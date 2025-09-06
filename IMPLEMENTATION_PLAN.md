@@ -169,37 +169,93 @@ const { data, loading } = useQuery(pageQuery, {
 });
 ```
 
-#### Static Analysis Output
-After static analysis, the above code should generate:
-```graphql
-query PostDetailPage($postId: UUID!, $commentLimit: Int) {
-  post(id: $postId) {
-    id
-    title
-    content
-    author {
-      id
-      name
-      email
-    }
-    comments(limit: $commentLimit) {
-      id
-      content
-      createdAt
-    }
-  }
-  relatedPosts(postId: $postId) {
-    id
-    title
-    slug
-  }
-  currentUser {
-    id
-    name
-    avatar
-  }
+#### Static Analysis Output and Document Hoisting
+
+After static analysis, queries are hoisted to prevent re-evaluation:
+
+**Original Code (before transformation):**
+```typescript
+// src/components/PostDetail.tsx
+export function PostDetailComponent({ postId }: Props) {
+  // Query defined inside component
+  const { data } = useQuery(
+    gql.query(
+      ["PostDetail", { postId: gql.arg.uuid() }],
+      (_, args) => ({
+        post: getPostSlice({ id: args.postId })
+      })
+    ),
+    { variables: { postId } }
+  );
+  
+  return <div>{data.post.title}</div>;
 }
 ```
+
+**Transformed Code (after build):**
+```typescript
+// src/components/PostDetail.tsx
+
+// GraphQL document hoisted and registered at module level
+const __gql_PostDetail_query = __gqlRegistry.register({
+  id: "PostDetail_query_a1b2c3d4",
+  document: `
+    query PostDetail($postId: UUID!) {
+      post(id: $postId) {
+        id
+        title
+        content
+      }
+    }
+  `,
+  operationName: "PostDetail",
+  variables: ["postId"],
+  fragments: ["PostFragment_a1b2c3d4"]
+});
+
+export function PostDetailComponent({ postId }: Props) {
+  // Component now references the registered query
+  const { data } = useQuery(
+    __gql_PostDetail_query,
+    { variables: { postId } }
+  );
+  
+  return <div>{data.post.title}</div>;
+}
+```
+
+**Registry Implementation:**
+```typescript
+// Generated registry module (runtime)
+const __gqlRegistry = (() => {
+  const documents = new Map<string, RegisteredDocument>();
+  
+  return {
+    register(doc: DocumentDefinition): RegisteredDocument {
+      if (!documents.has(doc.id)) {
+        documents.set(doc.id, {
+          ...doc,
+          // Parse once at registration
+          parsed: parseGraphQL(doc.document),
+          // Create reusable document node
+          documentNode: gql`${doc.document}`
+        });
+      }
+      return documents.get(doc.id)!;
+    },
+    
+    get(id: string): RegisteredDocument | undefined {
+      return documents.get(id);
+    }
+  };
+})();
+```
+
+This approach ensures:
+- GraphQL documents are parsed only once at module load time
+- No re-evaluation in React render cycles
+- Better performance in hot module replacement (HMR)
+- Easier debugging with stable document IDs
 
 ### Runtime API Design Principles
 
@@ -320,7 +376,7 @@ function query<Args, Slices>(
 4. Test complex nested queries
 5. Test error cases
 
-### Phase 3: Static Analysis (Week 3-4)
+### Phase 3: Static Analysis and Transform (Week 3-4)
 
 #### Package: `@soda-gql/analyzer`
 
@@ -328,6 +384,7 @@ function query<Args, Slices>(
 - Parse TypeScript AST to extract GraphQL operations
 - Analyze dependencies between fragments and slices
 - Build operation registry
+- Transform code to hoist query documents
 
 **Key Components:**
 ```typescript
@@ -344,6 +401,32 @@ class DependencyAnalyzer {
   analyze(operations: ParsedOperations): DependencyGraph;
   detectCircular(): CircularDependency[];
   optimize(): OptimizedGraph;
+}
+
+// src/transformer.ts - AST transformation for document hoisting
+class QueryHoistingTransformer {
+  transform(sourceFile: ts.SourceFile): ts.SourceFile {
+    const queries = this.findQueryDefinitions(sourceFile);
+    const hoisted = this.hoistToModuleLevel(queries);
+    return this.replaceWithReferences(sourceFile, hoisted);
+  }
+  
+  private findQueryDefinitions(node: ts.Node): QueryDefinition[] {
+    // Find all gql.query/mutation/subscription calls
+  }
+  
+  private hoistToModuleLevel(queries: QueryDefinition[]): HoistedQuery[] {
+    // Generate unique IDs and create registry calls
+    return queries.map(q => ({
+      id: generateStableId(q),
+      registryCall: this.createRegistryCall(q),
+      reference: this.createReference(q)
+    }));
+  }
+  
+  private createRegistryCall(query: QueryDefinition): ts.Statement {
+    // Create __gqlRegistry.register() call
+  }
 }
 ```
 
