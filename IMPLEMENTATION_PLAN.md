@@ -211,22 +211,39 @@ packages/
 **Key Components:**
 ```typescript
 // src/types.ts - Core type definitions
-type Fragment<T, R> = {
+type Fragment<T, R, Args = void> = {
+  __type: T;
+  __result: R;
+  __args: Args;
+  definition: FragmentDefinition;
+  transform: (data: T) => R;
+  // Callable when parameterized
+  (args: Args): AppliedFragment<T, R>;
+};
+
+type AppliedFragment<T, R> = {
   __type: T;
   __result: R;
   definition: FragmentDefinition;
   transform: (data: T) => R;
 };
 
-// src/fragment.ts - Fragment builder
+// src/fragment.ts - Fragment builder (overloaded for parameters)
 function fragment<T, S, R>(
   typeName: string,
-  selection: S | ((args: Args) => S),
+  selection: S,
   transform: (data: Infer<T, S>) => R
-): Fragment<T, R>;
+): Fragment<T, R, void>;
+
+function fragment<T, Args, S, R>(
+  definition: [string, ArgsDefinition<Args>],
+  selection: (fields: FieldSelector<T>, args: Args) => S,
+  transform: (data: Infer<T, S>) => R
+): Fragment<T, R, Args>;
 
 // src/inference.ts - Type inference utilities
-type Infer<Fragment> = Fragment extends Fragment<any, infer R> ? R : never;
+type Infer<F> = F extends Fragment<any, infer R, any> ? R : 
+                F extends AppliedFragment<any, infer R> ? R : never;
 ```
 
 **Testing Strategy (TDD):**
