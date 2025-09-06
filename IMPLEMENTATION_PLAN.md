@@ -458,6 +458,272 @@ test('fragment should infer correct type', () => {
 3. Compatibility layer for existing queries
 4. Type compatibility with existing codegen
 
+## Coding Standards and Architectural Principles
+
+### Class Usage Guidelines
+
+Classes are only permitted for:
+1. **DTOs (Data Transfer Objects)** - Pure data structures with validation
+2. **Error definitions** - Custom error classes extending base Error
+3. **Pure method collections** - Stateless utility classes with pure functions
+
+Classes are **NOT** permitted for:
+- State management
+- Singleton patterns
+- Service containers
+- Dependency injection containers
+
+#### Acceptable Class Usage Examples
+
+```typescript
+// ✅ DTO with validation
+class FragmentDefinition {
+  constructor(
+    public readonly name: string,
+    public readonly typeName: string,
+    public readonly selection: SelectionSet,
+  ) {
+    // Validation only, no state management
+    if (!name) throw new Error('Fragment name is required');
+    if (!typeName) throw new Error('Type name is required');
+  }
+  
+  // Pure computed property
+  get fragmentName(): string {
+    return `${this.typeName}_${this.name}`;
+  }
+}
+
+// ✅ Error class definition
+class GraphQLSystemError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly details?: unknown,
+  ) {
+    super(message);
+    this.name = 'GraphQLSystemError';
+  }
+}
+
+// ✅ Pure method collection
+class GraphQLDocumentFormatter {
+  // All methods are pure functions
+  formatQuery(query: QueryNode): string {
+    return this.formatOperation('query', query);
+  }
+  
+  private formatOperation(type: string, node: OperationNode): string {
+    // Pure transformation, no side effects
+    return `${type} ${node.name} { ... }`;
+  }
+}
+```
+
+### State Management Patterns
+
+Use closures and factory functions to encapsulate mutable state:
+
+```typescript
+// ✅ State encapsulation with closure
+function createFragmentRegistry() {
+  // Private mutable state
+  let fragments = new Map<string, FragmentDefinition>();
+  let locked = false;
+  
+  // Public immutable interface
+  return {
+    register(fragment: FragmentDefinition): Result<void, RegistryError> {
+      if (locked) {
+        return err({ type: 'REGISTRY_LOCKED' } as const);
+      }
+      if (fragments.has(fragment.name)) {
+        return err({ type: 'DUPLICATE_FRAGMENT', name: fragment.name } as const);
+      }
+      fragments.set(fragment.name, fragment);
+      return ok(undefined);
+    },
+    
+    get(name: string): FragmentDefinition | undefined {
+      return fragments.get(name);
+    },
+    
+    getAll(): ReadonlyArray<FragmentDefinition> {
+      return Array.from(fragments.values());
+    },
+    
+    lock(): void {
+      locked = true;
+    },
+    
+    // For testing only
+    _reset(): void {
+      fragments = new Map();
+      locked = false;
+    }
+  } as const;
+}
+
+// ✅ Scoped mutable state with IIFE
+const analyzer = (() => {
+  let cache: Map<string, AnalysisResult> | null = null;
+  
+  const analyze = (path: string): Result<AnalysisResult, AnalysisError> => {
+    // Check cache first
+    if (cache?.has(path)) {
+      return ok(cache.get(path)!);
+    }
+    
+    // Perform analysis
+    const result = performAnalysis(path);
+    
+    // Update cache on success
+    if (result.isOk() && cache) {
+      cache.set(path, result.value);
+    }
+    
+    return result;
+  };
+  
+  const clearCache = () => {
+    cache = null;
+  };
+  
+  const enableCache = () => {
+    cache = new Map();
+  };
+  
+  return { analyze, clearCache, enableCache } as const;
+})();
+```
+
+### Pure Function Extraction
+
+Extract pure logic for better testability:
+
+```typescript
+// ✅ Pure functions extracted for testing
+// Pure business logic
+export const pure = {
+  // Fragment merging logic
+  mergeSelections(
+    a: SelectionSet,
+    b: SelectionSet,
+  ): SelectionSet {
+    const merged = new Map([...a.fields, ...b.fields]);
+    return { fields: merged };
+  },
+  
+  // Query variable extraction
+  extractVariables(
+    operation: OperationNode,
+  ): ReadonlyArray<VariableDefinition> {
+    const variables = new Set<VariableDefinition>();
+    
+    const traverse = (node: ASTNode): void => {
+      if (node.type === 'Variable') {
+        variables.add(node.definition);
+      }
+      node.children?.forEach(traverse);
+    };
+    
+    traverse(operation);
+    return Array.from(variables);
+  },
+  
+  // Fragment dependency analysis
+  analyzeFragmentDependencies(
+    fragments: ReadonlyArray<FragmentDefinition>,
+  ): Result<DependencyGraph, CircularDependencyError> {
+    const graph = new Map<string, Set<string>>();
+    
+    // Build dependency graph
+    for (const fragment of fragments) {
+      const deps = extractFragmentReferences(fragment.selection);
+      graph.set(fragment.name, new Set(deps));
+    }
+    
+    // Check for cycles
+    const cycle = detectCycle(graph);
+    if (cycle) {
+      return err({ 
+        type: 'CIRCULAR_DEPENDENCY', 
+        fragments: cycle 
+      } as const);
+    }
+    
+    return ok({ graph });
+  },
+} as const;
+
+// Impure wrapper that uses pure functions
+function createAnalyzer(config: AnalyzerConfig) {
+  return {
+    async analyzeFile(path: string): Promise<Result<Analysis, AnalysisError>> {
+      // IO operation
+      const content = await readFile(path);
+      if (content.isErr()) return content;
+      
+      // Pure transformation
+      const ast = pure.parseTypeScript(content.value);
+      if (ast.isErr()) return ast;
+      
+      // Pure analysis
+      const fragments = pure.extractFragments(ast.value);
+      const dependencies = pure.analyzeFragmentDependencies(fragments);
+      
+      return dependencies;
+    }
+  };
+}
+```
+
+### Testing Strategy for Pure Functions
+
+```typescript
+// Easy to test pure functions
+describe('pure.mergeSelections', () => {
+  it('should merge non-overlapping selections', () => {
+    const a = { fields: new Map([['id', true], ['name', true]]) };
+    const b = { fields: new Map([['email', true]]) };
+    
+    const result = pure.mergeSelections(a, b);
+    
+    expect(result.fields.size).toBe(3);
+    expect(result.fields.has('id')).toBe(true);
+    expect(result.fields.has('name')).toBe(true);
+    expect(result.fields.has('email')).toBe(true);
+  });
+  
+  it('should override duplicate fields', () => {
+    const a = { fields: new Map([['id', true], ['name', true]]) };
+    const b = { fields: new Map([['name', false], ['email', true]]) };
+    
+    const result = pure.mergeSelections(a, b);
+    
+    expect(result.fields.get('name')).toBe(false);
+  });
+});
+
+describe('pure.analyzeFragmentDependencies', () => {
+  it('should detect circular dependencies', () => {
+    const fragments = [
+      new FragmentDefinition('A', 'User', { references: ['B'] }),
+      new FragmentDefinition('B', 'User', { references: ['C'] }),
+      new FragmentDefinition('C', 'User', { references: ['A'] }),
+    ];
+    
+    const result = pure.analyzeFragmentDependencies(fragments);
+    
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.type).toBe('CIRCULAR_DEPENDENCY');
+      expect(result.error.fragments).toEqual(['A', 'B', 'C']);
+    }
+  });
+});
+```
+
 ## Technical Implementation Details
 
 ### Error Handling Strategy
