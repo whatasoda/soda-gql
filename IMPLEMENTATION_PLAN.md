@@ -458,6 +458,261 @@ test('fragment should infer correct type', () => {
 3. Compatibility layer for existing queries
 4. Type compatibility with existing codegen
 
+## Technical Implementation Details
+
+### Error Handling Strategy
+
+Using `neverthrow` for type-safe error handling throughout the internal implementation:
+
+```typescript
+// src/analyzer/parser.ts - Example of type-safe file reading
+import { z } from 'zod';
+import { Result, ok, err } from 'neverthrow';
+
+// Schema definitions for configuration
+const ConfigSchema = z.object({
+  schemaPath: z.string(),
+  outputPath: z.string().optional(),
+  watch: z.boolean().default(false),
+  generateRuntime: z.boolean().default(true),
+});
+
+type Config = z.infer<typeof ConfigSchema>;
+
+// Discriminated unions for detailed error types
+type ParseError = 
+  | { type: 'FILE_NOT_FOUND'; path: string }
+  | { type: 'INVALID_SYNTAX'; line: number; column: number; message: string }
+  | { type: 'SCHEMA_VALIDATION_FAILED'; errors: z.ZodError };
+
+type AnalysisError =
+  | { type: 'CIRCULAR_DEPENDENCY'; fragments: string[] }
+  | { type: 'UNDEFINED_FRAGMENT'; name: string; location: string }
+  | { type: 'TYPE_MISMATCH'; expected: string; actual: string };
+
+// Internal implementation with Result types
+class ConfigLoader {
+  load(path: string): Result<Config, ParseError> {
+    return (() => {
+      const content = this.readFileSync(path);
+      if (!content) {
+        return err({ type: 'FILE_NOT_FOUND', path } as const);
+      }
+      
+      const parsed = this.parseJson(content);
+      if (parsed.isErr()) {
+        return err({ 
+          type: 'INVALID_SYNTAX', 
+          ...parsed.error 
+        } as const);
+      }
+      
+      const validated = ConfigSchema.safeParse(parsed.value);
+      if (!validated.success) {
+        return err({ 
+          type: 'SCHEMA_VALIDATION_FAILED', 
+          errors: validated.error 
+        } as const);
+      }
+      
+      return ok(validated.data);
+    })();
+  }
+  
+  private readFileSync(path: string): string | null {
+    // Implementation
+  }
+  
+  private parseJson(content: string): Result<unknown, { line: number; column: number; message: string }> {
+    // Implementation using IIFE to avoid try-catch nesting
+    return (() => {
+      const lines = content.split('\n');
+      // Custom JSON parser that returns Result type
+      // No try-catch, no type casting
+    })();
+  }
+}
+```
+
+### GraphQL System Module Generation
+
+The `@/gql-system` module referenced in examples is auto-generated based on the GraphQL schema:
+
+#### Generated Module Structure
+```typescript
+// Generated: gql-system/index.ts
+export const gql = {
+  // Fragment builder with full type inference
+  fragment: createFragmentBuilder(schemaTypes),
+  
+  // Query/Mutation/Subscription slice builders
+  querySlice: createQuerySliceBuilder(schemaTypes),
+  mutationSlice: createMutationSliceBuilder(schemaTypes),
+  subscriptionSlice: createSubscriptionSliceBuilder(schemaTypes),
+  
+  // Page-level query/mutation builders
+  query: createQueryBuilder(schemaTypes),
+  mutation: createMutationBuilder(schemaTypes),
+  subscription: createSubscriptionBuilder(schemaTypes),
+  
+  // Argument type builders with validation
+  arg: {
+    string: () => createArgBuilder(z.string()),
+    int: () => createArgBuilder(z.number().int()),
+    float: () => createArgBuilder(z.number()),
+    boolean: () => createArgBuilder(z.boolean()),
+    uuid: () => createArgBuilder(z.string().uuid()),
+    // Custom scalars from schema
+    timestamptz: () => createArgBuilder(TimestamptzSchema),
+  },
+  
+  // Input type helpers for complex arguments
+  input: {
+    fromQuery: createInputFromQuery(schemaTypes),
+    fromMutation: createInputFromMutation(schemaTypes),
+  },
+  
+  // Type inference utility
+  infer: {} as InferUtility,
+} as const;
+
+// Generated type definitions based on schema
+export namespace SchemaTypes {
+  // Generated from GraphQL schema types
+  export interface User {
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+    posts: Post[];
+    comments: Comment[];
+  }
+  
+  export interface Post {
+    id: string;
+    title: string;
+    content: string;
+    userId: string;
+    published: boolean;
+    user: User;
+    comments: Comment[];
+  }
+  
+  // Input types
+  export interface UserWhereInput {
+    id?: UuidComparisonExp;
+    name?: StringComparisonExp;
+    // ... etc
+  }
+}
+```
+
+#### Generation Process
+
+1. **Schema Analysis Phase**
+```typescript
+// Internal implementation with Result types
+function analyzeSchema(schemaPath: string): Result<SchemaAnalysis, AnalysisError> {
+  return (() => {
+    // Parse GraphQL schema file
+    const schemaContent = loadSchemaFile(schemaPath);
+    if (schemaContent.isErr()) return schemaContent;
+    
+    // Validate schema with zod
+    const validated = GraphQLSchemaSchema.safeParse(schemaContent.value);
+    if (!validated.success) {
+      return err({ 
+        type: 'SCHEMA_VALIDATION_FAILED', 
+        errors: validated.error 
+      } as const);
+    }
+    
+    // Extract types, scalars, inputs
+    const types = extractTypes(validated.data);
+    const scalars = extractScalars(validated.data);
+    const inputs = extractInputTypes(validated.data);
+    
+    return ok({ types, scalars, inputs });
+  })();
+}
+```
+
+2. **Code Generation Phase**
+```typescript
+// Generates the gql-system module without exposing Result types
+function generateGqlSystem(analysis: SchemaAnalysis): string {
+  const typeDefinitions = generateTypeDefinitions(analysis.types);
+  const argBuilders = generateArgBuilders(analysis.scalars);
+  const apiBuilders = generateApiBuilders();
+  
+  return `
+    // Auto-generated by soda-gql
+    import { z } from 'zod';
+    import { 
+      createFragmentBuilder,
+      createQuerySliceBuilder,
+      createQueryBuilder,
+      createArgBuilder,
+    } from '@soda-gql/runtime';
+    
+    ${typeDefinitions}
+    ${argBuilders}
+    ${apiBuilders}
+    
+    export const gql = {
+      fragment: createFragmentBuilder(schemaTypes),
+      querySlice: createQuerySliceBuilder(schemaTypes),
+      query: createQueryBuilder(schemaTypes),
+      arg: argBuilders,
+      infer: {} as InferUtility,
+    } as const;
+  `;
+}
+```
+
+3. **Runtime API (User-facing)**
+```typescript
+// Public API - no Result types exposed
+export function fragment<T, S, R>(
+  typeName: string,
+  selection: S,
+  transform: (data: Infer<T, S>) => R
+): Fragment<T, R, void> {
+  // Internal implementation uses Result types
+  const result = validateAndCreateFragment(typeName, selection, transform);
+  
+  // But public API throws on error (fail-fast for developer)
+  if (result.isErr()) {
+    throw new GraphQLSystemError(result.error);
+  }
+  
+  return result.value;
+}
+```
+
+### Module Resolution Strategy
+
+The `@/gql-system` import is resolved through TypeScript path mapping:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/gql-system": ["./node_modules/.soda-gql/generated/index.ts"],
+      "@/gql-system/*": ["./node_modules/.soda-gql/generated/*"]
+    }
+  }
+}
+```
+
+Build tools generate the module to `.soda-gql/generated/` directory, which is:
+- Git-ignored by default
+- Regenerated on schema changes
+- Cached for performance
+- Type-checked incrementally
+
 ## Success Metrics
 
 - **Type Safety**: 100% type coverage without manual annotations
