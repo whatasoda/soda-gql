@@ -1,13 +1,15 @@
 import { gql } from "@/gql-system";
 import { useQuery } from "@/gql-system/react";
-import { getPostApis } from "../../../../entities/post/apis/get-post.api";
+import { getPostApis } from "../../../entities/post/apis/get-post.api";
 import { listUsersApis } from "../../../entities/user/apis/list-users.api";
+import { PostDetail } from "../../../features/post/view-post-detail/components/PostDetail";
+import { UserSelect } from "../../../features/user/select-user/components/UserSelect";
 
 export default function PostDetailPage() {
   const { id } = useParams();
 
   const { data } = useQuery(
-    gql.query.document(
+    gql.query(
       [
         "PostDetailPage_getPost",
         {
@@ -35,5 +37,10 @@ export default function PostDetailPage() {
         }
   );
 
-  return <div>PostDetailPage</div>;
+  return (
+    <>
+      <PostDetail post={data.post} />
+      <UserSelect users={data.users} />
+    </>
+  );
 }

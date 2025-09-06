@@ -2,7 +2,7 @@ import { gql } from "@/gql-system";
 import { post_remoteModel } from "../models/post.remote-model";
 
 export const getPostApis = {
-  getPost: gql.query(
+  getPost: gql.querySlice(
     [
       "getPost",
       {

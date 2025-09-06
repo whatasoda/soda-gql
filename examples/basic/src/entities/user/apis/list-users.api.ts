@@ -2,7 +2,7 @@ import { gql } from "@/gql-system";
 import { user_remoteModel } from "../models/user.remote-model";
 
 export const listUsersApis = {
-  iterateUsers: gql.query(
+  iterateUsers: gql.querySlice(
     "iterateUsers",
     (query) => ({
       users: query("users", user_remoteModel.forIterate()),
