@@ -29,9 +29,25 @@ Page Queries combine multiple slices to create complete GraphQL documents for sp
 #### Fragment Definition Runtime
 ```typescript
 // Runtime: Type-safe fragment definition with transformation
-const userFragment = gql.fragment(
+// Pattern 1: Simple object selection
+const userFragmentSimple = gql.fragment(
   "User",
   {
+    id: true,
+    name: true,
+    email: true,
+  },
+  (data) => ({
+    id: data.id,
+    displayName: data.name.toUpperCase(),
+    email: data.email,
+  })
+);
+
+// Pattern 2: Function returning selection (for consistency/lazy evaluation)
+const userFragment = gql.fragment(
+  "User",
+  () => ({
     id: true,
     name: true,
     email: true,
@@ -39,7 +55,7 @@ const userFragment = gql.fragment(
       id: true,
       title: true
     }
-  },
+  }),
   (data) => ({
     id: data.id,
     displayName: data.name.toUpperCase(),
@@ -52,23 +68,32 @@ const userFragment = gql.fragment(
 type User = gql.infer<typeof userFragment>; 
 // Results in: { id: string; displayName: string; email: string; postCount: number; }
 
-// Parameterized fragments for flexible field selection
+// Parameterized fragments with relation builder
 const postFragment = gql.fragment(
   ["Post", {
     includeAuthor: gql.arg.boolean().default(false),
     commentLimit: gql.arg.int().optional(),
+    // Using gql.input.fromQuery to extract input types
+    ...gql.input.fromQuery("posts.comments", {
+      prefix: "comments_",
+      pick: { where: true, limit: true, orderBy: true },
+    }),
   }],
-  (fields, args) => ({
+  (relation, args) => ({  // First param is 'relation', not 'fields'
     id: true,
     title: true,
     content: true,
     ...(args.includeAuthor && {
-      author: fields.relation("author", userFragment)
+      author: relation("author", userFragment())  // Fragments can be invoked
     }),
     ...(args.commentLimit && {
-      comments: fields.relation(
-        ["comments", { limit: args.commentLimit }],
-        commentFragment
+      comments: relation(
+        ["comments", { 
+          limit: args.commentLimit,
+          where: args.comments_where,
+          orderBy: args.comments_orderBy
+        }],
+        commentFragment()
       )
     })
   }),
@@ -217,7 +242,8 @@ type Fragment<T, R, Args = void> = {
   __args: Args;
   definition: FragmentDefinition;
   transform: (data: T) => R;
-  // Callable when parameterized
+  // Callable with no args (for consistency) or with args (when parameterized)
+  (): Args extends void ? Fragment<T, R, void> : never;
   (args: Args): AppliedFragment<T, R>;
 };
 
@@ -228,16 +254,25 @@ type AppliedFragment<T, R> = {
   transform: (data: T) => R;
 };
 
-// src/fragment.ts - Fragment builder (overloaded for parameters)
+// src/fragment.ts - Fragment builder (overloaded for all patterns)
+// Pattern 1: Simple object selection
 function fragment<T, S, R>(
   typeName: string,
   selection: S,
   transform: (data: Infer<T, S>) => R
 ): Fragment<T, R, void>;
 
+// Pattern 2: Function returning selection (for consistency)
+function fragment<T, S, R>(
+  typeName: string,
+  selection: () => S,
+  transform: (data: Infer<T, S>) => R
+): Fragment<T, R, void>;
+
+// Pattern 3: Parameterized with relation builder
 function fragment<T, Args, S, R>(
   definition: [string, ArgsDefinition<Args>],
-  selection: (fields: FieldSelector<T>, args: Args) => S,
+  selection: (relation: RelationBuilder<T>, args: Args) => S,
   transform: (data: Infer<T, S>) => R
 ): Fragment<T, R, Args>;
 
