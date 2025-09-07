@@ -4,6 +4,7 @@ import type { DeepFieldSelection, FieldSelection } from "../../types/field-selec
 describe("FieldSelection type", () => {
   it("should support basic field selection", () => {
     type User = {
+      __typename: "User";
       id: string;
       name: string;
       email: string;
@@ -11,6 +12,7 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<User> = {
+      __typename__: "User",
       id: true,
       name: true,
       email: false,
@@ -23,12 +25,14 @@ describe("FieldSelection type", () => {
 
   it("should support nested __relation__ in relation types", () => {
     type Tag = {
+      __typename: "Tag";
       id: string;
       name: string;
       color: string;
     };
 
     type Category = {
+      __typename: "Category";
       id: string;
       name: string;
       description: string;
@@ -39,6 +43,7 @@ describe("FieldSelection type", () => {
     };
 
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       content: string;
@@ -48,16 +53,19 @@ describe("FieldSelection type", () => {
       };
       __relation__: {
         author: {
+          __typename: "Author";
           // Inline type with nested __relation__
           id: string;
           name: string;
           verified: boolean;
           __relation__: {
             profile: {
+              __typename: "Profile";
               bio: string;
               website: string;
               __relation__: {
                 socialLinks: Array<{
+                  __typename: "SocialLink";
                   platform: string;
                   url: string;
                 }>;
@@ -71,24 +79,29 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<Post> = {
+      __typename__: "Post",
       id: true,
       title: true,
       content: false,
       metadata: true, // Regular object - boolean only
       author: {
+        __typename__: "Author",
         id: true,
         name: true,
         verified: true,
         profile: {
+          __typename__: "Profile",
           // Nested __relation__ access
           bio: true,
           website: false,
           socialLinks: {
+            __typename__: "SocialLink",
             platform: true,
             url: true,
           },
         },
         posts: {
+          __typename__: "Post",
           // Recursive selection
           id: true,
           title: true,
@@ -96,16 +109,19 @@ describe("FieldSelection type", () => {
         },
       },
       category: {
+        __typename__: "Category",
         id: true,
         name: true,
         description: false,
         parent: {
+          __typename__: "Category",
           // Nested relation from Category's __relation__
           id: true,
           name: true,
           description: true,
         },
         tags: {
+          __typename__: "Tag",
           id: true,
           name: true,
           color: false,
@@ -120,12 +136,14 @@ describe("FieldSelection type", () => {
 
   it("should distinguish between relations and regular objects using __relation__", () => {
     type Author = {
+      __typename: "Author";
       id: string;
       name: string;
       bio: string;
     };
 
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       metadata: {
@@ -137,6 +155,7 @@ describe("FieldSelection type", () => {
       __relation__: {
         author: Author;
         comments: Array<{
+          __typename: "Comment";
           id: string;
           content: string;
         }>;
@@ -144,16 +163,19 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<Post> = {
+      __typename__: "Post",
       id: true,
       title: true,
       metadata: true, // Regular object field - can only be boolean
       author: {
+        __typename__: "Author",
         // Relation field - can be nested selection
         id: true,
         name: true,
         bio: false,
       },
       comments: {
+        __typename__: "Comment",
         id: true,
         content: true,
       },
@@ -166,12 +188,14 @@ describe("FieldSelection type", () => {
 
   it("should support array relations via __relation__", () => {
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       content: string;
     };
 
     type Blog = {
+      __typename: "Blog";
       id: string;
       title: string;
       tags: string[]; // Simple array, not a relation
@@ -182,16 +206,19 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<Blog> = {
+      __typename__: "Blog",
       id: true,
       title: true,
       tags: true, // Simple array field - boolean only
       posts: {
+        __typename__: "Post",
         // Array relation - selection applies to each Post element
         id: true,
         title: true,
         content: false,
       },
       featuredPost: {
+        __typename__: "Post",
         // Single relation - same selection structure
         id: true,
         title: true,
@@ -214,11 +241,13 @@ describe("FieldSelection type", () => {
     };
 
     type Company = {
+      __typename: "Company";
       id: string;
       name: string;
       address: Address; // Regular nested object
       __relation__: {
         employees: Array<{
+          __typename: "Employee";
           id: string;
           name: string;
           role: string;
@@ -227,6 +256,7 @@ describe("FieldSelection type", () => {
     };
 
     type User = {
+      __typename: "User";
       id: string;
       name: string;
       profile: {
@@ -236,23 +266,27 @@ describe("FieldSelection type", () => {
       __relation__: {
         company: Company;
         manager: {
+          __typename: "Manager";
           id: string;
           name: string;
           level: number;
           __relation__: {
             // Nested __relation__ inside a relation
             department: {
+              __typename: "Department";
               id: string;
               name: string;
               budget: number;
               __relation__: {
                 // Another level of nested __relation__
                 head: {
+                  __typename: "DepartmentHead";
                   id: string;
                   name: string;
                   title: string;
                 };
                 projects: Array<{
+                  __typename: "Project";
                   id: string;
                   name: string;
                   status: string;
@@ -266,41 +300,49 @@ describe("FieldSelection type", () => {
     };
 
     const selection: DeepFieldSelection<User> = {
+      __typename__: "User",
       id: true,
       name: true,
       profile: true, // Regular object - boolean only
       company: {
+        __typename__: "Company",
         id: true,
         name: true,
         address: true, // Regular nested object inside relation - boolean only
         employees: {
+          __typename__: "Employee",
           id: true,
           name: true,
           role: false,
         },
       },
       manager: {
+        __typename__: "Manager",
         id: true,
         name: true,
         level: true,
         department: {
+          __typename__: "Department",
           // Accessing nested __relation__
           id: true,
           name: true,
           budget: false,
           head: {
+            __typename__: "DepartmentHead",
             // Another level deep
             id: true,
             name: true,
             title: true,
           },
           projects: {
+            __typename__: "Project",
             id: true,
             name: true,
             status: true,
           },
         },
         reports: {
+          __typename__: "User",
           // Recursive selection
           id: true,
           name: true,
@@ -316,12 +358,14 @@ describe("FieldSelection type", () => {
 
   it("should support conditional field selection", () => {
     type Review = {
+      __typename: "Review";
       id: string;
       rating: number;
       comment: string;
     };
 
     type Product = {
+      __typename: "Product";
       id: string;
       name: string;
       price: number;
@@ -337,18 +381,21 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<Product> = {
+      __typename__: "Product",
       id: true,
       name: true,
       price: true,
       discount: true, // Optional scalar field
       metadata: true, // Optional object field - boolean only
       reviews: {
+        __typename__: "Review",
         // Optional relation - can have nested selection
         id: true,
         rating: true,
         comment: false,
       },
       relatedProducts: {
+        __typename__: "Product",
         id: true,
         name: true,
         price: true,
@@ -368,32 +415,32 @@ describe("FieldSelection type", () => {
 
     // Union types require selecting __typename and all possible fields
     const selection: FieldSelection<SearchResult> = {
-      __typename: true, // Required for GraphQL union type discrimination
+      __typename__: "User",
       id: true,
       name: true,
-      title: true,
-      content: true,
-      // biome-ignore lint/suspicious/noExplicitAny: union type requires cast
-    } as any;
+    };
 
-    expect(selection.__typename).toBe(true);
+    expect(selection.__typename__).toBe("User");
     expect(selection.id).toBe(true);
   });
 
   it("should support partial selection", () => {
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       content: string;
     };
 
     type Settings = {
+      __typename: "Settings";
       theme: string;
       notifications: boolean;
       privacy: string;
     };
 
     type FullUser = {
+      __typename: "FullUser";
       id: string;
       email: string;
       profile: {
@@ -410,10 +457,12 @@ describe("FieldSelection type", () => {
 
     // Only select some fields
     const partialSelection: FieldSelection<FullUser> = {
+      __typename__: "FullUser",
       id: true,
       // email not selected
       profile: true, // Regular object - boolean only
       posts: {
+        __typename__: "Post",
         // Relation - partial selection of fields
         id: true,
         title: true,
@@ -421,6 +470,7 @@ describe("FieldSelection type", () => {
       },
       // followers not selected
       settings: {
+        __typename__: "Settings",
         theme: true,
         // notifications and privacy not selected
       },
@@ -433,6 +483,7 @@ describe("FieldSelection type", () => {
 
   it("should handle nested array relations", () => {
     type Comment = {
+      __typename: "Comment";
       id: string;
       text: string;
       __relation__: {
@@ -441,6 +492,7 @@ describe("FieldSelection type", () => {
     };
 
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       __relation__: {
@@ -449,17 +501,21 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<Post> = {
+      __typename__: "Post",
       id: true,
       title: true,
       comments: {
+        __typename__: "Comment",
         // Selection for Comment array elements
         id: true,
         text: true,
         replies: {
+          __typename__: "Comment",
           // Nested array relation - still selects element fields
           id: true,
           text: true,
           replies: {
+            __typename__: "Comment",
             // Can continue recursively
             id: true,
             text: false,
@@ -474,6 +530,7 @@ describe("FieldSelection type", () => {
 
   it("should handle recursive types with __relation__", () => {
     type TreeNode = {
+      __typename: "TreeNode";
       id: string;
       value: string;
       metadata: {
@@ -487,19 +544,23 @@ describe("FieldSelection type", () => {
     };
 
     const selection: FieldSelection<TreeNode> = {
+      __typename__: "TreeNode",
       id: true,
       value: true,
       metadata: true, // Regular object - boolean only
       parent: {
+        __typename__: "TreeNode",
         // Relation - nested selection
         id: true,
         value: true,
         metadata: true,
       },
       children: {
+        __typename__: "TreeNode",
         id: true,
         value: true,
         children: {
+          __typename__: "TreeNode",
           // Can continue recursively through relations
           id: true,
           value: true,

@@ -13,8 +13,8 @@ We will use GraphQL's standard `__typename` field for union type discrimination 
 
 Key changes:
 1. TypeScript union types use `__typename` as the discriminator field
-2. Field selection for union types requires `__typename: true`
-3. QuerySlice and future query builders will handle union types with conditional selections
+2. Field selection uses `__typename__` (double underscore suffix) with the concrete type name as value
+3. QuerySlice and future query builders will handle union types with type-specific selections
 4. RemoteModel remains for concrete types only; union handling happens at query composition level
 
 ## Consequences
@@ -45,14 +45,27 @@ type SearchResult =
   | { __typename: "Comment"; id: string; content: string };
 ```
 
-Example field selection:
+Example field selection (selecting User fields):
 ```typescript
 const selection: FieldSelection<SearchResult> = {
-  __typename: true, // Required
+  __typename__: "User", // Specify which type to select
   id: true,
   name: true,
-  title: true,
-  content: true,
+};
+```
+
+Example for non-union types:
+```typescript
+type Product = {
+  __typename: "Product";
+  id: string;
+  name: string;
+};
+
+const selection: FieldSelection<Product> = {
+  __typename__: "Product", // Type name value
+  id: true,
+  name: true,
 };
 ```
 

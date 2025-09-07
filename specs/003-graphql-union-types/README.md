@@ -64,15 +64,37 @@ type SearchResult =
 
 ## Field Selection for Union Types
 
-When selecting fields from a union type, the `__typename` field is **required**:
+When selecting fields from a union type, the `__typename__` field (note double underscore suffix) must specify which concrete type is being selected:
 
 ```typescript
-const selection: FieldSelection<SearchResult> = {
-  __typename: true, // Required for type discrimination
-  id: true,        // Common field across all union members
-  name: true,      // User-specific field
-  title: true,     // Post-specific field
-  content: true,   // Comment-specific field
+// Select fields for a User type from the union
+const userSelection: FieldSelection<SearchResult> = {
+  __typename__: "User", // Specify the concrete type being selected
+  id: true,            // Common field
+  name: true,          // User-specific field
+};
+
+// Select fields for a Post type from the union
+const postSelection: FieldSelection<SearchResult> = {
+  __typename__: "Post", // Specify the concrete type being selected
+  id: true,            // Common field
+  title: true,         // Post-specific field
+};
+```
+
+For non-union types with `__typename`, the type name is also specified:
+
+```typescript
+type Product = {
+  __typename: "Product";
+  id: string;
+  name: string;
+};
+
+const selection: FieldSelection<Product> = {
+  __typename__: "Product", // Type name value, not boolean
+  id: true,
+  name: true,
 };
 ```
 
@@ -88,7 +110,7 @@ const selection: FieldSelection<SearchResult> = {
 
 QuerySlice definitions must handle union types correctly:
 
-1. Always include `__typename` in the selection when dealing with union types
+1. Specify the concrete type name in `__typename__` field
 2. Transform functions should use `__typename` for type narrowing
 3. The selection builder must support conditional selections based on type
 
@@ -97,15 +119,29 @@ Example:
 ```typescript
 const searchSlice: QuerySlice<SearchResult[], { query: string }> = {
   // ...
-  selections: (builder, args) => ({
-    search: builder.unionType("SearchResult", {
-      __typename: true,
-      // Conditional selections based on type
-      "User": { id: true, name: true },
-      "Post": { id: true, title: true },
-      "Comment": { id: true, content: true },
-    }),
-  }),
+  selections: (builder, args) => {
+    // For union types, the builder needs to handle multiple type selections
+    // This is a future API design consideration
+    return {
+      search: [
+        {
+          __typename__: "User",
+          id: true,
+          name: true,
+        },
+        {
+          __typename__: "Post",
+          id: true,
+          title: true,
+        },
+        {
+          __typename__: "Comment",
+          id: true,
+          content: true,
+        },
+      ],
+    };
+  },
   transform: (data) => {
     return data.search.map(item => {
       switch (item.__typename) {

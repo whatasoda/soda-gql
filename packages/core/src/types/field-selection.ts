@@ -14,12 +14,20 @@
 /**
  * Helper type to extract relation fields from __relation__ property
  */
-type ExtractRelations<T> = T extends { __relation__: infer R } ? R : {};
+type ExtractRelations<T> = T extends { __relation__: infer R extends object } ? R : {};
 
 /**
  * Helper type to extract non-relation fields (excluding __relation__)
  */
 type ExtractNonRelations<T> = Omit<T, "__relation__">;
+
+/**
+ * Helper type to extract __typename field from a type
+ * Accepts both required and optional __typename fields
+ */
+type ExtractTypename<T> = T extends { __typename?: infer U extends string }
+  ? NonNullable<U>
+  : never;
 
 /**
  * Helper type to unwrap array types for field selection
@@ -31,24 +39,35 @@ type UnwrapArray<T> = T extends Array<infer U> ? U : T;
  * Basic field selection for GraphQL types with proper type inference
  * Relations are explicitly defined in __relation__ property
  * For array relations, the selection applies to each element
+ * Requires __typename to be defined in the type (either required or optional)
  */
 // biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
-export type FieldSelection<T = any> = {
-  // Regular fields (non-relations)
-  [K in keyof ExtractNonRelations<T>]?: boolean;
-} & {
-  // Relation fields from __relation__
-  // Arrays are unwrapped so selection applies to elements
-  [K in keyof ExtractRelations<T>]?: FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
-};
+export type FieldSelection<T = any> = T extends T
+  ? {
+      // __typename__ field is required for GraphQL type discrimination
+      // The type must define __typename (either required or optional)
+      __typename__: ExtractTypename<T>;
+    } & {
+      // Regular fields (non-relations)
+      [K in keyof ExtractNonRelations<T>]?: boolean;
+    } & {
+      // Relation fields from __relation__
+      // Arrays are unwrapped so selection applies to elements
+      [K in keyof ExtractRelations<T>]?: FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
+    }
+  : never;
 
 /**
  * Deep field selection that allows nested object traversal
  * Uses __relation__ to determine traversable relations
  * Arrays are automatically unwrapped
+ * Requires __typename to be defined in the type (either required or optional)
  */
 // biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
 export type DeepFieldSelection<T = any> = {
+  // __typename__ field for GraphQL type discrimination
+  __typename__: ExtractTypename<T>;
+} & {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
@@ -86,9 +105,13 @@ export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T,
  * Helper type for recursive field selection
  * Uses __relation__ for determining recursive traversal
  * Arrays are automatically unwrapped
+ * Requires __typename to be defined in the type (either required or optional)
  */
 // biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
 export type RecursiveFieldSelection<T = any> = {
+  // __typename__ field for GraphQL type discrimination
+  __typename__: ExtractTypename<T>;
+} & {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
