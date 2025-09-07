@@ -45,13 +45,13 @@
 
 ### A.3: Core Package - Type Implementation (After tests fail)
 
-- [ ] T018 [P] Implement RemoteModel interface in packages/core/src/types/remote-model.ts (copy from spec, don't import)
-- [ ] T019 [P] Implement QuerySlice interface in packages/core/src/types/query-slice.ts
-- [ ] T020 [P] Implement MutationSlice interface in packages/core/src/types/mutation-slice.ts
-- [ ] T021 [P] Implement PageQuery interface in packages/core/src/types/page-query.ts
-- [ ] T022 [P] Implement FieldSelection and helper types in packages/core/src/types/field-selection.ts
-- [ ] T023 Create type index in packages/core/src/types/index.ts exporting all types
-- [ ] T024 Quality check: bun run quality
+- [x] T018 [P] Implement RemoteModel interface in packages/core/src/types/remote-model.ts (copy from spec, don't import)
+- [x] T019 [P] Implement QuerySlice interface in packages/core/src/types/query-slice.ts
+- [x] T020 [P] Implement MutationSlice interface in packages/core/src/types/mutation-slice.ts
+- [x] T021 [P] Implement PageQuery interface in packages/core/src/types/page-query.ts
+- [x] T022 [P] Implement FieldSelection and helper types in packages/core/src/types/field-selection.ts
+- [x] T023 Create type index in packages/core/src/types/index.ts exporting all types
+- [x] T024 Quality check: bun run quality
 
 ### A.4: Core Package - createGql Function (TDD)
 
