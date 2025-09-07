@@ -21,6 +21,103 @@ describe("FieldSelection type", () => {
     expect(selection.email).toBe(false);
   });
 
+  it("should support nested __relation__ in relation types", () => {
+    type Tag = {
+      id: string;
+      name: string;
+      color: string;
+    };
+
+    type Category = {
+      id: string;
+      name: string;
+      description: string;
+      __relation__: {
+        parent: Category; // Self-reference
+        tags: Tag[];
+      };
+    };
+
+    type Post = {
+      id: string;
+      title: string;
+      content: string;
+      metadata: {
+        views: number;
+        likes: number;
+      };
+      __relation__: {
+        author: {
+          // Inline type with nested __relation__
+          id: string;
+          name: string;
+          verified: boolean;
+          __relation__: {
+            profile: {
+              bio: string;
+              website: string;
+              __relation__: {
+                socialLinks: Array<{
+                  platform: string;
+                  url: string;
+                }>;
+              };
+            };
+            posts: Post[]; // Recursive reference
+          };
+        };
+        category: Category; // Type with its own __relation__
+      };
+    };
+
+    const selection: FieldSelection<Post> = {
+      id: true,
+      title: true,
+      content: false,
+      metadata: true, // Regular object - boolean only
+      author: {
+        id: true,
+        name: true,
+        verified: true,
+        profile: {
+          // Nested __relation__ access
+          bio: true,
+          website: false,
+          socialLinks: {
+            platform: true,
+            url: true,
+          },
+        },
+        posts: {
+          // Recursive selection
+          id: true,
+          title: true,
+          metadata: true,
+        },
+      },
+      category: {
+        id: true,
+        name: true,
+        description: false,
+        parent: {
+          // Nested relation from Category's __relation__
+          id: true,
+          name: true,
+          description: true,
+        },
+        tags: {
+          id: true,
+          name: true,
+          color: false,
+        },
+      },
+    };
+
+    expect(selection.author).toBeDefined();
+    expect((selection.author as any).profile).toBeDefined();
+    expect((selection.category as any).parent).toBeDefined();
+  });
+
   it("should distinguish between relations and regular objects using __relation__", () => {
     type Author = {
       id: string;
@@ -109,54 +206,112 @@ describe("FieldSelection type", () => {
     expect(typeof selection.posts).toBe(typeof selection.featuredPost);
   });
 
-  it("should support deep field selection with __relation__", () => {
-    type Level4 = {
-      value: string;
+  it("should support deep field selection with nested __relation__", () => {
+    type Address = {
+      street: string;
+      city: string;
+      country: string;
     };
 
-    type Level3 = {
-      name: string;
-      __relation__: {
-        level4: Level4;
-      };
-    };
-
-    type Level2 = {
+    type Company = {
       id: string;
+      name: string;
+      address: Address; // Regular nested object
       __relation__: {
-        level3: Level3;
+        employees: Array<{
+          id: string;
+          name: string;
+          role: string;
+        }>;
       };
     };
 
-    type DeepStructure = {
-      rootData: string;
+    type User = {
+      id: string;
+      name: string;
+      profile: {
+        bio: string;
+        avatar: string;
+      };
       __relation__: {
-        level1: {
-          data: string;
+        company: Company;
+        manager: {
+          id: string;
+          name: string;
+          level: number;
           __relation__: {
-            level2: Level2;
+            // Nested __relation__ inside a relation
+            department: {
+              id: string;
+              name: string;
+              budget: number;
+              __relation__: {
+                // Another level of nested __relation__
+                head: {
+                  id: string;
+                  name: string;
+                  title: string;
+                };
+                projects: Array<{
+                  id: string;
+                  name: string;
+                  status: string;
+                }>;
+              };
+            };
+            reports: User[]; // Recursive reference
           };
         };
       };
     };
 
-    const selection: DeepFieldSelection<DeepStructure> = {
-      rootData: true,
-      level1: {
-        data: true,
-        level2: {
+    const selection: DeepFieldSelection<User> = {
+      id: true,
+      name: true,
+      profile: true, // Regular object - boolean only
+      company: {
+        id: true,
+        name: true,
+        address: true, // Regular nested object inside relation - boolean only
+        employees: {
           id: true,
-          level3: {
+          name: true,
+          role: false,
+        },
+      },
+      manager: {
+        id: true,
+        name: true,
+        level: true,
+        department: {
+          // Accessing nested __relation__
+          id: true,
+          name: true,
+          budget: false,
+          head: {
+            // Another level deep
+            id: true,
             name: true,
-            level4: {
-              value: true,
-            },
+            title: true,
           },
+          projects: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+        reports: {
+          // Recursive selection
+          id: true,
+          name: true,
+          profile: true,
         },
       },
     };
 
-    expect(selection.level1).toBeDefined();
+    expect(selection.manager).toBeDefined();
+    expect((selection.manager as any).department).toBeDefined();
+    expect((selection.manager as any).department.head).toBeDefined();
   });
 
   it("should support conditional field selection", () => {

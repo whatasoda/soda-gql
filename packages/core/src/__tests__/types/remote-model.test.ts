@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { hiddenBrand } from "../../types/brand-func";
-import type { FieldSelection, RemoteModel, TransformFunction } from "../../types/remote-model";
+import type { FieldSelection } from "../../types/field-selection";
+import type { RemoteModel, TransformFunction } from "../../types/remote-model";
 
 describe("RemoteModel type", () => {
   it("should have correct type structure", () => {
