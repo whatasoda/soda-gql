@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { DeepFieldSelection, FieldSelection } from "../../types/field-selection";
+import type { FieldSelection } from "../../types/field-selection";
 
 describe("FieldSelection type", () => {
   it("should support basic field selection", () => {
@@ -299,7 +299,7 @@ describe("FieldSelection type", () => {
       };
     };
 
-    const selection: DeepFieldSelection<User> = {
+    const selection: FieldSelection<User> = {
       __typename__: "User",
       id: true,
       name: true,

@@ -36,10 +36,11 @@ type ExtractTypename<T> = T extends { __typename?: infer U extends string }
 type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
 /**
- * Basic field selection for GraphQL types with proper type inference
+ * Field selection for GraphQL types with deep/nested traversal support
  * Relations are explicitly defined in __relation__ property
  * For array relations, the selection applies to each element
  * Requires __typename to be defined in the type (either required or optional)
+ * Always supports deep selection through relations
  */
 // biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
 export type FieldSelection<T = any> = T extends T
@@ -51,30 +52,17 @@ export type FieldSelection<T = any> = T extends T
       // Regular fields (non-relations)
       [K in keyof ExtractNonRelations<T>]?: boolean;
     } & {
-      // Relation fields from __relation__
+      // Relation fields from __relation__ with deep traversal
       // Arrays are unwrapped so selection applies to elements
       [K in keyof ExtractRelations<T>]?: FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
     }
   : never;
 
 /**
- * Deep field selection that allows nested object traversal
- * Uses __relation__ to determine traversable relations
- * Arrays are automatically unwrapped
- * Requires __typename to be defined in the type (either required or optional)
+ * @deprecated Use FieldSelection instead - it now supports deep selection by default
  */
 // biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
-export type DeepFieldSelection<T = any> = {
-  // __typename__ field for GraphQL type discrimination
-  __typename__: ExtractTypename<T>;
-} & {
-  // Regular fields (non-relations)
-  [K in keyof ExtractNonRelations<T>]?: boolean;
-} & {
-  // Relation fields from __relation__ with deep traversal
-  // Arrays are unwrapped for selection
-  [K in keyof ExtractRelations<T>]?: DeepFieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
-};
+export type DeepFieldSelection<T = any> = FieldSelection<T>;
 
 /**
  * Conditional field selection based on type

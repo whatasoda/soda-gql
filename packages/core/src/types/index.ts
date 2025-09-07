@@ -9,7 +9,7 @@ export { hiddenBrand } from "./brand-func";
 // Field selection types
 export type {
   ConditionalField,
-  DeepFieldSelection,
+  DeepFieldSelection, // @deprecated - Use FieldSelection instead
   ExtractNonRelations,
   ExtractRelations,
   FieldSelection,
