@@ -1,284 +1,228 @@
-# Tasks: Zero-runtime GraphQL Query Generation
+# Tasks: Zero-runtime GraphQL Query Generation System
 
 **Input**: Design documents from `/specs/001-zero-runtime-gql-in-js/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
-## Execution Flow (main)
-
-```
-1. Load plan.md from feature directory
-   → If not found: ERROR "No implementation plan found"
-   → Extract: tech stack, libraries, structure
-2. Load optional design documents:
-   → data-model.md: Extract entities → model tasks
-   → contracts/: Each file → contract test task
-   → research.md: Extract decisions → setup tasks
-3. Generate tasks by category:
-   → Setup: project init, dependencies, linting
-   → Tests: contract tests, integration tests
-   → Core: models, services, CLI commands
-   → Integration: DB, middleware, logging
-   → Polish: unit tests, performance, docs
-4. Apply task rules:
-   → Different files = mark [P] for parallel
-   → Same file = sequential (no [P])
-   → Tests before implementation (TDD)
-5. Number tasks sequentially (T001, T002...)
-6. Generate dependency graph
-7. Create parallel execution examples
-8. Validate task completeness:
-   → All contracts have tests?
-   → All entities have models?
-   → All endpoints implemented?
-9. Return: SUCCESS (tasks ready for execution)
-```
-
 ## Format: `[ID] [P?] Description`
-
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
+- **CRITICAL**: Never import from `/specs/` - copy types to packages
 
 ## Path Conventions
+- Monorepo structure with packages/
+- Direct TypeScript imports between packages (no build step initially)
+- No file extensions in imports
 
-- **Monorepo structure**: `packages/core/`, `packages/plugin-babel/`, `packages/plugin-bun/`, `packages/cli/`
-- Tests follow TDD structure: contract tests → integration tests → unit tests
-- Paths shown below follow the monorepo structure from plan.md
+## Phase A: Runtime Implementation (Foundation)
 
-## Phase 3.1: Setup
+### A.1: Project Setup
+- [ ] T001 Initialize monorepo with Bun workspaces in package.json
+- [ ] T002 Create base TypeScript configuration files (tsconfig.json, tsconfig.base.json)
+- [ ] T003 [P] Create package directories: packages/core, packages/codegen, packages/builder, packages/plugin-babel, packages/cli
+- [ ] T004 [P] Initialize package.json for each package with workspace protocol dependencies
+- [ ] T005 Configure tsconfig.json in each package extending ../../tsconfig.base.json
+- [ ] T006 [P] Install core dependencies: bun add neverthrow zod@4
+- [ ] T007 [P] Setup biome for linting and formatting with biome.json
+- [ ] T008 Create .gitignore with node_modules, dist, coverage patterns
 
-- [ ] T001 Create monorepo structure with packages/core, packages/plugin-babel, packages/plugin-bun, packages/cli
-- [ ] T002 Initialize TypeScript project with Bun runtime and workspace configuration
-- [ ] T003 [P] Configure ESLint, Prettier, and TypeScript paths in root tsconfig.json
-- [ ] T004 [P] Install core dependencies: zod, neverthrow, typescript in packages/core/package.json
-- [ ] T005 [P] Install plugin dependencies: @babel/core, @babel/types in packages/plugin-babel/package.json
-- [ ] T006 [P] Setup Bun test configuration with TDD structure in bunfig.toml
+### A.2: Core Package - Type Definitions (TDD - Tests First)
+**CRITICAL: Write tests first, they MUST fail before implementation**
 
-## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
+- [ ] T009 [P] Write failing test for RemoteModel type in packages/core/src/__tests__/types/remote-model.test.ts
+- [ ] T010 [P] Write failing test for QuerySlice type in packages/core/src/__tests__/types/query-slice.test.ts
+- [ ] T011 [P] Write failing test for MutationSlice type in packages/core/src/__tests__/types/mutation-slice.test.ts
+- [ ] T012 [P] Write failing test for PageQuery type in packages/core/src/__tests__/types/page-query.test.ts
+- [ ] T013 [P] Write failing test for FieldSelection type in packages/core/src/__tests__/types/field-selection.test.ts
 
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+### A.3: Core Package - Type Implementation (After tests fail)
+- [ ] T014 [P] Implement RemoteModel interface in packages/core/src/types/remote-model.ts (copy from spec, don't import)
+- [ ] T015 [P] Implement QuerySlice interface in packages/core/src/types/query-slice.ts
+- [ ] T016 [P] Implement MutationSlice interface in packages/core/src/types/mutation-slice.ts
+- [ ] T017 [P] Implement PageQuery interface in packages/core/src/types/page-query.ts
+- [ ] T018 [P] Implement FieldSelection and helper types in packages/core/src/types/field-selection.ts
+- [ ] T019 Create type index in packages/core/src/types/index.ts exporting all types
 
-### Contract Tests
+### A.4: Core Package - createGql Function (TDD)
+- [ ] T020 Write failing test for createGql factory in packages/core/src/__tests__/create-gql.test.ts
+- [ ] T021 Write failing test for gql.model() method in packages/core/src/__tests__/model.test.ts
+- [ ] T022 Write failing test for gql.query() method in packages/core/src/__tests__/query.test.ts
+- [ ] T023 Write failing test for gql.mutation() method in packages/core/src/__tests__/mutation.test.ts
+- [ ] T024 Write failing test for gql.page() method in packages/core/src/__tests__/page.test.ts
 
-- [ ] T007 [P] Contract test for Plugin API transform hook in packages/plugin-babel/tests/contract/plugin-api.test.ts
-- [ ] T008 [P] Contract test for Plugin API analysis hook in packages/plugin-babel/tests/contract/plugin-analysis.test.ts
-- [ ] T009 [P] Contract test for Plugin API generation hook in packages/plugin-babel/tests/contract/plugin-generation.test.ts
-- [ ] T010 [P] Contract test for Runtime API model function in packages/core/tests/contract/runtime-model.test.ts
-- [ ] T011 [P] Contract test for Runtime API querySlice function in packages/core/tests/contract/runtime-query-slice.test.ts
-- [ ] T012 [P] Contract test for Runtime API query composition in packages/core/tests/contract/runtime-query.test.ts
-- [ ] T013 [P] Contract test for Runtime API registration system in packages/core/tests/contract/runtime-registration.test.ts
+### A.5: Core Package - createGql Implementation
+- [ ] T025 Implement createGql factory function in packages/core/src/create-gql.ts with Generic constraints
+- [ ] T026 [P] Implement model utility in packages/core/src/utilities/model.ts using neverthrow
+- [ ] T027 [P] Implement query utility in packages/core/src/utilities/query.ts using neverthrow
+- [ ] T028 [P] Implement mutation utility in packages/core/src/utilities/mutation.ts using neverthrow
+- [ ] T029 [P] Implement page utility in packages/core/src/utilities/page.ts with deduplication logic
+- [ ] T030 Create utilities index in packages/core/src/utilities/index.ts
 
-### Integration Tests (from Quickstart scenarios)
+### A.6: Core Package - Runtime Document Generation (TDD)
+- [ ] T031 Write failing test for GraphQL document generation in packages/core/src/__tests__/document-generator.test.ts
+- [ ] T032 Write failing test for field selection merging in packages/core/src/__tests__/field-merger.test.ts
+- [ ] T033 Write failing test for argument mapping in packages/core/src/__tests__/argument-mapper.test.ts
 
-- [ ] T014 [P] Integration test for Remote Model definition and inference in packages/core/tests/integration/remote-model.test.ts
-- [ ] T015 [P] Integration test for Query Slice composition in packages/core/tests/integration/query-slice.test.ts
-- [ ] T016 [P] Integration test for Page Query generation in packages/core/tests/integration/page-query.test.ts
-- [ ] T017 [P] Integration test for Transform function execution in packages/core/tests/integration/transform.test.ts
-- [ ] T018 [P] Integration test for AST transformation pipeline in packages/plugin-babel/tests/integration/transform.test.ts
-- [ ] T019 [P] Integration test for cross-module dependency resolution in packages/plugin-babel/tests/integration/dependencies.test.ts
-- [ ] T020 [P] Integration test for document deduplication in packages/core/tests/integration/deduplication.test.ts
+### A.7: Core Package - Runtime Document Implementation
+- [ ] T034 Implement document generator in packages/core/src/runtime/document-generator.ts
+- [ ] T035 Implement field merger in packages/core/src/runtime/field-merger.ts
+- [ ] T036 Implement argument mapper in packages/core/src/runtime/argument-mapper.ts
+- [ ] T037 Create runtime index in packages/core/src/runtime/index.ts
 
-## Phase 3.3: Core Implementation (ONLY after tests are failing)
+### A.8: Core Package - Integration Tests
+- [ ] T038 Write integration test for complete RemoteModel flow in packages/core/src/__tests__/integration/remote-model.test.ts
+- [ ] T039 Write integration test for QuerySlice composition in packages/core/src/__tests__/integration/query-slice.test.ts
+- [ ] T040 Write integration test for PageQuery merging in packages/core/src/__tests__/integration/page-query.test.ts
+- [ ] T041 Create core package index in packages/core/src/index.ts exporting public API
 
-### Data Models (from data-model.md entities)
+## Phase B: Code Generation System
 
-- [ ] T021 [P] RemoteModel type definitions in packages/core/src/models/remote-model.ts
-- [ ] T022 [P] QuerySlice type definitions in packages/core/src/models/query-slice.ts
-- [ ] T023 [P] MutationSlice type definitions in packages/core/src/models/mutation-slice.ts
-- [ ] T024 [P] SubscriptionSlice type definitions in packages/core/src/models/subscription-slice.ts
-- [ ] T025 [P] PageQuery type definitions in packages/core/src/models/page-query.ts
-- [ ] T026 [P] FieldSelection type definitions in packages/core/src/models/field-selection.ts
-- [ ] T027 [P] TransformFunction type definitions in packages/core/src/models/transform-function.ts
-- [ ] T028 [P] GraphQLDocument type definitions in packages/core/src/models/graphql-document.ts
-- [ ] T029 [P] Registration type definitions in packages/core/src/models/registration.ts
-- [ ] T030 [P] Configuration schemas with Zod in packages/core/src/models/config.model.ts
+### B.1: Codegen Package - Schema Parser (TDD)
+- [ ] T042 [P] Write failing test for GraphQL schema parsing in packages/codegen/src/__tests__/schema-parser.test.ts
+- [ ] T043 [P] Write failing test for TypeScript type generation in packages/codegen/src/__tests__/type-generator.test.ts
+- [ ] T044 [P] Write failing test for enum generation in packages/codegen/src/__tests__/enum-generator.test.ts
+- [ ] T045 [P] Write failing test for input type generation in packages/codegen/src/__tests__/input-generator.test.ts
 
-### Core Services
+### B.2: Codegen Package - Schema Parser Implementation
+- [ ] T046 Implement schema parser with zod validation in packages/codegen/src/parsers/schema-parser.ts
+- [ ] T047 [P] Implement type generator in packages/codegen/src/generators/type-generator.ts
+- [ ] T048 [P] Implement enum generator in packages/codegen/src/generators/enum-generator.ts
+- [ ] T049 [P] Implement input generator in packages/codegen/src/generators/input-generator.ts
 
-- [ ] T031 [P] AST analyzer service in packages/plugin-babel/src/services/analyzer.service.ts
-- [ ] T032 [P] Query generator service in packages/plugin-babel/src/services/generator.service.ts
-- [ ] T033 [P] Document registry service in packages/core/src/services/registry.service.ts
-- [ ] T034 [P] Transform executor service in packages/core/src/services/transform.service.ts
-- [ ] T035 [P] Field selection builder in packages/core/src/services/selection.service.ts
-- [ ] T036 [P] Dependency resolver service in packages/plugin-babel/src/services/dependency.service.ts
+### B.3: Codegen Package - System Generation (TDD)
+- [ ] T050 Write failing test for graphql-system structure in packages/codegen/src/__tests__/system-generator.test.ts
+- [ ] T051 Write failing test for gql instance generation in packages/codegen/src/__tests__/gql-generator.test.ts
+- [ ] T052 Write failing test for template rendering in packages/codegen/src/__tests__/template-renderer.test.ts
 
-### Runtime API Implementation
+### B.4: Codegen Package - System Generation Implementation
+- [ ] T053 Implement system generator in packages/codegen/src/generators/system-generator.ts
+- [ ] T054 Implement gql instance generator in packages/codegen/src/generators/gql-generator.ts
+- [ ] T055 Implement template renderer in packages/codegen/src/templates/template-renderer.ts
+- [ ] T056 [P] Create TypeScript templates in packages/codegen/src/templates/
+- [ ] T057 Create codegen index in packages/codegen/src/index.ts
 
-- [ ] T037 Model function implementation in packages/core/src/lib/core/model.ts
-- [ ] T038 QuerySlice function implementation in packages/core/src/lib/core/query-slice.ts
-- [ ] T039 MutationSlice function implementation in packages/core/src/lib/core/mutation-slice.ts
-- [ ] T040 Query composition function in packages/core/src/lib/core/query.ts
-- [ ] T041 Mutation composition function in packages/core/src/lib/core/mutation.ts
-- [ ] T042 Argument type helpers in packages/core/src/lib/core/arg-types.ts
-- [ ] T043 Input parameter helpers in packages/core/src/lib/core/input-helpers.ts
-- [ ] T044 Type inference utilities in packages/core/src/lib/core/infer.ts
-- [ ] T045 Registration API implementation in packages/core/src/lib/core/registry.ts
-- [ ] T046 Main gql API export in packages/core/src/lib/core/index.ts
+## Phase C: Static Analysis & Builder
 
-### Plugin Implementation
+### C.1: Builder Package - AST Analysis (TDD)
+- [ ] T058 [P] Write failing test for TypeScript AST parsing in packages/builder/src/__tests__/ast-parser.test.ts
+- [ ] T059 [P] Write failing test for gql usage extraction in packages/builder/src/__tests__/usage-extractor.test.ts
+- [ ] T060 [P] Write failing test for dependency resolution in packages/builder/src/__tests__/dependency-resolver.test.ts
 
-- [ ] T047 Babel plugin factory in packages/plugin-babel/src/lib/plugin/index.ts
-- [ ] T048 Transform hook implementation in packages/plugin-babel/src/lib/plugin/transform.ts
-- [ ] T049 Analysis hook implementation in packages/plugin-babel/src/lib/plugin/analyze.ts
-- [ ] T050 Generation hook implementation in packages/plugin-babel/src/lib/plugin/generate.ts
-- [ ] T051 AST visitor for gql calls in packages/plugin-babel/src/lib/transforms/visitor.ts
-- [ ] T052 Document extraction logic in packages/plugin-babel/src/lib/transforms/extractor.ts
-- [ ] T053 Code replacement logic in packages/plugin-babel/src/lib/transforms/replacer.ts
-- [ ] T054 Source map generation in packages/plugin-babel/src/lib/transforms/sourcemap.ts
+### C.2: Builder Package - AST Analysis Implementation
+- [ ] T061 Implement AST parser using TypeScript Compiler API in packages/builder/src/analysis/ast-parser.ts
+- [ ] T062 Implement usage extractor in packages/builder/src/analysis/usage-extractor.ts
+- [ ] T063 Implement dependency resolver with {file}::{export}::{property} format in packages/builder/src/analysis/dependency-resolver.ts
 
-### Bun Plugin Implementation
+### C.3: Builder Package - Code Generation (TDD)
+- [ ] T064 Write failing test for executable code generation in packages/builder/src/__tests__/code-generator.test.ts
+- [ ] T065 Write failing test for refs object generation in packages/builder/src/__tests__/refs-generator.test.ts
+- [ ] T066 Write failing test for JSON output in packages/builder/src/__tests__/json-output.test.ts
 
-- [ ] T055 [P] Bun plugin factory in packages/plugin-bun/src/lib/plugin/index.ts
-- [ ] T056 [P] Bun-specific optimizations in packages/plugin-bun/src/lib/plugin/optimize.ts
-- [ ] T057 [P] Cache management for Bun in packages/plugin-bun/src/lib/plugin/cache.ts
+### C.4: Builder Package - Code Generation Implementation
+- [ ] T067 Implement executable code generator in packages/builder/src/generation/code-generator.ts
+- [ ] T068 Implement refs object generator with lazy evaluation in packages/builder/src/generation/refs-generator.ts
+- [ ] T069 Implement JSON output with zod validation in packages/builder/src/generation/json-output.ts
+- [ ] T070 Create builder index in packages/builder/src/index.ts
 
-### CLI Implementation
+## Phase D: Build Tool Integration
 
-- [ ] T058 [P] Generate command in packages/cli/src/cli/commands/generate.ts
-- [ ] T059 [P] Validate command in packages/cli/src/cli/commands/validate.ts
-- [ ] T060 [P] Init command in packages/cli/src/cli/commands/init.ts
-- [ ] T061 [P] CLI entry point in packages/cli/src/cli/index.ts
-- [ ] T062 [P] Schema loader utility in packages/cli/src/cli/utils/schema-loader.ts
-- [ ] T063 [P] Type generator from schema in packages/cli/src/cli/utils/type-generator.ts
+### D.1: Babel Plugin - Transformation (TDD)
+- [ ] T071 Write failing test for Babel visitor in packages/plugin-babel/src/__tests__/visitor.test.ts
+- [ ] T072 Write failing test for code replacement in packages/plugin-babel/src/__tests__/replacer.test.ts
+- [ ] T073 Write failing test for top-level hoisting in packages/plugin-babel/src/__tests__/hoister.test.ts
 
-## Phase 3.4: Integration
+### D.2: Babel Plugin - Implementation
+- [ ] T074 Implement Babel plugin entry in packages/plugin-babel/src/index.ts
+- [ ] T075 Implement visitor pattern in packages/plugin-babel/src/visitor.ts
+- [ ] T076 Implement code replacer in packages/plugin-babel/src/replacer.ts
+- [ ] T077 Implement query hoister in packages/plugin-babel/src/hoister.ts
+- [ ] T078 Add builder integration in packages/plugin-babel/src/builder-integration.ts
 
-### Build System Integration
+### D.3: Plugin Testing
+- [ ] T079 Create example React app in examples/basic/
+- [ ] T080 Write E2E test for zero-runtime transformation in tests/e2e/babel-plugin.test.ts
+- [ ] T081 Write performance benchmark in tests/performance/build-time.test.ts
 
-- [ ] T064 Bundle configuration for packages/core in packages/core/build.config.ts
-- [ ] T065 Bundle configuration for packages/plugin-babel in packages/plugin-babel/build.config.ts
-- [ ] T066 Bundle configuration for packages/plugin-bun in packages/plugin-bun/build.config.ts
-- [ ] T067 Bundle configuration for packages/cli in packages/cli/build.config.ts
-- [ ] T068 Performance monitoring hooks in packages/plugin-babel/src/lib/plugin/performance.ts
-- [ ] T069 Error reporting system in packages/plugin-babel/src/lib/plugin/errors.ts
-- [ ] T070 Incremental compilation support in packages/plugin-babel/src/lib/plugin/incremental.ts
+## Phase E: CLI & Developer Experience
 
-### Generated System Structure
+### E.1: CLI Package - Commands (TDD)
+- [ ] T082 [P] Write failing test for init command in packages/cli/src/__tests__/commands/init.test.ts
+- [ ] T083 [P] Write failing test for generate command in packages/cli/src/__tests__/commands/generate.test.ts
+- [ ] T084 [P] Write failing test for check command in packages/cli/src/__tests__/commands/check.test.ts
 
-- [ ] T071 System generator for graphql-system/index.ts template
-- [ ] T072 Type definitions generator for graphql-system/types.ts
-- [ ] T073 Input types generator for graphql-system/inputs.ts
-- [ ] T074 Scalar types generator for graphql-system/scalars.ts
-- [ ] T075 Enum types generator for graphql-system/enums.ts
+### E.2: CLI Package - Implementation
+- [ ] T085 Implement CLI entry point in packages/cli/src/index.ts with commander
+- [ ] T086 [P] Implement init command in packages/cli/src/commands/init.ts
+- [ ] T087 [P] Implement generate command in packages/cli/src/commands/generate.ts using codegen
+- [ ] T088 [P] Implement check command in packages/cli/src/commands/check.ts
+- [ ] T089 Implement config loader with zod in packages/cli/src/config/loader.ts
+- [ ] T090 Add error handling with neverthrow in packages/cli/src/utils/error-handler.ts
 
-## Phase 3.5: Polish
+### E.3: Documentation & Examples
+- [ ] T091 [P] Create README.md for each package with usage examples
+- [ ] T092 [P] Create advanced example in examples/advanced/ with cross-module composition
+- [ ] T093 [P] Write API documentation in docs/api.md
+- [ ] T094 [P] Create migration guide in docs/migration.md
+- [ ] T095 Update root README.md with quickstart guide
 
-### Unit Tests
-
-- [ ] T076 [P] Unit tests for RemoteModel validation in packages/core/tests/unit/models/remote-model.test.ts
-- [ ] T077 [P] Unit tests for QuerySlice merging in packages/core/tests/unit/models/query-slice.test.ts
-- [ ] T078 [P] Unit tests for Transform functions in packages/core/tests/unit/services/transform.test.ts
-- [ ] T079 [P] Unit tests for AST analysis in packages/plugin-babel/tests/unit/services/analyzer.test.ts
-- [ ] T080 [P] Unit tests for Document generation in packages/plugin-babel/tests/unit/services/generator.test.ts
-- [ ] T081 [P] Unit tests for Registry operations in packages/core/tests/unit/services/registry.test.ts
-
-### Performance Tests
-
-- [ ] T082 Performance test for < 100ms per file transformation in packages/plugin-babel/tests/performance/transform.bench.ts
-- [ ] T083 Performance test for < 500ms incremental builds in packages/plugin-babel/tests/performance/incremental.bench.ts
-- [ ] T084 Performance test for < 1ms transform functions in packages/core/tests/performance/transform.bench.ts
-- [ ] T085 Memory usage test for < 50MB analysis phase in packages/plugin-babel/tests/performance/memory.bench.ts
-
-### Documentation and Examples
-
-- [ ] T086 [P] Create basic example in examples/basic/ with user/post queries
-- [ ] T087 [P] Create advanced example in examples/advanced/ with parameterized models
-- [ ] T088 [P] Create feature-sliced example in examples/feature-sliced/
-- [ ] T089 [P] API documentation in packages/core/README.md
-- [ ] T090 [P] Plugin documentation in packages/plugin-babel/README.md
-- [ ] T091 [P] CLI documentation in packages/cli/README.md
-- [ ] T092 [P] Migration guide from graphql-codegen in docs/migration.md
-
-### Final Validation
-
-- [ ] T093 Run quickstart.md scenarios end-to-end
-- [ ] T094 Validate all contract tests pass
-- [ ] T095 Check TypeScript strict mode compliance
-- [ ] T096 Verify zero runtime overhead with bundle analysis
-- [ ] T097 Ensure < 32 slice warning system works
-- [ ] T098 Test error recovery and hot reload
+### E.4: Final Integration & Polish
+- [ ] T096 Run full integration test suite across all packages
+- [ ] T097 Performance optimization based on benchmarks
+- [ ] T098 Add GitHub Actions CI/CD workflow in .github/workflows/ci.yml
+- [ ] T099 Configure changesets for versioning in .changeset/
+- [ ] T100 Final review and cleanup of all TODO comments
 
 ## Dependencies
 
-- Setup (T001-T006) blocks all other tasks
-- Contract tests (T007-T013) before Runtime API implementation (T037-T046)
-- Integration tests (T014-T020) before Core Services (T031-T036)
-- Data Models (T021-T030) can run parallel with tests
-- Core Services before Plugin implementation (T047-T054)
-- Plugin implementation before CLI (T058-T063)
-- All implementation before Integration (T064-T075)
-- Integration before Polish (T076-T098)
+### Critical Dependencies:
+- **Phase A before all**: Core runtime must exist first
+- **Tests before implementation**: Every implementation task requires its test to fail first
+- **Phase A → B → C → D → E**: Sequential phase execution
+- T001-T008 (setup) blocks everything
+- T009-T013 (type tests) before T014-T019 (type implementation)
+- T020-T024 (createGql tests) before T025-T030 (createGql implementation)
+- T025 (createGql) blocks T026-T030 (utilities)
+- T042-T045 (codegen tests) before T046-T049 (codegen implementation)
+- T061-T063 (AST) required for T067-T069 (code generation)
+- T074-T078 (Babel plugin) requires builder package complete
+- T085-T090 (CLI) requires codegen package complete
 
-## Parallel Execution Examples
-
-### Initial Test Wave (after setup)
-
-```bash
-# Launch T007-T020 together (all test files are independent):
-Task: "Contract test for Plugin API transform hook"
-Task: "Contract test for Runtime API model function"
-Task: "Integration test for Remote Model definition"
-Task: "Integration test for Query Slice composition"
-# ... (14 parallel test tasks)
-```
-
-### Model Definition Wave
+### Parallel Execution Examples
 
 ```bash
-# Launch T021-T030 together (all different model files):
-Task: "RemoteModel type definitions in packages/core/src/models/remote-model.ts"
-Task: "QuerySlice type definitions in packages/core/src/models/query-slice.ts"
-Task: "PageQuery type definitions in packages/core/src/models/page-query.ts"
-# ... (10 parallel model tasks)
+# Phase A.2 - Type tests (all different files)
+Task agent="test-writer" task="Write failing test for RemoteModel type in packages/core/src/__tests__/types/remote-model.test.ts"
+Task agent="test-writer" task="Write failing test for QuerySlice type in packages/core/src/__tests__/types/query-slice.test.ts"
+Task agent="test-writer" task="Write failing test for MutationSlice type in packages/core/src/__tests__/types/mutation-slice.test.ts"
+Task agent="test-writer" task="Write failing test for PageQuery type in packages/core/src/__tests__/types/page-query.test.ts"
+
+# Phase A.3 - Type implementations (all different files)
+Task agent="type-implementer" task="Implement RemoteModel interface in packages/core/src/types/remote-model.ts"
+Task agent="type-implementer" task="Implement QuerySlice interface in packages/core/src/types/query-slice.ts"
+Task agent="type-implementer" task="Implement MutationSlice interface in packages/core/src/types/mutation-slice.ts"
+Task agent="type-implementer" task="Implement PageQuery interface in packages/core/src/types/page-query.ts"
+
+# Phase B.1 - Codegen tests (all different files)
+Task agent="test-writer" task="Write failing test for schema parsing in packages/codegen/src/__tests__/schema-parser.test.ts"
+Task agent="test-writer" task="Write failing test for type generation in packages/codegen/src/__tests__/type-generator.test.ts"
+Task agent="test-writer" task="Write failing test for enum generation in packages/codegen/src/__tests__/enum-generator.test.ts"
 ```
-
-### Service Implementation Wave
-
-```bash
-# Launch T031-T036 together (all different service files):
-Task: "AST analyzer service in packages/plugin-babel/src/services/analyzer.service.ts"
-Task: "Query generator service in packages/plugin-babel/src/services/generator.service.ts"
-Task: "Document registry service in packages/core/src/services/registry.service.ts"
-# ... (6 parallel service tasks)
-```
-
-## Notes
-
-- **TDD Enforcement**: Tests MUST fail before implementation
-- **[P] Safety**: Parallel tasks work on different files
-- **Commit Frequency**: After each task completion
-- **Performance Gates**: Must meet targets before proceeding
-- **Type Safety**: Full inference chain must be validated
-
-## Task Generation Rules
-
-_Applied during main() execution_
-
-1. **From Contracts**:
-   - plugin-api.ts → T007-T009 (transform, analysis, generation tests)
-   - runtime-api.ts → T010-T013 (model, slice, query, registration tests)
-2. **From Data Model**:
-   - Each entity (RemoteModel, QuerySlice, etc.) → T021-T029
-   - Configuration schemas → T030
-3. **From Quickstart Scenarios**:
-
-   - Remote Model usage → T014
-   - Query Slice usage → T015
-   - Page Query usage → T016
-   - Transform execution → T017
-
-4. **Ordering**:
-   - Setup → Tests → Models/Services (parallel) → API Implementation → Plugin → CLI → Integration → Polish
-   - Dependencies strictly enforced for TDD
 
 ## Validation Checklist
-
-_GATE: Checked by main() before returning_
-
-- [x] All contracts have corresponding tests (T007-T013)
-- [x] All entities have model tasks (T021-T029)
-- [x] All tests come before implementation (Phase 3.2 before 3.3)
-- [x] Parallel tasks truly independent (different files)
+- [x] All contracts (runtime-api.ts, plugin-api.ts) have corresponding type definitions
+- [x] All entities (RemoteModel, QuerySlice, MutationSlice, PageQuery) have implementation tasks
+- [x] All tests come before implementation (TDD enforced)
+- [x] Parallel tasks are truly independent (different files)
 - [x] Each task specifies exact file path
-- [x] No task modifies same file as another [P] task
-- [x] Performance targets defined (T082-T085)
-- [x] Quickstart scenarios covered (T014-T020, T093)
+- [x] No parallel task modifies same file as another [P] task
+- [x] Never imports from /specs/ directory (explicit warnings added)
+- [x] Uses workspace protocol for internal dependencies
+- [x] No file extensions in imports
+- [x] Direct TypeScript references between packages
+
+## Notes
+- Total tasks: 100 (comprehensive coverage of all 5 phases)
+- Estimated completion: 2-3 weeks with parallel execution
+- Critical path: A.1 → A.4 → A.5 → B.3 → B.4 → C.3 → C.4 → D.2 → E.2
+- Each phase builds on previous, no skipping allowed
+- Commit after each task with descriptive message
+- Run tests continuously to ensure nothing breaks
