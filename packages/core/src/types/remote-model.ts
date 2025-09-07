@@ -8,12 +8,14 @@ import type { FieldSelection } from "./field-selection";
 /**
  * Transform function for normalizing data
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic defaults for transform function
 export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput;
 
 /**
  * Remote Model definition
  * Represents a reusable GraphQL fragment with transformation
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic defaults for model interface
 export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
   /**
    * Internal type brands for type inference

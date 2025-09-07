@@ -83,6 +83,7 @@ describe("RemoteModel type", () => {
   it("should support parameters", () => {
     type Params = { limit: number; offset: number };
 
+    // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const model: RemoteModel<any, any, Params> = {
       _type: hiddenBrand(),
       _transformed: hiddenBrand(),

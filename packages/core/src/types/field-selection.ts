@@ -32,13 +32,14 @@ type UnwrapArray<T> = T extends Array<infer U> ? U : T;
  * Relations are explicitly defined in __relation__ property
  * For array relations, the selection applies to each element
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
 export type FieldSelection<T = any> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
   // Relation fields from __relation__
   // Arrays are unwrapped so selection applies to elements
-  [K in keyof ExtractRelations<T>]?: boolean | FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
+  [K in keyof ExtractRelations<T>]?: FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
 };
 
 /**
@@ -46,6 +47,7 @@ export type FieldSelection<T = any> = {
  * Uses __relation__ to determine traversable relations
  * Arrays are automatically unwrapped
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
 export type DeepFieldSelection<T = any> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
@@ -85,7 +87,8 @@ export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T,
  * Uses __relation__ for determining recursive traversal
  * Arrays are automatically unwrapped
  */
-export type RecursiveFieldSelection<T> = {
+// biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
+export type RecursiveFieldSelection<T = any> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {

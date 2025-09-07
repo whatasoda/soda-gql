@@ -26,6 +26,7 @@ describe("PageQuery type", () => {
   });
 
   it("should support multiple query slices", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const userSlice: QuerySlice<{ user: any }, { id: string }> = {
       _data: hiddenBrand(),
       _args: hiddenBrand(),
@@ -35,6 +36,7 @@ describe("PageQuery type", () => {
       transform: (data) => data,
     };
 
+    // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const postsSlice: QuerySlice<{ posts: any[] }, { userId: string }> = {
       _data: hiddenBrand(),
       _args: hiddenBrand(),
@@ -44,6 +46,7 @@ describe("PageQuery type", () => {
       transform: (data) => data,
     };
 
+    // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const pageQuery: PageQuery<any, any> = {
       _data: hiddenBrand(),
       _variables: hiddenBrand(),

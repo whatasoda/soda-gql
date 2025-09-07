@@ -28,7 +28,9 @@ describe("QuerySlice type", () => {
   it("should support selection builder", () => {
     const mockBuilder: SelectionBuilder = {
       select: (_field: string) => true,
+      // biome-ignore lint/suspicious/noExplicitAny: test mock
       relation: (_field: string, model: any) => model,
+      // biome-ignore lint/suspicious/noExplicitAny: test mock
       argument: (name: string, value: any) => ({ name, value }),
     };
 

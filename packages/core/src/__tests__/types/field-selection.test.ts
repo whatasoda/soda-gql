@@ -114,8 +114,8 @@ describe("FieldSelection type", () => {
     };
 
     expect(selection.author).toBeDefined();
-    expect((selection.author as any).profile).toBeDefined();
-    expect((selection.category as any).parent).toBeDefined();
+    expect(selection.author?.profile).toBeDefined();
+    expect(selection.category?.parent).toBeDefined();
   });
 
   it("should distinguish between relations and regular objects using __relation__", () => {
@@ -161,7 +161,7 @@ describe("FieldSelection type", () => {
 
     expect(selection.metadata).toBe(true);
     expect(selection.author).toBeDefined();
-    expect((selection.author as any).name).toBe(true);
+    expect(selection.author?.name).toBe(true);
   });
 
   it("should support array relations via __relation__", () => {
@@ -201,7 +201,7 @@ describe("FieldSelection type", () => {
 
     expect(selection.tags).toBe(true);
     expect(selection.posts).toBeDefined();
-    expect((selection.posts as any).title).toBe(true);
+    expect(selection.posts?.title).toBe(true);
     // Both array and single relations use same selection structure
     expect(typeof selection.posts).toBe(typeof selection.featuredPost);
   });
@@ -310,8 +310,8 @@ describe("FieldSelection type", () => {
     };
 
     expect(selection.manager).toBeDefined();
-    expect((selection.manager as any).department).toBeDefined();
-    expect((selection.manager as any).department.head).toBeDefined();
+    expect(selection.manager?.department).toBeDefined();
+    expect(selection.manager?.department?.head).toBeDefined();
   });
 
   it("should support conditional field selection", () => {
@@ -373,6 +373,7 @@ describe("FieldSelection type", () => {
       name: true,
       title: true,
       content: true,
+      // biome-ignore lint/suspicious/noExplicitAny: union type requires cast
     } as any;
 
     expect(selection.type).toBe(true);
@@ -427,7 +428,7 @@ describe("FieldSelection type", () => {
 
     expect(partialSelection.email).toBeUndefined();
     expect(partialSelection.followers).toBeUndefined();
-    expect((partialSelection.posts as any).content).toBeUndefined();
+    expect(partialSelection.posts?.content).toBeUndefined();
   });
 
   it("should handle nested array relations", () => {
@@ -468,7 +469,7 @@ describe("FieldSelection type", () => {
     };
 
     expect(selection.comments).toBeDefined();
-    expect((selection.comments as any).replies).toBeDefined();
+    expect(selection.comments?.replies).toBeDefined();
   });
 
   it("should handle recursive types with __relation__", () => {

@@ -4,7 +4,7 @@
     "": {
       "name": "soda-gql",
       "devDependencies": {
-        "@biomejs/biome": "2",
+        "@biomejs/biome": "2.2.3",
         "@types/bun": "latest",
         "zod": "^4.1.5",
       },

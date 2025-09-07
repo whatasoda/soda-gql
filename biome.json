@@ -6,11 +6,11 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
-
     "lineWidth": 100
   },
   "linter": {
     "enabled": true,
+    "includes": ["packages/**/*"],
     "rules": {
       "recommended": true,
       "correctness": {
@@ -25,7 +25,7 @@
         "noBannedTypes": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "error"
       }
     }
   },

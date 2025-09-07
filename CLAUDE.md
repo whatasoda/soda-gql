@@ -53,6 +53,11 @@ bun typecheck
   - Use Generic type parameters with constraints instead
   - Example: `<T extends BaseType>` not `any`
   - Cast to any/unknown only within Generic constraints
+- **Acceptable any usage** (requires suppression comment):
+  - Generic type parameter defaults: `<T = any>` with `// biome-ignore lint/suspicious/noExplicitAny: generic default`
+  - Type utilities that must handle any type: `// biome-ignore lint/suspicious/noExplicitAny: type utility`
+  - Test assertions with complex types: `// biome-ignore lint/suspicious/noExplicitAny: test assertion`
+  - Temporary migration code (must have TODO): `// biome-ignore lint/suspicious/noExplicitAny: TODO: add proper types`
 - **External Data Validation**: Always validate with zod v4
   - JSON files, API responses, user input
   - Never trust external data types
