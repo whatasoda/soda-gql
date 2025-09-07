@@ -362,13 +362,13 @@ describe("FieldSelection type", () => {
 
   it("should support union type selection", () => {
     type SearchResult =
-      | { type: "user"; id: string; name: string }
-      | { type: "post"; id: string; title: string }
-      | { type: "comment"; id: string; content: string };
+      | { __typename: "User"; id: string; name: string }
+      | { __typename: "Post"; id: string; title: string }
+      | { __typename: "Comment"; id: string; content: string };
 
-    // Union types require selecting all possible fields
+    // Union types require selecting __typename and all possible fields
     const selection: FieldSelection<SearchResult> = {
-      type: true,
+      __typename: true, // Required for GraphQL union type discrimination
       id: true,
       name: true,
       title: true,
@@ -376,7 +376,7 @@ describe("FieldSelection type", () => {
       // biome-ignore lint/suspicious/noExplicitAny: union type requires cast
     } as any;
 
-    expect(selection.type).toBe(true);
+    expect(selection.__typename).toBe(true);
     expect(selection.id).toBe(true);
   });
 
