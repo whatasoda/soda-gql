@@ -59,9 +59,10 @@ We use a lightweight format based on Michael Nygard's template:
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
-| [001](001-relation-field-selection.md) | Explicit Relation Marking with __relation__ | Accepted | 2024-01 |
+| [001](001-relation-field-selection.md) | Explicit Relation Marking with __relation__ | Superseded by 004 | 2024-01 |
 | [002](002-type-brand-safety.md) | Runtime-Safe Type Brand Properties | Accepted | 2024-01 |
 | [003](003-graphql-union-types.md) | GraphQL Union Type Handling with __typename | Accepted | 2024-01 |
+| [004](004-typename-based-relations.md) | TypeName-Based Relation Detection | Accepted | 2024-01 |
 
 ## Process
 

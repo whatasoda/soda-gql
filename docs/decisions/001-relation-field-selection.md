@@ -1,7 +1,7 @@
 # ADR-001: Explicit Relation Marking with __relation__
 
 ## Status
-Accepted
+Superseded by [ADR-004: TypeName-Based Relation Detection](004-typename-based-relations.md)
 
 ## Context
 In GraphQL type systems, we need to distinguish between:

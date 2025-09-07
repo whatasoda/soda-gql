@@ -2,24 +2,33 @@
  * Field Selection type definitions
  * Copied from spec - not imported from /specs directory
  *
- * @see docs/decisions/001-relation-field-selection.md for design rationale
+ * @see docs/decisions/004-typename-based-relations.md for design rationale
  *
  * Key concepts:
- * - Relations are explicitly marked with __relation__ property
- * - Regular objects can only be selected with boolean
+ * - Relations are identified by presence of __typename in the target type
+ * - Regular objects (no __typename) can only be selected with boolean
  * - Arrays are automatically unwrapped for field selection
- * - __relation__ can be nested at any level
+ * - Relations can be nested at any level
  */
 
 /**
- * Helper type to extract relation fields from __relation__ property
+ * Helper type to check if a type has __typename (making it a relation)
  */
-type ExtractRelations<T> = T extends { __relation__: infer R extends object } ? R : {};
+type HasTypename<T> = T extends { __typename?: string } ? true : false;
 
 /**
- * Helper type to extract non-relation fields (excluding __relation__)
+ * Helper type to extract fields that are relations (have __typename)
  */
-type ExtractNonRelations<T> = Omit<T, "__relation__">;
+type ExtractRelationFields<T> = {
+  [K in keyof T as HasTypename<UnwrapArray<T[K]>> extends true ? K : never]: T[K];
+};
+
+/**
+ * Helper type to extract fields that are not relations (no __typename)
+ */
+type ExtractNonRelationFields<T> = {
+  [K in keyof T as HasTypename<UnwrapArray<T[K]>> extends false ? K : never]: T[K];
+};
 
 /**
  * Helper type to extract __typename field from a type
@@ -37,7 +46,7 @@ type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
 /**
  * Field selection for GraphQL types with deep/nested traversal support
- * Relations are explicitly defined in __relation__ property
+ * Relations are identified by presence of __typename in the target type
  * For array relations, the selection applies to each element
  * Requires __typename to be defined in the type (either required or optional)
  * Always supports deep selection through relations
@@ -49,12 +58,12 @@ export type FieldSelection<T = any> = T extends T
       // The type must define __typename (either required or optional)
       __typename__: ExtractTypename<T>;
     } & {
-      // Regular fields (non-relations)
-      [K in keyof ExtractNonRelations<T>]?: boolean;
+      // Non-relation fields (no __typename in target type)
+      [K in keyof ExtractNonRelationFields<T>]?: boolean;
     } & {
-      // Relation fields from __relation__ with deep traversal
+      // Relation fields (have __typename in target type) with deep traversal
       // Arrays are unwrapped so selection applies to elements
-      [K in keyof ExtractRelations<T>]?: FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
+      [K in keyof ExtractRelationFields<T>]?: FieldSelection<UnwrapArray<T[K]>>;
     }
   : never;
 
@@ -91,7 +100,7 @@ export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T,
 
 /**
  * Helper type for recursive field selection
- * Uses __relation__ for determining recursive traversal
+ * Uses __typename presence for determining recursive traversal
  * Arrays are automatically unwrapped
  * Requires __typename to be defined in the type (either required or optional)
  */
@@ -100,15 +109,20 @@ export type RecursiveFieldSelection<T = any> = {
   // __typename__ field for GraphQL type discrimination
   __typename__: ExtractTypename<T>;
 } & {
-  // Regular fields (non-relations)
-  [K in keyof ExtractNonRelations<T>]?: boolean;
+  // Non-relation fields (no __typename)
+  [K in keyof ExtractNonRelationFields<T>]?: boolean;
 } & {
-  // Relation fields from __relation__ with recursion
+  // Relation fields (have __typename) with recursion
   // Arrays are unwrapped for selection
-  [K in keyof ExtractRelations<T>]?: RecursiveFieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
+  [K in keyof ExtractRelationFields<T>]?: RecursiveFieldSelection<UnwrapArray<T[K]>>;
 };
 
 /**
  * Export helper types for external use
+ * @deprecated ExtractRelations and ExtractNonRelations - use ExtractRelationFields and ExtractNonRelationFields
  */
-export type { ExtractRelations, ExtractNonRelations, UnwrapArray };
+export type {
+  ExtractRelationFields as ExtractRelations,
+  ExtractNonRelationFields as ExtractNonRelations,
+  UnwrapArray,
+};

@@ -23,7 +23,7 @@ describe("FieldSelection type", () => {
     expect(selection.email).toBe(false);
   });
 
-  it("should support nested __relation__ in relation types", () => {
+  it("should support nested relation types identified by __typename", () => {
     type Tag = {
       __typename: "Tag";
       id: string;
@@ -36,10 +36,26 @@ describe("FieldSelection type", () => {
       id: string;
       name: string;
       description: string;
-      __relation__: {
-        parent: Category; // Self-reference
-        tags: Tag[];
+      parent?: Category; // Self-reference
+      tags: Tag[];
+    };
+
+    type Author = {
+      __typename: "Author";
+      id: string;
+      name: string;
+      verified: boolean;
+      profile: {
+        __typename: "Profile";
+        bio: string;
+        website: string;
+        socialLinks: Array<{
+          __typename: "SocialLink";
+          platform: string;
+          url: string;
+        }>;
       };
+      posts: Post[]; // Recursive reference
     };
 
     type Post = {
@@ -51,31 +67,8 @@ describe("FieldSelection type", () => {
         views: number;
         likes: number;
       };
-      __relation__: {
-        author: {
-          __typename: "Author";
-          // Inline type with nested __relation__
-          id: string;
-          name: string;
-          verified: boolean;
-          __relation__: {
-            profile: {
-              __typename: "Profile";
-              bio: string;
-              website: string;
-              __relation__: {
-                socialLinks: Array<{
-                  __typename: "SocialLink";
-                  platform: string;
-                  url: string;
-                }>;
-              };
-            };
-            posts: Post[]; // Recursive reference
-          };
-        };
-        category: Category; // Type with its own __relation__
-      };
+      author: Author;
+      category: Category;
     };
 
     const selection: FieldSelection<Post> = {
@@ -134,7 +127,7 @@ describe("FieldSelection type", () => {
     expect(selection.category?.parent).toBeDefined();
   });
 
-  it("should distinguish between relations and regular objects using __relation__", () => {
+  it("should distinguish between relations and regular objects using __typename presence", () => {
     type Author = {
       __typename: "Author";
       id: string;
@@ -147,19 +140,17 @@ describe("FieldSelection type", () => {
       id: string;
       title: string;
       metadata: {
-        // Regular object, not a relation
+        // Regular object, not a relation (no __typename)
         createdAt: string;
         updatedAt: string;
         version: number;
       };
-      __relation__: {
-        author: Author;
-        comments: Array<{
-          __typename: "Comment";
-          id: string;
-          content: string;
-        }>;
-      };
+      author: Author; // Relation (has __typename)
+      comments: Array<{
+        __typename: "Comment";
+        id: string;
+        content: string;
+      }>;
     };
 
     const selection: FieldSelection<Post> = {
@@ -186,7 +177,7 @@ describe("FieldSelection type", () => {
     expect(selection.author?.name).toBe(true);
   });
 
-  it("should support array relations via __relation__", () => {
+  it("should support array relations via __typename presence", () => {
     type Post = {
       __typename: "Post";
       id: string;
@@ -198,11 +189,9 @@ describe("FieldSelection type", () => {
       __typename: "Blog";
       id: string;
       title: string;
-      tags: string[]; // Simple array, not a relation
-      __relation__: {
-        posts: Post[]; // Array relation - selection applies to Post type
-        featuredPost: Post; // Single relation
-      };
+      tags: string[]; // Simple array, not a relation (no __typename)
+      posts: Post[]; // Array relation - selection applies to Post type
+      featuredPost: Post; // Single relation
     };
 
     const selection: FieldSelection<Blog> = {
@@ -233,7 +222,7 @@ describe("FieldSelection type", () => {
     expect(typeof selection.posts).toBe(typeof selection.featuredPost);
   });
 
-  it("should support deep field selection with nested __relation__", () => {
+  it("should support deep field selection with nested relations", () => {
     type Address = {
       street: string;
       city: string;
@@ -244,15 +233,45 @@ describe("FieldSelection type", () => {
       __typename: "Company";
       id: string;
       name: string;
-      address: Address; // Regular nested object
-      __relation__: {
-        employees: Array<{
-          __typename: "Employee";
-          id: string;
-          name: string;
-          role: string;
-        }>;
-      };
+      address: Address; // Regular nested object (no __typename)
+      employees: Array<{
+        __typename: "Employee";
+        id: string;
+        name: string;
+        role: string;
+      }>;
+    };
+
+    type DepartmentHead = {
+      __typename: "DepartmentHead";
+      id: string;
+      name: string;
+      title: string;
+    };
+
+    type Project = {
+      __typename: "Project";
+      id: string;
+      name: string;
+      status: string;
+    };
+
+    type Department = {
+      __typename: "Department";
+      id: string;
+      name: string;
+      budget: number;
+      head: DepartmentHead;
+      projects: Project[];
+    };
+
+    type Manager = {
+      __typename: "Manager";
+      id: string;
+      name: string;
+      level: number;
+      department: Department;
+      reports: User[]; // Recursive reference
     };
 
     type User = {
@@ -263,40 +282,8 @@ describe("FieldSelection type", () => {
         bio: string;
         avatar: string;
       };
-      __relation__: {
-        company: Company;
-        manager: {
-          __typename: "Manager";
-          id: string;
-          name: string;
-          level: number;
-          __relation__: {
-            // Nested __relation__ inside a relation
-            department: {
-              __typename: "Department";
-              id: string;
-              name: string;
-              budget: number;
-              __relation__: {
-                // Another level of nested __relation__
-                head: {
-                  __typename: "DepartmentHead";
-                  id: string;
-                  name: string;
-                  title: string;
-                };
-                projects: Array<{
-                  __typename: "Project";
-                  id: string;
-                  name: string;
-                  status: string;
-                }>;
-              };
-            };
-            reports: User[]; // Recursive reference
-          };
-        };
-      };
+      company: Company;
+      manager: Manager;
     };
 
     const selection: FieldSelection<User> = {
@@ -374,10 +361,8 @@ describe("FieldSelection type", () => {
         tags: string[];
         category: string;
       };
-      __relation__: {
-        reviews?: Review[]; // Optional relation
-        relatedProducts?: Product[]; // Optional recursive relation
-      };
+      reviews?: Review[]; // Optional relation
+      relatedProducts?: Product[]; // Optional recursive relation
     };
 
     const selection: FieldSelection<Product> = {
@@ -448,11 +433,9 @@ describe("FieldSelection type", () => {
         bio: string;
         avatar: string;
       };
-      __relation__: {
-        posts: Post[];
-        followers: FullUser[];
-        settings: Settings;
-      };
+      posts: Post[];
+      followers: FullUser[];
+      settings: Settings;
     };
 
     // Only select some fields
@@ -486,18 +469,14 @@ describe("FieldSelection type", () => {
       __typename: "Comment";
       id: string;
       text: string;
-      __relation__: {
-        replies: Comment[]; // Recursive array relation
-      };
+      replies: Comment[]; // Recursive array relation
     };
 
     type Post = {
       __typename: "Post";
       id: string;
       title: string;
-      __relation__: {
-        comments: Comment[];
-      };
+      comments: Comment[];
     };
 
     const selection: FieldSelection<Post> = {
@@ -528,7 +507,7 @@ describe("FieldSelection type", () => {
     expect(selection.comments?.replies).toBeDefined();
   });
 
-  it("should handle recursive types with __relation__", () => {
+  it("should handle recursive types with __typename", () => {
     type TreeNode = {
       __typename: "TreeNode";
       id: string;
@@ -537,10 +516,8 @@ describe("FieldSelection type", () => {
         depth: number;
         path: string;
       };
-      __relation__: {
-        parent?: TreeNode;
-        children?: TreeNode[];
-      };
+      parent?: TreeNode;
+      children?: TreeNode[];
     };
 
     const selection: FieldSelection<TreeNode> = {
