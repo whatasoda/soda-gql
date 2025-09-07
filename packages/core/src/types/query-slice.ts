@@ -6,9 +6,7 @@
 /**
  * Transform function for normalizing data
  */
-export type TransformFunction<TInput = any, TOutput = any> = (
-  data: TInput
-) => TOutput;
+export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput;
 
 /**
  * Selection builder for constructing GraphQL selections

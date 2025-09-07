@@ -1,10 +1,10 @@
-import { gql } from '@/gql-system'
-import { post_remoteModel } from '../models/post.remote-model'
+import { gql } from "@/gql-system";
+import { post_remoteModel } from "../models/post.remote-model";
 
 export const getPostApis = {
   getPost: gql.querySlice(
     [
-      'getPost',
+      "getPost",
       {
         id: gql.arg.uuid(),
         commentCount: gql.arg.int(),
@@ -12,13 +12,13 @@ export const getPostApis = {
     ],
     (query, args) => ({
       posts: query(
-        ['posts', { where: { id: { _eq: args.id } } }],
+        ["posts", { where: { id: { _eq: args.id } } }],
         post_remoteModel.forFeature_showPostDetail({
           comments_limit: args.commentCount,
-          comments_orderBy: { createdAt: 'desc' },
+          comments_orderBy: { createdAt: "desc" },
         }),
       ),
     }),
     (data) => data?.posts?.[0] ?? null,
   ),
-}
+};

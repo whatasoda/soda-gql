@@ -9,9 +9,7 @@ import type { QuerySlice } from "./query-slice";
 /**
  * Transform function for normalizing data
  */
-export type TransformFunction<TInput = any, TOutput = any> = (
-  data: TInput
-) => TOutput;
+export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput;
 
 /**
  * Page Query definition

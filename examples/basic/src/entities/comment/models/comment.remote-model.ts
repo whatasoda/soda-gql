@@ -1,11 +1,11 @@
-import { gql } from '@/gql-system'
+import { gql } from "@/gql-system";
 
-export type CommentForIterate = gql.infer<typeof comment_remoteModel.forIterate>
-export type CommentForDetail = gql.infer<typeof comment_remoteModel.forDetail>
+export type CommentForIterate = gql.infer<typeof comment_remoteModel.forIterate>;
+export type CommentForDetail = gql.infer<typeof comment_remoteModel.forDetail>;
 
 export const comment_remoteModel = {
   forIterate: gql.model(
-    'comment',
+    "comment",
     () => ({
       id: true,
       postId: true,
@@ -21,7 +21,7 @@ export const comment_remoteModel = {
   ),
 
   forDetail: gql.model(
-    'comment',
+    "comment",
     () => ({
       id: true,
       content: true,
@@ -39,4 +39,4 @@ export const comment_remoteModel = {
       updatedAt: data.updatedAt,
     }),
   ),
-}
+};

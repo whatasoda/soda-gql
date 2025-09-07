@@ -6,6 +6,7 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
+
     "lineWidth": 100
   },
   "linter": {
@@ -30,8 +31,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "asNeeded",
+      "quoteStyle": "double",
+      "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
     }

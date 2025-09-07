@@ -1,10 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { hiddenBrand } from "../../types/brand-func";
-import type {
-  QuerySlice,
-  SelectionBuilder,
-  TransformFunction,
-} from "../../types/query-slice";
+import type { QuerySlice, SelectionBuilder, TransformFunction } from "../../types/query-slice";
 
 describe("QuerySlice type", () => {
   it("should have correct type structure", () => {

@@ -1,26 +1,21 @@
 import { describe, expect, it } from "bun:test";
 import { hiddenBrand } from "../../types/brand-func";
-import type {
-  FieldSelection,
-  RemoteModel,
-  TransformFunction,
-} from "../../types/remote-model";
+import type { FieldSelection, RemoteModel, TransformFunction } from "../../types/remote-model";
 
 describe("RemoteModel type", () => {
   it("should have correct type structure", () => {
     // This test verifies the RemoteModel interface exists and has correct properties
-    const model: RemoteModel<{ id: string; name: string }, { id: string }, {}> =
-      {
-        _type: hiddenBrand(),
-        _transformed: hiddenBrand(),
-        _params: hiddenBrand(),
-        typeName: "User",
-        fields: {
-          id: true,
-          name: true,
-        },
-        transform: (data) => ({ id: data.id }),
-      };
+    const model: RemoteModel<{ id: string; name: string }, { id: string }, {}> = {
+      _type: hiddenBrand(),
+      _transformed: hiddenBrand(),
+      _params: hiddenBrand(),
+      typeName: "User",
+      fields: {
+        id: true,
+        name: true,
+      },
+      transform: (data) => ({ id: data.id }),
+    };
 
     expect(model.typeName).toBe("User");
     expect(model.fields).toEqual({ id: true, name: true });

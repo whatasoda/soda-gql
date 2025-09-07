@@ -3,7 +3,7 @@
  * This defines the public API surface for the build plugin
  */
 
-import { z } from 'zod'
+import { z } from "zod";
 
 // ============================================================================
 // Configuration Schema
@@ -18,7 +18,7 @@ export const PluginConfigSchema = z.object({
   /**
    * Output directory for generated system (like PandaCSS's styled-system)
    */
-  systemDir: z.string().optional().default('./src/graphql-system'),
+  systemDir: z.string().optional().default("./src/graphql-system"),
 
   /**
    * Enable verbose logging
@@ -48,12 +48,12 @@ export const PluginConfigSchema = z.object({
       /**
        * Cache directory
        */
-      cacheDir: z.string().optional().default('.gql-cache'),
+      cacheDir: z.string().optional().default(".gql-cache"),
     })
     .optional(),
-})
+});
 
-export type PluginConfig = z.infer<typeof PluginConfigSchema>
+export type PluginConfig = z.infer<typeof PluginConfigSchema>;
 
 // ============================================================================
 // Transform API
@@ -74,9 +74,9 @@ export const TransformRequestSchema = z.object({
    * Source map for debugging
    */
   sourceMap: z.any().optional(),
-})
+});
 
-export type TransformRequest = z.infer<typeof TransformRequestSchema>
+export type TransformRequest = z.infer<typeof TransformRequestSchema>;
 
 export const TransformResponseSchema = z.object({
   /**
@@ -111,9 +111,9 @@ export const TransformResponseSchema = z.object({
       cache: z.boolean(),
     })
     .optional(),
-})
+});
 
-export type TransformResponse = z.infer<typeof TransformResponseSchema>
+export type TransformResponse = z.infer<typeof TransformResponseSchema>;
 
 // ============================================================================
 // Analysis API
@@ -128,10 +128,10 @@ export const AnalysisRequestSchema = z.object({
   /**
    * Analysis depth
    */
-  depth: z.enum(['shallow', 'deep']).optional().default('shallow'),
-})
+  depth: z.enum(["shallow", "deep"]).optional().default("shallow"),
+});
 
-export type AnalysisRequest = z.infer<typeof AnalysisRequestSchema>
+export type AnalysisRequest = z.infer<typeof AnalysisRequestSchema>;
 
 export const AnalysisResponseSchema = z.object({
   /**
@@ -152,7 +152,7 @@ export const AnalysisResponseSchema = z.object({
   slices: z.array(
     z.object({
       name: z.string(),
-      type: z.enum(['query', 'mutation', 'subscription']),
+      type: z.enum(["query", "mutation", "subscription"]),
       file: z.string(),
       models: z.array(z.string()),
     }),
@@ -173,9 +173,9 @@ export const AnalysisResponseSchema = z.object({
    * Dependency graph
    */
   dependencies: z.record(z.string(), z.array(z.string())),
-})
+});
 
-export type AnalysisResponse = z.infer<typeof AnalysisResponseSchema>
+export type AnalysisResponse = z.infer<typeof AnalysisResponseSchema>;
 
 // ============================================================================
 // Generation API
@@ -208,9 +208,9 @@ export const GenerationRequestSchema = z.object({
       pretty: z.boolean().optional().default(false),
     })
     .optional(),
-})
+});
 
-export type GenerationRequest = z.infer<typeof GenerationRequestSchema>
+export type GenerationRequest = z.infer<typeof GenerationRequestSchema>;
 
 export const GenerationResponseSchema = z.object({
   /**
@@ -233,9 +233,9 @@ export const GenerationResponseSchema = z.object({
     optimizations: z.number(),
     deduplicatedFields: z.number(),
   }),
-})
+});
 
-export type GenerationResponse = z.infer<typeof GenerationResponseSchema>
+export type GenerationResponse = z.infer<typeof GenerationResponseSchema>;
 
 // ============================================================================
 // Plugin Lifecycle Hooks
@@ -245,37 +245,37 @@ export interface PluginHooks {
   /**
    * Called when plugin is initialized
    */
-  onInit?: (config: PluginConfig) => Promise<void>
+  onInit?: (config: PluginConfig) => Promise<void>;
 
   /**
    * Called before transformation
    */
-  beforeTransform?: (request: TransformRequest) => Promise<TransformRequest>
+  beforeTransform?: (request: TransformRequest) => Promise<TransformRequest>;
 
   /**
    * Main transformation hook
    */
-  transform: (request: TransformRequest) => Promise<TransformResponse>
+  transform: (request: TransformRequest) => Promise<TransformResponse>;
 
   /**
    * Called after transformation
    */
-  afterTransform?: (response: TransformResponse) => Promise<TransformResponse>
+  afterTransform?: (response: TransformResponse) => Promise<TransformResponse>;
 
   /**
    * Called for analysis
    */
-  analyze?: (request: AnalysisRequest) => Promise<AnalysisResponse>
+  analyze?: (request: AnalysisRequest) => Promise<AnalysisResponse>;
 
   /**
    * Called for generation
    */
-  generate?: (request: GenerationRequest) => Promise<GenerationResponse>
+  generate?: (request: GenerationRequest) => Promise<GenerationResponse>;
 
   /**
    * Called when plugin is closed
    */
-  onClose?: () => Promise<void>
+  onClose?: () => Promise<void>;
 }
 
 // ============================================================================
@@ -283,9 +283,9 @@ export interface PluginHooks {
 // ============================================================================
 
 export interface Plugin {
-  name: string
-  version: string
-  hooks: PluginHooks
+  name: string;
+  version: string;
+  hooks: PluginHooks;
 }
 
-export type PluginFactory = (config: PluginConfig) => Plugin
+export type PluginFactory = (config: PluginConfig) => Plugin;

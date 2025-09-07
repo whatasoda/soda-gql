@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { hiddenBrand } from "../../types/brand-func";
-import type {
-  MutationSlice,
-  TransformFunction,
-} from "../../types/mutation-slice";
+import type { MutationSlice, TransformFunction } from "../../types/mutation-slice";
 
 describe("MutationSlice type", () => {
   it("should have correct type structure", () => {
@@ -137,9 +134,7 @@ describe("MutationSlice type", () => {
       createdAt: Date;
     };
 
-    const transform: TransformFunction<RawResponse, NormalizedUser> = (
-      data
-    ) => ({
+    const transform: TransformFunction<RawResponse, NormalizedUser> = (data) => ({
       id: data.mutation.user.id,
       fullName: `${data.mutation.user.first_name} ${data.mutation.user.last_name}`,
       createdAt: new Date(data.mutation.user.created_at),
