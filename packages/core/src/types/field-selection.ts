@@ -1,6 +1,14 @@
 /**
  * Field Selection type definitions
  * Copied from spec - not imported from /specs directory
+ *
+ * @see docs/decisions/001-relation-field-selection.md for design rationale
+ *
+ * Key concepts:
+ * - Relations are explicitly marked with __relation__ property
+ * - Regular objects can only be selected with boolean
+ * - Arrays are automatically unwrapped for field selection
+ * - __relation__ can be nested at any level
  */
 
 /**

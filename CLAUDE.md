@@ -118,3 +118,72 @@ bun run typecheck
   - Phase C: Static analysis and builder for document generation
   - Phase D: Build tool plugins (Babel, Bun)
   - Phase E: CLI and developer experience
+
+## Documentation Guidelines
+
+### Architecture Decision Records (ADRs)
+
+All significant architectural decisions should be documented in `docs/decisions/`.
+
+**When to write an ADR**:
+- Choosing between multiple viable technical approaches
+- Making decisions that will be hard to reverse
+- Deviating from established patterns
+- Adopting new technologies or patterns
+
+**Process**:
+1. Copy `docs/decisions/adr-template.md` to `docs/decisions/XXX-brief-name.md`
+2. Fill out all sections, especially Context and Consequences
+3. Include code examples where helpful
+4. Reference the ADR in relevant code with comments like `// See ADR-001`
+5. Link to the ADR in PR descriptions when implementing
+
+**Format**: We use Michael Nygard's lightweight ADR format with Status, Context, Decision, and Consequences sections.
+
+## Architectural Decisions
+
+### Type Brand Properties (2024-01)
+
+**Decision**: Use function-returning brand properties instead of direct type references
+- Brand properties (`_type`, `_data`, etc.) return functions: `() => T`
+- Prevents runtime errors when properties are accessed
+- Maintains full type safety at compile time
+- Example: `readonly _type: () => TType` instead of `readonly _type: TType`
+
+**Rationale**: Direct type references would throw at runtime if accessed. Function returns provide a safer undefined behavior while preserving TypeScript's type inference.
+
+### Explicit Relations with __relation__ (2024-01)
+
+**Decision**: Use `__relation__` property to explicitly define GraphQL relations
+- Relations must be defined in a special `__relation__` property
+- Regular nested objects (non-relations) can only be selected with boolean
+- Relations support nested field selection
+- Arrays are automatically unwrapped for selection
+
+**Example**:
+```typescript
+type User = {
+  id: string;
+  profile: { bio: string };        // Regular object
+  __relation__: {
+    posts: Post[];                 // Relation (array)
+    company: Company;              // Relation (single)
+  };
+};
+
+// Selection:
+const fields: FieldSelection<User> = {
+  id: true,
+  profile: true,                   // Boolean only
+  posts: {                         // Nested selection
+    id: true,
+    title: true,
+  },
+};
+```
+
+**Rationale**: 
+- Object type detection alone is insufficient for determining relations
+- Explicit marking provides precise control
+- Code generation can easily produce `__relation__` structure
+- Supports nested `__relation__` for complex schemas
