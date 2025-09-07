@@ -35,17 +35,14 @@ This project implements a zero-runtime GraphQL query generation system similar t
 ### Commands
 
 ```bash
-# Generate base types from schema
-bun run @soda-gql/core generate
-
 # Run tests
 bun test
 
-# Build with transformations
-bun run build
+# Run quality checks (linting + type check)
+bun quality
 
-# Type check
-bun run typecheck
+# Type check only
+bun typecheck
 ```
 
 ## Universal Code Conventions
@@ -110,80 +107,25 @@ bun run typecheck
 - `bun:test` for testing
 - `bun:sqlite` for SQLite
 
-### Recent Changes
-
-- 001-zero-runtime-gql-in-js: Zero-runtime GraphQL query generation system
-  - Phase A: Runtime implementation with createGql and utilities
-  - Phase B: Code generation from GraphQL schema
-  - Phase C: Static analysis and builder for document generation
-  - Phase D: Build tool plugins (Babel, Bun)
-  - Phase E: CLI and developer experience
-
-## Documentation Guidelines
+## Documentation
 
 ### Architecture Decision Records (ADRs)
 
-All significant architectural decisions should be documented in `docs/decisions/`.
+Significant architectural decisions are documented in `docs/decisions/`.
 
 **When to write an ADR**:
-- Choosing between multiple viable technical approaches
-- Making decisions that will be hard to reverse
+- Multiple viable technical approaches exist
+- Decision would be hard to reverse
 - Deviating from established patterns
-- Adopting new technologies or patterns
 
-**Process**:
-1. Copy `docs/decisions/adr-template.md` to `docs/decisions/XXX-brief-name.md`
-2. Fill out all sections, especially Context and Consequences
-3. Include code examples where helpful
-4. Reference the ADR in relevant code with comments like `// See ADR-001`
-5. Link to the ADR in PR descriptions when implementing
+**How to write**: 
+1. Copy `docs/decisions/adr-template.md`
+2. Fill out Context, Decision, and Consequences
+3. Reference in code: `// See ADR-001`
 
-**Format**: We use Michael Nygard's lightweight ADR format with Status, Context, Decision, and Consequences sections.
+See [ADR-000](docs/decisions/000-adr-process.md) for the full process.
 
-## Architectural Decisions
+### Recent Decisions
 
-### Type Brand Properties (2024-01)
-
-**Decision**: Use function-returning brand properties instead of direct type references
-- Brand properties (`_type`, `_data`, etc.) return functions: `() => T`
-- Prevents runtime errors when properties are accessed
-- Maintains full type safety at compile time
-- Example: `readonly _type: () => TType` instead of `readonly _type: TType`
-
-**Rationale**: Direct type references would throw at runtime if accessed. Function returns provide a safer undefined behavior while preserving TypeScript's type inference.
-
-### Explicit Relations with __relation__ (2024-01)
-
-**Decision**: Use `__relation__` property to explicitly define GraphQL relations
-- Relations must be defined in a special `__relation__` property
-- Regular nested objects (non-relations) can only be selected with boolean
-- Relations support nested field selection
-- Arrays are automatically unwrapped for selection
-
-**Example**:
-```typescript
-type User = {
-  id: string;
-  profile: { bio: string };        // Regular object
-  __relation__: {
-    posts: Post[];                 // Relation (array)
-    company: Company;              // Relation (single)
-  };
-};
-
-// Selection:
-const fields: FieldSelection<User> = {
-  id: true,
-  profile: true,                   // Boolean only
-  posts: {                         // Nested selection
-    id: true,
-    title: true,
-  },
-};
-```
-
-**Rationale**: 
-- Object type detection alone is insufficient for determining relations
-- Explicit marking provides precise control
-- Code generation can easily produce `__relation__` structure
-- Supports nested `__relation__` for complex schemas
+- [ADR-001](docs/decisions/001-relation-field-selection.md): Explicit relations with `__relation__`
+- [ADR-002](docs/decisions/002-type-brand-safety.md): Runtime-safe type brands
