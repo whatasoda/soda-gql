@@ -1,10 +1,9 @@
-# Implementation Plan: Zero-runtime GraphQL Query Generation
+# Implementation Plan: Zero-runtime GraphQL Query Generation System
 
-**Branch**: `001-zero-runtime-gql-in-js` | **Date**: 2025-01-07 | **Spec**: [link](./spec.md)
+**Branch**: `001-zero-runtime-gql-in-js` | **Date**: 2025-09-07 | **Spec**: `/specs/001-zero-runtime-gql-in-js/spec.md`
 **Input**: Feature specification from `/specs/001-zero-runtime-gql-in-js/spec.md`
 
 ## Execution Flow (/plan command scope)
-
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -17,7 +16,7 @@
    → Update Progress Tracking: Initial Constitution Check
 4. Execute Phase 0 → research.md
    → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
-5. Execute Phase 1 → contracts, data-model.md, quickstart.md, CLAUDE.md
+5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
    → Update Progress Tracking: Post-Design Constitution Check
@@ -26,285 +25,280 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
-
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-
-Implement a zero-runtime GraphQL query generation system that transforms TypeScript-defined queries into optimized GraphQL documents at build time, similar to PandaCSS's approach to CSS-in-JS. The system enables type-safe GraphQL operations with full inference, parameterized fragments, and cross-module query composition while maintaining zero runtime overhead. Initial scope covers queries and mutations only; subscriptions, directives, and native fragments are out of scope.
+Develop a zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach. The system allows developers to write GraphQL queries in TypeScript with full type safety, which are then statically analyzed and transformed at build time into optimized GraphQL documents. The implementation follows a phased approach: starting with runtime implementation for easier development and testing, then moving to zero-runtime with a styled-system-like generated import pattern, culminating in build tool plugins for static analysis and code transformation.
 
 ## Technical Context
-
-**Language/Version**: TypeScript 5.x / Bun 1.0+  
-**Primary Dependencies**: zod (validation), neverthrow (error handling), TypeScript Compiler API (analysis)  
-**Storage**: N/A (build-time transformation only)  
-**Testing**: bun test with TDD (t_wada methodology)  
-**Target Platform**: Node.js/Bun build environments  
-**Project Type**: single (library with CLI)  
-**Performance Goals**: < 100ms per file transformation, < 500ms incremental builds  
-**Constraints**: Zero runtime overhead, full type safety, no manual code generation, max 32 slices per query (warn at 16+)  
-**Scale/Scope**: Support for 1000+ files, practical limit of 32 slices per page
+**Language/Version**: TypeScript 5.x with Bun runtime  
+**Primary Dependencies**: neverthrow (error handling), zod v4 (validation), Babel/AST parsers  
+**Storage**: JSON files for generated GraphQL documents, file system for generated code  
+**Testing**: Bun test with TDD (t_wada methodology)  
+**Target Platform**: Node.js/Bun runtime, browser environments via build tools
+**Project Type**: single (library with CLI and plugins)  
+**Performance Goals**: Zero runtime overhead, instant type feedback during development  
+**Constraints**: Must handle up to 32 slices per Page Query (warning at 16+), single schema version support  
+**Scale/Scope**: Support Feature-Sliced Design architecture, multiple build tools (Babel minimum)
 
 ## Constitution Check
-
-_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Simplicity**:
-
-- Projects: 3 (core library, babel plugin, bun plugin)
-- Using framework directly? Yes (TypeScript Compiler API, no wrappers)
-- Single data model? Yes (GraphQL schema as single source)
-- Avoiding patterns? Yes (no Repository/UoW, direct transformations)
+- Projects: 5 (core, codegen, builder, plugin-babel, cli)
+- Using framework directly? Yes (Babel AST directly, no wrappers)
+- Single data model? Yes (GraphQL schema as single source of truth)
+- Avoiding patterns? Yes (no unnecessary abstractions, direct implementation)
 
 **Architecture**:
-
-- EVERY feature as library? Yes
+- EVERY feature as library? Yes (all functionality in packages)
 - Libraries listed:
-  - `@soda-gql/core`: Runtime API and type definitions
-  - `@soda-gql/plugin-babel`: Build-time transformation plugin (minimum requirement)
-  - `@soda-gql/plugin-bun`: Bun-specific plugin (additional)
-  - `@soda-gql/cli`: Command-line interface for generation
-- CLI per library:
-  - core: `soda-gql generate --schema --output --format`
-  - plugin: Configuration via bunfig.toml
-  - cli: `soda-gql --help --version --format`
-- Library docs: llms.txt format planned? Yes
+  - @soda-gql/core: Runtime GraphQL document generation and utilities
+  - @soda-gql/codegen: Schema parsing and code generation
+  - @soda-gql/builder: Static analysis and document generation
+  - @soda-gql/plugin-babel: Babel plugin for code transformation
+  - @soda-gql/cli: Command-line interface for schema codegen
+- CLI per library: Yes (soda-gql generate, soda-gql init, etc.)
+- Library docs: Yes (llms.txt format for each package)
 
 **Testing (NON-NEGOTIABLE)**:
-
-- RED-GREEN-Refactor cycle enforced? Yes
+- RED-GREEN-Refactor cycle enforced? Yes (TDD with t_wada methodology)
 - Git commits show tests before implementation? Yes
 - Order: Contract→Integration→E2E→Unit strictly followed? Yes
-- Real dependencies used? Yes (actual TypeScript compiler, real GraphQL parser)
+- Real dependencies used? Yes (actual GraphQL schemas, real file system)
 - Integration tests for: new libraries, contract changes, shared schemas? Yes
 - FORBIDDEN: Implementation before test, skipping RED phase
 
 **Observability**:
-
 - Structured logging included? Yes (build-time diagnostics)
-- Frontend logs → backend? N/A (build tool only)
-- Error context sufficient? Yes (file, line, transformation phase)
+- Frontend logs → backend? N/A (library, not app)
+- Error context sufficient? Yes (detailed AST location info, source maps)
 
 **Versioning**:
-
-- Version number assigned? 0.1.0
+- Version number assigned? Yes (0.1.0 initial)
 - BUILD increments on every change? Yes
-- Breaking changes handled? Semantic versioning, migration guides
+- Breaking changes handled? Yes (migration guides, deprecation warnings)
 
 ## Project Structure
 
 ### Documentation (this feature)
-
 ```
-specs/001-zero-runtime-gql-in-js/
+specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
-├── research.md          # Phase 0 output (/plan command) ✓
-├── data-model.md        # Phase 1 output (/plan command) ✓
-├── quickstart.md        # Phase 1 output (/plan command) ✓
-├── contracts/           # Phase 1 output (/plan command) ✓
-│   ├── plugin-api.ts    # Build plugin contract ✓
-│   └── runtime-api.ts   # Runtime API contract ✓
+├── research.md          # Phase 0 output (/plan command)
+├── data-model.md        # Phase 1 output (/plan command)
+├── quickstart.md        # Phase 1 output (/plan command)
+├── contracts/           # Phase 1 output (/plan command)
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
 ### Source Code (repository root)
-
 ```
-# Option 1: Single project (SELECTED - library with plugin)
+# Option 1: Single project (DEFAULT)
 src/
 ├── models/
-│   └── config.model.ts      # Configuration schemas
 ├── services/
-│   ├── analyzer.service.ts  # AST analysis
-│   ├── generator.service.ts # Query generation
-│   └── registry.service.ts  # Document registration
 ├── cli/
-│   └── commands/            # CLI commands
 └── lib/
-    ├── core/                # Core API
-    ├── plugin/              # Build plugin
-    └── transforms/          # AST transformations
 
 tests/
 ├── contract/
-│   ├── plugin-api.test.ts
-│   └── runtime-api.test.ts
 ├── integration/
-│   ├── transform.test.ts
-│   └── generation.test.ts
 └── unit/
-    └── services/
 
-packages/
-├── core/                    # @soda-gql/core package
-├── plugin-babel/           # @soda-gql/plugin-babel package (minimum requirement)
-├── plugin-bun/             # @soda-gql/plugin-bun package (additional)
-└── cli/                    # @soda-gql/cli package
+# Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure]
 ```
 
-**Structure Decision**: Option 1 (Single project) - Library with build plugin, organized as monorepo with separate packages
+**Structure Decision**: Monorepo with packages structure (modified Option 1):
+```
+packages/
+├── core/           # Runtime GraphQL utilities
+├── codegen/        # Schema code generation  
+├── builder/        # Static analysis & doc generation
+├── plugin-babel/   # Babel transformation plugin
+└── cli/            # Command-line interface
+
+examples/
+├── basic/          # Basic usage examples
+└── advanced/       # Complex scenarios
+
+tests/
+├── integration/    # Cross-package tests
+└── e2e/            # End-to-end scenarios
+```
 
 ## Phase 0: Outline & Research
-
 1. **Extract unknowns from Technical Context** above:
-
-   - ✓ TypeScript Compiler API usage patterns
-   - ✓ Bun plugin system architecture
-   - ✓ PandaCSS transformation approach
-   - ✓ Zod schema inference patterns
-   - ✓ Neverthrow Result composition
+   - For each NEEDS CLARIFICATION → research task
+   - For each dependency → best practices task
+   - For each integration → patterns task
 
 2. **Generate and dispatch research agents**:
+   ```
+   For each unknown in Technical Context:
+     Task: "Research {unknown} for {feature context}"
+   For each technology choice:
+     Task: "Find best practices for {tech} in {domain}"
+   ```
 
-   - ✓ Research TypeScript AST manipulation
-   - ✓ Research build-time code generation
-   - ✓ Research type inference strategies
-   - ✓ Research cross-module dependency resolution
+3. **Consolidate findings** in `research.md` using format:
+   - Decision: [what was chosen]
+   - Rationale: [why chosen]
+   - Alternatives considered: [what else evaluated]
 
-3. **Consolidate findings** in `research.md`:
-   - ✓ All technical decisions documented
-   - ✓ Architecture patterns identified
-   - ✓ Performance targets established
-
-**Output**: research.md with all NEEDS CLARIFICATION resolved ✓
+**Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
-
-_Prerequisites: research.md complete ✓_
+*Prerequisites: research.md complete*
 
 1. **Extract entities from feature spec** → `data-model.md`:
-
-   - ✓ RemoteModel, QuerySlice, MutationSlice, SubscriptionSlice
-   - ✓ PageQuery, FieldSelection, TransformFunction
-   - ✓ GraphQLDocument, Registration
+   - Entity name, fields, relationships
+   - Validation rules from requirements
+   - State transitions if applicable
 
 2. **Generate API contracts** from functional requirements:
-
-   - ✓ Plugin API contract (build-time interface)
-   - ✓ Runtime API contract (developer-facing API)
-   - ✓ Type definitions for all entities
+   - For each user action → endpoint
+   - Use standard REST/GraphQL patterns
+   - Output OpenAPI/GraphQL schema to `/contracts/`
 
 3. **Generate contract tests** from contracts:
-
-   - Tests to be created in Phase 3 (implementation)
-   - One test file per API surface
-   - Schema validation tests
+   - One test file per endpoint
+   - Assert request/response schemas
+   - Tests must fail (no implementation yet)
 
 4. **Extract test scenarios** from user stories:
+   - Each story → integration test scenario
+   - Quickstart test = story validation steps
 
-   - ✓ Remote Model definition and inference
-   - ✓ Query Slice composition
-   - ✓ Page Query generation
-   - ✓ Transform function execution
-   - ✓ Registration and deduplication
+5. **Update agent file incrementally** (O(1) operation):
+   - Run `/scripts/update-agent-context.sh [claude|gemini|copilot]` for your AI assistant
+   - If exists: Add only NEW tech from current plan
+   - Preserve manual additions between markers
+   - Update recent changes (keep last 3)
+   - Keep under 150 lines for token efficiency
+   - Output to repository root
 
-5. **Update agent file incrementally**:
-   - ✓ Updated CLAUDE.md with project context
-   - ✓ Added tech stack and commands
-   - ✓ Documented key concepts
-
-**Output**: data-model.md ✓, /contracts/\* ✓, quickstart.md ✓, CLAUDE.md ✓
+**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
-
-_This section describes what the /tasks command will do - DO NOT execute during /plan_
+*This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
 
-- Load `/templates/tasks-template.md` as base
-- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
-- Each contract → contract test task [P]
-- Each entity → model creation task [P]
-- Each user story → integration test task
-- Implementation tasks to make tests pass
+Based on the phased implementation approach specified, tasks will be organized into distinct implementation phases:
 
-**Task Categories**:
+**Phase A: Runtime Implementation (Foundation)**
+- Core package setup with createGql function
+- Individual utility implementations (RemoteModel, QuerySlice, etc.)
+- Type injection mechanism for schema types
+- Unit tests for each utility (TDD approach)
+- Runtime GraphQL document generation
+- Integration tests for runtime execution
 
-1. **Contract Tests** (TDD Red Phase):
+**Phase B: Code Generation System**
+- Codegen package for schema parsing
+- Type generation from GraphQL schema
+- graphql-system directory generation (PandaCSS-style)
+- Template generation for gql utilities
+- Tests for generated code correctness
 
-   - Plugin API contract tests
-   - Runtime API contract tests
-   - Type inference tests
+**Phase C: Static Analysis & Builder**
+- Builder package for GraphQL document generation
+- AST parsing for soda-gql usage extraction
+- Dependency resolution system ("{file}::{export}::{property}" format)
+- Executable code generation for evaluation
+- JSON output for transformation pipeline
 
-2. **Core Implementation**:
+**Phase D: Build Tool Integration**
+- plugin-babel implementation using builder
+- Code transformation with Babel AST
+- Zero-runtime replacement of gql calls
+- Top-level query registration generation
+- E2E tests with example applications
 
-   - AST analyzer service
-   - Query generator service
-   - Document registry service
-   - Transform executor
-
-3. **Plugin Implementation**:
-
-   - Bun plugin hooks
-   - File transformation pipeline
-   - Cache management
-   - Error reporting
-
-4. **CLI Implementation**:
-
-   - Generate command
-   - Validate command
-   - Init command
-
-5. **Integration Tests**:
-   - End-to-end transformation
-   - Cross-module composition
-   - Performance benchmarks
+**Phase E: CLI & Developer Experience**
+- CLI package with codegen integration
+- `soda-gql generate` command
+- Configuration file support
+- Error handling with neverthrow
+- Validation with zod v4
 
 **Ordering Strategy**:
+- TDD order: Tests MUST be written first (RED phase mandatory)
+- Sequential phases: A→B→C→D→E (dependencies between phases)
+- Within phases: Parallel tasks marked with [P] for independent files
+- Contract tests before integration tests before unit tests
 
-- TDD order: Tests before implementation
-- Dependency order: Core → Plugin → CLI
-- Mark [P] for parallel execution (independent modules)
+**Key Implementation Constraints**:
+- No any/unknown without Generic type parameters
+- No class-based state management
+- Pure functions for testability
+- neverthrow for error handling (no fromPromise)
+- zod v4 for external data validation
+- import only (no require) in tests
 
-**Estimated Output**: 30-35 numbered, ordered tasks in tasks.md covering:
-
-- 8-10 contract/unit test tasks
-- 12-15 implementation tasks
-- 5-8 integration test tasks
-- 2-3 documentation tasks
+**Estimated Output**: 50-60 numbered, ordered tasks in tasks.md
+- Phase A: ~15 tasks (runtime foundation)
+- Phase B: ~10 tasks (code generation)
+- Phase C: ~12 tasks (static analysis)
+- Phase D: ~10 tasks (build integration)
+- Phase E: ~8 tasks (CLI & polish)
 
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
-
-_These phases are beyond the scope of the /plan command_
+*These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)  
-**Phase 4**: Implementation (execute tasks.md following TDD principles)  
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
-
-_Fill ONLY if Constitution Check has violations that must be justified_
+*Fill ONLY if Constitution Check has violations that must be justified*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
-| --------- | ---------- | ------------------------------------ |
-| None      | -          | -                                    |
+|-----------|------------|-------------------------------------|
+| 5 packages | Clear separation of concerns: runtime, codegen, build, plugin, CLI | Combining would mix runtime/build-time code, violate single responsibility |
+| Complex dependency injection | Type safety requires injecting schema types into utilities | Direct coupling would prevent testing and reusability |
 
-No constitutional violations. The design maintains simplicity with only 2 projects (core library and plugin), uses frameworks directly without wrappers, and follows TDD principles strictly.
 
 ## Progress Tracking
-
-_This checklist is updated during execution flow_
+*This checklist is updated during execution flow*
 
 **Phase Status**:
-
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
-- [x] Phase 3: Tasks generated (/tasks command)
+- [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-
-- [x] Initial Constitution Check: PASS
+- [x] Initial Constitution Check: PASS (with documented deviations)
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
-- [x] Complexity deviations documented (none required)
+- [x] Complexity deviations documented
 
 ---
-
-_Based on Constitution v2.1.1 - See `/memory/constitution.md`_
+*Based on Constitution v2.1.1 - See `/memory/constitution.md`*

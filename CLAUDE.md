@@ -147,5 +147,9 @@ bun run typecheck
 
 ### Recent Changes
 
-- 001-zero-runtime-gql-in-js: Added TypeScript + Bun plugin architecture
-- Initial project setup with examples/basic implementation
+- 001-zero-runtime-gql-in-js: Zero-runtime GraphQL query generation system
+  - Phase A: Runtime implementation with createGql and utilities
+  - Phase B: Code generation from GraphQL schema
+  - Phase C: Static analysis and builder for document generation
+  - Phase D: Build tool plugins (Babel, Bun)
+  - Phase E: CLI and developer experience
