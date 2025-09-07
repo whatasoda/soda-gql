@@ -1,6 +1,6 @@
 # Feature Specification: Zero-runtime GraphQL Query Generation System
 
-**Feature Branch**: `001-pandacss-zero-runtime`  
+**Feature Branch**: `001-zero-runtime-gql-in-js`  
 **Created**: 2025-09-07  
 **Status**: Draft  
 **Input**: User description: "PandaCSS で行う Zero-runtime CSS-in-JS のように、 GraphQL のクエリも TypeScript 上で記述したものを静的解析によって Zero-runtime で生成できるようにしたい..."

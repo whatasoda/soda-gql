@@ -1,7 +1,7 @@
 # Implementation Plan: Zero-runtime GraphQL Query Generation
 
-**Branch**: `001-pandacss-zero-runtime` | **Date**: 2025-01-07 | **Spec**: [link](./spec.md)
-**Input**: Feature specification from `/specs/001-pandacss-zero-runtime/spec.md`
+**Branch**: `001-zero-runtime-gql-in-js` | **Date**: 2025-01-07 | **Spec**: [link](./spec.md)
+**Input**: Feature specification from `/specs/001-zero-runtime-gql-in-js/spec.md`
 
 ## Execution Flow (/plan command scope)
 
@@ -97,7 +97,7 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 ### Documentation (this feature)
 
 ```
-specs/001-pandacss-zero-runtime/
+specs/001-zero-runtime-gql-in-js/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command) ✓
 ├── data-model.md        # Phase 1 output (/plan command) ✓
