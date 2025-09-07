@@ -18,37 +18,37 @@
 
 // GraphQL Object Types (User, Post, etc.)
 export interface SchemaTypes {
-  [typeName: string]: any;
+  [typeName: string]: any
 }
 
 // GraphQL Input Types (CreateUserInput, UpdatePostInput, etc.)
 export interface SchemaInputTypes {
-  [inputName: string]: any;
+  [inputName: string]: any
 }
 
 // GraphQL Scalar Types (ID, String, Int, Float, Boolean, custom scalars)
 export interface SchemaScalarTypes {
-  ID: string;
-  String: string;
-  Int: number;
-  Float: number;
-  Boolean: boolean;
-  [scalarName: string]: any;
+  ID: string
+  String: string
+  Int: number
+  Float: number
+  Boolean: boolean
+  [scalarName: string]: any
 }
 
 // GraphQL Enum Types (Status, Role, etc.)
 export interface SchemaEnumTypes {
-  [enumName: string]: string;
+  [enumName: string]: string
 }
 
 // Combined schema interface for convenience
 export interface GeneratedSchema {
-  types: SchemaTypes;
-  inputs: SchemaInputTypes;
-  scalars: SchemaScalarTypes;
-  enums: SchemaEnumTypes;
-  Query: SchemaTypes["Query"];
-  Mutation: SchemaTypes["Mutation"];
+  types: SchemaTypes
+  inputs: SchemaInputTypes
+  scalars: SchemaScalarTypes
+  enums: SchemaEnumTypes
+  Query: SchemaTypes['Query']
+  Mutation: SchemaTypes['Mutation']
 }
 
 // ============================================================================
@@ -59,26 +59,22 @@ export interface GeneratedSchema {
  * Field selection for GraphQL types with proper type inference
  */
 export type FieldSelection<T = any> = {
-  [K in keyof T]?: T[K] extends object
-    ? boolean | FieldSelection<T[K]>
-    : boolean;
-};
+  [K in keyof T]?: T[K] extends object ? boolean | FieldSelection<T[K]> : boolean
+}
 
 /**
  * Transform function for normalizing data
  */
-export type TransformFunction<TInput = any, TOutput = any> = (
-  data: TInput
-) => TOutput;
+export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput
 
 /**
  * Parameter definition for parameterized fragments
  */
 export interface Parameter<T = any> {
-  name: string;
-  type: T;
-  required?: boolean;
-  defaultValue?: T;
+  name: string
+  type: T
+  required?: boolean
+  defaultValue?: T
 }
 
 /**
@@ -88,29 +84,29 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
   /**
    * Internal type brand
    */
-  readonly _type: TType;
-  readonly _transformed: TTransformed;
-  readonly _params: TParams;
+  readonly _type: TType
+  readonly _transformed: TTransformed
+  readonly _params: TParams
 
   /**
    * GraphQL type name
    */
-  typeName: string;
+  typeName: string
 
   /**
    * Field selection
    */
-  fields: FieldSelection<TType>;
+  fields: FieldSelection<TType>
 
   /**
    * Transform function
    */
-  transform: TransformFunction<TType, TTransformed>;
+  transform: TransformFunction<TType, TTransformed>
 
   /**
    * Parameters for this model
    */
-  parameters?: TParams;
+  parameters?: TParams
 }
 
 /**
@@ -120,21 +116,19 @@ export interface ModelFunction {
   // Simple form without parameters
   <TType extends keyof SchemaTypes, TTransformed>(
     typeName: TType,
-    fields: (
-      relation: RelationFunction<SchemaTypes[TType]>
-    ) => FieldSelection<SchemaTypes[TType]>,
-    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
-  ): RemoteModel<SchemaTypes[TType], TTransformed, {}>;
+    fields: (relation: RelationFunction<SchemaTypes[TType]>) => FieldSelection<SchemaTypes[TType]>,
+    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>,
+  ): RemoteModel<SchemaTypes[TType], TTransformed, {}>
 
   // Complex form with parameters
   <TType extends keyof SchemaTypes, TTransformed, TParams>(
     definition: [TType, TParams],
     fields: (
       relation: RelationFunction<SchemaTypes[TType]>,
-      args: NoInfer<TParams>
+      args: NoInfer<TParams>,
     ) => FieldSelection<SchemaTypes[TType]>,
-    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
-  ): RemoteModel<SchemaTypes[TType], TTransformed, TParams>;
+    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>,
+  ): RemoteModel<SchemaTypes[TType], TTransformed, TParams>
 }
 
 /**
@@ -145,14 +139,14 @@ export interface RelationFunction<TContext = any> {
   // Select a related field with a model
   <TField extends keyof TContext, TModel extends RemoteModel>(
     field: TField,
-    model: NoInfer<TModel>
-  ): TModel["_transformed"];
+    model: NoInfer<TModel>,
+  ): TModel['_transformed']
 
   // Select a related field with arguments and model
   <TField extends keyof TContext, TModel extends RemoteModel, TArgs>(
     definition: [TField, TArgs],
-    model: NoInfer<TModel> | [NoInfer<TModel>, FieldSelection<any>]
-  ): TModel["_transformed"];
+    model: NoInfer<TModel> | [NoInfer<TModel>, FieldSelection<any>],
+  ): TModel['_transformed']
 }
 
 /**
@@ -162,11 +156,11 @@ export interface InputHelpers {
   fromQuery(
     path: string,
     options: {
-      prefix?: string;
-      pick?: Record<string, boolean>;
-      omit?: Record<string, boolean>;
-    }
-  ): any;
+      prefix?: string
+      pick?: Record<string, boolean>
+      omit?: Record<string, boolean>
+    },
+  ): any
 }
 
 // ============================================================================
@@ -177,73 +171,67 @@ export interface InputHelpers {
  * Argument definition
  */
 export interface Argument<T = any> {
-  name: string;
-  type: T;
-  required?: boolean;
-  defaultValue?: T;
+  name: string
+  type: T
+  required?: boolean
+  defaultValue?: T
 }
 
 /**
  * Slice selection builder with type-safe field names
  */
-export interface SelectionBuilder<
-  TContext extends keyof SchemaTypes = "Query"
-> {
+export interface SelectionBuilder<TContext extends keyof SchemaTypes = 'Query'> {
   /**
    * Select a field with a remote model
    */
   <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel>(
     field: TField,
-    model: NoInfer<TModel>
-  ): TModel["_transformed"];
+    model: NoInfer<TModel>,
+  ): TModel['_transformed']
 
   /**
    * Select a field with arguments and model (tuple syntax)
    */
-  <
-    TField extends keyof SchemaTypes[TContext],
-    TModel extends RemoteModel,
-    TArgs
-  >(
+  <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel, TArgs>(
     definition: [TField, NoInfer<TArgs>],
-    model: NoInfer<TModel>
-  ): TModel["_transformed"];
+    model: NoInfer<TModel>,
+  ): TModel['_transformed']
 }
 
 /**
  * Query Slice definition
  */
 export interface QuerySlice<TData = any, TArgs = any> {
-  readonly _data: TData;
-  readonly _args: TArgs;
+  readonly _data: TData
+  readonly _args: TArgs
 
-  name: string;
-  selections: (query: SelectionBuilder, args: TArgs) => TData;
-  transform: TransformFunction<any, TData>;
+  name: string
+  selections: (query: SelectionBuilder, args: TArgs) => TData
+  transform: TransformFunction<any, TData>
 }
 
 /**
  * Mutation Slice definition
  */
 export interface MutationSlice<TData = any, TArgs = any> {
-  readonly _data: TData;
-  readonly _args: TArgs;
+  readonly _data: TData
+  readonly _args: TArgs
 
-  name: string;
-  selections: (mutate: SelectionBuilder, args: TArgs) => TData;
-  transform: TransformFunction<any, TData>;
+  name: string
+  selections: (mutate: SelectionBuilder, args: TArgs) => TData
+  transform: TransformFunction<any, TData>
 }
 
 /**
  * Subscription Slice definition
  */
 export interface SubscriptionSlice<TData = any, TArgs = any> {
-  readonly _data: TData;
-  readonly _args: TArgs;
+  readonly _data: TData
+  readonly _args: TArgs
 
-  name: string;
-  selections: (subscribe: SelectionBuilder, args: TArgs) => TData;
-  transform: TransformFunction<any, TData>;
+  name: string
+  selections: (subscribe: SelectionBuilder, args: TArgs) => TData
+  transform: TransformFunction<any, TData>
 }
 
 /**
@@ -254,15 +242,15 @@ export interface QuerySliceFunction {
   <TData>(
     name: string,
     selections: (query: SelectionBuilder) => TData,
-    transform?: TransformFunction<any, TData>
-  ): QuerySlice<TData, {}>;
+    transform?: TransformFunction<any, TData>,
+  ): QuerySlice<TData, {}>
 
   // Form with arguments using tuple syntax
   <TData, TArgs>(
     definition: [string, TArgs],
     selections: (query: SelectionBuilder, args: TArgs) => TData,
-    transform?: TransformFunction<any, TData>
-  ): QuerySlice<TData, TArgs>;
+    transform?: TransformFunction<any, TData>,
+  ): QuerySlice<TData, TArgs>
 }
 
 export interface MutationSliceFunction {
@@ -270,15 +258,15 @@ export interface MutationSliceFunction {
   <TData>(
     name: string,
     selections: (mutate: SelectionBuilder) => TData,
-    transform?: TransformFunction<any, TData>
-  ): MutationSlice<TData, {}>;
+    transform?: TransformFunction<any, TData>,
+  ): MutationSlice<TData, {}>
 
   // Form with arguments using tuple syntax
   <TData, TArgs>(
     definition: [string, TArgs],
     selections: (mutate: SelectionBuilder, args: TArgs) => TData,
-    transform?: TransformFunction<any, TData>
-  ): MutationSlice<TData, TArgs>;
+    transform?: TransformFunction<any, TData>,
+  ): MutationSlice<TData, TArgs>
 }
 
 // ============================================================================
@@ -289,21 +277,21 @@ export interface MutationSliceFunction {
  * Slice reference in a page query
  */
 export interface SliceReference<TSlice = any> {
-  slice: TSlice;
-  args?: any;
+  slice: TSlice
+  args?: any
 }
 
 /**
  * Page Query definition
  */
 export interface PageQuery<TData = any, TVariables = any> {
-  readonly _data: TData;
-  readonly _variables: TVariables;
+  readonly _data: TData
+  readonly _variables: TVariables
 
-  name: string;
-  slices: SliceReference[];
-  document?: string; // Generated at build time
-  registrationId?: symbol; // Assigned at registration
+  name: string
+  slices: SliceReference[]
+  document?: string // Generated at build time
+  registrationId?: symbol // Assigned at registration
 }
 
 /**
@@ -313,35 +301,28 @@ export interface QueryBuilder<TContext = any> {
   /**
    * Add a query slice
    */
-  <TSlice extends QuerySlice>(
-    slice: TSlice,
-    args?: TSlice["_args"]
-  ): TSlice["_data"];
+  <TSlice extends QuerySlice>(slice: TSlice, args?: TSlice['_args']): TSlice['_data']
 
   /**
    * Add multiple slices
    */
   combine<TSlices extends QuerySlice[]>(
     ...slices: TSlices
-  ): { [K in keyof TSlices]: TSlices[K]["_data"] };
+  ): { [K in keyof TSlices]: TSlices[K]['_data'] }
 }
 
 /**
  * Page Query creation function
  */
-export interface QueryFunction {
-  <TData, TVariables = {}>(
-    definition: [string, TVariables],
-    builder: (query: QueryBuilder, vars: TVariables) => TData
-  ): PageQuery<TData, TVariables>;
-}
+export type QueryFunction = <TData, TVariables = {}>(
+  definition: [string, TVariables],
+  builder: (query: QueryBuilder, vars: TVariables) => TData,
+) => PageQuery<TData, TVariables>
 
-export interface MutationFunction {
-  <TData, TVariables = {}>(
-    definition: [string, TVariables],
-    builder: (mutate: QueryBuilder, vars: TVariables) => TData
-  ): PageQuery<TData, TVariables>;
-}
+export type MutationFunction = <TData, TVariables = {}>(
+  definition: [string, TVariables],
+  builder: (mutate: QueryBuilder, vars: TVariables) => TData,
+) => PageQuery<TData, TVariables>
 
 // ============================================================================
 // Argument Type Definitions
@@ -349,25 +330,25 @@ export interface MutationFunction {
 
 export interface ArgTypes {
   // Scalar types
-  string(): SchemaScalarTypes["String"];
-  int(): SchemaScalarTypes["Int"];
-  float(): SchemaScalarTypes["Float"];
-  boolean(): SchemaScalarTypes["Boolean"];
-  id(): SchemaScalarTypes["ID"];
+  string(): SchemaScalarTypes['String']
+  int(): SchemaScalarTypes['Int']
+  float(): SchemaScalarTypes['Float']
+  boolean(): SchemaScalarTypes['Boolean']
+  id(): SchemaScalarTypes['ID']
 
   // Custom scalars
-  scalar<K extends keyof SchemaScalarTypes>(name: K): SchemaScalarTypes[K];
+  scalar<K extends keyof SchemaScalarTypes>(name: K): SchemaScalarTypes[K]
 
   // Enum types
-  enum<K extends keyof SchemaEnumTypes>(name: K): SchemaEnumTypes[K];
+  enum<K extends keyof SchemaEnumTypes>(name: K): SchemaEnumTypes[K]
 
   // Input types
-  input<K extends keyof SchemaInputTypes>(name: K): SchemaInputTypes[K];
+  input<K extends keyof SchemaInputTypes>(name: K): SchemaInputTypes[K]
 
   // Modifiers
-  array<T>(type: NoInfer<T>): T[];
-  nullable<T>(type: NoInfer<T>): T | null;
-  required<T>(type: NoInfer<T>): NonNullable<T>;
+  array<T>(type: NoInfer<T>): T[]
+  nullable<T>(type: NoInfer<T>): T | null
+  required<T>(type: NoInfer<T>): NonNullable<T>
 }
 
 // ============================================================================
@@ -379,7 +360,7 @@ export interface ArgTypes {
  */
 export type InferModel<T> = T extends RemoteModel<any, infer TTransformed, any>
   ? TTransformed
-  : never;
+  : never
 
 /**
  * Infer the data type of a Query Slice
@@ -387,24 +368,20 @@ export type InferModel<T> = T extends RemoteModel<any, infer TTransformed, any>
 export type InferSlice<T> = T extends QuerySlice<infer TData, any>
   ? TData
   : T extends MutationSlice<infer TData, any>
-  ? TData
-  : T extends SubscriptionSlice<infer TData, any>
-  ? TData
-  : never;
+    ? TData
+    : T extends SubscriptionSlice<infer TData, any>
+      ? TData
+      : never
 
 /**
  * Infer the data type of a Page Query
  */
-export type InferQuery<T> = T extends PageQuery<infer TData, any>
-  ? TData
-  : never;
+export type InferQuery<T> = T extends PageQuery<infer TData, any> ? TData : never
 
 /**
  * Infer the variables type of a Page Query
  */
-export type InferVariables<T> = T extends PageQuery<any, infer TVariables>
-  ? TVariables
-  : never;
+export type InferVariables<T> = T extends PageQuery<any, infer TVariables> ? TVariables : never
 
 // ============================================================================
 // Main GQL API
@@ -414,42 +391,42 @@ export interface GqlApi {
   /**
    * Create a remote model
    */
-  model: ModelFunction;
+  model: ModelFunction
 
   /**
    * Create a query slice
    */
-  querySlice: QuerySliceFunction;
+  querySlice: QuerySliceFunction
 
   /**
    * Create a mutation slice
    */
-  mutationSlice: MutationSliceFunction;
+  mutationSlice: MutationSliceFunction
 
   /**
    * Create a page query
    */
-  query: QueryFunction;
+  query: QueryFunction
 
   /**
    * Create a page mutation
    */
-  mutation: MutationFunction;
+  mutation: MutationFunction
 
   /**
    * Argument type helpers with proper type inference
    */
-  arg: ArgTypes;
+  arg: ArgTypes
 
   /**
    * Input parameter helpers for models
    */
-  input: InputHelpers;
+  input: InputHelpers
 
   /**
    * Type inference utility
    */
-  infer: <T>(model: T) => InferModel<T> | InferSlice<T> | InferQuery<T>;
+  infer: <T>(model: T) => InferModel<T> | InferSlice<T> | InferQuery<T>
 }
 
 // ============================================================================
@@ -457,28 +434,26 @@ export interface GqlApi {
 // ============================================================================
 
 export interface RegistrationOptions {
-  document: string;
-  transforms: Map<string, TransformFunction>;
-  checksum: string;
+  document: string
+  transforms: Map<string, TransformFunction>
+  checksum: string
 }
 
-export interface RegisterFunction {
-  (options: RegistrationOptions): symbol;
-}
+export type RegisterFunction = (options: RegistrationOptions) => symbol
 
 export interface RegistryApi {
   /**
    * Register a generated query document
    */
-  register: RegisterFunction;
+  register: RegisterFunction
 
   /**
    * Get a registered document by ID
    */
-  get(id: symbol): RegistrationOptions | undefined;
+  get(id: symbol): RegistrationOptions | undefined
 
   /**
    * Clear all registrations (for testing)
    */
-  clear(): void;
+  clear(): void
 }

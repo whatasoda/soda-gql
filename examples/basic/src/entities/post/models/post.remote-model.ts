@@ -1,15 +1,15 @@
-import { gql } from "@/gql-system";
-import { comment_remoteModel } from "../../comment/models/comment.remote-model";
-import { user_remoteModel } from "../../user/models/user.remote-model";
+import { gql } from '@/gql-system'
+import { comment_remoteModel } from '../../comment/models/comment.remote-model'
+import { user_remoteModel } from '../../user/models/user.remote-model'
 
-export type PostForIterate = gql.infer<typeof post_remoteModel.forIterate>;
+export type PostForIterate = gql.infer<typeof post_remoteModel.forIterate>
 export type PostForFeature_showPostDetail = gql.infer<
   typeof post_remoteModel.forFeature_showPostDetail
->;
+>
 
 export const post_remoteModel = {
   forIterate: gql.model(
-    "post",
+    'post',
     () => ({
       id: true,
       title: true,
@@ -19,15 +19,15 @@ export const post_remoteModel = {
       id: data.id,
       title: data.title,
       userId: data.userId,
-    })
+    }),
   ),
 
   forFeature_showPostDetail: gql.model(
     [
-      "post",
+      'post',
       {
-        ...gql.input.fromQuery("posts.comments", {
-          prefix: "comments_",
+        ...gql.input.fromQuery('posts.comments', {
+          prefix: 'comments_',
           pick: { where: true, limit: true, orderBy: true },
         }),
       },
@@ -39,7 +39,7 @@ export const post_remoteModel = {
       userId: true,
       comments: relation(
         [
-          "comments",
+          'comments',
           {
             where: args.comments_where,
             limit: args.comments_limit,
@@ -49,9 +49,9 @@ export const post_remoteModel = {
         [
           comment_remoteModel.forDetail(),
           {
-            user: relation("comments.user", user_remoteModel.forReferName()),
+            user: relation('comments.user', user_remoteModel.forReferName()),
           },
-        ]
+        ],
       ),
     }),
     (data) => ({
@@ -63,6 +63,6 @@ export const post_remoteModel = {
         ...comment_remoteModel.forDetail.transform(comment),
         user: user_remoteModel.forReferName.transform(comment.user),
       })),
-    })
+    }),
   ),
-};
+}

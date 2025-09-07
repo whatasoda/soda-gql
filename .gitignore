@@ -139,3 +139,22 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 .serena
+
+# Build directories
+build/
+dist/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test coverage
+coverage/
+*.lcov
+
+# Bun specific
+bun.lockb

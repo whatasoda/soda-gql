@@ -289,3 +289,4 @@ Task agent="test-writer" task="Write failing test for enum generation in package
 - Type checking ensures no TypeScript errors accumulate
 - `bun run quality` combines both Biome and TypeScript checks
 - Commit after each task with descriptive message
+- Update tasks.md and mark tasks as complete after each task
