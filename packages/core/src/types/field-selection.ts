@@ -12,6 +12,12 @@
  */
 
 /**
+ * Helper type to unwrap array types for field selection
+ * For arrays, we want to select fields of the element type, not the array itself
+ */
+type NormalizeField<T> = NonNullable<T> extends ReadonlyArray<infer U> ? U : NonNullable<T>;
+
+/**
  * Helper type to check if a type has __typename (making it a relation)
  */
 type HasTypename<T> = T extends { __typename?: string } ? true : false;
@@ -20,14 +26,14 @@ type HasTypename<T> = T extends { __typename?: string } ? true : false;
  * Helper type to extract fields that are relations (have __typename)
  */
 type ExtractRelationFields<T> = {
-  [K in keyof T as HasTypename<UnwrapArray<T[K]>> extends true ? K : never]: T[K];
+  [K in keyof T as HasTypename<NormalizeField<T[K]>> extends true ? K : never]: T[K];
 };
 
 /**
  * Helper type to extract fields that are not relations (no __typename)
  */
 type ExtractNonRelationFields<T> = {
-  [K in keyof T as HasTypename<UnwrapArray<T[K]>> extends false ? K : never]: T[K];
+  [K in keyof T as HasTypename<NormalizeField<T[K]>> extends false ? K : never]: T[K];
 };
 
 /**
@@ -37,12 +43,6 @@ type ExtractNonRelationFields<T> = {
 type ExtractTypename<T> = T extends { __typename?: infer U extends string }
   ? NonNullable<U>
   : never;
-
-/**
- * Helper type to unwrap array types for field selection
- * For arrays, we want to select fields of the element type, not the array itself
- */
-type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
 /**
  * Field selection for GraphQL types with deep/nested traversal support
@@ -63,15 +63,9 @@ export type FieldSelection<T = any> = T extends T
     } & {
       // Relation fields (have __typename in target type) with deep traversal
       // Arrays are unwrapped so selection applies to elements
-      [K in keyof ExtractRelationFields<T>]?: FieldSelection<UnwrapArray<T[K]>>;
+      [K in keyof ExtractRelationFields<T>]?: FieldSelection<NormalizeField<T[K]>>;
     }
   : never;
-
-/**
- * @deprecated Use FieldSelection instead - it now supports deep selection by default
- */
-// biome-ignore lint/suspicious/noExplicitAny: generic default for type utility
-export type DeepFieldSelection<T = any> = FieldSelection<T>;
 
 /**
  * Conditional field selection based on type
@@ -114,7 +108,7 @@ export type RecursiveFieldSelection<T = any> = {
 } & {
   // Relation fields (have __typename) with recursion
   // Arrays are unwrapped for selection
-  [K in keyof ExtractRelationFields<T>]?: RecursiveFieldSelection<UnwrapArray<T[K]>>;
+  [K in keyof ExtractRelationFields<T>]?: RecursiveFieldSelection<NormalizeField<T[K]>>;
 };
 
 /**
@@ -124,5 +118,5 @@ export type RecursiveFieldSelection<T = any> = {
 export type {
   ExtractRelationFields as ExtractRelations,
   ExtractNonRelationFields as ExtractNonRelations,
-  UnwrapArray,
+  NormalizeField as UnwrapArray,
 };
