@@ -6,8 +6,8 @@
 Represents a type-safe GraphQL fragment with transformation capabilities.
 
 **Fields**:
-- `typeName: keyof GeneratedSchema` - GraphQL type this model represents (type-safe)
-- `fields: (relation: RelationFunction, args?: TParams) => FieldSelection` - Field selector function
+- `typeName: keyof SchemaTypes` - GraphQL type this model represents (type-safe)
+- `fields: (relation: RelationFunction<T>, args?: TParams) => FieldSelection` - Field selector function with context-aware relations
 - `parameters: ParameterDefinition[]` - Injectable parameters for relationships
 - `transform: TransformFunction` - Data normalization function
 - `_brand: unique symbol` - Type brand for type safety
@@ -182,13 +182,29 @@ PageQuery.arguments → ArgumentMapping → SliceParameters → RemoteModelParam
 Definition → Analysis → Generation → Registration → Reference → Execution
 ```
 
+## Generated Schema Structure
+
+The generated `graphql-system` directory contains:
+
+```
+graphql-system/
+├── index.ts           # Main export with gql API
+├── types.ts           # SchemaTypes definitions
+├── inputs.ts          # SchemaInputTypes definitions
+├── scalars.ts         # SchemaScalarTypes definitions
+├── enums.ts           # SchemaEnumTypes definitions
+├── react.ts           # React hooks (if configured)
+└── package.json       # Package configuration
+
+```
+
 ## Validation Schemas (Zod)
 
 ```typescript
 const RemoteModelSchema = z.object({
-  typeName: z.string(),
-  fields: FieldSelectionSchema,
-  parameters: z.array(ParameterSchema),
+  typeName: z.enum(Object.keys(SchemaTypes)),
+  fields: z.function(),
+  parameters: z.array(ParameterSchema).optional(),
   transform: z.function()
 });
 

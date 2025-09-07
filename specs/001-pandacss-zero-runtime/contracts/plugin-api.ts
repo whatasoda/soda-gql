@@ -16,9 +16,9 @@ export const PluginConfigSchema = z.object({
   schemaPath: z.string(),
   
   /**
-   * Output directory for generated types
+   * Output directory for generated system (like PandaCSS's styled-system)
    */
-  outputDir: z.string().optional().default('./src/__generated__'),
+  systemDir: z.string().optional().default('./src/graphql-system'),
   
   /**
    * Enable verbose logging

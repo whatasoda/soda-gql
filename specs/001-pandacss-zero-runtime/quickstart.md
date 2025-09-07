@@ -27,7 +27,7 @@ preload = ["@soda-gql/plugin-bun"]
 
 [plugin."@soda-gql/plugin-bun"]
 schemaPath = "./schema.graphql"
-outputDir = "./src/__generated__"
+systemDir = "./src/graphql-system"  # Generated system directory
 ```
 
 ### 2. Initialize Schema
@@ -64,16 +64,19 @@ type Query {
 }
 ```
 
-### 3. Generate Base Types
+### 3. Generate GraphQL System
 
 ```bash
 bun run @soda-gql/core generate
 ```
 
-This creates type definitions in `src/__generated__/` including:
-- Complete type definitions for all GraphQL types
-- Proper TypeScript types for IDE autocomplete
-- Type-safe field selection support
+This creates a `graphql-system/` directory (similar to PandaCSS's `styled-system/`) containing:
+- Complete type definitions for all GraphQL types, inputs, scalars, and enums
+- The `gql` API with proper TypeScript types
+- React hooks and utilities (if configured)
+- All necessary type information for IDE autocomplete
+
+You import everything from this generated system rather than from the core package directly.
 
 ## Basic Usage
 
@@ -83,8 +86,7 @@ Create type-safe representations of your GraphQL types:
 
 ```typescript
 // src/models/user.remote-model.ts
-import { gql } from "@soda-gql/core";
-import type { Schema } from "@/__generated__/schema";  // Generated types
+import { gql } from "@/graphql-system";  // Generated system includes all types
 
 // Define a basic user model
 export const userBasic = gql.model(
@@ -134,7 +136,7 @@ Define domain-specific queries:
 
 ```typescript
 // src/slices/user.slices.ts
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 import { userBasic, userWithPosts } from "../models/user.remote-model";
 
 // Slice for fetching a single user
@@ -171,8 +173,8 @@ Combine slices for specific pages:
 
 ```typescript
 // src/pages/UserProfile.tsx
-import { gql } from "@soda-gql/core";
-import { useQuery } from "@soda-gql/react";
+import { gql } from "@/graphql-system";
+import { useQuery } from "@/graphql-system/react";
 import { getUserWithPostsSlice } from "../slices/user.slices";
 
 // Define the page query
@@ -214,7 +216,7 @@ Define models with injectable parameters:
 
 ```typescript
 // src/models/post.remote-model.ts
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 
 export const postWithComments = gql.model(
   ["Post", {
@@ -248,7 +250,7 @@ Combine slices from different modules:
 
 ```typescript
 // src/pages/Dashboard.tsx
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 import { listUsersSlice } from "../slices/user.slices";
 import { recentPostsSlice } from "../slices/post.slices";
 import { statsSlice } from "../slices/stats.slices";

@@ -13,14 +13,44 @@ import { z } from 'zod';
 // ============================================================================
 
 /**
- * These types are generated from GraphQL schema and imported by users
- * Example: import type { Schema } from '@/__generated__/schema';
+ * These interfaces are generated from GraphQL schema
+ * Users import via: import { gql } from '@/graphql-system';
+ * All schema types are accessible through the generated system
  */
-export interface GeneratedSchema {
-  Query: any;
-  Mutation: any;
-  // All GraphQL types from schema...
+
+// GraphQL Object Types (User, Post, etc.)
+export interface SchemaTypes {
   [typeName: string]: any;
+}
+
+// GraphQL Input Types (CreateUserInput, UpdatePostInput, etc.)
+export interface SchemaInputTypes {
+  [inputName: string]: any;
+}
+
+// GraphQL Scalar Types (ID, String, Int, Float, Boolean, custom scalars)
+export interface SchemaScalarTypes {
+  ID: string;
+  String: string;
+  Int: number;
+  Float: number;
+  Boolean: boolean;
+  [scalarName: string]: any;
+}
+
+// GraphQL Enum Types (Status, Role, etc.)
+export interface SchemaEnumTypes {
+  [enumName: string]: string;
+}
+
+// Combined schema interface for convenience
+export interface GeneratedSchema {
+  types: SchemaTypes;
+  inputs: SchemaInputTypes;
+  scalars: SchemaScalarTypes;
+  enums: SchemaEnumTypes;
+  Query: SchemaTypes['Query'];
+  Mutation: SchemaTypes['Mutation'];
 }
 
 // ============================================================================
@@ -88,34 +118,35 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
  */
 export interface ModelFunction {
   // Simple form without parameters
-  <TType extends keyof GeneratedSchema, TTransformed>(
+  <TType extends keyof SchemaTypes, TTransformed>(
     typeName: TType,
-    fields: (relation: RelationFunction) => FieldSelection<GeneratedSchema[TType]>,
-    transform: TransformFunction<GeneratedSchema[TType], TTransformed>
-  ): RemoteModel<GeneratedSchema[TType], TTransformed, {}>;
+    fields: (relation: RelationFunction<SchemaTypes[TType]>) => FieldSelection<SchemaTypes[TType]>,
+    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
+  ): RemoteModel<SchemaTypes[TType], TTransformed, {}>;
   
   // Complex form with parameters
-  <TType extends keyof GeneratedSchema, TTransformed, TParams>(
+  <TType extends keyof SchemaTypes, TTransformed, TParams>(
     definition: [TType, TParams],
-    fields: (relation: RelationFunction, args: TParams) => FieldSelection<GeneratedSchema[TType]>,
-    transform: TransformFunction<GeneratedSchema[TType], TTransformed>
-  ): RemoteModel<GeneratedSchema[TType], TTransformed, TParams>;
+    fields: (relation: RelationFunction<SchemaTypes[TType]>, args: NoInfer<TParams>) => FieldSelection<SchemaTypes[TType]>,
+    transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
+  ): RemoteModel<SchemaTypes[TType], TTransformed, TParams>;
 }
 
 /**
  * Relation function for nested selections in models
+ * Type parameter TContext provides proper field suggestions
  */
-export interface RelationFunction {
+export interface RelationFunction<TContext = any> {
   // Select a related field with a model
-  <TModel extends RemoteModel>(
-    field: string,
-    model: TModel
+  <TField extends keyof TContext, TModel extends RemoteModel>(
+    field: TField,
+    model: NoInfer<TModel>
   ): TModel['_transformed'];
   
   // Select a related field with arguments and model
-  <TModel extends RemoteModel>(
-    definition: [string, any],
-    model: TModel | [TModel, FieldSelection<any>]
+  <TField extends keyof TContext, TModel extends RemoteModel, TArgs>(
+    definition: [TField, TArgs],
+    model: NoInfer<TModel> | [NoInfer<TModel>, FieldSelection<any>]
   ): TModel['_transformed'];
 }
 
@@ -150,21 +181,21 @@ export interface Argument<T = any> {
 /**
  * Slice selection builder with type-safe field names
  */
-export interface SelectionBuilder<TContext extends keyof GeneratedSchema = 'Query'> {
+export interface SelectionBuilder<TContext extends keyof SchemaTypes = 'Query'> {
   /**
    * Select a field with a remote model
    */
-  <TField extends keyof GeneratedSchema[TContext], TModel extends RemoteModel>(
+  <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel>(
     field: TField,
-    model: TModel
+    model: NoInfer<TModel>
   ): TModel['_transformed'];
   
   /**
    * Select a field with arguments and model (tuple syntax)
    */
-  <TField extends keyof GeneratedSchema[TContext], TModel extends RemoteModel, TArgs>(
-    definition: [TField, TArgs],
-    model: TModel
+  <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel, TArgs>(
+    definition: [TField, NoInfer<TArgs>],
+    model: NoInfer<TModel>
   ): TModel['_transformed'];
 }
 
@@ -306,16 +337,26 @@ export interface MutationFunction {
 // ============================================================================
 
 export interface ArgTypes {
-  string(): string;
-  int(): number;
-  float(): number;
-  boolean(): boolean;
-  uuid(): string;
-  id(): string;
-  json<T = any>(): T;
-  array<T>(type: T): T[];
-  nullable<T>(type: T): T | null;
-  required<T>(type: T): T;
+  // Scalar types
+  string(): SchemaScalarTypes['String'];
+  int(): SchemaScalarTypes['Int'];
+  float(): SchemaScalarTypes['Float'];
+  boolean(): SchemaScalarTypes['Boolean'];
+  id(): SchemaScalarTypes['ID'];
+  
+  // Custom scalars
+  scalar<K extends keyof SchemaScalarTypes>(name: K): SchemaScalarTypes[K];
+  
+  // Enum types
+  enum<K extends keyof SchemaEnumTypes>(name: K): SchemaEnumTypes[K];
+  
+  // Input types
+  input<K extends keyof SchemaInputTypes>(name: K): SchemaInputTypes[K];
+  
+  // Modifiers
+  array<T>(type: NoInfer<T>): T[];
+  nullable<T>(type: NoInfer<T>): T | null;
+  required<T>(type: NoInfer<T>): NonNullable<T>;
 }
 
 // ============================================================================
