@@ -160,6 +160,12 @@ describe("FieldSelection type", () => {
   });
 
   it("should support conditional field selection", () => {
+    type Review = {
+      id: string;
+      rating: number;
+      comment: string;
+    };
+
     type Product = {
       id: string;
       name: string;
@@ -169,21 +175,34 @@ describe("FieldSelection type", () => {
         tags: string[];
         category: string;
       };
+      __relation__: {
+        reviews?: Review[]; // Optional relation
+        relatedProducts?: Product[]; // Optional recursive relation
+      };
     };
 
     const selection: FieldSelection<Product> = {
       id: true,
       name: true,
       price: true,
-      discount: true, // Optional field
-      metadata: {
-        tags: true,
-        category: true,
+      discount: true, // Optional scalar field
+      metadata: true, // Optional object field - boolean only
+      reviews: {
+        // Optional relation - can have nested selection
+        id: true,
+        rating: true,
+        comment: false,
+      },
+      relatedProducts: {
+        id: true,
+        name: true,
+        price: true,
       },
     };
 
     expect(selection.discount).toBe(true);
-    expect(selection.metadata).toBeDefined();
+    expect(selection.metadata).toBe(true);
+    expect(selection.reviews).toBeDefined();
   });
 
   it("should support union type selection", () => {
@@ -206,6 +225,18 @@ describe("FieldSelection type", () => {
   });
 
   it("should support partial selection", () => {
+    type Post = {
+      id: string;
+      title: string;
+      content: string;
+    };
+
+    type Settings = {
+      theme: string;
+      notifications: boolean;
+      privacy: string;
+    };
+
     type FullUser = {
       id: string;
       email: string;
@@ -213,25 +244,35 @@ describe("FieldSelection type", () => {
         name: string;
         bio: string;
         avatar: string;
-        settings: {
-          theme: string;
-          notifications: boolean;
-        };
+      };
+      __relation__: {
+        posts: Post[];
+        followers: FullUser[];
+        settings: Settings;
       };
     };
 
     // Only select some fields
     const partialSelection: FieldSelection<FullUser> = {
       id: true,
-      profile: {
-        name: true,
-        avatar: true,
-        // bio and settings not selected
+      // email not selected
+      profile: true, // Regular object - boolean only
+      posts: {
+        // Relation - partial selection of fields
+        id: true,
+        title: true,
+        // content not selected
+      },
+      // followers not selected
+      settings: {
+        theme: true,
+        // notifications and privacy not selected
       },
     };
 
     expect(partialSelection.email).toBeUndefined();
-    expect((partialSelection.profile as any).bio).toBeUndefined();
+    expect(partialSelection.followers).toBeUndefined();
+    expect((partialSelection.posts as any).content).toBeUndefined();
   });
 
   it("should handle nested array relations", () => {
