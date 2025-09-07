@@ -6,31 +6,35 @@ import type { RemoteModel, TransformFunction } from "../../types/remote-model";
 describe("RemoteModel type", () => {
   it("should have correct type structure", () => {
     // This test verifies the RemoteModel interface exists and has correct properties
-    const model: RemoteModel<{ id: string; name: string }, { id: string }, {}> = {
-      _type: hiddenBrand(),
-      _transformed: hiddenBrand(),
-      _params: hiddenBrand(),
-      typeName: "User",
-      fields: {
-        id: true,
-        name: true,
-      },
-      transform: (data) => ({ id: data.id }),
-    };
+    const model: RemoteModel<{ __typename: "User"; id: string; name: string }, { id: string }, {}> =
+      {
+        _type: hiddenBrand(),
+        _transformed: hiddenBrand(),
+        _params: hiddenBrand(),
+        typeName: "User",
+        fields: {
+          __typename__: "User",
+          id: true,
+          name: true,
+        },
+        transform: (data) => ({ id: data.id }),
+      };
 
     expect(model.typeName).toBe("User");
-    expect(model.fields).toEqual({ id: true, name: true });
+    expect(model.fields).toEqual({ __typename__: "User", id: true, name: true });
     expect(typeof model.transform).toBe("function");
   });
 
-  it("should support nested field selection with __relation__", () => {
+  it("should support nested field selection with __typename", () => {
     type Post = {
+      __typename: "Post";
       id: string;
       title: string;
       content: string;
     };
 
     type User = {
+      __typename: "User";
       id: string;
       name: string;
       email: string;
@@ -38,24 +42,25 @@ describe("RemoteModel type", () => {
         bio: string;
         avatar: string;
       };
-      __relation__: {
-        posts: Post[]; // Array relation - selection applies to Post type, not array
-        friends: User[]; // Array relation - selection applies to User type, not array
-      };
+      posts: Post[]; // Array relation - identified by __typename in Post
+      friends: User[]; // Array relation - identified by __typename in User
     };
 
     const fields: FieldSelection<User> = {
+      __typename__: "User",
       id: true,
       name: true,
       email: false,
-      profile: true, // Regular object field, not a relation
+      profile: true, // Regular object field (no __typename), not a relation
       posts: {
-        // Relation field from __relation__
+        __typename__: "Post",
+        // Relation field identified by __typename
         id: true,
         title: true,
         content: false,
       },
       friends: {
+        __typename__: "User",
         // Nested relation
         id: true,
         name: true,
