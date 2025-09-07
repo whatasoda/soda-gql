@@ -68,16 +68,19 @@ describe("FieldSelection type", () => {
   });
 
   it("should support array relations via __relation__", () => {
+    type Post = {
+      id: string;
+      title: string;
+      content: string;
+    };
+
     type Blog = {
       id: string;
       title: string;
       tags: string[]; // Simple array, not a relation
       __relation__: {
-        posts: Array<{
-          id: string;
-          title: string;
-          content: string;
-        }>;
+        posts: Post[]; // Array relation - selection applies to Post type
+        featuredPost: Post; // Single relation
       };
     };
 
@@ -86,16 +89,24 @@ describe("FieldSelection type", () => {
       title: true,
       tags: true, // Simple array field - boolean only
       posts: {
-        // Relation array - nested selection
+        // Array relation - selection applies to each Post element
         id: true,
         title: true,
         content: false,
+      },
+      featuredPost: {
+        // Single relation - same selection structure
+        id: true,
+        title: true,
+        content: true,
       },
     };
 
     expect(selection.tags).toBe(true);
     expect(selection.posts).toBeDefined();
     expect((selection.posts as any).title).toBe(true);
+    // Both array and single relations use same selection structure
+    expect(typeof selection.posts).toBe(typeof selection.featuredPost);
   });
 
   it("should support deep field selection with __relation__", () => {
@@ -221,6 +232,47 @@ describe("FieldSelection type", () => {
 
     expect(partialSelection.email).toBeUndefined();
     expect((partialSelection.profile as any).bio).toBeUndefined();
+  });
+
+  it("should handle nested array relations", () => {
+    type Comment = {
+      id: string;
+      text: string;
+      __relation__: {
+        replies: Comment[]; // Recursive array relation
+      };
+    };
+
+    type Post = {
+      id: string;
+      title: string;
+      __relation__: {
+        comments: Comment[];
+      };
+    };
+
+    const selection: FieldSelection<Post> = {
+      id: true,
+      title: true,
+      comments: {
+        // Selection for Comment array elements
+        id: true,
+        text: true,
+        replies: {
+          // Nested array relation - still selects element fields
+          id: true,
+          text: true,
+          replies: {
+            // Can continue recursively
+            id: true,
+            text: false,
+          },
+        },
+      },
+    };
+
+    expect(selection.comments).toBeDefined();
+    expect((selection.comments as any).replies).toBeDefined();
   });
 
   it("should handle recursive types with __relation__", () => {

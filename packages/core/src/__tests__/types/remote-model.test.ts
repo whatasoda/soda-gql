@@ -38,8 +38,8 @@ describe("RemoteModel type", () => {
         avatar: string;
       };
       __relation__: {
-        posts: Post[];
-        friends: User[];
+        posts: Post[]; // Array relation - selection applies to Post type, not array
+        friends: User[]; // Array relation - selection applies to User type, not array
       };
     };
 

@@ -14,29 +14,37 @@ type ExtractRelations<T> = T extends { __relation__: infer R } ? R : {};
 type ExtractNonRelations<T> = Omit<T, "__relation__">;
 
 /**
+ * Helper type to unwrap array types for field selection
+ * For arrays, we want to select fields of the element type, not the array itself
+ */
+type UnwrapArray<T> = T extends Array<infer U> ? U : T;
+
+/**
  * Basic field selection for GraphQL types with proper type inference
  * Relations are explicitly defined in __relation__ property
+ * For array relations, the selection applies to each element
  */
 export type FieldSelection<T = any> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
   // Relation fields from __relation__
-  [K in keyof ExtractRelations<T>]?: boolean | FieldSelection<ExtractRelations<T>[K]>;
+  // Arrays are unwrapped so selection applies to elements
+  [K in keyof ExtractRelations<T>]?: boolean | FieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
 };
 
 /**
  * Deep field selection that allows nested object traversal
  * Uses __relation__ to determine traversable relations
+ * Arrays are automatically unwrapped
  */
 export type DeepFieldSelection<T = any> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
   // Relation fields from __relation__ with deep traversal
-  [K in keyof ExtractRelations<T>]?: ExtractRelations<T>[K] extends Array<infer U>
-    ? DeepFieldSelection<U>
-    : DeepFieldSelection<ExtractRelations<T>[K]>;
+  // Arrays are unwrapped for selection
+  [K in keyof ExtractRelations<T>]?: DeepFieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
 };
 
 /**
@@ -67,18 +75,18 @@ export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T,
 /**
  * Helper type for recursive field selection
  * Uses __relation__ for determining recursive traversal
+ * Arrays are automatically unwrapped
  */
 export type RecursiveFieldSelection<T> = {
   // Regular fields (non-relations)
   [K in keyof ExtractNonRelations<T>]?: boolean;
 } & {
   // Relation fields from __relation__ with recursion
-  [K in keyof ExtractRelations<T>]?: ExtractRelations<T>[K] extends Array<infer U>
-    ? RecursiveFieldSelection<U>
-    : RecursiveFieldSelection<ExtractRelations<T>[K]>;
+  // Arrays are unwrapped for selection
+  [K in keyof ExtractRelations<T>]?: RecursiveFieldSelection<UnwrapArray<ExtractRelations<T>[K]>>;
 };
 
 /**
  * Export helper types for external use
  */
-export type { ExtractRelations, ExtractNonRelations };
+export type { ExtractRelations, ExtractNonRelations, UnwrapArray };
