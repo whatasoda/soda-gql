@@ -109,3 +109,39 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## Project: Zero-runtime GraphQL Query Generation
+
+This project implements a zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach.
+
+### Tech Stack
+- **Language**: TypeScript 5.x with Bun runtime
+- **Build**: Bun plugin system for static analysis and transformation
+- **Error Handling**: neverthrow for type-safe Results
+- **Validation**: Zod for runtime validation
+- **Testing**: Bun test with TDD (t_wada methodology)
+
+### Key Concepts
+- **Remote Models**: Type-safe GraphQL fragments with transforms
+- **Query Slices**: Domain-specific query definitions
+- **Page Queries**: Composed queries from multiple slices
+- **Zero Runtime**: All transformations at build time
+
+### Commands
+```bash
+# Generate base types from schema
+bun run @soda-gql/core generate
+
+# Run tests
+bun test
+
+# Build with transformations
+bun run build
+
+# Type check
+bun run typecheck
+```
+
+### Recent Changes
+- 001-pandacss-zero-runtime: Added TypeScript + Bun plugin architecture
+- Initial project setup with examples/basic implementation

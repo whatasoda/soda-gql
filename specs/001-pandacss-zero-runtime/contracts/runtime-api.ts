@@ -1,0 +1,369 @@
+/**
+ * Runtime API Contract for Zero-runtime GraphQL Generation
+ * This defines the public API that developers use in their application code
+ */
+
+import { z } from 'zod';
+
+// ============================================================================
+// Remote Model API
+// ============================================================================
+
+/**
+ * Field selection for GraphQL types
+ */
+export type FieldSelection<T = any> = {
+  [K in keyof T]?: T[K] extends object ? boolean | FieldSelection<T[K]> : boolean;
+};
+
+/**
+ * Transform function for normalizing data
+ */
+export type TransformFunction<TInput = any, TOutput = any> = (
+  data: TInput
+) => TOutput;
+
+/**
+ * Parameter definition for parameterized fragments
+ */
+export interface Parameter<T = any> {
+  name: string;
+  type: T;
+  required?: boolean;
+  defaultValue?: T;
+}
+
+/**
+ * Remote Model definition
+ */
+export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
+  /**
+   * Internal type brand
+   */
+  readonly _type: TType;
+  readonly _transformed: TTransformed;
+  readonly _params: TParams;
+  
+  /**
+   * GraphQL type name
+   */
+  typeName: string;
+  
+  /**
+   * Field selection
+   */
+  fields: FieldSelection<TType>;
+  
+  /**
+   * Transform function
+   */
+  transform: TransformFunction<TType, TTransformed>;
+  
+  /**
+   * Parameters for this model
+   */
+  parameters?: TParams;
+}
+
+/**
+ * Remote Model creation function
+ */
+export interface FragmentFunction {
+  <TType, TTransformed, TParams = {}>(
+    typeName: string,
+    fields: () => FieldSelection<TType>,
+    transform: TransformFunction<TType, TTransformed>,
+    parameters?: TParams
+  ): RemoteModel<TType, TTransformed, TParams>;
+}
+
+// ============================================================================
+// Query/Mutation/Subscription Slice API
+// ============================================================================
+
+/**
+ * Argument definition
+ */
+export interface Argument<T = any> {
+  name: string;
+  type: T;
+  required?: boolean;
+  defaultValue?: T;
+}
+
+/**
+ * Slice selection builder
+ */
+export interface SelectionBuilder<TContext = any> {
+  /**
+   * Select a field with a remote model
+   */
+  <TModel extends RemoteModel>(
+    field: string,
+    model: TModel
+  ): TModel['_transformed'];
+  
+  /**
+   * Select a field with arguments
+   */
+  <TModel extends RemoteModel, TArgs>(
+    field: string,
+    args: TArgs,
+    model: TModel
+  ): TModel['_transformed'];
+}
+
+/**
+ * Query Slice definition
+ */
+export interface QuerySlice<TData = any, TArgs = any> {
+  readonly _data: TData;
+  readonly _args: TArgs;
+  
+  name: string;
+  selections: (query: SelectionBuilder, args: TArgs) => TData;
+  transform: TransformFunction<any, TData>;
+}
+
+/**
+ * Mutation Slice definition
+ */
+export interface MutationSlice<TData = any, TArgs = any> {
+  readonly _data: TData;
+  readonly _args: TArgs;
+  
+  name: string;
+  selections: (mutate: SelectionBuilder, args: TArgs) => TData;
+  transform: TransformFunction<any, TData>;
+}
+
+/**
+ * Subscription Slice definition
+ */
+export interface SubscriptionSlice<TData = any, TArgs = any> {
+  readonly _data: TData;
+  readonly _args: TArgs;
+  
+  name: string;
+  selections: (subscribe: SelectionBuilder, args: TArgs) => TData;
+  transform: TransformFunction<any, TData>;
+}
+
+/**
+ * Slice creation functions
+ */
+export interface QuerySliceFunction {
+  <TData, TArgs = {}>(
+    name: string,
+    selections: (query: SelectionBuilder, args: TArgs) => TData,
+    transform?: TransformFunction<any, TData>
+  ): QuerySlice<TData, TArgs>;
+}
+
+export interface MutationSliceFunction {
+  <TData, TArgs = {}>(
+    name: string,
+    selections: (mutate: SelectionBuilder, args: TArgs) => TData,
+    transform?: TransformFunction<any, TData>
+  ): MutationSlice<TData, TArgs>;
+}
+
+export interface SubscriptionSliceFunction {
+  <TData, TArgs = {}>(
+    name: string,
+    selections: (subscribe: SelectionBuilder, args: TArgs) => TData,
+    transform?: TransformFunction<any, TData>
+  ): SubscriptionSlice<TData, TArgs>;
+}
+
+// ============================================================================
+// Page Query API
+// ============================================================================
+
+/**
+ * Slice reference in a page query
+ */
+export interface SliceReference<TSlice = any> {
+  slice: TSlice;
+  args?: any;
+}
+
+/**
+ * Page Query definition
+ */
+export interface PageQuery<TData = any, TVariables = any> {
+  readonly _data: TData;
+  readonly _variables: TVariables;
+  
+  name: string;
+  slices: SliceReference[];
+  document?: string; // Generated at build time
+  registrationId?: symbol; // Assigned at registration
+}
+
+/**
+ * Page Query builder
+ */
+export interface QueryBuilder<TContext = any> {
+  /**
+   * Add a query slice
+   */
+  <TSlice extends QuerySlice>(
+    slice: TSlice,
+    args?: TSlice['_args']
+  ): TSlice['_data'];
+  
+  /**
+   * Add multiple slices
+   */
+  combine<TSlices extends QuerySlice[]>(
+    ...slices: TSlices
+  ): { [K in keyof TSlices]: TSlices[K]['_data'] };
+}
+
+/**
+ * Page Query creation function
+ */
+export interface QueryFunction {
+  <TData, TVariables = {}>(
+    definition: [string, TVariables],
+    builder: (query: QueryBuilder, vars: TVariables) => TData
+  ): PageQuery<TData, TVariables>;
+}
+
+export interface MutationFunction {
+  <TData, TVariables = {}>(
+    definition: [string, TVariables],
+    builder: (mutate: QueryBuilder, vars: TVariables) => TData
+  ): PageQuery<TData, TVariables>;
+}
+
+// ============================================================================
+// Argument Type Definitions
+// ============================================================================
+
+export interface ArgTypes {
+  string(): string;
+  int(): number;
+  float(): number;
+  boolean(): boolean;
+  uuid(): string;
+  id(): string;
+  json<T = any>(): T;
+  array<T>(type: T): T[];
+  nullable<T>(type: T): T | null;
+  required<T>(type: T): T;
+}
+
+// ============================================================================
+// Type Inference Utilities
+// ============================================================================
+
+/**
+ * Infer the output type of a Remote Model
+ */
+export type InferModel<T> = T extends RemoteModel<any, infer TTransformed, any>
+  ? TTransformed
+  : never;
+
+/**
+ * Infer the data type of a Query Slice
+ */
+export type InferSlice<T> = T extends QuerySlice<infer TData, any>
+  ? TData
+  : T extends MutationSlice<infer TData, any>
+  ? TData
+  : T extends SubscriptionSlice<infer TData, any>
+  ? TData
+  : never;
+
+/**
+ * Infer the data type of a Page Query
+ */
+export type InferQuery<T> = T extends PageQuery<infer TData, any>
+  ? TData
+  : never;
+
+/**
+ * Infer the variables type of a Page Query
+ */
+export type InferVariables<T> = T extends PageQuery<any, infer TVariables>
+  ? TVariables
+  : never;
+
+// ============================================================================
+// Main GQL API
+// ============================================================================
+
+export interface GqlApi {
+  /**
+   * Create a remote model (fragment)
+   */
+  fragment: FragmentFunction;
+  
+  /**
+   * Create a query slice
+   */
+  querySlice: QuerySliceFunction;
+  
+  /**
+   * Create a mutation slice
+   */
+  mutationSlice: MutationSliceFunction;
+  
+  /**
+   * Create a subscription slice
+   */
+  subscriptionSlice: SubscriptionSliceFunction;
+  
+  /**
+   * Create a page query
+   */
+  query: QueryFunction;
+  
+  /**
+   * Create a page mutation
+   */
+  mutation: MutationFunction;
+  
+  /**
+   * Argument type helpers
+   */
+  arg: ArgTypes;
+  
+  /**
+   * Type inference utility
+   */
+  infer: <T>(model: T) => InferModel<T> | InferSlice<T> | InferQuery<T>;
+}
+
+// ============================================================================
+// Registration API (Internal, used by generated code)
+// ============================================================================
+
+export interface RegistrationOptions {
+  document: string;
+  transforms: Map<string, TransformFunction>;
+  checksum: string;
+}
+
+export interface RegisterFunction {
+  (options: RegistrationOptions): symbol;
+}
+
+export interface RegistryApi {
+  /**
+   * Register a generated query document
+   */
+  register: RegisterFunction;
+  
+  /**
+   * Get a registered document by ID
+   */
+  get(id: symbol): RegistrationOptions | undefined;
+  
+  /**
+   * Clear all registrations (for testing)
+   */
+  clear(): void;
+}
