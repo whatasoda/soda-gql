@@ -4,12 +4,14 @@
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 ## Format: `[ID] [P?] Description`
+
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 - **CRITICAL**: Never import from `/specs/` - copy types to packages
 - **Quality Checks**: Run `bun run quality` after each sub-phase
 
 ## Path Conventions
+
 - Monorepo structure with packages/
 - Direct TypeScript imports between packages (no build step initially)
 - No file extensions in imports
@@ -17,6 +19,7 @@
 ## Phase A: Runtime Implementation (Foundation)
 
 ### A.1: Project Setup
+
 - [ ] T001 Initialize monorepo with Bun workspaces in package.json
 - [ ] T002 Create base TypeScript configuration files (tsconfig.json, tsconfig.base.json)
 - [ ] T003 [P] Create package directories: packages/core, packages/codegen, packages/builder, packages/plugin-babel, packages/cli
@@ -25,21 +28,23 @@
 - [ ] T006 [P] Install core dependencies: bun add neverthrow zod@4
 - [ ] T007 Setup Biome v2 for linting and formatting: bun add -D @biomejs/biome@2
 - [ ] T008 Configure biome.json with TypeScript, import sorting, and formatting rules
-- [ ] T009 Add root package.json scripts: "typecheck": "tsc --noEmit", "biome:check": "biome check --write .", "quality": "bun run biome:check && bun run typecheck"
+- [ ] T009 Add root package.json scripts: "typecheck": "bun --filter='\*' typecheck", "biome:check": "biome check --write .", "quality": "bun run biome:check && bun run typecheck"
 - [ ] T010 Create .gitignore with node_modules, dist, coverage patterns
 - [ ] T011 Run initial quality check: bun run quality
 
 ### A.2: Core Package - Type Definitions (TDD - Tests First)
+
 **CRITICAL: Write tests first, they MUST fail before implementation**
 
-- [ ] T012 [P] Write failing test for RemoteModel type in packages/core/src/__tests__/types/remote-model.test.ts
-- [ ] T013 [P] Write failing test for QuerySlice type in packages/core/src/__tests__/types/query-slice.test.ts
-- [ ] T014 [P] Write failing test for MutationSlice type in packages/core/src/__tests__/types/mutation-slice.test.ts
-- [ ] T015 [P] Write failing test for PageQuery type in packages/core/src/__tests__/types/page-query.test.ts
-- [ ] T016 [P] Write failing test for FieldSelection type in packages/core/src/__tests__/types/field-selection.test.ts
+- [ ] T012 [P] Write failing test for RemoteModel type in packages/core/src/**tests**/types/remote-model.test.ts
+- [ ] T013 [P] Write failing test for QuerySlice type in packages/core/src/**tests**/types/query-slice.test.ts
+- [ ] T014 [P] Write failing test for MutationSlice type in packages/core/src/**tests**/types/mutation-slice.test.ts
+- [ ] T015 [P] Write failing test for PageQuery type in packages/core/src/**tests**/types/page-query.test.ts
+- [ ] T016 [P] Write failing test for FieldSelection type in packages/core/src/**tests**/types/field-selection.test.ts
 - [ ] T017 Quality check: bun run quality
 
 ### A.3: Core Package - Type Implementation (After tests fail)
+
 - [ ] T018 [P] Implement RemoteModel interface in packages/core/src/types/remote-model.ts (copy from spec, don't import)
 - [ ] T019 [P] Implement QuerySlice interface in packages/core/src/types/query-slice.ts
 - [ ] T020 [P] Implement MutationSlice interface in packages/core/src/types/mutation-slice.ts
@@ -49,14 +54,16 @@
 - [ ] T024 Quality check: bun run quality
 
 ### A.4: Core Package - createGql Function (TDD)
-- [ ] T025 Write failing test for createGql factory in packages/core/src/__tests__/create-gql.test.ts
-- [ ] T026 Write failing test for gql.model() method in packages/core/src/__tests__/model.test.ts
-- [ ] T027 Write failing test for gql.query() method in packages/core/src/__tests__/query.test.ts
-- [ ] T028 Write failing test for gql.mutation() method in packages/core/src/__tests__/mutation.test.ts
-- [ ] T029 Write failing test for gql.page() method in packages/core/src/__tests__/page.test.ts
+
+- [ ] T025 Write failing test for createGql factory in packages/core/src/**tests**/create-gql.test.ts
+- [ ] T026 Write failing test for gql.model() method in packages/core/src/**tests**/model.test.ts
+- [ ] T027 Write failing test for gql.query() method in packages/core/src/**tests**/query.test.ts
+- [ ] T028 Write failing test for gql.mutation() method in packages/core/src/**tests**/mutation.test.ts
+- [ ] T029 Write failing test for gql.page() method in packages/core/src/**tests**/page.test.ts
 - [ ] T030 Quality check: bun run quality
 
 ### A.5: Core Package - createGql Implementation
+
 - [ ] T031 Implement createGql factory function in packages/core/src/create-gql.ts with Generic constraints
 - [ ] T032 [P] Implement model utility in packages/core/src/utilities/model.ts using neverthrow
 - [ ] T033 [P] Implement query utility in packages/core/src/utilities/query.ts using neverthrow
@@ -66,12 +73,14 @@
 - [ ] T037 Quality check: bun run quality
 
 ### A.6: Core Package - Runtime Document Generation (TDD)
-- [ ] T038 Write failing test for GraphQL document generation in packages/core/src/__tests__/document-generator.test.ts
-- [ ] T039 Write failing test for field selection merging in packages/core/src/__tests__/field-merger.test.ts
-- [ ] T040 Write failing test for argument mapping in packages/core/src/__tests__/argument-mapper.test.ts
+
+- [ ] T038 Write failing test for GraphQL document generation in packages/core/src/**tests**/document-generator.test.ts
+- [ ] T039 Write failing test for field selection merging in packages/core/src/**tests**/field-merger.test.ts
+- [ ] T040 Write failing test for argument mapping in packages/core/src/**tests**/argument-mapper.test.ts
 - [ ] T041 Quality check: bun run quality
 
 ### A.7: Core Package - Runtime Document Implementation
+
 - [ ] T042 Implement document generator in packages/core/src/runtime/document-generator.ts
 - [ ] T043 Implement field merger in packages/core/src/runtime/field-merger.ts
 - [ ] T044 Implement argument mapper in packages/core/src/runtime/argument-mapper.ts
@@ -79,22 +88,25 @@
 - [ ] T046 Quality check: bun run quality
 
 ### A.8: Core Package - Integration Tests
-- [ ] T047 Write integration test for complete RemoteModel flow in packages/core/src/__tests__/integration/remote-model.test.ts
-- [ ] T048 Write integration test for QuerySlice composition in packages/core/src/__tests__/integration/query-slice.test.ts
-- [ ] T049 Write integration test for PageQuery merging in packages/core/src/__tests__/integration/page-query.test.ts
+
+- [ ] T047 Write integration test for complete RemoteModel flow in packages/core/src/**tests**/integration/remote-model.test.ts
+- [ ] T048 Write integration test for QuerySlice composition in packages/core/src/**tests**/integration/query-slice.test.ts
+- [ ] T049 Write integration test for PageQuery merging in packages/core/src/**tests**/integration/page-query.test.ts
 - [ ] T050 Create core package index in packages/core/src/index.ts exporting public API
 - [ ] T051 Final quality check for Phase A: bun run quality
 
 ## Phase B: Code Generation System
 
 ### B.1: Codegen Package - Schema Parser (TDD)
-- [ ] T052 [P] Write failing test for GraphQL schema parsing in packages/codegen/src/__tests__/schema-parser.test.ts
-- [ ] T053 [P] Write failing test for TypeScript type generation in packages/codegen/src/__tests__/type-generator.test.ts
-- [ ] T054 [P] Write failing test for enum generation in packages/codegen/src/__tests__/enum-generator.test.ts
-- [ ] T055 [P] Write failing test for input type generation in packages/codegen/src/__tests__/input-generator.test.ts
+
+- [ ] T052 [P] Write failing test for GraphQL schema parsing in packages/codegen/src/**tests**/schema-parser.test.ts
+- [ ] T053 [P] Write failing test for TypeScript type generation in packages/codegen/src/**tests**/type-generator.test.ts
+- [ ] T054 [P] Write failing test for enum generation in packages/codegen/src/**tests**/enum-generator.test.ts
+- [ ] T055 [P] Write failing test for input type generation in packages/codegen/src/**tests**/input-generator.test.ts
 - [ ] T056 Quality check: bun run quality
 
 ### B.2: Codegen Package - Schema Parser Implementation
+
 - [ ] T057 Implement schema parser with zod validation in packages/codegen/src/parsers/schema-parser.ts
 - [ ] T058 [P] Implement type generator in packages/codegen/src/generators/type-generator.ts
 - [ ] T059 [P] Implement enum generator in packages/codegen/src/generators/enum-generator.ts
@@ -102,12 +114,14 @@
 - [ ] T061 Quality check: bun run quality
 
 ### B.3: Codegen Package - System Generation (TDD)
-- [ ] T062 Write failing test for graphql-system structure in packages/codegen/src/__tests__/system-generator.test.ts
-- [ ] T063 Write failing test for gql instance generation in packages/codegen/src/__tests__/gql-generator.test.ts
-- [ ] T064 Write failing test for template rendering in packages/codegen/src/__tests__/template-renderer.test.ts
+
+- [ ] T062 Write failing test for graphql-system structure in packages/codegen/src/**tests**/system-generator.test.ts
+- [ ] T063 Write failing test for gql instance generation in packages/codegen/src/**tests**/gql-generator.test.ts
+- [ ] T064 Write failing test for template rendering in packages/codegen/src/**tests**/template-renderer.test.ts
 - [ ] T065 Quality check: bun run quality
 
 ### B.4: Codegen Package - System Generation Implementation
+
 - [ ] T066 Implement system generator in packages/codegen/src/generators/system-generator.ts
 - [ ] T067 Implement gql instance generator in packages/codegen/src/generators/gql-generator.ts
 - [ ] T068 Implement template renderer in packages/codegen/src/templates/template-renderer.ts
@@ -118,24 +132,28 @@
 ## Phase C: Static Analysis & Builder
 
 ### C.1: Builder Package - AST Analysis (TDD)
-- [ ] T072 [P] Write failing test for TypeScript AST parsing in packages/builder/src/__tests__/ast-parser.test.ts
-- [ ] T073 [P] Write failing test for gql usage extraction in packages/builder/src/__tests__/usage-extractor.test.ts
-- [ ] T074 [P] Write failing test for dependency resolution in packages/builder/src/__tests__/dependency-resolver.test.ts
+
+- [ ] T072 [P] Write failing test for TypeScript AST parsing in packages/builder/src/**tests**/ast-parser.test.ts
+- [ ] T073 [P] Write failing test for gql usage extraction in packages/builder/src/**tests**/usage-extractor.test.ts
+- [ ] T074 [P] Write failing test for dependency resolution in packages/builder/src/**tests**/dependency-resolver.test.ts
 - [ ] T075 Quality check: bun run quality
 
 ### C.2: Builder Package - AST Analysis Implementation
+
 - [ ] T076 Implement AST parser using TypeScript Compiler API in packages/builder/src/analysis/ast-parser.ts
 - [ ] T077 Implement usage extractor in packages/builder/src/analysis/usage-extractor.ts
 - [ ] T078 Implement dependency resolver with {file}::{export}::{property} format in packages/builder/src/analysis/dependency-resolver.ts
 - [ ] T079 Quality check: bun run quality
 
 ### C.3: Builder Package - Code Generation (TDD)
-- [ ] T080 Write failing test for executable code generation in packages/builder/src/__tests__/code-generator.test.ts
-- [ ] T081 Write failing test for refs object generation in packages/builder/src/__tests__/refs-generator.test.ts
-- [ ] T082 Write failing test for JSON output in packages/builder/src/__tests__/json-output.test.ts
+
+- [ ] T080 Write failing test for executable code generation in packages/builder/src/**tests**/code-generator.test.ts
+- [ ] T081 Write failing test for refs object generation in packages/builder/src/**tests**/refs-generator.test.ts
+- [ ] T082 Write failing test for JSON output in packages/builder/src/**tests**/json-output.test.ts
 - [ ] T083 Quality check: bun run quality
 
 ### C.4: Builder Package - Code Generation Implementation
+
 - [ ] T084 Implement executable code generator in packages/builder/src/generation/code-generator.ts
 - [ ] T085 Implement refs object generator with lazy evaluation in packages/builder/src/generation/refs-generator.ts
 - [ ] T086 Implement JSON output with zod validation in packages/builder/src/generation/json-output.ts
@@ -145,12 +163,14 @@
 ## Phase D: Build Tool Integration
 
 ### D.1: Babel Plugin - Transformation (TDD)
-- [ ] T089 Write failing test for Babel visitor in packages/plugin-babel/src/__tests__/visitor.test.ts
-- [ ] T090 Write failing test for code replacement in packages/plugin-babel/src/__tests__/replacer.test.ts
-- [ ] T091 Write failing test for top-level hoisting in packages/plugin-babel/src/__tests__/hoister.test.ts
+
+- [ ] T089 Write failing test for Babel visitor in packages/plugin-babel/src/**tests**/visitor.test.ts
+- [ ] T090 Write failing test for code replacement in packages/plugin-babel/src/**tests**/replacer.test.ts
+- [ ] T091 Write failing test for top-level hoisting in packages/plugin-babel/src/**tests**/hoister.test.ts
 - [ ] T092 Quality check: bun run quality
 
 ### D.2: Babel Plugin - Implementation
+
 - [ ] T093 Implement Babel plugin entry in packages/plugin-babel/src/index.ts
 - [ ] T094 Implement visitor pattern in packages/plugin-babel/src/visitor.ts
 - [ ] T095 Implement code replacer in packages/plugin-babel/src/replacer.ts
@@ -159,6 +179,7 @@
 - [ ] T098 Quality check: bun run quality
 
 ### D.3: Plugin Testing
+
 - [ ] T099 Create example React app in examples/basic/
 - [ ] T100 Write E2E test for zero-runtime transformation in tests/e2e/babel-plugin.test.ts
 - [ ] T101 Write performance benchmark in tests/performance/build-time.test.ts
@@ -167,12 +188,14 @@
 ## Phase E: CLI & Developer Experience
 
 ### E.1: CLI Package - Commands (TDD)
-- [ ] T103 [P] Write failing test for init command in packages/cli/src/__tests__/commands/init.test.ts
-- [ ] T104 [P] Write failing test for generate command in packages/cli/src/__tests__/commands/generate.test.ts
-- [ ] T105 [P] Write failing test for check command in packages/cli/src/__tests__/commands/check.test.ts
+
+- [ ] T103 [P] Write failing test for init command in packages/cli/src/**tests**/commands/init.test.ts
+- [ ] T104 [P] Write failing test for generate command in packages/cli/src/**tests**/commands/generate.test.ts
+- [ ] T105 [P] Write failing test for check command in packages/cli/src/**tests**/commands/check.test.ts
 - [ ] T106 Quality check: bun run quality
 
 ### E.2: CLI Package - Implementation
+
 - [ ] T107 Implement CLI entry point in packages/cli/src/index.ts with commander
 - [ ] T108 [P] Implement init command in packages/cli/src/commands/init.ts
 - [ ] T109 [P] Implement generate command in packages/cli/src/commands/generate.ts using codegen
@@ -182,6 +205,7 @@
 - [ ] T113 Quality check: bun run quality
 
 ### E.3: Documentation & Examples
+
 - [ ] T114 [P] Create README.md for each package with usage examples
 - [ ] T115 [P] Create advanced example in examples/advanced/ with cross-module composition
 - [ ] T116 [P] Write API documentation in docs/api.md
@@ -190,6 +214,7 @@
 - [ ] T119 Quality check: bun run quality
 
 ### E.4: Final Integration & Polish
+
 - [ ] T120 Run full integration test suite across all packages
 - [ ] T121 Performance optimization based on benchmarks
 - [ ] T122 Add GitHub Actions CI/CD workflow in .github/workflows/ci.yml
@@ -200,6 +225,7 @@
 ## Dependencies
 
 ### Critical Dependencies:
+
 - **Phase A before all**: Core runtime must exist first
 - **Tests before implementation**: Every implementation task requires its test to fail first
 - **Quality checks**: Each sub-phase must pass Biome and type checks before proceeding
@@ -235,6 +261,7 @@ Task agent="test-writer" task="Write failing test for enum generation in package
 ```
 
 ## Validation Checklist
+
 - [x] All contracts (runtime-api.ts, plugin-api.ts) have corresponding type definitions
 - [x] All entities (RemoteModel, QuerySlice, MutationSlice, PageQuery) have implementation tasks
 - [x] All tests come before implementation (TDD enforced)
@@ -249,6 +276,7 @@ Task agent="test-writer" task="Write failing test for enum generation in package
 - [x] Quality checks after each sub-phase
 
 ## Notes
+
 - Total tasks: 125 (comprehensive coverage with quality checks)
 - Biome v2 setup and configuration included
 - Quality checks after each sub-phase ensure code consistency
@@ -260,3 +288,4 @@ Task agent="test-writer" task="Write failing test for enum generation in package
 - Biome check --write automatically fixes formatting and import sorting
 - Type checking ensures no TypeScript errors accumulate
 - `bun run quality` combines both Biome and TypeScript checks
+- Commit after each task with descriptive message
