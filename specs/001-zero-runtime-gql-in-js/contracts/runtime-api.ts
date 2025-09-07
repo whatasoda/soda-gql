@@ -297,7 +297,7 @@ export interface PageQuery<TData = any, TVariables = any> {
 /**
  * Page Query builder
  */
-export interface QueryBuilder<TContext = any> {
+export interface QueryBuilder<_TContext = any> {
   /**
    * Add a query slice
    */
