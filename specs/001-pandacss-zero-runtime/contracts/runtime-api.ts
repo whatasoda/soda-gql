@@ -1,12 +1,10 @@
 /**
  * Runtime API Contract for Zero-runtime GraphQL Generation
  * This defines the public API that developers use in their application code
- * 
+ *
  * Note: Subscriptions support is currently out of scope and would be a runtime-only extension.
  * Directives and fragments are not supported in favor of higher-level abstractions.
  */
-
-import { z } from 'zod';
 
 // ============================================================================
 // Generated Schema Types (imported from generated code)
@@ -49,8 +47,8 @@ export interface GeneratedSchema {
   inputs: SchemaInputTypes;
   scalars: SchemaScalarTypes;
   enums: SchemaEnumTypes;
-  Query: SchemaTypes['Query'];
-  Mutation: SchemaTypes['Mutation'];
+  Query: SchemaTypes["Query"];
+  Mutation: SchemaTypes["Mutation"];
 }
 
 // ============================================================================
@@ -61,7 +59,9 @@ export interface GeneratedSchema {
  * Field selection for GraphQL types with proper type inference
  */
 export type FieldSelection<T = any> = {
-  [K in keyof T]?: T[K] extends object ? boolean | FieldSelection<T[K]> : boolean;
+  [K in keyof T]?: T[K] extends object
+    ? boolean | FieldSelection<T[K]>
+    : boolean;
 };
 
 /**
@@ -91,22 +91,22 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
   readonly _type: TType;
   readonly _transformed: TTransformed;
   readonly _params: TParams;
-  
+
   /**
    * GraphQL type name
    */
   typeName: string;
-  
+
   /**
    * Field selection
    */
   fields: FieldSelection<TType>;
-  
+
   /**
    * Transform function
    */
   transform: TransformFunction<TType, TTransformed>;
-  
+
   /**
    * Parameters for this model
    */
@@ -120,14 +120,19 @@ export interface ModelFunction {
   // Simple form without parameters
   <TType extends keyof SchemaTypes, TTransformed>(
     typeName: TType,
-    fields: (relation: RelationFunction<SchemaTypes[TType]>) => FieldSelection<SchemaTypes[TType]>,
+    fields: (
+      relation: RelationFunction<SchemaTypes[TType]>
+    ) => FieldSelection<SchemaTypes[TType]>,
     transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
   ): RemoteModel<SchemaTypes[TType], TTransformed, {}>;
-  
+
   // Complex form with parameters
   <TType extends keyof SchemaTypes, TTransformed, TParams>(
     definition: [TType, TParams],
-    fields: (relation: RelationFunction<SchemaTypes[TType]>, args: NoInfer<TParams>) => FieldSelection<SchemaTypes[TType]>,
+    fields: (
+      relation: RelationFunction<SchemaTypes[TType]>,
+      args: NoInfer<TParams>
+    ) => FieldSelection<SchemaTypes[TType]>,
     transform: TransformFunction<NoInfer<SchemaTypes[TType]>, TTransformed>
   ): RemoteModel<SchemaTypes[TType], TTransformed, TParams>;
 }
@@ -141,13 +146,13 @@ export interface RelationFunction<TContext = any> {
   <TField extends keyof TContext, TModel extends RemoteModel>(
     field: TField,
     model: NoInfer<TModel>
-  ): TModel['_transformed'];
-  
+  ): TModel["_transformed"];
+
   // Select a related field with arguments and model
   <TField extends keyof TContext, TModel extends RemoteModel, TArgs>(
     definition: [TField, TArgs],
     model: NoInfer<TModel> | [NoInfer<TModel>, FieldSelection<any>]
-  ): TModel['_transformed'];
+  ): TModel["_transformed"];
 }
 
 /**
@@ -181,22 +186,28 @@ export interface Argument<T = any> {
 /**
  * Slice selection builder with type-safe field names
  */
-export interface SelectionBuilder<TContext extends keyof SchemaTypes = 'Query'> {
+export interface SelectionBuilder<
+  TContext extends keyof SchemaTypes = "Query"
+> {
   /**
    * Select a field with a remote model
    */
   <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel>(
     field: TField,
     model: NoInfer<TModel>
-  ): TModel['_transformed'];
-  
+  ): TModel["_transformed"];
+
   /**
    * Select a field with arguments and model (tuple syntax)
    */
-  <TField extends keyof SchemaTypes[TContext], TModel extends RemoteModel, TArgs>(
+  <
+    TField extends keyof SchemaTypes[TContext],
+    TModel extends RemoteModel,
+    TArgs
+  >(
     definition: [TField, NoInfer<TArgs>],
     model: NoInfer<TModel>
-  ): TModel['_transformed'];
+  ): TModel["_transformed"];
 }
 
 /**
@@ -205,7 +216,7 @@ export interface SelectionBuilder<TContext extends keyof SchemaTypes = 'Query'> 
 export interface QuerySlice<TData = any, TArgs = any> {
   readonly _data: TData;
   readonly _args: TArgs;
-  
+
   name: string;
   selections: (query: SelectionBuilder, args: TArgs) => TData;
   transform: TransformFunction<any, TData>;
@@ -217,7 +228,7 @@ export interface QuerySlice<TData = any, TArgs = any> {
 export interface MutationSlice<TData = any, TArgs = any> {
   readonly _data: TData;
   readonly _args: TArgs;
-  
+
   name: string;
   selections: (mutate: SelectionBuilder, args: TArgs) => TData;
   transform: TransformFunction<any, TData>;
@@ -229,7 +240,7 @@ export interface MutationSlice<TData = any, TArgs = any> {
 export interface SubscriptionSlice<TData = any, TArgs = any> {
   readonly _data: TData;
   readonly _args: TArgs;
-  
+
   name: string;
   selections: (subscribe: SelectionBuilder, args: TArgs) => TData;
   transform: TransformFunction<any, TData>;
@@ -245,7 +256,7 @@ export interface QuerySliceFunction {
     selections: (query: SelectionBuilder) => TData,
     transform?: TransformFunction<any, TData>
   ): QuerySlice<TData, {}>;
-  
+
   // Form with arguments using tuple syntax
   <TData, TArgs>(
     definition: [string, TArgs],
@@ -261,7 +272,7 @@ export interface MutationSliceFunction {
     selections: (mutate: SelectionBuilder) => TData,
     transform?: TransformFunction<any, TData>
   ): MutationSlice<TData, {}>;
-  
+
   // Form with arguments using tuple syntax
   <TData, TArgs>(
     definition: [string, TArgs],
@@ -288,7 +299,7 @@ export interface SliceReference<TSlice = any> {
 export interface PageQuery<TData = any, TVariables = any> {
   readonly _data: TData;
   readonly _variables: TVariables;
-  
+
   name: string;
   slices: SliceReference[];
   document?: string; // Generated at build time
@@ -304,15 +315,15 @@ export interface QueryBuilder<TContext = any> {
    */
   <TSlice extends QuerySlice>(
     slice: TSlice,
-    args?: TSlice['_args']
-  ): TSlice['_data'];
-  
+    args?: TSlice["_args"]
+  ): TSlice["_data"];
+
   /**
    * Add multiple slices
    */
   combine<TSlices extends QuerySlice[]>(
     ...slices: TSlices
-  ): { [K in keyof TSlices]: TSlices[K]['_data'] };
+  ): { [K in keyof TSlices]: TSlices[K]["_data"] };
 }
 
 /**
@@ -338,21 +349,21 @@ export interface MutationFunction {
 
 export interface ArgTypes {
   // Scalar types
-  string(): SchemaScalarTypes['String'];
-  int(): SchemaScalarTypes['Int'];
-  float(): SchemaScalarTypes['Float'];
-  boolean(): SchemaScalarTypes['Boolean'];
-  id(): SchemaScalarTypes['ID'];
-  
+  string(): SchemaScalarTypes["String"];
+  int(): SchemaScalarTypes["Int"];
+  float(): SchemaScalarTypes["Float"];
+  boolean(): SchemaScalarTypes["Boolean"];
+  id(): SchemaScalarTypes["ID"];
+
   // Custom scalars
   scalar<K extends keyof SchemaScalarTypes>(name: K): SchemaScalarTypes[K];
-  
+
   // Enum types
   enum<K extends keyof SchemaEnumTypes>(name: K): SchemaEnumTypes[K];
-  
+
   // Input types
   input<K extends keyof SchemaInputTypes>(name: K): SchemaInputTypes[K];
-  
+
   // Modifiers
   array<T>(type: NoInfer<T>): T[];
   nullable<T>(type: NoInfer<T>): T | null;
@@ -404,37 +415,37 @@ export interface GqlApi {
    * Create a remote model
    */
   model: ModelFunction;
-  
+
   /**
    * Create a query slice
    */
   querySlice: QuerySliceFunction;
-  
+
   /**
    * Create a mutation slice
    */
   mutationSlice: MutationSliceFunction;
-  
+
   /**
    * Create a page query
    */
   query: QueryFunction;
-  
+
   /**
    * Create a page mutation
    */
   mutation: MutationFunction;
-  
+
   /**
    * Argument type helpers with proper type inference
    */
   arg: ArgTypes;
-  
+
   /**
    * Input parameter helpers for models
    */
   input: InputHelpers;
-  
+
   /**
    * Type inference utility
    */
@@ -460,12 +471,12 @@ export interface RegistryApi {
    * Register a generated query document
    */
   register: RegisterFunction;
-  
+
   /**
    * Get a registered document by ID
    */
   get(id: symbol): RegistrationOptions | undefined;
-  
+
   /**
    * Clear all registrations (for testing)
    */

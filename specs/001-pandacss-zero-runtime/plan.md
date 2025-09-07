@@ -4,6 +4,7 @@
 **Input**: Feature specification from `/specs/001-pandacss-zero-runtime/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -25,13 +26,16 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
+
 Implement a zero-runtime GraphQL query generation system that transforms TypeScript-defined queries into optimized GraphQL documents at build time, similar to PandaCSS's approach to CSS-in-JS. The system enables type-safe GraphQL operations with full inference, parameterized fragments, and cross-module query composition while maintaining zero runtime overhead. Initial scope covers queries and mutations only; subscriptions, directives, and native fragments are out of scope.
 
 ## Technical Context
+
 **Language/Version**: TypeScript 5.x / Bun 1.0+  
 **Primary Dependencies**: zod (validation), neverthrow (error handling), TypeScript Compiler API (analysis)  
 **Storage**: N/A (build-time transformation only)  
@@ -43,15 +47,18 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 **Scale/Scope**: Support for 1000+ files, practical limit of 32 slices per page
 
 ## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 **Simplicity**:
+
 - Projects: 3 (core library, babel plugin, bun plugin)
 - Using framework directly? Yes (TypeScript Compiler API, no wrappers)
 - Single data model? Yes (GraphQL schema as single source)
 - Avoiding patterns? Yes (no Repository/UoW, direct transformations)
 
 **Architecture**:
+
 - EVERY feature as library? Yes
 - Libraries listed:
   - `@soda-gql/core`: Runtime API and type definitions
@@ -65,6 +72,7 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 - Library docs: llms.txt format planned? Yes
 
 **Testing (NON-NEGOTIABLE)**:
+
 - RED-GREEN-Refactor cycle enforced? Yes
 - Git commits show tests before implementation? Yes
 - Order: Contract→Integration→E2E→Unit strictly followed? Yes
@@ -73,11 +81,13 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 - FORBIDDEN: Implementation before test, skipping RED phase
 
 **Observability**:
+
 - Structured logging included? Yes (build-time diagnostics)
 - Frontend logs → backend? N/A (build tool only)
 - Error context sufficient? Yes (file, line, transformation phase)
 
 **Versioning**:
+
 - Version number assigned? 0.1.0
 - BUILD increments on every change? Yes
 - Breaking changes handled? Semantic versioning, migration guides
@@ -85,6 +95,7 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/001-pandacss-zero-runtime/
 ├── plan.md              # This file (/plan command output)
@@ -98,6 +109,7 @@ specs/001-pandacss-zero-runtime/
 ```
 
 ### Source Code (repository root)
+
 ```
 # Option 1: Single project (SELECTED - library with plugin)
 src/
@@ -134,7 +146,9 @@ packages/
 **Structure Decision**: Option 1 (Single project) - Library with build plugin, organized as monorepo with separate packages
 
 ## Phase 0: Outline & Research
+
 1. **Extract unknowns from Technical Context** above:
+
    - ✓ TypeScript Compiler API usage patterns
    - ✓ Bun plugin system architecture
    - ✓ PandaCSS transformation approach
@@ -142,6 +156,7 @@ packages/
    - ✓ Neverthrow Result composition
 
 2. **Generate and dispatch research agents**:
+
    - ✓ Research TypeScript AST manipulation
    - ✓ Research build-time code generation
    - ✓ Research type inference strategies
@@ -155,24 +170,29 @@ packages/
 **Output**: research.md with all NEEDS CLARIFICATION resolved ✓
 
 ## Phase 1: Design & Contracts
-*Prerequisites: research.md complete ✓*
+
+_Prerequisites: research.md complete ✓_
 
 1. **Extract entities from feature spec** → `data-model.md`:
+
    - ✓ RemoteModel, QuerySlice, MutationSlice, SubscriptionSlice
    - ✓ PageQuery, FieldSelection, TransformFunction
    - ✓ GraphQLDocument, Registration
 
 2. **Generate API contracts** from functional requirements:
+
    - ✓ Plugin API contract (build-time interface)
    - ✓ Runtime API contract (developer-facing API)
    - ✓ Type definitions for all entities
 
 3. **Generate contract tests** from contracts:
+
    - Tests to be created in Phase 3 (implementation)
    - One test file per API surface
    - Schema validation tests
 
 4. **Extract test scenarios** from user stories:
+
    - ✓ Remote Model definition and inference
    - ✓ Query Slice composition
    - ✓ Page Query generation
@@ -184,38 +204,45 @@ packages/
    - ✓ Added tech stack and commands
    - ✓ Documented key concepts
 
-**Output**: data-model.md ✓, /contracts/* ✓, quickstart.md ✓, CLAUDE.md ✓
+**Output**: data-model.md ✓, /contracts/\* ✓, quickstart.md ✓, CLAUDE.md ✓
 
 ## Phase 2: Task Planning Approach
-*This section describes what the /tasks command will do - DO NOT execute during /plan*
+
+_This section describes what the /tasks command will do - DO NOT execute during /plan_
 
 **Task Generation Strategy**:
+
 - Load `/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Each contract → contract test task [P]
-- Each entity → model creation task [P] 
+- Each entity → model creation task [P]
 - Each user story → integration test task
 - Implementation tasks to make tests pass
 
 **Task Categories**:
+
 1. **Contract Tests** (TDD Red Phase):
+
    - Plugin API contract tests
    - Runtime API contract tests
    - Type inference tests
 
 2. **Core Implementation**:
+
    - AST analyzer service
    - Query generator service
    - Document registry service
    - Transform executor
 
 3. **Plugin Implementation**:
+
    - Bun plugin hooks
    - File transformation pipeline
    - Cache management
    - Error reporting
 
 4. **CLI Implementation**:
+
    - Generate command
    - Validate command
    - Init command
@@ -226,11 +253,13 @@ packages/
    - Performance benchmarks
 
 **Ordering Strategy**:
+
 - TDD order: Tests before implementation
 - Dependency order: Core → Plugin → CLI
 - Mark [P] for parallel execution (independent modules)
 
 **Estimated Output**: 30-35 numbered, ordered tasks in tasks.md covering:
+
 - 8-10 contract/unit test tasks
 - 12-15 implementation tasks
 - 5-8 integration test tasks
@@ -239,25 +268,29 @@ packages/
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
-*These phases are beyond the scope of the /plan command*
+
+_These phases are beyond the scope of the /plan command_
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)  
 **Phase 4**: Implementation (execute tasks.md following TDD principles)  
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
-*Fill ONLY if Constitution Check has violations that must be justified*
+
+_Fill ONLY if Constitution Check has violations that must be justified_
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| None | - | - |
+| --------- | ---------- | ------------------------------------ |
+| None      | -          | -                                    |
 
 No constitutional violations. The design maintains simplicity with only 2 projects (core library and plugin), uses frameworks directly without wrappers, and follows TDD principles strictly.
 
 ## Progress Tracking
-*This checklist is updated during execution flow*
+
+_This checklist is updated during execution flow_
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
@@ -266,10 +299,12 @@ No constitutional violations. The design maintains simplicity with only 2 projec
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
 - [x] Complexity deviations documented (none required)
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+
+_Based on Constitution v2.1.1 - See `/memory/constitution.md`_

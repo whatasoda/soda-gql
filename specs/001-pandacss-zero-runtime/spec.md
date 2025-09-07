@@ -1,11 +1,12 @@
 # Feature Specification: Zero-runtime GraphQL Query Generation System
 
 **Feature Branch**: `001-pandacss-zero-runtime`  
-**Created**: 2025-01-07  
+**Created**: 2025-09-07  
 **Status**: Draft  
 **Input**: User description: "PandaCSS で行う Zero-runtime CSS-in-JS のように、 GraphQL のクエリも TypeScript 上で記述したものを静的解析によって Zero-runtime で生成できるようにしたい..."
 
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
@@ -28,23 +29,27 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
 
 ### Section Requirements
+
 - **Mandatory sections**: Must be completed for every feature
 - **Optional sections**: Include only when relevant to the feature
 - When a section doesn't apply, remove it entirely (don't leave as "N/A")
 
 ### For AI Generation
+
 When creating this spec from a user prompt:
+
 1. **Mark all ambiguities**: Use [NEEDS CLARIFICATION: specific question] for any assumption you'd need to make
 2. **Don't guess**: If the prompt doesn't specify something (e.g., "login system" without auth method), mark it
 3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
 4. **Common underspecified areas**:
    - User types and permissions
-   - Data retention/deletion policies  
+   - Data retention/deletion policies
    - Performance targets and scale
    - Error handling behaviors
    - Integration requirements
@@ -52,12 +57,14 @@ When creating this spec from a user prompt:
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### Primary User Story
+
 As a frontend developer working on a project with Feature-Sliced Design architecture, I want to write GraphQL queries directly in TypeScript that are automatically transformed at build time into optimized GraphQL documents, so that I can maintain type safety throughout development without runtime overhead and without having to frequently regenerate code.
 
 ### Acceptance Scenarios
+
 1. **Given** a developer has defined Remote Models for GraphQL types with field selections and transform functions, **When** they reference these models in their application code, **Then** the system must provide full type inference for the transformed data structures
 
 2. **Given** a developer has created multiple Query Slices across different modules, **When** they combine these slices into a Page Query, **Then** the system must automatically merge them into a single GraphQL document with proper deduplication and argument mapping
@@ -69,15 +76,17 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 5. **Given** generated query documents are embedded in component files, **When** the application loads, **Then** each unique query must be registered only once at the top level, preventing re-evaluation on component re-renders
 
 ### Edge Cases
+
 - What happens when circular dependencies exist between Remote Models?
 - How does system handle conflicting field selections in merged queries?
 - What occurs when required parameters are not provided for parameterized Remote Models?
 - How does the system behave when schema changes make existing Remote Models invalid?
 - What happens when transform functions throw errors during data processing?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
+
 - **FR-001**: System MUST allow developers to define Remote Models as type-safe representations of GraphQL types with field selections
 - **FR-002**: System MUST support parameterized Remote Models that accept injected values from parent contexts
 - **FR-003**: System MUST enable creation of Query/Mutation/Subscription Slices that encapsulate specific domain concerns
@@ -94,7 +103,8 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 - **FR-014**: System MUST support only latest schema version (backward compatibility via future plugins if needed)
 - **FR-015**: System MUST integrate with Babel as minimum requirement with extensible design for multiple build tools
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
+
 - **Remote Model**: Type-safe representation of a GraphQL type with field selections, parameters, and transform functions. Can be created multiple times per GraphQL type for different use cases.
 - **Query/Mutation/Subscription Slice**: Domain-specific query definition that encapsulates argument definitions and data transformations for a focused concern.
 - **Page Query**: Composite query created by combining multiple Slices, handling cross-slice argument mapping and deduplication.
@@ -105,17 +115,20 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 ---
 
 ## Review & Acceptance Checklist
-*GATE: Automated checks run during main() execution*
+
+_GATE: Automated checks run during main() execution_
 
 ### Content Quality
+
 - [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [x] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable and unambiguous  
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
 - [x] Dependencies and assumptions identified
@@ -123,7 +136,8 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 ---
 
 ## Execution Status
-*Updated by main() during processing*
+
+_Updated by main() during processing_
 
 - [x] User description parsed
 - [x] Key concepts extracted
@@ -138,7 +152,9 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 ## Additional Context
 
 ### Business Value
+
 This system enables frontend teams to:
+
 - Maintain strict architectural boundaries while optimizing API calls
 - Eliminate frequent code generation cycles during development
 - Achieve full type safety without runtime performance penalties
@@ -146,12 +162,14 @@ This system enables frontend teams to:
 - Enable true separation of concerns in Feature-Sliced Design architectures
 
 ### Success Metrics
+
 - Zero runtime overhead for query generation
 - Immediate type feedback during development
 - Single query document per page despite multiple contributing modules
 - No manual code generation steps after initial schema import
 
 ### Risks and Assumptions
+
 - Assumes developers understand the relationship between Remote Models and GraphQL types
 - Assumes build-time static analysis is sufficient for all query generation needs
 - Risk of increased build complexity due to static analysis requirements

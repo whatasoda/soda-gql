@@ -71,6 +71,7 @@ bun run @soda-gql/core generate
 ```
 
 This creates a `graphql-system/` directory (similar to PandaCSS's `styled-system/`) containing:
+
 - Complete type definitions for all GraphQL types, inputs, scalars, and enums
 - The `gql` API with proper TypeScript types
 - React hooks and utilities (if configured)
@@ -86,20 +87,21 @@ Create type-safe representations of your GraphQL types:
 
 ```typescript
 // src/models/user.remote-model.ts
-import { gql } from "@/graphql-system";  // Generated system includes all types
+import { gql } from "@/graphql-system"; // Generated system includes all types
 
 // Define a basic user model
 export const userBasic = gql.model(
   "User",
-  (relation) => ({  // relation is available even in simple form
+  (relation) => ({
+    // relation is available even in simple form
     id: true,
     name: true,
-    email: true
+    email: true,
   }),
   (data) => ({
     id: data.id,
     displayName: data.name,
-    email: data.email.toLowerCase()
+    email: data.email.toLowerCase(),
   })
 );
 
@@ -111,17 +113,17 @@ export const userWithPosts = gql.model(
     name: true,
     posts: {
       id: true,
-      title: true
-    }
+      title: true,
+    },
   }),
   (data) => ({
     id: data.id,
     name: data.name,
     postCount: data.posts.length,
-    posts: data.posts.map(p => ({
+    posts: data.posts.map((p) => ({
       id: p.id,
-      title: p.title
-    }))
+      title: p.title,
+    })),
   })
 );
 
@@ -143,7 +145,7 @@ import { userBasic, userWithPosts } from "../models/user.remote-model";
 export const getUserSlice = gql.querySlice(
   ["getUser", { id: gql.arg.id() }],
   (query, args) => ({
-    user: query(["user", { id: args.id }], userBasic)
+    user: query(["user", { id: args.id }], userBasic),
   }),
   (data) => data?.user ?? null
 );
@@ -152,7 +154,7 @@ export const getUserSlice = gql.querySlice(
 export const listUsersSlice = gql.querySlice(
   "listUsers",
   (query) => ({
-    users: query("users", userBasic)
+    users: query("users", userBasic),
   }),
   (data) => data?.users ?? []
 );
@@ -161,7 +163,7 @@ export const listUsersSlice = gql.querySlice(
 export const getUserWithPostsSlice = gql.querySlice(
   ["getUserWithPosts", { id: gql.arg.id() }],
   (query, args) => ({
-    user: query(["user", { id: args.id }], userWithPosts)
+    user: query(["user", { id: args.id }], userWithPosts),
   }),
   (data) => data?.user ?? null
 );
@@ -181,25 +183,25 @@ import { getUserWithPostsSlice } from "../slices/user.slices";
 const userProfileQuery = gql.query(
   ["UserProfile", { userId: gql.arg.id() }],
   (_, args) => ({
-    user: getUserWithPostsSlice({ id: args.userId })
+    user: getUserWithPostsSlice({ id: args.userId }),
   })
 );
 
 export function UserProfile({ userId }: { userId: string }) {
   const { data, loading, error } = useQuery(userProfileQuery, {
-    variables: { userId }
+    variables: { userId },
   });
-  
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   if (!data.user) return <div>User not found</div>;
-  
+
   return (
     <div>
       <h1>{data.user.name}</h1>
       <p>Posts: {data.user.postCount}</p>
       <ul>
-        {data.user.posts.map(post => (
+        {data.user.posts.map((post) => (
           <li key={post.id}>{post.title}</li>
         ))}
       </ul>
@@ -219,27 +221,27 @@ Define models with injectable parameters:
 import { gql } from "@/graphql-system";
 
 export const postWithComments = gql.model(
-  ["Post", {
-    commentLimit: gql.arg.int()
-  }],
+  [
+    "Post",
+    {
+      commentLimit: gql.arg.int(),
+    },
+  ],
   (relation, args) => ({
     id: true,
     title: true,
     content: true,
-    comments: relation(
-      ["comments", { limit: args.commentLimit }],
-      {
-        id: true,
-        text: true
-      }
-    )
+    comments: relation(["comments", { limit: args.commentLimit }], {
+      id: true,
+      text: true,
+    }),
   }),
   (data) => ({
     id: data.id,
     title: data.title,
     content: data.content,
     commentCount: data.comments.length,
-    recentComments: data.comments
+    recentComments: data.comments,
   })
 );
 ```
@@ -255,15 +257,12 @@ import { listUsersSlice } from "../slices/user.slices";
 import { recentPostsSlice } from "../slices/post.slices";
 import { statsSlice } from "../slices/stats.slices";
 
-const dashboardQuery = gql.query(
-  ["Dashboard", {}],
-  (_) => ({
-    users: listUsersSlice(),
-    posts: recentPostsSlice({ limit: 10 }),
-    stats: statsSlice()
-    // Note: Maximum 32 slices per query, warning at 16+
-  })
-);
+const dashboardQuery = gql.query(["Dashboard", {}], (_) => ({
+  users: listUsersSlice(),
+  posts: recentPostsSlice({ limit: 10 }),
+  stats: statsSlice(),
+  // Note: Maximum 32 slices per query, warning at 16+
+}));
 ```
 
 ## Testing
@@ -280,25 +279,25 @@ describe("userBasic remote model", () => {
     const input = {
       id: "1",
       name: "John Doe",
-      email: "JOHN@EXAMPLE.COM"
+      email: "JOHN@EXAMPLE.COM",
     };
-    
+
     const result = userBasic.transform(input);
-    
+
     expect(result).toEqual({
       id: "1",
       displayName: "John Doe",
-      email: "john@example.com"
+      email: "john@example.com",
     });
   });
-  
+
   test("selects correct fields", () => {
     const fields = userBasic.fields();
-    
+
     expect(fields).toEqual({
       id: true,
       name: true,
-      email: true
+      email: true,
     });
   });
 });
@@ -316,20 +315,20 @@ describe("getUserSlice", () => {
     const result = getUserSlice.transform({ user: null });
     expect(result).toBeNull();
   });
-  
+
   test("transforms user data", () => {
     const result = getUserSlice.transform({
       user: {
         id: "1",
         name: "John",
-        email: "john@example.com"
-      }
+        email: "john@example.com",
+      },
     });
-    
+
     expect(result).toEqual({
       id: "1",
       displayName: "John",
-      email: "john@example.com"
+      email: "john@example.com",
     });
   });
 });
@@ -384,7 +383,7 @@ Transform functions propagate errors as runtime exceptions:
 export const userSlice = gql.querySlice(
   ["getUser", { id: gql.arg.id() }],
   (query, args) => ({
-    user: query(["user", { id: args.id }], userBasic)
+    user: query(["user", { id: args.id }], userBasic),
   }),
   (data) => {
     if (!data?.user) {
@@ -403,7 +402,7 @@ Support optimistic UI updates:
 const updateUserMutation = gql.mutation(
   ["UpdateUser", { id: gql.arg.id(), name: gql.arg.string() }],
   (mutate, args) => ({
-    updateUser: mutate("updateUser", args, userBasic)
+    updateUser: mutate("updateUser", args, userBasic),
   })
 );
 
@@ -412,9 +411,9 @@ const [updateUser] = useMutation(updateUserMutation, {
   optimisticResponse: {
     updateUser: {
       id: userId,
-      name: newName
-    }
-  }
+      name: newName,
+    },
+  },
 });
 ```
 
