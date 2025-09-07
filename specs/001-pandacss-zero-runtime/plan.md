@@ -29,7 +29,7 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Implement a zero-runtime GraphQL query generation system that transforms TypeScript-defined queries into optimized GraphQL documents at build time, similar to PandaCSS's approach to CSS-in-JS. The system enables type-safe GraphQL operations with full inference, parameterized fragments, and cross-module query composition while maintaining zero runtime overhead.
+Implement a zero-runtime GraphQL query generation system that transforms TypeScript-defined queries into optimized GraphQL documents at build time, similar to PandaCSS's approach to CSS-in-JS. The system enables type-safe GraphQL operations with full inference, parameterized fragments, and cross-module query composition while maintaining zero runtime overhead. Initial scope covers queries and mutations only; subscriptions, directives, and native fragments are out of scope.
 
 ## Technical Context
 **Language/Version**: TypeScript 5.x / Bun 1.0+  
@@ -39,14 +39,14 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 **Target Platform**: Node.js/Bun build environments  
 **Project Type**: single (library with CLI)  
 **Performance Goals**: < 100ms per file transformation, < 500ms incremental builds  
-**Constraints**: Zero runtime overhead, full type safety, no manual code generation  
-**Scale/Scope**: Support for 1000+ files, 100+ slices per page
+**Constraints**: Zero runtime overhead, full type safety, no manual code generation, max 32 slices per query (warn at 16+)  
+**Scale/Scope**: Support for 1000+ files, practical limit of 32 slices per page
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Simplicity**:
-- Projects: 2 (core library, build plugin)
+- Projects: 3 (core library, babel plugin, bun plugin)
 - Using framework directly? Yes (TypeScript Compiler API, no wrappers)
 - Single data model? Yes (GraphQL schema as single source)
 - Avoiding patterns? Yes (no Repository/UoW, direct transformations)
@@ -55,7 +55,8 @@ Implement a zero-runtime GraphQL query generation system that transforms TypeScr
 - EVERY feature as library? Yes
 - Libraries listed:
   - `@soda-gql/core`: Runtime API and type definitions
-  - `@soda-gql/plugin-bun`: Build-time transformation plugin
+  - `@soda-gql/plugin-babel`: Build-time transformation plugin (minimum requirement)
+  - `@soda-gql/plugin-bun`: Bun-specific plugin (additional)
   - `@soda-gql/cli`: Command-line interface for generation
 - CLI per library:
   - core: `soda-gql generate --schema --output --format`
@@ -125,7 +126,8 @@ tests/
 
 packages/
 ├── core/                    # @soda-gql/core package
-├── plugin-bun/             # @soda-gql/plugin-bun package
+├── plugin-babel/           # @soda-gql/plugin-babel package (minimum requirement)
+├── plugin-bun/             # @soda-gql/plugin-bun package (additional)
 └── cli/                    # @soda-gql/cli package
 ```
 

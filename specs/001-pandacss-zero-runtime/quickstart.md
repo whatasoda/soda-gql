@@ -7,11 +7,14 @@ This guide demonstrates the basic usage of the zero-runtime GraphQL generation s
 ```bash
 # Install the core package and build plugin
 bun add @soda-gql/core
-bun add -D @soda-gql/plugin-bun
+bun add -D @soda-gql/plugin-babel  # Minimum requirement
+bun add -D @soda-gql/plugin-bun    # Optional: Bun-specific optimizations
 
 # Install peer dependencies
 bun add zod neverthrow
 ```
+
+**Note**: This initial version supports queries and mutations only. Subscriptions, directives, and native GraphQL fragments are not supported.
 
 ## Setup
 
@@ -80,13 +83,13 @@ Create type-safe representations of your GraphQL types:
 import { gql } from "@soda-gql/core";
 
 // Define a basic user model
-export const userBasic = gql.fragment(
+export const userBasic = gql.model(
   "User",
-  () => ({
+  {
     id: true,
     name: true,
     email: true
-  }),
+  },
   (data) => ({
     id: data.id,
     displayName: data.name,
@@ -95,16 +98,16 @@ export const userBasic = gql.fragment(
 );
 
 // Define a detailed user model with posts
-export const userWithPosts = gql.fragment(
+export const userWithPosts = gql.model(
   "User",
-  () => ({
+  {
     id: true,
     name: true,
     posts: {
       id: true,
       title: true
     }
-  }),
+  },
   (data) => ({
     id: data.id,
     name: data.name,
@@ -132,9 +135,9 @@ import { userBasic, userWithPosts } from "../models/user.remote-model";
 
 // Slice for fetching a single user
 export const getUserSlice = gql.querySlice(
-  "getUser",
-  (query, args: { id: string }) => ({
-    user: query("user", { id: args.id }, userBasic)
+  ["getUser", { id: gql.arg.id() }],
+  (query, args) => ({
+    user: query(["user", { id: args.id }], userBasic)
   }),
   (data) => data?.user ?? null
 );
@@ -150,9 +153,9 @@ export const listUsersSlice = gql.querySlice(
 
 // Slice for user with posts
 export const getUserWithPostsSlice = gql.querySlice(
-  "getUserWithPosts",
-  (query, args: { id: string }) => ({
-    user: query("user", { id: args.id }, userWithPosts)
+  ["getUserWithPosts", { id: gql.arg.id() }],
+  (query, args) => ({
+    user: query(["user", { id: args.id }], userWithPosts)
   }),
   (data) => data?.user ?? null
 );
@@ -209,17 +212,21 @@ Define models with injectable parameters:
 // src/models/post.remote-model.ts
 import { gql } from "@soda-gql/core";
 
-export const postWithComments = gql.fragment(
-  "Post",
-  (params: { commentLimit: number }) => ({
+export const postWithComments = gql.model(
+  ["Post", {
+    commentLimit: gql.arg.int()
+  }],
+  (relation, args) => ({
     id: true,
     title: true,
     content: true,
-    comments: {
-      $args: { limit: params.commentLimit },
-      id: true,
-      text: true
-    }
+    comments: relation(
+      ["comments", { limit: args.commentLimit }],
+      {
+        id: true,
+        text: true
+      }
+    )
   }),
   (data) => ({
     id: data.id,
@@ -248,6 +255,7 @@ const dashboardQuery = gql.query(
     users: listUsersSlice(),
     posts: recentPostsSlice({ limit: 10 }),
     stats: statsSlice()
+    // Note: Maximum 32 slices per query, warning at 16+
   })
 );
 ```
@@ -364,21 +372,19 @@ src/
 
 ### 2. Error Handling
 
-Use Result types for safe error handling:
+Transform functions propagate errors as runtime exceptions:
 
 ```typescript
-import { Result } from "neverthrow";
-
 export const userSlice = gql.querySlice(
-  "getUser",
+  ["getUser", { id: gql.arg.id() }],
   (query, args) => ({
-    user: query("user", args, userBasic)
+    user: query(["user", { id: args.id }], userBasic)
   }),
-  (data): Result<UserBasic, Error> => {
+  (data) => {
     if (!data?.user) {
-      return Result.err(new Error("User not found"));
+      throw new Error("User not found");
     }
-    return Result.ok(userBasic.transform(data.user));
+    return userBasic.transform(data.user);
   }
 );
 ```

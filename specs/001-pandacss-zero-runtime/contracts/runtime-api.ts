@@ -1,6 +1,9 @@
 /**
  * Runtime API Contract for Zero-runtime GraphQL Generation
  * This defines the public API that developers use in their application code
+ * 
+ * Note: Subscriptions support is currently out of scope and would be a runtime-only extension.
+ * Directives and fragments are not supported in favor of higher-level abstractions.
  */
 
 import { z } from 'zod';
@@ -66,15 +69,53 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
 }
 
 /**
- * Remote Model creation function
+ * Remote Model creation function (renamed from fragment to model based on examples)
  */
-export interface FragmentFunction {
-  <TType, TTransformed, TParams = {}>(
+export interface ModelFunction {
+  // Simple form without parameters
+  <TType, TTransformed>(
     typeName: string,
-    fields: () => FieldSelection<TType>,
-    transform: TransformFunction<TType, TTransformed>,
-    parameters?: TParams
+    fields: FieldSelection<TType> | (() => FieldSelection<TType>),
+    transform: TransformFunction<TType, TTransformed>
+  ): RemoteModel<TType, TTransformed, {}>;
+  
+  // Complex form with parameters
+  <TType, TTransformed, TParams>(
+    definition: [string, TParams],
+    fields: (relation: RelationFunction, args: TParams) => FieldSelection<TType>,
+    transform: TransformFunction<TType, TTransformed>
   ): RemoteModel<TType, TTransformed, TParams>;
+}
+
+/**
+ * Relation function for nested selections in models
+ */
+export interface RelationFunction {
+  // Select a related field with a model
+  <TModel extends RemoteModel>(
+    field: string,
+    model: TModel
+  ): TModel['_transformed'];
+  
+  // Select a related field with arguments and model
+  <TModel extends RemoteModel>(
+    definition: [string, any],
+    model: TModel | [TModel, FieldSelection<any>]
+  ): TModel['_transformed'];
+}
+
+/**
+ * Input parameter helpers for models
+ */
+export interface InputHelpers {
+  fromQuery(
+    path: string,
+    options: {
+      prefix?: string;
+      pick?: Record<string, boolean>;
+      omit?: Record<string, boolean>;
+    }
+  ): any;
 }
 
 // ============================================================================
@@ -104,11 +145,10 @@ export interface SelectionBuilder<TContext = any> {
   ): TModel['_transformed'];
   
   /**
-   * Select a field with arguments
+   * Select a field with arguments and model (tuple syntax)
    */
   <TModel extends RemoteModel, TArgs>(
-    field: string,
-    args: TArgs,
+    definition: [string, TArgs],
     model: TModel
   ): TModel['_transformed'];
 }
@@ -153,27 +193,35 @@ export interface SubscriptionSlice<TData = any, TArgs = any> {
  * Slice creation functions
  */
 export interface QuerySliceFunction {
-  <TData, TArgs = {}>(
+  // Simple form without arguments
+  <TData>(
     name: string,
+    selections: (query: SelectionBuilder) => TData,
+    transform?: TransformFunction<any, TData>
+  ): QuerySlice<TData, {}>;
+  
+  // Form with arguments using tuple syntax
+  <TData, TArgs>(
+    definition: [string, TArgs],
     selections: (query: SelectionBuilder, args: TArgs) => TData,
     transform?: TransformFunction<any, TData>
   ): QuerySlice<TData, TArgs>;
 }
 
 export interface MutationSliceFunction {
-  <TData, TArgs = {}>(
+  // Simple form without arguments
+  <TData>(
     name: string,
+    selections: (mutate: SelectionBuilder) => TData,
+    transform?: TransformFunction<any, TData>
+  ): MutationSlice<TData, {}>;
+  
+  // Form with arguments using tuple syntax
+  <TData, TArgs>(
+    definition: [string, TArgs],
     selections: (mutate: SelectionBuilder, args: TArgs) => TData,
     transform?: TransformFunction<any, TData>
   ): MutationSlice<TData, TArgs>;
-}
-
-export interface SubscriptionSliceFunction {
-  <TData, TArgs = {}>(
-    name: string,
-    selections: (subscribe: SelectionBuilder, args: TArgs) => TData,
-    transform?: TransformFunction<any, TData>
-  ): SubscriptionSlice<TData, TArgs>;
 }
 
 // ============================================================================
@@ -297,9 +345,9 @@ export type InferVariables<T> = T extends PageQuery<any, infer TVariables>
 
 export interface GqlApi {
   /**
-   * Create a remote model (fragment)
+   * Create a remote model
    */
-  fragment: FragmentFunction;
+  model: ModelFunction;
   
   /**
    * Create a query slice
@@ -310,11 +358,6 @@ export interface GqlApi {
    * Create a mutation slice
    */
   mutationSlice: MutationSliceFunction;
-  
-  /**
-   * Create a subscription slice
-   */
-  subscriptionSlice: SubscriptionSliceFunction;
   
   /**
    * Create a page query
@@ -330,6 +373,11 @@ export interface GqlApi {
    * Argument type helpers
    */
   arg: ArgTypes;
+  
+  /**
+   * Input parameter helpers for models
+   */
+  input: InputHelpers;
   
   /**
    * Type inference utility

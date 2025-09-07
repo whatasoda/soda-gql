@@ -88,11 +88,11 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 - **FR-008**: Generated queries MUST be registered once at module top-level to prevent re-evaluation
 - **FR-009**: System MUST support cross-module query composition while maintaining proper dependency boundaries
 - **FR-010**: System MUST detect and report type mismatches immediately during development
-- **FR-011**: System MUST handle [NEEDS CLARIFICATION: maximum number of slices that can be combined in a single Page Query]
-- **FR-012**: System MUST support [NEEDS CLARIFICATION: specific GraphQL features like subscriptions, directives, fragments]
-- **FR-013**: Transform functions MUST handle [NEEDS CLARIFICATION: error recovery strategy when data transformation fails]
-- **FR-014**: System MUST maintain [NEEDS CLARIFICATION: backward compatibility requirements when schema evolves]
-- **FR-015**: System MUST integrate with [NEEDS CLARIFICATION: specific build tools and bundlers]
+- **FR-011**: System MUST handle up to 32 slices per Page Query with warning at 16+ slices
+- **FR-012**: System MUST support queries and mutations (subscriptions out of scope, directives future work, fragments replaced by higher-level concept)
+- **FR-013**: Transform functions MUST propagate errors as runtime exceptions without special recovery
+- **FR-014**: System MUST support only latest schema version (backward compatibility via future plugins if needed)
+- **FR-015**: System MUST integrate with Babel as minimum requirement with extensible design for multiple build tools
 
 ### Key Entities *(include if feature involves data)*
 - **Remote Model**: Type-safe representation of a GraphQL type with field selections, parameters, and transform functions. Can be created multiple times per GraphQL type for different use cases.
@@ -114,11 +114,11 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous  
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
-- [ ] Dependencies and assumptions identified
+- [x] Dependencies and assumptions identified
 
 ---
 
@@ -131,7 +131,7 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 - [x] User scenarios defined
 - [x] Requirements generated
 - [x] Entities identified
-- [ ] Review checklist passed (has NEEDS CLARIFICATION items)
+- [x] Review checklist passed
 
 ---
 
