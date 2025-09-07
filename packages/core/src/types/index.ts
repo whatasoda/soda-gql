@@ -10,6 +10,8 @@ export { hiddenBrand } from "./brand-func";
 export type {
   ConditionalField,
   DeepFieldSelection,
+  ExtractNonRelations,
+  ExtractRelations,
   FieldSelection,
   PartialFields,
   RecursiveFieldSelection,
@@ -22,7 +24,7 @@ export type { MutationSlice } from "./mutation-slice";
 export type { PageQuery } from "./page-query";
 // Query slice types
 export type { QuerySlice, SelectionBuilder } from "./query-slice";
-// Remote model types
+// Remote model types (FieldSelection now exported from field-selection)
 export type { RemoteModel, TransformFunction } from "./remote-model";
 
 import type { MutationSlice } from "./mutation-slice";

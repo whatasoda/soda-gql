@@ -3,12 +3,7 @@
  * Copied from spec - not imported from /specs directory
  */
 
-/**
- * Field selection for GraphQL types with proper type inference
- */
-export type FieldSelection<T = any> = {
-  [K in keyof T]?: T[K] extends object ? boolean | FieldSelection<T[K]> : boolean;
-};
+import type { FieldSelection } from "./field-selection";
 
 /**
  * Transform function for normalizing data

@@ -21,77 +21,122 @@ describe("FieldSelection type", () => {
     expect(selection.email).toBe(false);
   });
 
-  it("should support nested object selection", () => {
+  it("should distinguish between relations and regular objects using __relation__", () => {
+    type Author = {
+      id: string;
+      name: string;
+      bio: string;
+    };
+
     type Post = {
       id: string;
       title: string;
-      author: {
-        id: string;
-        name: string;
-        profile: {
-          bio: string;
-          avatar: string;
-        };
+      metadata: {
+        // Regular object, not a relation
+        createdAt: string;
+        updatedAt: string;
+        version: number;
+      };
+      __relation__: {
+        author: Author;
+        comments: Array<{
+          id: string;
+          content: string;
+        }>;
       };
     };
 
     const selection: FieldSelection<Post> = {
       id: true,
       title: true,
+      metadata: true, // Regular object field - can only be boolean
       author: {
+        // Relation field - can be nested selection
         id: true,
         name: true,
-        profile: {
-          bio: true,
-          avatar: false,
-        },
+        bio: false,
+      },
+      comments: {
+        id: true,
+        content: true,
       },
     };
 
+    expect(selection.metadata).toBe(true);
     expect(selection.author).toBeDefined();
-    expect((selection.author as any).profile.bio).toBe(true);
+    expect((selection.author as any).name).toBe(true);
   });
 
-  it("should support array field selection", () => {
+  it("should support array relations via __relation__", () => {
     type Blog = {
       id: string;
-      posts: Array<{
-        id: string;
-        title: string;
-        tags: string[];
-      }>;
+      title: string;
+      tags: string[]; // Simple array, not a relation
+      __relation__: {
+        posts: Array<{
+          id: string;
+          title: string;
+          content: string;
+        }>;
+      };
     };
 
     const selection: FieldSelection<Blog> = {
       id: true,
+      title: true,
+      tags: true, // Simple array field - boolean only
       posts: {
+        // Relation array - nested selection
         id: true,
         title: true,
-        tags: true,
+        content: false,
       },
     };
 
+    expect(selection.tags).toBe(true);
     expect(selection.posts).toBeDefined();
-    expect((selection.posts as any).tags).toBe(true);
+    expect((selection.posts as any).title).toBe(true);
   });
 
-  it("should support deep field selection", () => {
+  it("should support deep field selection with __relation__", () => {
+    type Level4 = {
+      value: string;
+    };
+
+    type Level3 = {
+      name: string;
+      __relation__: {
+        level4: Level4;
+      };
+    };
+
+    type Level2 = {
+      id: string;
+      __relation__: {
+        level3: Level3;
+      };
+    };
+
     type DeepStructure = {
-      level1: {
-        level2: {
-          level3: {
-            level4: {
-              value: string;
-            };
+      rootData: string;
+      __relation__: {
+        level1: {
+          data: string;
+          __relation__: {
+            level2: Level2;
           };
         };
       };
     };
 
     const selection: DeepFieldSelection<DeepStructure> = {
+      rootData: true,
       level1: {
+        data: true,
         level2: {
+          id: true,
           level3: {
+            name: true,
             level4: {
               value: true,
             },
@@ -178,27 +223,42 @@ describe("FieldSelection type", () => {
     expect((partialSelection.profile as any).bio).toBeUndefined();
   });
 
-  it("should handle recursive types", () => {
+  it("should handle recursive types with __relation__", () => {
     type TreeNode = {
       id: string;
       value: string;
-      children?: TreeNode[];
+      metadata: {
+        depth: number;
+        path: string;
+      };
+      __relation__: {
+        parent?: TreeNode;
+        children?: TreeNode[];
+      };
     };
 
     const selection: FieldSelection<TreeNode> = {
       id: true,
       value: true,
+      metadata: true, // Regular object - boolean only
+      parent: {
+        // Relation - nested selection
+        id: true,
+        value: true,
+        metadata: true,
+      },
       children: {
         id: true,
         value: true,
         children: {
+          // Can continue recursively through relations
           id: true,
           value: true,
-          // Can continue recursively
         },
       },
     };
 
     expect(selection.children).toBeDefined();
+    expect(selection.parent).toBeDefined();
   });
 });
