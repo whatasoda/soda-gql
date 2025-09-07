@@ -13,103 +13,6 @@ Default to using Bun instead of Node.js.
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
 - Bun automatically loads .env, so don't use dotenv.
 
-## APIs
-
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
-
-## Testing
-
-Use `bun test` to run tests.
-
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
-
-## Frontend
-
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-
-// import .css files directly and it works
-import './index.css';
-
-import { createRoot } from "react-dom/client";
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
-
 ## Project: Zero-runtime GraphQL Query Generation
 
 This project implements a zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach.
@@ -144,6 +47,64 @@ bun run build
 # Type check
 bun run typecheck
 ```
+
+## Universal Code Conventions
+
+### Type Safety
+
+- **NO any/unknown**: Never use `any` or `unknown` directly
+  - Use Generic type parameters with constraints instead
+  - Example: `<T extends BaseType>` not `any`
+  - Cast to any/unknown only within Generic constraints
+- **External Data Validation**: Always validate with zod v4
+  - JSON files, API responses, user input
+  - Never trust external data types
+  - Example: `z.object({ ... }).parse(data)`
+
+### Error Handling
+
+- **Use neverthrow**: Type-safe error handling without exceptions
+  - Use `ok()` and `err()` functions only
+  - NO `fromPromise` (loses type information)
+  - Use discriminated unions for complex flows
+  - Example: `Result<SuccessType, ErrorType>`
+- **Never throw**: Return Result types instead
+  - Exceptions only for truly exceptional cases
+  - All expected errors must be Result types
+
+### Code Organization
+
+- **NO Classes for State**: Classes forbidden for state management
+  - OK for: DTOs, Error classes, pure method collections
+  - Use dependency injection for state
+  - Keep state scope minimal with closures
+- **Pure Functions**: Extract pure logic for testability
+  - Side effects at boundaries only
+  - Dependency injection over global state
+- **Optimize Dependencies**: Both file and function level
+  - Minimize coupling between modules
+  - Use explicit imports, never circular
+
+### Testing
+
+- **TDD Mandatory**: t_wada methodology
+  - Write test first (RED phase)
+  - Make it pass (GREEN phase)
+  - Refactor (REFACTOR phase)
+  - Commit tests before implementation
+- **No Mocks**: Use real dependencies
+  - Real databases, actual file systems
+  - Integration issues caught early
+- **Import Only**: Use `import`, never `require`
+  - Preserves type information
+  - Better tree-shaking
+
+### Bun Specific
+
+- Use Bun's built-in APIs over Node.js equivalents
+- `Bun.file()` over `fs.readFile()`
+- `bun:test` for testing
+- `bun:sqlite` for SQLite
 
 ### Recent Changes
 
