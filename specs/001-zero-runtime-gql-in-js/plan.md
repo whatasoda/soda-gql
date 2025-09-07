@@ -87,6 +87,7 @@ The implementation deliberately follows a **runtime-first, zero-runtime later** 
 - **Import Style**: No file extensions in imports (`import { x } from './file'` not `'./file.ts'`)
 - **Build Strategy**: Direct TS references initially, build config deferred until publishing
 - **Workspace**: Bun workspaces with workspace protocol for internal dependencies
+- **CRITICAL**: NEVER import from `/specs/` directory - specs are documentation only, not implementation
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -287,6 +288,21 @@ packages/
 - Example: `import { createGql } from './create-gql'` not `'./create-gql.ts'`
 - Rationale: Allows flexibility in build output format
 
+**⚠️ CRITICAL Import Restriction**:
+- **NEVER import from `/specs/` directory in implementation code**
+- Specs contain contracts and documentation, NOT implementation
+- Files in `/specs/001-*/contracts/` are for reference only
+- Copy type definitions to packages if needed, don't import directly
+- Example of what NOT to do:
+  ```typescript
+  // ❌ FORBIDDEN - Never do this
+  import { RemoteModel } from '../../specs/001-zero-runtime-gql-in-js/contracts/runtime-api';
+  
+  // ✅ CORRECT - Define in package
+  // packages/core/src/types/remote-model.ts
+  export interface RemoteModel<T> { ... }
+  ```
+
 ### Build Strategy
 
 **Development-First Approach**:
@@ -456,6 +472,22 @@ The implementation is deliberately structured in 5 phases (A→E) based on depen
   - No mocks ensures integration issues caught early
   - Each utility tested in isolation then integration
   - Test files colocated: `src/__tests__/create-gql.test.ts`
+
+- **Implementation Guidelines**:
+  - **CRITICAL**: Never import from `/specs/` directory
+  - Contracts in `/specs/001-*/contracts/` are reference only
+  - Copy type definitions to `packages/core/src/types/`
+  - Each package self-contained with its own type definitions
+  - Example structure:
+    ```
+    packages/core/src/
+    ├── types/
+    │   ├── remote-model.ts    # Copied from spec, not imported
+    │   ├── query-slice.ts     # Copied from spec, not imported
+    │   └── index.ts           # Re-exports all types
+    ├── create-gql.ts
+    └── index.ts
+    ```
 
 ### Phase B: Code Generation System
 **Why Second**: Runtime implementation informs generation requirements

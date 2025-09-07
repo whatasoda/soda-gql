@@ -148,6 +148,7 @@ function createUserService(repository: UserRepository) {
 - Explicit imports only
 - Pure functions where possible
 - Side effects only at boundaries
+- **NEVER import from `/specs/` directory**
 
 ```typescript
 // ❌ FORBIDDEN - Circular dependency
@@ -159,6 +160,9 @@ export const a = () => b();
 import { a } from './a';
 export const b = () => a();
 
+// ❌ FORBIDDEN - Importing from specs
+import { SomeType } from '../../../specs/001-feature/contracts/api';
+
 // ✅ CORRECT - Unidirectional flow
 // file: core.ts
 export const core = () => 'core';
@@ -166,9 +170,50 @@ export const core = () => 'core';
 // file: feature.ts
 import { core } from './core';
 export const feature = () => core();
+
+// ✅ CORRECT - Define types in packages
+// packages/core/src/types.ts
+export interface SomeType { ... }
 ```
 
-**Rationale**: Complex dependency graphs make code hard to understand, test, and refactor. Clear, unidirectional dependencies enable confident changes.
+### Specs Directory Restriction
+
+**Rule**: The `/specs/` directory is for documentation and planning only.
+
+**FORBIDDEN**:
+- Importing any TypeScript/JavaScript files from `/specs/`
+- Using contracts from `/specs/*/contracts/` as implementation
+- Referencing specs files in production or test code
+
+**CORRECT Approach**:
+1. Read specs contracts for reference
+2. Copy type definitions to appropriate package
+3. Implement types in package source code
+4. Keep specs as documentation only
+
+```typescript
+// ❌ FORBIDDEN
+import { RemoteModel } from '../../specs/001-zero-runtime-gql-in-js/contracts/runtime-api';
+import type { PluginAPI } from '../../specs/001-zero-runtime-gql-in-js/contracts/plugin-api';
+
+// ✅ CORRECT
+// packages/core/src/types/remote-model.ts
+export interface RemoteModel<T> {
+  // Implementation based on spec
+}
+
+// packages/builder/src/types/plugin-api.ts  
+export interface PluginAPI {
+  // Implementation based on spec
+}
+```
+
+**Rationale**: 
+- Specs are living documentation that may change
+- Implementation should be self-contained in packages
+- Prevents accidental coupling to documentation
+- Ensures packages are independently deployable
+- Avoids confusion between reference and implementation
 
 ## Testing (NON-NEGOTIABLE)
 

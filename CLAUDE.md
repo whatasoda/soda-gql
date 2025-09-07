@@ -84,6 +84,10 @@ bun run typecheck
 - **Optimize Dependencies**: Both file and function level
   - Minimize coupling between modules
   - Use explicit imports, never circular
+- **NEVER import from /specs/**: Specs are documentation only
+  - Don't import contracts or types from specs directory
+  - Copy needed types to packages instead
+  - specs/*/contracts/ files are reference documentation
 
 ### Testing
 
