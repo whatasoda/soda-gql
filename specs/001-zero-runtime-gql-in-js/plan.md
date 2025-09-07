@@ -77,10 +77,16 @@ The implementation deliberately follows a **runtime-first, zero-runtime later** 
 **Storage**: JSON files for generated GraphQL documents, file system for generated code  
 **Testing**: Bun test with TDD (t_wada methodology)  
 **Target Platform**: Node.js/Bun runtime, browser environments via build tools
-**Project Type**: single (library with CLI and plugins)  
+**Project Type**: Monorepo with multiple packages (core, codegen, builder, plugins, cli)  
 **Performance Goals**: Zero runtime overhead, instant type feedback during development  
 **Constraints**: Must handle up to 32 slices per Page Query (warning at 16+), single schema version support  
 **Scale/Scope**: Support Feature-Sliced Design architecture, multiple build tools (Babel minimum)
+
+**Development Conventions**:
+- **TypeScript Config**: Monorepo best practices with tsconfig.base.json and per-package configs
+- **Import Style**: No file extensions in imports (`import { x } from './file'` not `'./file.ts'`)
+- **Build Strategy**: Direct TS references initially, build config deferred until publishing
+- **Workspace**: Bun workspaces with workspace protocol for internal dependencies
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -231,6 +237,105 @@ tests/
 4. **Parallel Development**: Teams can work on different packages simultaneously
 5. **Testing Isolation**: Each package can be tested independently
 
+### TypeScript Configuration Strategy
+
+**Monorepo TypeScript Best Practices**:
+
+```
+# Root configuration files
+/
+├── tsconfig.json          # Root config for IDE support
+├── tsconfig.base.json     # Shared base configuration
+├── package.json           # Workspace configuration
+│
+# Per-package configuration
+packages/
+├── core/
+│   └── tsconfig.json      # Extends ../../tsconfig.base.json
+├── codegen/
+│   └── tsconfig.json      # Extends ../../tsconfig.base.json
+├── builder/
+│   └── tsconfig.json      # Extends ../../tsconfig.base.json
+├── plugin-babel/
+│   └── tsconfig.json      # Extends ../../tsconfig.base.json
+└── cli/
+    └── tsconfig.json      # Extends ../../tsconfig.base.json
+```
+
+**Configuration Details**:
+
+1. **tsconfig.base.json**: Shared compiler options
+   - `strict: true` for maximum type safety
+   - `module: "NodeNext"` for modern module resolution
+   - `moduleResolution: "NodeNext"` for package.json exports
+   - `esModuleInterop: true` for compatibility
+   - No `paths` aliases - use workspace protocol
+
+2. **Root tsconfig.json**: IDE and tooling support
+   - References all packages for project-wide navigation
+   - Composite project setup for incremental builds
+   - Solution-style configuration
+
+3. **Package tsconfig.json**: Package-specific settings
+   - Extends base configuration
+   - Sets `outDir` and `rootDir` appropriately
+   - Defines package-specific `include` patterns
+   - References dependent packages via `references`
+
+**Import Convention**:
+- **No file extensions in imports**: TypeScript handles resolution
+- Example: `import { createGql } from './create-gql'` not `'./create-gql.ts'`
+- Rationale: Allows flexibility in build output format
+
+### Build Strategy
+
+**Development-First Approach**:
+
+1. **Initial Phase: Direct TS References**
+   - Packages reference TypeScript files directly
+   - No build step required for development
+   - Fast iteration with Bun's native TS support
+   - Example: `packages/plugin-babel` imports from `packages/builder/src/index.ts`
+
+2. **Testing Phase: Runtime Execution**
+   - Tests run against TypeScript source directly
+   - Bun test handles TS transparently
+   - No compilation needed for test execution
+
+3. **Final Phase: Build Configuration** (Deferred)
+   - Add build configuration only when publishing
+   - Each package gets appropriate build setup:
+     - `core`: ESM + CJS dual package
+     - `codegen`: CLI-focused build
+     - `builder`: Library build
+     - `plugin-babel`: Babel plugin format
+     - `cli`: Executable with bundled dependencies
+
+**Why Defer Build Configuration**:
+- Faster initial development without build complexity
+- Focus on functionality over packaging
+- Bun's native TS support eliminates build need during development
+- Build configuration can be optimized based on actual usage patterns
+
+**Package.json Workspace Setup**:
+```json
+{
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ]
+}
+```
+
+Each package uses workspace protocol for internal dependencies:
+```json
+{
+  "dependencies": {
+    "@soda-gql/core": "workspace:*"
+  }
+}
+```
+
 ## Phase 0: Outline & Research
 
 ### Background & Rationale
@@ -324,19 +429,33 @@ The implementation is deliberately structured in 5 phases (A→E) based on depen
 **Why First**: Provides immediate value and enables testing without build tool complexity
 
 **Background & Details**:
+- **TypeScript-First Development**:
+  - Direct TS file imports between packages (no build step)
+  - Bun executes TypeScript natively during development
+  - Import paths without extensions: `import { util } from './util'`
+  - TypeScript project references for cross-package types
+  
 - **createGql Function**: Factory pattern that accepts generated schema types
   - Rationale: Enables type injection without circular dependencies
   - Returns object with all utilities (model, query, mutation methods)
+  - Located in `packages/core/src/create-gql.ts`
+  
 - **Individual Utilities**: Each implemented as pure function with dependency injection
   - RemoteModel: Handles field selection and transform functions
   - QuerySlice: Encapsulates domain-specific queries
   - MutationSlice: Similar to QuerySlice for mutations
   - PageQuery: Combines multiple slices with deduplication
+  - Each in separate file for clarity (e.g., `src/remote-model.ts`)
+  
 - **Type Injection Mechanism**: Generic constraints ensure type safety
   - Example: `createGql<TSchema>()` where TSchema extends GeneratedSchema
+  - No `any` types except within Generic bounds
+  
 - **Testing Strategy**: TDD with real GraphQL schemas
+  - Tests import TS files directly: `import { createGql } from '../src/create-gql'`
   - No mocks ensures integration issues caught early
   - Each utility tested in isolation then integration
+  - Test files colocated: `src/__tests__/create-gql.test.ts`
 
 ### Phase B: Code Generation System
 **Why Second**: Runtime implementation informs generation requirements
