@@ -3,13 +3,15 @@
  * Copied from spec - not imported from /specs directory
  */
 
-import type { MutationSlice } from './mutation-slice'
-import type { QuerySlice } from './query-slice'
+import type { MutationSlice } from "./mutation-slice";
+import type { QuerySlice } from "./query-slice";
 
 /**
  * Transform function for normalizing data
  */
-export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput
+export type TransformFunction<TInput = any, TOutput = any> = (
+  data: TInput
+) => TOutput;
 
 /**
  * Page Query definition
@@ -19,40 +21,35 @@ export interface PageQuery<TData = any, TVariables = any> {
   /**
    * Internal type brands for type inference
    */
-  readonly _data: TData
-  readonly _variables: TVariables
+  readonly _data: () => TData;
+  readonly _variables: () => TVariables;
 
   /**
    * Query/Mutation/Subscription name
    */
-  name: string
+  name: string;
 
   /**
    * Operation type
    */
-  type: 'query' | 'mutation' | 'subscription'
+  type: "query" | "mutation" | "subscription";
 
   /**
    * Slices that compose this page query
    */
-  slices: Array<QuerySlice<any, any> | MutationSlice<any, any>>
+  slices: Array<QuerySlice<any, any> | MutationSlice<any, any>>;
 
   /**
    * Generated GraphQL document (populated at build time)
    */
-  document: string
+  document: string;
 
   /**
    * Variables for the operation
    */
-  variables: TVariables
-
-  /**
-   * Optional transform function for the entire response
-   */
-  transform?: TransformFunction<any, TData>
+  variables: TVariables;
 }
 
-export type { MutationSlice } from './mutation-slice'
+export type { MutationSlice } from "./mutation-slice";
 // Re-export dependent types for convenience
-export type { QuerySlice } from './query-slice'
+export type { QuerySlice } from "./query-slice";
