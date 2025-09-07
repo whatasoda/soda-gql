@@ -85,11 +85,11 @@ import { gql } from "@soda-gql/core";
 // Define a basic user model
 export const userBasic = gql.model(
   "User",
-  {
+  () => ({
     id: true,
     name: true,
     email: true
-  },
+  }),
   (data) => ({
     id: data.id,
     displayName: data.name,
@@ -100,14 +100,14 @@ export const userBasic = gql.model(
 // Define a detailed user model with posts
 export const userWithPosts = gql.model(
   "User",
-  {
+  () => ({
     id: true,
     name: true,
     posts: {
       id: true,
       title: true
     }
-  },
+  }),
   (data) => ({
     id: data.id,
     name: data.name,
@@ -287,7 +287,7 @@ describe("userBasic remote model", () => {
   });
   
   test("selects correct fields", () => {
-    const fields = userBasic.fields;
+    const fields = userBasic.fields();
     
     expect(fields).toEqual({
       id: true,

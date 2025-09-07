@@ -10,11 +10,11 @@ export type PostForFeature_showPostDetail = gql.infer<
 export const post_remoteModel = {
   forIterate: gql.model(
     "post",
-    {
+    () => ({
       id: true,
       title: true,
       userId: true,
-    },
+    }),
     (data) => ({
       id: data.id,
       title: data.title,

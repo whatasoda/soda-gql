@@ -75,7 +75,7 @@ export interface ModelFunction {
   // Simple form without parameters
   <TType, TTransformed>(
     typeName: string,
-    fields: FieldSelection<TType> | (() => FieldSelection<TType>),
+    fields: () => FieldSelection<TType>,
     transform: TransformFunction<TType, TTransformed>
   ): RemoteModel<TType, TTransformed, {}>;
   
