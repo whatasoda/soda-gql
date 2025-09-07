@@ -24,7 +24,12 @@ export type { PageQuery } from "./page-query";
 // Query slice types
 export type { QuerySlice, SelectionBuilder } from "./query-slice";
 // Remote model types (FieldSelection now exported from field-selection)
-export type { RemoteModel, TransformFunction } from "./remote-model";
+export type {
+  FieldSelector,
+  RelationFunction,
+  RemoteModel,
+  TransformFunction,
+} from "./remote-model";
 
 import type { MutationSlice } from "./mutation-slice";
 import type { PageQuery } from "./page-query";

@@ -12,6 +12,25 @@ import type { FieldSelection } from "./field-selection";
 export type TransformFunction<TInput = any, TOutput = any> = (data: TInput) => TOutput;
 
 /**
+ * Relation function for building nested selections
+ */
+// biome-ignore lint/suspicious/noExplicitAny: generic defaults for relation function
+export type RelationFunction<T = any> = <R>(
+  field: keyof T,
+  // biome-ignore lint/suspicious/noExplicitAny: model can have any transform and params
+  model: RemoteModel<R, any, any>,
+) => FieldSelection<R>;
+
+/**
+ * Field selector function that builds field selection
+ */
+// biome-ignore lint/suspicious/noExplicitAny: generic defaults for selector function
+export type FieldSelector<TType = any, TParams = {}> = (
+  relation: RelationFunction<TType>,
+  args?: TParams,
+) => FieldSelection<TType>;
+
+/**
  * Remote Model definition
  * Represents a reusable GraphQL fragment with transformation
  */
@@ -30,9 +49,9 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
   typeName: string;
 
   /**
-   * Field selection
+   * Field selector function with context-aware relations
    */
-  fields: FieldSelection<TType>;
+  fields: FieldSelector<TType, TParams>;
 
   /**
    * Transform function
