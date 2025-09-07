@@ -20,17 +20,17 @@
 
 ### A.1: Project Setup
 
-- [ ] T001 Initialize monorepo with Bun workspaces in package.json
-- [ ] T002 Create base TypeScript configuration files (tsconfig.json, tsconfig.base.json)
-- [ ] T003 [P] Create package directories: packages/core, packages/codegen, packages/builder, packages/plugin-babel, packages/cli
-- [ ] T004 [P] Initialize package.json for each package with workspace protocol dependencies
-- [ ] T005 Configure tsconfig.json in each package extending ../../tsconfig.base.json
-- [ ] T006 [P] Install core dependencies: bun add neverthrow zod@4
-- [ ] T007 Setup Biome v2 for linting and formatting: bun add -D @biomejs/biome@2
-- [ ] T008 Configure biome.json with TypeScript, import sorting, and formatting rules
-- [ ] T009 Add root package.json scripts: "typecheck": "bun --filter='\*' typecheck", "biome:check": "biome check --write .", "quality": "bun run biome:check && bun run typecheck"
-- [ ] T010 Create .gitignore with node_modules, dist, coverage patterns
-- [ ] T011 Run initial quality check: bun run quality
+- [x] T001 Initialize monorepo with Bun workspaces in package.json
+- [x] T002 Create base TypeScript configuration files (tsconfig.json, tsconfig.base.json)
+- [x] T003 [P] Create package directories: packages/core, packages/codegen, packages/builder, packages/plugin-babel, packages/cli
+- [x] T004 [P] Initialize package.json for each package with workspace protocol dependencies
+- [x] T005 Configure tsconfig.json in each package extending ../../tsconfig.base.json
+- [x] T006 [P] Install core dependencies: bun add neverthrow zod@4
+- [x] T007 Setup Biome v2 for linting and formatting: bun add -D @biomejs/biome@2
+- [x] T008 Configure biome.json with TypeScript, import sorting, and formatting rules
+- [x] T009 Add root package.json scripts: "typecheck": "bun --filter='\*' typecheck", "biome:check": "biome check --write .", "quality": "bun run biome:check && bun run typecheck"
+- [x] T010 Create .gitignore with node_modules, dist, coverage patterns
+- [x] T011 Run initial quality check: bun run quality
 
 ### A.2: Core Package - Type Definitions (TDD - Tests First)
 
