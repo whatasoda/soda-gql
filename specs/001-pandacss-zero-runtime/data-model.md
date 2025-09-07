@@ -6,8 +6,8 @@
 Represents a type-safe GraphQL fragment with transformation capabilities.
 
 **Fields**:
-- `typeName: string` - GraphQL type this model represents
-- `fields: FieldSelection` - Selected fields and nested selections
+- `typeName: keyof GeneratedSchema` - GraphQL type this model represents (type-safe)
+- `fields: (relation: RelationFunction, args?: TParams) => FieldSelection` - Field selector function
 - `parameters: ParameterDefinition[]` - Injectable parameters for relationships
 - `transform: TransformFunction` - Data normalization function
 - `_brand: unique symbol` - Type brand for type safety

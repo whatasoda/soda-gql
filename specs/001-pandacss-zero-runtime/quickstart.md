@@ -70,7 +70,10 @@ type Query {
 bun run @soda-gql/core generate
 ```
 
-This creates type definitions in `src/__generated__/`.
+This creates type definitions in `src/__generated__/` including:
+- Complete type definitions for all GraphQL types
+- Proper TypeScript types for IDE autocomplete
+- Type-safe field selection support
 
 ## Basic Usage
 
@@ -81,11 +84,12 @@ Create type-safe representations of your GraphQL types:
 ```typescript
 // src/models/user.remote-model.ts
 import { gql } from "@soda-gql/core";
+import type { Schema } from "@/__generated__/schema";  // Generated types
 
 // Define a basic user model
 export const userBasic = gql.model(
   "User",
-  () => ({
+  (relation) => ({  // relation is available even in simple form
     id: true,
     name: true,
     email: true
@@ -100,7 +104,7 @@ export const userBasic = gql.model(
 // Define a detailed user model with posts
 export const userWithPosts = gql.model(
   "User",
-  () => ({
+  (relation) => ({
     id: true,
     name: true,
     posts: {

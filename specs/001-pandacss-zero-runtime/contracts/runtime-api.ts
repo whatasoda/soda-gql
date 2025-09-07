@@ -9,11 +9,26 @@
 import { z } from 'zod';
 
 // ============================================================================
+// Generated Schema Types (imported from generated code)
+// ============================================================================
+
+/**
+ * These types are generated from GraphQL schema and imported by users
+ * Example: import type { Schema } from '@/__generated__/schema';
+ */
+export interface GeneratedSchema {
+  Query: any;
+  Mutation: any;
+  // All GraphQL types from schema...
+  [typeName: string]: any;
+}
+
+// ============================================================================
 // Remote Model API
 // ============================================================================
 
 /**
- * Field selection for GraphQL types
+ * Field selection for GraphQL types with proper type inference
  */
 export type FieldSelection<T = any> = {
   [K in keyof T]?: T[K] extends object ? boolean | FieldSelection<T[K]> : boolean;
@@ -69,22 +84,22 @@ export interface RemoteModel<TType = any, TTransformed = any, TParams = {}> {
 }
 
 /**
- * Remote Model creation function (renamed from fragment to model based on examples)
+ * Remote Model creation function
  */
 export interface ModelFunction {
   // Simple form without parameters
-  <TType, TTransformed>(
-    typeName: string,
-    fields: () => FieldSelection<TType>,
-    transform: TransformFunction<TType, TTransformed>
-  ): RemoteModel<TType, TTransformed, {}>;
+  <TType extends keyof GeneratedSchema, TTransformed>(
+    typeName: TType,
+    fields: (relation: RelationFunction) => FieldSelection<GeneratedSchema[TType]>,
+    transform: TransformFunction<GeneratedSchema[TType], TTransformed>
+  ): RemoteModel<GeneratedSchema[TType], TTransformed, {}>;
   
   // Complex form with parameters
-  <TType, TTransformed, TParams>(
-    definition: [string, TParams],
-    fields: (relation: RelationFunction, args: TParams) => FieldSelection<TType>,
-    transform: TransformFunction<TType, TTransformed>
-  ): RemoteModel<TType, TTransformed, TParams>;
+  <TType extends keyof GeneratedSchema, TTransformed, TParams>(
+    definition: [TType, TParams],
+    fields: (relation: RelationFunction, args: TParams) => FieldSelection<GeneratedSchema[TType]>,
+    transform: TransformFunction<GeneratedSchema[TType], TTransformed>
+  ): RemoteModel<GeneratedSchema[TType], TTransformed, TParams>;
 }
 
 /**
@@ -133,22 +148,22 @@ export interface Argument<T = any> {
 }
 
 /**
- * Slice selection builder
+ * Slice selection builder with type-safe field names
  */
-export interface SelectionBuilder<TContext = any> {
+export interface SelectionBuilder<TContext extends keyof GeneratedSchema = 'Query'> {
   /**
    * Select a field with a remote model
    */
-  <TModel extends RemoteModel>(
-    field: string,
+  <TField extends keyof GeneratedSchema[TContext], TModel extends RemoteModel>(
+    field: TField,
     model: TModel
   ): TModel['_transformed'];
   
   /**
    * Select a field with arguments and model (tuple syntax)
    */
-  <TModel extends RemoteModel, TArgs>(
-    definition: [string, TArgs],
+  <TField extends keyof GeneratedSchema[TContext], TModel extends RemoteModel, TArgs>(
+    definition: [TField, TArgs],
     model: TModel
   ): TModel['_transformed'];
 }
@@ -370,7 +385,7 @@ export interface GqlApi {
   mutation: MutationFunction;
   
   /**
-   * Argument type helpers
+   * Argument type helpers with proper type inference
    */
   arg: ArgTypes;
   
