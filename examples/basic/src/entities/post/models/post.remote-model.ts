@@ -8,7 +8,7 @@ export type PostForFeature_showPostDetail = gql.infer<
 >;
 
 export const post_remoteModel = {
-  forIterate: gql.fragment(
+  forIterate: gql.model(
     "post",
     {
       id: true,
@@ -22,7 +22,7 @@ export const post_remoteModel = {
     })
   ),
 
-  forFeature_showPostDetail: gql.fragment(
+  forFeature_showPostDetail: gql.model(
     [
       "post",
       {

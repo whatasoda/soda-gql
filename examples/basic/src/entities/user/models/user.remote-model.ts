@@ -4,7 +4,7 @@ export type UserForIterate = gql.infer<typeof user_remoteModel.forIterate>;
 export type UserForReferName = gql.infer<typeof user_remoteModel.forReferName>;
 
 export const user_remoteModel = {
-  forIterate: gql.fragment(
+  forIterate: gql.model(
     "user",
     () => ({
       id: true,
@@ -16,7 +16,7 @@ export const user_remoteModel = {
     })
   ),
 
-  forReferName: gql.fragment(
+  forReferName: gql.model(
     "user",
     () => ({
       id: true,

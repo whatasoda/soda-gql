@@ -6,7 +6,7 @@ export type CommentForIterate = gql.infer<
 export type CommentForDetail = gql.infer<typeof comment_remoteModel.forDetail>;
 
 export const comment_remoteModel = {
-  forIterate: gql.fragment(
+  forIterate: gql.model(
     "comment",
     {
       id: true,
@@ -22,7 +22,7 @@ export const comment_remoteModel = {
     })
   ),
 
-  forDetail: gql.fragment(
+  forDetail: gql.model(
     "comment",
     {
       id: true,
