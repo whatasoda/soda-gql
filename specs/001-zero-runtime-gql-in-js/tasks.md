@@ -36,12 +36,12 @@
 
 **CRITICAL: Write tests first, they MUST fail before implementation**
 
-- [ ] T012 [P] Write failing test for RemoteModel type in packages/core/src/**tests**/types/remote-model.test.ts
-- [ ] T013 [P] Write failing test for QuerySlice type in packages/core/src/**tests**/types/query-slice.test.ts
-- [ ] T014 [P] Write failing test for MutationSlice type in packages/core/src/**tests**/types/mutation-slice.test.ts
-- [ ] T015 [P] Write failing test for PageQuery type in packages/core/src/**tests**/types/page-query.test.ts
-- [ ] T016 [P] Write failing test for FieldSelection type in packages/core/src/**tests**/types/field-selection.test.ts
-- [ ] T017 Quality check: bun run quality
+- [x] T012 [P] Write failing test for RemoteModel type in packages/core/src/**tests**/types/remote-model.test.ts
+- [x] T013 [P] Write failing test for QuerySlice type in packages/core/src/**tests**/types/query-slice.test.ts
+- [x] T014 [P] Write failing test for MutationSlice type in packages/core/src/**tests**/types/mutation-slice.test.ts
+- [x] T015 [P] Write failing test for PageQuery type in packages/core/src/**tests**/types/page-query.test.ts
+- [x] T016 [P] Write failing test for FieldSelection type in packages/core/src/**tests**/types/field-selection.test.ts
+- [x] T017 Quality check: bun run quality
 
 ### A.3: Core Package - Type Implementation (After tests fail)
 
