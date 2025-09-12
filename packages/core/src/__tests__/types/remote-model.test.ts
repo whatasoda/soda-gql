@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { FieldSelection } from "../../types/field-selection";
 import { hidden } from "../../types/hidden";
 import type { RemoteModel, TransformFunction } from "../../types/remote-model";
 
@@ -13,10 +14,19 @@ describe("RemoteModel type", () => {
       _transformed: hidden(),
       _params: hidden(),
       typeName: "User",
-      fields: (_relation, _args) => ({
-        __typename__: "User",
-        id: true,
-        name: true,
+      fields: ({ fields: _fields, args: _args }) => ({
+        id: {
+          _type: hidden(),
+          key: "id" as const,
+          args: {},
+          directives: {},
+        },
+        name: {
+          _type: hidden(),
+          key: "name" as const,
+          args: {},
+          directives: {},
+        },
       }),
       transform: (data) => ({ id: data.id }),
     };
@@ -27,8 +37,11 @@ describe("RemoteModel type", () => {
 
     // Test that fields function returns correct selection
     // biome-ignore lint/suspicious/noExplicitAny: test mock
-    const selection = model.fields({} as any, undefined);
-    expect(selection).toEqual({ __typename__: "User", id: true, name: true });
+    const selection = model.fields({ fields: {} as any, args: undefined });
+    expect(selection.id).toBeDefined();
+    expect(selection.name).toBeDefined();
+    expect(selection.id.key).toBe("id");
+    expect(selection.name.key).toBe("name");
   });
 
   it("should support nested field selection with relations", () => {
@@ -58,11 +71,19 @@ describe("RemoteModel type", () => {
       _transformed: hidden(),
       _params: hidden(),
       typeName: "Post",
-      fields: () => ({
-        __typename__: "Post",
-        id: true,
-        title: true,
-        content: false,
+      fields: ({ fields: _fields, args: _args }) => ({
+        id: {
+          _type: hidden(),
+          key: "id" as const,
+          args: {},
+          directives: {},
+        },
+        title: {
+          _type: hidden(),
+          key: "title" as const,
+          args: {},
+          directives: {},
+        },
       }),
       transform: (data) => data,
     };
@@ -73,19 +94,61 @@ describe("RemoteModel type", () => {
       _transformed: hidden(),
       _params: hidden(),
       typeName: "User",
-      fields: (relation) => ({
-        __typename__: "User",
-        id: true,
-        name: true,
-        email: false,
-        profile: true, // Regular object field (no __typename), not a relation
-        posts: relation("posts", postModel),
+      fields: ({ fields: _fields, args: _args }) => ({
+        id: {
+          _type: hidden(),
+          key: "id" as const,
+          args: {},
+          directives: {},
+        },
+        name: {
+          _type: hidden(),
+          key: "name" as const,
+          args: {},
+          directives: {},
+        },
+        profile: {
+          _type: hidden(),
+          key: "profile" as const,
+          args: {},
+          directives: {},
+        },
+        posts: {
+          _type: hidden(),
+          key: "posts" as const,
+          args: {},
+          directives: {},
+          selection: {
+            Post: postModel.fields({ fields: {}, args: {} }),
+          },
+        },
         friends: {
-          // Can also define inline without using relation function
-          __typename__: "User",
-          id: true,
-          name: true,
-          email: true,
+          _type: hidden(),
+          key: "friends" as const,
+          args: {},
+          directives: {},
+          selection: {
+            User: {
+              id: {
+                _type: hidden(),
+                key: "id" as const,
+                args: {},
+                directives: {},
+              },
+              name: {
+                _type: hidden(),
+                key: "name" as const,
+                args: {},
+                directives: {},
+              },
+              email: {
+                _type: hidden(),
+                key: "email" as const,
+                args: {},
+                directives: {},
+              },
+            },
+          },
         },
       }),
       transform: (data) => data,
@@ -93,13 +156,13 @@ describe("RemoteModel type", () => {
 
     // Test that fields function returns correct selection
     // biome-ignore lint/suspicious/noExplicitAny: test mock
-    const mockRelation = (_field: string, model: any) => model.fields();
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
-    const selection = userModel.fields(mockRelation as any);
+    const selection = userModel.fields({ fields: {} as any, args: {} });
 
     expect(selection.posts).toBeDefined();
     expect(selection.friends).toBeDefined();
-    expect(selection.profile).toBe(true);
+    expect(selection.profile).toBeDefined();
+    expect(selection.posts.selection).toBeDefined();
+    expect(selection.friends.selection).toBeDefined();
   });
 
   it("should support transform function", () => {
@@ -124,26 +187,49 @@ describe("RemoteModel type", () => {
       _transformed: hidden(),
       _params: hidden(),
       typeName: "User",
-      fields: (_relation, args) => ({
-        __typename__: "User",
-        id: true,
-        name: true,
+      fields: ({ fields: _fields, args }) => {
+        const result: FieldSelection<User> = {
+          id: {
+            _type: hidden(),
+            key: "id" as const,
+            args: {},
+            directives: {},
+          },
+          name: {
+            _type: hidden(),
+            key: "name" as const,
+            args: {},
+            directives: {},
+          },
+        };
         // Conditionally include archived field based on parameters
-        archived: args?.includeArchived ?? false,
-      }),
+        if (args?.includeArchived) {
+          result.archived = {
+            _type: hidden(),
+            key: "archived" as const,
+            args: {},
+            directives: {},
+          };
+        }
+        return result;
+      },
       transform: (data) => data,
       parameters: { limit: 10, offset: 0, includeArchived: false },
     };
 
     // Test with default parameters
     // biome-ignore lint/suspicious/noExplicitAny: test mock
-    const selection1 = model.fields({} as any, model.parameters);
-    expect(selection1.archived).toBe(false);
+    const selection1 = model.fields({ fields: {} as any, args: model.parameters });
+    expect(selection1.archived).toBeUndefined();
 
     // Test with custom parameters
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
-    const selection2 = model.fields({} as any, { limit: 5, offset: 0, includeArchived: true });
-    expect(selection2.archived).toBe(true);
+    const selection2 = model.fields({
+      // biome-ignore lint/suspicious/noExplicitAny: test mock
+      fields: {} as any,
+      args: { limit: 5, offset: 0, includeArchived: true },
+    });
+    expect(selection2.archived).toBeDefined();
+    expect(selection2.archived?.key).toBe("archived");
 
     expect(model.parameters).toEqual({ limit: 10, offset: 0, includeArchived: false } as Params);
   });

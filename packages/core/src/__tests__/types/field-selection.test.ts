@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { FieldSelection, SelectedFields } from "../../types/field-selection";
+import type { FieldSelection } from "../../types/field-selection";
 import { hidden } from "../../types/hidden";
 
 describe("FieldSelection type", () => {
@@ -239,14 +239,14 @@ describe("FieldSelection type", () => {
       },
     } satisfies FieldSelection<Blog>;
 
-    expect(selection.tags).toBe({
+    expect(selection.tags).toEqual({
       _type: hidden(),
       key: "tags",
       args: {},
       directives: {},
     });
     expect(selection.posts).toBeDefined();
-    expect(selection.posts?.selection.Post.title).toBe({
+    expect(selection.posts?.selection.Post.title).toEqual({
       _type: hidden(),
       key: "title",
       args: {},

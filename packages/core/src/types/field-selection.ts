@@ -60,6 +60,7 @@ type TypeInfo<T> = {
 };
 
 type FromTypeInfo<
+  // biome-ignore lint/suspicious/noExplicitAny: generic constraint for type info
   TInfo extends TypeInfo<any>,
   TType = TInfo extends { type: infer T } ? T : never,
 > = TInfo extends { list: true }
@@ -78,10 +79,12 @@ type InputObject<T extends object, TName extends string> = T & {
   __input_object_name?: InputObjectName<TName>;
 };
 type ExtractInputObjectNestedFields<T> = {
-  [K in Exclude<keyof T, "__input_object_name"> as T[K] extends InputObject<infer _, infer _> ? K : never]: T[K];
+  [K in Exclude<keyof T, "__input_object_name"> as T[K] extends InputObject<infer _U, infer _N>
+    ? K
+    : never]: T[K];
 };
 type ExtractInputObjectScalarFields<T> = {
-  [K in keyof T as T[K] extends InputObject<infer _, infer _> ? never : K]: T[K];
+  [K in keyof T as T[K] extends InputObject<infer _U, infer _N> ? never : K]: T[K];
 };
 
 type FieldArgRef<T> = {
@@ -92,13 +95,12 @@ type FieldArgRef<T> = {
   typeName: string;
 };
 
-
 export type FieldArgs<T> = {
   [K in keyof ExtractInputObjectScalarFields<T>]: FieldArgRef<T[K]>;
 } & {
   [K in keyof ExtractInputObjectNestedFields<T>]:
     | FieldArgRef<T[K]>
-    | (T[K] extends InputObject<infer U, infer _> ? FieldArgs<U> : never);
+    | (T[K] extends InputObject<infer U, infer _N> ? FieldArgs<U> : never);
 };
 
 /**
@@ -123,8 +125,10 @@ export type ObjectTypeScalarSelection<T, K extends keyof T> = {
 
   key: K;
 
+  // biome-ignore lint/suspicious/noExplicitAny: field arguments can be any type
   args: FieldArgs<any>;
 
+  // biome-ignore lint/suspicious/noExplicitAny: directives can have any value
   directives: Record<string, any>;
 };
 
@@ -133,8 +137,10 @@ export type ObjectTypeNestedSelection<T, K extends keyof T> = {
 
   key: K;
 
+  // biome-ignore lint/suspicious/noExplicitAny: field arguments can be any type
   args: FieldArgs<any>;
 
+  // biome-ignore lint/suspicious/noExplicitAny: directives can have any value
   directives: Record<string, any>;
 
   selection: ObjectTypeNestedSelectionSelection<NormalizeType<T[K]>>;
@@ -170,10 +176,12 @@ export type FieldSelection<T = any> = {
  */
 export type SelectedFields<TSelection> = Prettify<{
   [K in keyof TSelection]: TSelection[K] extends {
+    // biome-ignore lint/suspicious/noExplicitAny: generic constraint for type info
     _type: Hidden<infer TInfo extends TypeInfo<any>>;
   }
     ? FromTypeInfo<TInfo>
     : TSelection[K] extends {
+          // biome-ignore lint/suspicious/noExplicitAny: generic constraint for type info
           _type: Hidden<infer TInfo extends TypeInfo<any>>;
           selection: infer TSubSelection;
         }

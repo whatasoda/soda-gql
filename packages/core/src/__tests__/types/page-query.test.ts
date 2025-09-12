@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hiddenBrand } from "../../types/brand-func";
+import { hidden } from "../../types/hidden";
 import type { PageQuery, QuerySlice } from "../../types/page-query";
 
 describe("PageQuery type", () => {
@@ -10,8 +10,8 @@ describe("PageQuery type", () => {
     type CombinedArgs = { userId: string; limit: number };
 
     const pageQuery: PageQuery<CombinedData, CombinedArgs> = {
-      _data: hiddenBrand(),
-      _variables: hiddenBrand(),
+      _data: hidden(),
+      _variables: hidden(),
       name: "UserWithPosts",
       type: "query",
       slices: [],
@@ -28,8 +28,8 @@ describe("PageQuery type", () => {
   it("should support multiple query slices", () => {
     // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const userSlice: QuerySlice<{ user: any }, { id: string }> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "user",
       name: "user",
       selections: (_query, _args) => ({ user: {} }),
@@ -38,8 +38,8 @@ describe("PageQuery type", () => {
 
     // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const postsSlice: QuerySlice<{ posts: any[] }, { userId: string }> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "posts",
       name: "posts",
       selections: (_query, _args) => ({ posts: [] }),
@@ -48,8 +48,8 @@ describe("PageQuery type", () => {
 
     // biome-ignore lint/suspicious/noExplicitAny: test fixture
     const pageQuery: PageQuery<any, any> = {
-      _data: hiddenBrand(),
-      _variables: hiddenBrand(),
+      _data: hidden(),
+      _variables: hidden(),
       name: "UserPage",
       type: "query",
       slices: [userSlice, postsSlice],
@@ -67,8 +67,8 @@ describe("PageQuery type", () => {
     type CreateUserArgs = { input: { name: string; email: string } };
 
     const pageQuery: PageQuery<CreateUserData, CreateUserArgs> = {
-      _data: hiddenBrand(),
-      _variables: hiddenBrand(),
+      _data: hidden(),
+      _variables: hidden(),
       name: "CreateUser",
       type: "mutation",
       slices: [],
@@ -85,8 +85,8 @@ describe("PageQuery type", () => {
     type MessageArgs = { channel: string };
 
     const pageQuery: PageQuery<MessageData, MessageArgs> = {
-      _data: hiddenBrand(),
-      _variables: hiddenBrand(),
+      _data: hidden(),
+      _variables: hidden(),
       name: "MessageSubscription",
       type: "subscription",
       slices: [],
@@ -102,8 +102,8 @@ describe("PageQuery type", () => {
     type AllUsersData = { users: Array<{ id: string; name: string }> };
 
     const pageQuery: PageQuery<AllUsersData, {}> = {
-      _data: hiddenBrand(),
-      _variables: hiddenBrand(),
+      _data: hidden(),
+      _variables: hidden(),
       name: "AllUsers",
       type: "query",
       slices: [],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hiddenBrand } from "../../types/brand-func";
+import { hidden } from "../../types/hidden";
 import type { MutationSlice, TransformFunction } from "../../types/mutation-slice";
 
 describe("MutationSlice type", () => {
@@ -10,8 +10,8 @@ describe("MutationSlice type", () => {
     type CreateUserArgs = { input: { name: string; email: string } };
 
     const slice: MutationSlice<CreateUserData, CreateUserArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "create-user",
       name: "createUser",
       selections: (_mutate, args) => ({
@@ -47,8 +47,8 @@ describe("MutationSlice type", () => {
     };
 
     const slice: MutationSlice<UpdateUserData, UpdateUserArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "update-user",
       name: "updateUser",
       selections: (_mutate, args) => ({
@@ -69,8 +69,8 @@ describe("MutationSlice type", () => {
     type DeleteUserArgs = { id: string };
 
     const slice: MutationSlice<DeleteUserData, DeleteUserArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "delete-user",
       name: "deleteUser",
       selections: (_mutate, args) => ({
@@ -97,8 +97,8 @@ describe("MutationSlice type", () => {
     };
 
     const slice: MutationSlice<BatchCreateData, BatchCreateArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "batch-create",
       name: "batchCreate",
       selections: (_mutate, args) => ({

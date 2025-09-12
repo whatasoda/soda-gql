@@ -21,7 +21,7 @@ export type { QuerySlice, SelectionBuilder } from "./query-slice";
 // Remote model types (FieldSelection now exported from field-selection)
 export type {
   FieldSelector,
-  RelationFunction,
+  FieldSelectorContext,
   RemoteModel,
   TransformFunction,
 } from "./remote-model";
