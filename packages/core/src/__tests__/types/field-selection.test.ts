@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { FieldSelection } from "../../types/field-selection";
+import type { FieldSelection, SelectedFields } from "../../types/field-selection";
+import { hidden } from "../../types/hidden";
 
 describe("FieldSelection type", () => {
   it("should support basic field selection", () => {
@@ -188,36 +189,69 @@ describe("FieldSelection type", () => {
     type Blog = {
       __typename: "Blog";
       id: string;
-      title: string;
-      tags: string[]; // Simple array, not a relation (no __typename)
+      title?: string;
+      tags?: string[]; // Simple array, not a relation (no __typename)
       posts: Post[]; // Array relation - selection applies to Post type
       featuredPost: Post; // Single relation
     };
 
-    const selection: FieldSelection<Blog> = {
-      __typename__: "Blog",
-      id: true,
-      title: true,
-      tags: true, // Simple array field - boolean only
+    const selection = {
+      id: { _type: hidden(), key: "id", args: {}, directives: {} },
+      title: { _type: hidden(), key: "title", args: {}, directives: {} },
+      tags: { _type: hidden(), key: "tags", args: {}, directives: {} },
       posts: {
-        __typename__: "Post",
-        // Array relation - selection applies to each Post element
-        id: true,
-        title: true,
-        content: false,
+        _type: hidden(),
+        key: "posts",
+        args: {},
+        directives: {},
+        selection: {
+          Post: {
+            // Array relation - selection applies to each Post element
+            id: { _type: hidden(), key: "id", args: {}, directives: {} },
+            title: { _type: hidden(), key: "title", args: {}, directives: {} },
+            content: {
+              _type: hidden(),
+              key: "content",
+              args: {},
+              directives: {},
+            },
+          },
+        },
       },
       featuredPost: {
-        __typename__: "Post",
-        // Single relation - same selection structure
-        id: true,
-        title: true,
-        content: true,
+        _type: hidden(),
+        key: "featuredPost",
+        args: {},
+        directives: {},
+        selection: {
+          Post: {
+            // Single relation - same selection structure
+            id: { _type: hidden(), key: "id", args: {}, directives: {} },
+            title: { _type: hidden(), key: "title", args: {}, directives: {} },
+            content: {
+              _type: hidden(),
+              key: "content",
+              args: {},
+              directives: {},
+            },
+          },
+        },
       },
-    };
+    } satisfies FieldSelection<Blog>;
 
-    expect(selection.tags).toBe(true);
+    expect(selection.tags).toBe({
+      _type: hidden(),
+      key: "tags",
+      args: {},
+      directives: {},
+    });
     expect(selection.posts).toBeDefined();
-    expect(selection.posts?.title).toBe(true);
+    expect(selection.posts?.selection.Post.title).toBe({
+      _type: hidden(),
+      key: "title",
+      args: {},
+      directives: {},
+    });
     // Both array and single relations use same selection structure
     expect(typeof selection.posts).toBe(typeof selection.featuredPost);
   });

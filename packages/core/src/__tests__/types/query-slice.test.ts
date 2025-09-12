@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hiddenBrand } from "../../types/brand-func";
+import { hidden } from "../../types/hidden";
 import type { QuerySlice, SelectionBuilder, TransformFunction } from "../../types/query-slice";
 
 describe("QuerySlice type", () => {
@@ -8,8 +8,8 @@ describe("QuerySlice type", () => {
     type UserArgs = { id: string };
 
     const slice: QuerySlice<UserData, UserArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "user-by-id",
       name: "user",
       selections: (_query, args) => ({
@@ -46,8 +46,8 @@ describe("QuerySlice type", () => {
     type AllUsersData = { users: Array<{ id: string; name: string }> };
 
     const slice: QuerySlice<AllUsersData, {}> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "all-users",
       name: "users",
       selections: (_query) => ({
@@ -96,8 +96,8 @@ describe("QuerySlice type", () => {
     };
 
     const slice: QuerySlice<SearchData, SearchArgs> = {
-      _data: hiddenBrand(),
-      _args: hiddenBrand(),
+      _data: hidden(),
+      _args: hidden(),
       sliceKey: "search",
       name: "search",
       selections: (_query, _args) => ({

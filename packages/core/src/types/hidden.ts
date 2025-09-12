@@ -1,3 +1,7 @@
+const _hiddenFn = () => {
+  throw new Error("DO NOT CALL THIS FUNCTION -- property for type inference");
+};
+
 /**
  * Helper function for creating runtime-safe type brand properties
  * @see docs/decisions/002-type-brand-safety.md for design rationale
@@ -16,8 +20,6 @@
  *   _brand: hiddenBrand(),
  * };
  */
-export const hiddenBrand =
-  <T>(): (() => T) =>
-  () => {
-    throw new Error("DO NOT CALL THIS FUNCTION -- property for type inference");
-  };
+export const hidden = <T>(): (() => T) => _hiddenFn;
+
+export type Hidden<T> = () => T;

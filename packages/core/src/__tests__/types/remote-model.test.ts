@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hiddenBrand } from "../../types/brand-func";
+import { hidden } from "../../types/hidden";
 import type { RemoteModel, TransformFunction } from "../../types/remote-model";
 
 describe("RemoteModel type", () => {
@@ -9,9 +9,9 @@ describe("RemoteModel type", () => {
     type TransformedType = { id: string };
 
     const model: RemoteModel<UserType, TransformedType, {}> = {
-      _type: hiddenBrand(),
-      _transformed: hiddenBrand(),
-      _params: hiddenBrand(),
+      _type: hidden(),
+      _transformed: hidden(),
+      _params: hidden(),
       typeName: "User",
       fields: (_relation, _args) => ({
         __typename__: "User",
@@ -54,9 +54,9 @@ describe("RemoteModel type", () => {
 
     // Define post model that can be reused
     const postModel: RemoteModel<Post, Post, {}> = {
-      _type: hiddenBrand(),
-      _transformed: hiddenBrand(),
-      _params: hiddenBrand(),
+      _type: hidden(),
+      _transformed: hidden(),
+      _params: hidden(),
       typeName: "Post",
       fields: () => ({
         __typename__: "Post",
@@ -69,9 +69,9 @@ describe("RemoteModel type", () => {
 
     // Define user model with relations
     const userModel: RemoteModel<User, User, {}> = {
-      _type: hiddenBrand(),
-      _transformed: hiddenBrand(),
-      _params: hiddenBrand(),
+      _type: hidden(),
+      _transformed: hidden(),
+      _params: hidden(),
       typeName: "User",
       fields: (relation) => ({
         __typename__: "User",
@@ -120,9 +120,9 @@ describe("RemoteModel type", () => {
     type User = { __typename: "User"; id: string; name: string; archived: boolean };
 
     const model: RemoteModel<User, User, Params> = {
-      _type: hiddenBrand(),
-      _transformed: hiddenBrand(),
-      _params: hiddenBrand(),
+      _type: hidden(),
+      _transformed: hidden(),
+      _params: hidden(),
       typeName: "User",
       fields: (_relation, args) => ({
         __typename__: "User",

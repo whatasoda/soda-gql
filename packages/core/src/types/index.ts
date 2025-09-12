@@ -3,20 +3,15 @@
  * All types are re-exported from this index for convenience
  */
 
-// Brand function utility
-export { hiddenBrand } from "./brand-func";
-
 // Field selection types
 export type {
-  ConditionalField,
-  ExtractNonRelations,
-  ExtractRelations,
   FieldSelection,
   PartialFields,
-  RecursiveFieldSelection,
   RequiredFields,
   SelectedFields,
 } from "./field-selection";
+// Brand function utility
+export { hidden as hiddenBrand } from "./hidden";
 // Mutation slice types
 export type { MutationSlice } from "./mutation-slice";
 // Page query types

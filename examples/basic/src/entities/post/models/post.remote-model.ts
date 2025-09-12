@@ -10,10 +10,10 @@ export type PostForFeature_showPostDetail = gql.infer<
 export const post_remoteModel = {
   forIterate: gql.model(
     "post",
-    () => ({
-      id: true,
-      title: true,
-      userId: true,
+    ({ fields }) => ({
+      ...fields.id(),
+      ...fields.title(),
+      ...fields.userId(),
     }),
     (data) => ({
       id: data.id,
@@ -26,31 +26,28 @@ export const post_remoteModel = {
     [
       "post",
       {
-        ...gql.input.fromQuery("posts.comments", {
-          prefix: "comments_",
-          pick: { where: true, limit: true, orderBy: true },
-        }),
+        comments_where: gql.input.fromQuery("posts.comments", "where"),
+        comments_limit: gql.input.fromQuery("posts.comments", "limit"),
+        comments_orderBy: gql.input.fromQuery("posts.comments", "orderBy"),
       },
     ],
-    (relation, args) => ({
-      id: true,
-      title: true,
-      content: true,
-      userId: true,
-      comments: relation(
-        [
-          "comments",
-          {
-            where: args.comments_where,
-            limit: args.comments_limit,
-            orderBy: args.comments_orderBy,
-          },
-        ],
+    ({ fields, args }) => ({
+      ...fields.id(),
+      postId: fields.id().id,
+      ...fields.title(),
+      ...fields.content(),
+      ...fields.userId(),
+      ...fields.comments(
+        {
+          where: args.comments_where,
+          limit: args.comments_limit,
+          orderBy: args.comments_orderBy,
+        },
         [
           comment_remoteModel.forDetail(),
-          {
-            user: relation("comments.user", user_remoteModel.forReferName()),
-          },
+          ({ fields }) => ({
+            ...fields.user(null, user_remoteModel.forReferName()),
+          }),
         ],
       ),
     }),
