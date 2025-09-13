@@ -26,9 +26,9 @@ export const post_remoteModel = {
     [
       "post",
       {
-        comments_where: gql.input.fromQuery("posts.comments", "where"),
-        comments_limit: gql.input.fromQuery("posts.comments", "limit"),
-        comments_orderBy: gql.input.fromQuery("posts.comments", "orderBy"),
+        comments_where: gql.input.fromTypeField("posts", "comments", "where"),
+        comments_limit: gql.input.fromTypeField("posts", "comments", "limit"),
+        comments_orderBy: gql.input.fromTypeField("posts", "comments", "orderBy"),
       },
     ],
     ({ fields, args }) => ({
@@ -45,9 +45,9 @@ export const post_remoteModel = {
         },
         [
           comment_remoteModel.forDetail(),
-          ({ fields }) => ({
+          gql.model("comment", ({ fields }) => ({
             ...fields.user(null, user_remoteModel.forReferName()),
-          }),
+          }))(),
         ],
       ),
     }),

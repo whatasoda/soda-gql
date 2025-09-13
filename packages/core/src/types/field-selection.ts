@@ -79,12 +79,12 @@ type InputObject<T extends object, TName extends string> = T & {
   __input_object_name?: InputObjectName<TName>;
 };
 type ExtractInputObjectNestedFields<T> = {
-  [K in Exclude<keyof T, "__input_object_name"> as T[K] extends InputObject<infer _U, infer _N>
+  [K in Exclude<keyof T, "__input_object_name"> as T[K] extends InputObject<infer _0, infer _1>
     ? K
     : never]: T[K];
 };
 type ExtractInputObjectScalarFields<T> = {
-  [K in keyof T as T[K] extends InputObject<infer _U, infer _N> ? never : K]: T[K];
+  [K in keyof T as T[K] extends InputObject<infer _0, infer _1> ? never : K]: T[K];
 };
 
 type FieldArgRef<T> = {
@@ -100,7 +100,7 @@ export type FieldArgs<T> = {
 } & {
   [K in keyof ExtractInputObjectNestedFields<T>]:
     | FieldArgRef<T[K]>
-    | (T[K] extends InputObject<infer U, infer _N> ? FieldArgs<U> : never);
+    | (T[K] extends InputObject<infer U, infer _0> ? FieldArgs<U> : never);
 };
 
 /**
