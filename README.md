@@ -1,14 +1,15 @@
-# soda-gql
+# @soda-gql - Zero-runtime GraphQL Query Generation
 
-Zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach. Write GraphQL queries in TypeScript with full type safety, which are then statically analyzed and transformed at build time into optimized GraphQL documents.
+A zero-runtime GraphQL query generation system that brings PandaCSS's approach to GraphQL. Write type-safe queries in TypeScript that are statically analyzed and transformed at build time into optimized GraphQL documents.
 
 ## Features
 
-- 🚀 **Zero Runtime Overhead**: All transformations happen at build time
-- 🔒 **Full Type Safety**: Complete TypeScript inference without code generation loops
-- 🔧 **Build Tool Agnostic**: Works with Babel, Bun, Vite, and more
-- 🎯 **Smart Composition**: Cross-module query composition with automatic deduplication
-- ⚡ **Developer Experience**: Instant type feedback during development
+- 🚀 **Zero Runtime Overhead**: All GraphQL queries are generated at build time
+- 🔍 **Full Type Safety**: Complete TypeScript inference from schema to query results
+- 🎯 **No Code Generation Loop**: Unlike traditional GraphQL codegen, no constant regeneration needed
+- 🔧 **Transform Functions**: Built-in data normalization at the model level
+- 📦 **Modular Architecture**: Compose queries from reusable models
+- ⚡ **Instant Feedback**: Type errors appear immediately in your IDE
 
 ## Project Structure
 
@@ -23,6 +24,52 @@ packages/
 ```
 
 ## Quick Start
+
+### For Users
+
+```bash
+# Install packages
+bun add @soda-gql/core
+bun add -D @soda-gql/cli @soda-gql/plugin-babel
+
+# Initialize project
+bunx soda-gql init
+
+# Generate GraphQL system from schema
+bunx soda-gql generate
+```
+
+### Basic Example
+
+```typescript
+import { gql } from "@/graphql-system";
+
+// Define a reusable model
+const userModel = gql.model(
+  "User",
+  ({ fields }) => ({
+    ...fields.id(),
+    ...fields.name(),
+    ...fields.email(),
+  }),
+  (data) => ({
+    id: data.id,
+    displayName: data.name,
+    email: data.email.toLowerCase(),
+  })
+);
+
+// Create a query
+const getUserQuery = gql.query(
+  ["GetUser", { id: gql.input.scalar("ID", "!") }],
+  ({ query, variables }) => ({
+    user: query.user({ id: variables.id }, userModel),
+  }),
+  (data) => data.user
+);
+```
+
+### For Contributors
 
 ```bash
 # Install dependencies
@@ -64,34 +111,42 @@ We follow TDD (Test-Driven Development) with the t_wada methodology:
 
 ## Implementation Status
 
-### Phase A: Runtime Implementation ✅
-- [x] Project setup with Bun workspaces
-- [x] TypeScript configuration
-- [x] Biome v2 for linting/formatting
-- [x] Core dependencies installed
-- [ ] Type definitions (RemoteModel, QuerySlice, etc.)
-- [ ] createGql factory function
-- [ ] Runtime document generation
+### Phase 1: Type System Foundation ✅
+- [x] GraphqlSchema type system (schema.ts)
+- [x] Document structure types (document.ts)
+- [x] Model API interface (model.ts)
+- [x] Type inference utilities
 
-### Phase B: Code Generation System
-- [ ] GraphQL schema parsing
-- [ ] TypeScript type generation
-- [ ] graphql-system directory generation
+### Phase 2: Codegen - Schema Parser 🚧
+- [ ] GraphQL schema file parsing
+- [ ] GraphqlSchema object generation
+- [ ] TypeScript code generation with factories
 
-### Phase C: Static Analysis & Builder
-- [ ] AST analysis with TypeScript Compiler API
-- [ ] Dependency resolution
-- [ ] Executable code generation
+### Phase 3: Core Implementation
+- [ ] gql.model() function implementation
+- [ ] gql.inlineModel() function
+- [ ] Query/mutation builders
+- [ ] Document generation from models
 
-### Phase D: Build Tool Integration
-- [ ] Babel plugin implementation
-- [ ] Bun plugin implementation
-- [ ] Code transformation
+### Phase 4: Codegen - gql Instance
+- [ ] graphql-system directory structure
+- [ ] Configured gql instance export
+- [ ] Type inference helpers
 
-### Phase E: CLI & Developer Experience
-- [ ] CLI commands (init, generate, check)
+### Phase 5: Builder - Static Analysis
+- [ ] TypeScript AST analysis
+- [ ] Model extraction from source
+- [ ] Document optimization
+
+### Phase 6: Plugin Integration
+- [ ] Babel plugin for transformation
+- [ ] Zero-runtime code generation
+- [ ] Source map support
+
+### Phase 7: CLI & DevEx
+- [ ] init, generate, watch commands
 - [ ] Configuration management
-- [ ] Error handling and reporting
+- [ ] Error reporting with context
 
 ## License
 
