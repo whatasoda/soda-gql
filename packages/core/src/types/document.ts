@@ -1,5 +1,6 @@
 import type { Hidden } from "./hidden";
 import type {
+  ApplyTypeRefStyle,
   EnumRef,
   FieldDefinition,
   GraphqlSchema,
@@ -13,6 +14,9 @@ import type {
   UnionTypeRef,
   UnwrapRefList,
 } from "./schema";
+
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+const _prettify = <T extends object>(obj: T) => obj as Prettify<T>;
 
 type OperationType = "query" | "mutation" | "subscription";
 
@@ -37,25 +41,25 @@ export type GraphqlDocument<
   fields: SelectedFields<TSchema, TSchema["schema"][TOperation]>;
 };
 
-export type InlineFragment<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["objects"]> = {
+export type InlineFragment<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["object"]> = {
   typename: TTypename;
   fields: SelectedFields<TSchema, TTypename>;
 };
 
-export type SelectedFields<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["objects"]> = {
+export type SelectedFields<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["object"]> = {
   [alias: string]: FieldSelection<TSchema, TTypename>;
 };
 
-export type FieldSelection<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["objects"]> = FieldSelectionMapping<
+export type FieldSelection<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["object"]> = FieldSelectionMapping<
   TSchema,
   TTypename
->[keyof TSchema["objects"][TTypename]["fields"]];
+>[keyof TSchema["object"][TTypename]["fields"]];
 
-export type FieldSelectionMapping<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["objects"]> = {
-  [TFieldName in keyof TSchema["objects"][TTypename]["fields"]]: {
+export type FieldSelectionMapping<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["object"]> = {
+  [TFieldName in keyof TSchema["object"][TTypename]["fields"]]: {
     field: TFieldName;
 
-    args: ArgumentAssignments<TSchema, TSchema["objects"][TTypename]["fields"][TFieldName]["arguments"]>;
+    args: ArgumentAssignments<TSchema, TSchema["object"][TTypename]["fields"][TFieldName]["arguments"]>;
 
     directives: {
       /* TODO: implement */
@@ -66,11 +70,11 @@ export type FieldSelectionMapping<TSchema extends GraphqlSchema, TTypename exten
 };
 
 export type FieldSelectionNestedTypes<TSchema extends GraphqlSchema, TRef extends ObjectTypeRef | UnionTypeRef> = {
-  [TNestedTypename in keyof TSchema["objects"] &
+  [TNestedTypename in keyof TSchema["object"] &
     (
       | (TRef extends ObjectTypeRef ? TRef["name"] : never)
-      | (TRef extends UnionTypeRef ? keyof TSchema["unions"][TRef["name"]]["types"] : never)
-    )]: InlineFragment<TSchema, TNestedTypename>;
+      | (TRef extends UnionTypeRef ? keyof TSchema["union"][TRef["name"]]["types"] : never)
+    )]?: InlineFragment<TSchema, TNestedTypename>;
 };
 
 export type VariableRef<T> = `${VariableRefInner<T>}`;
@@ -88,35 +92,38 @@ type ArgumentAssignmentBody<TSchema extends GraphqlSchema, TRef extends ScalarRe
           | (TRef extends EnumRef ? InferByTypeRef<TSchema, TRef> : never)
       : ArgumentAssignmentBody<TSchema, UnwrapRefList<TRef>>[]);
 
-type ArgumentAssignmentBodyStruct<TSchema extends GraphqlSchema, TInputType extends keyof TSchema["inputs"]> = {
-  [K in keyof RefMappingWithOptionalFlags<TSchema["inputs"][TInputType]["fields"]>]: ArgumentAssignmentBody<
+type ArgumentAssignmentBodyStruct<TSchema extends GraphqlSchema, TInputType extends keyof TSchema["input"]> = {
+  [K in keyof RefMappingWithOptionalFlags<TSchema["input"][TInputType]["fields"]>]: ArgumentAssignmentBody<
     TSchema,
-    TSchema["inputs"][TInputType]["fields"][K]
+    TSchema["input"][TInputType]["fields"][K]
   >;
 };
 
-export type BuildTypeFromSelectedFields<
+export type InferFromSelectedFields<
   TSchema extends GraphqlSchema,
-  TTypename extends keyof TSchema["objects"],
+  TTypename extends keyof TSchema["object"],
   TSelectedFields extends SelectedFields<TSchema, TTypename>,
 > = {
-  [TAliasName in keyof TSelectedFields]: BuildTypeFromFieldSelection<TSchema, TTypename, TSelectedFields, TAliasName>;
+  [TAliasName in keyof TSelectedFields]: InferFromFieldSelection<TSchema, TTypename, TSelectedFields, TAliasName>;
 };
 
-type BuildTypeFromFieldSelection<
+export type InferFromFieldSelection<
   TSchema extends GraphqlSchema,
-  TTypename extends keyof TSchema["objects"],
+  TTypename extends keyof TSchema["object"],
   TSelectedFields extends SelectedFields<TSchema, TTypename>,
   TAliasName extends keyof TSelectedFields,
 > = TypeRefOfObjectField<TSchema, TTypename, TSelectedFields[TAliasName]["field"]> extends infer TRef extends FieldDefinition
-  ? TSelectedFields[TAliasName] extends { nested: infer TNested extends { [typename: string]: InlineFragment<TSchema, string> } }
-    ? {
-        [TNestedTypename in keyof TNested & keyof TSchema["objects"]]: TNested[TNestedTypename] extends {
-          typename: TNestedTypename;
-          fields: infer TNestedFields extends SelectedFields<TSchema, TNestedTypename>;
-        }
-          ? BuildTypeFromSelectedFields<TSchema, TNestedTypename, TNestedFields>
-          : never;
-      }[keyof TNested & keyof TSchema["objects"]]
+  ? TSelectedFields[TAliasName] extends { nested: infer TNested }
+    ? ApplyTypeRefStyle<
+        TRef,
+        {
+          [TNestedTypename in keyof TNested & keyof TSchema["object"]]: TNested[TNestedTypename] extends {
+            typename: TNestedTypename;
+            fields: infer TNestedFields extends SelectedFields<TSchema, TNestedTypename>;
+          }
+            ? Prettify<InferFromSelectedFields<TSchema, TNestedTypename, TNestedFields>>
+            : never;
+        }[keyof TNested & keyof TSchema["object"]]
+      >
     : InferByTypeRef<TSchema, TRef>
   : never;
