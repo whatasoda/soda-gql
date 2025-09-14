@@ -1,4 +1,3 @@
-import type { Hidden } from "./hidden";
 import type {
   ApplyTypeRefStyle,
   EnumRef,
@@ -14,9 +13,7 @@ import type {
   UnionTypeRef,
   UnwrapRefList,
 } from "./schema";
-
-type Prettify<T> = { [K in keyof T]: T[K] } & {};
-const _prettify = <T extends object>(obj: T) => obj as Prettify<T>;
+import type { Hidden, Prettify } from "./utility";
 
 type OperationType = "query" | "mutation" | "subscription";
 

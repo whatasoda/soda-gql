@@ -1,7 +1,4 @@
-import { type Hidden, hidden } from "./hidden";
-
-type Prettify<T> = { [K in keyof T]: T[K] } & {};
-const prettify = <T extends object>(obj: T) => obj as Prettify<T>;
+import { type Hidden, hidden, prettify } from "./utility";
 
 type AbstractRef<TKind extends string> = {
   kind: TKind;

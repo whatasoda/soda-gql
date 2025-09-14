@@ -190,4 +190,19 @@ const c = model(
   (data) => data,
 );
 
-type AA = InferFromSelectedFields<typeof schema, typeof c.typeName, typeof c.fields>;
+const _a: InferFromSelectedFields<typeof schema, typeof c.typeName, typeof c.fields> = {
+  id: "1",
+  name: "John Doe",
+  posts: [
+    {
+      id: "1",
+      title: "Post 1",
+    },
+  ],
+  postOrComment: [
+    {
+      id: "1",
+      title: "Post 1",
+    },
+  ],
+};
