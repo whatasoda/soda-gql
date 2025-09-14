@@ -3,6 +3,7 @@ import type {
   BuildTypeFromSelectedFields,
   FieldSelection,
   FieldSelectionMapping,
+  InlineFragment,
   SelectedFields,
 } from "./document";
 import type { GraphqlSchema, InputDefinition } from "./schema";
@@ -15,13 +16,25 @@ export type ModelFn<TSchema extends GraphqlSchema> = <
 >(
   target: TTypename | [TTypename, TVariables],
   factory: ModelFactory<TSchema, TTypename, TVariables, TSelected>,
+  transform: (selected: NoInfer<BuildTypeFromSelectedFields<TSchema, TTypename, TSelected>>) => TTransformed,
 ) => {
   typeName: TTypename;
   variables: TVariables;
-  fields: FieldSelectionMapping<TSchema, TTypename>;
-  transform: (
-    selected: NoInfer<BuildTypeFromSelectedFields<TSchema, TTypename, TSelected>>,
-  ) => TTransformed;
+  fields: FieldSelection<TSchema, TTypename>;
+  transform: (selected: NoInfer<BuildTypeFromSelectedFields<TSchema, TTypename, TSelected>>) => TTransformed;
+};
+
+export type InlineModelFn<TSchema extends GraphqlSchema> = <
+  TTypename extends keyof TSchema["objects"],
+  TSelected extends SelectedFields<TSchema, TTypename>,
+>(
+  target: TTypename,
+  factory: InlineModelFactory<TSchema, TTypename, TSelected>,
+) => {
+  [_ in TTypename]: {
+    typeName: TTypename;
+    fields: FieldSelection<TSchema, TTypename>;
+  };
 };
 
 type ModelFactory<
@@ -29,21 +42,23 @@ type ModelFactory<
   TTypename extends keyof TSchema["objects"],
   TVariables extends { [key: string]: InputDefinition },
   TSelected extends SelectedFields<TSchema, TTypename>,
-> = (tools: NoInfer<ModelFactoryTools<TSchema, TTypename, TVariables>>) => TSelected;
+> = (tools: {
+  fields: NoInfer<ModelFactoryFields<TSchema, TTypename>>;
+  variables: NoInfer<ModelFactoryVariables<TSchema, TVariables>>;
+}) => TSelected;
 
-type ModelFactoryTools<
+type InlineModelFactory<
   TSchema extends GraphqlSchema,
   TTypename extends keyof TSchema["objects"],
+  TSelected extends SelectedFields<TSchema, TTypename>,
+> = (tools: { fields: NoInfer<ModelFactoryFields<TSchema, TTypename>> }) => TSelected;
+
+type ModelFactoryVariables<
+  TSchema extends GraphqlSchema,
   TVariables extends { [key: string]: InputDefinition },
-> = {
-  fields: ModelFactoryFieldsTool<TSchema, TTypename>;
-  variables: ArgumentAssignments<TSchema, TVariables>;
-};
+> = ArgumentAssignments<TSchema, TVariables>;
 
-type ModelFactoryFieldsTool<
-  TSchema extends GraphqlSchema,
-  TTypename extends keyof TSchema["objects"],
-> = {
+type ModelFactoryFields<TSchema extends GraphqlSchema, TTypename extends keyof TSchema["objects"]> = {
   [TField in keyof FieldSelectionMapping<TSchema, TTypename>]: ModelFactoryFieldsToolField<
     TSchema,
     TTypename,
@@ -55,13 +70,15 @@ type ModelFactoryFieldsToolField<
   TSchema extends GraphqlSchema,
   TTypename extends keyof TSchema["objects"],
   TFieldSelectionTemplate extends FieldSelection<TSchema, TTypename>,
-> = TFieldSelectionTemplate extends { selection: infer TNestedSelectionTemplate }
+> = TFieldSelectionTemplate extends {
+  nested: infer TNestedSelectionTemplate extends { [typename: string]: InlineFragment<TSchema, string> };
+}
   ? <TNestedFieldSelection extends TNestedSelectionTemplate>(
       args:
         | VoidIfEmptyObject<TFieldSelectionTemplate["args"]>
         | TFieldSelectionTemplate["args"]
         | [args: TFieldSelectionTemplate["args"], directives: {}],
-      selection: TNestedFieldSelection | TNestedFieldSelection[],
+      selection: TNestedFieldSelection,
     ) => {
       [_ in TFieldSelectionTemplate["field"]]: {
         field: TFieldSelectionTemplate["field"];

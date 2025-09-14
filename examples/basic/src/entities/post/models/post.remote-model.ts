@@ -3,9 +3,7 @@ import { comment_remoteModel } from "../../comment/models/comment.remote-model";
 import { user_remoteModel } from "../../user/models/user.remote-model";
 
 export type PostForIterate = gql.infer<typeof post_remoteModel.forIterate>;
-export type PostForFeature_showPostDetail = gql.infer<
-  typeof post_remoteModel.forFeature_showPostDetail
->;
+export type PostForFeature_showPostDetail = gql.infer<typeof post_remoteModel.forFeature_showPostDetail>;
 
 export const post_remoteModel = {
   forIterate: gql.model(
@@ -43,12 +41,10 @@ export const post_remoteModel = {
           limit: args.comments_limit,
           orderBy: args.comments_orderBy,
         },
-        [
-          comment_remoteModel.forDetail(),
-          gql.model("comment", ({ fields }) => ({
-            ...fields.user(null, user_remoteModel.forReferName()),
-          }))(),
-        ],
+        gql.inlineModel("comment", ({ fields }) => ({
+          ...comment_remoteModel.forDetail(),
+          ...fields.user(null, user_remoteModel.forReferName()),
+        })),
       ),
     }),
     (data) => ({

@@ -150,47 +150,58 @@ export type ApplyTypeRefStyle<TRef extends RefStyle, TInner> = {
   }[TRef["selfStyle"]];
 }[TRef["listStyle"]];
 
-export type BuildType<TSchema extends GraphqlSchema, TRef extends TypeRef> = ApplyTypeRefStyle<
+export type InferByTypeRef<TSchema extends GraphqlSchema, TRef extends TypeRef> = ApplyTypeRefStyle<
   TRef,
-  BuildTypeInner<TSchema, TRef>
+  InferByTypeRefInner<TSchema, TRef>
 >;
 
-type BuildTypeInner<TSchema extends GraphqlSchema, TRef extends TypeRef> = {
-  scalar: TRef extends { kind: "scalar" } ? BuildScalarType<TSchema, TRef["name"]> : never;
-  enum: TRef extends { kind: "enum" } ? BuildEnumType<TSchema, TRef["name"]> : never;
-  input: TRef extends { kind: "input" } ? BuildInputType<TSchema, TRef["name"]> : never;
-  object: TRef extends { kind: "object" } ? BuildObjectType<TSchema, TRef["name"]> : never;
-  union: TRef extends { kind: "union" } ? BuildUnionType<TSchema, TRef["name"]> : never;
+type InferByTypeRefInner<TSchema extends GraphqlSchema, TRef extends TypeRef> = {
+  scalar: TRef extends { kind: "scalar" } ? InferByScalarRef<TSchema, TRef["name"]> : never;
+  enum: TRef extends { kind: "enum" } ? InferByEnumRef<TSchema, TRef["name"]> : never;
+  input: TRef extends { kind: "input" } ? InferByInputRef<TSchema, TRef["name"]> : never;
+  object: TRef extends { kind: "object" } ? InferByObjectRef<TSchema, TRef["name"]> : never;
+  union: TRef extends { kind: "union" } ? InferByUnionRef<TSchema, TRef["name"]> : never;
 }[TRef["kind"]];
 
-type BuildScalarType<
-  TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["scalars"],
-> = TSchema["scalars"][TName] extends { _type: Hidden<infer T> } ? T : never;
+type InferByScalarRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["scalars"]> = TSchema["scalars"][TName] extends {
+  _type: Hidden<infer T>;
+}
+  ? T
+  : never;
 
-type BuildEnumType<
-  TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["enums"],
-> = TSchema["enums"][TName] extends { _type: Hidden<infer T> } ? T : never;
+type InferByEnumRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["enums"]> = TSchema["enums"][TName] extends {
+  _type: Hidden<infer T>;
+}
+  ? T
+  : never;
 
-type BuildInputType<
-  TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["inputs"],
-> = TSchema["inputs"][TName] extends { _type: Hidden<infer T> } ? T : never;
+type InferByInputRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["inputs"]> = TSchema["inputs"][TName] extends {
+  _type: Hidden<infer T>;
+}
+  ? T
+  : never;
 
-type BuildObjectType<
-  TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["objects"],
-> = TSchema["objects"][TName] extends { _type: Hidden<infer T> } ? T : never;
+type InferByObjectRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["objects"]> = TSchema["objects"][TName] extends {
+  _type: Hidden<infer T>;
+}
+  ? T
+  : never;
 
-type BuildUnionType<
-  TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["unions"],
-> = TSchema["unions"][TName] extends { _type: Hidden<infer T> } ? T : never;
+type InferByUnionRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["unions"]> = TSchema["unions"][TName] extends {
+  _type: Hidden<infer T>;
+}
+  ? T
+  : never;
 
-export type BuildArgumentType<
+export type InferArgumentType<
   TSchema extends GraphqlSchema,
-  TName extends keyof TSchema["objects"],
-  TFieldName extends keyof TSchema["objects"][TName]["fields"],
-  TArgumentName extends keyof TSchema["objects"][TName]["fields"][TFieldName]["arguments"],
-> = BuildType<TSchema, TSchema["objects"][TName]["fields"][TFieldName]["arguments"][TArgumentName]>;
+  TTypename extends keyof TSchema["objects"],
+  TFieldName extends keyof TSchema["objects"][TTypename]["fields"],
+  TArgumentName extends keyof TSchema["objects"][TTypename]["fields"][TFieldName]["arguments"],
+> = InferByTypeRef<TSchema, TSchema["objects"][TTypename]["fields"][TFieldName]["arguments"][TArgumentName]>;
+
+export type TypeRefOfObjectField<
+  TSchema extends GraphqlSchema,
+  TTypename extends keyof TSchema["objects"],
+  TFieldName extends keyof TSchema["objects"][TTypename]["fields"],
+> = TSchema["objects"][TTypename]["fields"][TFieldName]["type"];
