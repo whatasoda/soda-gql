@@ -1,112 +1,15 @@
-import { type Hidden, hidden, prettify } from "./utility";
-
-type AbstractRef<TKind extends string> = {
-  kind: TKind;
-  name: string;
-  style: RefStyle;
-};
-
-type RefStyle =
-  | "?" // nullable, no-default
-  | "?=" // nullable, with-default
-  | "?[]?" // nullable, list, no-default
-  | "?[]?=" // nullable, list, with-default
-  | "?[]!" // nullable, list, with-default
-  | "?[]!=" // nullable, list, with-default
-  | "!" // non-nullable, no-default
-  | "!=" // non-nullable, with-default
-  | "![]?" // non-nullable, list, no-default
-  | "![]?=" // non-nullable, list, with-default
-  | "![]!" // non-nullable, list, with-default
-  | "![]!="; // non-nullable, list, with-default
-
-type UnwrapRefStyleList2<TStyle extends RefStyle> = {
-  "?": "?";
-  "?=": "?=";
-  "?[]?": "?";
-  "?[]?=": "?";
-  "?[]!": "?";
-  "?[]!=": "?";
-  "!": "!";
-  "!=": "!=";
-  "![]?": "!";
-  "![]?=": "!";
-  "![]!": "!";
-  "![]!=": "!";
-}[TStyle];
-
-export type ApplyTypeRefStyle<TRef extends { style: RefStyle }, TInner> = {
-  "?": TInner | null | undefined;
-  "?=": TInner | null | undefined;
-  "?[]?": (TInner | null | undefined)[] | null | undefined;
-  "?[]?=": (TInner | null | undefined)[] | null | undefined;
-  "?[]!": (TInner | null | undefined)[];
-  "?[]!=": (TInner | null | undefined)[];
-  "!": TInner;
-  "!=": TInner;
-  "![]?": TInner[] | null | undefined;
-  "![]?=": TInner[] | null | undefined;
-  "![]!": TInner[];
-  "![]!=": TInner[];
-}[TRef["style"]];
-
-type RefStyleOfOptional = { [T in RefStyle]: T extends `${string}${"?" | "="}` ? T : never }[RefStyle];
-
-export type UnwrapRefList<TRef extends TypeRef> = TRef extends { listStyle: "not-a-list" }
-  ? TRef
-  : {
-      kind: TRef["kind"];
-      name: TRef["name"];
-      style: UnwrapRefStyleList2<TRef["style"]>;
-    };
-
-export type RefMappingWithOptionalFlags<TRefMapping extends { [key: string]: { style: RefStyle } }> = {
-  [K in keyof TRefMapping as TRefMapping[K] extends { style: RefStyleOfOptional } ? never : K]-?: TRefMapping[K];
-} & {
-  [K in keyof TRefMapping as TRefMapping[K] extends { style: RefStyleOfOptional } ? K : never]+?: TRefMapping[K];
-};
-
-export type TypeRef = ScalarRef | EnumRef | InputTypeRef | ObjectTypeRef | UnionTypeRef;
-
-export type ScalarRef = AbstractRef<"scalar">;
-
-export type EnumRef = AbstractRef<"enum">;
-
-export type InputTypeRef = AbstractRef<"input">;
-
-export type ObjectTypeRef = AbstractRef<"object">;
-
-export type UnionTypeRef = AbstractRef<"union">;
-
-export type InputDefinition = ScalarRef | EnumRef | InputTypeRef;
-
-export type FieldDefinition = ScalarRef | EnumRef | ObjectTypeRef | UnionTypeRef;
-
-export const unsafeRef = {
-  scalar: <T extends string, const TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "scalar", name, style } satisfies ScalarRef & { style: TStyle }),
-  enum: <T extends string, const TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "enum", name, style } satisfies EnumRef & { style: TStyle }),
-  input: <T extends string, const TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "input", name, style } satisfies InputTypeRef & { style: TStyle }),
-  object: <T extends string, const TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "object", name, style } satisfies ObjectTypeRef & { style: TStyle }),
-  union: <T extends string, const TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "union", name, style } satisfies UnionTypeRef & { style: TStyle }),
-};
-
-export const createTypeRefFactories = <TSchema extends GraphqlSchema>(_schemas: TSchema) => ({
-  scalar: <T extends keyof TSchema["scalar"] & string, TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "scalar", name, style } satisfies ScalarRef & { style: TStyle }),
-  enum: <T extends keyof TSchema["enum"] & string, TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "enum", name, style } satisfies EnumRef & { style: TStyle }),
-  input: <T extends keyof TSchema["input"] & string, TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "input", name, style } satisfies InputTypeRef & { style: TStyle }),
-  object: <T extends keyof TSchema["object"] & string, TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "object", name, style } satisfies ObjectTypeRef & { style: TStyle }),
-  union: <T extends keyof TSchema["union"] & string, TStyle extends RefStyle>(name: T, style: TStyle) =>
-    prettify({ kind: "union", name, style } satisfies UnionTypeRef & { style: TStyle }),
-});
+import {
+  type ApplyTypeFormat,
+  type EnumRef,
+  type FieldDefinition,
+  type InferrableTypeRef,
+  type InputDefinition,
+  type InputTypeRef,
+  type ScalarRef,
+  type TypenameRef,
+  unsafeType,
+} from "./type-ref";
+import { type Hidden, hidden } from "./utility";
 
 const named = <TName extends string, TValue>(name: TName, value: TValue) => ({ [name]: value }) as { [K in TName]: TValue };
 
@@ -115,10 +18,6 @@ export type Scalar<T> = {
 
   name: string;
 };
-export const defineScalar =
-  <const TName extends string>(name: TName) =>
-  <TType>() =>
-    named(name, { _type: hidden(), name } satisfies Scalar<TType>);
 
 export type Enum<T extends string> = {
   _type: Hidden<T>;
@@ -127,31 +26,19 @@ export type Enum<T extends string> = {
 
   values: { [_ in T]: true };
 };
-export const defineEnum =
-  <const TName extends string>(name: TName) =>
-  <const TValues extends Enum<string>["values"]>(values: TValues) =>
-    named(name, { _type: hidden(), name, values } satisfies Enum<keyof TValues & string>);
 
-export type InputType<T extends object> = {
-  _type: Hidden<T>;
-
+export type InputType = {
   name: string;
 
+  // TODO: implement
   // oneOf: boolean;
 
   fields: {
     [field: string]: InputDefinition;
   };
 };
-export const defineInputType =
-  <const TName extends string>(name: TName) =>
-  <TType extends object>() =>
-  <TFields extends InputType<TType>["fields"]>(fields: TFields) =>
-    named(name, { _type: hidden(), name, fields } satisfies InputType<TType>);
 
-export type ObjectType<T extends object> = {
-  _type: Hidden<T>;
-
+export type ObjectType = {
   name: string;
 
   fields: {
@@ -163,30 +50,50 @@ export type ObjectType<T extends object> = {
     };
   };
 };
-export const defineObjectType =
-  <const TName extends string>(name: TName) =>
-  <TType extends object>() =>
-  <TFields extends ObjectType<TType>["fields"]>(fields: TFields) =>
-    named(name, { _type: hidden(), name, fields } satisfies ObjectType<TType>);
 
-export type UnionType<T extends object> = {
-  _type: Hidden<T>;
-
+export type UnionType = {
   name: string;
 
   types: { [typename: string]: true };
 };
-export const createDefineUnionType =
-  <TSchema extends GraphqlSchema["object"]>(_schemas: TSchema) =>
-  <const TName extends string>(name: TName) =>
-  <TTypes extends UnionType<object>["types"]>(types: TTypes & NoInfer<{ [_ in keyof TSchema & string]?: true }>) =>
-    named(name, { _type: hidden(), name, types } satisfies UnionType<
-      {
-        [TTypename in keyof TTypes & keyof TSchema]: TSchema[TTypename] extends { _type: Hidden<infer T extends object> }
-          ? T
-          : never;
-      }[keyof TTypes & keyof TSchema]
-    >);
+
+export const define = <const TName extends string>(name: TName) => ({
+  scalar: <TType>() =>
+    named(name, {
+      _type: hidden(),
+      name,
+    } satisfies Scalar<TType>),
+
+  enum: <const TValues extends Enum<string>["values"]>(values: TValues) =>
+    named(name, {
+      _type: hidden(),
+      name,
+      values,
+    } satisfies Enum<keyof TValues & string>),
+
+  input: <TFields extends InputType["fields"]>(fields: TFields) =>
+    named(name, {
+      name,
+      fields,
+    } satisfies InputType),
+
+  object: <TFields extends ObjectType["fields"]>(fields: TFields) =>
+    named(name, {
+      name,
+      fields: {
+        __typename: { arguments: {}, type: unsafeType.typename(name, "!") },
+        ...fields,
+      },
+    } satisfies ObjectType),
+
+  union: <TTypes extends UnionType["types"]>(types: TTypes) =>
+    named(name, {
+      name,
+      types,
+    } satisfies UnionType),
+});
+
+export type OperationType = keyof GraphqlSchema["schema"];
 
 export type GraphqlSchema = {
   schema: {
@@ -198,12 +105,9 @@ export type GraphqlSchema = {
   scalar: { [typename: string]: Scalar<any> };
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
   enum: { [typename: string]: Enum<any> };
-  // biome-ignore lint/suspicious/noExplicitAny: abstract types
-  input: { [typename: string]: InputType<any> };
-  // biome-ignore lint/suspicious/noExplicitAny: abstract types
-  object: { [typename: string]: ObjectType<any> };
-  // biome-ignore lint/suspicious/noExplicitAny: abstract types
-  union: { [typename: string]: UnionType<any> };
+  input: { [typename: string]: InputType };
+  object: { [typename: string]: ObjectType };
+  union: { [typename: string]: UnionType };
   // directives: {
   //   query: { [typename: string]: Directive<any> }
   //   mutation: { [typename: string]: true };
@@ -212,58 +116,44 @@ export type GraphqlSchema = {
   // };
 };
 
-export type InferByTypeRef<TSchema extends GraphqlSchema, TRef extends TypeRef> = ApplyTypeRefStyle<
-  TRef,
-  InferByTypeRefInner<TSchema, TRef>
->;
-
-type InferByTypeRefInner<TSchema extends GraphqlSchema, TRef extends TypeRef> = {
-  scalar: TRef extends { kind: "scalar" } ? InferByScalarRef<TSchema, TRef["name"]> : never;
-  enum: TRef extends { kind: "enum" } ? InferByEnumRef<TSchema, TRef["name"]> : never;
-  input: TRef extends { kind: "input" } ? InferByInputRef<TSchema, TRef["name"]> : never;
-  object: TRef extends { kind: "object" } ? InferByObjectRef<TSchema, TRef["name"]> : never;
-  union: TRef extends { kind: "union" } ? InferByUnionRef<TSchema, TRef["name"]> : never;
+export type InferByTypeRef<TSchema extends GraphqlSchema, TRef extends InferrableTypeRef> = {
+  typename: TRef extends TypenameRef ? InferTypenameByRef<TSchema, TRef> : never;
+  scalar: TRef extends ScalarRef ? InferScalarByRef<TSchema, TRef> : never;
+  enum: TRef extends EnumRef ? InferEnumByRef<TSchema, TRef> : never;
 }[TRef["kind"]];
 
-type InferByScalarRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["scalar"]> = TSchema["scalar"][TName] extends {
-  _type: Hidden<infer T>;
-}
-  ? T
+type InferTypenameByRef<TSchema extends GraphqlSchema, TRef extends TypenameRef> = TRef["name"] extends keyof TSchema["object"]
+  ? ApplyTypeFormat<TRef, TRef["name"]>
   : never;
 
-type InferByEnumRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["enum"]> = TSchema["enum"][TName] extends {
-  _type: Hidden<infer T>;
-}
-  ? T
-  : never;
+type InferScalarByRef<TSchema extends GraphqlSchema, TRef extends ScalarRef> = ApplyTypeFormat<
+  TRef,
+  ReturnType<TSchema["scalar"][TRef["name"]]["_type"]>
+>;
 
-type InferByInputRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["input"]> = TSchema["input"][TName] extends {
-  _type: Hidden<infer T>;
-}
-  ? T
-  : never;
+type InferEnumByRef<TSchema extends GraphqlSchema, TRef extends EnumRef> = ApplyTypeFormat<
+  TRef,
+  ReturnType<TSchema["enum"][TRef["name"]]["_type"]>
+>;
 
-type InferByObjectRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["object"]> = TSchema["object"][TName] extends {
-  _type: Hidden<infer T>;
-}
-  ? T
-  : never;
+export type InferInputDefinitionType<TSchema extends GraphqlSchema, TRef extends InputDefinition> =
+  | (TRef extends ScalarRef ? InferByTypeRef<TSchema, TRef> : never)
+  | (TRef extends EnumRef ? InferByTypeRef<TSchema, TRef> : never)
+  | (TRef extends InputTypeRef
+      ? TSchema["input"][TRef["name"]]["fields"] extends infer TFields extends { [key: string]: InputDefinition }
+        ? { [K in keyof TFields]: InferInputDefinitionType<TSchema, TFields[K]> }
+        : never
+      : never);
 
-type InferByUnionRef<TSchema extends GraphqlSchema, TName extends keyof TSchema["union"]> = TSchema["union"][TName] extends {
-  _type: Hidden<infer T>;
-}
-  ? T
-  : never;
-
-export type InferArgumentType<
+export type InferArgumentTypeByFieldName<
   TSchema extends GraphqlSchema,
-  TTypename extends keyof TSchema["object"],
-  TFieldName extends keyof TSchema["object"][TTypename]["fields"],
-  TArgumentName extends keyof TSchema["object"][TTypename]["fields"][TFieldName]["arguments"],
-> = InferByTypeRef<TSchema, TSchema["object"][TTypename]["fields"][TFieldName]["arguments"][TArgumentName]>;
+  TTypeName extends keyof TSchema["object"],
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
+  TArgumentName extends keyof TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"],
+> = InferInputDefinitionType<TSchema, TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"][TArgumentName]>;
 
-export type TypeRefOfObjectField<
+export type PickTypeRefByFieldName<
   TSchema extends GraphqlSchema,
-  TTypename extends keyof TSchema["object"],
-  TFieldName extends keyof TSchema["object"][TTypename]["fields"],
-> = TSchema["object"][TTypename]["fields"][TFieldName]["type"];
+  TTypeName extends keyof TSchema["object"],
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
+> = TSchema["object"][TTypeName]["fields"][TFieldName]["type"];

@@ -17,12 +17,12 @@ export default function PostDetailPage() {
           commentCount: gql.arg.int(),
         },
       ],
-      (_, args) => ({
-        post: getPostApis.getPost({
+      ({ args }) => ({
+        post: getPostApis.getPost.slice({
           id: args.postId,
           commentCount: args.commentCount,
         }),
-        users: listUsersApis.iterateUsers(),
+        users: listUsersApis.iterateUsers.slice(),
       }),
     ),
     id

@@ -42,7 +42,7 @@ export const post_remoteModel = {
           orderBy: args.comments_orderBy,
         },
         gql.inlineModel("comment", ({ fields }) => ({
-          ...comment_remoteModel.forDetail(),
+          ...comment_remoteModel.forDetail.fields(),
           ...fields.user(null, user_remoteModel.forReferName()),
         })),
       ),
