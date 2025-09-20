@@ -129,8 +129,3 @@ Significant architectural decisions are documented in `docs/decisions/`.
 3. Reference in code: `// See ADR-001`
 
 See [ADR-000](docs/decisions/000-adr-process.md) for the full process.
-
-### Recent Decisions
-
-- [ADR-001](docs/decisions/001-relation-field-selection.md): Explicit relations with `__relation__`
-- [ADR-002](docs/decisions/002-type-brand-safety.md): Runtime-safe type brands

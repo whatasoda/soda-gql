@@ -2,29 +2,26 @@ import { gql } from "@/gql-system";
 import { post_remoteModel } from "../models/post.remote-model";
 
 export const getPostApis = {
-  getPost: gql.model(
+  getPost: gql.querySlice(
     [
-      "query",
       {
-        id: gql.arg.uuid(),
-        commentCount: gql.arg.int(),
-      },
-      {
-        // directives
-        cached: {
-          ttl: 60,
-          refresh: false,
-        },
+        id: gql.scalar("uuid", "!"),
+        commentCount: gql.scalar("int", "?"),
       },
     ],
-    ({ fields, args }) => ({
-      ...fields.posts(
+    ({ f, $ }) => ({
+      ...f.posts(
         {
-          where: { id: { _eq: args.id } },
+          where: { id: { _eq: $.id } },
         },
-        post_remoteModel.forFeature_showPostDetail.inline(),
+        () => ({
+          ...post_remoteModel.forFeature_showPostDetail.fragment({}),
+        }),
       ),
     }),
-    (data) => data?.posts?.[0] ?? null,
+    ({ select }) =>
+      select("$.posts", (result) =>
+        result.safeUnwrap((data) => data.map((post) => post_remoteModel.forFeature_showPostDetail.transform(post))),
+      ),
   ),
 };

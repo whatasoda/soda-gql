@@ -46,26 +46,56 @@ import { gql } from "@/graphql-system";
 
 // Define a reusable model
 const userModel = gql.model(
-  "User",
-  ({ fields }) => ({
-    ...fields.id(),
-    ...fields.name(),
-    ...fields.email(),
+  ["User", { postCategoryId: gql.scalar("ID", "?") }],
+  ({ f, $ }) => ({
+    ...f.id(),
+    ...f.name(),
+    ...f.email(),
+    ...f.posts(
+      { postCategoryId: $.postCategoryId },
+      ({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+      }),
+    ),
   }),
   (data) => ({
     id: data.id,
     displayName: data.name,
     email: data.email.toLowerCase(),
+    posts: data.posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+    })),
   })
 );
 
-// Create a query
-const getUserQuery = gql.query(
-  ["GetUser", { id: gql.input.scalar("ID", "!") }],
-  ({ query, variables }) => ({
-    user: query.user({ id: variables.id }, userModel),
+// Create a query slice
+const getUserQuery = gql.querySlice(
+  [
+    {
+      id: gql.scalar("ID", "!"),
+      postCategoryId: gql.scalar("ID", "?"),
+    },
+  ],
+  ({ query, $ }) => ({
+    user: query.user({ id: $.id, postCategoryId: $.postCategoryId }, userModel),
   }),
-  (data) => data.user
+  ({ select }) => select("$.user", (result) => result.safeUnwrap((data) => data.user))
+);
+
+const pageQuery = gql.query(
+  "PageQuery",
+  {
+    userId: gql.scalar("ID", "!"),
+    postCategoryId: gql.scalar("ID", "?"),
+  },
+  ({ $ }) => ({
+    user: getUserQuery({
+      id: $.userId,
+      postCategoryId: $.postCategoryId,
+    }),
+  }),
 );
 ```
 
@@ -108,45 +138,6 @@ We follow TDD (Test-Driven Development) with the t_wada methodology:
 - **Error Handling**: Using `neverthrow` for type-safe Results
 - **Validation**: Using `zod` v4 for external data validation
 - **Formatting**: Biome v2 with automatic import sorting
-
-## Implementation Status
-
-### Phase 1: Type System Foundation ✅
-- [x] GraphqlSchema type system (schema.ts)
-- [x] Document structure types (document.ts)
-- [x] Model API interface (model.ts)
-- [x] Type inference utilities
-
-### Phase 2: Codegen - Schema Parser 🚧
-- [ ] GraphQL schema file parsing
-- [ ] GraphqlSchema object generation
-- [ ] TypeScript code generation with factories
-
-### Phase 3: Core Implementation
-- [ ] gql.model() function implementation
-- [ ] gql.inlineModel() function
-- [ ] Query/mutation builders
-- [ ] Document generation from models
-
-### Phase 4: Codegen - gql Instance
-- [ ] graphql-system directory structure
-- [ ] Configured gql instance export
-- [ ] Type inference helpers
-
-### Phase 5: Builder - Static Analysis
-- [ ] TypeScript AST analysis
-- [ ] Model extraction from source
-- [ ] Document optimization
-
-### Phase 6: Plugin Integration
-- [ ] Babel plugin for transformation
-- [ ] Zero-runtime code generation
-- [ ] Source map support
-
-### Phase 7: CLI & DevEx
-- [ ] init, generate, watch commands
-- [ ] Configuration management
-- [ ] Error reporting with context
 
 ## License
 
