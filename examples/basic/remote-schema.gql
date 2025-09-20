@@ -154,7 +154,7 @@ type user {
   name: String!
   createdAt: timestamptz!
   updatedAt: timestamptz!
-  
+
   """
   An array relationship
   """
@@ -180,7 +180,7 @@ type user {
     """
     where: post_bool_exp
   ): [post!]!
-  
+
   """
   An aggregate relationship
   """
@@ -206,7 +206,7 @@ type user {
     """
     where: post_bool_exp
   ): post_aggregate!
-  
+
   """
   An array relationship
   """
@@ -217,7 +217,7 @@ type user {
     order_by: [comment_order_by!]
     where: comment_bool_exp
   ): [comment!]!
-  
+
   """
   An aggregate relationship
   """
@@ -293,7 +293,7 @@ enum user_constraint {
   unique or primary key constraint on columns "id"
   """
   users_pkey
-  
+
   """
   unique or primary key constraint on columns "email"
   """
@@ -407,12 +407,12 @@ type post {
   published: Boolean!
   createdAt: timestamptz!
   updatedAt: timestamptz!
-  
+
   """
   An object relationship
   """
   user: user!
-  
+
   """
   An array relationship
   """
@@ -423,7 +423,7 @@ type post {
     order_by: [comment_order_by!]
     where: comment_bool_exp
   ): [comment!]!
-  
+
   """
   An aggregate relationship
   """
@@ -654,12 +654,12 @@ type comment {
   userId: uuid!
   createdAt: timestamptz!
   updatedAt: timestamptz!
-  
+
   """
   An object relationship
   """
   post: post!
-  
+
   """
   An object relationship
   """

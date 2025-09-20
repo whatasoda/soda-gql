@@ -6,25 +6,25 @@ export type UserForReferName = gql.infer<typeof user_remoteModel.forReferName>;
 export const user_remoteModel = {
   forIterate: gql.model(
     "user",
-    () => ({
-      id: true,
-      name: true,
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
     }),
     (data) => ({
       id: data.id,
       name: data.name,
-    })
+    }),
   ),
 
   forReferName: gql.model(
     "user",
-    () => ({
-      id: true,
-      name: true,
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
     }),
     (data) => ({
       id: data.id,
       name: data.name,
-    })
+    }),
   ),
 };

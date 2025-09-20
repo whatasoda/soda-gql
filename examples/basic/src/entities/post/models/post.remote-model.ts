@@ -3,55 +3,50 @@ import { comment_remoteModel } from "../../comment/models/comment.remote-model";
 import { user_remoteModel } from "../../user/models/user.remote-model";
 
 export type PostForIterate = gql.infer<typeof post_remoteModel.forIterate>;
-export type PostForFeature_showPostDetail = gql.infer<
-  typeof post_remoteModel.forFeature_showPostDetail
->;
+export type PostForFeature_showPostDetail = gql.infer<typeof post_remoteModel.forFeature_showPostDetail>;
 
 export const post_remoteModel = {
   forIterate: gql.model(
     "post",
-    () => ({
-      id: true,
-      title: true,
-      userId: true,
+    ({ f }) => ({
+      ...f.id(),
+      ...f.title(),
+      ...f.userId(),
     }),
     (data) => ({
       id: data.id,
       title: data.title,
       userId: data.userId,
-    })
+    }),
   ),
 
   forFeature_showPostDetail: gql.model(
     [
       "post",
       {
-        ...gql.input.fromQuery("posts.comments", {
-          prefix: "comments_",
-          pick: { where: true, limit: true, orderBy: true },
-        }),
+        comments_where: gql.fieldArg("post", "comments", "where"),
+        comments_limit: gql.fieldArg("post", "comments", "limit"),
+        comments_orderBy: gql.fieldArg("post", "comments", "orderBy"),
       },
     ],
-    (relation, args) => ({
-      id: true,
-      title: true,
-      content: true,
-      userId: true,
-      comments: relation(
-        [
-          "comments",
-          {
-            where: args.comments_where,
-            limit: args.comments_limit,
-            orderBy: args.comments_orderBy,
-          },
-        ],
-        [
-          comment_remoteModel.forDetail(),
-          {
-            user: relation("comments.user", user_remoteModel.forReferName()),
-          },
-        ]
+    ({ f, $ }) => ({
+      ...f.id(),
+      postId: f.id().id,
+      ...f.title(),
+      ...f.content(),
+      ...f.userId(),
+      ...f.comments(
+        {
+          where: $.comments_where,
+          limit: $.comments_limit,
+          orderBy: $.comments_orderBy,
+        },
+        ({ f }) => ({
+          ...comment_remoteModel.forDetail.fragment({}),
+          ...f.user(null, () => ({
+            ...user_remoteModel.forReferName.fragment({}),
+          })),
+        }),
       ),
     }),
     (data) => ({
@@ -63,6 +58,6 @@ export const post_remoteModel = {
         ...comment_remoteModel.forDetail.transform(comment),
         user: user_remoteModel.forReferName.transform(comment.user),
       })),
-    })
+    }),
   ),
 };

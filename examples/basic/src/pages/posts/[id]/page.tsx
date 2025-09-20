@@ -10,20 +10,18 @@ export default function PostDetailPage() {
 
   const { data } = useQuery(
     gql.query(
-      [
-        "PostDetailPage_getPost",
-        {
-          postId: gql.arg.uuid(),
-          commentCount: gql.arg.int(),
-        },
-      ],
-      (_, args) => ({
+      "PostDetailPage_getPost",
+      {
+        postId: gql.scalar("uuid", "!"),
+        commentCount: gql.scalar("int", "?"),
+      },
+      ({ $ }) => ({
         post: getPostApis.getPost({
-          id: args.postId,
-          commentCount: args.commentCount,
+          id: $.postId,
+          commentCount: $.commentCount,
         }),
         users: listUsersApis.iterateUsers(),
-      })
+      }),
     ),
     id
       ? {
@@ -34,7 +32,7 @@ export default function PostDetailPage() {
         }
       : {
           skip: true,
-        }
+        },
   );
 
   return (

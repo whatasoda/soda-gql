@@ -4,21 +4,24 @@ import { post_remoteModel } from "../models/post.remote-model";
 export const getPostApis = {
   getPost: gql.querySlice(
     [
-      "getPost",
       {
-        id: gql.arg.uuid(),
-        commentCount: gql.arg.int(),
+        id: gql.scalar("uuid", "!"),
+        commentCount: gql.scalar("int", "?"),
       },
     ],
-    (query, args) => ({
-      posts: query(
-        ["posts", { where: { id: { _eq: args.id } } }],
-        post_remoteModel.forFeature_showPostDetail({
-          comments_limit: args.commentCount,
-          comments_orderBy: { createdAt: "desc" },
-        })
+    ({ f, $ }) => ({
+      ...f.posts(
+        {
+          where: { id: { _eq: $.id } },
+        },
+        () => ({
+          ...post_remoteModel.forFeature_showPostDetail.fragment({}),
+        }),
       ),
     }),
-    (data) => data?.posts?.[0] ?? null
+    ({ select }) =>
+      select("$.posts", (result) =>
+        result.safeUnwrap((data) => data.map((post) => post_remoteModel.forFeature_showPostDetail.transform(post))),
+      ),
   ),
 };

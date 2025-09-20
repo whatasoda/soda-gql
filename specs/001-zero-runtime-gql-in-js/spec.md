@@ -11,7 +11,7 @@
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
 2. Extract key concepts from description
-   → Identify: developers (actors), query generation/static analysis/type inference (actions), GraphQL documents/remote models/slices (data), zero-runtime/type-safety (constraints)
+   → Identify: developers (actors), query generation/static analysis/type inference (actions), GraphQL documents/models/slices (data), zero-runtime/type-safety (constraints)
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
 4. Fill User Scenarios & Testing section
@@ -65,34 +65,34 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 
 ### Acceptance Scenarios
 
-1. **Given** a developer has defined Remote Models for GraphQL types with field selections and transform functions, **When** they reference these models in their application code, **Then** the system must provide full type inference for the transformed data structures
+1. **Given** a developer has defined Models for GraphQL types with field selections and transform functions, **When** they reference these models in their application code, **Then** the system must provide full type inference for the transformed data structures
 
 2. **Given** a developer has created multiple Query Slices across different modules, **When** they combine these slices into a Page Query, **Then** the system must automatically merge them into a single GraphQL document with proper deduplication and argument mapping
 
-3. **Given** a developer modifies a Remote Model's field selection, **When** they save the file, **Then** type errors must immediately appear in all consuming code that relies on the removed fields
+3. **Given** a developer modifies a Model's field selection, **When** they save the file, **Then** type errors must immediately appear in all consuming code that relies on the removed fields
 
-4. **Given** a Remote Model includes parameterized relationships, **When** a parent component provides parameter values, **Then** the child Remote Model must resolve with the injected parameters without direct knowledge of them
+4. **Given** a Model includes parameterized relationships, **When** a parent component provides parameter values, **Then** the child Model must resolve with the injected parameters without direct knowledge of them
 
 5. **Given** generated query documents are embedded in component files, **When** the application loads, **Then** each unique query must be registered only once at the top level, preventing re-evaluation on component re-renders
 
 ### Edge Cases
 
-- What happens when circular dependencies exist between Remote Models?
+- What happens when circular dependencies exist between Models?
 - How does system handle conflicting field selections in merged queries?
-- What occurs when required parameters are not provided for parameterized Remote Models?
-- How does the system behave when schema changes make existing Remote Models invalid?
+- What occurs when required parameters are not provided for parameterized Models?
+- How does the system behave when schema changes make existing Models invalid?
 - What happens when transform functions throw errors during data processing?
 
 ## Requirements _(mandatory)_
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow developers to define Remote Models as type-safe representations of GraphQL types with field selections
-- **FR-002**: System MUST support parameterized Remote Models that accept injected values from parent contexts
+- **FR-001**: System MUST allow developers to define Models as type-safe representations of GraphQL types with field selections
+- **FR-002**: System MUST support parameterized Models that accept injected values from parent contexts
 - **FR-003**: System MUST enable creation of Query/Mutation/Subscription Slices that encapsulate specific domain concerns
 - **FR-004**: System MUST merge multiple Slices into unified Page Queries with automatic deduplication
-- **FR-005**: Remote Models MUST include mandatory transform/normalize functions for data processing
-- **FR-006**: System MUST provide full type inference from Remote Models to consuming application code
+- **FR-005**: Models MUST include mandatory transform/normalize functions for data processing
+- **FR-006**: System MUST provide full type inference from Models to consuming application code
 - **FR-007**: System MUST perform all query generation at build time with zero runtime overhead
 - **FR-008**: Generated queries MUST be registered once at module top-level to prevent re-evaluation
 - **FR-009**: System MUST support cross-module query composition while maintaining proper dependency boundaries
@@ -105,11 +105,11 @@ As a frontend developer working on a project with Feature-Sliced Design architec
 
 ### Key Entities _(include if feature involves data)_
 
-- **Remote Model**: Type-safe representation of a GraphQL type with field selections, parameters, and transform functions. Can be created multiple times per GraphQL type for different use cases.
+- **Model**: Type-safe representation of a GraphQL type with field selections, parameters, and transform functions. Can be created multiple times per GraphQL type for different use cases.
 - **Query/Mutation/Subscription Slice**: Domain-specific query definition that encapsulates argument definitions and data transformations for a focused concern.
 - **Page Query**: Composite query created by combining multiple Slices, handling cross-slice argument mapping and deduplication.
-- **Transform Function**: Required function attached to each Remote Model that normalizes and transforms raw GraphQL response data.
-- **Parameter**: Injectable value that can be passed to Remote Models to handle relationships without coupling.
+- **Transform Function**: Required function attached to each Model that normalizes and transforms raw GraphQL response data.
+- **Parameter**: Injectable value that can be passed to Models to handle relationships without coupling.
 - **Registration**: Top-level storage mechanism for generated query documents to prevent re-evaluation.
 
 ---
@@ -170,7 +170,7 @@ This system enables frontend teams to:
 
 ### Risks and Assumptions
 
-- Assumes developers understand the relationship between Remote Models and GraphQL types
+- Assumes developers understand the relationship between Models and GraphQL types
 - Assumes build-time static analysis is sufficient for all query generation needs
 - Risk of increased build complexity due to static analysis requirements
 - Risk of learning curve for developers familiar with traditional GraphQL tooling
