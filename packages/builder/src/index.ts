@@ -1,14 +1,9 @@
 #!/usr/bin/env bun
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { err, ok, Result } from "neverthrow";
 import { Glob } from "bun";
-import {
-  createCanonicalId,
-  createDocumentRegistry,
-  type CanonicalId,
-  type DocumentEntry,
-} from "./registry";
+import { err, ok, type Result } from "neverthrow";
+import { type CanonicalId, createCanonicalId, createDocumentRegistry, type DocumentEntry } from "./registry";
 
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";
@@ -142,7 +137,9 @@ const resolveImportPath = (currentFile: string, specifier: string): string => {
   }
 
   const resolved = resolve(dirname(currentFile), specifier);
-  const withExtension = ["", ".ts", ".tsx", ".js", ".jsx"].map((ext) => `${resolved}${ext}`).find((candidate) => existsSync(candidate));
+  const withExtension = ["", ".ts", ".tsx", ".js", ".jsx"]
+    .map((ext) => `${resolved}${ext}`)
+    .find((candidate) => existsSync(candidate));
   return withExtension ?? resolved;
 };
 
@@ -237,10 +234,13 @@ const detectDuplicates = (queries: readonly ParsedQuery[]): Result<void, Builder
 const detectCycles = (slices: readonly ParsedSlice[]): Result<void, BuilderError> => {
   const adjacency = new Map<string, readonly string[]>();
   slices.forEach((slice) => {
-    adjacency.set(`${slice.filePath}::${slice.exportName}`, slice.dependencies.map((dep) => {
-      const target = slices.find((candidate) => candidate.exportName === dep);
-      return target ? `${target.filePath}::${target.exportName}` : dep;
-    }));
+    adjacency.set(
+      `${slice.filePath}::${slice.exportName}`,
+      slice.dependencies.map((dep) => {
+        const target = slices.find((candidate) => candidate.exportName === dep);
+        return target ? `${target.filePath}::${target.exportName}` : dep;
+      }),
+    );
   });
 
   const visited = new Set<string>();
@@ -283,15 +283,10 @@ const detectCycles = (slices: readonly ParsedSlice[]): Result<void, BuilderError
   return ok(undefined);
 };
 
-const buildArtifact = (
-  queries: readonly ParsedQuery[],
-): BuilderArtifact => {
+const buildArtifact = (queries: readonly ParsedQuery[]): BuilderArtifact => {
   const registry = createDocumentRegistry<undefined>();
 
-  const refRecords: Array<[
-    CanonicalId,
-    { readonly kind: "query" | "slice" | "model"; readonly document?: string }
-  ]> = [];
+  const refRecords: Array<[CanonicalId, { readonly kind: "query" | "slice" | "model"; readonly document?: string }]> = [];
 
   queries.forEach((query) => {
     const id = createCanonicalId(query.filePath, query.exportName);
@@ -544,7 +539,4 @@ if (import.meta.main) {
   process.exit(exitCode);
 }
 
-export {
-  createCanonicalId,
-  createDocumentRegistry,
-};
+export { createCanonicalId, createDocumentRegistry };

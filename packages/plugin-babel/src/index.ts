@@ -1,8 +1,8 @@
-import type { PluginObj, types as BabelTypes } from "@babel/core";
-import { types as t } from "@babel/core";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createCanonicalId, type CanonicalId, type BuilderArtifact } from "@soda-gql/builder";
+import type { types as BabelTypes, PluginObj } from "@babel/core";
+import { types as t } from "@babel/core";
+import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 
 export type SodaGqlBabelOptions = {
   readonly mode: "runtime" | "zero-runtime";
@@ -33,9 +33,10 @@ const lookupRef = (
   canonicalId: string,
 ): { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined => {
   if (artifact.refs && canonicalId in (artifact.refs as Record<string, unknown>)) {
-    return (artifact.refs as Record<string, unknown>)[
-      canonicalId
-    ] as { readonly kind: "query" | "slice" | "model"; readonly document?: string };
+    return (artifact.refs as Record<string, unknown>)[canonicalId] as {
+      readonly kind: "query" | "slice" | "model";
+      readonly document?: string;
+    };
   }
 
   if (artifact.refMap && canonicalId in artifact.refMap) {
@@ -57,12 +58,7 @@ const lookupRef = (
   return cursor as { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined;
 };
 
-const ensureImport = (
-  programPath: BabelTypes.NodePath<t.Program>,
-  source: string,
-  exportName: string,
-  alias: string,
-) => {
+const ensureImport = (programPath: BabelTypes.NodePath<t.Program>, source: string, exportName: string, alias: string) => {
   const alreadyImported = programPath.node.body.some(
     (statement) =>
       statement.type === "ImportDeclaration" &&
@@ -81,10 +77,7 @@ const ensureImport = (
   }
 
   programPath.node.body.unshift(
-    t.importDeclaration(
-      [t.importSpecifier(t.identifier(alias), t.identifier(exportName))],
-      t.stringLiteral(source),
-    ),
+    t.importDeclaration([t.importSpecifier(t.identifier(alias), t.identifier(exportName))], t.stringLiteral(source)),
   );
 };
 

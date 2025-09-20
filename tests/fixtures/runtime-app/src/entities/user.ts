@@ -43,10 +43,5 @@ export const userSlice = gql.querySlice(
       ...userModel.fragment({ categoryId: $.categoryId }),
     })),
   }),
-  ({ select }) =>
-    select("$.users", (result) =>
-      result.safeUnwrap((data) =>
-        data.map((user) => userModel.transform(user)),
-      ),
-    ),
+  ({ select }) => select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
 );

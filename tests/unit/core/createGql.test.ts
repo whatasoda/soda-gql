@@ -115,11 +115,7 @@ describe("createGql", () => {
         })),
       }),
       ({ select }: any) =>
-        select("$.user", (result: any) =>
-          result.safeUnwrap((data: { id: string; name: string }) =>
-            userModel.transform(data),
-          ),
-        ),
+        select("$.user", (result: any) => result.safeUnwrap((data: { id: string; name: string }) => userModel.transform(data))),
     );
 
     const slice = userSliceFactory({ id: "1" });

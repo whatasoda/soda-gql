@@ -1,10 +1,14 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { err, ok, Result } from "neverthrow";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import {
   buildSchema,
+  type GraphQLArgument,
+  type GraphQLField,
+  type GraphQLNamedType,
+  type GraphQLSchema,
+  type GraphQLType,
   isEnumType,
   isInputObjectType,
   isInterfaceType,
@@ -14,14 +18,8 @@ import {
   isScalarType,
   isUnionType,
   printSchema,
-  type GraphQLArgument,
-  type GraphQLField,
-  type GraphQLInputField,
-  type GraphQLNamedType,
-  type GraphQLSchema,
-  type GraphQLType,
 } from "graphql";
-import { readFileSync, writeFileSync } from "node:fs";
+import { err, ok, type Result } from "neverthrow";
 
 export type CodegenFormat = "json" | "human";
 
@@ -65,7 +63,7 @@ const builtinScalars = new Map<string, string>([
   ["Boolean", "boolean"],
 ]);
 
-const sanitiseTypeName = (name: string): string => name;
+const _sanitiseTypeName = (name: string): string => name;
 
 const formatForGraphqlType = (type: GraphQLType): string => {
   const resolve = (graphType: GraphQLType, outerNonNull: boolean): string => {
@@ -171,7 +169,10 @@ const renderInputDefinition = (schema: GraphQLSchema, typeName: string): string 
     return `${fieldName}: ${renderFieldType(field.type)}`;
   });
 
-  const body = entries.length === 0 ? "{}" : `{
+  const body =
+    entries.length === 0
+      ? "{}"
+      : `{
     ${entries.join(",\n    ")}
   }`;
 
@@ -184,7 +185,10 @@ const renderEnumDefinition = (schema: GraphQLSchema, typeName: string): string =
     return "";
   }
 
-  const values = type.getValues().map((value) => `${value.name}: true`).join(", ");
+  const values = type
+    .getValues()
+    .map((value) => `${value.name}: true`)
+    .join(", ");
   return `...define("${type.name}").enum({ ${values} })`;
 };
 
@@ -194,7 +198,8 @@ const renderUnionDefinition = (schema: GraphQLSchema, typeName: string): string 
     return "";
   }
 
-  const values = type.getTypes()
+  const values = type
+    .getTypes()
     .map((member) => `${member.name}: true`)
     .join(", ");
 
@@ -268,27 +273,31 @@ const generateRuntimeModule = (schema: GraphQLSchema): string => {
       .join(",\n    ")}
   }`;
 
-  const enumBlock = enumTypeNames.length === 0
-    ? "{}"
-    : `{
+  const enumBlock =
+    enumTypeNames.length === 0
+      ? "{}"
+      : `{
     ${enumTypeNames.map((name) => renderEnumDefinition(schema, name)).join(",\n    ")}
   }`;
 
-  const inputBlock = inputTypeNames.length === 0
-    ? "{}"
-    : `{
+  const inputBlock =
+    inputTypeNames.length === 0
+      ? "{}"
+      : `{
     ${inputTypeNames.map((name) => renderInputDefinition(schema, name)).join(",\n    ")}
   }`;
 
-  const objectBlock = objectTypeNames.length === 0
-    ? "{}"
-    : `{
+  const objectBlock =
+    objectTypeNames.length === 0
+      ? "{}"
+      : `{
     ${objectTypeNames.map((name) => renderObjectDefinition(schema, name)).join(",\n    ")}
   }`;
 
-  const unionBlock = unionTypeNames.length === 0
-    ? "{}"
-    : `{
+  const unionBlock =
+    unionTypeNames.length === 0
+      ? "{}"
+      : `{
     ${unionTypeNames.map((name) => renderUnionDefinition(schema, name)).join(",\n    ")}
   }`;
 
@@ -374,7 +383,6 @@ const parseArgs = (argv: readonly string[]): Result<CodegenOptions, CodegenError
         });
       }
       options.format = value;
-      continue;
     }
   }
 
@@ -442,27 +450,25 @@ const writeModule = (outPath: string, content: string): Result<void, CodegenErro
   }
 };
 
-const hashSchema = (schema: GraphQLSchema): string =>
-  createHash("sha256").update(printSchema(schema)).digest("hex");
+const hashSchema = (schema: GraphQLSchema): string => createHash("sha256").update(printSchema(schema)).digest("hex");
 
 export const runCodegen = (options: CodegenOptions): Result<CodegenSuccess, CodegenError> =>
-  loadSchema(resolve(options.schemaPath))
-    .andThen((schema) => {
-      const moduleContents = generateRuntimeModule(schema);
-      const writeResult = writeModule(resolve(options.outPath), moduleContents);
-      if (writeResult.isErr()) {
-        return writeResult;
-      }
+  loadSchema(resolve(options.schemaPath)).andThen((schema) => {
+    const moduleContents = generateRuntimeModule(schema);
+    const writeResult = writeModule(resolve(options.outPath), moduleContents);
+    if (writeResult.isErr()) {
+      return err(writeResult.error);
+    }
 
-      return ok<CodegenSuccess, CodegenError>({
-        schemaHash: hashSchema(schema),
-        outPath: resolve(options.outPath),
-        objects: collectObjectTypeNames(schema).length,
-        enums: collectEnumTypeNames(schema).length,
-        inputs: collectInputTypeNames(schema).length,
-        unions: collectUnionTypeNames(schema).length,
-      });
+    return ok<CodegenSuccess, CodegenError>({
+      schemaHash: hashSchema(schema),
+      outPath: resolve(options.outPath),
+      objects: collectObjectTypeNames(schema).length,
+      enums: collectEnumTypeNames(schema).length,
+      inputs: collectInputTypeNames(schema).length,
+      unions: collectUnionTypeNames(schema).length,
     });
+  });
 
 const outputJson = (payload: unknown) => {
   process.stdout.write(`${JSON.stringify(payload)}\n`);

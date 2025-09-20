@@ -1,5 +1,5 @@
-import { resolve, isAbsolute, normalize } from "node:path";
-import { err, ok, Result } from "neverthrow";
+import { isAbsolute, normalize, resolve } from "node:path";
+import { err, ok, type Result } from "neverthrow";
 
 export type CanonicalId = string & { readonly __brand: "CanonicalId" };
 
@@ -46,28 +46,21 @@ export type RegistryRefLoadError = {
   readonly error: unknown;
 };
 
-export type RegistryRefInput<
-  TKind extends RegistryRefKind,
-  TValue,
-> = {
+export type RegistryRefInput<TKind extends RegistryRefKind, TValue> = {
   readonly id: CanonicalId;
   readonly kind: TKind;
   readonly metadata: RegistryRefMetadataMap[TKind];
   readonly loader: RegistryRefLoader<TValue>;
 };
 
-export type RegistryRefEntry<
-  TKind extends RegistryRefKind,
-  TValue,
-> = RegistryRefInput<TKind, TValue>;
+export type RegistryRefEntry<TKind extends RegistryRefKind, TValue> = RegistryRefInput<TKind, TValue>;
 
 export type RegisterRefResult<TValue> = Result<RegistryRefEntry<RegistryRefKind, TValue>, RegistryRefError>;
 
-export type RegistryRefError =
-  | {
-      readonly code: "REF_ALREADY_REGISTERED";
-      readonly id: CanonicalId;
-    };
+export type RegistryRefError = {
+  readonly code: "REF_ALREADY_REGISTERED";
+  readonly id: CanonicalId;
+};
 
 export type DocumentEntry = {
   readonly name: string;
@@ -111,9 +104,7 @@ export type DocumentLookupError = {
 export type RegistryRefLookupResult<TValue> = Result<RegistryRefEntry<RegistryRefKind, TValue>, RegistryGetRefError>;
 
 export type DocumentRegistry<TValue> = {
-  readonly registerRef: <TKind extends RegistryRefKind>(
-    input: RegistryRefInput<TKind, TValue>,
-  ) => RegisterRefResult<TValue>;
+  readonly registerRef: <TKind extends RegistryRefKind>(input: RegistryRefInput<TKind, TValue>) => RegisterRefResult<TValue>;
   readonly getRef: (id: CanonicalId) => RegistryRefLookupResult<TValue>;
   readonly registerDocument: (input: RegisterDocumentInput) => RegisterDocumentResult;
   readonly getDocument: (name: string) => Result<DocumentEntry, DocumentLookupError>;
@@ -163,14 +154,16 @@ export const createDocumentRegistry = <TValue>(): DocumentRegistry<TValue> => {
         } satisfies DocumentRegisterError);
       }
 
-      documents.set(input.name, {
+      const value = {
         name: input.name,
         text: input.text,
         variables: { ...input.variables },
         sourcePath: input.sourcePath,
-      });
+      };
 
-      return ok(documents.get(input.name)!);
+      documents.set(input.name, value);
+
+      return ok(value);
     },
 
     getDocument: (name) => {
@@ -188,9 +181,10 @@ export const createDocumentRegistry = <TValue>(): DocumentRegistry<TValue> => {
 
     snapshot: () => {
       const documentRecord = Object.fromEntries(documents.entries());
-      const refRecord = Object.fromEntries(
-        Array.from(refs.entries(), ([id, entry]) => [id, toSnapshotEntry(entry)]),
-      ) as Record<CanonicalId, { kind: RegistryRefKind; metadata: RegistryRefMetadataMap[RegistryRefKind] }>;
+      const refRecord = Object.fromEntries(Array.from(refs.entries(), ([id, entry]) => [id, toSnapshotEntry(entry)])) as Record<
+        CanonicalId,
+        { kind: RegistryRefKind; metadata: RegistryRefMetadataMap[RegistryRefKind] }
+      >;
 
       return {
         documents: documentRecord,

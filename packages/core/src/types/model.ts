@@ -1,10 +1,11 @@
 /** Model helper types mirroring the `gql.model` API. */
-import type { VariableReferencesByDefinition } from "./variables";
+
 import type { AnyFields, InferFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
 import type { AnyGraphqlSchema } from "./schema";
 import type { InputDefinition } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
+import type { VariableReferencesByDefinition } from "./variables";
 
 /**
  * Describes the userland `gql.model` helper. It binds a schema type, a field

@@ -59,14 +59,7 @@ describe("soda-gql codegen CLI", () => {
     await Bun.write(invalidSchemaPath, "type Query { invalid }");
     const outFile = join(tmpRoot, `invalid-schema-${Date.now()}.ts`);
 
-    const result = await runCodegenCli([
-      "--schema",
-      invalidSchemaPath,
-      "--out",
-      outFile,
-      "--format",
-      "json",
-    ]);
+    const result = await runCodegenCli(["--schema", invalidSchemaPath, "--out", outFile, "--format", "json"]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toContain("SchemaValidationError");
@@ -75,23 +68,10 @@ describe("soda-gql codegen CLI", () => {
 
   it("emits graphql-system bundle for valid schema", async () => {
     mkdirSync(tmpRoot, { recursive: true });
-    const schemaPath = join(
-      projectRoot,
-      "tests",
-      "fixtures",
-      "runtime-app",
-      "schema.graphql",
-    );
+    const schemaPath = join(projectRoot, "tests", "fixtures", "runtime-app", "schema.graphql");
     const outFile = join(tmpRoot, `runtime-schema-${Date.now()}.ts`);
 
-    const result = await runCodegenCli([
-      "--schema",
-      schemaPath,
-      "--out",
-      outFile,
-      "--format",
-      "json",
-    ]);
+    const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json"]);
 
     expect(result.exitCode).toBe(0);
     const generatedExists = await Bun.file(outFile).exists();

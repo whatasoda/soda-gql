@@ -33,10 +33,7 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   return { stdout, stderr, exitCode };
 };
 
-const runBuilderCli = async (
-  workspaceRoot: string,
-  args: readonly string[],
-): Promise<CliResult> => {
+const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
   const subprocess = Bun.spawn({
     cmd: ["bun", "run", "soda-gql", "builder", ...args],
     cwd: projectRoot,
@@ -44,12 +41,7 @@ const runBuilderCli = async (
     env: {
       ...process.env,
       NODE_ENV: "test",
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
-        .filter(Boolean)
-        .join(":"),
+      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
     },
   });
 
@@ -76,14 +68,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   mkdirSync(graphqlSystemDir, { recursive: true });
   const outFile = join(graphqlSystemDir, "index.ts");
 
-  const result = await runCodegenCli([
-    "--schema",
-    schemaPath,
-    "--out",
-    outFile,
-    "--format",
-    "json",
-  ]);
+  const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json"]);
 
   expect(result.exitCode).toBe(0);
   const exists = await Bun.file(outFile).exists();

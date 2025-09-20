@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import * as babel from "@babel/core";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as babel from "@babel/core";
 
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
@@ -17,12 +17,7 @@ const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "plugin-babel");
 
-const profileQueryPath = join(
-  fixturesRoot,
-  "src",
-  "pages",
-  "profile.query.ts",
-);
+const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
 
 const loadPlugin = async (): Promise<babel.PluginItem> => {
   const module = await import("../../../packages/plugin-babel/src/index.ts");
@@ -35,11 +30,7 @@ const loadPlugin = async (): Promise<babel.PluginItem> => {
   throw new Error("soda-gql Babel plugin must export a default function");
 };
 
-const transformWithPlugin = async (
-  code: string,
-  filename: string,
-  options: PluginOptions,
-): Promise<BabelResult> => {
+const transformWithPlugin = async (code: string, filename: string, options: PluginOptions): Promise<BabelResult> => {
   const plugin = await loadPlugin();
 
   return babel.transformAsync(code, {

@@ -29,22 +29,14 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   return { stdout, stderr, exitCode };
 };
 
-const runBuilderCli = async (
-  workspaceRoot: string,
-  args: readonly string[],
-): Promise<CliResult> => {
+const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
   const subprocess = Bun.spawn({
     cmd: ["bun", "run", "soda-gql", "builder", ...args],
     cwd: projectRoot,
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
-        .filter(Boolean)
-        .join(":"),
+      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
     },
   });
 
@@ -107,9 +99,7 @@ describe("runtime builder flow", () => {
 
     const artifact = JSON.parse(await Bun.file(artifactPath).text());
     expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(artifact.refs).toHaveProperty(
-      `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`,
-    );
+    expect(artifact.refs).toHaveProperty(`${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
   });
 });

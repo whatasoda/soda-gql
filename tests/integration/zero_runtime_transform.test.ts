@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import * as babel from "@babel/core";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as babel from "@babel/core";
 
 type CliResult = {
   readonly stdout: string;
@@ -30,22 +30,14 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   return { stdout, stderr, exitCode };
 };
 
-const runBuilderCli = async (
-  workspaceRoot: string,
-  args: readonly string[],
-): Promise<CliResult> => {
+const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
   const subprocess = Bun.spawn({
     cmd: ["bun", "run", "soda-gql", "builder", ...args],
     cwd: projectRoot,
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
-        .filter(Boolean)
-        .join(":"),
+      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
     },
   });
 
@@ -83,14 +75,7 @@ describe("zero-runtime transform", () => {
     mkdirSync(graphqlSystemDir, { recursive: true });
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
 
-    const codegenResult = await runCodegenCli([
-      "--schema",
-      schemaPath,
-      "--out",
-      graphqlSystemEntry,
-      "--format",
-      "json",
-    ]);
+    const codegenResult = await runCodegenCli(["--schema", schemaPath, "--out", graphqlSystemEntry, "--format", "json"]);
 
     expect(codegenResult.exitCode).toBe(0);
     const generatedExists = await Bun.file(graphqlSystemEntry).exists();

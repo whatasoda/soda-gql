@@ -1,10 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { ok } from "neverthrow";
 
-import {
-  createCanonicalId,
-  createDocumentRegistry,
-} from "../../../packages/builder/src/registry";
+import { createCanonicalId, createDocumentRegistry } from "../../../packages/builder/src/registry";
 
 describe("canonical identifier helpers", () => {
   it("normalises absolute file paths and export names", () => {
@@ -13,9 +10,7 @@ describe("canonical identifier helpers", () => {
   });
 
   it("guards against relative paths", () => {
-    expect(() => createCanonicalId("./user.ts", "userSlice")).toThrow(
-      "CANONICAL_ID_REQUIRES_ABSOLUTE_PATH",
-    );
+    expect(() => createCanonicalId("./user.ts", "userSlice")).toThrow("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
   });
 });
 

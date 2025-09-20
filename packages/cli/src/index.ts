@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { runCodegenCli } from "@soda-gql/codegen";
 import { runBuilderCli } from "@soda-gql/builder";
+import { runCodegenCli } from "@soda-gql/codegen";
 
 const dispatch = (argv: readonly string[]): number => {
   const [command, ...rest] = argv;
