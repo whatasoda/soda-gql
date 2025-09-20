@@ -5,7 +5,7 @@ import type { AnyFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
 import type { AnyGraphqlSchema, OperationType } from "./schema";
 import type { AnySliceResultRecord, SliceResult } from "./slice-result";
-import type { AnySliceResultSelection, InferSliceResultSelection, SliceResultSelection } from "./slice-result-selection";
+import type { AnySliceResultSelections, InferSliceResultSelection, SliceResultSelection } from "./slice-result-selection";
 import type { InputDefinition } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
 import type { VariableReferencesByDefinition } from "./variables";
@@ -22,7 +22,7 @@ export type OperationSliceFn<
 > = TSchema["schema"][TOperation] extends infer TTypeName extends keyof TSchema["object"]
   ? <
       TFields extends AnyFields,
-      TSelection extends AnySliceResultSelection<TAdapter>,
+      TSelection extends AnySliceResultSelections<TAdapter>,
       TVariables extends { [key: string]: InputDefinition } = EmptyObject,
     >(
       variables: [TVariables?],
@@ -48,7 +48,7 @@ export type OperationSlice<
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
   TFields extends AnyFields,
-  TSelection extends AnySliceResultSelection<TAdapter>,
+  TSelection extends AnySliceResultSelections<TAdapter>,
 > = {
   operation: TOperation;
   object: TFields;
@@ -63,7 +63,7 @@ type SliceResultSelectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TFields extends AnyFields,
-  TSelection extends AnySliceResultSelection<TAdapter>,
+  TSelection extends AnySliceResultSelections<TAdapter>,
 > = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TSelection;
 
 /** Helper passed to selection builders for choosing a field path and projector. */

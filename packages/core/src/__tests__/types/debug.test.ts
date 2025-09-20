@@ -352,11 +352,9 @@ const userQuerySlice3 = gql.querySlice(
     ),
   }),
   ({ select }) => ({
-    multiple: {
-      // multiple results are allowed, duplication is also allowed
-      a: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
-      b: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
-    },
+    // multiple results are allowed, duplication is also allowed
+    a: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
+    b: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
   }),
 );
 
