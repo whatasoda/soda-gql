@@ -8,7 +8,7 @@
     "examples/*"
   ],
   "scripts": {
-    "typecheck": "bun --filter='*' typecheck",
+    "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
     "quality": "bun run biome:check && bun run typecheck"
   },
