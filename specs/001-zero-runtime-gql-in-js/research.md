@@ -1,243 +1,98 @@
 # Research Document: Zero-runtime GraphQL Query Generation
 
 ## Executive Summary
+The soda-gql platform will deliver a staged migration from runtime GraphQL document generation (for rapid feature development and testing) to a zero-runtime pipeline powered by static analysis and build-time code transformation. Key decisions balance immediate developer ergonomics with long-term performance, type safety, and constitution compliance (Bun + TypeScript, neverthrow, zod).
 
-This document consolidates research findings for implementing a zero-runtime GraphQL query generation system similar to PandaCSS's approach to CSS-in-JS. The system will enable TypeScript-defined GraphQL queries to be statically analyzed and transformed at build time, eliminating runtime overhead while maintaining full type safety.
+## Staged Delivery Strategy
 
-## Technology Stack Research
+### Decision: Two-phase Runtime → Zero-runtime Rollout
+- **Rationale**: Runtime generation unlocks fast iteration, integration testing, and validates core abstractions before investing in static analysis plumbing. It also enables CLI/plug-in consumers to exercise the API without bespoke tooling.
+- **Alternatives Considered**:
+  - _Zero-runtime only_: High upfront cost, limited feedback loop, hard to debug early issues.
+  - _Keep runtime permanently_: Violates zero-runtime requirement, adds bundle weight.
 
-### Decision: TypeScript + Bun Build System
+### Decision: Shared Builder Pipeline for Both Modes
+- **Rationale**: Implement GraphQL Document Generation once inside `packages/builder` and call it from runtime (direct execution) and static analysis (code transform) paths. Ensures parity and reduces divergence.
+- **Alternatives Considered**: Separate runtime builder vs static builder → risk of mismatch and duplicated maintenance.
 
-**Rationale**:
+## Core Technology Choices
 
-- TypeScript provides the necessary type system for inference and static analysis
-- Bun offers fast build times and built-in TypeScript support without additional transpilation steps
-- Native support for plugins allows custom transformations during build
+### TypeScript + Bun Toolchain
+- **Decision**: Use Bun 1.x with TypeScript 5.x strict mode for CLI, builder, and plugin execution.
+- **Rationale**: Constitution mandates Bun; Bun offers native TypeScript bundling, fast execution, realistic production parity.
+- **Alternatives**: Node.js (non-compliant), Deno (immature plugin ecosystem).
 
-**Alternatives Considered**:
+### AST & Static Analysis Infrastructure
+- **Decision**: Leverage the TypeScript Compiler API for static analysis, with Babel parser support limited to plugin integration.
+- **Rationale**: TypeScript AST retains type metadata needed to enforce model/query slice contracts; integrates with existing tooling; matches PandaCSS precedent.
+- **Alternatives**: Babel-only (no type info), swc (less ergonomic, limited docs), custom parser (reinventing wheel).
 
-- Webpack/Babel: More complex configuration, slower build times
-- Vite/Rollup: Good but Bun's integrated approach is simpler
-- SWC: Fast but requires additional tooling setup
+### Error Handling & Validation
+- **Decision**: Wrap all fallible operations in neverthrow `Result`, validate external inputs (schema JSON, config) via zod v4.
+- **Rationale**: Preserves type information, aligns with constitution; allows deterministic error propagation to CLI/IDE.
+- **Alternatives**: try/catch (type loss), fp-ts Either (heavier abstraction), manual validation (error-prone).
 
-### Decision: Static Analysis via TypeScript Compiler API
+## Domain Decisions
 
-**Rationale**:
+### Identifier Strategy for Dependency Resolution
+- **Decision**: Use canonical identifiers `{absPath}::{exportName}::{propName}` for models and slices; expose helpers to create/consume IDs.
+- **Rationale**: Matches user requirements; enables deterministic cross-file linking during static analysis and runtime generation.
+- **Alternatives**: AST node hashes (unstable), relative paths (ambiguous with index exports).
 
-- Direct access to AST for analyzing GraphQL query definitions
-- Type checker integration for inferring types from Remote Models
-- Proven approach used by PandaCSS for similar transformations
+### Lazy Reference Execution Model
+- **Decision**: Store model/slice definitions as nullary arrow functions inside a `refs` map to avoid temporal dead zones.
+- **Rationale**: Satisfies requirement that `refs[id]()` defers evaluation until dependencies ready; works in runtime and generated script.
+- **Alternatives**: Direct object references (ordering hazards), Proxy-based resolution (complex, harder to statically emit).
 
-**Alternatives Considered**:
+### Document Registry Deduplication
+- **Decision**: Maintain `docs` map keyed by GraphQL document name, error on duplicates, emit JSON artifact consumed by transformers.
+- **Rationale**: Enforces uniqueness, simplifies plugin consumption, meets spec scenario (single registration per doc).
+- **Alternatives**: Hash-based deduping (harder to debug collisions), multi-file outputs (increases IO complexity).
 
-- Babel plugins: Limited type information access
-- Regular expressions: Too fragile for complex code analysis
-- Runtime reflection: Violates zero-runtime requirement
+## Builder Responsibilities
 
-### Decision: Neverthrow for Error Handling
+| Stage | Responsibilities | Notes |
+|-------|------------------|-------|
+| Static Analysis | Parse files, detect soda-gql usage, collect dependency graph | Implemented via build tool APIs (Babel first) |
+| GraphQL Document Generation | Execute resolved refs to produce documents | Shared by runtime + zero-runtime |
+| Code Transform | Rewrite source to import generated docs | Plugin-specific; builder supplies artifacts |
 
-**Rationale**:
+## Package Roles
 
-- Type-safe error handling without exceptions
-- Composable Result types for complex flows
-- Prevents type information loss from try-catch blocks
+- `packages/core`: `createGql` factory, utilities for models, query slices, runtime adapters.
+- `packages/builder`: Document generation engine + dependency resolver, CLI entry (`bun run soda-gql builder`).
+- `packages/codegen`: Schema ingestion, type generation, emission of `graphql-system` module, CLI command `soda-gql codegen`.
+- `packages/plugin-babel`: Build-tool integration; consumes builder artifacts to rewrite code to zero-runtime form.
 
-**Alternatives Considered**:
+## Testing Strategy (t_wada)
 
-- Native try-catch: Loses type information
-- fp-ts Either: More complex, steeper learning curve
-- Custom Result implementation: Unnecessary when neverthrow exists
+| Layer | Purpose | Example Failing Test (RED) |
+|-------|---------|----------------------------|
+| Contract | CLI commands input/output | `codegen` rejects schema without valid SDL path |
+| Integration | Builder pipeline merges slices | Combined page query deduplicates fields |
+| E2E | Plugin transforms TypeScript file | Import replaced with generated `@/graphql-system` reference |
+| Unit | Pure utilities (`resolveRefs`, `mergeArguments`) | Error on missing required parameter |
 
-### Decision: Zod for Runtime Validation
+## Observability & Diagnostics
 
-**Rationale**:
+- Structured JSON logs with context (`stage`, `file`, `identifier`).
+- Builder emits summary reports (counts of docs, models, slices) to aid debugging.
+- CLI returns non-zero exit codes with neverthrow error messages.
 
-- Type inference from schemas
-- Composable validation primitives
-- Excellent TypeScript integration
+## Performance Considerations
 
-**Alternatives Considered**:
+- Cache schema metadata and intermediate dependency graphs in memory during build.
+- Batch file analysis where possible; rely on Bun streaming FS APIs.
+- Provide perf guard (warn at ≥16 slices, fail at >32) to match requirement.
 
-- io-ts: More functional but harder to adopt
-- Yup: Less TypeScript-focused
-- Manual validation: Error-prone and verbose
+## Outstanding Risks & Mitigations
 
-## Architectural Patterns Research
+| Risk | Mitigation |
+|------|------------|
+| Circular dependencies between models | Detect cycles in graph, emit descriptive error, suggest refactor |
+| Conflicting field selections | Merge via schema-aware reconciler; fail fast on incompatible transforms |
+| Parameter injection misuse | zod-validate inputs; ensure type signatures enforce required params |
+| Schema drift | CLI re-emit triggers type errors; document migration flow |
 
-### Decision: Plugin-based Transformation Architecture
-
-**Rationale**:
-
-- Similar to PandaCSS's approach with proven success
-- Clear separation between analysis and generation phases
-- Supports incremental compilation
-
-**Implementation Approach**:
-
-1. **Analysis Phase**: Extract GraphQL definitions from TypeScript files
-2. **Resolution Phase**: Resolve dependencies and merge slices
-3. **Generation Phase**: Create optimized GraphQL documents
-4. **Registration Phase**: Generate top-level registrations
-
-### Decision: t_wada TDD Methodology
-
-**Rationale**:
-
-- Ensures testable design from the start
-- Red-Green-Refactor cycle prevents over-engineering
-- Focus on behavior rather than implementation
-
-**Testing Strategy**:
-
-1. **Contract Tests**: GraphQL schema compliance
-2. **Integration Tests**: Plugin transformation pipeline
-3. **Unit Tests**: Individual transformation functions
-4. **E2E Tests**: Full build process validation
-
-## Query Registration Strategy
-
-### Decision: Module-level Registration with WeakMap
-
-**Rationale**:
-
-- Prevents re-evaluation on component re-renders
-- Memory-efficient with automatic garbage collection
-- Unique document identification via Symbol keys
-
-**Implementation**:
-
-```typescript
-// Generated at module top-level
-const __query_abc123 = registerQuery({
-  document: "...",
-  transforms: {...}
-});
-
-// In component
-const query = __query_abc123; // Reference only
-```
-
-**Alternatives Considered**:
-
-- Global registry: Potential memory leaks
-- In-component generation: Re-evaluation overhead
-- External file generation: Complicates imports
-
-## Type Inference Strategy
-
-### Decision: Branded Types with Phantom Types
-
-**Rationale**:
-
-- Maintains type information through transformations
-- Enables parameterized fragments via type parameters
-- Zero runtime cost (types erased at compile time)
-
-**Example Pattern**:
-
-```typescript
-type RemoteModel<T, P = {}> = {
-  _type: T;
-  _params: P;
-  fields: FieldSelection;
-  transform: (data: unknown) => T;
-};
-```
-
-## Cross-module Query Composition
-
-### Decision: Dependency Graph Analysis
-
-**Rationale**:
-
-- Detects and merges queries across module boundaries
-- Maintains proper dependency ordering
-- Enables dead code elimination
-
-**Implementation Steps**:
-
-1. Build dependency graph from imports
-2. Topological sort for processing order
-3. Merge queries with deduplication
-4. Generate single document per page
-
-## Performance Targets
-
-### Resolved Targets:
-
-- **Build Time**: < 100ms per file transformation
-- **Type Checking**: < 500ms incremental
-- **Bundle Size**: Zero runtime overhead (transforms removed)
-- **Memory Usage**: < 50MB for analysis phase
-
-### Benchmarking Plan:
-
-- Compare against graphql-codegen baseline
-- Measure incremental build performance
-- Profile memory usage during large codebases
-
-## Integration Requirements
-
-### Build Tool Support:
-
-- **Primary**: Bun plugin system
-- **Future**: Vite plugin compatibility
-- **Future**: Webpack loader support
-
-### Framework Integration:
-
-- React: Custom hooks for query execution
-- Vue: Composition API integration
-- Svelte: Store-based approach
-
-## Error Recovery Strategy
-
-### Transform Function Errors:
-
-- **Compile Time**: Fail build with clear error messages
-- **Runtime**: Return Result type with error details
-- **Development**: Hot reload with error overlay
-
-### Schema Mismatch Handling:
-
-- Detect at build time via schema validation
-- Generate migration hints for breaking changes
-- Support gradual migration via versioned models
-
-## Backward Compatibility
-
-### Schema Evolution:
-
-- Support multiple schema versions simultaneously
-- Deprecation warnings for removed fields
-- Automatic migration suggestions
-
-### API Stability:
-
-- Semantic versioning for public API
-- Deprecation cycle: 2 major versions
-- Migration guides for breaking changes
-
-## Key Design Decisions Summary
-
-1. **Zero-runtime constraint**: All GraphQL generation at build time
-2. **Type safety**: Full inference from Remote Models to application code
-3. **Modular composition**: Queries composed from independent slices
-4. **Registration pattern**: Top-level registration prevents re-evaluation
-5. **Error handling**: Neverthrow for type-safe error propagation
-6. **Testing**: TDD with contract-first approach
-7. **Performance**: Sub-second build times, zero runtime overhead
-
-## Unresolved Questions
-
-All NEEDS CLARIFICATION items from the specification have been resolved through research:
-
-- Maximum slices: No hard limit, performance-based soft limit at ~100 slices
-- GraphQL features: Support all standard features via schema-first approach
-- Error recovery: Result types with detailed error information
-- Backward compatibility: Versioned models with migration support
-- Build tool integration: Plugin architecture for multiple tools
-
-## Next Steps
-
-With all technical decisions made and patterns identified, the project is ready to proceed to Phase 1: Design & Contracts. The architecture will follow established patterns from PandaCSS while adapting them for GraphQL-specific requirements.
+## Conclusion
+All clarifications from the feature specification and user timeline have been addressed. The staged runtime→zero-runtime strategy, shared builder, and strict type/validation rules position the team to begin detailed design (Phase 1) and subsequent task planning.

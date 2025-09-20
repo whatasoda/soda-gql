@@ -35,6 +35,12 @@ This project implements a zero-runtime GraphQL query generation system similar t
 ### Commands
 
 ```bash
+# Generate typed runtime entry from schema
+bun run soda-gql codegen --schema ./schema.graphql --out packages/graphql-system/src/index.ts
+
+# Produce runtime GraphQL documents during development
+bun run soda-gql builder --mode runtime --entry ./src/pages/**/*.ts --out ./.cache/soda-gql/runtime.json
+
 # Run tests
 bun test
 
@@ -129,3 +135,6 @@ Significant architectural decisions are documented in `docs/decisions/`.
 3. Reference in code: `// See ADR-001`
 
 See [ADR-000](docs/decisions/000-adr-process.md) for the full process.
+
+## Recent Changes
+- 2025-09-20 (001-zero-runtime-gql-in-js): Document staged runtime → zero-runtime plan, added codegen/builder commands.
