@@ -1,7 +1,7 @@
 # Contract — `soda-gql codegen`
 
 ## Purpose
-Generate the `graphql-system` runtime module by consuming a GraphQL schema and emitting typed helpers wired through `createGql`.
+Generate the `graphql-system` runtime module by consuming a GraphQL schema and emitting the strongly typed helper bundle (`createHelpers`, `createRefFactories`, `model`, `querySlice`, `query`, etc.) that mirrors the usage demonstrated in `packages/core/src/__tests__/types/debug.test.ts`.
 
 ## Inputs
 | Flag | Type | Required | Description |
@@ -14,12 +14,14 @@ Generate the `graphql-system` runtime module by consuming a GraphQL schema and e
 
 ## Successful Response (GREEN)
 - Exit code `0`.
-- Writes target file with:
-  - Generated TypeScript types for Models/Slices.
-  - `createGql` invocation seeded with schema + runtime helpers.
+- Writes the target module exporting a default `gql` object that aggregates:
+  - Schema helpers (`createHelpers<Schema>` output) scoped to the provided schema.
+  - Reference factories produced via `createRefFactories<Schema>()`.
+  - Runtime-bound factories (`gql.model`, `gql.querySlice`, `gql.query`, `gql.mutation`, `gql.subscription`).
+- Injects the serialised schema description required by downstream builders.
 - Emits diagnostics (JSON or human readable) including:
-  - Number of types generated.
-  - Hash of schema input.
+  - Number of object/union/input definitions processed.
+  - Hash of schema input for cache invalidation.
 
 ## Failure Cases (RED)
 | Scenario | Expected Behavior |

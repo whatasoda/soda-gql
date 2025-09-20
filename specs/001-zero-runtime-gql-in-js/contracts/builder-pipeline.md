@@ -1,7 +1,7 @@
 # Contract — `soda-gql builder`
 
 ## Purpose
-Execute GraphQL document generation using the shared builder pipeline, supporting both `runtime` and `zero-runtime` modes.
+Traverse user code that imports the generated `gql` helpers, evaluate model/slice/page-query descriptors, and emit GraphQL documents plus dependency metadata for both runtime execution and zero-runtime transforms.
 
 ## Inputs
 | Flag | Type | Required | Description |
@@ -15,6 +15,7 @@ Execute GraphQL document generation using the shared builder pipeline, supportin
 
 ## Successful Response (GREEN)
 - Exit code `0`.
+- Executes all reachable `gql.model`, `gql.querySlice`, and `gql.query` factories exactly once, resolving canonical identifiers of the form `{absPath}::{exportName}` for every definition.
 - Writes artifact JSON with shape:
   ```json
   {
@@ -25,9 +26,14 @@ Execute GraphQL document generation using the shared builder pipeline, supportin
       }
     },
     "refs": {
-      "/abs/path/user.model.ts::userModel": {
+      "/abs/path/entities/user.ts::userModel": {
+        "kind": "model",
         "hash": "...",
         "dependencies": []
+      },
+      "/abs/path/entities/user.ts::userSlice": {
+        "kind": "slice",
+        "canonicalDocument": "ProfilePageQuery"
       }
     },
     "report": {
@@ -39,6 +45,7 @@ Execute GraphQL document generation using the shared builder pipeline, supportin
   }
   ```
 - Emits warnings when slice count ≥16, errors when >32.
+- In `--mode runtime`, also materialises the documents to disk for direct consumption by tests.
 
 ## Failure Cases (RED)
 | Scenario | Expected Behavior |

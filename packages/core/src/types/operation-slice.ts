@@ -1,3 +1,4 @@
+/** Operation slice builders (`gql.querySlice`, etc.). */
 import type { GraphqlAdapter } from "./adapter";
 import type { FieldPaths, InferByFieldPath } from "./field-path";
 import type { AnyFields } from "./fields";
@@ -9,6 +10,11 @@ import type { InputDefinition } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
 import type { VariableReferencesByDefinition } from "./variables";
 
+/**
+ * Describes the query/mutation/subscription slice helper. Each slice captures
+ * its input variables, the selected fields, and how to project the adapter-level
+ * slice results into domain data.
+ */
 export type OperationSliceFn<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
@@ -27,6 +33,7 @@ export type OperationSliceFn<
     ) => OperationSlice<TAdapter, TOperation, TFields, TSelection>
   : never;
 
+/** Nominal type representing any slice instance regardless of schema specifics. */
 export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extends OperationType> = OperationSlice<
   TAdapter,
   TOperation,
@@ -36,6 +43,7 @@ export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extend
   any
 >;
 
+/** Concrete slice value returned by the builder. */
 export type OperationSlice<
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
@@ -50,6 +58,7 @@ export type OperationSlice<
   }) => InferSliceResultSelection<TAdapter, TSelection>;
 };
 
+/** Builder used to declare how slice results are projected. */
 type SliceResultSelectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
@@ -57,6 +66,7 @@ type SliceResultSelectionsBuilder<
   TSelection extends AnySliceResultSelection<TAdapter>,
 > = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TSelection;
 
+/** Helper passed to selection builders for choosing a field path and projector. */
 type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TFields extends AnyFields> = <
   TPath extends FieldPaths<TSchema, TFields>,
   TTransformed,

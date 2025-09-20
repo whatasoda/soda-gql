@@ -16,9 +16,10 @@ Transform TypeScript/JavaScript source files by replacing soda-gql runtime const
 
 ## Behavior (GREEN)
 1. Load artifact JSON via neverthrow `Result` with zod validation.
-2. Traverse AST; for each soda-gql construct:
-   - Resolve canonical identifier.
-   - Replace inline document definition with `import { gql } from "@/graphql-system"; const doc = gql("DocumentName");` in zero-runtime mode.
+2. Traverse AST; for each `gql.query`/`gql.mutation`/`gql.subscription` invocation:
+   - Resolve the canonical identifier of the callee export (e.g., `profileQuery`).
+   - Look up the matching document entry in the artifact and rewrite the call to a direct import from the generated module (e.g., `import { profileQuery } from "@/graphql-system";`).
+   - Preserve `gql.model` and `gql.querySlice` definitions (they are erased during builder execution, not via Babel).
    - Leave runtime constructs intact when `mode === "runtime"`.
 3. Inject import once per file; ensure tree-shakeable registration (top-level only).
 4. Emit diagnostics (console or JSON) summarizing transformed documents.

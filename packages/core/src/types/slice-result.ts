@@ -1,6 +1,12 @@
+/** Result-like wrapper types returned from slice projections. */
 import type { GraphqlAdapter } from "./adapter";
 import type { Prettify } from "./utility";
 
+/**
+ * Internal discriminated union describing the Result-like wrapper exposed to
+ * slice selection callbacks. The adapter decides how raw errors are
+ * materialized.
+ */
 export type AnySliceResultRecord<TAdapter extends GraphqlAdapter> = {
   [path: string]: SliceResult<
     // biome-ignore lint/suspicious/noExplicitAny: abstract type
@@ -9,17 +15,20 @@ export type AnySliceResultRecord<TAdapter extends GraphqlAdapter> = {
   >;
 };
 
+/** Public union used by selection callbacks to inspect data, empty, or error states. */
 export type SliceResult<TData, TAdapter extends GraphqlAdapter> =
   | SliceResultEmpty<TData, TAdapter>
   | SliceResultSuccess<TData, TAdapter>
   | SliceResultError<TData, TAdapter>;
 
+/** Runtime guard interface shared by all slice result variants. */
 type SliceResultGuards<TData, TAdapter extends GraphqlAdapter> = {
   isEmpty(): this is SliceResultEmpty<TData, TAdapter>;
   isSuccess(): this is SliceResultSuccess<TData, TAdapter>;
   isError(): this is SliceResultError<TData, TAdapter>;
 };
 
+/** Variant representing an empty payload (no data, no error). */
 export type SliceResultEmpty<TData, TAdapter extends GraphqlAdapter> = Prettify<
   SliceResultGuards<TData, TAdapter> & {
     unwrap: () => null;
@@ -27,6 +36,7 @@ export type SliceResultEmpty<TData, TAdapter extends GraphqlAdapter> = Prettify<
   }
 >;
 
+/** Variant representing a successful payload. */
 export type SliceResultSuccess<TData, TAdapter extends GraphqlAdapter> = Prettify<
   SliceResultGuards<TData, TAdapter> & {
     data: TData;
@@ -35,6 +45,7 @@ export type SliceResultSuccess<TData, TAdapter extends GraphqlAdapter> = Prettif
   }
 >;
 
+/** Variant representing an error payload created by the adapter. */
 export type SliceResultError<TData, TAdapter extends GraphqlAdapter> = Prettify<
   SliceResultGuards<TData, TAdapter> & {
     error: ReturnType<TAdapter["createError"]>;
@@ -42,6 +53,7 @@ export type SliceResultError<TData, TAdapter extends GraphqlAdapter> = Prettify<
   }
 >;
 
+/** Utility signature returned by the safe unwrap helper. */
 type SliceResultSafeUnwrapFn<TData, TError> = <TTransformed>(transform: (data: TData) => TTransformed) =>
   | {
       data?: never;

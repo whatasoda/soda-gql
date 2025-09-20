@@ -1,9 +1,15 @@
+/** Field builder factories shared by model and slice helpers. */
 import type { AbstractFieldReference, AnyFieldReference, AnyFields, AnyNestedObject, FieldReferenceOf } from "./fields";
 import type { AnyGraphqlSchema, ObjectFieldRecord, UnionTypeRecord } from "./schema";
 import type { EnumRef, InputDefinition, ObjectTypeRef, ScalarRef, TypenameRef, UnionTypeRef } from "./type-ref";
 import type { VoidIfEmptyObject } from "./utility";
 import type { VariableReferencesByDefinition } from "./variables";
 
+/**
+ * Builder signature exposed to userland `model` and `slice` helpers. The
+ * tooling `f`/`fields`/`_` aliases provide ergonomic access to GraphQL fields
+ * while preserving the original schema information for inference.
+ */
 export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
@@ -16,6 +22,7 @@ export type FieldsBuilder<
   $: NoInfer<VariableReferencesByDefinition<TSchema, TVariables>>;
 }) => TFields;
 
+/** Narrow builder used when a field resolves to an object and we need nested selections. */
 type NestedFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
@@ -26,6 +33,7 @@ type NestedFieldsBuilder<
   fields: NoInfer<FieldReferenceFactories<TSchema, TTypeName>>;
 }) => TFields;
 
+/** Map each field to a factory capable of emitting fully-typed references. */
 type FieldReferenceFactories<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
   [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName>]: FieldReferenceFactory<
     TSchema,
@@ -33,6 +41,7 @@ type FieldReferenceFactories<TSchema extends AnyGraphqlSchema, TTypeName extends
   >;
 };
 
+/** Polymorphic factory that handles object, union, and scalar/enum fields. */
 type FieldReferenceFactory<TSchema extends AnyGraphqlSchema, TReference extends AnyFieldReference> =
   | (TReference extends { type: ObjectTypeRef }
       ? <TNested extends AnyNestedObject>(
@@ -85,6 +94,7 @@ type FieldReferenceFactory<TSchema extends AnyGraphqlSchema, TReference extends 
         }
       : never);
 
+/** Flexible argument tuple accepted by field factories (supports directives). */
 type FieldReferenceFactoryFieldArguments<TFieldSelectionTemplate extends AnyFieldReference> =
   | TFieldSelectionTemplate["args"]
   | VoidIfEmptyObject<TFieldSelectionTemplate["args"]>

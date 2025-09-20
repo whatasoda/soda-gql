@@ -17,26 +17,59 @@ bun run soda-gql codegen \
 - Validates schema with zod; exits non-zero on failure (expect RED test initially).
 - Emits types + `createGql` wiring for runtime APIs.
 
-## Step 2 — Define Models and Query Slices
+## Step 2 — Define Models and Query Slices with the Generated `gql`
 ```ts
-// src/entities/user.model.ts
-import { defineModel } from "@soda-gql/core";
+// src/entities/user.ts
+import { gql } from "@/graphql-system";
 
-export const userModel = defineModel({
-  name: "User",
-  fields: {
-    id: field.string(),
-    name: field.string(),
-    posts: field.list("Post", { params: { limit: int() } }),
-  },
-  transform: (data) => ok({
+export const userModel = gql.model(
+  ["user", { categoryId: gql.scalar("id", "?") }],
+  ({ f, $ }) => ({
+    ...f.id(),
+    ...f.name(),
+    posts: f.posts({ categoryId: $.categoryId }, ({ f }) => ({
+      ...f.id(),
+      ...f.title(),
+    })),
+  }),
+  (data) => ({
     id: data.id,
     name: data.name,
-    posts: data.posts.map(post => postModel.transform(post).unwrap()),
+    posts: data.posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+    })),
   }),
-});
+);
+
+export const userSlice = gql.querySlice(
+  [{
+    id: gql.scalar("id", "!"),
+    categoryId: gql.scalar("id", "?"),
+  }],
+  ({ f, $ }) => ({
+    users: f.users({ id: [$.id] }, () => ({
+      ...userModel.fragment({ categoryId: $.categoryId }),
+    })),
+  }),
+  ({ select }) =>
+    select("$.users", (result) => {
+      if (result.isError()) {
+        return { error: result.error };
+      }
+
+      if (result.isEmpty()) {
+        return { data: [] };
+      }
+
+      return {
+        data: result.data.map((user) => userModel.transform(user)),
+      };
+    }),
+);
 ```
-- Models declared at module top-level; transforms return neverthrow `Result`.
+- Models and slices are declared at module top-level; the transform callback
+  returns domain-friendly data while preserving neverthrow-like ergonomics.
 
 ## Step 3 — Run Runtime Builder (Development Mode)
 ```bash
@@ -48,16 +81,33 @@ bun run soda-gql builder \
 - Evaluates refs/docs directly, generates GraphQL documents used by tests.
 - JSON output validated before writing.
 
-## Step 4 — Consume Generated Docs in Tests
+## Step 4 — Compose a Page Query and Assert Types
 ```ts
+// src/pages/profile.query.ts
 import { gql } from "@/graphql-system";
+import { userSlice } from "../entities/user";
 
-test("profile page query merges slices", () => {
-  const doc = gql("ProfilePageQuery");
-  expect(doc.document).toMatchSnapshot();
+export const profileQuery = gql.query(
+  "ProfilePageQuery",
+  { userId: gql.scalar("id", "!") },
+  ({ $ }) => ({
+    users: userSlice({ id: $.userId }),
+  }),
+);
+
+// In contract tests
+test("profile query exposes typed transform", () => {
+  const response = profileQuery.transform({ users: [] });
+
+  if ("error" in response.users) {
+    throw new Error("unexpected error");
+  }
+
+  expect(response.users.data).toEqual([]);
 });
 ```
-- Contract tests should fail until builder emits expected document (RED phase).
+- Contract tests should fail in RED phase until the builder and adapters produce
+  real GraphQL documents and runtime execution results.
 
 ## Step 5 — Enable Zero-runtime Transform (Babel Plugin)
 ```js

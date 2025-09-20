@@ -1,9 +1,15 @@
+/** Canonical field selection types used by models and slices. */
 import type { AnyDirectiveAttachments } from "./directives";
 import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferByTypeRef, PickTypeRefByFieldName } from "./schema";
 import type { ApplyTypeFormat, FieldDefinition, InferrableTypeRef, ObjectTypeRef, UnionTypeRef } from "./type-ref";
 import type { Prettify } from "./utility";
 import type { AnyVariableAssignments, VariableReferencesByFieldName } from "./variables";
 
+/**
+ * Canonical representation of the field selections we collect during model and
+ * slice definition. Each alias maps to a typed field reference that still
+ * remembers its parent type, arguments, directives, and nested selections.
+ */
 export type AnyFieldReference = {
   parent: AnyTypeName;
   field: AnyFieldName;
@@ -14,13 +20,17 @@ export type AnyFieldReference = {
   union: AnyNestedUnion | null;
 };
 
+/** Nested selection produced when resolving an object field. */
 export type AnyNestedObject = { [alias: string]: AnyFieldReference };
+/** Nested selection produced when resolving a union field. */
 type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldReference } };
 
+/** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
   [alias: string]: AnyFieldReference;
 };
 
+/** Strongly typed field reference produced for concrete schema members. */
 export type AbstractFieldReference<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
@@ -38,6 +48,7 @@ export type AbstractFieldReference<
   union: TExtras extends { union: infer TUnion } ? TUnion : null;
 };
 
+/** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldReferenceOf<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
@@ -54,10 +65,12 @@ export type FieldReferenceOf<
     >
   : never;
 
+/** Resolve the data shape produced by a set of field references. */
 export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = Prettify<{
   [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
 }>;
 
+/** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TReference extends AnyFieldReference> =
   | (TReference extends {
       type: infer TRef extends ObjectTypeRef;

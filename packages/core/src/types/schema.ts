@@ -1,3 +1,4 @@
+/** Schema description DSL and type inference helpers. */
 import {
   type ApplyTypeFormat,
   type EnumRef,
@@ -12,10 +13,15 @@ import {
 } from "./type-ref";
 import { type Hidden, hidden } from "./utility";
 
+/**
+ * Core schema DSL used by generated helpers and tests to describe GraphQL
+ * metadata without executing any runtime code.
+ */
 export type OperationType = keyof AnyGraphqlSchema["schema"];
 export type AnyTypeName = PropertyKey;
 export type AnyFieldName = PropertyKey;
 
+/** Root schema shape describing scalars, objects, unions, and inputs. */
 export type AnyGraphqlSchema = {
   schema: {
     query: string;
@@ -37,12 +43,14 @@ export type AnyGraphqlSchema = {
   // };
 };
 
+/** Scalar definition carries a phantom type for inference. */
 export type ScalarDef<T> = {
   _type: Hidden<T>;
 
   name: string;
 };
 
+/** Enum definition capturing the literal union of values. */
 export type EnumDef<T extends string> = {
   _type: Hidden<T>;
 
@@ -51,6 +59,7 @@ export type EnumDef<T extends string> = {
   values: { [_ in T]: true };
 };
 
+/** Input object definition describing its typed fields. */
 export type InputDef = {
   name: string;
 
@@ -62,6 +71,7 @@ export type InputDef = {
   };
 };
 
+/** Object definition including argument metadata for every field. */
 export type ObjectDef = {
   name: string;
 
@@ -75,12 +85,14 @@ export type ObjectDef = {
   };
 };
 
+/** Union definition listing the concrete object members. */
 export type UnionDef = {
   name: string;
 
   types: { [typename: string]: true };
 };
 
+/** Resolve the TypeScript type represented by a schema type reference. */
 export type InferByTypeRef<TSchema extends AnyGraphqlSchema, TRef extends InferrableTypeRef> = {
   typename: TRef extends TypenameRef
     ? TRef["name"] extends keyof TSchema["object"]
@@ -91,6 +103,7 @@ export type InferByTypeRef<TSchema extends AnyGraphqlSchema, TRef extends Inferr
   enum: TRef extends EnumRef ? ApplyTypeFormat<TRef, ReturnType<TSchema["enum"][TRef["name"]]["_type"]>> : never;
 }[TRef["kind"]];
 
+/** Infer the TypeScript type expected by an input definition. */
 export type InferInputDefinitionType<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> =
   | (TRef extends ScalarRef ? InferByTypeRef<TSchema, TRef> : never)
   | (TRef extends EnumRef ? InferByTypeRef<TSchema, TRef> : never)
@@ -100,22 +113,26 @@ export type InferInputDefinitionType<TSchema extends AnyGraphqlSchema, TRef exte
         : never
       : never);
 
+/** Grab the field definition reference for a specific object field. */
 export type PickTypeRefByFieldName<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
 > = TSchema["object"][TTypeName]["fields"][TFieldName]["type"];
 
+/** Convenience alias exposing all fields for an object type. */
 export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
   [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
 };
 
+/** Map union member names to their object definitions. */
 export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TRef extends UnionTypeRef> = {
   [TTypeName in Extract<keyof TSchema["object"], keyof TSchema["union"][TRef["name"]]["types"]>]: TSchema["object"][TTypeName];
 };
 
 const named = <TName extends string, TValue>(name: TName, value: TValue) => ({ [name]: value }) as { [K in TName]: TValue };
 
+/** Fluent helper to declare schema components in a type-safe way. */
 export const define = <const TName extends string>(name: TName) => ({
   scalar: <TType>() =>
     named(name, {
@@ -152,6 +169,7 @@ export const define = <const TName extends string>(name: TName) => ({
     } satisfies UnionDef),
 });
 
+/** Accessor utilities for looking up argument definitions from the schema. */
 export const createHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({
   fieldArg: <
     const TTypeName extends keyof TSchema["object"] & string,

@@ -1,3 +1,4 @@
+/** Variable helper types for binding GraphQL inputs. */
 import type { AnyGraphqlSchema, InferByTypeRef, InferInputDefinitionType } from "./schema";
 import type {
   EnumRef,
@@ -12,12 +13,18 @@ import { type Hidden, hidden } from "./utility";
 
 type AnyScalarValue = string | number | boolean | null | undefined;
 type AnyEnumValue = string | undefined | null;
+/**
+ * Variable helpers bridge schema input definitions to assignable values in
+ * model and slice builders. Each reference carries the inferred TypeScript type
+ * so callers cannot bind incompatible structures.
+ */
 export type AnyVariableAssignments = {
   [key: string]:
     | (AnyVariableAssignments | AnyVariableReference | AnyScalarValue | AnyEnumValue)
     | (AnyVariableAssignments | AnyVariableReference | AnyScalarValue | AnyEnumValue)[];
 };
 
+/** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 type AnyVariableReference = VariableReference<
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
   any,
@@ -26,6 +33,8 @@ type AnyVariableReference = VariableReference<
 >;
 
 declare const __VARIABLE_REFERENCE_BRAND__: unique symbol;
+
+/** Nominal reference used to defer variable binding while carrying type info. */
 export class VariableReference<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> {
   [__VARIABLE_REFERENCE_BRAND__]: Hidden<{
     type: InferInputDefinitionType<TSchema, TRef>;
@@ -36,6 +45,7 @@ export class VariableReference<TSchema extends AnyGraphqlSchema, TRef extends In
   constructor(public readonly name: string) {}
 }
 
+/** Recursively resolves all assignable shapes for a variable definition. */
 type AssignableVariable<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> =
   | VariableReference<TSchema, TRef>
   | (TRef extends { format: ListTypeFormat }
@@ -44,6 +54,7 @@ type AssignableVariable<TSchema extends AnyGraphqlSchema, TRef extends InputDefi
           | (TRef extends InputTypeRef ? AssignableVariableNested<TSchema, TRef["name"]> : never)
           | (TRef extends ScalarRef | EnumRef ? InferByTypeRef<TSchema, TRef> : never));
 
+/** Value shape for nested input objects referenced by a variable definition. */
 type AssignableVariableNested<TSchema extends AnyGraphqlSchema, TInputType extends keyof TSchema["input"]> = {
   [K in keyof TypeRefMappingWithFlags<TSchema["input"][TInputType]["fields"]>]: AssignableVariable<
     TSchema,
@@ -51,6 +62,7 @@ type AssignableVariableNested<TSchema extends AnyGraphqlSchema, TInputType exten
   >;
 };
 
+/** Map of variable names to values inferred from their input definitions. */
 export type VariableReferencesByDefinition<
   TSchema extends AnyGraphqlSchema,
   TDefinition extends { [key: string]: InputDefinition },
@@ -58,6 +70,7 @@ export type VariableReferencesByDefinition<
   [K in keyof TypeRefMappingWithFlags<TDefinition>]: AssignableVariable<TSchema, TDefinition[K]>;
 };
 
+/** Shortcut for retrieving variables bound to a specific field. */
 export type VariableReferencesByFieldName<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
