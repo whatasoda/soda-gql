@@ -1,72 +1,66 @@
 import type { GraphqlAdapter } from "./adapter";
-import type { ArgumentAssignments } from "./arguments";
-import type { FieldPaths, Fields, FieldsBuilder, InferByFieldPath } from "./fields";
-import type { GraphqlSchema, OperationType } from "./schema";
-import type { AbstractSliceResultRecord, SliceResult } from "./slice-result";
-import type { AbstractSliceResultSelection, InferSliceResultSelection, SliceResultSelection } from "./slice-result-selection";
+import type { FieldPaths, InferByFieldPath } from "./field-path";
+import type { AnyFields } from "./fields";
+import type { FieldsBuilder } from "./fields-builder";
+import type { AnyGraphqlSchema, OperationType } from "./schema";
+import type { AnySliceResultRecord, SliceResult } from "./slice-result";
+import type { AnySliceResultSelection, InferSliceResultSelection, SliceResultSelection } from "./slice-result-selection";
 import type { InputDefinition } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
+import type { VariableReferencesByDefinition } from "./variables";
 
 export type OperationSliceFn<
-  TSchema extends GraphqlSchema,
+  TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
 > = TSchema["schema"][TOperation] extends infer TTypeName extends keyof TSchema["object"]
   ? <
-      TFields extends Fields<TSchema, TTypeName>,
-      TSelection extends AbstractSliceResultSelection<TAdapter>,
+      TFields extends AnyFields,
+      TSelection extends AnySliceResultSelection<TAdapter>,
       TVariables extends { [key: string]: InputDefinition } = EmptyObject,
     >(
       variables: [TVariables?],
       builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
-      selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TTypeName, TFields, TSelection>,
+      selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
     ) => (
-      variables: VoidIfEmptyObject<TVariables> | ArgumentAssignments<TSchema, TVariables>,
-    ) => OperationSlice<TSchema, TAdapter, TOperation, TTypeName, TSelection>
+      variables: VoidIfEmptyObject<TVariables> | VariableReferencesByDefinition<TSchema, TVariables>,
+    ) => OperationSlice<TAdapter, TOperation, TFields, TSelection>
   : never;
 
-export type AbstractOperationSlice<
-  TSchema extends GraphqlSchema,
-  TAdapter extends GraphqlAdapter,
-  TOperation extends OperationType,
-> = OperationSlice<
-  TSchema,
+export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extends OperationType> = OperationSlice<
   TAdapter,
   TOperation,
-  TSchema["schema"][TOperation],
+  // biome-ignore lint/suspicious/noExplicitAny: abstract type
+  any,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;
 
 export type OperationSlice<
-  TSchema extends GraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
-  TTypeName extends keyof TSchema["object"],
-  TSelection extends AbstractSliceResultSelection<TAdapter>,
+  TFields extends AnyFields,
+  TSelection extends AnySliceResultSelection<TAdapter>,
 > = {
   operation: TOperation;
-  object: Fields<TSchema, TTypeName>;
+  object: TFields;
   transform: (input: {
     prefix: string;
-    results: AbstractSliceResultRecord<TAdapter>;
+    results: AnySliceResultRecord<TAdapter>;
   }) => InferSliceResultSelection<TAdapter, TSelection>;
 };
 
 type SliceResultSelectionsBuilder<
-  TSchema extends GraphqlSchema,
+  TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
-  TTypeName extends keyof TSchema["object"],
-  TFields extends Fields<TSchema, TTypeName>,
-  TSelection extends AbstractSliceResultSelection<TAdapter>,
-> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TTypeName, TFields> }) => TSelection;
+  TFields extends AnyFields,
+  TSelection extends AnySliceResultSelection<TAdapter>,
+> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TSelection;
 
-type SliceResultSelector<
-  TSchema extends GraphqlSchema,
-  TAdapter extends GraphqlAdapter,
-  TTypeName extends keyof TSchema["object"],
-  TFields extends Fields<TSchema, TTypeName>,
-> = <TPath extends FieldPaths<TSchema, TTypeName, TFields>, TTransformed>(
+type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TFields extends AnyFields> = <
+  TPath extends FieldPaths<TSchema, TFields>,
+  TTransformed,
+>(
   path: TPath,
-  transform: (result: SliceResult<InferByFieldPath<TSchema, TTypeName, TFields, TPath>, TAdapter>) => TTransformed,
-) => SliceResultSelection<TAdapter, TPath, InferByFieldPath<TSchema, TTypeName, TFields, TPath>, TTransformed>;
+  transform: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TAdapter>) => TTransformed,
+) => SliceResultSelection<TAdapter, TPath, InferByFieldPath<TSchema, TFields, TPath>, TTransformed>;

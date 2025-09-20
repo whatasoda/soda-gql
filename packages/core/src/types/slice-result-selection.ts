@@ -6,15 +6,15 @@ export type SliceResultSelection<TAdapter extends GraphqlAdapter, TPath extends 
   transform: (result: SliceResult<TData, TAdapter>) => TTransformed;
 };
 
-export type AbstractSliceResultSelection<TAdapter extends GraphqlAdapter> =
-  | AbstractSliceResultSelectionSingle<TAdapter>
-  | AbstractSliceResultSelectionMultiple<TAdapter>;
+export type AnySliceResultSelection<TAdapter extends GraphqlAdapter> =
+  | AnySliceResultSelectionSingle<TAdapter>
+  | AnySliceResultSelectionMultiple<TAdapter>;
 
-type AbstractSliceResultSelectionMultiple<TAdapter extends GraphqlAdapter> = {
-  multiple: { [key: string]: AbstractSliceResultSelectionSingle<TAdapter> };
+type AnySliceResultSelectionMultiple<TAdapter extends GraphqlAdapter> = {
+  multiple: { [key: string]: AnySliceResultSelectionSingle<TAdapter> };
 };
 
-type AbstractSliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = SliceResultSelection<
+type AnySliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = SliceResultSelection<
   TAdapter,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any,
@@ -26,7 +26,7 @@ type AbstractSliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = Slice
 
 export type InferSliceResultSelection<
   TAdapter extends GraphqlAdapter,
-  TSelection extends AbstractSliceResultSelectionSingle<TAdapter> | AbstractSliceResultSelectionMultiple<TAdapter>,
+  TSelection extends AnySliceResultSelectionSingle<TAdapter> | AnySliceResultSelectionMultiple<TAdapter>,
 > = TSelection extends { multiple: unknown }
   ? {
       [K in keyof TSelection["multiple"]]: TSelection["multiple"][K] extends {

@@ -79,7 +79,7 @@ export type InputTypeRef = AbstractTypeRef<"input">;
 export type ObjectTypeRef = AbstractTypeRef<"object">;
 export type UnionTypeRef = AbstractTypeRef<"union">;
 
-export const unsafeType = {
+export const unsafeRef = {
   typename: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
     prettify({ kind: "typename", name, format } satisfies TypenameRef & { format: TFormat }),
   scalar: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
@@ -94,11 +94,9 @@ export const unsafeType = {
     prettify({ kind: "union", name, format } satisfies UnionTypeRef & { format: TFormat }),
 };
 
-export const createTypeFactories = <
+export const createRefFactories = <
   TSchema extends { [_ in Exclude<TypeRef["kind"], "typename">]: { [typename: string]: unknown } },
 >() => ({
-  typename: <T extends keyof TSchema["object"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "typename", name, format } satisfies TypenameRef & { format: TFormat }),
   scalar: <T extends keyof TSchema["scalar"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
     prettify({ kind: "scalar", name, format } satisfies ScalarRef & { format: TFormat }),
   enum: <T extends keyof TSchema["enum"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>

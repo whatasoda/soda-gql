@@ -1,10 +1,11 @@
 import type { GraphqlAdapter } from "../../types/adapter";
-import type { FieldPaths, InferFields } from "../../types/fields";
+import type { InferFields } from "../../types/fields";
+import type { FieldPaths } from "../../types/field-path";
 import type { ModelFn } from "../../types/model";
 import type { OperationFn } from "../../types/operation";
 import type { OperationSliceFn } from "../../types/operation-slice";
-import { define, type GraphqlSchema } from "../../types/schema";
-import { createTypeFactories, unsafeType } from "../../types/type-ref";
+import { createHelpers, define, type AnyGraphqlSchema } from "../../types/schema";
+import { createRefFactories, unsafeRef } from "../../types/type-ref";
 
 type Scalars = {
   string: string;
@@ -33,8 +34,8 @@ const enums = {
 
 const inputs = {
   ...define("point").input({
-    x: unsafeType.scalar("int", "!"),
-    y: unsafeType.scalar("int", "!"),
+    x: unsafeRef.scalar("int", "!"),
+    y: unsafeRef.scalar("int", "!"),
   }),
 };
 
@@ -42,71 +43,71 @@ const objects = {
   ...define("point").object({
     x: {
       arguments: {
-        input: unsafeType.input("point", "!"),
+        input: unsafeRef.input("point", "!"),
       },
-      type: unsafeType.scalar("int", "!"),
+      type: unsafeRef.scalar("int", "!"),
     },
     y: {
       arguments: {
-        input: unsafeType.input("point", "!"),
+        input: unsafeRef.input("point", "!"),
       },
-      type: unsafeType.scalar("int", "!"),
+      type: unsafeRef.scalar("int", "!"),
     },
   }),
   ...define("user").object({
     id: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
     name: {
       arguments: {},
-      type: unsafeType.scalar("string", "!"),
+      type: unsafeRef.scalar("string", "!"),
     },
     posts: {
       arguments: {
-        categoryId: unsafeType.scalar("id", "?"),
+        categoryId: unsafeRef.scalar("id", "?"),
       },
-      type: unsafeType.object("post", "![]!"),
+      type: unsafeRef.object("post", "![]!"),
     },
     postOrComment: {
       arguments: {},
-      type: unsafeType.union("postOrComment", "![]!"),
+      type: unsafeRef.union("postOrComment", "![]!"),
     },
   }),
   ...define("post").object({
     id: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
     title: {
       arguments: {},
-      type: unsafeType.scalar("string", "!"),
+      type: unsafeRef.scalar("string", "!"),
     },
     content: {
       arguments: {},
-      type: unsafeType.scalar("string", "!"),
+      type: unsafeRef.scalar("string", "!"),
     },
     userId: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
   }),
   ...define("comment").object({
     id: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
     content: {
       arguments: {},
-      type: unsafeType.scalar("string", "!"),
+      type: unsafeRef.scalar("string", "!"),
     },
     userId: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
     postId: {
       arguments: {},
-      type: unsafeType.scalar("id", "!"),
+      type: unsafeRef.scalar("id", "!"),
     },
   }),
 };
@@ -115,18 +116,18 @@ const query_root = {
   ...define("query_root").object({
     users: {
       arguments: {
-        id: unsafeType.scalar("id", "![]!"),
-        point: unsafeType.input("point", "!"),
+        id: unsafeRef.scalar("id", "![]!"),
+        point: unsafeRef.input("point", "!"),
       },
-      type: unsafeType.object("user", "![]!"),
+      type: unsafeRef.object("user", "![]!"),
     },
     posts: {
       arguments: {},
-      type: unsafeType.object("post", "![]!"),
+      type: unsafeRef.object("post", "![]!"),
     },
     comments: {
       arguments: {},
-      type: unsafeType.object("comment", "![]!"),
+      type: unsafeRef.object("comment", "![]!"),
     },
   }),
 };
@@ -152,7 +153,7 @@ export const schema = {
     ...query_root,
   },
   union: unions,
-} satisfies GraphqlSchema;
+} satisfies AnyGraphqlSchema;
 
 export const adapter = {
   createError: (raw: unknown) => ({
@@ -163,7 +164,8 @@ export const adapter = {
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
 
-const ref = createTypeFactories<Schema>();
+const ref = createRefFactories<Schema>();
+const helpers = createHelpers<Schema>(schema);
 
 declare const model: ModelFn<Schema>;
 declare const querySlice: OperationSliceFn<Schema, Adapter, "query">;
@@ -174,11 +176,12 @@ declare const mutation: OperationFn<Schema, Adapter, "mutation">;
 declare const subscription: OperationFn<Schema, Adapter, "subscription">;
 
 const gql = {
+  ...helpers,
+  ...ref,
   query,
   mutation,
   subscription,
   model,
-  ref,
   querySlice,
   mutationSlice,
   subscriptionSlice,
@@ -194,7 +197,7 @@ const userModel = gql.model(
     "user",
     // model can have variables
     {
-      categoryId: gql.ref.scalar("id", "?"),
+      categoryId: gql.scalar("id", "?"),
     },
   ],
   // fields
@@ -255,10 +258,10 @@ const userQuerySlice = gql.querySlice(
   [
     // arguments
     {
-      id: gql.ref.scalar("id", "!"),
-      categoryId: gql.ref.scalar("id", "?"),
-      x: gql.ref.scalar("int", "!"),
-      y: gql.ref.scalar("int", "!"),
+      id: gql.scalar("id", "!"),
+      categoryId: gql.scalar("id", "?"),
+      x: gql.scalar("int", "!"),
+      y: gql.scalar("int", "!"),
     },
   ],
   // fields of query root type
@@ -281,6 +284,8 @@ const userQuerySlice = gql.querySlice(
       "$.users",
       // runtime function to transform result
       (result) => {
+        // selected result data is wrapped by Result-like object
+        // use must handle error on every single case
         if (result.isError()) {
           return { error: result.error };
         }
@@ -299,9 +304,9 @@ const userQuerySlice = gql.querySlice(
 const userQuerySlice2 = gql.querySlice(
   [
     {
-      id: gql.ref.scalar("id", "!"),
-      x: gql.ref.scalar("int", "!"),
-      y: gql.ref.scalar("int", "!"),
+      id: gql.scalar("id", "!"),
+      x: gql.scalar("int", "!"),
+      y: gql.scalar("int", "!"),
     },
   ],
   ({ f, $ }) => ({
@@ -330,9 +335,9 @@ const userQuerySlice2 = gql.querySlice(
 const userQuerySlice3 = gql.querySlice(
   [
     {
-      id: gql.ref.scalar("id", "!"),
-      x: gql.ref.scalar("int", "!"),
-      y: gql.ref.scalar("int", "!"),
+      id: gql.scalar("id", "!"),
+      x: gql.scalar("int", "!"),
+      y: gql.scalar("int", "!"),
     },
   ],
   ({ f, $ }) => ({
@@ -358,9 +363,9 @@ const userQuerySlice3 = gql.querySlice(
 const pageQuery = gql.query(
   "DocumentName",
   {
-    userId: gql.ref.scalar("id", "!"),
-    x: gql.ref.scalar("int", "!"),
-    y: gql.ref.scalar("int", "!"),
+    userId: gql.scalar("id", "!"),
+    x: gql.scalar("int", "!"),
+    y: gql.scalar("int", "!"),
   },
   ({ $ }) => ({
     // define query document with slices
@@ -382,15 +387,16 @@ const pageQuery = gql.query(
   }),
 );
 
+// for now, way to handle built query document is not implemented. But we can confirm that type inference works correctly.
 const a = pageQuery.transform({});
-
 a.users;
 a.users2;
 a.users3;
 
-const _a: InferFields<Schema, typeof userModel.typename, ReturnType<typeof userModel.fragment>> = {
+const _a: InferFields<Schema, ReturnType<typeof userModel.fragment>> = {
   id: "1",
   name: "John Doe",
+  userName: "John Doe",
   posts: [
     {
       id: "1",
@@ -406,4 +412,5 @@ const _a: InferFields<Schema, typeof userModel.typename, ReturnType<typeof userM
   ],
 };
 
-type a = FieldPaths<Schema, typeof userModel.typename, ReturnType<typeof userModel.fragment>>;
+type a = FieldPaths<Schema, ReturnType<typeof userModel.fragment>>;
+

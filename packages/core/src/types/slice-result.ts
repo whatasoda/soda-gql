@@ -1,7 +1,7 @@
 import type { GraphqlAdapter } from "./adapter";
 import type { Prettify } from "./utility";
 
-export type AbstractSliceResultRecord<TAdapter extends GraphqlAdapter> = {
+export type AnySliceResultRecord<TAdapter extends GraphqlAdapter> = {
   [path: string]: SliceResult<
     // biome-ignore lint/suspicious/noExplicitAny: abstract type
     any,

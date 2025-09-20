@@ -1,14 +1,14 @@
 import type { DocumentNode } from "graphql";
 import type { GraphqlAdapter } from "./adapter";
-import type { ArgumentAssignments } from "./arguments";
-import type { AbstractOperationSlice } from "./operation-slice";
-import type { GraphqlSchema, OperationType } from "./schema";
+import type { AnyOperationSlice } from "./operation-slice";
+import type { AnyGraphqlSchema, OperationType } from "./schema";
 import type { InputDefinition } from "./type-ref";
 import type { EmptyObject } from "./utility";
+import type { VariableReferencesByDefinition } from "./variables";
 
-export type OperationFn<TSchema extends GraphqlSchema, TAdapter extends GraphqlAdapter, TOperation extends OperationType> = <
+export type OperationFn<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TOperation extends OperationType> = <
   TName extends string,
-  TSlices extends { [key: string]: AbstractOperationSlice<TSchema, TAdapter, TOperation> },
+  TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
   TVariables extends { [key: string]: InputDefinition } = EmptyObject,
 >(
   name: TName,
@@ -23,9 +23,9 @@ export type OperationFn<TSchema extends GraphqlSchema, TAdapter extends GraphqlA
 };
 
 type OperationBuilder<
-  TSchema extends GraphqlSchema,
+  TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
   TVariables extends { [key: string]: InputDefinition },
-  TSlices extends { [key: string]: AbstractOperationSlice<TSchema, TAdapter, TOperation> },
-> = (tools: { $: NoInfer<ArgumentAssignments<TSchema, TVariables>> }) => TSlices;
+  TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
+> = (tools: { $: NoInfer<VariableReferencesByDefinition<TSchema, TVariables>> }) => TSlices;
