@@ -14,11 +14,11 @@ import type { VariableReferencesByDefinition } from "./variables";
 export type OperationFn<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TOperation extends OperationType> = <
   TName extends string,
   TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
-  TVariables extends { [key: string]: InputDefinition } = EmptyObject,
+  TVariableDefinitions extends { [key: string]: InputDefinition } = EmptyObject,
 >(
   name: TName,
-  variables: TVariables | null,
-  builder: OperationBuilder<TSchema, TAdapter, TOperation, TVariables, TSlices>,
+  variables: TVariableDefinitions | null,
+  builder: OperationBuilder<TSchema, TAdapter, TOperation, TVariableDefinitions, TSlices>,
 ) => {
   name: TName;
   document: DocumentNode;
@@ -28,7 +28,7 @@ export type OperationFn<TSchema extends AnyGraphqlSchema, TAdapter extends Graph
 };
 
 /** Builder invoked from userland to wire slices with operation-level variables. */
-type OperationBuilder<
+export type OperationBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,

@@ -11,6 +11,10 @@ import type {
 } from "./type-ref";
 import { type Hidden, hidden } from "./utility";
 
+export type AnyVariableDefinition = {
+  [key: string]: InputDefinition;
+};
+
 type AnyScalarValue = string | number | boolean | null | undefined;
 type AnyEnumValue = string | undefined | null;
 /**
@@ -32,7 +36,7 @@ type AnyVariableReference = VariableReference<
   any
 >;
 
-declare const __VARIABLE_REFERENCE_BRAND__: unique symbol;
+const __VARIABLE_REFERENCE_BRAND__: unique symbol = Symbol("VariableReferenceBrand");
 
 /** Nominal reference used to defer variable binding while carrying type info. */
 export class VariableReference<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> {

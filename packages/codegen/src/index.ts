@@ -63,33 +63,25 @@ const builtinScalars = new Map<string, string>([
   ["Boolean", "boolean"],
 ]);
 
-const _sanitiseTypeName = (name: string): string => name;
-
 const formatForGraphqlType = (type: GraphQLType): string => {
-  const resolve = (graphType: GraphQLType, outerNonNull: boolean): string => {
-    if (isNonNullType(graphType)) {
-      return resolve(graphType.ofType, true);
-    }
+  if (isNonNullType(type)) {
+    const innerFormat = formatForGraphqlType(type.ofType);
+    return innerFormat.startsWith("?") ? innerFormat.replace("?", "!") : `!${innerFormat}`;
+  }
 
-    if (isListType(graphType)) {
-      const inner = graphType.ofType;
-      const itemNonNull = isNonNullType(inner);
-      const itemFlag = itemNonNull ? "!" : "?";
-      const topFlag = outerNonNull ? "!" : "?";
-      return `${topFlag}[]${itemFlag}`;
-    }
+  if (isListType(type)) {
+    const inner = type.ofType;
+    const itemFlag = isNonNullType(inner) ? "!" : "?";
+    return `?[]${itemFlag}`;
+  }
 
-    return outerNonNull ? "!" : "?";
-  };
-
-  const isOuterNonNull = isNonNullType(type);
-  return resolve(isOuterNonNull ? type.ofType : type, isOuterNonNull);
+  return "?";
 };
 
 const unwrapNamedType = (type: GraphQLType): GraphQLNamedType => {
   let current: GraphQLType = type;
   while (isNonNullType(current) || isListType(current)) {
-    current = isListType(current) ? current.ofType : current.ofType;
+    current = (current as { ofType: GraphQLType }).ofType;
   }
   return current as GraphQLNamedType;
 };
@@ -130,13 +122,19 @@ const renderArgumentMap = (args: readonly GraphQLArgument[]): string => {
 };
 
 const renderFieldMap = (fields: Record<string, GraphQLField<unknown, unknown>>): string => {
-  const lines = Object.keys(fields).map((fieldName) => {
-    const field = fields[fieldName];
-    return `${fieldName}: {
+  const lines = Object.keys(fields)
+    .map((fieldName) => {
+      const field = fields[fieldName];
+      if (!field) {
+        return null;
+      }
+
+      return `${fieldName}: {
       arguments: ${renderArgumentMap(field.args)},
       type: ${renderFieldType(field.type)},
     }`;
-  });
+    })
+    .filter((line): line is string => line !== null);
 
   if (lines.length === 0) {
     return "{}";
@@ -339,7 +337,9 @@ export type GeneratedSchema = typeof schema;
 
 const parseArgs = (argv: readonly string[]): Result<CodegenOptions, CodegenError> => {
   const args = [...argv];
-  const options: Partial<CodegenOptions> = {};
+  let schemaPath: string | undefined;
+  let outPath: string | undefined;
+  let format: CodegenFormat = "human";
 
   while (args.length > 0) {
     const current = args.shift();
@@ -356,7 +356,7 @@ const parseArgs = (argv: readonly string[]): Result<CodegenOptions, CodegenError
           schemaPath: "",
         });
       }
-      options.schemaPath = value;
+      schemaPath = value;
       continue;
     }
 
@@ -369,7 +369,7 @@ const parseArgs = (argv: readonly string[]): Result<CodegenOptions, CodegenError
           outPath: "",
         });
       }
-      options.outPath = value;
+      outPath = value;
       continue;
     }
 
@@ -379,16 +379,12 @@ const parseArgs = (argv: readonly string[]): Result<CodegenOptions, CodegenError
         return err({
           code: "SCHEMA_INVALID",
           message: `Unsupported format: ${value}`,
-          schemaPath: options.schemaPath ?? "",
+          schemaPath: schemaPath ?? "",
         });
       }
-      options.format = value;
+      format = value;
     }
   }
-
-  const schemaPath = options.schemaPath;
-  const outPath = options.outPath;
-  const format = options.format ?? "human";
 
   if (!schemaPath) {
     return err({

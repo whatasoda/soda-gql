@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { types as BabelTypes, PluginObj } from "@babel/core";
+import type { PluginObj } from "@babel/core";
 import { types as t } from "@babel/core";
+import type { NodePath } from "@babel/traverse";
 import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 
 export type SodaGqlBabelOptions = {
@@ -58,7 +59,7 @@ const lookupRef = (
   return cursor as { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined;
 };
 
-const ensureImport = (programPath: BabelTypes.NodePath<t.Program>, source: string, exportName: string, alias: string) => {
+const ensureImport = (programPath: NodePath<t.Program>, source: string, exportName: string, alias: string) => {
   const alreadyImported = programPath.node.body.some(
     (statement) =>
       statement.type === "ImportDeclaration" &&
@@ -86,12 +87,13 @@ const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =
 
 const plugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
-  pre(file) {
+  pre(_file) {
+    const rawOptions = (this as unknown as { opts?: SodaGqlBabelOptions }).opts ?? {};
     const options: SodaGqlBabelOptions = {
       mode: "runtime",
       importIdentifier: "@/graphql-system",
       diagnostics: "json",
-      ...this.opts,
+      ...rawOptions,
     };
 
     const artifact = loadArtifact(options.artifactsPath);
@@ -111,7 +113,7 @@ const plugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => 
         return;
       }
 
-      const filename = state.file.opts.filename;
+      const filename = programPath.hub?.file?.opts?.filename;
       if (!filename) {
         return;
       }

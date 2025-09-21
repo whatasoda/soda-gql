@@ -3,7 +3,7 @@ import type { GraphqlAdapter } from "./adapter";
 import type { SliceResult } from "./slice-result";
 import { type Hidden, hidden } from "./utility";
 
-declare const __SLICE_RESULT_SELECTION_BRAND__: unique symbol;
+const __SLICE_RESULT_SELECTION_BRAND__: unique symbol = Symbol("SliceResultSelectionBrand");
 
 /**
  * Nominal type representing any slice selection regardless of schema specifics.
@@ -15,7 +15,7 @@ export class SliceResultSelection<TAdapter extends GraphqlAdapter, TPath extends
 
   constructor(
     public readonly path: TPath,
-    public readonly transform: (result: SliceResult<TData, TAdapter>) => TTransformed,
+    public readonly projector: (result: SliceResult<TData, TAdapter>) => TTransformed,
   ) {}
 }
 
@@ -25,7 +25,7 @@ export type AnySliceResultSelections<TAdapter extends GraphqlAdapter> =
   | AnySliceResultSelectionMultiple<TAdapter>;
 
 /** Shape of a single selection slice projection. */
-type AnySliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = SliceResultSelection<
+export type AnySliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = SliceResultSelection<
   TAdapter,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any,
@@ -35,7 +35,7 @@ type AnySliceResultSelectionSingle<TAdapter extends GraphqlAdapter> = SliceResul
   any
 >;
 
-type AnySliceResultSelectionMultiple<TAdapter extends GraphqlAdapter> = {
+export type AnySliceResultSelectionMultiple<TAdapter extends GraphqlAdapter> = {
   [key: string]: AnySliceResultSelectionSingle<TAdapter>;
 };
 
@@ -44,7 +44,7 @@ export type InferSliceResultSelection<
   TAdapter extends GraphqlAdapter,
   TSelection extends AnySliceResultSelections<TAdapter>,
 > = TSelection extends AnySliceResultSelectionSingle<TAdapter>
-  ? ReturnType<TSelection["transform"]>
+  ? ReturnType<TSelection["projector"]>
   : TSelection extends AnySliceResultSelectionMultiple<TAdapter>
-    ? { [K in keyof TSelection]: ReturnType<TSelection[K]["transform"]> }
+    ? { [K in keyof TSelection]: ReturnType<TSelection[K]["projector"]> }
     : never;

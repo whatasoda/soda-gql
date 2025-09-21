@@ -11,7 +11,7 @@ import {
   type UnionTypeRef,
   unsafeRef,
 } from "./type-ref";
-import { type Hidden, hidden } from "./utility";
+import { type Hidden, hidden, wrapValueByKey } from "./utility";
 
 /**
  * Core schema DSL used by generated helpers and tests to describe GraphQL
@@ -127,34 +127,38 @@ export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extend
 
 /** Map union member names to their object definitions. */
 export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TRef extends UnionTypeRef> = {
-  [TTypeName in Extract<keyof TSchema["object"], keyof TSchema["union"][TRef["name"]]["types"]>]: TSchema["object"][TTypeName];
+  [TTypeName in UnionMemberName<TSchema, TRef>]: TSchema["object"][TTypeName];
 };
 
-const named = <TName extends string, TValue>(name: TName, value: TValue) => ({ [name]: value }) as { [K in TName]: TValue };
+export type UnionMemberName<TSchema extends AnyGraphqlSchema, TRef extends UnionTypeRef> = Extract<
+  keyof TSchema["object"],
+  keyof TSchema["union"][TRef["name"]]["types"]
+> &
+  string;
 
 /** Fluent helper to declare schema components in a type-safe way. */
 export const define = <const TName extends string>(name: TName) => ({
   scalar: <TType>() =>
-    named(name, {
+    wrapValueByKey(name, {
       _type: hidden(),
       name,
     } satisfies ScalarDef<TType>),
 
   enum: <const TValues extends EnumDef<string>["values"]>(values: TValues) =>
-    named(name, {
+    wrapValueByKey(name, {
       _type: hidden(),
       name,
       values,
     } satisfies EnumDef<keyof TValues & string>),
 
   input: <TFields extends InputDef["fields"]>(fields: TFields) =>
-    named(name, {
+    wrapValueByKey(name, {
       name,
       fields,
     } satisfies InputDef),
 
   object: <TFields extends ObjectDef["fields"]>(fields: TFields) =>
-    named(name, {
+    wrapValueByKey(name, {
       name,
       fields: {
         __typename: { arguments: {}, type: unsafeRef.typename(name, "!") },
@@ -163,7 +167,7 @@ export const define = <const TName extends string>(name: TName) => ({
     } satisfies ObjectDef),
 
   union: <TTypes extends UnionDef["types"]>(types: TTypes) =>
-    named(name, {
+    wrapValueByKey(name, {
       name,
       types,
     } satisfies UnionDef),

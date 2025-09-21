@@ -23,7 +23,7 @@ export type AnyFieldReference = {
 /** Nested selection produced when resolving an object field. */
 export type AnyNestedObject = { [alias: string]: AnyFieldReference };
 /** Nested selection produced when resolving a union field. */
-type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldReference } };
+export type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldReference } | undefined };
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
@@ -37,7 +37,7 @@ export type AbstractFieldReference<
   TRef extends FieldDefinition,
   TArgs extends AnyVariableAssignments,
   TDirectives extends AnyDirectiveAttachments,
-  TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion },
+  TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
 > = {
   parent: TTypeName;
   field: TFieldName;
@@ -82,7 +82,14 @@ export type InferField<TSchema extends AnyGraphqlSchema, TReference extends AnyF
       type: infer TRef extends UnionTypeRef;
       union: infer TNested extends AnyNestedUnion;
     }
-      ? ApplyTypeFormat<TRef, { [TTypename in keyof TNested]: InferFields<TSchema, TNested[TTypename]> }[keyof TNested]>
+      ? ApplyTypeFormat<
+          TRef,
+          {
+            [TTypename in keyof TNested]: undefined extends TNested[TTypename]
+              ? never
+              : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
+          }[keyof TNested]
+        >
       : never)
   | (TReference extends {
       type: infer TRef extends InferrableTypeRef;

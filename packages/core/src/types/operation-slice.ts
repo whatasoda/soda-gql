@@ -19,19 +19,19 @@ export type OperationSliceFn<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
-> = TSchema["schema"][TOperation] extends infer TTypeName extends keyof TSchema["object"]
-  ? <
-      TFields extends AnyFields,
-      TSelection extends AnySliceResultSelections<TAdapter>,
-      TVariables extends { [key: string]: InputDefinition } = EmptyObject,
-    >(
-      variables: [TVariables?],
-      builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
-      selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
-    ) => (
-      variables: VoidIfEmptyObject<TVariables> | VariableReferencesByDefinition<TSchema, TVariables>,
-    ) => OperationSlice<TAdapter, TOperation, TFields, TSelection>
-  : never;
+  TTypeName extends TSchema["schema"][TOperation] & keyof TSchema["object"] = TSchema["schema"][TOperation] &
+    keyof TSchema["object"],
+> = <
+  TFields extends AnyFields,
+  TSelection extends AnySliceResultSelections<TAdapter>,
+  TVariables extends { [key: string]: InputDefinition } = EmptyObject,
+>(
+  variables: [TVariables?],
+  builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
+  selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
+) => (
+  variables: VoidIfEmptyObject<TVariables> | VariableReferencesByDefinition<TSchema, TVariables>,
+) => OperationSlice<TAdapter, TOperation, TFields, TSelection>;
 
 /** Nominal type representing any slice instance regardless of schema specifics. */
 export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extends OperationType> = OperationSlice<
@@ -52,6 +52,7 @@ export type OperationSlice<
 > = {
   operation: TOperation;
   object: TFields;
+  selections: TSelection;
   transform: (input: {
     prefix: string;
     results: AnySliceResultRecord<TAdapter>;
@@ -59,7 +60,7 @@ export type OperationSlice<
 };
 
 /** Builder used to declare how slice results are projected. */
-type SliceResultSelectionsBuilder<
+export type SliceResultSelectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TFields extends AnyFields,

@@ -13,7 +13,7 @@ import type { VariableReferencesByDefinition } from "./variables";
  * construct that can later be injected into operations.
  */
 export type ModelFn<TSchema extends AnyGraphqlSchema> = <
-  TTypeName extends keyof TSchema["object"],
+  TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyFields,
   TTransformed extends object,
   TVariables extends { [key: string]: InputDefinition } = EmptyObject,
@@ -24,9 +24,9 @@ export type ModelFn<TSchema extends AnyGraphqlSchema> = <
 ) => NoInfer<Model<TSchema, TTypeName, TVariables, TFields, TTransformed>>;
 
 /** Internal representation returned by `gql.model`. */
-type Model<
+export type Model<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
+  TTypeName extends keyof TSchema["object"] & string,
   TVariables extends { [key: string]: InputDefinition },
   TFields extends AnyFields,
   TTransformed extends object,

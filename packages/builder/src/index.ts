@@ -87,11 +87,14 @@ type SliceDraft = {
 };
 
 const detectSliceDrafts = (filePath: string, source: string): SliceDraft[] =>
-  findMatches(slicePattern, source).map((match) => ({
-    exportName: match[1],
-    filePath,
-    source,
-  }));
+  findMatches(slicePattern, source)
+    .map((match) => match[1] ?? "")
+    .filter((exportName): exportName is string => exportName.length > 0)
+    .map((exportName) => ({
+      exportName,
+      filePath,
+      source,
+    }));
 
 const enrichSlices = (drafts: readonly SliceDraft[]): ParsedSlice[] => {
   const sliceNames = drafts.map((draft) => draft.exportName);
@@ -109,14 +112,15 @@ const enrichSlices = (drafts: readonly SliceDraft[]): ParsedSlice[] => {
   });
 };
 
-const detectQueries = (filePath: string, source: string): ParsedQuery[] => {
-  const matches = findMatches(queryPattern, source);
-  return matches.map((match) => ({
-    exportName: match[1],
-    name: match[2],
-    filePath,
-  }));
-};
+const detectQueries = (filePath: string, source: string): ParsedQuery[] =>
+  findMatches(queryPattern, source)
+    .map((match) => ({ exportName: match[1], name: match[2] }))
+    .filter((item): item is { exportName: string; name: string } => Boolean(item.exportName) && Boolean(item.name))
+    .map((item) => ({
+      exportName: item.exportName,
+      name: item.name,
+      filePath,
+    }));
 
 const scanEntries = (pattern: string): readonly string[] => {
   const glob = new Glob(pattern);
@@ -178,6 +182,7 @@ const collectSources = (entryPaths: readonly string[]): readonly SourceFile[] =>
     imports
       .filter((specifier) => specifier.startsWith("."))
       .map((specifier) => resolveImportPath(current, specifier))
+      .filter((resolvedPath) => existsSync(resolvedPath))
       .forEach((resolvedPath) => {
         if (!visited.has(resolvedPath)) {
           stack.push(resolvedPath);
@@ -408,7 +413,10 @@ export const runBuilder = (options: BuilderOptions): Result<BuilderSuccess, Buil
 
 const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, BuilderError> => {
   const args = [...argv];
-  const options: Partial<BuilderOptions> = { format: "human" };
+  let mode: BuilderMode | undefined;
+  const entries: string[] = [];
+  let outPath: string | undefined;
+  let format: BuilderFormat = "human";
 
   while (args.length > 0) {
     const current = args.shift();
@@ -426,7 +434,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
             entry: "",
           });
         }
-        options.mode = value;
+        mode = value;
         break;
       }
       case "--entry": {
@@ -438,7 +446,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
             entry: "",
           });
         }
-        options.entry = [...(options.entry ?? []), value];
+        entries.push(value);
         break;
       }
       case "--out": {
@@ -450,7 +458,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
             outPath: "",
           });
         }
-        options.outPath = value;
+        outPath = value;
         break;
       }
       case "--format": {
@@ -462,7 +470,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
             entry: "",
           });
         }
-        options.format = value;
+        format = value;
         break;
       }
       default:
@@ -470,7 +478,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
     }
   }
 
-  if (!options.entry || options.entry.length === 0) {
+  if (entries.length === 0) {
     return err({
       code: "ENTRY_NOT_FOUND",
       message: "No entry provided",
@@ -478,7 +486,7 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
     });
   }
 
-  if (!options.outPath) {
+  if (!outPath) {
     return err({
       code: "WRITE_FAILED",
       message: "Output path not provided",
@@ -486,15 +494,11 @@ const parseBuilderArgs = (argv: readonly string[]): Result<BuilderOptions, Build
     });
   }
 
-  if (!options.mode) {
-    options.mode = "runtime";
-  }
-
   return ok({
-    mode: options.mode,
-    entry: options.entry,
-    outPath: options.outPath,
-    format: options.format ?? "human",
+    mode: mode ?? "runtime",
+    entry: entries,
+    outPath,
+    format,
   });
 };
 
@@ -540,3 +544,4 @@ if (import.meta.main) {
 }
 
 export { createCanonicalId, createDocumentRegistry };
+export type { CanonicalId } from "./registry";
