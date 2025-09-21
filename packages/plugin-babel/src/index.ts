@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { PluginObj } from "@babel/core";
+import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
@@ -19,12 +19,16 @@ type PluginState = {
   readonly importAliases: Map<string, string>;
 };
 
+type PluginPassState = PluginPass & { _state?: PluginState };
+
 const loadArtifact = (path: string): BuilderArtifact => {
-  if (!existsSync(path)) {
+  const resolvedPath = resolve(path);
+
+  if (!existsSync(resolvedPath)) {
     throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
   }
 
-  const contents = readFileSync(path, "utf8");
+  const contents = readFileSync(resolvedPath, "utf8");
   const parsed = JSON.parse(contents) as BuilderArtifact;
   return parsed;
 };
@@ -88,12 +92,24 @@ const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =
 const plugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
   pre(_file) {
-    const rawOptions = (this as unknown as { opts?: SodaGqlBabelOptions }).opts ?? {};
-    const options: SodaGqlBabelOptions = {
-      mode: "runtime",
+    const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
+    const mergedOptions = {
+      mode: "runtime" as SodaGqlBabelOptions["mode"],
       importIdentifier: "@/graphql-system",
-      diagnostics: "json",
+      diagnostics: "json" as SodaGqlBabelOptions["diagnostics"],
+      artifactsPath: rawOptions.artifactsPath ?? "",
       ...rawOptions,
+    };
+
+    if (!mergedOptions.artifactsPath) {
+      throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
+    }
+
+    const options: SodaGqlBabelOptions = {
+      mode: mergedOptions.mode,
+      importIdentifier: mergedOptions.importIdentifier,
+      diagnostics: mergedOptions.diagnostics,
+      artifactsPath: mergedOptions.artifactsPath,
     };
 
     const artifact = loadArtifact(options.artifactsPath);
@@ -107,13 +123,14 @@ const plugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => 
     };
   },
   visitor: {
-    Program(programPath, state) {
-      const pluginState = state._state;
+    Program(programPath: NodePath<t.Program>, state) {
+      const pass = state as unknown as PluginPassState;
+      const pluginState = pass._state;
       if (!pluginState || pluginState.options.mode === "runtime") {
         return;
       }
 
-      const filename = programPath.hub?.file?.opts?.filename;
+      const filename = pass.file?.opts?.filename;
       if (!filename) {
         return;
       }

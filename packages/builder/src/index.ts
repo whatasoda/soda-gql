@@ -168,14 +168,20 @@ const collectSources = (entryPaths: readonly string[]): readonly SourceFile[] =>
     const clone = new RegExp(importPattern.source, importPattern.flags);
     let match = clone.exec(source);
     while (match) {
-      imports.push(match[1]);
+      const specifier = match[1];
+      if (typeof specifier === "string" && specifier.length > 0) {
+        imports.push(specifier);
+      }
       match = clone.exec(source);
     }
 
     const sideEffectClone = new RegExp(sideEffectImportPattern.source, sideEffectImportPattern.flags);
     let seMatch = sideEffectClone.exec(source);
     while (seMatch) {
-      imports.push(seMatch[1]);
+      const specifier = seMatch[1];
+      if (typeof specifier === "string" && specifier.length > 0) {
+        imports.push(specifier);
+      }
       seMatch = sideEffectClone.exec(source);
     }
 
@@ -403,11 +409,14 @@ export const runBuilder = (options: BuilderOptions): Result<BuilderSuccess, Buil
         writeFileSync(outPath, JSON.stringify(artifact, null, 2));
         return ok<BuilderSuccess, BuilderError>({ artifact, outPath });
       } catch (error) {
-        return err({
+        const message = error instanceof Error ? error.message : String(error);
+        const writeError: BuilderError = {
           code: "WRITE_FAILED",
-          message: (error as Error).message,
+          message,
           outPath,
-        });
+        };
+
+        return err(writeError);
       }
     });
 

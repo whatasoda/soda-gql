@@ -162,10 +162,16 @@ const renderInputDefinition = (schema: GraphQLSchema, typeName: string): string 
     return "";
   }
 
-  const entries = Object.keys(type.getFields()).map((fieldName) => {
-    const field = type.getFields()[fieldName];
-    return `${fieldName}: ${renderFieldType(field.type)}`;
-  });
+  const entries = Object.keys(type.getFields())
+    .map((fieldName) => {
+      const field = type.getFields()[fieldName];
+      if (!field) {
+        return null;
+      }
+
+      return `${fieldName}: ${renderFieldType(field.type)}`;
+    })
+    .filter((value): value is string => value !== null);
 
   const body =
     entries.length === 0
