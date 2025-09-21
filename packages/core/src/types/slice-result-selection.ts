@@ -1,23 +1,6 @@
 /** Slice selection descriptors produced by `gql.querySlice`. */
 import type { GraphqlAdapter } from "./adapter";
-import type { SliceResult } from "./slice-result";
-import { type Hidden, hidden } from "./utility";
-
-const __SLICE_RESULT_SELECTION_BRAND__: unique symbol = Symbol("SliceResultSelectionBrand");
-
-/**
- * Nominal type representing any slice selection regardless of schema specifics.
- * Encodes how individual slices map a concrete field path to a projection
- * function. Multiple selections allow slices to expose several derived values.
- */
-export class SliceResultSelection<TAdapter extends GraphqlAdapter, TPath extends string, TData, TTransformed> {
-  [__SLICE_RESULT_SELECTION_BRAND__]: Hidden<never> = hidden();
-
-  constructor(
-    public readonly path: TPath,
-    public readonly projector: (result: SliceResult<TData, TAdapter>) => TTransformed,
-  ) {}
-}
+import type { SliceResultSelection } from "./branded-classes";
 
 /** Either a single selection or a container of multiple named selections. */
 export type AnySliceResultSelections<TAdapter extends GraphqlAdapter> =

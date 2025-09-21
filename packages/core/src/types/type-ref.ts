@@ -1,12 +1,10 @@
-import { prettify } from "./utility";
-
 type AbstractTypeRef<TKind extends string> = {
   kind: TKind;
   name: string;
   format: TypeFormat;
 };
 
-type TypeFormat =
+export type TypeFormat =
   | "?" // nullable, no-default
   | "?=" // nullable, with-default
   | "?[]?" // nullable, list, no-default
@@ -78,33 +76,3 @@ export type EnumRef = AbstractTypeRef<"enum">;
 export type InputTypeRef = AbstractTypeRef<"input">;
 export type ObjectTypeRef = AbstractTypeRef<"object">;
 export type UnionTypeRef = AbstractTypeRef<"union">;
-
-export const unsafeRef = {
-  typename: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "typename", name, format } satisfies TypenameRef & { format: TFormat }),
-  scalar: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "scalar", name, format } satisfies ScalarRef & { format: TFormat }),
-  enum: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "enum", name, format } satisfies EnumRef & { format: TFormat }),
-  input: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "input", name, format } satisfies InputTypeRef & { format: TFormat }),
-  object: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "object", name, format } satisfies ObjectTypeRef & { format: TFormat }),
-  union: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "union", name, format } satisfies UnionTypeRef & { format: TFormat }),
-};
-
-export const createRefFactories = <
-  TSchema extends { [_ in Exclude<TypeRef["kind"], "typename">]: { [typename: string]: unknown } },
->() => ({
-  scalar: <T extends keyof TSchema["scalar"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "scalar", name, format } satisfies ScalarRef & { format: TFormat }),
-  enum: <T extends keyof TSchema["enum"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "enum", name, format } satisfies EnumRef & { format: TFormat }),
-  input: <T extends keyof TSchema["input"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "input", name, format } satisfies InputTypeRef & { format: TFormat }),
-  object: <T extends keyof TSchema["object"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "object", name, format } satisfies ObjectTypeRef & { format: TFormat }),
-  union: <T extends keyof TSchema["union"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "union", name, format } satisfies UnionTypeRef & { format: TFormat }),
-});

@@ -1,11 +1,11 @@
-import { createModelFactory } from "./createGql/model";
-import { createOperationFactory } from "./createGql/operation";
-import { createOperationSliceFactory } from "./createGql/operation-slice";
+import { createModelFactory } from "./model";
+import { createOperationFactory } from "./operation";
+import { createOperationSliceFactory } from "./operation-slice";
+import { createGqlHelpers } from "./schema";
 import type { GraphqlAdapter } from "./types/adapter";
 import type { AnyGraphqlSchema } from "./types/schema";
-import { createHelpers } from "./types/schema";
-import { createRefFactories } from "./types/type-ref";
 
+export { define, unsafeRef } from "./schema";
 export * from "./types";
 
 export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter> = {
@@ -17,16 +17,13 @@ export const createGql = <TSchema extends AnyGraphqlSchema, TAdapter extends Gra
   schema,
   adapter,
 }: CreateGqlConfig<TSchema, TAdapter>) => {
-  const helpers = createHelpers(schema);
-  const refs = createRefFactories<TSchema>();
-
+  const helpers = createGqlHelpers(schema);
   const model = createModelFactory(schema);
   const sliceFactory = createOperationSliceFactory(schema, adapter);
   const operationFactory = createOperationFactory(schema, adapter);
 
   return {
     ...helpers,
-    ...refs,
     model,
     querySlice: sliceFactory("query"),
     mutationSlice: sliceFactory("mutation"),

@@ -1,11 +1,12 @@
 /** Operation slice builders (`gql.querySlice`, etc.). */
 import type { GraphqlAdapter } from "./adapter";
+import type { SliceResultSelection } from "./branded-classes";
 import type { FieldPaths, InferByFieldPath } from "./field-path";
 import type { AnyFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
 import type { AnyGraphqlSchema, OperationType } from "./schema";
 import type { AnySliceResultRecord, SliceResult } from "./slice-result";
-import type { AnySliceResultSelections, InferSliceResultSelection, SliceResultSelection } from "./slice-result-selection";
+import type { AnySliceResultSelections, InferSliceResultSelection } from "./slice-result-selection";
 import type { InputDefinition } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
 import type { VariableReferencesByDefinition } from "./variables";

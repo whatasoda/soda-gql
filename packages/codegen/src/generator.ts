@@ -216,6 +216,41 @@ export type GeneratedModule = {
   };
 };
 
+const runtimeTemplate = ($$: {
+  queryType: string;
+  mutationType: string;
+  subscriptionType: string;
+  scalarBlock: string;
+  enumBlock: string;
+  inputBlock: string;
+  objectBlock: string;
+  unionBlock: string;
+}) => `\
+import { createGql, define, unsafeRef, type GraphqlAdapter } from "@soda-gql/core";
+
+export const schema = {
+  schema: {
+    query: "${$$.queryType}",
+    mutation: "${$$.mutationType}",
+    subscription: "${$$.subscriptionType}",
+  },
+  scalar: ${$$.scalarBlock},
+  enum: ${$$.enumBlock},
+  input: ${$$.inputBlock},
+  object: ${$$.objectBlock},
+  union: ${$$.unionBlock},
+} satisfies AnyGraphqlSchema;
+
+const adapter = {
+  createError: (raw) => raw,
+} satisfies GraphqlAdapter;
+
+export const gql = createGql({ schema, adapter });
+
+export type Schema = typeof schema & { _?: never };
+export type Adapter = typeof adapter & { _?: never };
+`;
+
 export const generateRuntimeModule = (schema: GraphQLSchema): GeneratedModule => {
   const scalarDefinitions = collectScalarNames(schema)
     .filter((name) => !builtinScalars.has(name))
@@ -265,36 +300,16 @@ export const generateRuntimeModule = (schema: GraphQLSchema): GeneratedModule =>
   const mutationType = schema.getMutationType()?.name ?? "Mutation";
   const subscriptionType = schema.getSubscriptionType()?.name ?? "Subscription";
 
-  const code = `import { createGql } from "@soda-gql/core";
-import { define } from "@soda-gql/core/types/schema";
-import { createRefFactories, unsafeRef } from "@soda-gql/core/types/type-ref";
-import type { GraphqlAdapter } from "@soda-gql/core/types/adapter";
-
-const schema = {
-  schema: {
-    query: "${queryType}",
-    mutation: "${mutationType}",
-    subscription: "${subscriptionType}",
-  },
-  scalar: ${scalarBlock},
-  enum: ${enumBlock},
-  input: ${inputBlock},
-  object: ${objectBlock},
-  union: ${unionBlock},
-} as const;
-
-const adapter: GraphqlAdapter = {
-  createError: (raw) => raw,
-};
-
-export const gql = createGql({
-  schema,
-  adapter,
-});
-
-export { schema };
-export type GeneratedSchema = typeof schema;
-`;
+  const code = runtimeTemplate({
+    queryType,
+    mutationType,
+    subscriptionType,
+    scalarBlock,
+    enumBlock,
+    inputBlock,
+    objectBlock,
+    unionBlock,
+  });
 
   return {
     code,

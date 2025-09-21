@@ -1,5 +1,6 @@
 /** Variable helper types for binding GraphQL inputs. */
-import type { AnyGraphqlSchema, InferByTypeRef, InferInputDefinitionType } from "./schema";
+import type { VariableReference } from "./branded-classes";
+import type { AnyGraphqlSchema, InferByTypeRef } from "./schema";
 import type {
   EnumRef,
   InputDefinition,
@@ -9,7 +10,6 @@ import type {
   TypeRefMappingWithFlags,
   UnwrapListTypeRef,
 } from "./type-ref";
-import { type Hidden, hidden } from "./utility";
 
 export type AnyVariableDefinition = {
   [key: string]: InputDefinition;
@@ -35,19 +35,6 @@ type AnyVariableReference = VariableReference<
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
   any
 >;
-
-const __VARIABLE_REFERENCE_BRAND__: unique symbol = Symbol("VariableReferenceBrand");
-
-/** Nominal reference used to defer variable binding while carrying type info. */
-export class VariableReference<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> {
-  [__VARIABLE_REFERENCE_BRAND__]: Hidden<{
-    type: InferInputDefinitionType<TSchema, TRef>;
-    kind: TRef["kind"];
-    name: TRef["name"];
-  }> = hidden();
-
-  constructor(public readonly name: string) {}
-}
 
 /** Recursively resolves all assignable shapes for a variable definition. */
 type AssignableVariable<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> =

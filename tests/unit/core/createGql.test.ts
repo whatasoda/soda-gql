@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { createGql } from "../../../packages/core/src/index";
-import { define } from "../../../packages/core/src/types/schema";
-import { unsafeRef } from "../../../packages/core/src/types/type-ref";
+import { createGql, define, GraphqlAdapter, unsafeRef } from "../../../packages/core/src/index";
 
 const schema = {
   schema: {
@@ -45,10 +43,10 @@ type Schema = typeof schema;
 
 const adapter = {
   createError: (raw: unknown) => raw,
-};
+} satisfies GraphqlAdapter;
 
 describe("createGql", () => {
-  const gql = createGql<Schema>({ schema, adapter });
+  const gql = createGql<Schema, typeof adapter>({ schema, adapter });
 
   it("exposes ref factories and schema helpers", () => {
     expect(typeof gql.scalar).toBe("function");

@@ -1,17 +1,17 @@
 /** Schema description DSL and type inference helpers. */
-import {
-  type ApplyTypeFormat,
-  type EnumRef,
-  type FieldDefinition,
-  type InferrableTypeRef,
-  type InputDefinition,
-  type InputTypeRef,
-  type ScalarRef,
-  type TypenameRef,
-  type UnionTypeRef,
-  unsafeRef,
+
+import type {
+  ApplyTypeFormat,
+  EnumRef,
+  FieldDefinition,
+  InferrableTypeRef,
+  InputDefinition,
+  InputTypeRef,
+  ScalarRef,
+  TypenameRef,
+  UnionTypeRef,
 } from "./type-ref";
-import { type Hidden, hidden, wrapValueByKey } from "./utility";
+import type { Hidden } from "./utility";
 
 /**
  * Core schema DSL used by generated helpers and tests to describe GraphQL
@@ -135,61 +135,3 @@ export type UnionMemberName<TSchema extends AnyGraphqlSchema, TRef extends Union
   keyof TSchema["union"][TRef["name"]]["types"]
 > &
   string;
-
-/** Fluent helper to declare schema components in a type-safe way. */
-export const define = <const TName extends string>(name: TName) => ({
-  scalar: <TType>() =>
-    wrapValueByKey(name, {
-      _type: hidden(),
-      name,
-    } satisfies ScalarDef<TType>),
-
-  enum: <const TValues extends EnumDef<string>["values"]>(values: TValues) =>
-    wrapValueByKey(name, {
-      _type: hidden(),
-      name,
-      values,
-    } satisfies EnumDef<keyof TValues & string>),
-
-  input: <TFields extends InputDef["fields"]>(fields: TFields) =>
-    wrapValueByKey(name, {
-      name,
-      fields,
-    } satisfies InputDef),
-
-  object: <TFields extends ObjectDef["fields"]>(fields: TFields) =>
-    wrapValueByKey(name, {
-      name,
-      fields: {
-        __typename: { arguments: {}, type: unsafeRef.typename(name, "!") },
-        ...fields,
-      },
-    } satisfies ObjectDef),
-
-  union: <TTypes extends UnionDef["types"]>(types: TTypes) =>
-    wrapValueByKey(name, {
-      name,
-      types,
-    } satisfies UnionDef),
-});
-
-/** Accessor utilities for looking up argument definitions from the schema. */
-export const createHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({
-  fieldArg: <
-    const TTypeName extends keyof TSchema["object"] & string,
-    const TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
-    const TArgName extends keyof TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"] & string,
-  >(
-    typeName: TTypeName,
-    fieldName: TFieldName,
-    argName: TArgName,
-  ) => {
-    const argTypeRef = schema.object[typeName]?.fields[fieldName]?.arguments[argName];
-
-    if (!argTypeRef) {
-      throw new Error(`Argument ${argName} not found in field ${fieldName} of type ${typeName}`);
-    }
-
-    return argTypeRef as TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"][TArgName];
-  },
-});

@@ -1,3 +1,5 @@
+import { createFieldFactories } from "./fields-builder";
+import { evaluateSelections } from "./slice-result-selection";
 import {
   type AnyFields,
   type AnyGraphqlSchema,
@@ -13,9 +15,7 @@ import {
   type SliceResultSelectionsBuilder,
   type VariableReferencesByDefinition,
   type VoidIfEmptyObject,
-} from "../types";
-import { createFieldFactories } from "./fields-builder";
-import { evaluateSelections } from "./slice-result-selection";
+} from "./types";
 import { createVariableAssignments } from "./variables";
 
 export const createOperationSliceFactory =

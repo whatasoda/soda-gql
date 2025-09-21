@@ -1,4 +1,5 @@
 export * from "./adapter";
+export * from "./branded-classes";
 export * from "./directives";
 export * from "./field-path";
 export * from "./fields";

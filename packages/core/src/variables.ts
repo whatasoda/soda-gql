@@ -5,7 +5,7 @@ import type {
   InputDefinition,
   VariableReferencesByDefinition,
   VoidIfEmptyObject,
-} from "../types";
+} from "./types";
 
 export const createVariableAssignments = <
   TSchema extends AnyGraphqlSchema,

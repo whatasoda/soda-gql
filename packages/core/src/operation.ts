@@ -9,7 +9,7 @@ import type {
   OperationBuilder,
   OperationFn,
   OperationType,
-} from "../types";
+} from "./types";
 import { createVariableAssignments } from "./variables";
 
 const createDocumentStub = (): DocumentNode => ({

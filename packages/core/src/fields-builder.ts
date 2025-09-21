@@ -19,7 +19,7 @@ import {
   type UnionMemberName,
   type UnionTypeRef,
   wrapValueByKey,
-} from "../types";
+} from "./types";
 
 export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
   schema: TSchema,
