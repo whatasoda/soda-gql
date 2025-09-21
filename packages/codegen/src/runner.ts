@@ -5,10 +5,10 @@ import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
 export const runCodegen = (options: CodegenOptions): CodegenResult =>
-  loadSchema(options.schemaPath).andThen((schema) => {
-    const { code, stats } = generateRuntimeModule(schema);
+  loadSchema(options.schemaPath).andThen((document) => {
+    const { code, stats } = generateRuntimeModule(document);
     const outPath = resolve(options.outPath);
-    const schemaHash = hashSchema(schema);
+    const schemaHash = hashSchema(document);
 
     return writeModule(outPath, code).map(
       () =>
