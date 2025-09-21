@@ -37,14 +37,14 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
         argsAndDirectives: FieldReferenceFactoryFieldArguments<TReference>,
         objectBuilder: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>,
       ) => {
-        const [args = {}, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
         const nestedFactories = createFieldFactories(schema, type.name);
 
         return wrapValueByKey(fieldName, {
           parent: typeName,
           field: fieldName,
           type: type,
-          args,
+          args: args ?? {},
           directives,
           object: objectBuilder({
             _: nestedFactories,
@@ -64,13 +64,13 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
         argsAndDirectives: FieldReferenceFactoryFieldArguments<TReference>,
         unionBuilder: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>,
       ) => {
-        const [args = {}, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
 
         return wrapValueByKey(fieldName, {
           parent: typeName,
           field: fieldName,
           type: type,
-          args,
+          args: args ?? {},
           directives,
           object: null,
           union: Object.fromEntries(
@@ -92,12 +92,12 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
       const factory: FieldReferenceFactoryScalar<TReference> = (
         argsAndDirectives: FieldReferenceFactoryFieldArguments<TReference>,
       ) => {
-        const [args = {}, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
         return wrapValueByKey(fieldName, {
           parent: typeName,
           field: fieldName,
           type,
-          args,
+          args: args ?? {},
           directives,
           object: null,
           union: null,

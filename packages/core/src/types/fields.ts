@@ -51,8 +51,8 @@ export type AbstractFieldReference<
 /** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldReferenceOf<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
-  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
 > = PickTypeRefByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends FieldDefinition
   ? AbstractFieldReference<
       TTypeName,

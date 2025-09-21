@@ -229,11 +229,11 @@ const runtimeTemplate = ($$: {
 import { createGql, define, unsafeRef, type GraphqlAdapter } from "@soda-gql/core";
 
 export const schema = {
-  schema: {
+  operations: defineOperationTypeNames({
     query: "${$$.queryType}",
     mutation: "${$$.mutationType}",
     subscription: "${$$.subscriptionType}",
-  },
+  }),
   scalar: ${$$.scalarBlock},
   enum: ${$$.enumBlock},
   input: ${$$.inputBlock},

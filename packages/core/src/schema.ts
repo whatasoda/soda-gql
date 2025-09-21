@@ -1,5 +1,5 @@
 import type { EnumRef, InputTypeRef, ObjectTypeRef, ScalarRef, TypeFormat, TypenameRef, UnionTypeRef } from "./types";
-import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, ScalarDef, UnionDef } from "./types/schema";
+import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, OperationTypeNames, ScalarDef, UnionDef } from "./types/schema";
 import { hidden, prettify, wrapValueByKey } from "./types/utility";
 
 /** Fluent helper to declare schema components in a type-safe way. */
@@ -54,6 +54,10 @@ export const define = <const TName extends string>(name: TName) => ({
       types,
     } satisfies UnionDef),
 });
+
+export const defineOperationTypeNames = <const TOperationTypeNames extends OperationTypeNames>(
+  operationTypeNames: TOperationTypeNames,
+) => operationTypeNames;
 
 /** Accessor utilities for looking up argument definitions from the schema. */
 export const createGqlHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({

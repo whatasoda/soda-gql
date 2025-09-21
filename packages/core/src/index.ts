@@ -5,7 +5,7 @@ import { createGqlHelpers } from "./schema";
 import type { GraphqlAdapter } from "./types/adapter";
 import type { AnyGraphqlSchema } from "./types/schema";
 
-export { define, unsafeRef } from "./schema";
+export { define, defineOperationTypeNames, unsafeRef } from "./schema";
 export * from "./types";
 
 export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter> = {

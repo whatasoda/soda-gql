@@ -20,7 +20,7 @@ export type OperationSliceFn<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TOperation extends OperationType,
-  TTypeName extends TSchema["schema"][TOperation] & keyof TSchema["object"] = TSchema["schema"][TOperation] &
+  TTypeName extends TSchema["operations"][TOperation] & keyof TSchema["object"] = TSchema["operations"][TOperation] &
     keyof TSchema["object"],
 > = <
   TFields extends AnyFields,
@@ -38,8 +38,7 @@ export type OperationSliceFn<
 export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extends OperationType> = OperationSlice<
   TAdapter,
   TOperation,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any,
+  AnyFields,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;

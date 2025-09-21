@@ -17,17 +17,13 @@ import type { Hidden } from "./utility";
  * Core schema DSL used by generated helpers and tests to describe GraphQL
  * metadata without executing any runtime code.
  */
-export type OperationType = keyof AnyGraphqlSchema["schema"];
-export type AnyTypeName = PropertyKey;
-export type AnyFieldName = PropertyKey;
+export type OperationType = keyof OperationTypeNames;
+export type AnyTypeName = string;
+export type AnyFieldName = string;
 
 /** Root schema shape describing scalars, objects, unions, and inputs. */
 export type AnyGraphqlSchema = {
-  schema: {
-    query: string;
-    mutation: string;
-    subscription: string;
-  };
+  operations: OperationTypeNames;
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
   scalar: { [name: string]: ScalarDef<any> };
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
@@ -41,6 +37,12 @@ export type AnyGraphqlSchema = {
   //   subscription: { [typename: string]: true };
   //   parameter: { [typename: string]: true };
   // };
+};
+
+export type OperationTypeNames = {
+  query: string;
+  mutation: string;
+  subscription: string;
 };
 
 /** Scalar definition carries a phantom type for inference. */

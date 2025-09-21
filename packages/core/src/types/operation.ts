@@ -22,6 +22,7 @@ export type OperationFn<TSchema extends AnyGraphqlSchema, TAdapter extends Graph
 ) => {
   name: TName;
   document: DocumentNode;
+  variables: TVariableDefinitions;
   transform: (data: unknown) => {
     [K in keyof TSlices]: ReturnType<TSlices[K]["transform"]>;
   };

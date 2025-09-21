@@ -141,7 +141,7 @@ const unions = {
 };
 
 export const schema = {
-  schema: {
+  operations: {
     query: "query_root" as const,
     mutation: "mutation_root" as const,
     subscription: "subscription_root" as const,

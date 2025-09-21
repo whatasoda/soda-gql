@@ -19,13 +19,13 @@ import type { VariableReferencesByDefinition } from "./variables";
  */
 export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
+  TTypeName extends keyof TSchema["object"] & string,
   TVariables extends { [key: string]: InputDefinition },
   TFields extends AnyFields,
 > = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariables>>) => TFields;
 export type FieldsBuilderTools<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
+  TTypeName extends keyof TSchema["object"] & string,
   TVariables extends { [key: string]: InputDefinition },
 > = {
   _: FieldReferenceFactories<TSchema, TTypeName>;
@@ -37,10 +37,13 @@ export type FieldsBuilderTools<
 /** Narrow builder used when a field resolves to an object and we need nested selections. */
 export type NestedObjectFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
+  TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyNestedObject,
 > = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchema, TTypeName>>) => TFields;
-export type NestedObjectFieldsBuilderTools<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
+export type NestedObjectFieldsBuilderTools<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+> = {
   _: FieldReferenceFactories<TSchema, TTypeName>;
   f: FieldReferenceFactories<TSchema, TTypeName>;
   fields: FieldReferenceFactories<TSchema, TTypeName>;
@@ -59,8 +62,8 @@ export type NestedUnionFieldsBuilder<
 };
 
 /** Map each field to a factory capable of emitting fully-typed references. */
-export type FieldReferenceFactories<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
-  [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName>]: FieldReferenceFactory<
+export type FieldReferenceFactories<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string> = {
+  [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName> & string]: FieldReferenceFactory<
     TSchema,
     FieldReferenceOf<TSchema, TTypeName, TFieldName>
   >;

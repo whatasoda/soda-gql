@@ -1,4 +1,4 @@
-import { type DocumentNode, Kind } from "graphql";
+import { buildDocument } from "./document-builder";
 import type {
   AnyGraphqlSchema,
   AnyOperationSlice,
@@ -10,16 +10,11 @@ import type {
   OperationFn,
   OperationType,
 } from "./types";
-import { createVariableAssignments } from "./variables";
-
-const createDocumentStub = (): DocumentNode => ({
-  kind: Kind.DOCUMENT,
-  definitions: [],
-});
+import { createVariableReferences } from "./variables";
 
 export const createOperationFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(_schema: TSchema, _adapter: TAdapter) =>
-  <TOperation extends OperationType>(_operation: TOperation): OperationFn<TSchema, TAdapter, TOperation> => {
+  <TOperation extends OperationType>(operation: TOperation): OperationFn<TSchema, TAdapter, TOperation> => {
     const operationFn: OperationFn<TSchema, TAdapter, TOperation> = <
       TName extends string,
       TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
@@ -30,8 +25,19 @@ export const createOperationFactory =
       builder: OperationBuilder<TSchema, TAdapter, TOperation, TVariableDefinitions, TSlices>,
     ) => {
       const variables = (variablesDefinitions ?? {}) as TVariableDefinitions;
-      const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variables, {} as EmptyObject);
+      const $ = createVariableReferences<TSchema, TVariableDefinitions>(variables);
       const slices = builder({ $ });
+
+      const fields = Object.entries(slices).flatMap(([label, slice]) =>
+        Object.entries(slice.object).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
+      );
+
+      const document = buildDocument({
+        name,
+        operation,
+        variables,
+        fields: Object.fromEntries(fields.map(({ labeledKey, reference }) => [labeledKey, reference])),
+      });
 
       const transform = (data: unknown) => {
         const records = (
@@ -49,7 +55,7 @@ export const createOperationFactory =
 
       return {
         name,
-        document: createDocumentStub() as DocumentNode,
+        document,
         transform,
         variables,
         slices,

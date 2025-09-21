@@ -1,13 +1,21 @@
 import { describe, expect, it } from "bun:test";
 
-import { createGql, define, GraphqlAdapter, unsafeRef } from "../../../packages/core/src/index";
+import {
+  AnyGraphqlSchema,
+  createGql,
+  define,
+  defineOperationTypeNames,
+  empty,
+  GraphqlAdapter,
+  unsafeRef,
+} from "../../../packages/core/src/index";
 
 const schema = {
-  schema: {
+  operations: defineOperationTypeNames({
     query: "Query",
     mutation: "Mutation",
     subscription: "Subscription",
-  },
+  }),
   scalar: {
     ...define("ID").scalar<string>(),
     ...define("String").scalar<string>(),
@@ -37,7 +45,7 @@ const schema = {
     }),
   },
   union: {},
-} as const;
+} satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema;
 
@@ -62,21 +70,20 @@ describe("createGql", () => {
   });
 
   it("creates model descriptors with fragment + transform wiring", () => {
-    // biome-ignore lint/suspicious/noExplicitAny: test helper exercise
-    const userModel = (gql.model as any)(
+    const userModel = gql.model(
       "User",
-      ({ f }: any) => ({
+      ({ f }) => ({
         ...f.id(),
         ...f.name(),
       }),
-      (selected: { id: string; name: string }) => ({
+      (selected) => ({
         id: selected.id,
         label: selected.name,
       }),
     );
 
     expect(userModel.typename).toBe("User");
-    expect(userModel.variables).toEqual({});
+    expect(userModel.variables).toEqual(empty());
     const fragment = userModel.fragment({} as never);
     expect(fragment).toHaveProperty("id");
     expect(fragment).toHaveProperty("name");
@@ -87,46 +94,42 @@ describe("createGql", () => {
   });
 
   it("creates query slices and operations that reuse registered models", () => {
-    // biome-ignore lint/suspicious/noExplicitAny: test helper exercise
-    const userModel = (gql.model as any)(
+    const userModel = gql.model(
       "User",
-      ({ f }: any) => ({
+      ({ f }) => ({
         ...f.id(),
         ...f.name(),
       }),
-      (selected: { id: string; name: string }) => ({
+      (selected) => ({
         id: selected.id,
         name: selected.name,
       }),
     );
 
-    // biome-ignore lint/suspicious/noExplicitAny: test helper exercise
-    const userSliceFactory = (gql.querySlice as any)(
+    const userSliceFactory = gql.querySlice(
       [
         {
           id: gql.scalar("ID", "!"),
         },
       ],
-      ({ f, $ }: any) => ({
-        user: f.user({ id: $.id }, () => ({
+      ({ f, $ }) => ({
+        ...f.user({ id: $.id }, () => ({
           ...userModel.fragment({}),
         })),
       }),
-      ({ select }: any) =>
-        select("$.user", (result: any) => result.safeUnwrap((data: { id: string; name: string }) => userModel.transform(data))),
+      ({ select }) => select("$.user", (result) => result.safeUnwrap((data) => userModel.transform(data))),
     );
 
     const slice = userSliceFactory({ id: "1" });
     expect(slice.operation).toBe("query");
     expect(typeof slice.transform).toBe("function");
 
-    // biome-ignore lint/suspicious/noExplicitAny: test helper exercise
-    const profileQuery = (gql.query as any)(
+    const profileQuery = gql.query(
       "ProfilePageQuery",
       {
         userId: gql.scalar("ID", "!"),
       },
-      ({ $ }: any) => ({
+      ({ $ }) => ({
         user: userSliceFactory({ id: $.userId }),
       }),
     );

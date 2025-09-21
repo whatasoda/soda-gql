@@ -21,8 +21,8 @@ import { createVariableAssignments } from "./variables";
 export const createOperationSliceFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(schema: TSchema, _adapter: TAdapter) =>
   <TOperation extends OperationType>(operation: TOperation) => {
-    type TTypeName = TSchema["schema"][TOperation] & keyof TSchema["object"];
-    const operationTypeName: TTypeName = schema.schema[operation];
+    type TTypeName = TSchema["operations"][TOperation] & keyof TSchema["object"];
+    const operationTypeName: TTypeName = schema.operations[operation];
 
     const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperation, TTypeName> = <
       TFields extends AnyFields,
