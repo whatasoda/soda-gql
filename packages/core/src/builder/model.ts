@@ -1,5 +1,3 @@
-import { createFieldFactories } from "./fields-builder";
-import { createVariableAssignments } from "./input";
 import type {
   AnyFields,
   AnyGraphqlSchema,
@@ -9,7 +7,9 @@ import type {
   InputTypeRefs,
   Model,
   ModelFn,
-} from "./types";
+} from "../types";
+import { createFieldFactories } from "./fields-builder";
+import { createVariableAssignments } from "./input";
 
 export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => {
   const modelFn: ModelFn<TSchema> = <

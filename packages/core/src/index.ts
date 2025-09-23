@@ -1,12 +1,11 @@
-import { createModelFactory } from "./model";
-import { createOperationFactory } from "./operation";
-import { createOperationSliceFactory } from "./operation-slice";
-import { createGqlHelpers } from "./schema";
-import type { GraphqlAdapter } from "./types/adapter";
-import type { AnyGraphqlSchema } from "./types/schema";
+import { createModelFactory } from "./builder/model";
+import { createOperationFactory } from "./builder/operation";
+import { createOperationSliceFactory } from "./builder/operation-slice";
+import { createGqlHelpers } from "./builder/schema";
+import type { AnyGraphqlSchema, GraphqlAdapter } from "./types";
 
-export { define, defineOperationTypeNames, defineScalar } from "./schema";
-export { unsafeInputRef, unsafeOutputRef } from "./type-ref";
+export { define, defineOperationTypeNames, defineScalar } from "./builder/schema";
+export { unsafeInputRef, unsafeOutputRef } from "./builder/type-ref";
 export * from "./types";
 
 export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter> = {

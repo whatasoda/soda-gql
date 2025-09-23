@@ -6,7 +6,7 @@ import {
   type InputTypeRefs,
   VariableReference,
   type VoidIfEmptyObject,
-} from "./types";
+} from "../types";
 
 export const createVariableAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeRefs>(
   definitions: TVariableDefinitions,

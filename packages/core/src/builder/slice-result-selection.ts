@@ -7,7 +7,7 @@ import {
   type InferSliceResultSelection,
   type SliceResult,
   SliceResultSelection,
-} from "./types";
+} from "../types";
 
 const evaluateSliceSelectionSingle = <
   TAdapter extends GraphqlAdapter,

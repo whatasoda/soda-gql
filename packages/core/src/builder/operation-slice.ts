@@ -1,6 +1,3 @@
-import { createFieldFactories } from "./fields-builder";
-import { createVariableAssignments } from "./input";
-import { evaluateSelections } from "./slice-result-selection";
 import {
   type AnyFields,
   type AnyGraphqlSchema,
@@ -16,7 +13,10 @@ import {
   SliceResultSelection,
   type SliceResultSelectionsBuilder,
   type VoidIfEmptyObject,
-} from "./types";
+} from "../types";
+import { createFieldFactories } from "./fields-builder";
+import { createVariableAssignments } from "./input";
+import { evaluateSelections } from "./slice-result-selection";
 
 export const createOperationSliceFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(schema: TSchema, _adapter: TAdapter) =>

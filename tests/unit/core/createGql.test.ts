@@ -10,7 +10,7 @@ import {
   GraphqlAdapter,
   unsafeInputRef,
   unsafeOutputRef,
-} from "../../../packages/core/src/index";
+} from "../../../packages/core";
 
 const schema = {
   operations: defineOperationTypeNames({

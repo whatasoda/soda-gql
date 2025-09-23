@@ -1,7 +1,16 @@
+import type {
+  AnyConstDirectiveAttachments,
+  AnyGraphqlSchema,
+  EnumDef,
+  Hidden,
+  InputDef,
+  ObjectDef,
+  OperationTypeNames,
+  ScalarDef,
+  UnionDef,
+} from "../types";
+import { hidden, wrapValueByKey } from "../types";
 import { createInputTypeRefFactory, unsafeOutputRef } from "./type-ref";
-import type { AnyConstDirectiveAttachments, Hidden, OperationTypeNames } from "./types";
-import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, ScalarDef, UnionDef } from "./types/schema";
-import { hidden, wrapValueByKey } from "./types/utility";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
   name: TName,

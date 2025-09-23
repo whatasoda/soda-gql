@@ -5,7 +5,7 @@ import type {
   InputTypeRefs,
   TypeModifier,
   TypeModifierBuilder,
-} from "./types";
+} from "../types";
 
 /** Fluent helper to declare schema components in a type-safe way. */
 type UnsafeInputRefFactory<TKind extends "scalar" | "enum" | "input"> = <

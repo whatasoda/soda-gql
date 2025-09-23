@@ -1,5 +1,3 @@
-import { buildDocument } from "./document-builder";
-import { createVariableReferences } from "./input";
 import type {
   AnyGraphqlSchema,
   AnyOperationSlice,
@@ -10,7 +8,9 @@ import type {
   OperationBuilder,
   OperationFn,
   OperationType,
-} from "./types";
+} from "../types";
+import { buildDocument } from "./document-builder";
+import { createVariableReferences } from "./input";
 
 export const createOperationFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(_schema: TSchema, _adapter: TAdapter) =>
