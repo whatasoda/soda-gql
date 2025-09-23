@@ -520,26 +520,39 @@ export type GeneratedModule = {
   };
 };
 
-const runtimeTemplate = ($$: {
-  queryType: string;
-  mutationType: string;
-  subscriptionType: string;
-  scalarBlock: string;
-  enumBlock: string;
-  inputBlock: string;
-  objectBlock: string;
-  unionBlock: string;
-}) => `\
-import {
-  type AnyGraphqlSchema,
-  createGql,
-  define,
-  defineOperationTypeNames,
-  type GraphqlAdapter,
-  type,
-  unsafeInputRef,
-  unsafeOutputRef,
-} from "@soda-gql/core";
+type RuntimeTemplateInjection =
+  | { readonly mode: "inline" }
+  | { readonly mode: "inject"; readonly importPath: string };
+
+type RuntimeTemplateOptions = {
+  readonly queryType: string;
+  readonly mutationType: string;
+  readonly subscriptionType: string;
+  readonly scalarBlock: string;
+  readonly enumBlock: string;
+  readonly inputBlock: string;
+  readonly objectBlock: string;
+  readonly unionBlock: string;
+  readonly injection: RuntimeTemplateInjection;
+};
+
+const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
+  const importLines = [
+    'import {\n  type AnyGraphqlSchema,\n  createGql,\n  define,\n  defineOperationTypeNames,\n  type GraphqlAdapter,\n  type,\n  unsafeInputRef,\n  unsafeOutputRef,\n} from "@soda-gql/core";',
+    $$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : "",
+  ]
+    .filter((line) => line.length > 0)
+    .join("\n");
+
+  const adapterBlock =
+    $$.injection.mode === "inject"
+      ? ""
+      : `const adapter = {\n  createError: (raw) => raw,\n} satisfies GraphqlAdapter;\n\n`;
+
+  const scalarEntry = $$.injection.mode === "inject" ? "scalar" : $$.scalarBlock;
+
+  return `\
+${importLines}
 
 export const schema = {
   operations: defineOperationTypeNames({
@@ -547,24 +560,30 @@ export const schema = {
     mutation: "${$$.mutationType}",
     subscription: "${$$.subscriptionType}",
   }),
-  scalar: ${$$.scalarBlock},
+  scalar: ${scalarEntry},
   enum: ${$$.enumBlock},
   input: ${$$.inputBlock},
   object: ${$$.objectBlock},
   union: ${$$.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-const adapter = {
-  createError: (raw) => raw,
-} satisfies GraphqlAdapter;
-
-export type Schema = typeof schema & { _?: never };
-export type Adapter = typeof adapter & { _?: never };
+${adapterBlock}export type Schema = typeof schema & { _?: never };
+export type Adapter = (typeof adapter & GraphqlAdapter) & { _?: never };
 
 export const gql = createGql<Schema, Adapter>({ schema, adapter });
 `;
+};
 
-export const generateRuntimeModule = (document: DocumentNode): GeneratedModule => {
+export type RuntimeGenerationOptions = {
+  readonly injection?: {
+    readonly importPath: string;
+  };
+};
+
+export const generateRuntimeModule = (
+  document: DocumentNode,
+  options?: RuntimeGenerationOptions,
+): GeneratedModule => {
   const schema = createSchemaIndex(document);
 
   const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
@@ -612,6 +631,10 @@ export const generateRuntimeModule = (document: DocumentNode): GeneratedModule =
   const mutationType = schema.operationTypes.mutation ?? "Mutation";
   const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
 
+  const injection: RuntimeTemplateInjection = options?.injection
+    ? { mode: "inject", importPath: options.injection.importPath }
+    : { mode: "inline" };
+
   const code = runtimeTemplate({
     queryType,
     mutationType,
@@ -621,6 +644,7 @@ export const generateRuntimeModule = (document: DocumentNode): GeneratedModule =
     inputBlock,
     objectBlock,
     unionBlock,
+    injection,
   });
 
   return {

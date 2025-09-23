@@ -13,6 +13,27 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
 
+const writeInjectModule = async (outFile: string) => {
+  const contents = `import { define, type, type GraphqlAdapter } from "@soda-gql/core";
+
+export const scalar = {
+  ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
+  ...define("String").scalar(type<{ input: string; output: string }>(), {}),
+  ...define("Int").scalar(type<{ input: number; output: number }>(), {}),
+  ...define("Float").scalar(type<{ input: number; output: number }>(), {}),
+  ...define("Boolean").scalar(type<{ input: boolean; output: boolean }>(), {}),
+} as const;
+
+const createError: GraphqlAdapter["createError"] = (raw) => raw;
+
+export const adapter = {
+  createError,
+} satisfies GraphqlAdapter;
+`;
+
+  await Bun.write(outFile, contents);
+};
+
 const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   const subprocess = Bun.spawn({
     cmd: ["bun", "run", "soda-gql", "codegen", ...args],
@@ -81,6 +102,9 @@ describe("runtime builder flow", () => {
     const graphqlSystemDir = join(workspace, "node_modules", "@", "graphql-system");
     mkdirSync(graphqlSystemDir, { recursive: true });
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
+    const injectPath = join(workspace, "graphql-inject.ts");
+
+    await writeInjectModule(injectPath);
 
     const codegenResult = await runCodegenCli([
       "--schema",
@@ -89,6 +113,8 @@ describe("runtime builder flow", () => {
       graphqlSystemEntry,
       "--format",
       "json",
+      "--inject-from",
+      injectPath,
     ]);
 
     expect(codegenResult.exitCode).toBe(0);

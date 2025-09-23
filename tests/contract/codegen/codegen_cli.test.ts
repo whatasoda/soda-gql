@@ -31,6 +31,27 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   return { stdout, stderr, exitCode };
 };
 
+const createInjectModule = async (outFile: string) => {
+  const contents = `import { define, type, type GraphqlAdapter } from "@soda-gql/core";
+
+export const scalar = {
+  ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
+  ...define("String").scalar(type<{ input: string; output: string }>(), {}),
+  ...define("Int").scalar(type<{ input: number; output: number }>(), {}),
+  ...define("Float").scalar(type<{ input: number; output: number }>(), {}),
+  ...define("Boolean").scalar(type<{ input: boolean; output: boolean }>(), {}),
+} as const;
+
+const createError: GraphqlAdapter["createError"] = (raw) => raw;
+
+export const adapter = {
+  createError,
+} satisfies GraphqlAdapter;
+`;
+
+  await Bun.write(outFile, contents);
+};
+
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
   const subprocess = Bun.spawn({
     cmd: ["bun", "x", "tsc", "--noEmit", "--project", tsconfigPath],
@@ -59,6 +80,9 @@ describe("soda-gql codegen CLI", () => {
   it("reports SCHEMA_NOT_FOUND when schema file is missing", async () => {
     mkdirSync(tmpRoot, { recursive: true });
     const outFile = join(tmpRoot, `missing-schema-${Date.now()}.ts`);
+    const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
+
+    await createInjectModule(injectFile);
 
     const result = await runCodegenCli([
       "--schema",
@@ -67,6 +91,8 @@ describe("soda-gql codegen CLI", () => {
       outFile,
       "--format",
       "json",
+      "--inject-from",
+      injectFile,
     ]);
 
     expect(result.exitCode).toBe(1);
@@ -80,8 +106,20 @@ describe("soda-gql codegen CLI", () => {
     const invalidSchemaPath = join(tmpRoot, `invalid-${Date.now()}.graphql`);
     await Bun.write(invalidSchemaPath, "type Query { invalid }");
     const outFile = join(tmpRoot, `invalid-schema-${Date.now()}.ts`);
+    const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    const result = await runCodegenCli(["--schema", invalidSchemaPath, "--out", outFile, "--format", "json"]);
+    await createInjectModule(injectFile);
+
+    const result = await runCodegenCli([
+      "--schema",
+      invalidSchemaPath,
+      "--out",
+      outFile,
+      "--format",
+      "json",
+      "--inject-from",
+      injectFile,
+    ]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toContain("SchemaValidationError");
@@ -92,14 +130,27 @@ describe("soda-gql codegen CLI", () => {
     mkdirSync(tmpRoot, { recursive: true });
     const schemaPath = join(projectRoot, "tests", "fixtures", "runtime-app", "schema.graphql");
     const outFile = join(tmpRoot, `runtime-schema-${Date.now()}.ts`);
+    const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json"]);
+    await createInjectModule(injectFile);
+
+    const result = await runCodegenCli([
+      "--schema",
+      schemaPath,
+      "--out",
+      outFile,
+      "--format",
+      "json",
+      "--inject-from",
+      injectFile,
+    ]);
 
     expect(result.exitCode).toBe(0);
     const generatedExists = await Bun.file(outFile).exists();
     expect(generatedExists).toBe(true);
     const moduleContents = await Bun.file(outFile).text();
     expect(moduleContents).toContain("export const gql");
+    expect(moduleContents).toContain("import { adapter, scalar } from");
     expect(result.stdout).toContain("schemaHash");
 
     const tsconfigPath = join(
@@ -131,6 +182,20 @@ describe("soda-gql codegen CLI", () => {
 
     const typecheckResult = await runTypecheck(tsconfigPath);
     expect(typecheckResult.exitCode).toBe(0);
+  });
+
+  it("creates inject module template", async () => {
+    mkdirSync(tmpRoot, { recursive: true });
+    const templatePath = join(tmpRoot, `inject-template-${Date.now()}.ts`);
+
+    const result = await runCodegenCli(["--emit-inject-template", templatePath]);
+
+    expect(result.exitCode).toBe(0);
+    const templateExists = await Bun.file(templatePath).exists();
+    expect(templateExists).toBe(true);
+    const contents = await Bun.file(templatePath).text();
+    expect(contents).toContain("export const scalar");
+    expect(contents).toContain("export const adapter");
   });
 
   afterAll(() => {

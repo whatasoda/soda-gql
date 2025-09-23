@@ -6,7 +6,19 @@ export type CodegenOptions = {
   readonly schemaPath: string;
   readonly outPath: string;
   readonly format: CodegenFormat;
+  readonly injectFromPath: string;
 };
+
+export type CodegenCliCommand =
+  | {
+      readonly kind: "generate";
+      readonly options: CodegenOptions;
+    }
+  | {
+      readonly kind: "emitInjectTemplate";
+      readonly outPath: string;
+      readonly format: CodegenFormat;
+    };
 
 export type CodegenError =
   | {
@@ -21,6 +33,25 @@ export type CodegenError =
     }
   | {
       readonly code: "EMIT_FAILED";
+      readonly message: string;
+      readonly outPath: string;
+    }
+  | {
+      readonly code: "INJECT_MODULE_REQUIRED";
+      readonly message: string;
+    }
+  | {
+      readonly code: "INJECT_MODULE_NOT_FOUND";
+      readonly message: string;
+      readonly injectPath: string;
+    }
+  | {
+      readonly code: "INJECT_TEMPLATE_EXISTS";
+      readonly message: string;
+      readonly outPath: string;
+    }
+  | {
+      readonly code: "INJECT_TEMPLATE_FAILED";
       readonly message: string;
       readonly outPath: string;
     };
