@@ -9,9 +9,15 @@ export type Prettify<T> = {
 } & {};
 export const prettify = <T extends object>(obj: T) => obj as Prettify<T>;
 
-declare const __EMPTY_SYMBOL__: unique symbol;
+const __EMPTY_SYMBOL__: unique symbol = Symbol("EmptyObjectBrand");
 type IsEmptyObject<T> = keyof (T & { [__EMPTY_SYMBOL__]: true }) extends typeof __EMPTY_SYMBOL__ ? true : false;
 // biome-ignore lint/suspicious/noConfusingVoidType: Need to use void to make argument optional
 export type VoidIfEmptyObject<T> = IsEmptyObject<T> extends true ? void : never;
 
 export type EmptyObject = { [__EMPTY_SYMBOL__]: never };
+export const empty = (): EmptyObject => ({}) as EmptyObject;
+
+export const wrapValueByKey = <TName extends string, TValue>(name: TName, value: TValue) =>
+  ({ [name]: value }) as {
+    [K in TName]: TValue;
+  };

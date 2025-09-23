@@ -1,146 +1,144 @@
-import type { GraphqlAdapter } from "../../types/adapter";
-import type { InferFields } from "../../types/fields";
-import type { FieldPaths } from "../../types/field-path";
-import type { ModelFn } from "../../types/model";
-import type { OperationFn } from "../../types/operation";
-import type { OperationSliceFn } from "../../types/operation-slice";
-import { createHelpers, define, type AnyGraphqlSchema } from "../../types/schema";
-import { createRefFactories, unsafeRef } from "../../types/type-ref";
-
-type Scalars = {
-  string: string;
-  int: number;
-  float: number;
-  boolean: boolean;
-  id: string;
-};
+import { createGql, define, defineScalar, unsafeInputRef, unsafeOutputRef } from "./packages/core/src";
+import type { GraphqlAdapter } from "./packages/core/src/types/adapter";
+import type { FieldPaths } from "./packages/core/src/types/field-path";
+import type { InferFields } from "./packages/core/src/types/fields";
+import { type AnyGraphqlSchema } from "./packages/core/src/types/schema";
 
 const scalars = {
-  ...define("string").scalar<Scalars["string"]>(),
-  ...define("int").scalar<Scalars["int"]>(),
-  ...define("float").scalar<Scalars["float"]>(),
-  ...define("boolean").scalar<Scalars["boolean"]>(),
-  ...define("id").scalar<Scalars["id"]>(),
+  ...defineScalar("String", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("Int", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Float", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Boolean", ({ type }) => ({
+    input: type<boolean>(),
+    output: type<boolean>(),
+    directives: {},
+  })),
+  ...defineScalar("ID", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
 };
 
 const enums = {
-  ...define("direction").enum({
-    up: true,
-    down: true,
-    left: true,
-    right: true,
-  }),
+  ...define("direction").enum(
+    {
+      up: true,
+      down: true,
+      left: true,
+      right: true,
+    },
+    {},
+  ),
 };
 
 const inputs = {
-  ...define("point").input({
-    x: unsafeRef.scalar("int", "!"),
-    y: unsafeRef.scalar("int", "!"),
-  }),
+  ...define("point").input(
+    {
+      x: unsafeInputRef.scalar(["Int", "!"], { default: 0 }, {}),
+      y: unsafeInputRef.scalar(["Int", "!"], null, {}),
+    },
+    {},
+  ),
 };
 
 const objects = {
-  ...define("point").object({
-    x: {
-      arguments: {
-        input: unsafeRef.input("point", "!"),
-      },
-      type: unsafeRef.scalar("int", "!"),
+  ...define("point").object(
+    {
+      x: unsafeOutputRef.scalar(
+        ["Int", ""],
+        {
+          input: unsafeInputRef.input(["point", "!"], null, {}),
+        },
+        {},
+      ),
+      y: unsafeOutputRef.scalar(
+        ["Int", "!"],
+        {
+          input: unsafeInputRef.input(["point", "!"], null, {}),
+        },
+        {},
+      ),
     },
-    y: {
-      arguments: {
-        input: unsafeRef.input("point", "!"),
-      },
-      type: unsafeRef.scalar("int", "!"),
+    {},
+  ),
+  ...define("user").object(
+    {
+      id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
+      name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+      posts: unsafeOutputRef.object(
+        ["post", "![]!"],
+        {
+          categoryId: unsafeInputRef.scalar(["ID", ""], null, {}),
+        },
+        {},
+      ),
+      postOrComment: unsafeOutputRef.union(["postOrComment", "![]!"], {}, {}),
     },
-  }),
-  ...define("user").object({
-    id: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
+    {},
+  ),
+  ...define("post").object(
+    {
+      id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
+      title: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+      content: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+      userId: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
     },
-    name: {
-      arguments: {},
-      type: unsafeRef.scalar("string", "!"),
+    {},
+  ),
+  ...define("comment").object(
+    {
+      id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
+      content: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+      userId: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
+      postId: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
     },
-    posts: {
-      arguments: {
-        categoryId: unsafeRef.scalar("id", "?"),
-      },
-      type: unsafeRef.object("post", "![]!"),
-    },
-    postOrComment: {
-      arguments: {},
-      type: unsafeRef.union("postOrComment", "![]!"),
-    },
-  }),
-  ...define("post").object({
-    id: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
-    },
-    title: {
-      arguments: {},
-      type: unsafeRef.scalar("string", "!"),
-    },
-    content: {
-      arguments: {},
-      type: unsafeRef.scalar("string", "!"),
-    },
-    userId: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
-    },
-  }),
-  ...define("comment").object({
-    id: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
-    },
-    content: {
-      arguments: {},
-      type: unsafeRef.scalar("string", "!"),
-    },
-    userId: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
-    },
-    postId: {
-      arguments: {},
-      type: unsafeRef.scalar("id", "!"),
-    },
-  }),
+    {},
+  ),
 };
 
 const query_root = {
-  ...define("query_root").object({
-    users: {
-      arguments: {
-        id: unsafeRef.scalar("id", "![]!"),
-        point: unsafeRef.input("point", "!"),
-      },
-      type: unsafeRef.object("user", "![]!"),
+  ...define("query_root").object(
+    {
+      users: unsafeOutputRef.object(
+        ["user", "![]!"],
+        {
+          id: unsafeInputRef.scalar(["ID", "![]!"], null, {}),
+          point: unsafeInputRef.input(["point", "!"], null, {}),
+        },
+        {},
+      ),
+      posts: unsafeOutputRef.object(["post", "![]!"], {}, {}),
+      comments: unsafeOutputRef.object(["comment", "![]!"], {}, {}),
     },
-    posts: {
-      arguments: {},
-      type: unsafeRef.object("post", "![]!"),
-    },
-    comments: {
-      arguments: {},
-      type: unsafeRef.object("comment", "![]!"),
-    },
-  }),
+    {},
+  ),
 };
 
 const unions = {
-  ...define("postOrComment").union({
-    post: true,
-    comment: true,
-  }),
+  ...define("postOrComment").union(
+    {
+      post: true,
+      comment: true,
+    },
+    {},
+  ),
 };
 
 export const schema = {
-  schema: {
+  operations: {
     query: "query_root" as const,
     mutation: "mutation_root" as const,
     subscription: "subscription_root" as const,
@@ -164,28 +162,33 @@ export const adapter = {
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
 
-const ref = createRefFactories<Schema>();
-const helpers = createHelpers<Schema>(schema);
+// const ref = createRefFactories<Schema>();
+// const helpers = createHelpers<Schema>(schema);
 
-declare const model: ModelFn<Schema>;
-declare const querySlice: OperationSliceFn<Schema, Adapter, "query">;
-declare const mutationSlice: OperationSliceFn<Schema, Adapter, "mutation">;
-declare const subscriptionSlice: OperationSliceFn<Schema, Adapter, "subscription">;
-declare const query: OperationFn<Schema, Adapter, "query">;
-declare const mutation: OperationFn<Schema, Adapter, "mutation">;
-declare const subscription: OperationFn<Schema, Adapter, "subscription">;
+// declare const model: ModelFn<Schema>;
+// declare const querySlice: OperationSliceFn<Schema, Adapter, "query">;
+// declare const mutationSlice: OperationSliceFn<Schema, Adapter, "mutation">;
+// declare const subscriptionSlice: OperationSliceFn<Schema, Adapter, "subscription">;
+// declare const query: OperationFn<Schema, Adapter, "query">;
+// declare const mutation: OperationFn<Schema, Adapter, "mutation">;
+// declare const subscription: OperationFn<Schema, Adapter, "subscription">;
 
-const gql = {
-  ...helpers,
-  ...ref,
-  query,
-  mutation,
-  subscription,
-  model,
-  querySlice,
-  mutationSlice,
-  subscriptionSlice,
-};
+// const gql = {
+//   ...helpers,
+//   ...ref,
+//   query,
+//   mutation,
+//   subscription,
+//   model,
+//   querySlice,
+//   mutationSlice,
+//   subscriptionSlice,
+// };
+
+const gql = createGql<Schema, Adapter>({
+  schema,
+  adapter,
+});
 
 // ここから上は生成されるべきコード
 
@@ -197,7 +200,7 @@ const userModel = gql.model(
     "user",
     // model can have variables
     {
-      categoryId: gql.scalar("id", "?"),
+      categoryId: gql.scalar(["ID", ""]),
     },
   ],
   // fields
@@ -220,6 +223,7 @@ const userModel = gql.model(
           ...f.id(),
           ...f.title(),
         }),
+
         comment: ({ f }) => ({
           ...f.__typename(),
           ...f.id(),
@@ -258,10 +262,10 @@ const userQuerySlice = gql.querySlice(
   [
     // arguments
     {
-      id: gql.scalar("id", "!"),
-      categoryId: gql.scalar("id", "?"),
-      x: gql.scalar("int", "!"),
-      y: gql.scalar("int", "!"),
+      id: gql.scalar(["ID", "!"]),
+      categoryId: gql.scalar(["ID", ""]),
+      x: gql.scalar(["Int", "!"]),
+      y: gql.scalar(["Int", "!"]),
     },
   ],
   // fields of query root type
@@ -304,9 +308,9 @@ const userQuerySlice = gql.querySlice(
 const userQuerySlice2 = gql.querySlice(
   [
     {
-      id: gql.scalar("id", "!"),
-      x: gql.scalar("int", "!"),
-      y: gql.scalar("int", "!"),
+      id: gql.scalar(["ID", "!"]),
+      x: gql.scalar(["Int", "!"]),
+      y: gql.scalar(["Int", "!"]),
     },
   ],
   ({ f, $ }) => ({
@@ -335,9 +339,9 @@ const userQuerySlice2 = gql.querySlice(
 const userQuerySlice3 = gql.querySlice(
   [
     {
-      id: gql.scalar("id", "!"),
-      x: gql.scalar("int", "!"),
-      y: gql.scalar("int", "!"),
+      id: gql.scalar(["ID", "!"]),
+      x: gql.scalar(["Int", "!"]),
+      y: gql.scalar(["Int", "!"]),
     },
   ],
   ({ f, $ }) => ({
@@ -361,9 +365,9 @@ const userQuerySlice3 = gql.querySlice(
 const pageQuery = gql.query(
   "DocumentName",
   {
-    userId: gql.scalar("id", "!"),
-    x: gql.scalar("int", "!"),
-    y: gql.scalar("int", "!"),
+    userId: gql.scalar(["ID", "!"]),
+    x: gql.scalar(["Int", "!"]),
+    y: gql.scalar(["Int", "!"]),
   },
   ({ $ }) => ({
     // define query document with slices
@@ -411,4 +415,3 @@ const _a: InferFields<Schema, ReturnType<typeof userModel.fragment>> = {
 };
 
 type a = FieldPaths<Schema, ReturnType<typeof userModel.fragment>>;
-

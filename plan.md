@@ -47,7 +47,7 @@ The implementation is built around three foundational type definition files in `
 3. **Schema Structure** (as shown in debug.test.ts):
    ```typescript
    export const schema = {
-     schema: { query: "query_root", mutation: "mutation_root", subscription: "subscription_root" },
+     operations: { query: "query_root", mutation: "mutation_root", subscription: "subscription_root" },
      scalar: { /* generated scalars */ },
      enum: { /* generated enums */ },
      input: { /* generated inputs */ },

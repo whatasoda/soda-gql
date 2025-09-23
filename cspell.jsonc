@@ -1,0 +1,7 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": ["codegen", "neverthrow", "t_wada"],
+  "ignoreRegExpList": [],
+  "ignorePaths": ["node_modules", "dist"]
+}

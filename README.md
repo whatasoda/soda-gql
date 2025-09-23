@@ -35,9 +35,17 @@ bun add -D @soda-gql/cli @soda-gql/plugin-babel
 # Initialize project
 bunx soda-gql init
 
+# Scaffold scalar + adapter definitions for the runtime
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+
 # Generate GraphQL system from schema
-bunx soda-gql generate
+bun run soda-gql codegen \
+  --schema ./schema.graphql \
+  --out ./src/graphql-system/index.ts \
+  --inject-from ./src/graphql-system/inject.ts
 ```
+
+The generated runtime module imports your scalar and adapter implementations from `inject.ts`. Keep that file under version control so custom scalar behaviour stays explicit. Declare each scalar with the `defineScalar()` helper exported by `@soda-gql/core`—for example `defineScalar("DateTime", ({ type }) => ({ input: type<string>(), output: type<Date>(), directives: {} }))`—so both input and output shapes stay typed.
 
 ### Basic Example
 

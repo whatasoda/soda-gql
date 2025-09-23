@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/graphql-system": ["./node_modules/@/graphql-system/index.ts"],
+      "@soda-gql/core": [
+        "../../../packages/core/src/index.ts",
+        "../../../../packages/core/src/index.ts"
+      ],
+      "@soda-gql/core/*": [
+        "../../../packages/core/src/*",
+        "../../../../packages/core/src/*"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts", "node_modules/@/graphql-system/**/*.ts"]
+}

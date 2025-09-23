@@ -1,9 +1,10 @@
 /** Canonical field selection types used by models and slices. */
 import type { AnyDirectiveAttachments } from "./directives";
-import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferByTypeRef, PickTypeRefByFieldName } from "./schema";
-import type { ApplyTypeFormat, FieldDefinition, InferrableTypeRef, ObjectTypeRef, UnionTypeRef } from "./type-ref";
+import type { AnyAssignableInput, AssignableInputByFieldName } from "./input";
+import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputTypeRef, PickTypeRefByFieldName } from "./schema";
+import type { ApplyTypeModifier } from "./type-modifier";
+import type { OutputInferrableTypeRef, OutputObjectRef, OutputTypeRef, OutputUnionRef } from "./type-ref";
 import type { Prettify } from "./utility";
-import type { AnyVariableAssignments, VariableReferencesByFieldName } from "./variables";
 
 /**
  * Canonical representation of the field selections we collect during model and
@@ -13,8 +14,8 @@ import type { AnyVariableAssignments, VariableReferencesByFieldName } from "./va
 export type AnyFieldReference = {
   parent: AnyTypeName;
   field: AnyFieldName;
-  type: FieldDefinition;
-  args: AnyVariableAssignments;
+  type: OutputTypeRef;
+  args: AnyAssignableInput;
   directives: AnyDirectiveAttachments;
   object: AnyNestedObject | null;
   union: AnyNestedUnion | null;
@@ -23,7 +24,7 @@ export type AnyFieldReference = {
 /** Nested selection produced when resolving an object field. */
 export type AnyNestedObject = { [alias: string]: AnyFieldReference };
 /** Nested selection produced when resolving a union field. */
-type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldReference } };
+export type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldReference } | undefined };
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
@@ -34,10 +35,10 @@ export type AnyFields = {
 export type AbstractFieldReference<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
-  TRef extends FieldDefinition,
-  TArgs extends AnyVariableAssignments,
+  TRef extends OutputTypeRef,
+  TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
-  TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion },
+  TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
 > = {
   parent: TTypeName;
   field: TFieldName;
@@ -51,17 +52,17 @@ export type AbstractFieldReference<
 /** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldReferenceOf<
   TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"],
-  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
-> = PickTypeRefByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends FieldDefinition
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
+> = PickTypeRefByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends OutputTypeRef
   ? AbstractFieldReference<
       TTypeName,
       TFieldName,
       TRef,
-      VariableReferencesByFieldName<TSchema, TTypeName, TFieldName>,
+      AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
       AnyDirectiveAttachments,
-      | (TRef extends ObjectTypeRef ? { object: AnyNestedObject } : never)
-      | (TRef extends UnionTypeRef ? { union: AnyNestedUnion } : never)
+      | (TRef extends OutputObjectRef ? { object: AnyNestedObject } : never)
+      | (TRef extends OutputUnionRef ? { union: AnyNestedUnion } : never)
     >
   : never;
 
@@ -73,19 +74,26 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TReference extends AnyFieldReference> =
   | (TReference extends {
-      type: infer TRef extends ObjectTypeRef;
+      type: infer TRef extends OutputObjectRef;
       object: infer TNested extends AnyNestedObject;
     }
-      ? ApplyTypeFormat<TRef, InferFields<TSchema, TNested>>
+      ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchema, TNested>>
       : never)
   | (TReference extends {
-      type: infer TRef extends UnionTypeRef;
+      type: infer TRef extends OutputUnionRef;
       union: infer TNested extends AnyNestedUnion;
     }
-      ? ApplyTypeFormat<TRef, { [TTypename in keyof TNested]: InferFields<TSchema, TNested[TTypename]> }[keyof TNested]>
+      ? ApplyTypeModifier<
+          TRef["modifier"],
+          {
+            [TTypename in keyof TNested]: undefined extends TNested[TTypename]
+              ? never
+              : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
+          }[keyof TNested]
+        >
       : never)
   | (TReference extends {
-      type: infer TRef extends InferrableTypeRef;
+      type: infer TRef extends OutputInferrableTypeRef;
     }
-      ? InferByTypeRef<TSchema, TRef>
+      ? InferOutputTypeRef<TSchema, TRef>
       : never);

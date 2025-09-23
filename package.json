@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
-    "quality": "bun run biome:check && bun run typecheck"
+    "quality": "bun run biome:check && bun run typecheck",
+    "soda-gql": "bun run packages/cli/src/index.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",

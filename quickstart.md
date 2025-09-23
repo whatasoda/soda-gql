@@ -71,21 +71,59 @@ type Mutation {
 }
 ```
 
-### 3. Generate GraphQL System
+### 3. Prepare Scalars and Adapter
+
+Code generation now expects user-defined scalar implementations and a runtime adapter. Scaffold a template and adjust it as needed for your environment:
+
+```bash
+# Create a starting point for scalar + adapter definitions
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+```
+
+Edit `./src/graphql-system/inject.ts` to describe each custom scalar and to implement the `GraphqlAdapter`. The template uses the new `defineScalar()` helper so each scalar stays strongly typed.
+
+```ts
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+
+export const scalar = {
+  ...defineScalar("DateTime", ({ type }) => ({
+    input: type<string>(),
+    output: type<Date>(),
+    directives: {},
+  })),
+  ...defineScalar("Money", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+} as const;
+
+const createError: GraphqlAdapter["createError"] = (raw) => raw;
+
+export const adapter = {
+  createError,
+} satisfies GraphqlAdapter;
+```
+
+Replace or extend the examples to match the scalars and runtime behaviour in your own schema.
+
+### 4. Generate GraphQL System
 
 ```bash
 # Generate the type-safe GraphQL system
-bunx soda-gql generate
+bun run soda-gql codegen \
+  --schema ./schema.graphql \
+  --out ./src/graphql-system/index.ts \
+  --inject-from ./src/graphql-system/inject.ts
 
-# Watch mode for development
-bunx soda-gql generate --watch
+# Produce builder artifacts during development
+bun run soda-gql builder \
+  --mode runtime \
+  --entry ./src/pages/**/*.ts \
+  --out ./.cache/soda-gql/runtime.json
 ```
 
-This creates a `graphql-system/` directory containing:
-- `index.ts` - Main export with configured `gql` instance
-- `schema.ts` - Generated `GraphqlSchema` type structure
-- `types.ts` - Type exports for all GraphQL types
-- Helper utilities and type inference tools
+`codegen` emits a complete runtime schema file that imports your scalar and adapter definitions. The `builder` command continues to generate runtime documents for development.
 
 ## Basic Usage
 

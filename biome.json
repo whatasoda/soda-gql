@@ -10,7 +10,7 @@
   },
   "linter": {
     "enabled": true,
-    "includes": ["packages/**/*"],
+    "includes": ["packages/**/*", "!**/dist/**/*"],
     "rules": {
       "recommended": true,
       "correctness": {
