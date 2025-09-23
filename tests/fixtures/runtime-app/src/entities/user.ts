@@ -16,7 +16,7 @@ export const userModel = gql.model(
   ({ f, $ }) => ({
     ...f.id(),
     ...f.name(),
-    posts: f.posts({ categoryId: $.categoryId }, ({ f }) => ({
+    ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
       ...f.id(),
       ...f.title(),
     })),
@@ -39,7 +39,7 @@ export const userSlice = gql.querySlice(
     },
   ],
   ({ f, $ }) => ({
-    users: f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
+    ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
       ...userModel.fragment({ categoryId: $.categoryId }),
     })),
   }),

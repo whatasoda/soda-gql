@@ -1,4 +1,6 @@
 import {
+  type ConstDirectiveNode,
+  type ConstValueNode,
   type DocumentNode,
   type EnumValueDefinitionNode,
   type FieldDefinitionNode,
@@ -10,12 +12,12 @@ import {
   type TypeNode,
 } from "graphql";
 
-const builtinScalars = new Map<string, string>([
-  ["ID", "string"],
-  ["String", "string"],
-  ["Int", "number"],
-  ["Float", "number"],
-  ["Boolean", "boolean"],
+const builtinScalarTypes = new Map<string, { readonly input: string; readonly output: string }>([
+  ["ID", { input: "string", output: "string" }],
+  ["String", { input: "string", output: "string" }],
+  ["Int", { input: "number", output: "number" }],
+  ["Float", { input: "number", output: "number" }],
+  ["Boolean", { input: "boolean", output: "boolean" }],
 ]);
 
 type OperationTypeNames = {
@@ -27,21 +29,30 @@ type OperationTypeNames = {
 type ObjectRecord = {
   readonly name: string;
   readonly fields: Map<string, FieldDefinitionNode>;
+  directives: ConstDirectiveNode[];
 };
 
 type InputRecord = {
   readonly name: string;
   readonly fields: Map<string, InputValueDefinitionNode>;
+  directives: ConstDirectiveNode[];
 };
 
 type EnumRecord = {
   readonly name: string;
   readonly values: Map<string, EnumValueDefinitionNode>;
+  directives: ConstDirectiveNode[];
 };
 
 type UnionRecord = {
   readonly name: string;
   readonly members: Map<string, NamedTypeNode>;
+  directives: ConstDirectiveNode[];
+};
+
+type ScalarRecord = {
+  readonly name: string;
+  directives: ConstDirectiveNode[];
 };
 
 type SchemaIndex = {
@@ -49,7 +60,7 @@ type SchemaIndex = {
   readonly inputs: Map<string, InputRecord>;
   readonly enums: Map<string, EnumRecord>;
   readonly unions: Map<string, UnionRecord>;
-  readonly scalars: Set<string>;
+  readonly scalars: Map<string, ScalarRecord>;
   readonly operationTypes: OperationTypeNames;
 };
 
@@ -110,6 +121,16 @@ const addUnionMembers = (target: Map<string, NamedTypeNode>, members: readonly N
   }
 };
 
+const mergeDirectives = (
+  existing: ConstDirectiveNode[] | undefined,
+  incoming: readonly ConstDirectiveNode[] | undefined,
+  precedence: "definition" | "extension",
+): ConstDirectiveNode[] => {
+  const current = existing ?? [];
+  const next = incoming ? Array.from(incoming) : [];
+  return precedence === "definition" ? [...next, ...current] : [...current, ...next];
+};
+
 const updateOperationTypes = (
   operationTypes: OperationTypeNames,
   definition: SchemaDefinitionNode | SchemaExtensionNode,
@@ -137,51 +158,69 @@ const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
   const inputs = new Map<string, InputRecord>();
   const enums = new Map<string, EnumRecord>();
   const unions = new Map<string, UnionRecord>();
-  const scalars = new Set<string>();
+  const scalars = new Map<string, ScalarRecord>();
   const operationTypes: OperationTypeNames = {};
 
   for (const definition of document.definitions) {
     switch (definition.kind) {
       case Kind.OBJECT_TYPE_DEFINITION:
       case Kind.OBJECT_TYPE_EXTENSION: {
+        const precedence = definition.kind === Kind.OBJECT_TYPE_DEFINITION ? "definition" : "extension";
         const record = ensureRecord(objects, definition.name.value, (name) => ({
           name,
           fields: new Map<string, FieldDefinitionNode>(),
+          directives: [],
         }));
         addObjectFields(record.fields, definition.fields);
+        record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
       }
       case Kind.INPUT_OBJECT_TYPE_DEFINITION:
       case Kind.INPUT_OBJECT_TYPE_EXTENSION: {
+        const precedence = definition.kind === Kind.INPUT_OBJECT_TYPE_DEFINITION ? "definition" : "extension";
         const record = ensureRecord(inputs, definition.name.value, (name) => ({
           name,
           fields: new Map<string, InputValueDefinitionNode>(),
+          directives: [],
         }));
         addInputFields(record.fields, definition.fields);
+        record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
       }
       case Kind.ENUM_TYPE_DEFINITION:
       case Kind.ENUM_TYPE_EXTENSION: {
+        const precedence = definition.kind === Kind.ENUM_TYPE_DEFINITION ? "definition" : "extension";
         const record = ensureRecord(enums, definition.name.value, (name) => ({
           name,
           values: new Map<string, EnumValueDefinitionNode>(),
+          directives: [],
         }));
         addEnumValues(record.values, definition.values);
+        record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
       }
       case Kind.UNION_TYPE_DEFINITION:
       case Kind.UNION_TYPE_EXTENSION: {
+        const precedence = definition.kind === Kind.UNION_TYPE_DEFINITION ? "definition" : "extension";
         const record = ensureRecord(unions, definition.name.value, (name) => ({
           name,
           members: new Map<string, NamedTypeNode>(),
+          directives: [],
         }));
         addUnionMembers(record.members, definition.types);
+        record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
       }
       case Kind.SCALAR_TYPE_DEFINITION:
-      case Kind.SCALAR_TYPE_EXTENSION:
-        scalars.add(definition.name.value);
+      case Kind.SCALAR_TYPE_EXTENSION: {
+        const precedence = definition.kind === Kind.SCALAR_TYPE_DEFINITION ? "definition" : "extension";
+        const record = ensureRecord(scalars, definition.name.value, (name) => ({
+          name,
+          directives: [],
+        }));
+        record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
+      }
       case Kind.SCHEMA_DEFINITION:
       case Kind.SCHEMA_EXTENSION:
         updateOperationTypes(operationTypes, definition);
@@ -208,134 +247,192 @@ const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
     unions,
     scalars,
     operationTypes,
-  };
+  } satisfies SchemaIndex;
 };
 
-type TypeShape =
-  | {
-      readonly kind: "named";
-      readonly required: boolean;
-    }
-  | {
-      readonly kind: "list";
-      readonly required: boolean;
-      readonly itemRequired: boolean;
-    };
+type TypeLevel = {
+  readonly kind: "list" | "named";
+  readonly nonNull: boolean;
+};
 
-const toTypeShape = (type: TypeNode): TypeShape => {
+const collectTypeLevels = (
+  type: TypeNode,
+  nonNull = false,
+  levels: TypeLevel[] = [],
+): { readonly name: string; readonly levels: TypeLevel[] } => {
   if (type.kind === Kind.NON_NULL_TYPE) {
-    const inner = toTypeShape(type.type);
-    if (inner.kind === "named") {
-      return { kind: "named", required: true } satisfies TypeShape;
-    }
-
-    return {
-      kind: "list",
-      required: true,
-      itemRequired: inner.itemRequired,
-    } satisfies TypeShape;
+    return collectTypeLevels(type.type, true, levels);
   }
 
   if (type.kind === Kind.LIST_TYPE) {
-    const inner = toTypeShape(type.type);
+    levels.push({ kind: "list", nonNull });
+    return collectTypeLevels(type.type, false, levels);
+  }
 
-    if (inner.kind === "named") {
-      return {
-        kind: "list",
-        required: false,
-        itemRequired: inner.required,
-      } satisfies TypeShape;
+  levels.push({ kind: "named", nonNull });
+  return { name: type.name.value, levels };
+};
+
+const buildTypeModifier = (levels: TypeLevel[]): string => {
+  if (levels.length === 0) {
+    return "";
+  }
+
+  let modifier = "";
+
+  for (const level of levels.slice().reverse()) {
+    if (level.kind === "named") {
+      modifier = level.nonNull ? "!" : "";
+      continue;
     }
 
-    return {
-      kind: "list",
-      required: false,
-      itemRequired: inner.itemRequired,
-    } satisfies TypeShape;
+    const rest = modifier;
+    const base = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
+    modifier = level.nonNull ? `${base}!` : base;
   }
 
-  return { kind: "named", required: false } satisfies TypeShape;
+  return modifier;
 };
 
-const formatForGraphqlType = (type: TypeNode): string => {
-  const shape = toTypeShape(type);
-
-  if (shape.kind === "named") {
-    return shape.required ? "!" : "?";
-  }
-
-  const itemFlag = shape.itemRequired ? "!" : "?";
-  const listFlag = shape.required ? "!" : "?";
-
-  return `${itemFlag}[]${listFlag}`;
+const parseTypeReference = (type: TypeNode): { readonly name: string; readonly modifier: string } => {
+  const { name, levels } = collectTypeLevels(type);
+  return { name, modifier: buildTypeModifier(levels) };
 };
 
-const unwrapNamedType = (type: TypeNode): string => {
-  if (type.kind === Kind.NON_NULL_TYPE || type.kind === Kind.LIST_TYPE) {
-    return unwrapNamedType(type.type);
+const renderTypeTuple = (name: string, modifier: string): string => `[${JSON.stringify(name)}, ${JSON.stringify(modifier)}]`;
+
+const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
+const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
+const _isInputName = (schema: SchemaIndex, name: string): boolean => schema.inputs.has(name);
+const isUnionName = (schema: SchemaIndex, name: string): boolean => schema.unions.has(name);
+const isObjectName = (schema: SchemaIndex, name: string): boolean => schema.objects.has(name);
+
+const renderConstValue = (value: ConstValueNode): string => {
+  switch (value.kind) {
+    case Kind.NULL:
+      return "null";
+    case Kind.INT:
+    case Kind.FLOAT:
+      return value.value;
+    case Kind.STRING:
+    case Kind.ENUM:
+      return JSON.stringify(value.value);
+    case Kind.BOOLEAN:
+      return value.value ? "true" : "false";
+    case Kind.LIST:
+      return `[${value.values.map((item) => renderConstValue(item)).join(", ")}]`;
+    case Kind.OBJECT: {
+      if (value.fields.length === 0) {
+        return "{}";
+      }
+      const entries = value.fields.map((field) => `${field.name.value}: ${renderConstValue(field.value)}`);
+      return `{ ${entries.join(", ")} }`;
+    }
   }
-  return type.name.value;
 };
 
-const renderFieldType = (schema: SchemaIndex, type: TypeNode): string => {
-  const format = formatForGraphqlType(type);
-  const named = unwrapNamedType(type);
+const renderConstArgumentMap = (
+  args: readonly { readonly name: { readonly value: string }; readonly value: ConstValueNode }[] | undefined,
+): string => {
+  const entries = (args ?? []).map((arg) => `${arg.name.value}: ${renderConstValue(arg.value)}`);
+  return renderPropertyLines({ entries, indentSize: 8 });
+};
 
-  if (builtinScalars.has(named) || schema.scalars.has(named)) {
-    return `unsafeRef.scalar("${named}", "${format}")`;
+const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined): string => {
+  const entries = (directives ?? []).map(
+    (directive) => `${directive.name.value}: ${renderConstArgumentMap(directive.arguments)}`,
+  );
+  return renderPropertyLines({ entries, indentSize: 8 });
+};
+
+const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
+  value ? `{ default: ${renderConstValue(value)} }` : "null";
+
+const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
+  const { name, modifier } = parseTypeReference(definition.type);
+  const tuple = renderTypeTuple(name, modifier);
+  const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
+  const directives = renderDirectives(definition.directives);
+
+  if (isScalarName(schema, name)) {
+    return `unsafeInputRef.scalar(${tuple}, ${defaultValue}, ${directives})`;
   }
 
-  if (schema.enums.has(named)) {
-    return `unsafeRef.enum("${named}", "${format}")`;
+  if (isEnumName(schema, name)) {
+    return `unsafeInputRef.enum(${tuple}, ${defaultValue}, ${directives})`;
   }
 
-  if (schema.unions.has(named)) {
-    return `unsafeRef.union("${named}", "${format}")`;
-  }
-
-  if (schema.inputs.has(named)) {
-    return `unsafeRef.input("${named}", "${format}")`;
-  }
-
-  return `unsafeRef.object("${named}", "${format}")`;
+  return `unsafeInputRef.input(${tuple}, ${defaultValue}, ${directives})`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
-  const sorted = [...(args ?? [])].sort((left, right) => left.name.value.localeCompare(right.name.value));
+  const entries = [...(args ?? [])]
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg)}`);
 
-  if (sorted.length === 0) {
+  return renderPropertyLines({ entries, indentSize: 8 });
+};
+
+const renderOutputRef = (
+  schema: SchemaIndex,
+  type: TypeNode,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  directives: readonly ConstDirectiveNode[] | undefined,
+): string => {
+  const { name, modifier } = parseTypeReference(type);
+  const tuple = renderTypeTuple(name, modifier);
+  const argumentMap = renderArgumentMap(schema, args);
+  const directiveMap = renderDirectives(directives);
+
+  if (isScalarName(schema, name)) {
+    return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+  }
+
+  if (isEnumName(schema, name)) {
+    return `unsafeOutputRef.enum(${tuple}, ${argumentMap}, ${directiveMap})`;
+  }
+
+  if (isUnionName(schema, name)) {
+    return `unsafeOutputRef.union(${tuple}, ${argumentMap}, ${directiveMap})`;
+  }
+
+  if (isObjectName(schema, name)) {
+    return `unsafeOutputRef.object(${tuple}, ${argumentMap}, ${directiveMap})`;
+  }
+
+  return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+};
+
+const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
+  if (entries.length === 0) {
     return "{}";
   }
 
-  const entries = sorted.map((arg) => `${arg.name.value}: ${renderFieldType(schema, arg.type)}`);
-
-  return `{
-    ${entries.join(",\n    ")}
-  }`;
+  const indent = " ".repeat(indentSize);
+  const lastIndent = " ".repeat(indentSize - 2);
+  return ["{", `${indent}${entries.join(`,\n${indent}`)},`, `${lastIndent}}`].join(`\n`);
 };
 
-const renderFieldMap = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>): string => {
-  const sorted = Array.from(fields.values()).sort((left, right) => left.name.value.localeCompare(right.name.value));
+const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>): string => {
+  const entries = Array.from(fields.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, field.directives)}`);
 
-  if (sorted.length === 0) {
-    return "{}";
-  }
-
-  const lines = sorted.map(
-    (field) => `${field.name.value}: {
-      arguments: ${renderArgumentMap(schema, field.arguments)},
-      type: ${renderFieldType(schema, field.type)},
-    }`,
-  );
-
-  return `{
-    ${lines.join(",\n    ")}
-  }`;
+  return renderPropertyLines({ entries, indentSize: 6 });
 };
 
-const renderScalarDefinition = (typeName: string): string => {
-  const tsType = builtinScalars.get(typeName) ?? "string";
-  return `...define("${typeName}").scalar<${tsType}>()`;
+const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDefinitionNode>): string => {
+  const entries = Array.from(fields.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((field) => `${field.name.value}: ${renderInputRef(schema, field)}`);
+
+  return renderPropertyLines({ entries, indentSize: 6 });
+};
+
+const renderScalarDefinition = (record: ScalarRecord): string => {
+  const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
+  const scalarType = `type<{ input: ${typeInfo.input}; output: ${typeInfo.output} }>()`;
+  return `...define("${record.name}").scalar(${scalarType}, ${renderDirectives(record.directives)})`;
 };
 
 const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -344,8 +441,8 @@ const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string =
     return "";
   }
 
-  const fields = renderFieldMap(schema, record.fields);
-  return `...define("${record.name}").object(${fields})`;
+  const fields = renderObjectFields(schema, record.fields);
+  return `...define("${record.name}").object(${fields}, ${renderDirectives(record.directives)})`;
 };
 
 const renderInputDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -354,17 +451,8 @@ const renderInputDefinition = (schema: SchemaIndex, typeName: string): string =>
     return "";
   }
 
-  const sorted = Array.from(record.fields.values()).sort((left, right) => left.name.value.localeCompare(right.name.value));
-  const entries = sorted.map((field) => `${field.name.value}: ${renderFieldType(schema, field.type)}`);
-
-  const body =
-    entries.length === 0
-      ? "{}"
-      : `{
-    ${entries.join(",\n    ")}
-  }`;
-
-  return `...define("${record.name}").input(${body})`;
+  const fields = renderInputFields(schema, record.fields);
+  return `...define("${record.name}").input(${fields}, ${renderDirectives(record.directives)})`;
 };
 
 const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -373,10 +461,13 @@ const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => 
     return "";
   }
 
-  const sorted = Array.from(record.values.values()).sort((left, right) => left.name.value.localeCompare(right.name.value));
-  const values = sorted.map((value) => `${value.name.value}: true`).join(", ");
+  const values = Array.from(record.values.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((value) => `${value.name.value}: true`)
+    .join(", ");
+  const body = values.length === 0 ? "{}" : `{ ${values} }`;
 
-  return `...define("${record.name}").enum({ ${values} })`;
+  return `...define("${record.name}").enum(${body}, ${renderDirectives(record.directives)})`;
 };
 
 const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -385,10 +476,13 @@ const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string =>
     return "";
   }
 
-  const sorted = Array.from(record.members.values()).sort((left, right) => left.name.value.localeCompare(right.name.value));
-  const values = sorted.map((member) => `${member.name.value}: true`).join(", ");
+  const members = Array.from(record.members.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((member) => `${member.name.value}: true`)
+    .join(", ");
+  const body = members.length === 0 ? "{}" : `{ ${members} }`;
 
-  return `...define("${record.name}").union({ ${values} })`;
+  return `...define("${record.name}").union(${body}, ${renderDirectives(record.directives)})`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
@@ -408,6 +502,11 @@ const collectEnumTypeNames = (schema: SchemaIndex): string[] =>
 
 const collectUnionTypeNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.unions.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+const collectScalarNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.scalars.keys())
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
@@ -431,7 +530,16 @@ const runtimeTemplate = ($$: {
   objectBlock: string;
   unionBlock: string;
 }) => `\
-import { createGql, define, defineOperationTypeNames, unsafeRef, type AnyGraphqlSchema, type GraphqlAdapter } from "@soda-gql/core";
+import {
+  type AnyGraphqlSchema,
+  createGql,
+  define,
+  defineOperationTypeNames,
+  type GraphqlAdapter,
+  type,
+  unsafeInputRef,
+  unsafeOutputRef,
+} from "@soda-gql/core";
 
 export const schema = {
   operations: defineOperationTypeNames({
@@ -450,75 +558,55 @@ const adapter = {
   createError: (raw) => raw,
 } satisfies GraphqlAdapter;
 
-export const gql = createGql({ schema, adapter });
-
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
-`;
 
-const collectScalarNames = (schema: SchemaIndex): string[] =>
-  Array.from(schema.scalars)
-    .filter((name) => !name.startsWith("__"))
-    .sort((left, right) => left.localeCompare(right));
+export const gql = createGql<Schema, Adapter>({ schema, adapter });
+`;
 
 export const generateRuntimeModule = (document: DocumentNode): GeneratedModule => {
   const schema = createSchemaIndex(document);
 
-  const scalarDefinitions = collectScalarNames(schema)
-    .filter((name) => !builtinScalars.has(name))
-    .map((name) => renderScalarDefinition(name));
+  const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
+    renderScalarDefinition(schema.scalars.get(name) ?? { name, directives: [] }),
+  );
+
+  const customScalarDefinitions = collectScalarNames(schema)
+    .filter((name) => !builtinScalarTypes.has(name))
+    .map((name) => {
+      const record = schema.scalars.get(name);
+      return record ? renderScalarDefinition(record) : "";
+    })
+    .filter((definition) => definition.length > 0);
+
+  const allScalarDefinitions = builtinScalarDefinitions.concat(customScalarDefinitions);
 
   const objectTypeNames = collectObjectTypeNames(schema);
   const enumTypeNames = collectEnumTypeNames(schema);
   const inputTypeNames = collectInputTypeNames(schema);
   const unionTypeNames = collectUnionTypeNames(schema);
 
-  const scalarBlock = `{
-    ${Array.from(builtinScalars.keys())
-      .map((name) => renderScalarDefinition(name))
-      .concat(scalarDefinitions)
-      .join(",\n    ")}
-  }`;
+  const scalarBlock = renderPropertyLines({ entries: allScalarDefinitions, indentSize: 4 });
 
   const enumDefinitions = enumTypeNames
     .map((name) => renderEnumDefinition(schema, name))
     .filter((definition) => definition.length > 0);
-  const enumBlock =
-    enumDefinitions.length === 0
-      ? "{}"
-      : `{
-    ${enumDefinitions.join(",\n    ")}
-  }`;
+  const enumBlock = renderPropertyLines({ entries: enumDefinitions, indentSize: 4 });
 
   const inputDefinitions = inputTypeNames
     .map((name) => renderInputDefinition(schema, name))
     .filter((definition) => definition.length > 0);
-  const inputBlock =
-    inputDefinitions.length === 0
-      ? "{}"
-      : `{
-    ${inputDefinitions.join(",\n    ")}
-  }`;
+  const inputBlock = renderPropertyLines({ entries: inputDefinitions, indentSize: 4 });
 
   const objectDefinitions = objectTypeNames
     .map((name) => renderObjectDefinition(schema, name))
     .filter((definition) => definition.length > 0);
-  const objectBlock =
-    objectDefinitions.length === 0
-      ? "{}"
-      : `{
-    ${objectDefinitions.join(",\n    ")}
-  }`;
+  const objectBlock = renderPropertyLines({ entries: objectDefinitions, indentSize: 4 });
 
   const unionDefinitions = unionTypeNames
     .map((name) => renderUnionDefinition(schema, name))
     .filter((definition) => definition.length > 0);
-  const unionBlock =
-    unionDefinitions.length === 0
-      ? "{}"
-      : `{
-    ${unionDefinitions.join(",\n    ")}
-  }`;
+  const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
 
   const queryType = schema.operationTypes.query ?? "Query";
   const mutationType = schema.operationTypes.mutation ?? "Mutation";

@@ -49,6 +49,23 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
   return { stdout, stderr, exitCode };
 };
 
+const runTypecheck = async (workspaceRoot: string): Promise<CliResult> => {
+  const tsconfigPath = join(workspaceRoot, "tsconfig.json");
+  const subprocess = Bun.spawn({
+    cmd: ["bun", "x", "tsc", "--noEmit", "--project", tsconfigPath],
+    cwd: projectRoot,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(subprocess.stdout).text(),
+    new Response(subprocess.stderr).text(),
+    subprocess.exited,
+  ]);
+
+  return { stdout, stderr, exitCode };
+};
+
 const copyFixtureWorkspace = (name: string) => {
   mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
@@ -77,6 +94,9 @@ describe("runtime builder flow", () => {
     expect(codegenResult.exitCode).toBe(0);
     const generatedExists = await Bun.file(graphqlSystemEntry).exists();
     expect(generatedExists).toBe(true);
+
+    const typecheckResult = await runTypecheck(workspace);
+    expect(typecheckResult.exitCode).toBe(0);
 
     const artifactDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(artifactDir, { recursive: true });

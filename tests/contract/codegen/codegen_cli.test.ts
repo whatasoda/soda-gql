@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -30,6 +30,28 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 
   return { stdout, stderr, exitCode };
 };
+
+const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
+  const subprocess = Bun.spawn({
+    cmd: ["bun", "x", "tsc", "--noEmit", "--project", tsconfigPath],
+    cwd: projectRoot,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+    },
+  });
+
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(subprocess.stdout).text(),
+    new Response(subprocess.stderr).text(),
+    subprocess.exited,
+  ]);
+
+  return { stdout, stderr, exitCode };
+};
+
+const toPosix = (value: string): string => value.split(/\\|\//).join("/");
 
 describe("soda-gql codegen CLI", () => {
   const tmpRoot = join(projectRoot, "tests", ".tmp", "codegen-cli");
@@ -79,6 +101,36 @@ describe("soda-gql codegen CLI", () => {
     const moduleContents = await Bun.file(outFile).text();
     expect(moduleContents).toContain("export const gql");
     expect(result.stdout).toContain("schemaHash");
+
+    const tsconfigPath = join(
+      tmpRoot,
+      `tsconfig-${Date.now()}.json`,
+    );
+    const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
+    const coreEntryPath = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src", "index.ts")));
+    const coreEntryWildcard = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src")) + "/*");
+    const generatedRelative = toPosix(relative(tmpRoot, outFile));
+
+    const tsconfig = {
+      extends: extendsPath.startsWith(".") ? extendsPath : `./${extendsPath}`,
+      compilerOptions: {
+        baseUrl: ".",
+        paths: {
+          "@soda-gql/core": [coreEntryPath.startsWith(".") ? coreEntryPath : `./${coreEntryPath}`],
+          "@soda-gql/core/*": [
+            coreEntryWildcard.startsWith(".")
+              ? coreEntryWildcard
+              : `./${coreEntryWildcard}`,
+          ],
+        },
+      },
+      files: [generatedRelative.startsWith(".") ? generatedRelative : `./${generatedRelative}`],
+    } satisfies Record<string, unknown>;
+
+    await Bun.write(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`);
+
+    const typecheckResult = await runTypecheck(tsconfigPath);
+    expect(typecheckResult.exitCode).toBe(0);
   });
 
   afterAll(() => {
