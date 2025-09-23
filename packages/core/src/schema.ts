@@ -1,57 +1,63 @@
-import type { EnumRef, InputTypeRef, ObjectTypeRef, ScalarRef, TypeFormat, TypenameRef, UnionTypeRef } from "./types";
-import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, OperationTypeNames, ScalarDef, UnionDef } from "./types/schema";
-import { hidden, prettify, wrapValueByKey } from "./types/utility";
+import { createInputTypeRefFactory, unsafeOutputRef } from "./type-ref";
+import type { AnyConstDirectiveAttachments, Hidden, OperationTypeNames } from "./types";
+import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, ScalarDef, UnionDef } from "./types/schema";
+import { hidden, wrapValueByKey } from "./types/utility";
 
-/** Fluent helper to declare schema components in a type-safe way. */
-
-export const unsafeRef = {
-  typename: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "typename", name, format } satisfies TypenameRef & { format: TFormat }),
-  scalar: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "scalar", name, format } satisfies ScalarRef & { format: TFormat }),
-  enum: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "enum", name, format } satisfies EnumRef & { format: TFormat }),
-  input: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "input", name, format } satisfies InputTypeRef & { format: TFormat }),
-  object: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "object", name, format } satisfies ObjectTypeRef & { format: TFormat }),
-  union: <T extends string, const TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "union", name, format } satisfies UnionTypeRef & { format: TFormat }),
-};
+export const type = <T>() => hidden<T>();
 
 export const define = <const TName extends string>(name: TName) => ({
-  scalar: <TType>() =>
+  scalar: <TType extends { input: unknown; output: unknown }, TDirectives extends AnyConstDirectiveAttachments>(
+    _type: Hidden<TType>,
+    directives: TDirectives,
+  ) =>
     wrapValueByKey(name, {
-      _type: hidden(),
+      _type,
       name,
-    } satisfies ScalarDef<TType>),
+      directives,
+    } satisfies ScalarDef<TType & { input: unknown; output: unknown }>),
 
-  enum: <const TValues extends EnumDef<string>["values"]>(values: TValues) =>
+  enum: <const TValues extends EnumDef<string>["values"], TDirectives extends AnyConstDirectiveAttachments>(
+    values: TValues,
+    directives: TDirectives,
+  ) =>
     wrapValueByKey(name, {
       _type: hidden(),
       name,
       values,
+      directives,
     } satisfies EnumDef<keyof TValues & string>),
 
-  input: <TFields extends InputDef["fields"]>(fields: TFields) =>
+  input: <TFields extends InputDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
+    fields: TFields,
+    directives: TDirectives,
+  ) =>
     wrapValueByKey(name, {
       name,
       fields,
+      directives,
     } satisfies InputDef),
 
-  object: <TFields extends ObjectDef["fields"]>(fields: TFields) =>
+  object: <TFields extends ObjectDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
+    fields: TFields,
+    directives: TDirectives,
+  ) =>
     wrapValueByKey(name, {
       name,
       fields: {
-        __typename: { arguments: {}, type: unsafeRef.typename(name, "!") },
+        __typename: unsafeOutputRef.typename([name, "!"], {}, {}),
         ...fields,
       },
+      directives,
     } satisfies ObjectDef),
 
-  union: <TTypes extends UnionDef["types"]>(types: TTypes) =>
+  union: <TTypes extends UnionDef["types"], TDirectives extends AnyConstDirectiveAttachments>(
+    types: TTypes,
+    directives: TDirectives,
+  ) =>
     wrapValueByKey(name, {
       name,
       types,
+      directives,
     } satisfies UnionDef),
 });
 
@@ -61,16 +67,9 @@ export const defineOperationTypeNames = <const TOperationTypeNames extends Opera
 
 /** Accessor utilities for looking up argument definitions from the schema. */
 export const createGqlHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({
-  scalar: <T extends keyof TSchema["scalar"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "scalar", name, format } satisfies ScalarRef & { format: TFormat }),
-  enum: <T extends keyof TSchema["enum"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "enum", name, format } satisfies EnumRef & { format: TFormat }),
-  input: <T extends keyof TSchema["input"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "input", name, format } satisfies InputTypeRef & { format: TFormat }),
-  object: <T extends keyof TSchema["object"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "object", name, format } satisfies ObjectTypeRef & { format: TFormat }),
-  union: <T extends keyof TSchema["union"] & string, TFormat extends TypeFormat>(name: T, format: TFormat) =>
-    prettify({ kind: "union", name, format } satisfies UnionTypeRef & { format: TFormat }),
+  scalar: createInputTypeRefFactory<TSchema, "scalar">("scalar"),
+  enum: createInputTypeRefFactory<TSchema, "enum">("enum"),
+  input: createInputTypeRefFactory<TSchema, "input">("input"),
 
   fieldArg: <
     const TTypeName extends keyof TSchema["object"] & string,

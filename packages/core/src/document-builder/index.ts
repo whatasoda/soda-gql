@@ -1,5 +1,7 @@
 import {
   type ArgumentNode,
+  type ConstObjectFieldNode,
+  type ConstValueNode,
   type DocumentNode,
   type FieldNode,
   type InlineFragmentNode,
@@ -12,15 +14,18 @@ import {
   type VariableDefinitionNode,
 } from "graphql";
 import {
+  type AnyAssignableInput,
+  type AnyAssignableInputValue,
   type AnyFields,
   type AnyNestedUnion,
-  type AnyVariableAssignments,
-  type AnyVariableDefinition,
+  type ConstValue,
+  type InputTypeRefs,
   type OperationType,
+  type TypeModifier,
   VariableReference,
 } from "../types";
 
-const buildArgumentValue = (value: AnyVariableAssignments[string]): ValueNode | null => {
+const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -87,7 +92,7 @@ const buildArgumentValue = (value: AnyVariableAssignments[string]): ValueNode | 
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
 };
 
-const buildArguments = (args: AnyVariableAssignments): ArgumentNode[] =>
+const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
   Object.entries(args)
     .map(([name, value]): ArgumentNode | null => {
       const valueNode = buildArgumentValue(value);
@@ -129,34 +134,92 @@ const buildField = (field: AnyFields): FieldNode[] =>
     }),
   );
 
-const buildVariables = (variables: AnyVariableDefinition): VariableDefinitionNode[] => {
+const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (value === null) {
+    return { kind: Kind.NULL };
+  }
+
+  if (typeof value === "string") {
+    return { kind: Kind.STRING, value };
+  }
+
+  if (typeof value === "boolean") {
+    return { kind: Kind.BOOLEAN, value };
+  }
+
+  if (typeof value === "number") {
+    return { kind: Kind.INT, value: value.toString() };
+  }
+
+  if (Array.isArray(value)) {
+    return { kind: Kind.LIST, values: value.map((item) => buildConstValueNode(item)).filter((item) => item !== null) };
+  }
+
+  if (typeof value === "object") {
+    return {
+      kind: Kind.OBJECT,
+      fields: Object.entries(value)
+        .map(([key, value]): ConstObjectFieldNode | null => {
+          const valueNode = buildConstValueNode(value);
+          return valueNode
+            ? {
+                kind: Kind.OBJECT_FIELD,
+                name: { kind: Kind.NAME, value: key },
+                value: valueNode,
+              }
+            : null;
+        })
+        .filter((item) => item !== null),
+    };
+  }
+
+  throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
+};
+
+const buildWithTypeModifier = (input: { modifier: TypeModifier; type: NamedTypeNode }): TypeNode => {
+  if (input.modifier === "") {
+    return input.type;
+  }
+
+  let curr: Readonly<{ modifier: TypeModifier; type: TypeNode }> = { modifier: input.modifier, type: input.type };
+
+  while (curr.modifier.length > 0) {
+    if (curr.modifier.startsWith("!")) {
+      curr = {
+        modifier: curr.modifier.slice(1) as TypeModifier,
+        type: curr.type.kind === Kind.NON_NULL_TYPE ? curr.type : { kind: Kind.NON_NULL_TYPE, type: curr.type },
+      };
+      continue;
+    }
+
+    if (curr.modifier.startsWith("[]")) {
+      curr = {
+        modifier: curr.modifier.slice(2) as TypeModifier,
+        type: { kind: Kind.LIST_TYPE, type: curr.type },
+      };
+      continue;
+    }
+
+    throw new Error(`Unknown modifier: ${curr.modifier}`);
+  }
+
+  return curr.type;
+};
+
+const buildVariables = (variables: InputTypeRefs): VariableDefinitionNode[] => {
   return Object.entries(variables).map(
-    ([key, value]): VariableDefinitionNode => ({
+    ([name, ref]): VariableDefinitionNode => ({
       kind: Kind.VARIABLE_DEFINITION,
-      variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: key } },
-      type: ((): TypeNode => {
-        const inner: NamedTypeNode = { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: value.name } };
-        switch (value.format) {
-          case "?":
-          case "?=":
-            return inner;
-          case "!":
-          case "!=":
-            return { kind: Kind.NON_NULL_TYPE, type: inner };
-          case "?[]?":
-          case "?[]?=":
-            return { kind: Kind.LIST_TYPE, type: inner };
-          case "![]?":
-          case "![]?=":
-            return { kind: Kind.LIST_TYPE, type: { kind: Kind.NON_NULL_TYPE, type: inner } };
-          case "?[]!":
-          case "?[]!=":
-            return { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.LIST_TYPE, type: inner } };
-          case "![]!":
-          case "![]!=":
-            return { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.LIST_TYPE, type: { kind: Kind.NON_NULL_TYPE, type: inner } } };
-        }
-      })(),
+      variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
+      defaultValue: (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) || undefined,
+      type: buildWithTypeModifier({
+        modifier: ref.modifier,
+        type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: ref.name } },
+      }),
     }),
   );
 };
@@ -180,7 +243,7 @@ export const buildDocument = ({
 }: {
   name: string;
   operation: OperationType;
-  variables: AnyVariableDefinition;
+  variables: InputTypeRefs;
   fields: AnyFields;
 }): DocumentNode => ({
   kind: Kind.DOCUMENT,

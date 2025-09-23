@@ -4,12 +4,12 @@ import type { SliceResultSelection } from "./branded-classes";
 import type { FieldPaths, InferByFieldPath } from "./field-path";
 import type { AnyFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
+import type { AssignableInput } from "./input";
 import type { AnyGraphqlSchema, OperationType } from "./schema";
 import type { AnySliceResultRecord, SliceResult } from "./slice-result";
 import type { AnySliceResultSelections, InferSliceResultSelection } from "./slice-result-selection";
-import type { InputDefinition } from "./type-ref";
+import type { InputTypeRefs } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
-import type { VariableReferencesByDefinition } from "./variables";
 
 /**
  * Describes the query/mutation/subscription slice helper. Each slice captures
@@ -25,13 +25,13 @@ export type OperationSliceFn<
 > = <
   TFields extends AnyFields,
   TSelection extends AnySliceResultSelections<TAdapter>,
-  TVariables extends { [key: string]: InputDefinition } = EmptyObject,
+  TVariables extends InputTypeRefs = EmptyObject,
 >(
   variables: [TVariables?],
   builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
   selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
 ) => (
-  variables: VoidIfEmptyObject<TVariables> | VariableReferencesByDefinition<TSchema, TVariables>,
+  variables: VoidIfEmptyObject<TVariables> | AssignableInput<TSchema, TVariables>,
 ) => OperationSlice<TAdapter, TOperation, TFields, TSelection>;
 
 /** Nominal type representing any slice instance regardless of schema specifics. */

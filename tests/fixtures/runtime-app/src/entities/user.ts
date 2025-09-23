@@ -12,7 +12,7 @@ type UserModel = {
 };
 
 export const userModel = gql.model(
-  ["User", { categoryId: gql.scalar("ID", "?") }],
+  ["User", { categoryId: gql.scalar(["ID", ""]) }],
   ({ f, $ }) => ({
     ...f.id(),
     ...f.name(),
@@ -34,8 +34,8 @@ export const userModel = gql.model(
 export const userSlice = gql.querySlice(
   [
     {
-      id: gql.scalar("ID", "!"),
-      categoryId: gql.scalar("ID", "?"),
+      id: gql.scalar(["ID", "!"]),
+      categoryId: gql.scalar(["ID", ""]),
     },
   ],
   ({ f, $ }) => ({

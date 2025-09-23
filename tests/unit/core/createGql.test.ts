@@ -7,7 +7,9 @@ import {
   defineOperationTypeNames,
   empty,
   GraphqlAdapter,
-  unsafeRef,
+  type,
+  unsafeInputRef,
+  unsafeOutputRef,
 } from "../../../packages/core/src/index";
 
 const schema = {
@@ -17,32 +19,33 @@ const schema = {
     subscription: "Subscription",
   }),
   scalar: {
-    ...define("ID").scalar<string>(),
-    ...define("String").scalar<string>(),
+    ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
+    ...define("String").scalar(type<{ input: string; output: string }>(), {}),
   },
   enum: {},
   input: {},
   object: {
-    ...define("Query").object({
-      user: {
-        arguments: {
-          id: unsafeRef.scalar("ID", "!"),
-        },
-        type: unsafeRef.object("User", "!"),
+    ...define("Query").object(
+      {
+        user: unsafeOutputRef.object(
+          ["User", "!"],
+          {
+            id: unsafeInputRef.scalar(["ID", "!"], null, {}),
+          },
+          {},
+        ),
       },
-    }),
-    ...define("Mutation").object({}),
-    ...define("Subscription").object({}),
-    ...define("User").object({
-      id: {
-        arguments: {},
-        type: unsafeRef.scalar("ID", "!"),
+      {},
+    ),
+    ...define("Mutation").object({}, {}),
+    ...define("Subscription").object({}, {}),
+    ...define("User").object(
+      {
+        id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
+        name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
       },
-      name: {
-        arguments: {},
-        type: unsafeRef.scalar("String", "!"),
-      },
-    }),
+      {},
+    ),
   },
   union: {},
 } satisfies AnyGraphqlSchema;
@@ -60,10 +63,10 @@ describe("createGql", () => {
     expect(typeof gql.scalar).toBe("function");
     expect(typeof gql.fieldArg).toBe("function");
 
-    const idRef = gql.scalar("ID", "!");
+    const idRef = gql.scalar(["ID", "!"]);
     expect(idRef.kind).toBe("scalar");
     expect(idRef.name).toBe("ID");
-    expect(idRef.format).toBe("!");
+    expect(idRef.modifier).toBe("!");
 
     const fieldArg = gql.fieldArg("Query", "user", "id");
     expect(fieldArg.name).toBe("ID");
@@ -109,12 +112,12 @@ describe("createGql", () => {
     const userSliceFactory = gql.querySlice(
       [
         {
-          id: gql.scalar("ID", "!"),
+          id: gql.scalar(["ID", "!"]),
         },
       ],
       ({ f, $ }) => ({
         ...f.user({ id: $.id }, () => ({
-          ...userModel.fragment({}),
+          ...userModel.fragment(),
         })),
       }),
       ({ select }) => select("$.user", (result) => result.safeUnwrap((data) => userModel.transform(data))),
@@ -127,7 +130,7 @@ describe("createGql", () => {
     const profileQuery = gql.query(
       "ProfilePageQuery",
       {
-        userId: gql.scalar("ID", "!"),
+        userId: gql.scalar(["ID", "!"]),
       },
       ({ $ }) => ({
         user: userSliceFactory({ id: $.userId }),

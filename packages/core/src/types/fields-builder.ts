@@ -7,10 +7,17 @@ import type {
   AnyNestedUnion,
   FieldReferenceOf,
 } from "./fields";
+import type { AssignableInput } from "./input";
 import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "./schema";
-import type { EnumRef, InputDefinition, ObjectTypeRef, ScalarRef, TypenameRef, UnionTypeRef } from "./type-ref";
+import type {
+  InputTypeRefs,
+  OutputEnumRef,
+  OutputObjectRef,
+  OutputScalarRef,
+  OutputTypenameRef,
+  OutputUnionRef,
+} from "./type-ref";
 import type { VoidIfEmptyObject } from "./utility";
-import type { VariableReferencesByDefinition } from "./variables";
 
 /**
  * Builder signature exposed to userland `model` and `slice` helpers. The
@@ -20,18 +27,18 @@ import type { VariableReferencesByDefinition } from "./variables";
 export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariables extends { [key: string]: InputDefinition },
+  TVariableDefinitions extends InputTypeRefs,
   TFields extends AnyFields,
-> = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariables>>) => TFields;
+> = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 export type FieldsBuilderTools<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariables extends { [key: string]: InputDefinition },
+  TVariableDefinitions extends InputTypeRefs,
 > = {
   _: FieldReferenceFactories<TSchema, TTypeName>;
   f: FieldReferenceFactories<TSchema, TTypeName>;
   fields: FieldReferenceFactories<TSchema, TTypeName>;
-  $: VariableReferencesByDefinition<TSchema, TVariables>;
+  $: AssignableInput<TSchema, TVariableDefinitions>;
 };
 
 /** Narrow builder used when a field resolves to an object and we need nested selections. */
@@ -70,24 +77,23 @@ export type FieldReferenceFactories<TSchema extends AnyGraphqlSchema, TTypeName 
 };
 
 export type AnyFieldReferenceFactory<TSchema extends AnyGraphqlSchema> =
-  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: ObjectTypeRef }>
-  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: UnionTypeRef }>
-  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: TypenameRef | ScalarRef | EnumRef }>;
+  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: OutputObjectRef }>
+  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: OutputUnionRef }>
+  | FieldReferenceFactory<TSchema, AnyFieldReference & { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef }>;
 
 /** Polymorphic factory that handles object, union, and scalar/enum fields. */
-export type FieldReferenceFactory<TSchema extends AnyGraphqlSchema, TReference extends AnyFieldReference> = TReference extends {
-  type: ObjectTypeRef;
-}
+export type FieldReferenceFactory<TSchema extends AnyGraphqlSchema, TReference extends AnyFieldReference> = /* */
+TReference extends { type: OutputObjectRef }
   ? FieldReferenceFactoryObject<TSchema, TReference>
-  : TReference extends { type: UnionTypeRef }
+  : TReference extends { type: OutputUnionRef }
     ? FieldReferenceFactoryUnion<TSchema, TReference>
-    : TReference extends { type: TypenameRef | ScalarRef | EnumRef }
-      ? FieldReferenceFactoryScalar<TReference>
+    : TReference extends { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef }
+      ? FieldReferenceFactoryPrimitive<TReference>
       : never;
 
 export type FieldReferenceFactoryObject<
   TSchema extends AnyGraphqlSchema,
-  TReference extends AnyFieldReference & { type: ObjectTypeRef },
+  TReference extends AnyFieldReference & { type: OutputObjectRef },
 > = <TNested extends AnyNestedObject>(
   fieldArguments: FieldReferenceFactoryFieldArguments<TReference>,
   object: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>,
@@ -106,7 +112,7 @@ export type StrictlyRequired<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 
 export type FieldReferenceFactoryUnion<
   TSchema extends AnyGraphqlSchema,
-  TReference extends AnyFieldReference & { type: UnionTypeRef },
+  TReference extends AnyFieldReference & { type: OutputUnionRef },
 > = <TNested extends AnyNestedUnion>(
   fieldArguments: FieldReferenceFactoryFieldArguments<TReference>,
   union: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>,
@@ -121,9 +127,9 @@ export type FieldReferenceFactoryUnion<
   >;
 };
 
-export type FieldReferenceFactoryScalar<TReference extends AnyFieldReference & { type: TypenameRef | ScalarRef | EnumRef }> = (
-  fieldArguments: FieldReferenceFactoryFieldArguments<TReference>,
-) => {
+export type FieldReferenceFactoryPrimitive<
+  TReference extends AnyFieldReference & { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef },
+> = (fieldArguments: FieldReferenceFactoryFieldArguments<TReference>) => {
   [_ in TReference["field"]]: AbstractFieldReference<
     TReference["parent"],
     TReference["field"],

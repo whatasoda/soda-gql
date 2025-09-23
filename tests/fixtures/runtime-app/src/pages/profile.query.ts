@@ -9,8 +9,8 @@ type ProfileQueryVariables = {
 export const profileQuery = gql.query(
   "ProfilePageQuery",
   {
-    userId: gql.scalar("ID", "!"),
-    categoryId: gql.scalar("ID", "?"),
+    userId: gql.scalar(["ID", "!"]),
+    categoryId: gql.scalar(["ID", ""]),
   },
   ({ $ }) => ({
     users: userSlice({

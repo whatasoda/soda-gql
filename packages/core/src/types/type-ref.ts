@@ -1,78 +1,65 @@
-type AbstractTypeRef<TKind extends string> = {
-  kind: TKind;
+import type { ConstValue } from "./const-value";
+import type { AnyConstDirectiveAttachments } from "./directives";
+import type { ListTypeModifierSuffix, StripTailingListFromTypeModifier, TypeModifier } from "./type-modifier";
+
+export type DefaultValue = { default: ConstValue };
+
+type InputTypeKind = "scalar" | "enum" | "input";
+type OutputTypeKind = "scalar" | "enum" | "object" | "union" | "typename";
+
+export type AnyTypeRef = {
+  kind: string;
   name: string;
-  format: TypeFormat;
+  modifier: TypeModifier;
+  directives: AnyConstDirectiveAttachments;
+  defaultValue?: DefaultValue | null;
+  arguments?: InputTypeRefs;
 };
 
-export type TypeFormat =
-  | "?" // nullable, no-default
-  | "?=" // nullable, with-default
-  | "?[]?" // nullable, list, no-default
-  | "?[]?=" // nullable, list, with-default
-  | "?[]!" // nullable, list, with-default
-  | "?[]!=" // nullable, list, with-default
-  | "!" // non-nullable, no-default
-  | "!=" // non-nullable, with-default
-  | "![]?" // non-nullable, list, no-default
-  | "![]?=" // non-nullable, list, with-default
-  | "![]!" // non-nullable, list, with-default
-  | "![]!="; // non-nullable, list, with-default
+type AbstractInputTypeRef<TKind extends InputTypeKind> = {
+  kind: TKind;
+  name: string;
+  modifier: TypeModifier;
+  directives: AnyConstDirectiveAttachments;
+  defaultValue: DefaultValue | null;
+};
+export type InputTypeRefs = { [key: string]: InputTypeRef };
+export type InputTypeRef = InputScalarRef | InputEnumRef | InputInputObjectRef;
+export type InputInferrableTypeRef = InputScalarRef | InputEnumRef;
+export type InputScalarRef = AbstractInputTypeRef<"scalar">;
+export type InputEnumRef = AbstractInputTypeRef<"enum">;
+export type InputInputObjectRef = AbstractInputTypeRef<"input">;
 
-type UnwrapListTypeFormat<TFormat extends TypeFormat> = {
-  "?": "?";
-  "?=": "?=";
-  "?[]?": "?";
-  "?[]?=": "?";
-  "?[]!": "?";
-  "?[]!=": "?";
-  "!": "!";
-  "!=": "!=";
-  "![]?": "!";
-  "![]?=": "!";
-  "![]!": "!";
-  "![]!=": "!";
-}[TFormat];
+type AbstractOutputTypeRef<TKind extends OutputTypeKind> = {
+  kind: TKind;
+  name: string;
+  modifier: TypeModifier;
+  directives: AnyConstDirectiveAttachments;
+  arguments: InputTypeRefs;
+};
+export type OutputTypeRefs = { [key: string]: OutputTypeRef };
+export type OutputTypeRef = OutputScalarRef | OutputEnumRef | OutputObjectRef | OutputUnionRef | OutputTypenameRef;
+export type OutputInferrableTypeRef = OutputScalarRef | OutputEnumRef | OutputTypenameRef;
+export type OutputScalarRef = AbstractOutputTypeRef<"scalar">;
+export type OutputEnumRef = AbstractOutputTypeRef<"enum">;
+export type OutputObjectRef = AbstractOutputTypeRef<"object">;
+export type OutputUnionRef = AbstractOutputTypeRef<"union">;
+export type OutputTypenameRef = AbstractOutputTypeRef<"typename">;
 
-export type ApplyTypeFormat<TRef extends { format: TypeFormat }, TInner> = {
-  "?": TInner | null | undefined;
-  "?=": TInner | null | undefined;
-  "?[]?": (TInner | null | undefined)[] | null | undefined;
-  "?[]?=": (TInner | null | undefined)[] | null | undefined;
-  "?[]!": (TInner | null | undefined)[];
-  "?[]!=": (TInner | null | undefined)[];
-  "!": TInner;
-  "!=": TInner;
-  "![]?": TInner[] | null | undefined;
-  "![]?=": TInner[] | null | undefined;
-  "![]!": TInner[];
-  "![]!=": TInner[];
-}[TRef["format"]];
-
-export type ListTypeFormat = { [T in TypeFormat]: T extends `${string}[]${string}` ? T : never }[TypeFormat];
-export type OptionalTypeFormat = { [T in TypeFormat]: T extends `${string}${"?" | "="}` ? T : never }[TypeFormat];
-
-export type UnwrapListTypeRef<TRef extends AbstractTypeRef<string>> = TRef extends TRef
+export type StripTailingListFromTypeRef<TRef extends AnyTypeRef> = TRef extends { defaultValue: DefaultValue | null }
   ? {
       kind: TRef["kind"];
       name: TRef["name"];
-      format: UnwrapListTypeFormat<TRef["format"]>;
+      modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
+      directives: TRef["directives"];
+      defaultValue: TRef["modifier"] extends `${string}${ListTypeModifierSuffix}` ? null : TRef["defaultValue"];
     }
-  : never;
-
-export type TypeRefMappingWithFlags<TRefMapping extends { [key: string]: { format: TypeFormat } }> = {
-  [K in keyof TRefMapping as TRefMapping[K] extends { format: OptionalTypeFormat } ? never : K]-?: TRefMapping[K];
-} & {
-  [K in keyof TRefMapping as TRefMapping[K] extends { format: OptionalTypeFormat } ? K : never]+?: TRefMapping[K];
-};
-
-export type TypeRef = TypenameRef | ScalarRef | EnumRef | InputTypeRef | ObjectTypeRef | UnionTypeRef;
-export type InferrableTypeRef = TypenameRef | ScalarRef | EnumRef;
-export type InputDefinition = ScalarRef | EnumRef | InputTypeRef;
-export type FieldDefinition = TypenameRef | ScalarRef | EnumRef | ObjectTypeRef | UnionTypeRef;
-
-export type TypenameRef = AbstractTypeRef<"typename">;
-export type ScalarRef = AbstractTypeRef<"scalar">;
-export type EnumRef = AbstractTypeRef<"enum">;
-export type InputTypeRef = AbstractTypeRef<"input">;
-export type ObjectTypeRef = AbstractTypeRef<"object">;
-export type UnionTypeRef = AbstractTypeRef<"union">;
+  : TRef extends { arguments: InputTypeRefs }
+    ? {
+        kind: TRef["kind"];
+        name: TRef["name"];
+        modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
+        directives: TRef["directives"];
+        arguments: TRef["arguments"];
+      }
+    : never;

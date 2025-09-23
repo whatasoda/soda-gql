@@ -1,34 +1,34 @@
 import { createFieldFactories } from "./fields-builder";
+import { createVariableAssignments } from "./input";
 import type {
   AnyFields,
   AnyGraphqlSchema,
   EmptyObject,
   FieldsBuilder,
   InferFields,
-  InputDefinition,
+  InputTypeRefs,
   Model,
   ModelFn,
 } from "./types";
-import { createVariableAssignments } from "./variables";
 
 export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => {
   const modelFn: ModelFn<TSchema> = <
     TTypeName extends keyof TSchema["object"] & string,
     TFields extends AnyFields,
     TTransformed extends object,
-    TVariables extends { [key: string]: InputDefinition } = EmptyObject,
+    TVariableDefinitions extends InputTypeRefs = EmptyObject,
   >(
-    target: TTypeName | [TTypeName, TVariables],
-    builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
+    target: TTypeName | [TTypeName, TVariableDefinitions],
+    builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
     transform: (selected: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
   ) => {
     const [typename, variablesDefinition] = Array.isArray(target)
-      ? [target[0] as TTypeName, target[1] ?? ({} as TVariables)]
-      : [target as TTypeName, {} as TVariables];
+      ? [target[0] as TTypeName, target[1] ?? ({} as TVariableDefinitions)]
+      : [target as TTypeName, {} as TVariableDefinitions];
 
     const fieldFactories = createFieldFactories(schema, typename);
 
-    const model: Model<TSchema, TTypeName, TVariables, TFields, TTransformed> = {
+    const model: Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed> = {
       typename,
       variables: variablesDefinition,
       fragment: (assignments) =>
@@ -36,7 +36,7 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
           _: fieldFactories,
           f: fieldFactories,
           fields: fieldFactories,
-          $: createVariableAssignments<TSchema, TVariables>(variablesDefinition, assignments),
+          $: createVariableAssignments<TSchema, TVariableDefinitions>(variablesDefinition, assignments),
         }),
       transform,
     };

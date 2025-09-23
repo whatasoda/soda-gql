@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parse, print, type DocumentNode } from "graphql";
+import { type DocumentNode, parse, print } from "graphql";
 import { err, ok } from "neverthrow";
 
 import type { CodegenError } from "./types";

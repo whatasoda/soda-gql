@@ -1,20 +1,34 @@
 import type { GraphqlAdapter } from "./adapter";
-import type { AnyGraphqlSchema, InferInputDefinitionType } from "./schema";
 import type { SliceResult } from "./slice-result";
-import type { InputDefinition } from "./type-ref";
-import type { Hidden } from "./utility";
+import type { ApplyTypeModifier } from "./type-modifier";
+import type { DefaultValue, InputTypeRef } from "./type-ref";
+import type { Hidden, Prettify } from "./utility";
 
 declare const __VARIABLE_REFERENCE_BRAND__: unique symbol;
 
-/** Nominal reference used to defer variable binding while carrying type info. */
-export class VariableReference<TSchema extends AnyGraphqlSchema, TRef extends InputDefinition> {
-  declare readonly [__VARIABLE_REFERENCE_BRAND__]: Hidden<{
-    type: InferInputDefinitionType<TSchema, TRef>;
-    kind: TRef["kind"];
-    name: TRef["name"];
-  }>;
+type VariableReferenceInput<TRef extends InputTypeRef> = Prettify<{
+  kind: TRef["kind"];
+  name: TRef["name"];
+  modifier: ApplyTypeModifier<TRef["modifier"], "_"> | (TRef["defaultValue"] extends DefaultValue ? null | undefined : never);
+}>;
 
-  constructor(public readonly name: string) {}
+type AnyVariableReferenceInfo = {
+  kind: string;
+  name: string;
+  modifier: unknown;
+};
+
+export type VariableReferenceOf<TRef extends InputTypeRef> = VariableReference<VariableReferenceInput<TRef>>;
+
+/** Nominal reference used to defer variable binding while carrying type info. */
+export class VariableReference<TInput extends AnyVariableReferenceInfo> {
+  declare readonly [__VARIABLE_REFERENCE_BRAND__]: Hidden<TInput>;
+
+  private constructor(public readonly name: string) {}
+
+  static create<TRef extends InputTypeRef>(ref: TRef): VariableReferenceOf<TRef> {
+    return new VariableReference<VariableReferenceInput<TRef>>(ref.name);
+  }
 }
 
 declare const __SLICE_RESULT_SELECTION_BRAND__: unique symbol;

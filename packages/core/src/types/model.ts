@@ -2,10 +2,10 @@
 
 import type { AnyFields, InferFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
+import type { AssignableInput } from "./input";
 import type { AnyGraphqlSchema } from "./schema";
-import type { InputDefinition } from "./type-ref";
+import type { InputTypeRefs } from "./type-ref";
 import type { EmptyObject, VoidIfEmptyObject } from "./utility";
-import type { VariableReferencesByDefinition } from "./variables";
 
 /**
  * Describes the userland `gql.model` helper. It binds a schema type, a field
@@ -16,7 +16,7 @@ export type ModelFn<TSchema extends AnyGraphqlSchema> = <
   TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyFields,
   TTransformed extends object,
-  TVariables extends { [key: string]: InputDefinition } = EmptyObject,
+  TVariables extends InputTypeRefs = EmptyObject,
 >(
   target: TTypeName | [TTypeName, TVariables],
   builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
@@ -27,12 +27,12 @@ export type ModelFn<TSchema extends AnyGraphqlSchema> = <
 export type Model<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariables extends { [key: string]: InputDefinition },
+  TVariables extends InputTypeRefs,
   TFields extends AnyFields,
   TTransformed extends object,
 > = {
   typename: TTypeName;
   variables: TVariables;
-  fragment: (variables: VoidIfEmptyObject<TVariables> | VariableReferencesByDefinition<TSchema, TVariables>) => TFields;
+  fragment: (variables: VoidIfEmptyObject<TVariables> | AssignableInput<TSchema, TVariables>) => TFields;
   transform: (selected: InferFields<TSchema, TFields>) => TTransformed;
 };

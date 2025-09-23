@@ -1,16 +1,16 @@
 import { buildDocument } from "./document-builder";
+import { createVariableReferences } from "./input";
 import type {
   AnyGraphqlSchema,
   AnyOperationSlice,
   AnySliceResultRecord,
   EmptyObject,
   GraphqlAdapter,
-  InputDefinition,
+  InputTypeRefs,
   OperationBuilder,
   OperationFn,
   OperationType,
 } from "./types";
-import { createVariableReferences } from "./variables";
 
 export const createOperationFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(_schema: TSchema, _adapter: TAdapter) =>
@@ -18,7 +18,7 @@ export const createOperationFactory =
     const operationFn: OperationFn<TSchema, TAdapter, TOperation> = <
       TName extends string,
       TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
-      TVariableDefinitions extends { [key: string]: InputDefinition } = EmptyObject,
+      TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       name: TName,
       variablesDefinitions: TVariableDefinitions | null,
