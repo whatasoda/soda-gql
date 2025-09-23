@@ -45,7 +45,7 @@ bun run soda-gql codegen \
   --inject-from ./src/graphql-system/inject.ts
 ```
 
-The generated runtime module imports your scalar and adapter implementations from `inject.ts`. Keep that file under version control so custom scalar behaviour stays explicit.
+The generated runtime module imports your scalar and adapter implementations from `inject.ts`. Keep that file under version control so custom scalar behaviour stays explicit. Declare each scalar with the `defineScalar()` helper exported by `@soda-gql/core`—for example `defineScalar("DateTime", ({ type }) => ({ input: type<string>(), output: type<Date>(), directives: {} }))`—so both input and output shapes stay typed.
 
 ### Basic Example
 

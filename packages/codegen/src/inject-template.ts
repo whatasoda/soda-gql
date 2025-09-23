@@ -4,14 +4,35 @@ import { err, ok } from "neverthrow";
 
 import type { CodegenError } from "./types";
 
-const templateContents = `import { define, type, type GraphqlAdapter } from "@soda-gql/core";
+const templateContents = `\
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
 
 export const scalar = {
-  ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("String").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("Int").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Float").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Boolean").scalar(type<{ input: boolean; output: boolean }>(), {}),
+  ...defineScalar("ID", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("String", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("Int", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Float", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Boolean", ({ type }) => ({
+    input: type<boolean>(),
+    output: type<boolean>(),
+    directives: {},
+  })),
 } as const;
 
 const createError: GraphqlAdapter["createError"] = (raw) => raw;

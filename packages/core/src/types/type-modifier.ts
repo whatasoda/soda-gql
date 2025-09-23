@@ -35,6 +35,3 @@ export type ApplyTypeModifierToKeys<T extends { [key: string]: { modifier: TypeM
 } & {
   [K in keyof T as T[K]["modifier"] extends `${string}!` ? never : K]+?: T[K];
 };
-
-// declare const builder: <T extends TypeModifier>(modifier: TypeModifierBuilder<T>) => T;
-// builder("!");

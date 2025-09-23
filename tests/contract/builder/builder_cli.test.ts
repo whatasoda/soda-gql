@@ -34,14 +34,35 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 };
 
 const writeInjectModule = async (outFile: string) => {
-  const contents = `import { define, type, type GraphqlAdapter } from "@soda-gql/core";
+  const contents = `\
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
 
 export const scalar = {
-  ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("String").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("Int").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Float").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Boolean").scalar(type<{ input: boolean; output: boolean }>(), {}),
+  ...defineScalar("ID", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("String", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("Int", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Float", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Boolean", ({ type }) => ({
+    input: type<boolean>(),
+    output: type<boolean>(),
+    directives: {},
+  })),
 } as const;
 
 const createError: GraphqlAdapter["createError"] = (raw) => raw;
@@ -92,16 +113,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   const injectFile = join(workspaceRoot, "graphql-inject.ts");
   await writeInjectModule(injectFile);
 
-  const result = await runCodegenCli([
-    "--schema",
-    schemaPath,
-    "--out",
-    outFile,
-    "--format",
-    "json",
-    "--inject-from",
-    injectFile,
-  ]);
+  const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json", "--inject-from", injectFile]);
 
   expect(result.exitCode).toBe(0);
   const exists = await Bun.file(outFile).exists();

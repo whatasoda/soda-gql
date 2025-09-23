@@ -520,9 +520,7 @@ export type GeneratedModule = {
   };
 };
 
-type RuntimeTemplateInjection =
-  | { readonly mode: "inline" }
-  | { readonly mode: "inject"; readonly importPath: string };
+type RuntimeTemplateInjection = { readonly mode: "inline" } | { readonly mode: "inject"; readonly importPath: string };
 
 type RuntimeTemplateOptions = {
   readonly queryType: string;
@@ -537,22 +535,26 @@ type RuntimeTemplateOptions = {
 };
 
 const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
-  const importLines = [
-    'import {\n  type AnyGraphqlSchema,\n  createGql,\n  define,\n  defineOperationTypeNames,\n  type GraphqlAdapter,\n  type,\n  unsafeInputRef,\n  unsafeOutputRef,\n} from "@soda-gql/core";',
-    $$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : "",
-  ]
+  const extraImports = [$$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : ""]
     .filter((line) => line.length > 0)
     .join("\n");
 
   const adapterBlock =
-    $$.injection.mode === "inject"
-      ? ""
-      : `const adapter = {\n  createError: (raw) => raw,\n} satisfies GraphqlAdapter;\n\n`;
+    $$.injection.mode === "inject" ? "" : `const adapter = {\n  createError: (raw) => raw,\n} satisfies GraphqlAdapter;`;
 
   const scalarEntry = $$.injection.mode === "inject" ? "scalar" : $$.scalarBlock;
 
   return `\
-${importLines}
+import {
+  type AnyGraphqlSchema,
+  createGql,
+  define,
+  defineOperationTypeNames,
+  type GraphqlAdapter,
+  unsafeInputRef,
+  unsafeOutputRef,
+} from "@soda-gql/core";
+${extraImports}
 
 export const schema = {
   operations: defineOperationTypeNames({
@@ -567,8 +569,10 @@ export const schema = {
   union: ${$$.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-${adapterBlock}export type Schema = typeof schema & { _?: never };
-export type Adapter = (typeof adapter & GraphqlAdapter) & { _?: never };
+${adapterBlock}
+
+export type Schema = typeof schema & { _?: never };
+export type Adapter = typeof adapter & { _?: never };
 
 export const gql = createGql<Schema, Adapter>({ schema, adapter });
 `;
@@ -580,10 +584,7 @@ export type RuntimeGenerationOptions = {
   };
 };
 
-export const generateRuntimeModule = (
-  document: DocumentNode,
-  options?: RuntimeGenerationOptions,
-): GeneratedModule => {
+export const generateRuntimeModule = (document: DocumentNode, options?: RuntimeGenerationOptions): GeneratedModule => {
   const schema = createSchemaIndex(document);
 
   const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>

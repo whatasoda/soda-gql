@@ -32,14 +32,35 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 };
 
 const createInjectModule = async (outFile: string) => {
-  const contents = `import { define, type, type GraphqlAdapter } from "@soda-gql/core";
+  const contents = `\
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
 
 export const scalar = {
-  ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("String").scalar(type<{ input: string; output: string }>(), {}),
-  ...define("Int").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Float").scalar(type<{ input: number; output: number }>(), {}),
-  ...define("Boolean").scalar(type<{ input: boolean; output: boolean }>(), {}),
+  ...defineScalar("ID", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("String", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("Int", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Float", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Boolean", ({ type }) => ({
+    input: type<boolean>(),
+    output: type<boolean>(),
+    directives: {},
+  })),
 } as const;
 
 const createError: GraphqlAdapter["createError"] = (raw) => raw;
@@ -153,10 +174,7 @@ describe("soda-gql codegen CLI", () => {
     expect(moduleContents).toContain("import { adapter, scalar } from");
     expect(result.stdout).toContain("schemaHash");
 
-    const tsconfigPath = join(
-      tmpRoot,
-      `tsconfig-${Date.now()}.json`,
-    );
+    const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
     const coreEntryPath = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src", "index.ts")));
     const coreEntryWildcard = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src")) + "/*");
@@ -168,11 +186,7 @@ describe("soda-gql codegen CLI", () => {
         baseUrl: ".",
         paths: {
           "@soda-gql/core": [coreEntryPath.startsWith(".") ? coreEntryPath : `./${coreEntryPath}`],
-          "@soda-gql/core/*": [
-            coreEntryWildcard.startsWith(".")
-              ? coreEntryWildcard
-              : `./${coreEntryWildcard}`,
-          ],
+          "@soda-gql/core/*": [coreEntryWildcard.startsWith(".") ? coreEntryWildcard : `./${coreEntryWildcard}`],
         },
       },
       files: [generatedRelative.startsWith(".") ? generatedRelative : `./${generatedRelative}`],

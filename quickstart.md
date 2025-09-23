@@ -80,7 +80,32 @@ Code generation now expects user-defined scalar implementations and a runtime ad
 bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
 ```
 
-Edit `./src/graphql-system/inject.ts` to describe each custom scalar and to implement the `GraphqlAdapter`. The template includes built-ins to get you started.
+Edit `./src/graphql-system/inject.ts` to describe each custom scalar and to implement the `GraphqlAdapter`. The template uses the new `defineScalar()` helper so each scalar stays strongly typed.
+
+```ts
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+
+export const scalar = {
+  ...defineScalar("DateTime", ({ type }) => ({
+    input: type<string>(),
+    output: type<Date>(),
+    directives: {},
+  })),
+  ...defineScalar("Money", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+} as const;
+
+const createError: GraphqlAdapter["createError"] = (raw) => raw;
+
+export const adapter = {
+  createError,
+} satisfies GraphqlAdapter;
+```
+
+Replace or extend the examples to match the scalars and runtime behaviour in your own schema.
 
 ### 4. Generate GraphQL System
 

@@ -5,9 +5,9 @@ import {
   createGql,
   define,
   defineOperationTypeNames,
+  defineScalar,
   empty,
   GraphqlAdapter,
-  type,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../../packages/core/src/index";
@@ -19,8 +19,16 @@ const schema = {
     subscription: "Subscription",
   }),
   scalar: {
-    ...define("ID").scalar(type<{ input: string; output: string }>(), {}),
-    ...define("String").scalar(type<{ input: string; output: string }>(), {}),
+    ...defineScalar("ID", ({ type }) => ({
+      input: type<string>(),
+      output: type<string>(),
+      directives: {},
+    })),
+    ...defineScalar("String", ({ type }) => ({
+      input: type<string>(),
+      output: type<string>(),
+      directives: {},
+    })),
   },
   enum: {},
   input: {},

@@ -3,19 +3,21 @@ import type { AnyConstDirectiveAttachments, Hidden, OperationTypeNames } from ".
 import type { AnyGraphqlSchema, EnumDef, InputDef, ObjectDef, ScalarDef, UnionDef } from "./types/schema";
 import { hidden, wrapValueByKey } from "./types/utility";
 
-export const type = <T>() => hidden<T>();
+export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
+  name: TName,
+  definition: (tool: { type: typeof hidden }) => {
+    input: Hidden<TInput>;
+    output: Hidden<TOutput>;
+    directives: TDirectives;
+  },
+) =>
+  wrapValueByKey(name, {
+    _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
+    name,
+    directives: definition({ type: hidden }).directives,
+  } satisfies ScalarDef<{ input: TInput; output: TOutput }>);
 
 export const define = <const TName extends string>(name: TName) => ({
-  scalar: <TType extends { input: unknown; output: unknown }, TDirectives extends AnyConstDirectiveAttachments>(
-    _type: Hidden<TType>,
-    directives: TDirectives,
-  ) =>
-    wrapValueByKey(name, {
-      _type,
-      name,
-      directives,
-    } satisfies ScalarDef<TType & { input: unknown; output: unknown }>),
-
   enum: <const TValues extends EnumDef<string>["values"], TDirectives extends AnyConstDirectiveAttachments>(
     values: TValues,
     directives: TDirectives,
