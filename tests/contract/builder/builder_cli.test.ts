@@ -270,6 +270,98 @@ export const duplicated = gql.query(
     expect(parsed.report.documents).toBeGreaterThanOrEqual(1);
   });
 
+  it("prints human diagnostics with cache summary when format is human", async () => {
+    const workspace = prepareWorkspace("runtime-success");
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `human-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+
+    const result = await runBuilderCli(workspace, [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "profile.page.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Documents:");
+    expect(result.stdout).toContain("Cache: hits 0, misses 1");
+  });
+
+  it("logs cache hits on repeated runs of the same entry set", async () => {
+    const workspace = prepareWorkspace("runtime-success");
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `cache-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+
+    const entryArgs = [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "profile.page.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+    ] as const;
+
+    const firstRun = await runBuilderCli(workspace, entryArgs);
+    expect(firstRun.exitCode).toBe(0);
+
+    const secondRun = await runBuilderCli(workspace, entryArgs);
+    expect(secondRun.exitCode).toBe(0);
+    expect(secondRun.stdout).toContain("Cache: hits");
+    expect(secondRun.stdout).toContain("misses 0");
+  });
+
+  it("emits slice-count warnings when exceeding threshold", async () => {
+    const workspace = prepareWorkspace("slice-warning");
+    const entitiesDir = join(workspace, "src", "entities");
+    const pagesDir = join(workspace, "src", "pages");
+
+    mkdirSync(entitiesDir, { recursive: true });
+    mkdirSync(pagesDir, { recursive: true });
+
+    const slicesSource = Array.from({ length: 17 }, (_, index) => {
+      return `export const slice${index} = gql.querySlice([], () => ({}), () => ({}));`;
+    }).join("\n");
+
+    await Bun.write(
+      join(entitiesDir, "slices.ts"),
+      `import { gql } from "@/graphql-system";\n${slicesSource}\n`,
+    );
+
+    await Bun.write(
+      join(pagesDir, "profile.page.ts"),
+      `import { gql } from "@/graphql-system";\nimport * as slices from "../entities/slices";\n\nexport const profileQuery = gql.query("ProfilePageQuery", {}, () => ({\n  slice0: slices.slice0(),\n}));\n`,
+    );
+
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `slice-warning-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+
+    const result = await runBuilderCli(workspace, [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "**/*.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Warning: slice count 17");
+  });
+
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
