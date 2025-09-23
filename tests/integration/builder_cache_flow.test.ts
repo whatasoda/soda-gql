@@ -7,6 +7,48 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "builder-cache-flow");
 
+const writeInjectModule = async (outFile: string) => {
+  const contents = `\
+import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+
+export const scalar = {
+  ...defineScalar("ID", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("String", ({ type }) => ({
+    input: type<string>(),
+    output: type<string>(),
+    directives: {},
+  })),
+  ...defineScalar("Int", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Float", ({ type }) => ({
+    input: type<number>(),
+    output: type<number>(),
+    directives: {},
+  })),
+  ...defineScalar("Boolean", ({ type }) => ({
+    input: type<boolean>(),
+    output: type<boolean>(),
+    directives: {},
+  })),
+} as const;
+
+const createError: GraphqlAdapter["createError"] = (raw) => raw;
+
+export const adapter = {
+  createError,
+} satisfies GraphqlAdapter;
+`;
+
+  await Bun.write(outFile, contents);
+};
+
 type CliResult = {
   readonly stdout: string;
   readonly stderr: string;
@@ -39,13 +81,28 @@ const runCli = async (args: readonly string[], options: RunCliOptions = {}): Pro
 };
 
 const runCodegen = async (workspaceRoot: string, schemaPath: string, outFile: string) => {
-  const result = await runCli(["soda-gql", "codegen", "--schema", schemaPath, "--out", outFile, "--format", "json"]);
+  const injectPath = join(workspaceRoot, "graphql-inject.ts");
+  await writeInjectModule(injectPath);
+
+  const result = await runCli([
+    "soda-gql",
+    "codegen",
+    "--schema",
+    schemaPath,
+    "--out",
+    outFile,
+    "--format",
+    "json",
+    "--inject-from",
+    injectPath,
+  ]);
   expect(result.exitCode).toBe(0);
 };
 
 const runBuilder = async (workspaceRoot: string, entry: string, outFile: string) => {
   const nodePath = [
     join(workspaceRoot, "node_modules"),
+    join(projectRoot, "node_modules"),
     process.env.NODE_PATH ?? "",
   ]
     .filter(Boolean)

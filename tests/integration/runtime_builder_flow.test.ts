@@ -78,7 +78,13 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
+      NODE_PATH: [
+        join(workspaceRoot, "node_modules"),
+        join(projectRoot, "node_modules"),
+        process.env.NODE_PATH ?? "",
+      ]
+        .filter(Boolean)
+        .join(":"),
     },
   });
 
@@ -166,7 +172,8 @@ describe("runtime builder flow", () => {
 
     const artifact = JSON.parse(await Bun.file(artifactPath).text());
     expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(artifact.refs).toHaveProperty(`${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`);
+    const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
+    expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
   });
 });

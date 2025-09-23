@@ -30,6 +30,12 @@ export type BuilderError =
       readonly code: "WRITE_FAILED";
       readonly message: string;
       readonly outPath: string;
+    }
+  | {
+      readonly code: "MODULE_EVALUATION_FAILED";
+      readonly filePath: string;
+      readonly exportName: string;
+      readonly message: string;
     };
 
 export type BuilderArtifact = {
@@ -42,6 +48,10 @@ export type BuilderArtifact = {
     readonly slices: number;
     readonly durationMs: number;
     readonly warnings: readonly string[];
+    readonly cache: {
+      readonly hits: number;
+      readonly misses: number;
+    };
   };
 };
 

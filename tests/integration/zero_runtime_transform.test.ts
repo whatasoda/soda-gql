@@ -79,7 +79,13 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
-      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
+      NODE_PATH: [
+        join(workspaceRoot, "node_modules"),
+        join(projectRoot, "node_modules"),
+        process.env.NODE_PATH ?? "",
+      ]
+        .filter(Boolean)
+        .join(":"),
     },
   });
 
