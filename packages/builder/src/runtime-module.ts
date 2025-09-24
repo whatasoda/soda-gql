@@ -7,6 +7,38 @@ import ts from "typescript";
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
+const runtimePlaceholderIdentifier = "__SODA_RUNTIME_PLACEHOLDER__";
+
+const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
+  const placeholderStatement = ts.factory.createExpressionStatement(
+    ts.factory.createIdentifier(runtimePlaceholderIdentifier),
+  );
+  const block = ts.factory.createBlock([placeholderStatement], true);
+
+  if (ts.isArrowFunction(fn)) {
+    return ts.factory.updateArrowFunction(
+      fn,
+      fn.modifiers,
+      fn.typeParameters,
+      fn.parameters,
+      fn.type,
+      fn.equalsGreaterThanToken,
+      block,
+    );
+  }
+
+  return ts.factory.updateFunctionExpression(
+    fn,
+    fn.modifiers,
+    fn.asteriskToken,
+    fn.name,
+    fn.typeParameters,
+    fn.parameters,
+    fn.type,
+    block,
+  );
+};
+
 const indentLines = (value: string, indent: string): string =>
   value
     .split("\n")
@@ -53,27 +85,11 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   const sourceText = `(${expression})`;
   const sourceFile = ts.createSourceFile("runtime-expression.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
 
-  const runtimePlaceholderIdentifier = "__SODA_RUNTIME_PLACEHOLDER__";
-
   const createAccessorExpression = (replacement: ReplacementEntry): ts.ElementAccessExpression =>
     ts.factory.createElementAccessExpression(
       ts.factory.createIdentifier(replacement.prefix),
       ts.factory.createStringLiteral(replacement.canonicalId),
     );
-
-  const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
-    const placeholderStatement = ts.factory.createExpressionStatement(ts.factory.createIdentifier(runtimePlaceholderIdentifier));
-    const block = ts.factory.createBlock([placeholderStatement], true);
-
-    return ts.factory.createArrowFunction(
-      fn.modifiers,
-      [],
-      [],
-      fn.type,
-      ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-      block,
-    );
-  };
 
   const shouldReplaceTransform = (
     expression: ts.Expression | undefined,
@@ -290,12 +306,63 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const expressionText = node.definition.expression.trim();
   const replacements = createReplacementMap(node, graph);
   const rewritten = rewriteExpression(expressionText, replacements);
-  const factory = formatFactory(rewritten);
+  const normalised = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
+  const factory = formatFactory(normalised);
 
   const runtimeCall =
     node.definition.kind === "model" ? "createModel" : node.definition.kind === "slice" ? "createSlice" : "createOperation";
 
   return `  "${node.id}": ${runtimeCall}("${node.id}", ${factory}),`;
+};
+
+const replaceModelTransform = (expression: string): string => {
+  const target = expression.trimStart();
+  if (!target.startsWith("gql.model")) {
+    return expression;
+  }
+
+  const sourceText = `(${expression})`;
+  const sourceFile = ts.createSourceFile("model.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
+
+  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+    const visit: ts.Visitor = (node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === "model"
+      ) {
+        const args = [...node.arguments];
+        if (args.length >= 3 && (ts.isArrowFunction(args[2]) || ts.isFunctionExpression(args[2]))) {
+          args[2] = createRuntimePlaceholder(args[2]);
+          return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
+        }
+      }
+
+      return ts.visitEachChild(node, visit, context);
+    };
+
+    return (node) => ts.visitEachChild(node, visit, context);
+  };
+
+  const transformed = ts.transform(sourceFile, [transformer]);
+  const transformedFile = transformed.transformed[0] as ts.SourceFile;
+  const expressionStatement = transformedFile.statements[0];
+
+  if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
+    transformed.dispose();
+    return expression;
+  }
+
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  let printed = printer.printNode(ts.EmitHint.Expression, expressionStatement.expression, transformedFile).trim();
+
+  if (printed.startsWith("(") && printed.endsWith(")")) {
+    printed = printed.slice(1, -1).trim();
+  }
+
+  transformed.dispose();
+
+  return printed.replace(new RegExp(`${runtimePlaceholderIdentifier};`, "g"), "/* runtime function */");
 };
 
 const renderSection = (label: string, entries: readonly string[]): string => {
