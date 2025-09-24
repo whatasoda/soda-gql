@@ -1,12 +1,13 @@
-import type {
-  AnyFields,
-  AnyGraphqlSchema,
-  EmptyObject,
-  FieldsBuilder,
-  InferFields,
-  InputTypeRefs,
-  Model,
-  ModelFn,
+import {
+  hidden,
+  type AnyFields,
+  type AnyGraphqlSchema,
+  type EmptyObject,
+  type FieldsBuilder,
+  type InferFields,
+  type InputTypeRefs,
+  type Model,
+  type ModelFn,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
@@ -29,8 +30,9 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
     const fieldFactories = createFieldFactories(schema, typename);
 
     const model: Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed> = {
+      _input: hidden(),
+      _output: hidden(),
       typename,
-      variables: variablesDefinition,
       fragment: (assignments) =>
         builder({
           _: fieldFactories,

@@ -1,65 +1,57 @@
-import type {
-  AnyGraphqlSchema,
-  AnyOperationSlice,
-  AnySliceResultRecord,
-  EmptyObject,
-  GraphqlAdapter,
-  InputTypeRefs,
-  OperationBuilder,
-  OperationFn,
-  OperationType,
+import { DocumentNode } from "graphql";
+import {
+  hidden,
+  Operation,
+  type AnyGraphqlSchema,
+  type AnyOperationSlice,
+  type EmptyObject,
+  type GraphqlAdapter,
+  type InputTypeRefs,
+  type OperationBuilder,
+  type OperationFn,
+  type OperationType,
 } from "../types";
 import { buildDocument } from "./document-builder";
 import { createVariableReferences } from "./input";
 
 export const createOperationFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(_schema: TSchema, _adapter: TAdapter) =>
-  <TOperation extends OperationType>(operation: TOperation): OperationFn<TSchema, TAdapter, TOperation> => {
-    const operationFn: OperationFn<TSchema, TAdapter, TOperation> = <
+  <TOperationType extends OperationType>(operationType: TOperationType): OperationFn<TSchema, TAdapter, TOperationType> => {
+    const operationFn: OperationFn<TSchema, TAdapter, TOperationType> = <
       TName extends string,
-      TSlices extends { [key: string]: AnyOperationSlice<TAdapter, TOperation> },
+      TSlices extends { [key: string]: AnyOperationSlice<TSchema, TAdapter, TOperationType> },
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       name: TName,
       variablesDefinitions: TVariableDefinitions | null,
-      builder: OperationBuilder<TSchema, TAdapter, TOperation, TVariableDefinitions, TSlices>,
+      builder: OperationBuilder<TSchema, TAdapter, TOperationType, TVariableDefinitions, TSlices>,
     ) => {
       const variables = (variablesDefinitions ?? {}) as TVariableDefinitions;
       const $ = createVariableReferences<TSchema, TVariableDefinitions>(variables);
-      const slices = builder({ $ });
 
+      const slices = builder({ $ });
       const fields = Object.entries(slices).flatMap(([label, slice]) =>
-        Object.entries(slice.object).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
+        Object.entries(slice.fields).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
       );
 
-      const document = buildDocument({
+      const document: DocumentNode = buildDocument({
         name,
-        operation,
+        operationType: operationType,
         variables,
         fields: Object.fromEntries(fields.map(({ labeledKey, reference }) => [labeledKey, reference])),
       });
 
-      const transform = (data: unknown) => {
-        const records = (
-          typeof data === "object" && data !== null ? (data as AnySliceResultRecord<TAdapter>) : {}
-        ) satisfies AnySliceResultRecord<TAdapter>;
-
-        const entries = Object.entries(slices).map(([key, slice]) => {
-          return [key, slice.transform({ prefix: key, results: records })] as const;
-        });
-
-        return Object.fromEntries(entries) as {
-          [K in keyof typeof slices]: ReturnType<(typeof slices)[K]["transform"]>;
-        };
-      };
-
-      return {
+      const operation: Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices> = {
+        _input: hidden(),
+        _raw: hidden(),
+        _output: hidden(),
+        type: operationType,
         name,
-        document,
-        transform,
-        variables,
-        slices,
+        document: document as Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices>["document"],
+        parse: hidden(),
       };
+
+      return operation;
     };
 
     return operationFn;

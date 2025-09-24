@@ -4,7 +4,7 @@ import {
   AnyGraphqlSchema,
   createGql,
   define,
-  defineOperationTypeNames,
+  defineOperationRoots,
   defineScalar,
   empty,
   GraphqlAdapter,
@@ -13,7 +13,7 @@ import {
 } from "../../../packages/core";
 
 const schema = {
-  operations: defineOperationTypeNames({
+  operations: defineOperationRoots({
     query: "Query",
     mutation: "Mutation",
     subscription: "Subscription",
@@ -94,7 +94,6 @@ describe("createGql", () => {
     );
 
     expect(userModel.typename).toBe("User");
-    expect(userModel.variables).toEqual(empty());
     const fragment = userModel.fragment({} as never);
     expect(fragment).toHaveProperty("id");
     expect(fragment).toHaveProperty("name");
@@ -132,8 +131,8 @@ describe("createGql", () => {
     );
 
     const slice = userSliceFactory({ id: "1" });
-    expect(slice.operation).toBe("query");
-    expect(typeof slice.transform).toBe("function");
+    expect(slice.operationType).toBe("query");
+    expect(typeof slice.getProjections).toBe("function");
 
     const profileQuery = gql.query(
       "ProfilePageQuery",
@@ -146,7 +145,6 @@ describe("createGql", () => {
     );
 
     expect(profileQuery.name).toBe("ProfilePageQuery");
-    expect(typeof profileQuery.transform).toBe("function");
-    expect(profileQuery.variables).toHaveProperty("userId");
+    expect(typeof profileQuery.parse).toBe("function");
   });
 });

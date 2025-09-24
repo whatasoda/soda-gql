@@ -1,6 +1,6 @@
 /** Canonical field selection types used by models and slices. */
 import type { AnyDirectiveAttachments } from "./directives";
-import type { AnyAssignableInput, AssignableInputByFieldName } from "./input";
+import type { AnyAssignableInput, AssignableInputByFieldName } from "./input-value";
 import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputTypeRef, PickTypeRefByFieldName } from "./schema";
 import type { ApplyTypeModifier } from "./type-modifier";
 import type { OutputInferrableTypeRef, OutputObjectRef, OutputTypeRef, OutputUnionRef } from "./type-ref";

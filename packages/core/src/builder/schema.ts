@@ -5,7 +5,7 @@ import type {
   Hidden,
   InputDef,
   ObjectDef,
-  OperationTypeNames,
+  OperationRoots,
   ScalarDef,
   UnionDef,
 } from "../types";
@@ -72,9 +72,9 @@ export const define = <const TName extends string>(name: TName) => ({
     } satisfies UnionDef),
 });
 
-export const defineOperationTypeNames = <const TOperationTypeNames extends OperationTypeNames>(
-  operationTypeNames: TOperationTypeNames,
-) => operationTypeNames;
+export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(
+  operationRoots: TOperationRoots,
+) => operationRoots;
 
 /** Accessor utilities for looking up argument definitions from the schema. */
 export const createGqlHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({
