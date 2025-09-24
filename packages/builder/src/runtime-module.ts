@@ -51,13 +51,9 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   }
 
   const sourceText = `(${expression})`;
-  const sourceFile = ts.createSourceFile(
-    "runtime-expression.ts",
-    sourceText,
-    ts.ScriptTarget.ES2022,
-    true,
-    ts.ScriptKind.TS,
-  );
+  const sourceFile = ts.createSourceFile("runtime-expression.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
+
+  const runtimePlaceholderIdentifier = "__SODA_RUNTIME_PLACEHOLDER__";
 
   const createAccessorExpression = (replacement: ReplacementEntry): ts.ElementAccessExpression =>
     ts.factory.createElementAccessExpression(
@@ -65,7 +61,132 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
       ts.factory.createStringLiteral(replacement.canonicalId),
     );
 
+  const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
+    const placeholderStatement = ts.factory.createExpressionStatement(ts.factory.createIdentifier(runtimePlaceholderIdentifier));
+    const block = ts.factory.createBlock([placeholderStatement], true);
+
+    return ts.factory.createArrowFunction(
+      fn.modifiers,
+      [],
+      [],
+      fn.type,
+      ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+      block,
+    );
+  };
+
+  const shouldReplaceTransform = (
+    expression: ts.Expression | undefined,
+  ): expression is ts.ArrowFunction | ts.FunctionExpression =>
+    Boolean(expression && (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)));
+
+  const maybeSanitiseTransform = (call: ts.CallExpression): ts.CallExpression => {
+    if (!ts.isPropertyAccessExpression(call.expression)) {
+      return call;
+    }
+
+    const method = call.expression.name.text;
+    const args = [...call.arguments];
+
+    const replaceTransformAt = (index: number) => {
+      const candidate = args[index];
+      if (shouldReplaceTransform(candidate)) {
+        args[index] = createRuntimePlaceholder(candidate);
+      }
+    };
+
+    if (method === "model" && args.length >= 3) {
+      replaceTransformAt(2);
+    }
+
+    if (args.every((arg, index) => arg === call.arguments[index])) {
+      return call;
+    }
+
+    return ts.factory.updateCallExpression(call, call.expression, call.typeArguments, args);
+  };
+
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+    const sanitizeSelectResolver = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
+      let changed = false;
+
+      const transformNode = (node: ts.Node): ts.Node => {
+        if (ts.isCallExpression(node)) {
+          const callee = node.expression;
+          const isSelectCall =
+            (ts.isPropertyAccessExpression(callee) && callee.name.text === "select") ||
+            (ts.isIdentifier(callee) && callee.text === "select");
+
+          if (isSelectCall) {
+            const args = [...node.arguments];
+            if (args.length >= 2 && shouldReplaceTransform(args[1])) {
+              args[1] = createRuntimePlaceholder(args[1]);
+              changed = true;
+              if (ts.isPropertyAccessExpression(callee)) {
+                return ts.factory.updateCallExpression(node, callee, node.typeArguments, args);
+              }
+              return ts.factory.updateCallExpression(node, callee, node.typeArguments, args);
+            }
+          }
+        }
+
+        if (
+          ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === "select"
+        ) {
+          const args = [...node.arguments];
+          if (args.length >= 2 && shouldReplaceTransform(args[1])) {
+            args[1] = createRuntimePlaceholder(args[1]);
+            changed = true;
+            return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
+          }
+        }
+
+        return ts.visitEachChild(node, transformNode, context);
+      };
+
+      let newBody: ts.ConciseBody = fn.body;
+      if (ts.isBlock(fn.body)) {
+        const statements = fn.body.statements.map((statement) => transformNode(statement) as ts.Statement);
+        if (changed) {
+          newBody = ts.factory.updateBlock(fn.body, statements);
+        }
+      } else {
+        const expressionBody = transformNode(fn.body) as ts.Expression;
+        if (changed) {
+          newBody = expressionBody;
+        }
+      }
+
+      if (!changed) {
+        return fn;
+      }
+
+      if (ts.isArrowFunction(fn)) {
+        return ts.factory.updateArrowFunction(
+          fn,
+          fn.modifiers,
+          fn.typeParameters,
+          fn.parameters,
+          fn.type,
+          fn.equalsGreaterThanToken,
+          newBody,
+        );
+      }
+
+      return ts.factory.updateFunctionExpression(
+        fn,
+        fn.modifiers,
+        fn.asteriskToken,
+        fn.name,
+        fn.typeParameters,
+        fn.parameters,
+        fn.type,
+        newBody as ts.Block,
+      );
+    };
+
     const visit: ts.Visitor = (node) => {
       if (ts.isPropertyAccessExpression(node)) {
         const path = getPropertyAccessPath(node);
@@ -77,8 +198,35 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
         }
       }
 
+      if (ts.isCallExpression(node)) {
+        const updated = maybeSanitiseTransform(node);
+        if (updated !== node) {
+          return ts.visitEachChild(updated, visit, context);
+        }
+
+        if (ts.isPropertyAccessExpression(node.expression)) {
+          const calleeName = node.expression.name.text;
+          if (calleeName === "querySlice" || calleeName === "mutationSlice" || calleeName === "subscriptionSlice") {
+            const args = [...node.arguments];
+            const resolver = args[2];
+            if (resolver && shouldReplaceTransform(resolver)) {
+              const sanitised = sanitizeSelectResolver(resolver);
+              if (sanitised !== resolver) {
+                args[2] = sanitised;
+                return ts.visitEachChild(
+                  ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args),
+                  visit,
+                  context,
+                );
+              }
+            }
+          }
+        }
+      }
+
       if (ts.isIdentifier(node)) {
-        if (ts.isPropertyAssignment(node.parent) && node.parent.name === node) {
+        const parent = node.parent;
+        if (parent && ts.isPropertyAssignment(parent) && parent.name === node) {
           return node;
         }
 
@@ -111,7 +259,8 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   }
 
   transformed.dispose();
-  return printed;
+
+  return printed.replace(new RegExp(`${runtimePlaceholderIdentifier};`, "g"), "/* runtime function */");
 };
 
 type ReplacementEntry = {
@@ -129,11 +278,7 @@ const createReplacementMap = (node: DependencyGraphNode, graph: DependencyGraph)
     }
 
     const accessorPrefix =
-      target.definition.kind === "model"
-        ? "models"
-        : target.definition.kind === "slice"
-          ? "slices"
-          : "operations";
+      target.definition.kind === "model" ? "models" : target.definition.kind === "slice" ? "slices" : "operations";
 
     map.set(symbol, { prefix: accessorPrefix, canonicalId });
   });
@@ -148,11 +293,7 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const factory = formatFactory(rewritten);
 
   const runtimeCall =
-    node.definition.kind === "model"
-      ? "createModel"
-      : node.definition.kind === "slice"
-        ? "createSlice"
-        : "createOperation";
+    node.definition.kind === "model" ? "createModel" : node.definition.kind === "slice" ? "createSlice" : "createOperation";
 
   return `  "${node.id}": ${runtimeCall}("${node.id}", ${factory}),`;
 };
@@ -214,7 +355,7 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
 
   if (missing.length > 0) {
     const [first] = missing;
-    const filePath = first ? first.id.split("::")[0] ?? first.id : outDir;
+    const filePath = first ? (first.id.split("::")[0] ?? first.id) : outDir;
     const exportName = first?.definition.exportName ?? "";
     return err({
       code: "MODULE_EVALUATION_FAILED",
