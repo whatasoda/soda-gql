@@ -263,14 +263,136 @@ const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: t
   return { method };
 };
 
+const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
+  if (ts.isIdentifier(parameter)) {
+    into.add(parameter.text);
+    return;
+  }
+
+  if (ts.isObjectBindingPattern(parameter)) {
+    parameter.elements.forEach((element) => {
+      if (element.name) {
+        collectParameterIdentifiers(element.name, into);
+      }
+    });
+    return;
+  }
+
+  if (ts.isArrayBindingPattern(parameter)) {
+    parameter.elements.forEach((element) => {
+      if (ts.isBindingElement(element) && element.name) {
+        collectParameterIdentifiers(element.name, into);
+      }
+    });
+  }
+};
+
+const collectReferencesFromCall = (
+  initializer: ts.CallExpression,
+  imports: readonly ModuleImport[],
+  definitionNames: ReadonlySet<string>,
+  identifiers: ReadonlySet<string>,
+): Set<string> => {
+  const namedImportLocals = new Set<string>();
+  const namespaceImportLocals = new Set<string>();
+
+  imports.forEach((entry) => {
+    if (entry.kind === "named" || entry.kind === "default") {
+      namedImportLocals.add(entry.local);
+    }
+    if (entry.kind === "namespace") {
+      namespaceImportLocals.add(entry.local);
+    }
+  });
+
+  const references = new Set<string>();
+  const baseExclusions = new Set<string>(["gql"]);
+
+  const visitNode = (node: ts.Node, exclusions: Set<string>) => {
+    if (ts.isCallExpression(node)) {
+      visitNode(node.expression, exclusions);
+      node.arguments.forEach((argument) => visitNode(argument, exclusions));
+      return;
+    }
+
+    if (ts.isFunctionLike(node) && node.parameters) {
+      const nextExclusions = new Set(exclusions);
+      node.parameters.forEach((parameter) => {
+        collectParameterIdentifiers(parameter.name, nextExclusions);
+      });
+
+      if (ts.isArrowFunction(node) && node.equalsGreaterThanToken) {
+        if (node.body) {
+          if (ts.isBlock(node.body)) {
+            node.body.statements.forEach((statement) => visitNode(statement, nextExclusions));
+          } else {
+            visitNode(node.body, nextExclusions);
+          }
+        }
+        return;
+      }
+
+      if (node.body && ts.isBlock(node.body)) {
+        node.body.statements.forEach((statement) => visitNode(statement, nextExclusions));
+      }
+      return;
+    }
+
+    if (ts.isPropertyAccessExpression(node)) {
+      const expression = node.expression;
+      if (ts.isIdentifier(expression) && !exclusions.has(expression.text)) {
+        if (namespaceImportLocals.has(expression.text)) {
+          references.add(node.name.text);
+          references.add(`${expression.text}.${node.name.text}`);
+        } else if (namedImportLocals.has(expression.text) || definitionNames.has(expression.text)) {
+          if (!identifiers.has(expression.text)) {
+            references.add(expression.text);
+          }
+        }
+      }
+
+      visitNode(node.expression, exclusions);
+      return;
+    }
+
+    if (ts.isIdentifier(node)) {
+      const name = node.text;
+      if (exclusions.has(name)) {
+        return;
+      }
+
+      if (namedImportLocals.has(name) || definitionNames.has(name)) {
+        if (!identifiers.has(name)) {
+          references.add(name);
+        }
+      }
+      return;
+    }
+
+    ts.forEachChild(node, (child) => visitNode(child, exclusions));
+  };
+
+  visitNode(initializer, baseExclusions);
+
+  return references;
+};
+
 const collectTopLevelDefinitions = (
   sourceFile: ts.SourceFile,
   identifiers: ReadonlySet<string>,
+  imports: readonly ModuleImport[],
 ): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: Set<ts.CallExpression>;
 } => {
-  const definitions: ModuleDefinition[] = [];
+  type PendingDefinition = {
+    readonly exportName: string;
+    readonly kind: GqlDefinitionKind;
+    readonly loc: SourceLocation;
+    readonly initializer: ts.CallExpression;
+  };
+
+  const pending: PendingDefinition[] = [];
   const handledCalls = new Set<ts.CallExpression>();
 
   sourceFile.statements.forEach((statement) => {
@@ -298,14 +420,23 @@ const collectTopLevelDefinitions = (
 
       handledCalls.add(declaration.initializer);
 
-      definitions.push({
-        kind: gqlDefinitionKinds[gqlCall.method],
+      pending.push({
         exportName: declaration.name.text,
+        kind: gqlDefinitionKinds[gqlCall.method],
         loc: toLocation(sourceFile, declaration),
-        references: [],
+        initializer: declaration.initializer,
       });
     });
   });
+
+  const definitionNames = new Set<string>(pending.map((item) => item.exportName));
+
+  const definitions = pending.map((item) => ({
+    kind: item.kind,
+    exportName: item.exportName,
+    loc: item.loc,
+    references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
+  } satisfies ModuleDefinition));
 
   return { definitions, handledCalls };
 };
@@ -344,7 +475,9 @@ const collectDiagnostics = (
 export const analyzeModule = ({ filePath, source }: AnalyzeModuleInput): ModuleAnalysis => {
   const sourceFile = createSourceFile(filePath, source);
   const gqlIdentifiers = collectGqlImports(sourceFile);
-  const { definitions, handledCalls } = collectTopLevelDefinitions(sourceFile, gqlIdentifiers);
+  const imports = collectImports(sourceFile);
+  const exports = collectExports(sourceFile);
+  const { definitions, handledCalls } = collectTopLevelDefinitions(sourceFile, gqlIdentifiers, imports);
   const diagnostics = collectDiagnostics(sourceFile, gqlIdentifiers, handledCalls);
 
   return {
@@ -352,7 +485,7 @@ export const analyzeModule = ({ filePath, source }: AnalyzeModuleInput): ModuleA
     sourceHash: createHash(source),
     definitions,
     diagnostics,
-    imports: collectImports(sourceFile),
-    exports: collectExports(sourceFile),
+    imports,
+    exports,
   } satisfies ModuleAnalysis;
 };

@@ -73,4 +73,63 @@ export const userSlice = buildSlice();
     expect(diagnostic.loc.start.line).toBeGreaterThan(0);
     expect(diagnostic.loc.start.column).toBeGreaterThan(0);
   });
+
+  it("captures references to imported slices and models", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import { userSlice } from "../entities/user";
+
+export const pageQuery = gql.query(
+  "ProfilePageQuery",
+  { userId: gql.scalar("ID", "!") },
+  ({ $ }) => ({
+    users: userSlice({ id: $.userId }),
+  }),
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
+    expect(definition?.references).toContain("userSlice");
+  });
+
+  it("captures references across same-module definitions", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+
+export const sliceA = gql.querySlice([], () => ({
+  echo: sliceB(),
+}), () => ({}));
+
+export const sliceB = gql.querySlice([], () => ({
+  echo: sliceA(),
+}), () => ({}));
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const sliceA = analysis.definitions.find((item) => item.exportName === "sliceA");
+    const sliceB = analysis.definitions.find((item) => item.exportName === "sliceB");
+
+    expect(sliceA?.references).toContain("sliceB");
+    expect(sliceB?.references).toContain("sliceA");
+  });
+
+  it("captures references accessed through namespace imports", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import * as slices from "../entities/slices";
+
+export const pageQuery = gql.query(
+  "ProfilePageQuery",
+  {},
+  () => ({
+    first: slices.slice0(),
+  }),
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
+    expect(definition?.references).toContain("slice0");
+  });
 });

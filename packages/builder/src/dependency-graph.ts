@@ -147,6 +147,7 @@ const buildModuleImportMap = (
     if (entry.kind === "namespace") {
       targetExports.forEach((canonicalId, exportedName) => {
         map.set(`${entry.local}.${exportedName}`, canonicalId);
+        map.set(exportedName, canonicalId);
       });
       return;
     }
