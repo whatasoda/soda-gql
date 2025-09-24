@@ -18,27 +18,10 @@ const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) 
   const block = ts.factory.createBlock([commentedReturn], true);
 
   if (ts.isArrowFunction(fn)) {
-    return ts.factory.updateArrowFunction(
-      fn,
-      fn.modifiers,
-      fn.typeParameters,
-      fn.parameters,
-      fn.type,
-      fn.equalsGreaterThanToken,
-      block,
-    );
+    return ts.factory.updateArrowFunction(fn, fn.modifiers, [], [], undefined, fn.equalsGreaterThanToken, block);
   }
 
-  return ts.factory.updateFunctionExpression(
-    fn,
-    fn.modifiers,
-    fn.asteriskToken,
-    fn.name,
-    fn.typeParameters,
-    fn.parameters,
-    fn.type,
-    block,
-  );
+  return ts.factory.updateFunctionExpression(fn, fn.modifiers, undefined, fn.name, [], [], undefined, block);
 };
 
 const indentLines = (value: string, indent: string): string =>
