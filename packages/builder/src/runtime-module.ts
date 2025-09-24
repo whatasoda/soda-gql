@@ -7,13 +7,15 @@ import ts from "typescript";
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
-const runtimePlaceholderIdentifier = "__SODA_RUNTIME_PLACEHOLDER__";
-
 const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
-  const placeholderStatement = ts.factory.createExpressionStatement(
-    ts.factory.createIdentifier(runtimePlaceholderIdentifier),
+  const returnStatement = ts.factory.createReturnStatement(ts.factory.createObjectLiteralExpression([], false));
+  const commentedReturn = ts.addSyntheticLeadingComment(
+    returnStatement,
+    ts.SyntaxKind.MultiLineCommentTrivia,
+    " runtime function ",
+    true,
   );
-  const block = ts.factory.createBlock([placeholderStatement], true);
+  const block = ts.factory.createBlock([commentedReturn], true);
 
   if (ts.isArrowFunction(fn)) {
     return ts.factory.updateArrowFunction(
@@ -276,7 +278,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 
   transformed.dispose();
 
-  return printed.replace(new RegExp(`${runtimePlaceholderIdentifier};`, "g"), "/* runtime function */");
+  return printed;
 };
 
 type ReplacementEntry = {
@@ -326,11 +328,7 @@ const replaceModelTransform = (expression: string): string => {
 
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const visit: ts.Visitor = (node) => {
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === "model"
-      ) {
+      if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "model") {
         const args = [...node.arguments];
         if (args.length >= 3 && (ts.isArrowFunction(args[2]) || ts.isFunctionExpression(args[2]))) {
           args[2] = createRuntimePlaceholder(args[2]);
@@ -362,7 +360,7 @@ const replaceModelTransform = (expression: string): string => {
 
   transformed.dispose();
 
-  return printed.replace(new RegExp(`${runtimePlaceholderIdentifier};`, "g"), "/* runtime function */");
+  return printed;
 };
 
 const renderSection = (label: string, entries: readonly string[]): string => {
