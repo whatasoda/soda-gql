@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 
@@ -15,6 +16,14 @@ const withArtifactFile = async (artifact: BuilderArtifact): Promise<string> => {
   const artifactFile = join(process.cwd(), "tests", ".tmp", `babel-plugin-artifact-${randomUUID()}.json`);
   await Bun.write(artifactFile, JSON.stringify(artifact));
   return artifactFile;
+};
+
+const writeTransformedOutput = async (label: string, contents: string) => {
+  const outputDir = join(process.cwd(), "tests", ".tmp", "unit-plugin-transforms");
+  mkdirSync(outputDir, { recursive: true });
+  const fileName = `${label}-${Date.now()}-${randomUUID()}.ts`;
+  const filePath = join(outputDir, fileName);
+  await Bun.write(filePath, contents);
 };
 
 const runTransform = async (source: string, filename: string, artifact: BuilderArtifact) => {
@@ -108,6 +117,7 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
 `;
 
     const transformed = await runTransform(source, sourcePath, artifact);
+    await writeTransformedOutput(`${queryRuntimeName}-profile`, transformed);
 
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
@@ -186,6 +196,7 @@ export const userSliceCatalog = {
 `;
 
     const transformed = await runTransform(source, sourcePath, artifact);
+    await writeTransformedOutput(`${nestedSliceRuntimeName}-nested`, transformed);
 
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
