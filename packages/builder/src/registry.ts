@@ -1,4 +1,5 @@
 import { isAbsolute, normalize, resolve } from "node:path";
+import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 
 export type CanonicalId = string & { readonly __brand: "CanonicalId" };
@@ -69,6 +70,7 @@ export type DocumentEntry = {
   readonly text: string;
   readonly variables: Readonly<Record<string, string>>;
   readonly sourcePath?: string;
+  readonly ast: DocumentNode;
 };
 
 export type RegisterDocumentInput = DocumentEntry;
@@ -161,6 +163,7 @@ export const createDocumentRegistry = <TValue>(): DocumentRegistry<TValue> => {
         text: input.text,
         variables: { ...input.variables },
         sourcePath: input.sourcePath,
+        ast: input.ast,
       };
 
       documents.set(input.name, value);

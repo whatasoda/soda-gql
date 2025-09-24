@@ -62,12 +62,20 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           text: "query ProfilePageQuery { viewer { id } }",
           variables: {},
           sourcePath,
+          ast: {
+            kind: "Document",
+            definitions: [],
+          },
         },
         UserSliceDocument: {
           name: "UserSliceDocument",
           text: "fragment UserSliceDocument on Query { viewer { id } }",
           variables: {},
           sourcePath,
+          ast: {
+            kind: "Document",
+            definitions: [],
+          },
         },
       },
       refs: {
@@ -123,18 +131,11 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).not.toContain("gql.query");
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
-    expect(transformed).toContain(
-      `import { ${modelRuntimeName} as ${modelRuntimeName}Artifact } from "@/graphql-runtime"`,
-    );
-    expect(transformed).toContain(
-      `import { ${sliceRuntimeName} as ${sliceRuntimeName}Artifact } from "@/graphql-runtime"`,
-    );
-    expect(transformed).toContain(
-      `import { ${queryRuntimeName} as ${queryRuntimeName}Artifact } from "@/graphql-runtime"`,
-    );
-    expect(transformed).toContain(`export const userModel = gqlRuntime.model(${modelRuntimeName}Artifact);`);
-    expect(transformed).toContain(`export const userSlice = gqlRuntime.querySlice(${sliceRuntimeName}Artifact);`);
-    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query(${queryRuntimeName}Artifact);`);
+    expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
+    expect(transformed).toContain(`export const userModel = gqlRuntime.model({`);
+    expect(transformed).toContain(`export const userSlice = gqlRuntime.querySlice({`);
+    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
+    expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
     expect(transformed).not.toMatch(/import\s+{\s*gql\b/);
   });
 
@@ -153,6 +154,10 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
           text: "fragment UserSliceCatalogDocument on Query { users { id } }",
           variables: {},
           sourcePath,
+          ast: {
+            kind: "Document",
+            definitions: [],
+          },
         },
       },
       refs: {
@@ -201,17 +206,9 @@ export const userSliceCatalog = {
 
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
-    expect(transformed).toContain(`${nestedModelRuntimeName}Artifact`);
-    expect(transformed).toContain(`${nestedSliceRuntimeName}Artifact`);
-    expect(transformed).toContain(`forIterate: gqlRuntime.model(${nestedModelRuntimeName}Artifact)`);
-    expect(transformed).toContain(`byId: gqlRuntime.querySlice(${nestedSliceRuntimeName}Artifact)`);
-    expect(transformed).toContain(
-      `import { ${nestedModelRuntimeName} as ${nestedModelRuntimeName}Artifact } from "@/graphql-runtime"`,
-    );
-    expect(transformed).toContain(
-      `import { ${nestedSliceRuntimeName} as ${nestedSliceRuntimeName}Artifact } from "@/graphql-runtime"`,
-    );
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain(`forIterate: gqlRuntime.model({`);
+    expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
     expect(transformed).not.toMatch(/import\s+{\s*gql\b/);
   });
 });

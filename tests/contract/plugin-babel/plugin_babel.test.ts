@@ -129,6 +129,10 @@ describe("@soda-gql/plugin-babel", () => {
               variables: {
                 userId: "ID!",
               },
+              ast: {
+                kind: "Document",
+                definitions: [],
+              },
             },
           },
           refs: {
@@ -170,11 +174,9 @@ describe("@soda-gql/plugin-babel", () => {
     const aliasName = `${runtimeName}Artifact`;
 
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
-    expect(transformed).toContain(
-      `import { ${runtimeName} as ${aliasName} } from "@/graphql-system"`,
-    );
+    expect(transformed).toContain(`const ${runtimeName}Document = {`);
     expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query(${aliasName});`);
+    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });
     await Bun.write(join(outputDir, `${runtimeName}.${Date.now()}.ts`), transformed);

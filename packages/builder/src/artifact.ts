@@ -1,4 +1,4 @@
-import { print } from "graphql";
+import { print, type DocumentNode } from "graphql";
 import { pathToFileURL } from "node:url";
 import { err, ok, type Result } from "neverthrow";
 
@@ -11,6 +11,17 @@ const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("
 
 const computeModelHash = (canonicalId: string, dependencies: readonly string[]): string =>
   Bun.hash(`${canonicalId}:${dependencies.join(",")}`).toString(16);
+
+const stripDocument = (document: DocumentNode): DocumentNode =>
+  JSON.parse(
+    JSON.stringify(document, (key, value) => {
+      if (key === "loc") {
+        return undefined;
+      }
+
+      return value;
+    }),
+  ) as DocumentNode;
 
 export type BuildArtifactInput = {
   readonly graph: DependencyGraph;
@@ -174,6 +185,7 @@ export const buildArtifact = async ({ graph, cache, runtimeModulePath }: BuildAr
       text,
       variables: operationDescriptor.variables ?? {},
       sourcePath: filePath,
+      ast: stripDocument(operationDescriptor.document as DocumentNode),
     });
 
     if (documentResult.isErr()) {

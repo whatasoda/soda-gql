@@ -189,10 +189,9 @@ describe("zero-runtime transform", () => {
 
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
-    expect(transformed).toContain(
-      `import { ${runtimeName} as ${aliasName} } from "@/graphql-system"`,
-    );
-    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query(${aliasName});`);
+    expect(transformed).toContain(`const ${runtimeName}Document = {`);
+    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
+    expect(transformed).toContain(`document: ${runtimeName}Document`);
     const transformOutDir = join(cacheDir, "plugin-output");
     mkdirSync(transformOutDir, { recursive: true });
     await Bun.write(join(transformOutDir, "profile.query.transformed.ts"), transformed);
