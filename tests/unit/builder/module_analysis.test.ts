@@ -132,4 +132,29 @@ export const pageQuery = gql.query(
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
     expect(definition?.references).toContain("slice0");
   });
+
+  it("extracts definitions from object property exports", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+
+export const user_remoteModel = {
+  forIterate: gql.model(
+    "user",
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+    (data) => ({
+      id: data.id,
+      name: data.name,
+    }),
+  ),
+};
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const names = analysis.definitions.map((item) => item.exportName);
+    expect(names).toContain("user_remoteModel.forIterate");
+    expect(analysis.diagnostics).toHaveLength(0);
+  });
 });

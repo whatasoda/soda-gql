@@ -82,15 +82,8 @@ const toLocation = (resolvePosition: (offset: number) => SourcePosition, span: S
 
 const collectImports = (module: Module): ModuleImport[] => {
   const imports: ModuleImport[] = [];
-  module.body.forEach((item) => {
-    if (item.type !== "ModuleDeclaration") {
-      return;
-    }
-    const declaration = item.declaration;
-    if (declaration.type !== "ImportDeclaration") {
-      return;
-    }
 
+  const handle = (declaration: ImportDeclaration) => {
     const source = declaration.source.value;
     declaration.specifiers?.forEach((specifier) => {
       if (specifier.type === "ImportSpecifier") {
@@ -124,21 +117,28 @@ const collectImports = (module: Module): ModuleImport[] => {
         });
       }
     });
+  };
+
+  module.body.forEach((item) => {
+    if (item.type === "ImportDeclaration") {
+      handle(item);
+      return;
+    }
+    if (item.type === "ModuleDeclaration" && item.declaration.type === "ImportDeclaration") {
+      handle(item.declaration);
+    }
   });
+
   return imports;
 };
 
 const collectExports = (module: Module): ModuleExport[] => {
   const exports: ModuleExport[] = [];
-  module.body.forEach((item) => {
-    if (item.type !== "ModuleDeclaration") {
-      return;
-    }
-    const declaration = item.declaration;
 
+  const handle = (declaration: any) => {
     if (declaration.type === "ExportDeclaration") {
       if (declaration.declaration.type === "VariableDeclaration") {
-        declaration.declaration.declarations.forEach((decl) => {
+        declaration.declaration.declarations.forEach((decl: any) => {
           if (decl.id.type === "Identifier") {
             exports.push({
               kind: "named",
@@ -165,7 +165,7 @@ const collectExports = (module: Module): ModuleExport[] => {
 
     if (declaration.type === "ExportNamedDeclaration") {
       const source = declaration.source?.value;
-      declaration.specifiers?.forEach((specifier) => {
+      declaration.specifiers?.forEach((specifier: any) => {
         if (specifier.type !== "ExportSpecifier") {
           return;
         }
@@ -199,18 +199,39 @@ const collectExports = (module: Module): ModuleExport[] => {
         isTypeOnly: false,
       });
     }
+  };
+
+  module.body.forEach((item) => {
+    if (item.type === "ExportDeclaration" || item.type === "ExportNamedDeclaration" || item.type === "ExportAllDeclaration") {
+      handle(item);
+      return;
+    }
+
+    if (item.type === "ModuleDeclaration") {
+      const declaration = item.declaration;
+      if (
+        declaration.type === "ExportDeclaration" ||
+        declaration.type === "ExportNamedDeclaration" ||
+        declaration.type === "ExportAllDeclaration"
+      ) {
+        handle(declaration);
+      }
+    }
   });
+
   return exports;
 };
 
 const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
   const identifiers = new Set<string>();
   module.body.forEach((item) => {
-    if (item.type !== "ModuleDeclaration") {
-      return;
-    }
-    const declaration = item.declaration;
-    if (declaration.type !== "ImportDeclaration") {
+    const declaration =
+      item.type === "ImportDeclaration"
+        ? item
+        : item.type === "ModuleDeclaration" && item.declaration.type === "ImportDeclaration"
+          ? item.declaration
+          : null;
+    if (!declaration) {
       return;
     }
     if (!declaration.source.value.endsWith("/graphql-system")) {
@@ -233,11 +254,15 @@ const isGqlCall = (
   call: CallExpression,
 ): { readonly method: string; readonly callee: MemberExpression } | null => {
   const callee = call.callee;
-  if (callee.type !== "Expression") {
+  let expression: MemberExpression | null = null;
+
+  if (callee.type === "MemberExpression") {
+    expression = callee;
+  } else if (callee.type === "Super" || callee.type === "Import") {
     return null;
-  }
-  const expression = callee.expression;
-  if (expression.type !== "MemberExpression") {
+  } else if ((callee as any).expression && (callee as any).expression.type === "MemberExpression") {
+    expression = (callee as any).expression as MemberExpression;
+  } else {
     return null;
   }
   if (expression.object.type !== "Identifier") {
@@ -256,7 +281,10 @@ const isGqlCall = (
   return { method, callee: expression };
 };
 
-const collectIdentifiersFromPattern = (pattern: Pattern, into: Set<string>) => {
+const collectIdentifiersFromPattern = (pattern: Pattern | null | undefined, into: Set<string>) => {
+  if (!pattern) {
+    return;
+  }
   if (pattern.type === "Identifier") {
     into.add(pattern.value);
     return;
@@ -460,6 +488,19 @@ const collectTopLevelDefinitions = (
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: Set<CallExpression>;
 } => {
+  const getPropertyName = (property: any): string | null => {
+    if (!property) {
+      return null;
+    }
+    if (property.type === "Identifier") {
+      return property.value;
+    }
+    if (property.type === "StringLiteral" || property.type === "NumericLiteral") {
+      return property.value;
+    }
+    return null;
+  };
+
   type Pending = {
     readonly exportName: string;
     readonly kind: GqlDefinitionKind;
@@ -475,35 +516,60 @@ const collectTopLevelDefinitions = (
     pending.push({ exportName, initializer, span, kind });
   };
 
-  module.body.forEach((item) => {
-    if (item.type === "ModuleDeclaration") {
-      const declaration = item.declaration;
-
-      if (declaration.type === "ExportDeclaration" && declaration.declaration.type === "VariableDeclaration") {
-        declaration.declaration.declarations.forEach((decl) => {
-          if (decl.id.type !== "Identifier" || !decl.init || decl.init.type !== "CallExpression") {
-            return;
-          }
-          const gqlCall = isGqlCall(gqlIdentifiers, decl.init);
-          if (!gqlCall) {
-            return;
-          }
-          register(decl.id.value, decl.init, decl.span ?? decl.init.span, gqlCallKinds[gqlCall.method]);
-        });
+  const handleVariableDeclaration = (declaration: any) => {
+    declaration.declarations?.forEach((decl: any) => {
+      if (decl.id.type !== "Identifier" || !decl.init) {
         return;
       }
 
-      if (declaration.type === "ExportNamedDeclaration" && declaration.declaration && declaration.declaration.type === "VariableDeclaration") {
-        declaration.declaration.declarations.forEach((decl) => {
-          if (decl.id.type !== "Identifier" || !decl.init || decl.init.type !== "CallExpression") {
+      const baseName = decl.id.value;
+
+      if (decl.init.type === "CallExpression") {
+        const gqlCall = isGqlCall(gqlIdentifiers, decl.init);
+        if (!gqlCall) {
+          return;
+        }
+        register(baseName, decl.init, decl.span ?? decl.init.span, gqlCallKinds[gqlCall.method]);
+        return;
+      }
+
+      if (decl.init.type === "ObjectExpression") {
+        decl.init.properties?.forEach((prop: any) => {
+          if (prop.type !== "KeyValueProperty") {
             return;
           }
-          const gqlCall = isGqlCall(gqlIdentifiers, decl.init);
+          const name = getPropertyName(prop.key);
+          if (!name || prop.value.type !== "CallExpression") {
+            return;
+          }
+          const gqlCall = isGqlCall(gqlIdentifiers, prop.value);
           if (!gqlCall) {
             return;
           }
-          register(decl.id.value, decl.init, decl.span ?? decl.init.span, gqlCallKinds[gqlCall.method]);
+          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, gqlCallKinds[gqlCall.method]);
         });
+      }
+    });
+  };
+
+  module.body.forEach((item) => {
+    if (item.type === "ExportDeclaration" && item.declaration.type === "VariableDeclaration") {
+      handleVariableDeclaration(item.declaration);
+      return;
+    }
+
+    if (item.type === "ExportNamedDeclaration" && item.declaration && item.declaration.type === "VariableDeclaration") {
+      handleVariableDeclaration(item.declaration);
+      return;
+    }
+
+    if (item.type === "ModuleDeclaration") {
+      const declaration = item.declaration;
+      if (declaration.type === "ExportDeclaration" && declaration.declaration.type === "VariableDeclaration") {
+        handleVariableDeclaration(declaration.declaration);
+      }
+      if (declaration.type === "ExportNamedDeclaration" && declaration.declaration && declaration.declaration.type === "VariableDeclaration") {
+        handleVariableDeclaration(declaration.declaration);
       }
     }
   });

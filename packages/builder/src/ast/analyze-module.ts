@@ -385,6 +385,16 @@ const collectTopLevelDefinitions = (
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: Set<ts.CallExpression>;
 } => {
+  const getPropertyName = (name: ts.PropertyName): string | null => {
+    if (ts.isIdentifier(name)) {
+      return name.text;
+    }
+    if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+      return name.text;
+    }
+    return null;
+  };
+
   type PendingDefinition = {
     readonly exportName: string;
     readonly kind: GqlDefinitionKind;
@@ -394,6 +404,16 @@ const collectTopLevelDefinitions = (
 
   const pending: PendingDefinition[] = [];
   const handledCalls = new Set<ts.CallExpression>();
+
+  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node, kind: GqlDefinitionKind) => {
+    handledCalls.add(initializer);
+    pending.push({
+      exportName,
+      kind,
+      loc: toLocation(sourceFile, span),
+      initializer,
+    });
+  };
 
   sourceFile.statements.forEach((statement) => {
     if (!ts.isVariableStatement(statement)) {
@@ -405,27 +425,45 @@ const collectTopLevelDefinitions = (
     }
 
     statement.declarationList.declarations.forEach((declaration) => {
-      if (!ts.isIdentifier(declaration.name)) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
         return;
       }
 
-      if (!declaration.initializer || !ts.isCallExpression(declaration.initializer)) {
+      const exportName = declaration.name.text;
+      const initializer = declaration.initializer;
+
+      if (ts.isCallExpression(initializer)) {
+        const gqlCall = isGqlDefinitionCall(identifiers, initializer);
+        if (!gqlCall) {
+          return;
+        }
+        register(exportName, initializer, declaration, gqlDefinitionKinds[gqlCall.method]);
         return;
       }
 
-      const gqlCall = isGqlDefinitionCall(identifiers, declaration.initializer);
-      if (!gqlCall) {
-        return;
+      if (ts.isObjectLiteralExpression(initializer)) {
+        initializer.properties.forEach((property) => {
+          if (!ts.isPropertyAssignment(property)) {
+            return;
+          }
+
+          const name = getPropertyName(property.name);
+          if (!name) {
+            return;
+          }
+
+          if (!ts.isCallExpression(property.initializer)) {
+            return;
+          }
+
+          const gqlCall = isGqlDefinitionCall(identifiers, property.initializer);
+          if (!gqlCall) {
+            return;
+          }
+
+          register(`${exportName}.${name}`, property.initializer, property, gqlDefinitionKinds[gqlCall.method]);
+        });
       }
-
-      handledCalls.add(declaration.initializer);
-
-      pending.push({
-        exportName: declaration.name.text,
-        kind: gqlDefinitionKinds[gqlCall.method],
-        loc: toLocation(sourceFile, declaration),
-        initializer: declaration.initializer,
-      });
     });
   });
 
