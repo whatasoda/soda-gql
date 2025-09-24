@@ -175,6 +175,8 @@ describe("runtime builder flow", () => {
 
     const artifact = JSON.parse(await Bun.file(artifactPath).text());
     expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
+    expect(artifact.documents.ProfilePageQuery.text).toContain("remoteUsers");
+    expect(artifact.documents.ProfilePageQuery.text).toContain("catalogUsers");
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
     expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);

@@ -1,5 +1,6 @@
 import { gql } from "@/graphql-system";
-import { userSlice } from "../entities/user";
+import { userSlice, userSliceCatalog } from "../entities/user";
+import * as userCatalog from "../entities/user.catalog";
 
 type ProfileQueryVariables = {
   readonly userId: string;
@@ -15,6 +16,13 @@ export const profileQuery = gql.query(
   ({ $ }) => ({
     users: userSlice({
       id: $.userId,
+      categoryId: $.categoryId,
+    }),
+    remoteUsers: userSliceCatalog.byId({
+      id: $.userId,
+      categoryId: $.categoryId,
+    }),
+    catalogUsers: userCatalog.collections.byCategory({
       categoryId: $.categoryId,
     }),
   }),

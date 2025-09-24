@@ -93,7 +93,7 @@ const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null =>
 };
 
 const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
-  Object.entries(args)
+  Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
       const valueNode = buildArgumentValue(value);
       return valueNode ? { kind: Kind.ARGUMENT, name: { kind: Kind.NAME, value: name }, value: valueNode } : null;
