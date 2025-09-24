@@ -122,9 +122,7 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).not.toContain("gql.query");
-    expect(transformed).toContain(`${modelRuntimeName}Artifact`);
-    expect(transformed).toContain(`${sliceRuntimeName}Artifact`);
-    expect(transformed).toContain(`${queryRuntimeName}Artifact`);
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain(
       `import { ${modelRuntimeName} as ${modelRuntimeName}Artifact } from "@/graphql-runtime"`,
     );
@@ -134,7 +132,10 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
     expect(transformed).toContain(
       `import { ${queryRuntimeName} as ${queryRuntimeName}Artifact } from "@/graphql-runtime"`,
     );
-    expect(transformed).not.toContain('import { gql');
+    expect(transformed).toContain(`export const userModel = gqlRuntime.model(${modelRuntimeName}Artifact);`);
+    expect(transformed).toContain(`export const userSlice = gqlRuntime.querySlice(${sliceRuntimeName}Artifact);`);
+    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query(${queryRuntimeName}Artifact);`);
+    expect(transformed).not.toMatch(/import\s+{\s*gql\b/);
   });
 
   it("replaces nested gql helpers exposed via object properties", async () => {
@@ -202,14 +203,15 @@ export const userSliceCatalog = {
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).toContain(`${nestedModelRuntimeName}Artifact`);
     expect(transformed).toContain(`${nestedSliceRuntimeName}Artifact`);
-    expect(transformed).toContain(`forIterate: ${nestedModelRuntimeName}Artifact`);
-    expect(transformed).toContain(`byId: ${nestedSliceRuntimeName}Artifact`);
+    expect(transformed).toContain(`forIterate: gqlRuntime.model(${nestedModelRuntimeName}Artifact)`);
+    expect(transformed).toContain(`byId: gqlRuntime.querySlice(${nestedSliceRuntimeName}Artifact)`);
     expect(transformed).toContain(
       `import { ${nestedModelRuntimeName} as ${nestedModelRuntimeName}Artifact } from "@/graphql-runtime"`,
     );
     expect(transformed).toContain(
       `import { ${nestedSliceRuntimeName} as ${nestedSliceRuntimeName}Artifact } from "@/graphql-runtime"`,
     );
-    expect(transformed).not.toContain('import { gql');
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).not.toMatch(/import\s+{\s*gql\b/);
   });
 });

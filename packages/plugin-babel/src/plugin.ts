@@ -130,6 +130,35 @@ const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
   );
 };
 
+const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
+  const existing = programPath.node.body.find(
+    (statement) =>
+      statement.type === "ImportDeclaration" &&
+      statement.source.value === "@soda-gql/runtime",
+  );
+
+  if (existing) {
+    const hasSpecifier = existing.specifiers.some(
+      (specifier) => specifier.type === "ImportSpecifier" && specifier.imported.type === "Identifier" && specifier.imported.name === "gqlRuntime",
+    );
+
+    if (!hasSpecifier) {
+      existing.specifiers = [
+        ...existing.specifiers,
+        t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime")),
+      ];
+    }
+
+    return;
+  }
+
+  programPath.node.body.unshift(
+    t.importDeclaration([
+      t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime")),
+    ], t.stringLiteral("@soda-gql/runtime")),
+  );
+};
+
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
   pre() {
@@ -207,8 +236,10 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
           const alias = `${runtimeExport}Artifact`;
 
           ensureImport(programPath, pluginState.importSource, runtimeExport, alias);
+          ensureGqlRuntimeImport(programPath);
 
-          callPath.replaceWith(t.identifier(alias));
+          const callee = t.memberExpression(t.identifier("gqlRuntime"), t.identifier(method));
+          callPath.replaceWith(t.callExpression(callee, [t.identifier(alias)]));
           replacedCanonicals.add(canonicalId);
         },
       });
