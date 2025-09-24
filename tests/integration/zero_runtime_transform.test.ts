@@ -4,6 +4,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
+import { createCanonicalId, createRuntimeBindingName } from "../../packages/builder/src/index.ts";
+
 type CliResult = {
   readonly stdout: string;
   readonly stderr: string;
@@ -181,9 +183,15 @@ describe("zero-runtime transform", () => {
 
     expect(transformResult).not.toBeNull();
     const transformed = transformResult?.code ?? "";
+    const canonicalId = createCanonicalId(sourcePath, "profileQuery");
+    const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
+    const aliasName = `${runtimeName}Artifact`;
+
     expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain('import { profileQuery as profileQueryArtifact } from "@/graphql-system"');
-    expect(transformed).toContain("export const profileQuery = profileQueryArtifact;");
+    expect(transformed).toContain(
+      `import { ${runtimeName} as ${aliasName} } from "@/graphql-system"`,
+    );
+    expect(transformed).toContain(`export const profileQuery = ${aliasName};`);
     const transformOutDir = join(cacheDir, "plugin-output");
     mkdirSync(transformOutDir, { recursive: true });
     await Bun.write(join(transformOutDir, "profile.query.transformed.ts"), transformed);

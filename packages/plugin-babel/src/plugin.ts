@@ -1,7 +1,7 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { BuilderArtifact } from "@soda-gql/builder";
+import { createRuntimeBindingName, type BuilderArtifact } from "@soda-gql/builder";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { ensureImport } from "./imports";
 import { normalizeOptions } from "./options";
@@ -11,16 +11,124 @@ export type PluginState = {
   readonly options: SodaGqlBabelOptions;
   readonly artifact: BuilderArtifact;
   readonly importSource: string;
-  readonly importAliases: Map<string, string>;
 };
 
 type PluginPassState = PluginPass & { _state?: PluginState };
 
-const isQueryCall = (node: t.Node): node is t.CallExpression =>
-  t.isCallExpression(node) &&
-  t.isMemberExpression(node.callee) &&
-  t.isIdentifier(node.callee.object, { name: "gql" }) &&
-  t.isIdentifier(node.callee.property, { name: "query" });
+const gqlMethodNames = new Set(["query", "querySlice", "model"] as const);
+
+type SupportedGqlMethod = typeof gqlMethodNames extends Set<infer U> ? U : never;
+
+const asSupportedMethod = (node: t.CallExpression): SupportedGqlMethod | null => {
+  if (!t.isMemberExpression(node.callee)) {
+    return null;
+  }
+
+  if (!t.isIdentifier(node.callee.object, { name: "gql" })) {
+    return null;
+  }
+
+  const property = node.callee.property;
+  if (!t.isIdentifier(property)) {
+    return null;
+  }
+
+  if (!gqlMethodNames.has(property.name as SupportedGqlMethod)) {
+    return null;
+  }
+
+  return property.name as SupportedGqlMethod;
+};
+
+const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly string[] | null => {
+  let current: NodePath<t.Node> | null = callPath;
+  const segments: string[] = [];
+
+  while (current) {
+    const parent = current.parentPath;
+    if (!parent) {
+      return null;
+    }
+
+    if (parent.isObjectProperty()) {
+      const key = parent.node.key;
+      if (t.isIdentifier(key)) {
+        segments.unshift(key.name);
+      } else if (t.isStringLiteral(key)) {
+        segments.unshift(key.value);
+      } else {
+        return null;
+      }
+      current = parent;
+      continue;
+    }
+
+    if (parent.isObjectExpression()) {
+      current = parent;
+      continue;
+    }
+
+    if (parent.isVariableDeclarator()) {
+      const id = parent.node.id;
+      if (!t.isIdentifier(id)) {
+        return null;
+      }
+
+      const declaration = parent.parentPath;
+      if (!declaration || !declaration.isVariableDeclaration()) {
+        return null;
+      }
+
+      const exportDecl = declaration.parentPath;
+      if (!exportDecl || !exportDecl.isExportNamedDeclaration()) {
+        return null;
+      }
+
+      segments.unshift(id.name);
+      return segments;
+    }
+
+    return null;
+  }
+
+  return null;
+};
+
+const makeExportName = (segments: readonly string[]): string | null => {
+  if (segments.length === 0) {
+    return null;
+  }
+
+  return segments.join(".");
+};
+
+const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
+  const binding = programPath.scope.getBinding("gql");
+  if (!binding || binding.referencePaths.length > 0) {
+    return;
+  }
+
+  const importSpecifierPath = binding.path;
+  if (!importSpecifierPath.isImportSpecifier()) {
+    return;
+  }
+
+  const declaration = importSpecifierPath.parentPath;
+  if (!declaration?.isImportDeclaration()) {
+    return;
+  }
+
+  const remainingSpecifiers = declaration.node.specifiers.filter((specifier) => specifier !== importSpecifierPath.node);
+
+  if (remainingSpecifiers.length === 0) {
+    declaration.remove();
+    return;
+  }
+
+  declaration.replaceWith(
+    t.importDeclaration(remainingSpecifiers, declaration.node.source),
+  );
+};
 
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
@@ -34,7 +142,6 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
       options,
       artifact,
       importSource,
-      importAliases: new Map<string, string>(),
     };
   },
   visitor: {
@@ -50,37 +157,66 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
         return;
       }
 
+      const replacedCanonicals = new Set<string>();
+
       programPath.traverse({
-        VariableDeclarator(declaratorPath) {
-          const init = declaratorPath.node.init;
-          if (!init || !isQueryCall(init)) {
+        CallExpression(callPath) {
+          const method = asSupportedMethod(callPath.node);
+          if (!method) {
             return;
           }
 
-          const id = declaratorPath.node.id;
-          if (!t.isIdentifier(id)) {
+          const segments = collectExportSegments(callPath);
+          if (!segments) {
             return;
           }
 
-          const canonicalId = resolveCanonicalId(filename, id.name);
+          const exportName = makeExportName(segments);
+          if (!exportName) {
+            return;
+          }
+
+          const canonicalId = resolveCanonicalId(filename, exportName);
           const refEntry = lookupRef(pluginState.artifact, canonicalId);
           if (!refEntry) {
             throw new Error("SODA_GQL_DOCUMENT_NOT_FOUND");
           }
 
-          if (refEntry.document) {
-            const documentEntry = pluginState.artifact.documents?.[refEntry.document];
-            if (!documentEntry) {
-              throw new Error("SODA_GQL_DOCUMENT_NOT_FOUND");
+          if (method === "query") {
+            if (refEntry.kind !== "query") {
+              throw new Error("SODA_GQL_KIND_MISMATCH");
+            }
+
+            if (refEntry.document) {
+              const documentEntry = pluginState.artifact.documents?.[refEntry.document];
+              if (!documentEntry) {
+                throw new Error("SODA_GQL_DOCUMENT_NOT_FOUND");
+              }
             }
           }
 
-          const alias = `${id.name}Artifact`;
-          pluginState.importAliases.set(id.name, alias);
-          ensureImport(programPath, pluginState.importSource, id.name, alias);
-          declaratorPath.get("init").replaceWith(t.identifier(alias));
+          if (method === "querySlice" && refEntry.kind !== "slice") {
+            throw new Error("SODA_GQL_KIND_MISMATCH");
+          }
+
+          if (method === "model" && refEntry.kind !== "model") {
+            throw new Error("SODA_GQL_KIND_MISMATCH");
+          }
+
+          const runtimeExport = createRuntimeBindingName(canonicalId, exportName);
+          const alias = `${runtimeExport}Artifact`;
+
+          ensureImport(programPath, pluginState.importSource, runtimeExport, alias);
+
+          callPath.replaceWith(t.identifier(alias));
+          replacedCanonicals.add(canonicalId);
         },
       });
+
+      if (replacedCanonicals.size > 0) {
+        programPath.scope.crawl();
+        maybeRemoveUnusedGqlImport(programPath);
+      }
     },
   },
 });

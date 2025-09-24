@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
+import { createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
+
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
   readonly artifactsPath: string;
@@ -69,7 +71,7 @@ describe("@soda-gql/plugin-babel", () => {
   it("throws when document is not present in artifact refs", async () => {
     mkdirSync(tmpRoot, { recursive: true });
     const artifactPath = join(tmpRoot, `missing-doc-${Date.now()}.json`);
-    const canonicalId = `${profileQueryPath}::profileQuery`;
+    const canonicalId = createCanonicalId(profileQueryPath, "profileQuery");
 
     await Bun.write(
       artifactPath,
@@ -164,9 +166,14 @@ describe("@soda-gql/plugin-babel", () => {
 
     expect(result).not.toBeNull();
     const transformed = result?.code ?? "";
-    expect(transformed).toContain('import { profileQuery as profileQueryArtifact } from "@/graphql-system"');
+    const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
+    const aliasName = `${runtimeName}Artifact`;
+
+    expect(transformed).toContain(
+      `import { ${runtimeName} as ${aliasName} } from "@/graphql-system"`,
+    );
     expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain("export const profileQuery = profileQueryArtifact;");
+    expect(transformed).toContain(`export const profileQuery = ${aliasName};`);
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });
     await Bun.write(join(outputDir, `profile.query.${Date.now()}.ts`), transformed);

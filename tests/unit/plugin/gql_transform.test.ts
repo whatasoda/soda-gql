@@ -4,7 +4,12 @@ import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 
 import createPlugin from "../../../packages/plugin-babel/src/index.ts";
-import { createCanonicalId, type BuilderArtifact, type CanonicalId } from "../../../packages/builder/src/index.ts";
+import {
+  createCanonicalId,
+  createRuntimeBindingName,
+  type BuilderArtifact,
+  type CanonicalId,
+} from "../../../packages/builder/src/index.ts";
 
 const withArtifactFile = async (artifact: BuilderArtifact): Promise<string> => {
   const artifactFile = join(process.cwd(), "tests", ".tmp", `babel-plugin-artifact-${randomUUID()}.json`);
@@ -36,6 +41,10 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const modelId: CanonicalId = createCanonicalId(sourcePath, "userModel");
     const sliceId: CanonicalId = createCanonicalId(sourcePath, "userSlice");
     const queryId: CanonicalId = createCanonicalId(sourcePath, "profileQuery");
+
+    const modelRuntimeName = createRuntimeBindingName(modelId, "userModel");
+    const sliceRuntimeName = createRuntimeBindingName(sliceId, "userSlice");
+    const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
     const artifact: BuilderArtifact = {
       documents: {
@@ -103,10 +112,18 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).not.toContain("gql.query");
-    expect(transformed).toContain("userModelArtifact");
-    expect(transformed).toContain("userSliceArtifact");
-    expect(transformed).toContain("profileQueryArtifact");
-    expect(transformed).toContain('import { userModel as userModelArtifact');
+    expect(transformed).toContain(`${modelRuntimeName}Artifact`);
+    expect(transformed).toContain(`${sliceRuntimeName}Artifact`);
+    expect(transformed).toContain(`${queryRuntimeName}Artifact`);
+    expect(transformed).toContain(
+      `import { ${modelRuntimeName} as ${modelRuntimeName}Artifact } from "@/graphql-runtime"`,
+    );
+    expect(transformed).toContain(
+      `import { ${sliceRuntimeName} as ${sliceRuntimeName}Artifact } from "@/graphql-runtime"`,
+    );
+    expect(transformed).toContain(
+      `import { ${queryRuntimeName} as ${queryRuntimeName}Artifact } from "@/graphql-runtime"`,
+    );
     expect(transformed).not.toContain('import { gql');
   });
 
@@ -114,6 +131,9 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
     const sourcePath = join(process.cwd(), "tests/fixtures/plugin/entities/user.ts");
     const nestedModelId: CanonicalId = createCanonicalId(sourcePath, "userRemote.forIterate");
     const nestedSliceId: CanonicalId = createCanonicalId(sourcePath, "userSliceCatalog.byId");
+
+    const nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
+    const nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
 
     const artifact: BuilderArtifact = {
       documents: {
@@ -169,11 +189,16 @@ export const userSliceCatalog = {
 
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
-    expect(transformed).toContain("userRemote_forIterateArtifact");
-    expect(transformed).toContain("userSliceCatalog_byIdArtifact");
-    expect(transformed).toContain("forIterate: userRemote_forIterateArtifact");
-    expect(transformed).toContain("byId: userSliceCatalog_byIdArtifact");
-    expect(transformed).toContain('import { userRemote_forIterate as userRemote_forIterateArtifact');
+    expect(transformed).toContain(`${nestedModelRuntimeName}Artifact`);
+    expect(transformed).toContain(`${nestedSliceRuntimeName}Artifact`);
+    expect(transformed).toContain(`forIterate: ${nestedModelRuntimeName}Artifact`);
+    expect(transformed).toContain(`byId: ${nestedSliceRuntimeName}Artifact`);
+    expect(transformed).toContain(
+      `import { ${nestedModelRuntimeName} as ${nestedModelRuntimeName}Artifact } from "@/graphql-runtime"`,
+    );
+    expect(transformed).toContain(
+      `import { ${nestedSliceRuntimeName} as ${nestedSliceRuntimeName}Artifact } from "@/graphql-runtime"`,
+    );
     expect(transformed).not.toContain('import { gql');
   });
 });

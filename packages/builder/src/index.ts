@@ -4,6 +4,7 @@ import { runBuilderCli } from "./cli";
 export { runBuilderCli } from "./cli";
 export type { CanonicalId } from "./registry";
 export { createCanonicalId, createDocumentRegistry } from "./registry";
+export { createRuntimeBindingName, createRuntimeDocumentName } from "./runtime-names";
 export { runBuilder } from "./runner";
 export type {
   BuilderArtifact,

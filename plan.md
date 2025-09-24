@@ -32,8 +32,8 @@ The core builder pipeline now emits placeholder runtime modules, canonical depen
    - Validate with smoke fixtures that applications can import the generated documents/functions without referencing builder internals.
 
 ### Runtime Export Surface Sketch (2025-09-24)
-- Builder runtime modules should emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export mirrors the canonical ID with `.` replaced by `_` (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId`).
-- Operations expose `{ document, variables, transform }` tuples; slices expose `{ invoke, document }` bindings; models expose `{ fragment, transform }` helpers. Each named export proxies the corresponding entry in the aggregated map to keep imports ergonomic.
+- Builder runtime modules emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export uses the sanitized export name plus an 8-character hash of the canonical ID (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId_a1b2c3d4`) to avoid collisions across modules.
+- Operations expose `{ document, variables, transform }` tuples; slices expose `{ invoke, document }` bindings; models expose `{ fragment, transform }` helpers. Each named export proxies the corresponding entry in the aggregated map to keep imports ergonomic, and companion `...Document` bindings surface GraphQL document nodes.
 - Generated modules also re-export compiled GraphQL documents under `Document` suffixes (e.g., `ProfilePageQueryDocument`) to support tooling that needs raw documents.
 - Babel plugin will import these named bindings (defaulting to `@/graphql-system/runtime` unless overridden) and rewrite `gql.*` call sites to reference the generated exports, removing the original `gql` import when no runtime helpers remain.
 
