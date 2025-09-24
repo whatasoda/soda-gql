@@ -31,6 +31,12 @@ The core builder pipeline now emits placeholder runtime modules, canonical depen
    - Prune superfluous imports from transformed application files; ensure generated bindings map cleanly onto runtime exports.
    - Validate with smoke fixtures that applications can import the generated documents/functions without referencing builder internals.
 
+### Runtime Export Surface Sketch (2025-09-24)
+- Builder runtime modules should emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export mirrors the canonical ID with `.` replaced by `_` (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId`).
+- Operations expose `{ document, variables, transform }` tuples; slices expose `{ invoke, document }` bindings; models expose `{ fragment, transform }` helpers. Each named export proxies the corresponding entry in the aggregated map to keep imports ergonomic.
+- Generated modules also re-export compiled GraphQL documents under `Document` suffixes (e.g., `ProfilePageQueryDocument`) to support tooling that needs raw documents.
+- Babel plugin will import these named bindings (defaulting to `@/graphql-system/runtime` unless overridden) and rewrite `gql.*` call sites to reference the generated exports, removing the original `gql` import when no runtime helpers remain.
+
 3. **SWC-based Artifact Generation**
    - Re-implement intermediate artifact writers currently relying on the TypeScript compiler API using SWC transforms.
    - Guarantee emitted files are executable JavaScript (strip TS syntax) to unblock non-Bun consumers and satisfy T021 follow-up.
