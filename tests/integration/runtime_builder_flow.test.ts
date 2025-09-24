@@ -154,6 +154,7 @@ describe("runtime builder flow", () => {
     const artifactDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(artifactDir, { recursive: true });
     const artifactPath = join(artifactDir, "runtime.json");
+    const debugDir = join(artifactDir, "debug");
 
     const builderResult = await runBuilderCli(workspace, [
       "--mode",
@@ -164,6 +165,8 @@ describe("runtime builder flow", () => {
       artifactPath,
       "--format",
       "json",
+      "--debug-dir",
+      debugDir,
     ]);
 
     expect(builderResult.exitCode).toBe(0);
@@ -175,5 +178,6 @@ describe("runtime builder flow", () => {
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
     expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
+    await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });
 });

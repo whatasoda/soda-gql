@@ -1,11 +1,12 @@
 import { join } from "node:path";
 import { type Result } from "neverthrow";
 
-import { analyzeModule } from "./ast/analyze-module";
+import { analyzeModule as analyzeModuleTs } from "./ast/analyze-module";
+import { analyzeModule as analyzeModuleSwc } from "./ast/analyze-module-swc";
 import { createModuleCache } from "./cache";
 import { collectSources, resolveEntryPaths } from "./discover";
 import type { ModuleAnalysis } from "./ast/analyze-module";
-import type { BuilderError } from "./types";
+import type { BuilderAnalyzer, BuilderError } from "./types";
 
 export type ModuleLoadStats = {
   readonly hits: number;
@@ -28,12 +29,15 @@ const defaultCacheRoot = () => join(process.cwd(), ".cache", "soda-gql", "builde
 export type LoadModulesOptions = {
   readonly entry: readonly string[];
   readonly cacheRoot?: string;
+  readonly analyzer: BuilderAnalyzer;
 };
 
-export const loadModules = ({ entry, cacheRoot }: LoadModulesOptions): Result<LoadedModules, BuilderError> =>
+export const loadModules = ({ entry, cacheRoot, analyzer }: LoadModulesOptions): Result<LoadedModules, BuilderError> =>
   resolveEntryPaths(entry).map((paths) => {
     const sources = collectSources(paths);
     const cache = createModuleCache({ rootDir: cacheRoot ?? defaultCacheRoot() });
+
+    const analyze = analyzer === "swc" ? analyzeModuleSwc : analyzeModuleTs;
 
     const modules: ModuleAnalysis[] = [];
     let hits = 0;
@@ -48,7 +52,7 @@ export const loadModules = ({ entry, cacheRoot }: LoadModulesOptions): Result<Lo
         return;
       }
 
-      const analysis = analyzeModule({ filePath, source });
+      const analysis = analyze({ filePath, source });
       cache.store(analysis);
       misses += 1;
       modules.push(analysis);

@@ -4,11 +4,15 @@ import type { CanonicalId, DocumentEntry } from "./registry";
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";
 
+export type BuilderAnalyzer = "ts" | "swc";
+
 export type BuilderOptions = {
   readonly mode: BuilderMode;
   readonly entry: readonly string[];
   readonly outPath: string;
   readonly format: BuilderFormat;
+  readonly analyzer: BuilderAnalyzer;
+  readonly debugDir?: string;
 };
 
 export type BuilderError =

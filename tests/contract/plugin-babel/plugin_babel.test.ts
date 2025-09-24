@@ -153,5 +153,8 @@ describe("@soda-gql/plugin-babel", () => {
     expect(transformed).toContain('import { profileQuery as profileQueryArtifact } from "@/graphql-system"');
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).toContain("export const profileQuery = profileQueryArtifact;");
+    const outputDir = join(tmpRoot, "transforms");
+    mkdirSync(outputDir, { recursive: true });
+    await Bun.write(join(outputDir, `profile.query.${Date.now()}.ts`), transformed);
   });
 });

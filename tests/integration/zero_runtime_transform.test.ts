@@ -144,6 +144,7 @@ describe("zero-runtime transform", () => {
     const cacheDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(cacheDir, { recursive: true });
     const artifactPath = join(cacheDir, "runtime.json");
+    const debugDir = join(cacheDir, "debug");
 
     const builderResult = await runBuilderCli(workspace, [
       "--mode",
@@ -154,11 +155,14 @@ describe("zero-runtime transform", () => {
       artifactPath,
       "--format",
       "json",
+      "--debug-dir",
+      debugDir,
     ]);
 
     expect(builderResult.exitCode).toBe(0);
     const artifactExists = await Bun.file(artifactPath).exists();
     expect(artifactExists).toBe(true);
+    await Bun.write(join(debugDir, "stdout.txt"), builderResult.stdout);
 
     const sourcePath = join(workspace, "src", "pages", "profile.query.ts");
     const sourceCode = await Bun.file(sourcePath).text();
@@ -180,5 +184,8 @@ describe("zero-runtime transform", () => {
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).toContain('import { profileQuery as profileQueryArtifact } from "@/graphql-system"');
     expect(transformed).toContain("export const profileQuery = profileQueryArtifact;");
+    const transformOutDir = join(cacheDir, "plugin-output");
+    mkdirSync(transformOutDir, { recursive: true });
+    await Bun.write(join(transformOutDir, "profile.query.transformed.ts"), transformed);
   });
 });

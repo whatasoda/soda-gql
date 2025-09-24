@@ -1,9 +1,10 @@
 import { err, ok } from "neverthrow";
 
-import type { BuilderError, BuilderFormat, BuilderMode, BuilderOptions } from "./types";
+import type { BuilderAnalyzer, BuilderError, BuilderFormat, BuilderMode, BuilderOptions } from "./types";
 
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
 const isFormat = (value: string): value is BuilderFormat => value === "json" || value === "human";
+const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
 
 export const parseBuilderArgs = (argv: readonly string[]) => {
   const args = [...argv];
@@ -11,6 +12,8 @@ export const parseBuilderArgs = (argv: readonly string[]) => {
   let outPath: string | undefined;
   let mode: BuilderMode = "runtime";
   let format: BuilderFormat = "human";
+  let analyzer: BuilderAnalyzer = "ts";
+  let debugDir: string | undefined;
 
   while (args.length > 0) {
     const current = args.shift();
@@ -67,6 +70,30 @@ export const parseBuilderArgs = (argv: readonly string[]) => {
         format = value;
         break;
       }
+      case "--analyzer": {
+        const value = args.shift();
+        if (!value || !isAnalyzer(value)) {
+          return err<BuilderOptions, BuilderError>({
+            code: "ENTRY_NOT_FOUND",
+            message: `Unsupported analyzer: ${value ?? ""}`,
+            entry: "",
+          });
+        }
+        analyzer = value;
+        break;
+      }
+      case "--debug-dir": {
+        const value = args.shift();
+        if (!value) {
+          return err<BuilderOptions, BuilderError>({
+            code: "ENTRY_NOT_FOUND",
+            message: "Missing value for --debug-dir",
+            entry: "",
+          });
+        }
+        debugDir = value;
+        break;
+      }
       default:
         break;
     }
@@ -93,5 +120,7 @@ export const parseBuilderArgs = (argv: readonly string[]) => {
     entry: entries,
     outPath,
     format,
+    analyzer,
+    debugDir,
   });
 };

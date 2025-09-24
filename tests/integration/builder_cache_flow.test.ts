@@ -99,7 +99,7 @@ const runCodegen = async (workspaceRoot: string, schemaPath: string, outFile: st
   expect(result.exitCode).toBe(0);
 };
 
-const runBuilder = async (workspaceRoot: string, entry: string, outFile: string) => {
+const runBuilder = async (workspaceRoot: string, entry: string, outFile: string, debugDir: string) => {
   const nodePath = [
     join(workspaceRoot, "node_modules"),
     join(projectRoot, "node_modules"),
@@ -119,6 +119,8 @@ const runBuilder = async (workspaceRoot: string, entry: string, outFile: string)
     outFile,
     "--format",
     "json",
+    "--debug-dir",
+    debugDir,
   ], {
     env: {
       NODE_PATH: nodePath,
@@ -148,17 +150,19 @@ describe("builder cache flow integration", () => {
     const entryGlob = join(workspaceRoot, "src", "pages", "profile.page.ts");
     const artifactFile = join(workspaceRoot, ".cache", "builder", "artifact.json");
     mkdirSync(join(workspaceRoot, ".cache", "builder"), { recursive: true });
+    const debugDir = join(workspaceRoot, ".cache", "builder", "debug");
 
-    await runBuilder(workspaceRoot, entryGlob, artifactFile);
+    await runBuilder(workspaceRoot, entryGlob, artifactFile, debugDir);
 
     const firstArtifact = JSON.parse(await Bun.file(artifactFile).text());
     expect(firstArtifact.documents.ProfilePageQuery.text).toContain("users");
     expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
 
-    await runBuilder(workspaceRoot, entryGlob, artifactFile);
+    await runBuilder(workspaceRoot, entryGlob, artifactFile, debugDir);
 
     const secondArtifact = JSON.parse(await Bun.file(artifactFile).text());
     expect(secondArtifact.report.cache?.hits ?? 0).toBeGreaterThan(0);
+    await Bun.write(join(debugDir, "artifact-second.json"), JSON.stringify(secondArtifact, null, 2));
   });
 
   afterAll(() => {
