@@ -24,12 +24,14 @@ describe("dependency graph resolver", () => {
           exportName: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           references: [],
+          expression: "gql.model('User', () => ({}), (value) => value)",
         },
         {
           kind: "slice",
           exportName: "userSlice",
           loc: { start: { line: 10, column: 6 }, end: { line: 16, column: 1 } },
           references: ["userModel"],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
       imports: [
@@ -55,6 +57,7 @@ describe("dependency graph resolver", () => {
           exportName: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
           references: ["userSlice"],
+          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
         },
       ],
       imports: [
@@ -101,6 +104,7 @@ describe("dependency graph resolver", () => {
           exportName: "userSlice",
           loc: { start: { line: 4, column: 6 }, end: { line: 12, column: 1 } },
           references: [],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
       exports: [
@@ -123,6 +127,7 @@ describe("dependency graph resolver", () => {
           exportName: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
           references: ["userSlice"],
+          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
         },
       ],
       imports: [
@@ -166,6 +171,7 @@ describe("dependency graph resolver", () => {
           exportName: "sliceA",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
           references: ["sliceB"],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
       imports: [
@@ -190,6 +196,7 @@ describe("dependency graph resolver", () => {
           exportName: "sliceB",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
           references: ["sliceA"],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
       imports: [
@@ -221,6 +228,90 @@ describe("dependency graph resolver", () => {
           createCanonicalId("/app/src/entities/slice-b.ts", "sliceB"),
           createCanonicalId("/app/src/entities/slice-a.ts", "sliceA"),
         ]);
+      },
+    );
+  });
+
+  it("resolves canonical ids for object member references across modules", () => {
+    const userModule = baseAnalysis({
+      filePath: "/app/src/entities/user.ts",
+      definitions: [
+        {
+          kind: "slice",
+          exportName: "userSliceCatalog.byId",
+          loc: { start: { line: 10, column: 6 }, end: { line: 18, column: 1 } },
+          references: [],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
+        },
+      ],
+      exports: [
+        { kind: "named", exported: "userSliceCatalog", local: "userSliceCatalog", isTypeOnly: false },
+      ],
+    });
+
+    const userCatalogModule = baseAnalysis({
+      filePath: "/app/src/entities/user.catalog.ts",
+      definitions: [
+        {
+          kind: "slice",
+          exportName: "collections.byCategory",
+          loc: { start: { line: 6, column: 6 }, end: { line: 16, column: 1 } },
+          references: [],
+          expression: "gql.querySlice([], () => ({}), () => ({}))",
+        },
+      ],
+      exports: [
+        { kind: "named", exported: "collections", local: "collections", isTypeOnly: false },
+      ],
+    });
+
+    const profileModule = baseAnalysis({
+      filePath: "/app/src/pages/profile.query.ts",
+      definitions: [
+        {
+          kind: "operation",
+          exportName: "profileQuery",
+          loc: { start: { line: 4, column: 6 }, end: { line: 20, column: 1 } },
+          references: ["userSliceCatalog.byId", "userCatalog.collections.byCategory"],
+          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+        },
+      ],
+      imports: [
+        {
+          source: "../entities/user",
+          imported: "userSliceCatalog",
+          local: "userSliceCatalog",
+          kind: "named",
+          isTypeOnly: false,
+        },
+        {
+          source: "../entities/user.catalog",
+          imported: "*",
+          local: "userCatalog",
+          kind: "namespace",
+          isTypeOnly: false,
+        },
+      ],
+      exports: [
+        { kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false },
+      ],
+    });
+
+    const result = buildDependencyGraph([userModule, userCatalogModule, profileModule]);
+
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (graph) => {
+        const queryId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
+        const catalogSliceId = createCanonicalId("/app/src/entities/user.ts", "userSliceCatalog.byId");
+        const userCatalogSliceId = createCanonicalId("/app/src/entities/user.catalog.ts", "collections.byCategory");
+
+        const dependencies = graph.get(queryId)?.dependencies ?? [];
+        expect(dependencies).toContain(catalogSliceId);
+        expect(dependencies).toContain(userCatalogSliceId);
+      },
+      () => {
+        throw new Error("expected dependency graph resolution to succeed");
       },
     );
   });

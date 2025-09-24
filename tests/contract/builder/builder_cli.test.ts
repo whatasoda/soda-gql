@@ -216,7 +216,7 @@ import { userSlice } from "../entities/user";
 
 export const duplicated = gql.query(
   "DuplicatedName",
-  { userId: gql.scalar("ID", "!") },
+  { userId: gql.scalar(["ID", "!"]) },
   ({ $ }) => ({
     users: userSlice({ id: $.userId }),
   }),

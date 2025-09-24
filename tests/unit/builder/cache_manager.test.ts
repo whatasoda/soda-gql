@@ -34,6 +34,7 @@ describe("module cache manager", () => {
           exportName: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           references: [],
+          expression: "gql.model('User', () => ({}), (value) => value)",
         },
       ],
     });
@@ -73,6 +74,7 @@ describe("module cache manager", () => {
           exportName: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
           references: [],
+          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
         },
       ],
     });

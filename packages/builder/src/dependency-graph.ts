@@ -9,6 +9,7 @@ export type DependencyGraphNode = {
   readonly id: CanonicalId;
   readonly definition: ModuleDefinition;
   readonly dependencies: readonly CanonicalId[];
+  readonly references: Readonly<Record<string, CanonicalId>>;
 };
 
 export type DependencyGraph = Map<CanonicalId, DependencyGraphNode>;
@@ -157,6 +158,21 @@ const buildModuleImportMap = (
     if (canonical) {
       map.set(entry.local, canonical);
     }
+
+    targetExports.forEach((canonicalId, exportedName) => {
+      const prefix = `${exportName}.`;
+      if (!exportedName.startsWith(prefix)) {
+        return;
+      }
+
+      const suffix = exportedName.slice(prefix.length);
+      if (suffix.length === 0) {
+        return;
+      }
+
+      map.set(`${entry.local}.${suffix}`, canonicalId);
+      map.set(exportedName, canonicalId);
+    });
   });
 
   return map;
@@ -224,11 +240,13 @@ export const buildDependencyGraph = (
     module.definitions.forEach((definition) => {
       const id = createCanonicalId(module.filePath, definition.exportName);
       const dependencySet = new Set<CanonicalId>();
+      const resolvedReferences: Record<string, CanonicalId> = {};
 
       definition.references.forEach((reference) => {
         const canonical = referenceMap.get(reference);
         if (canonical && canonical !== id) {
           dependencySet.add(canonical);
+          resolvedReferences[reference] = canonical;
         }
       });
 
@@ -236,6 +254,7 @@ export const buildDependencyGraph = (
         id,
         definition,
         dependencies: Array.from(dependencySet),
+        references: resolvedReferences,
       });
     });
   });

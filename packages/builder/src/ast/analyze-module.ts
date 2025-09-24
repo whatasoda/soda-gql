@@ -19,6 +19,7 @@ export type ModuleDefinition = {
   readonly exportName: string;
   readonly loc: SourceLocation;
   readonly references: readonly string[];
+  readonly expression: string;
 };
 
 export type ModuleDiagnostic = {
@@ -308,6 +309,54 @@ const collectReferencesFromCall = (
   const references = new Set<string>();
   const baseExclusions = new Set<string>(["gql"]);
 
+  const resolvePropertyAccess = (
+    expression: ts.Expression,
+  ): { readonly root: string; readonly segments: readonly string[] } | null => {
+    const segments: string[] = [];
+    let current: ts.Expression = expression;
+
+    while (true) {
+      if (ts.isPropertyAccessExpression(current)) {
+        segments.unshift(current.name.text);
+        current = current.expression;
+        continue;
+      }
+
+      if (ts.isIdentifier(current)) {
+        return {
+          root: current.text,
+          segments,
+        } as const;
+      }
+
+      return null;
+    }
+  };
+
+  const registerNamespaceReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      return;
+    }
+
+    for (let index = 0; index < segments.length; index += 1) {
+      const slice = segments.slice(0, index + 1).join(".");
+      references.add(slice);
+      references.add(`${root}.${slice}`);
+    }
+  };
+
+  const registerNamedReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      if (!identifiers.has(root)) {
+        references.add(root);
+      }
+      return;
+    }
+
+    const suffix = segments.join(".");
+    references.add(`${root}.${suffix}`);
+  };
+
   const visitNode = (node: ts.Node, exclusions: Set<string>) => {
     if (ts.isCallExpression(node)) {
       visitNode(node.expression, exclusions);
@@ -339,14 +388,21 @@ const collectReferencesFromCall = (
     }
 
     if (ts.isPropertyAccessExpression(node)) {
-      const expression = node.expression;
-      if (ts.isIdentifier(expression) && !exclusions.has(expression.text)) {
-        if (namespaceImportLocals.has(expression.text)) {
-          references.add(node.name.text);
-          references.add(`${expression.text}.${node.name.text}`);
-        } else if (namedImportLocals.has(expression.text) || definitionNames.has(expression.text)) {
-          if (!identifiers.has(expression.text)) {
-            references.add(expression.text);
+      const resolved = resolvePropertyAccess(node);
+      if (resolved) {
+        const { root, segments } = resolved;
+        if (!exclusions.has(root)) {
+          if (namespaceImportLocals.has(root)) {
+            registerNamespaceReference(root, segments);
+          } else if (namedImportLocals.has(root)) {
+            registerNamedReference(root, segments);
+          } else {
+            const fullName = segments.length > 0 ? `${root}.${segments.join(".")}` : root;
+            if (definitionNames.has(fullName)) {
+              references.add(fullName);
+            } else if (definitionNames.has(root) && segments.length === 0 && !identifiers.has(root)) {
+              references.add(root);
+            }
           }
         }
       }
@@ -400,6 +456,7 @@ const collectTopLevelDefinitions = (
     readonly kind: GqlDefinitionKind;
     readonly loc: SourceLocation;
     readonly initializer: ts.CallExpression;
+    readonly expression: string;
   };
 
   const pending: PendingDefinition[] = [];
@@ -412,6 +469,7 @@ const collectTopLevelDefinitions = (
       kind,
       loc: toLocation(sourceFile, span),
       initializer,
+      expression: initializer.getText(sourceFile),
     });
   };
 
@@ -474,6 +532,7 @@ const collectTopLevelDefinitions = (
     exportName: item.exportName,
     loc: item.loc,
     references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
+    expression: item.expression,
   } satisfies ModuleDefinition));
 
   return { definitions, handledCalls };

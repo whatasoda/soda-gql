@@ -2,142 +2,251 @@ import { print } from "graphql";
 import { pathToFileURL } from "node:url";
 import { err, ok, type Result } from "neverthrow";
 
+import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { ModuleLoadStats } from "./module-loader";
-import type { ParsedQuery } from "./discover";
-import { createCanonicalId, createDocumentRegistry } from "./registry";
+import { createDocumentRegistry } from "./registry";
 import type { BuilderArtifact, BuilderError } from "./types";
 
+const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
+
+const computeModelHash = (canonicalId: string, dependencies: readonly string[]): string =>
+  Bun.hash(`${canonicalId}:${dependencies.join(",")}`).toString(16);
+
 export type BuildArtifactInput = {
-  readonly queries: readonly ParsedQuery[];
-  readonly sliceCount: number;
+  readonly graph: DependencyGraph;
   readonly cache: ModuleLoadStats;
+  readonly runtimeModulePath: string;
 };
 
-export const buildArtifact = async ({
-  queries,
-  sliceCount,
-  cache,
-}: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+export const buildArtifact = async ({ graph, cache, runtimeModulePath }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
   const registry = createDocumentRegistry<unknown>();
-  const refRecords: Array<[string, { readonly kind: "query" | "slice" | "model"; readonly document?: string }]> = [];
 
-  for (const query of queries) {
-    const moduleUrl = pathToFileURL(query.filePath).href;
+  const modelNodes: DependencyGraphNode[] = [];
+  const sliceNodes: DependencyGraphNode[] = [];
+  const operationNodes: DependencyGraphNode[] = [];
 
-    let moduleExports: Record<string, unknown>;
-    try {
-      moduleExports = (await import(moduleUrl)) as Record<string, unknown>;
-    } catch (error) {
+  graph.forEach((node) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (node.definition.kind === "model") {
+      modelNodes.push(node);
+      return;
+    }
+
+    if (node.definition.kind === "slice") {
+      sliceNodes.push(node);
+      return;
+    }
+
+    if (node.definition.kind === "operation") {
+      operationNodes.push(node);
+    }
+  });
+
+  let runtimeModule: Record<string, unknown>;
+  try {
+    runtimeModule = (await import(pathToFileURL(runtimeModulePath).href)) as Record<string, unknown>;
+  } catch (error) {
+    return err({
+      code: "MODULE_EVALUATION_FAILED",
+      filePath: runtimeModulePath,
+      exportName: "runtime",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  const runtimeOperations = (runtimeModule.operations ?? {}) as Record<string, Record<string, unknown>>;
+
+  for (const model of modelNodes) {
+    const hash = computeModelHash(model.id, model.dependencies);
+    const result = registry.registerRef({
+      id: model.id,
+      kind: "model",
+      metadata: {
+        hash,
+        dependencies: model.dependencies,
+      },
+      loader: () => ok(undefined),
+    });
+
+    if (result.isErr()) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
-        message: error instanceof Error ? error.message : String(error),
+        filePath: canonicalToFilePath(model.id),
+        exportName: model.definition.exportName,
+        message: result.error.code,
+      });
+    }
+  }
+
+  const sliceConsumers = new Map<string, Set<string>>();
+  const documentNameToCanonical = new Map<string, string>();
+
+  for (const operation of operationNodes) {
+    const filePath = canonicalToFilePath(operation.id);
+    const descriptor = runtimeOperations[operation.id];
+
+    if (!descriptor || typeof descriptor !== "object") {
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath,
+        exportName: operation.definition.exportName,
+        message: "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE",
       });
     }
 
-    const exported = moduleExports?.[query.exportName] as
-      | {
-          readonly document?: unknown;
-          readonly variables?: Record<string, string>;
-        }
-      | undefined;
-
-    if (!exported || typeof exported !== "object") {
+    if (!("document" in descriptor)) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
-        message: "EXPORT_NOT_FOUND",
-      });
-    }
-
-    if (!("document" in exported)) {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
+        filePath,
+        exportName: operation.definition.exportName,
         message: "EXPORT_MISSING_DOCUMENT",
+      });
+    }
+
+    const operationDescriptor = descriptor as {
+      readonly document: unknown;
+      readonly variables?: Record<string, string>;
+      readonly name?: string;
+    };
+
+    let documentName: string | undefined = typeof operationDescriptor.name === "string" ? operationDescriptor.name : undefined;
+
+    if (!documentName) {
+      const document = operationDescriptor.document as { readonly definitions?: Array<{ readonly name?: { readonly value?: string } }> };
+      const definition = Array.isArray(document?.definitions)
+        ? document.definitions.find((entry) => entry?.name?.value)
+        : undefined;
+      const inferred = definition?.name?.value;
+      if (typeof inferred === "string" && inferred.length > 0) {
+        documentName = inferred;
+      }
+    }
+
+    if (!documentName || documentName.length === 0) {
+      documentName = operation.definition.exportName;
+    }
+
+    const duplicate = documentNameToCanonical.get(documentName);
+    if (duplicate && duplicate !== operation.id) {
+      return err({
+        code: "DOC_DUPLICATE",
+        name: documentName,
+        sources: [canonicalToFilePath(duplicate), filePath],
       });
     }
 
     let text: string;
     try {
-      text = print(exported.document as unknown);
+      text = print(operationDescriptor.document as unknown);
     } catch (error) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
+        filePath,
+        exportName: operation.definition.exportName,
         message: error instanceof Error ? error.message : String(error),
       });
     }
 
-    const id = createCanonicalId(query.filePath, query.exportName);
-
-    const refResult = registry.registerRef({
-      id,
+    const registerResult = registry.registerRef({
+      id: operation.id,
       kind: "operation",
       metadata: {
-        canonicalDocument: query.name,
+        canonicalDocument: documentName,
+        dependencies: operation.dependencies,
       },
-      loader: () => ok(exported),
+      loader: () => ok(operationDescriptor),
     });
 
-    if (refResult.isErr()) {
+    if (registerResult.isErr()) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
-        message: refResult.error.code,
+        filePath,
+        exportName: operation.definition.exportName,
+        message: registerResult.error.code,
       });
     }
 
     const documentResult = registry.registerDocument({
-      name: query.name,
+      name: documentName,
       text,
-      variables: exported.variables ?? {},
-      sourcePath: query.filePath,
+      variables: operationDescriptor.variables ?? {},
+      sourcePath: filePath,
     });
 
     if (documentResult.isErr()) {
+      if (documentResult.error.code === "DOCUMENT_ALREADY_REGISTERED") {
+        const prior = documentNameToCanonical.get(documentName) ?? operation.id;
+        return err({
+          code: "DOC_DUPLICATE",
+          name: documentName,
+          sources: [canonicalToFilePath(prior), filePath],
+        });
+      }
+
       return err({
         code: "MODULE_EVALUATION_FAILED",
-        filePath: query.filePath,
-        exportName: query.exportName,
+        filePath,
+        exportName: operation.definition.exportName,
         message: documentResult.error.code,
       });
     }
 
-    refRecords.push([
-      id,
-      {
-        kind: "query",
-        document: query.name,
+    documentNameToCanonical.set(documentName, operation.id);
+
+    operation.dependencies.forEach((dependency) => {
+      const target = graph.get(dependency);
+      if (target?.definition.kind !== "slice") {
+        return;
+      }
+
+      const consumers = sliceConsumers.get(dependency) ?? new Set<string>();
+      consumers.add(documentName!);
+      sliceConsumers.set(dependency, consumers);
+    });
+  }
+
+  for (const slice of sliceNodes) {
+    const documents = Array.from(sliceConsumers.get(slice.id) ?? []);
+    const result = registry.registerRef({
+      id: slice.id,
+      kind: "slice",
+      metadata: {
+        dependencies: slice.dependencies,
+        canonicalDocuments: documents,
       },
-    ]);
+      loader: () => ok(undefined),
+    });
+
+    if (result.isErr()) {
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: canonicalToFilePath(slice.id),
+        exportName: slice.definition.exportName,
+        message: result.error.code,
+      });
+    }
   }
 
   const snapshot = registry.snapshot();
-  const refsTree: Record<string, unknown> = Object.fromEntries(refRecords);
-
   const documents: BuilderArtifact["documents"] = Object.fromEntries(
     Object.entries(snapshot.documents).map(([name, entry]) => [name, { ...entry, variables: { ...entry.variables } }]),
   );
 
   const warnings: string[] = [];
-  if (sliceCount >= 16) {
-    warnings.push(`Warning: slice count ${sliceCount}`);
+  if (sliceNodes.length >= 16) {
+    warnings.push(`Warning: slice count ${sliceNodes.length}`);
   }
 
   return ok({
     documents,
-    refs: refsTree,
-    refMap: Object.fromEntries(refRecords),
+    refs: snapshot.refs,
     report: {
-      documents: queries.length,
-      models: 0,
-      slices: sliceCount,
+      documents: operationNodes.length,
+      models: modelNodes.length,
+      slices: sliceNodes.length,
       durationMs: 0,
       warnings,
       cache,

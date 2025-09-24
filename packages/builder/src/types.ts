@@ -1,5 +1,5 @@
 import type { Result } from "neverthrow";
-import type { CanonicalId, DocumentEntry } from "./registry";
+import type { CanonicalId, DocumentEntry, RegistryRefKind, RegistryRefMetadataMap } from "./registry";
 
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";
@@ -44,8 +44,13 @@ export type BuilderError =
 
 export type BuilderArtifact = {
   readonly documents: Record<string, DocumentEntry & { readonly variables: Record<string, string> }>;
-  readonly refs: Record<string, unknown>;
-  readonly refMap?: Record<CanonicalId, { readonly kind: "query" | "slice" | "model"; readonly document?: string }>;
+  readonly refs: Record<
+    CanonicalId,
+    {
+      readonly kind: RegistryRefKind;
+      readonly metadata: RegistryRefMetadataMap[RegistryRefKind];
+    }
+  >;
   readonly report: {
     readonly documents: number;
     readonly models: number;

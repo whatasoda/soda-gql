@@ -180,6 +180,27 @@ describe("runtime builder flow", () => {
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
     expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
+    expect(artifact.report.models).toBe(2);
+    expect(artifact.report.slices).toBe(3);
+
+    const userModelId = `${join(workspace, "src", "entities", "user.ts")}::userModel`;
+    const catalogModelId = `${join(workspace, "src", "entities", "user.ts")}::userRemote.forIterate`;
+    const userSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSlice`;
+    const catalogSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSliceCatalog.byId`;
+    const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::collections.byCategory`;
+
+    expect(artifact.refs[userModelId].kind).toBe("model");
+    expect(artifact.refs[catalogModelId].kind).toBe("model");
+    expect(artifact.refs[userSliceId].kind).toBe("slice");
+    expect(artifact.refs[catalogSliceId].kind).toBe("slice");
+    expect(artifact.refs[collectionsSliceId].kind).toBe("slice");
+    expect(artifact.refs[canonicalId].kind).toBe("operation");
+
+    expect(artifact.refs[userSliceId].metadata.dependencies).toContain(userModelId);
+    expect(artifact.refs[catalogSliceId].metadata.dependencies).toContain(catalogModelId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(userSliceId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(catalogSliceId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(collectionsSliceId);
     await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });
 });

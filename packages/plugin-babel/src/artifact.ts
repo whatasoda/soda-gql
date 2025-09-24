@@ -22,28 +22,26 @@ export const lookupRef = (
   artifact: BuilderArtifact,
   canonicalId: string,
 ): { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined => {
-  if (artifact.refs && canonicalId in (artifact.refs as Record<string, unknown>)) {
-    return (artifact.refs as Record<string, unknown>)[canonicalId] as {
-      readonly kind: "query" | "slice" | "model";
-      readonly document?: string;
-    };
-  }
-
-  if (artifact.refMap && canonicalId in artifact.refMap) {
-    return artifact.refMap[canonicalId as CanonicalId];
-  }
-
-  const segments = canonicalId.split(".");
-  let cursor: unknown = artifact.refs;
-
-  for (const segment of segments) {
-    if (cursor && typeof cursor === "object" && segment in (cursor as Record<string, unknown>)) {
-      cursor = (cursor as Record<string, unknown>)[segment];
-      continue;
-    }
-
+  const entry = artifact.refs[canonicalId as CanonicalId];
+  if (!entry) {
     return undefined;
   }
 
-  return cursor as { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined;
+  if (entry.kind === "operation") {
+    return {
+      kind: "query",
+      document: entry.metadata.canonicalDocument,
+    };
+  }
+
+  if (entry.kind === "slice") {
+    return {
+      kind: "slice",
+      document: entry.metadata.canonicalDocuments[0],
+    };
+  }
+
+  return {
+    kind: "model",
+  };
 };

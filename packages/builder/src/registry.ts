@@ -25,11 +25,13 @@ export type ModelRefMetadata = {
 };
 
 export type SliceRefMetadata = {
-  readonly canonicalDocument: string;
+  readonly dependencies: readonly CanonicalId[];
+  readonly canonicalDocuments: readonly string[];
 };
 
 export type OperationRefMetadata = {
   readonly canonicalDocument: string;
+  readonly dependencies: readonly CanonicalId[];
 };
 
 export type RegistryRefMetadataMap = {

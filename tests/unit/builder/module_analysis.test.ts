@@ -157,4 +157,42 @@ export const user_remoteModel = {
     expect(names).toContain("user_remoteModel.forIterate");
     expect(analysis.diagnostics).toHaveLength(0);
   });
+
+  it("captures references to properties on imported bindings", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import { userSliceCatalog } from "../entities/user";
+
+export const pageQuery = gql.query(
+  "ProfilePageQuery",
+  { userId: gql.scalar("ID", "!") },
+  ({ $ }) => ({
+    catalog: userSliceCatalog.byId({ id: $.userId }),
+  }),
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
+    expect(definition?.references).toContain("userSliceCatalog.byId");
+  });
+
+  it("captures deep member references from namespace imports", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import * as userCatalog from "../entities/user.catalog";
+
+export const pageQuery = gql.query(
+  "ProfilePageQuery",
+  { userId: gql.scalar("ID", "!") },
+  ({ $ }) => ({
+    catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
+  }),
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
+    expect(definition?.references).toContain("userCatalog.collections.byCategory");
+  });
 });

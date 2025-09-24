@@ -78,8 +78,11 @@ describe("@soda-gql/plugin-babel", () => {
           documents: {},
           refs: {
             [canonicalId]: {
-              kind: "query",
-              document: "ProfilePageQuery",
+              kind: "operation",
+              metadata: {
+                canonicalDocument: "ProfilePageQuery",
+                dependencies: [],
+              },
             },
           },
           report: {
@@ -88,6 +91,10 @@ describe("@soda-gql/plugin-babel", () => {
             slices: 0,
             durationMs: 0,
             warnings: [],
+            cache: {
+              hits: 0,
+              misses: 0,
+            },
           },
         },
         null,
@@ -124,8 +131,11 @@ describe("@soda-gql/plugin-babel", () => {
           },
           refs: {
             [canonicalId]: {
-              kind: "query",
-              document: "ProfilePageQuery",
+              kind: "operation",
+              metadata: {
+                canonicalDocument: "ProfilePageQuery",
+                dependencies: [],
+              },
             },
           },
           report: {
@@ -134,6 +144,10 @@ describe("@soda-gql/plugin-babel", () => {
             slices: 1,
             durationMs: 1,
             warnings: [],
+            cache: {
+              hits: 0,
+              misses: 0,
+            },
           },
         },
         null,

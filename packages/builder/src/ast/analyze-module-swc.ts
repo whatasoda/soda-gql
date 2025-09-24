@@ -348,6 +348,63 @@ const collectReferencesFromExpression = (
 
   const references = new Set<string>();
 
+  const resolveMemberPath = (
+    node: MemberExpression,
+  ): { readonly root: string; readonly segments: readonly string[] } | null => {
+    const segments: string[] = [];
+    let current: MemberExpression["object"] | MemberExpression = node;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (current.type === "MemberExpression") {
+        const property = current.property;
+        if (property.type === "Identifier") {
+          segments.unshift(property.value);
+        } else if (property.type === "StringLiteral" || property.type === "NumericLiteral") {
+          segments.unshift(String(property.value));
+        } else {
+          return null;
+        }
+
+        current = current.object;
+        continue;
+      }
+
+      if (current.type === "Identifier") {
+        return {
+          root: current.value,
+          segments,
+        } as const;
+      }
+
+      return null;
+    }
+  };
+
+  const registerNamespaceReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      return;
+    }
+
+    for (let index = 0; index < segments.length; index += 1) {
+      const slice = segments.slice(0, index + 1).join(".");
+      references.add(slice);
+      references.add(`${root}.${slice}`);
+    }
+  };
+
+  const registerNamedReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      if (!gqlIdentifiers.has(root)) {
+        references.add(root);
+      }
+      return;
+    }
+
+    const suffix = segments.join(".");
+    references.add(`${root}.${suffix}`);
+  };
+
   const visit = (node: any, exclusions: Set<string>) => {
     if (!node || typeof node !== "object") {
       return;
@@ -367,21 +424,25 @@ const collectReferencesFromExpression = (
     }
 
     if (node.type === "MemberExpression") {
-      if (node.object.type === "Identifier") {
-        const base = node.object.value;
-        if (!exclusions.has(base)) {
-          if (namespaceImports.has(base)) {
-            if (node.property.type === "Identifier") {
-              references.add(node.property.value);
-              references.add(`${base}.${node.property.value}`);
-            }
-          } else if (namedImports.has(base) || definitionNames.has(base)) {
-            if (!gqlIdentifiers.has(base)) {
-              references.add(base);
+      const resolved = resolveMemberPath(node);
+      if (resolved) {
+        const { root, segments } = resolved;
+        if (!exclusions.has(root)) {
+          if (namespaceImports.has(root)) {
+            registerNamespaceReference(root, segments);
+          } else if (namedImports.has(root)) {
+            registerNamedReference(root, segments);
+          } else {
+            const fullName = segments.length > 0 ? `${root}.${segments.join(".")}` : root;
+            if (definitionNames.has(fullName)) {
+              references.add(fullName);
+            } else if (definitionNames.has(root) && segments.length === 0 && !gqlIdentifiers.has(root)) {
+              references.add(root);
             }
           }
         }
       }
+
       visit(node.object, exclusions);
       if (node.property && node.property.type !== "Identifier") {
         visit(node.property, exclusions);
@@ -484,6 +545,7 @@ const collectTopLevelDefinitions = (
   gqlIdentifiers: ReadonlySet<string>,
   imports: readonly ModuleImport[],
   resolvePosition: (offset: number) => SourcePosition,
+  source: string,
 ): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: Set<CallExpression>;
@@ -506,14 +568,37 @@ const collectTopLevelDefinitions = (
     readonly kind: GqlDefinitionKind;
     readonly initializer: CallExpression;
     readonly span: Span;
+    readonly expression: string;
   };
 
   const pending: Pending[] = [];
   const handled = new Set<CallExpression>();
 
+  const expressionFromCall = (call: CallExpression): string => {
+    let start = call.span.start;
+    // Adjust when span starts one character after the leading "g"
+    if (start > 0 && source[start] === "q" && source[start - 1] === "g" && source.slice(start, start + 3) === "ql.") {
+      start -= 1;
+    }
+
+    const raw = source.slice(start, call.span.end);
+    const marker = raw.indexOf("gql");
+    if (marker >= 0) {
+      return raw.slice(marker);
+    }
+    return raw;
+  };
+
   const register = (exportName: string, initializer: CallExpression, span: Span, kind: GqlDefinitionKind) => {
     handled.add(initializer);
-    pending.push({ exportName, initializer, span, kind });
+    const expression = expressionFromCall(initializer);
+    pending.push({
+      exportName,
+      initializer,
+      span,
+      kind,
+      expression,
+    });
   };
 
   const handleVariableDeclaration = (declaration: any) => {
@@ -580,6 +665,7 @@ const collectTopLevelDefinitions = (
     exportName: item.exportName,
     loc: toLocation(resolvePosition, item.span),
     references: Array.from(collectReferencesFromExpression(item.initializer, imports, definitionNames, gqlIdentifiers)),
+    expression: item.expression,
   } satisfies ModuleDefinition));
 
   return { definitions, handledCalls: handled };
@@ -641,8 +727,42 @@ export const analyzeModule = ({ filePath, source }: AnalyzeModuleInput): ModuleA
   const imports = collectImports(module);
   const exports = collectExports(module);
   const gqlIdentifiers = collectGqlIdentifiers(module);
-  const { definitions, handledCalls } = collectTopLevelDefinitions(module, gqlIdentifiers, imports, resolvePosition);
-  const diagnostics = collectDiagnostics(module, gqlIdentifiers, handledCalls, resolvePosition);
+  const collected = collectTopLevelDefinitions(module, gqlIdentifiers, imports, resolvePosition, source);
+  let { definitions } = collected;
+  const diagnostics = collectDiagnostics(module, gqlIdentifiers, collected.handledCalls, resolvePosition);
+
+  const needsFallback = (expression: string | undefined): boolean => {
+    if (!expression) {
+      return true;
+    }
+
+    const trimmed = expression.trim();
+    if (trimmed.length === 0) {
+      return true;
+    }
+
+    return !trimmed.startsWith("gql");
+  };
+
+  if (definitions.some((definition) => needsFallback(definition.expression))) {
+    const fallback = analyzeModuleTs({ filePath, source });
+    const fallbackExpressions = new Map<string, string>();
+    fallback.definitions.forEach((definition) => {
+      fallbackExpressions.set(definition.exportName, definition.expression);
+    });
+
+    definitions = definitions.map((definition) => {
+      if (!needsFallback(definition.expression)) {
+        return definition;
+      }
+
+      const replacement = fallbackExpressions.get(definition.exportName) ?? "";
+      return {
+        ...definition,
+        expression: replacement,
+      } satisfies ModuleDefinition;
+    });
+  }
 
   return {
     filePath,
