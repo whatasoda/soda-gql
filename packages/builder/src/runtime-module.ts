@@ -34,16 +34,15 @@ const indentLines = (value: string, indent: string): string =>
 const formatFactory = (expression: string): string => {
   const trimmed = expression.trim();
   if (!trimmed.includes("\n")) {
-    return `() => ${trimmed}`;
+    return trimmed;
   }
 
-  const indented = trimmed
-    .split("\n")
-    .map((line) => line.trimEnd())
+  const lines = trimmed.split("\n").map((line) => line.trimEnd());
+  const indented = lines
+    .map((line, index) => (index === 0 ? line : `    ${line}`))
     .join("\n");
 
-  const block = indentLines(indented, "      ");
-  return `() => (\n${block}\n    )`;
+  return `(\n    ${indented}\n  )`;
 };
 
 const getPropertyAccessPath = (node: ts.PropertyAccessExpression): string | null => {
@@ -295,7 +294,7 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const normalised = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
   const factory = formatFactory(normalised);
 
-  return `  "${node.id}": (${factory})(),`;
+  return `  "${node.id}": ${factory},`;
 };
 
 const replaceModelTransform = (expression: string): string => {
