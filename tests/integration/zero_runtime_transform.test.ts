@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
@@ -166,34 +166,64 @@ describe("zero-runtime transform", () => {
     expect(artifactExists).toBe(true);
     await Bun.write(join(debugDir, "stdout.txt"), builderResult.stdout);
 
-    const sourcePath = join(workspace, "src", "pages", "profile.query.ts");
-    const sourceCode = await Bun.file(sourcePath).text();
     const plugin = await loadPlugin();
-
-    const transformResult = await babel.transformAsync(sourceCode, {
-      filename: sourcePath,
-      configFile: false,
-      babelrc: false,
-      parserOpts: {
-        sourceType: "module",
-        plugins: ["typescript"],
-      },
-      plugins: [[plugin, { mode: "zero-runtime", artifactsPath: artifactPath }]],
-    });
-
-    expect(transformResult).not.toBeNull();
-    const transformed = transformResult?.code ?? "";
-    const canonicalId = createCanonicalId(sourcePath, "profileQuery");
-    const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
-    const aliasName = `${runtimeName}Artifact`;
-
-    expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
-    expect(transformed).toContain(`const ${runtimeName}Document = {`);
-    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
-    expect(transformed).toContain(`document: ${runtimeName}Document`);
     const transformOutDir = join(cacheDir, "plugin-output");
+    rmSync(transformOutDir, { recursive: true, force: true });
     mkdirSync(transformOutDir, { recursive: true });
-    await Bun.write(join(transformOutDir, "profile.query.transformed.ts"), transformed);
+
+    const targets = [
+      {
+        filePath: join(workspace, "src", "pages", "profile.query.ts"),
+        verify: (code: string) => {
+          const canonicalId = createCanonicalId(join(workspace, "src", "pages", "profile.query.ts"), "profileQuery");
+          const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
+          expect(code).not.toContain("gql.query(");
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          expect(code).toContain(`const ${runtimeName}Document = {`);
+          expect(code).toContain(`export const profileQuery = gqlRuntime.query({`);
+          expect(code).toContain(`document: ${runtimeName}Document`);
+        },
+      },
+      {
+        filePath: join(workspace, "src", "entities", "user.ts"),
+        verify: (code: string) => {
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          expect(code).toContain("export const userModel = gqlRuntime.model({");
+          expect(code).toContain("posts: selection.posts.map(post => ({");
+          expect(code).not.toContain("/* runtime function */");
+        },
+      },
+      {
+        filePath: join(workspace, "src", "entities", "user.catalog.ts"),
+        verify: (code: string) => {
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          expect(code).toContain("byCategory: gqlRuntime.querySlice({");
+          expect(code).not.toContain("/* runtime function */");
+        },
+      },
+    ];
+
+    for (const target of targets) {
+      const sourceCode = await Bun.file(target.filePath).text();
+      const transformResult = await babel.transformAsync(sourceCode, {
+        filename: target.filePath,
+        configFile: false,
+        babelrc: false,
+        parserOpts: {
+          sourceType: "module",
+          plugins: ["typescript"],
+        },
+        plugins: [[plugin, { mode: "zero-runtime", artifactsPath: artifactPath }]],
+      });
+
+      expect(transformResult).not.toBeNull();
+      const transformed = transformResult?.code ?? "";
+      target.verify(transformed);
+
+      const relativePath = target.filePath.slice(workspace.length + 1);
+      const outputPath = join(transformOutDir, `${relativePath}.transformed.ts`);
+      mkdirSync(dirname(outputPath), { recursive: true });
+      await Bun.write(outputPath, transformed);
+    }
   });
 });
