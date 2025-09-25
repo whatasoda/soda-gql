@@ -182,6 +182,7 @@ describe("zero-runtime transform", () => {
           expect(code).toContain(`const ${runtimeName}Document = {`);
           expect(code).toContain(`export const profileQuery = gqlRuntime.query({`);
           expect(code).toContain(`document: ${runtimeName}Document`);
+          expect(code).toContain("projectionPathGraph");
         },
       },
       {

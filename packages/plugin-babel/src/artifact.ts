@@ -21,7 +21,7 @@ export const resolveCanonicalId = (filename: string, exportName: string): Canoni
 export const lookupRef = (
   artifact: BuilderArtifact,
   canonicalId: string,
-): { readonly kind: "query" | "slice" | "model"; readonly document?: string } | undefined => {
+): { readonly kind: "query" | "slice" | "model"; readonly document?: string; readonly dependencies?: readonly string[] } | undefined => {
   const entry = artifact.refs[canonicalId as CanonicalId];
   if (!entry) {
     return undefined;
@@ -31,6 +31,7 @@ export const lookupRef = (
     return {
       kind: "query",
       document: entry.metadata.canonicalDocument,
+      dependencies: entry.metadata.dependencies,
     };
   }
 
@@ -38,6 +39,7 @@ export const lookupRef = (
     return {
       kind: "slice",
       document: entry.metadata.canonicalDocuments[0],
+      dependencies: entry.metadata.dependencies,
     };
   }
 

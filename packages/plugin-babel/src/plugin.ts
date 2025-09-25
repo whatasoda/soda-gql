@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import { parse } from "@babel/parser";
-import traverse, { type NodePath } from "@babel/traverse";
+import traverse, { type Binding, type NodePath } from "@babel/traverse";
 import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
@@ -369,6 +370,374 @@ const convertSliceVariables = (node: t.Expression | undefined): t.Expression | n
   return convertVariablesObject(element);
 };
 
+const collectSelectPaths = (expression: t.Expression): readonly string[] => {
+  const paths: string[] = [];
+
+  const visit = (node: t.Node) => {
+    if (t.isCallExpression(node)) {
+      const callee = node.callee;
+      const isSelect =
+        (t.isIdentifier(callee) && callee.name === "select") ||
+        (t.isMemberExpression(callee) && t.isIdentifier(callee.property, { name: "select" }));
+
+      if (isSelect) {
+        const [first] = node.arguments;
+        if (first && t.isStringLiteral(first)) {
+          paths.push(first.value);
+        }
+      }
+    }
+
+    const keys = t.VISITOR_KEYS[node.type] ?? [];
+    for (const key of keys) {
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        value.forEach((child) => {
+          if (child && typeof child === "object") {
+            visit(child as t.Node);
+          }
+        });
+        continue;
+      }
+
+      if (value && typeof value === "object") {
+        visit(value as t.Node);
+      }
+    }
+  };
+
+  visit(expression);
+  return paths;
+};
+
+const collectCalleeSegments = (callee: t.Expression): readonly string[] => {
+  if (t.isIdentifier(callee)) {
+    return [callee.name];
+  }
+
+  if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.property)) {
+    const objectSegments = collectCalleeSegments(callee.object as t.Expression);
+    return [...objectSegments, callee.property.name];
+  }
+
+  return [];
+};
+
+const resolveImportPath = (filename: string, source: string): string | null => {
+  if (!source.startsWith(".")) {
+    return null;
+  }
+
+  const base = resolvePath(dirname(filename), source);
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.jsx`,
+    `${base}.mjs`,
+    `${base}.cjs`,
+    `${base}.mts`,
+    `${base}.cts`,
+    joinPath(base, "index.ts"),
+    joinPath(base, "index.tsx"),
+    joinPath(base, "index.js"),
+    joinPath(base, "index.jsx"),
+    joinPath(base, "index.mjs"),
+    joinPath(base, "index.cjs"),
+    joinPath(base, "index.mts"),
+    joinPath(base, "index.cts"),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
+const resolveCanonicalIdFromBinding = (
+  binding: Binding,
+  segments: readonly string[],
+  dependencies: readonly string[],
+  filename: string,
+): string | null => {
+  const bindingPath = binding.path;
+
+  if (bindingPath.isImportSpecifier()) {
+    const importDeclaration = bindingPath.parentPath?.parentPath;
+    if (!importDeclaration || !importDeclaration.isImportDeclaration()) {
+      return null;
+    }
+
+    const importSource = importDeclaration.node.source.value;
+    const resolved = resolveImportPath(filename, importSource);
+    const importedName = bindingPath.node.imported?.name ?? bindingPath.node.local.name;
+    const exportPath = [importedName, ...segments.slice(1)].join(".");
+
+    if (resolved) {
+      const canonical = dependencies.find((entry) => entry === `${resolved}::${exportPath}`);
+      if (canonical) {
+        return canonical;
+      }
+    }
+
+    const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
+    if (matches.length === 1) {
+      return matches[0];
+    }
+  }
+
+  if (bindingPath.isImportNamespaceSpecifier()) {
+    const importDeclaration = bindingPath.parentPath;
+    if (!importDeclaration || !importDeclaration.isImportDeclaration()) {
+      return null;
+    }
+
+    const importSource = importDeclaration.node.source.value;
+    const resolved = resolveImportPath(filename, importSource);
+    const exportPath = segments.slice(1).join(".");
+
+    if (resolved) {
+      const canonical = dependencies.find((entry) => entry === `${resolved}::${exportPath}`);
+      if (canonical) {
+        return canonical;
+      }
+    }
+
+    const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
+    if (matches.length === 1) {
+      return matches[0];
+    }
+  }
+
+  if (bindingPath.isImportDefaultSpecifier()) {
+    const importDeclaration = bindingPath.parentPath;
+    if (!importDeclaration || !importDeclaration.isImportDeclaration()) {
+      return null;
+    }
+
+    const importSource = importDeclaration.node.source.value;
+    const resolved = resolveImportPath(filename, importSource);
+    const exportPath = ["default", ...segments.slice(1)].join(".");
+
+    if (resolved) {
+      const canonical = dependencies.find((entry) => entry === `${resolved}::${exportPath}`);
+      if (canonical) {
+        return canonical;
+      }
+    }
+
+    const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
+    if (matches.length === 1) {
+      return matches[0];
+    }
+  }
+
+  if (bindingPath.isVariableDeclarator() || bindingPath.isFunctionDeclaration()) {
+    const exportPath = segments.join(".");
+    const localCanonical = resolveCanonicalId(filename, exportPath);
+    if (dependencies.includes(localCanonical)) {
+      return localCanonical;
+    }
+  }
+
+  return null;
+};
+
+const resolveSliceCanonicalId = (
+  valuePath: NodePath<t.CallExpression>,
+  dependencies: readonly string[],
+  filename: string,
+): string | null => {
+  const calleePath = valuePath.get("callee");
+  const segments = collectCalleeSegments(calleePath.node as t.Expression);
+  if (segments.length === 0) {
+    return null;
+  }
+
+  const exportPath = segments.join(".");
+  const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
+  if (matches.length === 1) {
+    return matches[0];
+  }
+
+  const root = segments[0];
+  const binding = calleePath.scope.getBinding(root);
+  if (binding) {
+    const resolved = resolveCanonicalIdFromBinding(binding, segments, dependencies, filename);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  if (matches.length > 0) {
+    return matches[0];
+  }
+
+  const localCanonical = resolveCanonicalId(filename, exportPath);
+  if (dependencies.includes(localCanonical)) {
+    return localCanonical;
+  }
+
+  return null;
+};
+
+const getSliceBuilderObjectExpression = (
+  builderPath: NodePath<t.Expression>,
+): NodePath<t.ObjectExpression> | null => {
+  if (builderPath.isObjectExpression()) {
+    return builderPath;
+  }
+
+  if (builderPath.isArrowFunctionExpression() || builderPath.isFunctionExpression()) {
+    const bodyPath = builderPath.get("body");
+    if (Array.isArray(bodyPath)) {
+      return null;
+    }
+
+    if (bodyPath.isObjectExpression()) {
+      return bodyPath as NodePath<t.ObjectExpression>;
+    }
+
+    if (bodyPath.isBlockStatement()) {
+      for (const statement of bodyPath.get("body")) {
+        if (statement.isReturnStatement()) {
+          const argument = statement.get("argument");
+          if (!Array.isArray(argument) && argument?.isObjectExpression()) {
+            return argument as NodePath<t.ObjectExpression>;
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+type ProjectionEntry = {
+  readonly label: string;
+  readonly path: string;
+};
+
+type ProjectionPathGraphNode = {
+  readonly matches: readonly { readonly label: string; readonly path: string }[];
+  readonly children: ProjectionPathGraph;
+};
+
+type ProjectionPathGraph = Record<string, ProjectionPathGraphNode>;
+
+const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): ProjectionPathGraph => {
+  const normalized = entries.map(({ label, path }) => ({
+    label,
+    path,
+    segments: path.replace("$.", `${label}_`).split("."),
+  }));
+
+  const build = (
+    paths: { readonly label: string; readonly path: string; readonly segments: readonly string[] }[],
+  ): ProjectionPathGraph => {
+    const buckets = new Map<string, { label: string; path: string; segments: readonly string[] }[]>();
+
+    paths.forEach(({ label, path, segments: [first, ...rest] }) => {
+      if (!first) {
+        return;
+      }
+      const bucket = buckets.get(first) ?? [];
+      bucket.push({ label, path, segments: rest });
+      buckets.set(first, bucket);
+    });
+
+    const result: ProjectionPathGraph = {};
+
+    Array.from(buckets.keys())
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((segment) => {
+        const bucket = buckets.get(segment)!;
+        result[segment] = {
+          matches: bucket.map(({ label, path }) => ({ label, path })),
+          children: build(bucket),
+        } satisfies ProjectionPathGraphNode;
+      });
+
+    return result;
+  };
+
+  return build(normalized);
+};
+
+const projectionGraphToAst = (graph: ProjectionPathGraph): t.Expression =>
+  t.objectExpression(
+    Object.entries(graph).map(([segment, node]) =>
+      t.objectProperty(
+        t.stringLiteral(segment),
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier("matches"),
+            t.arrayExpression(
+              node.matches.map(({ label, path }) =>
+                t.objectExpression([
+                  t.objectProperty(t.identifier("label"), t.stringLiteral(label)),
+                  t.objectProperty(t.identifier("path"), t.stringLiteral(path)),
+                ]),
+              ),
+            ),
+          ),
+          t.objectProperty(t.identifier("children"), projectionGraphToAst(node.children)),
+        ]),
+      ),
+    ),
+  );
+
+const collectSliceUsageEntries = (
+  slicesBuilderPath: NodePath<t.Expression>,
+  dependencies: readonly string[],
+  state: PluginState,
+  filename: string,
+): ProjectionEntry[] => {
+  const objectPath = getSliceBuilderObjectExpression(slicesBuilderPath);
+  if (!objectPath) {
+    return [];
+  }
+
+  const entries: ProjectionEntry[] = [];
+  objectPath.get("properties").forEach((propertyPath) => {
+    if (!propertyPath.isObjectProperty()) {
+      return;
+    }
+
+    const key = propertyPath.node.key;
+    const label = t.isIdentifier(key) ? key.name : t.isStringLiteral(key) ? key.value : null;
+    if (!label) {
+      return;
+    }
+
+    const valuePath = propertyPath.get("value");
+    if (Array.isArray(valuePath) || !valuePath.isCallExpression()) {
+      return;
+    }
+
+    const canonicalId = resolveSliceCanonicalId(valuePath, dependencies, filename);
+    if (!canonicalId) {
+      return;
+    }
+
+    const projectionBuilder = getOriginalArgument(state, canonicalId, "querySlice", 2);
+    if (!projectionBuilder) {
+      return;
+    }
+
+    const paths = collectSelectPaths(projectionBuilder);
+    paths.forEach((path) => {
+      entries.push({ label, path });
+    });
+  });
+
+  return entries;
+};
+
 const isRuntimePlaceholderFunction = (node: t.ArrowFunctionExpression | t.FunctionExpression): boolean => {
   if (!t.isBlockStatement(node.body)) {
     return false;
@@ -599,6 +968,7 @@ const buildQueryRuntimeComponents = (
   canonicalId: string,
   exportName: string,
   state: PluginState,
+  filename: string,
 ) => {
   const [nameArg, variablesArg, slicesBuilder] = callPath.node.arguments;
   if (!nameArg || !t.isStringLiteral(nameArg) || !slicesBuilder) {
@@ -620,6 +990,11 @@ const buildQueryRuntimeComponents = (
     throw new Error("SODA_GQL_DOCUMENT_NOT_FOUND");
   }
 
+  const dependencies = Array.isArray(refEntry.dependencies) ? refEntry.dependencies : [];
+  const slicesBuilderPath = callPath.get("arguments")[2] as NodePath<t.Expression>;
+  const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
+  const projectionGraph = projectionEntries.length > 0 ? buildProjectionPathGraph(projectionEntries) : null;
+
   const runtimeName = createRuntimeBindingName(canonicalId, exportName);
   const documentIdentifier = `${runtimeName}Document`;
 
@@ -638,6 +1013,10 @@ const buildQueryRuntimeComponents = (
   }
 
   properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
+
+  if (projectionGraph) {
+    properties.push(t.objectProperty(t.identifier("projectionPathGraph"), projectionGraphToAst(projectionGraph)));
+  }
 
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("query")), [
     t.objectExpression(properties),
@@ -747,6 +1126,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
               canonicalId,
               declaratorPath.node.id.name,
               pluginState,
+              filename,
             );
 
             const exportDeclaration = t.exportNamedDeclaration(

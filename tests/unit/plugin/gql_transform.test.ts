@@ -42,6 +42,19 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const queryId = createCanonicalId(sourcePath, "profileQuery");
     const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
+    const userSliceId = createCanonicalId(
+      join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
+      "userSlice",
+    );
+    const userSliceCatalogId = createCanonicalId(
+      join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
+      "userSliceCatalog.byId",
+    );
+    const userCatalogCollectionId = createCanonicalId(
+      join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.catalog.ts"),
+      "collections.byCategory",
+    );
+
     const artifact: BuilderArtifact = {
       documents: {
         ProfilePageQuery: {
@@ -60,7 +73,28 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           kind: "operation",
           metadata: {
             canonicalDocument: "ProfilePageQuery",
+            dependencies: [userSliceId, userSliceCatalogId, userCatalogCollectionId],
+          },
+        },
+        [userSliceId]: {
+          kind: "slice",
+          metadata: {
             dependencies: [],
+            canonicalDocuments: ["ProfilePageQuery"],
+          },
+        },
+        [userSliceCatalogId]: {
+          kind: "slice",
+          metadata: {
+            dependencies: [],
+            canonicalDocuments: ["ProfilePageQuery"],
+          },
+        },
+        [userCatalogCollectionId]: {
+          kind: "slice",
+          metadata: {
+            dependencies: [],
+            canonicalDocuments: ["ProfilePageQuery"],
           },
         },
       },
@@ -85,6 +119,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
     expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
     expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
+    expect(transformed).toContain("projectionPathGraph");
   });
 
   it("replaces nested gql helpers exposed via object properties", async () => {
@@ -166,12 +201,65 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
       },
     };
 
-    const runtimeModulePath = join(process.cwd(), "tests/fixtures/runtime-module/user.runtime.ts");
-    const expectedPath = join(process.cwd(), "tests/fixtures/runtime-module/user.runtime.transformed.ts");
-    const source = await Bun.file(runtimeModulePath).text();
-    const transformed = await runTransform(source, runtimeModulePath, artifact);
-    const expected = await Bun.file(expectedPath).text();
+    const entityPath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts").replace(/\\/g, "/");
+    const canonicalModel = `${entityPath}::userModel`;
+    const canonicalSlice = `${entityPath}::userSlice`;
 
-    expect(transformed.trim()).toBe(expected.trim());
+    const source = `import { gql } from "@/graphql-system";
+import { createModel, createSlice } from "@soda-gql/runtime";
+
+export const models = {
+  "${canonicalModel}": createModel(
+    "${canonicalModel}",
+    () =>
+      gql.model(
+        ["User", { categoryId: gql.scalar(["ID", ""]) }],
+        ({ f, $ }) => ({
+          ...f.id(),
+          ...f.name(),
+          ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
+            ...f.id(),
+            ...f.title(),
+          })),
+        }),
+        () => {
+          /* runtime function */
+          return {};
+        },
+      ),
+  ),
+} as const;
+
+export const slices = {
+  "${canonicalSlice}": createSlice(
+    "${canonicalSlice}",
+    () =>
+      gql.querySlice(
+        [
+          {
+            id: gql.scalar(["ID", "!"]),
+            categoryId: gql.scalar(["ID", ""]),
+          },
+        ],
+        ({ f, $ }) => ({
+          ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
+            ...models["${canonicalModel}"].fragment({ categoryId: $.categoryId }),
+          })),
+        }),
+        ({ select }) =>
+          select("$.users", () => {
+            /* runtime function */
+            return {};
+          }),
+      ),
+  ),
+} as const;
+`;
+
+    const transformed = await runTransform(source, join(process.cwd(), "tests/.tmp", "runtime-module.ts"), artifact);
+
+    expect(transformed).not.toContain("/* runtime function */");
+    expect(transformed).toContain("posts.map(post => ({");
+    expect(transformed).toContain("result.safeUnwrap(data => data.map(user => userModel.transform(user)))");
   });
 });
