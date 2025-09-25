@@ -10,12 +10,13 @@ declare const __EXECUTION_RESULT_PROJECTION_BRAND__: unique symbol;
  * Encodes how individual slices map a concrete field path to a projection
  * function. Multiple selections allow slices to expose several derived values.
  */
-export class ExecutionResultProjection<TAdapter extends GraphqlAdapter, TPath extends string, TData, TTransformed> {
+export class ExecutionResultProjection<TAdapter extends GraphqlAdapter, TPath extends string, TTransformed> {
   declare readonly [__EXECUTION_RESULT_PROJECTION_BRAND__]: Hidden<never>;
 
   constructor(
     public readonly path: TPath,
-    public readonly projector: (result: SliceResult<TData, TAdapter>) => TTransformed,
+    // biome-ignore lint/suspicious/noExplicitAny: abstract type
+    public readonly projector: (result: SliceResult<any, TAdapter>) => TTransformed,
   ) {}
 }
 
@@ -28,8 +29,6 @@ export type AnyExecutionResultProjections<TAdapter extends GraphqlAdapter> =
 export type AnyExecutionResultProjectionSingle<TAdapter extends GraphqlAdapter> = ExecutionResultProjection<
   TAdapter,
   string,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;

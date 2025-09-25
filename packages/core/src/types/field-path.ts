@@ -26,7 +26,12 @@ export type InferByFieldPath<
   TSchema extends AnyGraphqlSchema,
   TFields extends AnyFields,
   TPath extends string,
-> = TPath extends "$" ? InferFields<TSchema, TFields> : InferByFieldPathInner<TSchema, TFields, TPath, "$">;
+> = string extends keyof TFields
+  ? // biome-ignore lint/suspicious/noExplicitAny: abstract type
+    any
+  : TPath extends "$"
+    ? InferFields<TSchema, TFields>
+    : InferByFieldPathInner<TSchema, TFields, TPath, "$">;
 
 /** Internal helper that walks a field tree while matching a path literal. */
 type InferByFieldPathInner<

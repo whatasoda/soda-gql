@@ -1,6 +1,7 @@
 import {
   type AnyAssignableInput,
   type AnyExecutionResultProjections,
+  type AnyFields,
   type AnyGraphqlSchema,
   ExecutionResultProjection,
   type GraphqlAdapter,
@@ -34,6 +35,6 @@ export const runtimeOperationSlice =
     _output: hidden(),
     operationType,
     variables: (variables ?? {}) as AnyAssignableInput,
-    getFields: hidden(),
+    getFields: hidden<AnyFields>(),
     getProjections: generated.getProjections,
   });

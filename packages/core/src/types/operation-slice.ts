@@ -80,8 +80,8 @@ export type SliceResultProjectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TFields extends AnyFields,
-  TProjection extends AnyExecutionResultProjections<TAdapter>,
-> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TProjection;
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
+> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TProjections;
 
 /** Helper passed to selection builders for choosing a field path and projector. */
 type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TFields extends AnyFields> = <
@@ -90,4 +90,4 @@ type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends Grap
 >(
   path: TPath,
   projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TAdapter>) => TProjected,
-) => ExecutionResultProjection<TAdapter, TPath, InferByFieldPath<TSchema, TFields, TPath>, TProjected>;
+) => ExecutionResultProjection<TAdapter, TPath, TProjected>;

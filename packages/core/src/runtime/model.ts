@@ -2,7 +2,8 @@ import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, hidden, type M
 
 type GeneratedModel = {
   typename: string;
-  transform: (raw: unknown) => object;
+  // biome-ignore lint/suspicious/noExplicitAny: abstract type
+  transform: (raw: any) => object;
 };
 
 export const runtimeModel = (generated: GeneratedModel): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
