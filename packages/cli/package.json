@@ -25,9 +25,5 @@
     "commander": "^12.0.0",
     "neverthrow": "^8.1.1",
     "zod": "^4.1.5"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
   }
 }

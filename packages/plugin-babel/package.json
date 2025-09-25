@@ -12,10 +12,6 @@
       "default": "./src/index.ts"
     }
   },
-  "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
-  },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@babel/core": "^7.24.0",
@@ -26,8 +22,6 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@types/babel__core": "^7.20.5",
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/babel__core": "^7.20.5"
   }
 }

@@ -9,16 +9,14 @@
   ],
   "scripts": {
     "typecheck": "tsc -b",
-    "biome:check": "biome check --write packages/**/*",
+    "biome:check": "biome check --write .",
     "quality": "bun run biome:check && bun run typecheck",
     "soda-gql": "bun run packages/cli/src/index.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",
     "@types/bun": "latest",
+    "typescript": "^5",
     "zod": "^4.1.5"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   }
 }

@@ -1,4 +1,5 @@
 import { gqlRuntime } from "@soda-gql/runtime";
+import { DocumentNode } from "graphql";
 
 const userModel = gqlRuntime.model({
   typename: "User",
@@ -75,9 +76,8 @@ const userQuerySlice3 = gqlRuntime.querySlice({
 
 const pageQuery = gqlRuntime.query({
   name: "PageQuery",
-  document: {
-    /* omitted in this sample */
-  },
+  document: { /* omitted in this sample */ } as DocumentNode,
+  projectionPathGraph: {},
   getSlices: ({ $ }) => ({
     // define query document with slices
     users: userQuerySlice({
