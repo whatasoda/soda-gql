@@ -1,7 +1,7 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { createRuntimeBindingName, type BuilderArtifact } from "@soda-gql/builder";
+import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import type { SodaGqlBabelOptions } from "./types";
@@ -104,9 +104,7 @@ const makeExportName = (segments: readonly string[]): string | null => {
 
 const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   const existing = programPath.node.body.find(
-    (statement) =>
-      statement.type === "ImportDeclaration" &&
-      statement.source.value === "@soda-gql/runtime",
+    (statement) => statement.type === "ImportDeclaration" && statement.source.value === "@soda-gql/runtime",
   );
 
   if (existing) {
@@ -118,10 +116,7 @@ const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
     );
 
     if (!hasSpecifier) {
-      existing.specifiers = [
-        ...existing.specifiers,
-        t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime")),
-      ];
+      existing.specifiers = [...existing.specifiers, t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime"))];
     }
 
     return;
@@ -190,10 +185,7 @@ const buildLiteralFromValue = (value: unknown): t.Expression => {
 
   if (typeof value === "object") {
     const props = Object.entries(value as PlainObject).map(([key, entry]) =>
-      t.objectProperty(
-        t.stringLiteral(key),
-        buildLiteralFromValue(entry),
-      ),
+      t.objectProperty(t.stringLiteral(key), buildLiteralFromValue(entry)),
     );
     return t.objectExpression(props);
   }
@@ -292,9 +284,7 @@ const buildModelRuntimeCall = (args: t.Expression[]): t.Expression => {
     }
     properties.push(t.objectProperty(t.identifier("typename"), clone(typenameNode)));
     if (variablesNode && t.isObjectExpression(variablesNode)) {
-      properties.push(
-        t.objectProperty(t.identifier("variables"), convertVariablesObject(variablesNode)),
-      );
+      properties.push(t.objectProperty(t.identifier("variables"), convertVariablesObject(variablesNode)));
     }
   } else {
     throw new Error("Unsupported target for gql.model");
@@ -302,10 +292,9 @@ const buildModelRuntimeCall = (args: t.Expression[]): t.Expression => {
 
   properties.push(t.objectProperty(t.identifier("transform"), clone(transform)));
 
-  return t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")),
-    [t.objectExpression(properties)],
-  );
+  return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
+    t.objectExpression(properties),
+  ]);
 };
 
 const buildSliceRuntimeCall = (args: t.Expression[]): t.Expression => {
@@ -323,17 +312,15 @@ const buildSliceRuntimeCall = (args: t.Expression[]): t.Expression => {
   properties.push(
     t.objectProperty(
       t.identifier("getProjections"),
-      t.callExpression(
-        t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")),
-        [clone(projectionBuilder)],
-      ),
+      t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")), [
+        clone(projectionBuilder),
+      ]),
     ),
   );
 
-  return t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("querySlice")),
-    [t.objectExpression(properties)],
-  );
+  return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("querySlice")), [
+    t.objectExpression(properties),
+  ]);
 };
 
 const buildQueryRuntimeComponents = (
@@ -382,10 +369,9 @@ const buildQueryRuntimeComponents = (
 
   properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
 
-  const runtimeCall = t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("query")),
-    [t.objectExpression(properties)],
-  );
+  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("query")), [
+    t.objectExpression(properties),
+  ]);
 
   ensureGqlRuntimeImport(programPath);
 

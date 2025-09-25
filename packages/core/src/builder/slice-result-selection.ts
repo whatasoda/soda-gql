@@ -1,21 +1,21 @@
 import {
+  type AnyExecutionResultProjectionMultiple,
+  type AnyExecutionResultProjectionSingle,
+  type AnyExecutionResultProjections,
   type AnySliceResultRecord,
-  type AnySliceResultProjectionMultiple,
-  type AnySliceResultProjectionSingle,
-  type AnySliceResultProjections,
+  ExecutionResultProjection,
   type GraphqlAdapter,
-  type InferSliceResultProjection,
+  type InferExecutionResultProjection,
   type SliceResult,
-  SliceResultProjection,
 } from "../types";
 
 const evaluateSliceSelectionSingle = <
   TAdapter extends GraphqlAdapter,
-  TSelection extends AnySliceResultProjectionSingle<TAdapter>,
+  TSelection extends AnyExecutionResultProjectionSingle<TAdapter>,
 >(
   selection: TSelection,
   results: AnySliceResultRecord<TAdapter>,
-): InferSliceResultProjection<TAdapter, TSelection> => {
+): InferExecutionResultProjection<TAdapter, TSelection> => {
   const key = selection.path.startsWith("$.") ? selection.path.slice(2) : selection.path;
   const target = results[key];
   return selection.projector(target as SliceResult<unknown, TAdapter>);
@@ -23,19 +23,19 @@ const evaluateSliceSelectionSingle = <
 
 const evaluateSliceSelectionMultiple = <
   TAdapter extends GraphqlAdapter,
-  TSelection extends AnySliceResultProjectionMultiple<TAdapter>,
+  TSelection extends AnyExecutionResultProjectionMultiple<TAdapter>,
 >(
   selection: TSelection,
   results: AnySliceResultRecord<TAdapter>,
-): InferSliceResultProjection<TAdapter, TSelection> =>
+): InferExecutionResultProjection<TAdapter, TSelection> =>
   Object.fromEntries(
     Object.entries(selection).map(([key, value]) => [key, evaluateSliceSelectionSingle(value, results)]),
-  ) as InferSliceResultProjection<TAdapter, TSelection>;
+  ) as InferExecutionResultProjection<TAdapter, TSelection>;
 
-export const evaluateSelections = <TAdapter extends GraphqlAdapter, TSelection extends AnySliceResultProjections<TAdapter>>(
+export const evaluateSelections = <TAdapter extends GraphqlAdapter, TSelection extends AnyExecutionResultProjections<TAdapter>>(
   selection: TSelection,
   results: AnySliceResultRecord<TAdapter>,
-): InferSliceResultProjection<TAdapter, TSelection> =>
-  selection instanceof SliceResultProjection
+): InferExecutionResultProjection<TAdapter, TSelection> =>
+  selection instanceof ExecutionResultProjection
     ? evaluateSliceSelectionSingle(selection, results)
-    : (evaluateSliceSelectionMultiple(selection, results) as InferSliceResultProjection<TAdapter, TSelection>);
+    : (evaluateSliceSelectionMultiple(selection, results) as InferExecutionResultProjection<TAdapter, TSelection>);

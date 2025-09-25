@@ -72,9 +72,8 @@ export const define = <const TName extends string>(name: TName) => ({
     } satisfies UnionDef),
 });
 
-export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(
-  operationRoots: TOperationRoots,
-) => operationRoots;
+export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(operationRoots: TOperationRoots) =>
+  operationRoots;
 
 /** Accessor utilities for looking up argument definitions from the schema. */
 export const createGqlHelpers = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => ({

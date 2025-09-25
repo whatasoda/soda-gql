@@ -1,12 +1,16 @@
 /** Operation slice builders (`gql.querySlice`, etc.). */
 import type { GraphqlAdapter } from "./adapter";
+import type {
+  AnyExecutionResultProjections,
+  ExecutionResultProjection,
+  InferExecutionResultProjection,
+} from "./execution-result-projection";
 import type { FieldPaths, InferByFieldPath } from "./field-path";
 import type { AnyFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
 import type { AssignableInput } from "./input-value";
 import type { AnyGraphqlSchema, OperationType } from "./schema";
 import type { SliceResult } from "./slice-result";
-import type { AnySliceResultProjections, InferSliceResultProjection, SliceResultProjection } from "./slice-result-projection";
 import type { InputTypeRefs } from "./type-ref";
 import type { EmptyObject, Hidden, VoidIfEmptyObject } from "./utility";
 
@@ -23,7 +27,7 @@ export type OperationSliceFn<
     keyof TSchema["object"],
 > = <
   TFields extends AnyFields,
-  TProjections extends AnySliceResultProjections<TAdapter>,
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
   TVariables extends InputTypeRefs = EmptyObject,
 >(
   variables: [TVariables?],
@@ -43,8 +47,7 @@ export type AnyOperationSlice<
   TAdapter,
   TOperationType,
   AnyFields,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any,
+  AnyExecutionResultProjections<TAdapter>,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;
@@ -62,10 +65,10 @@ export type OperationSlice<
   TAdapter extends GraphqlAdapter,
   TOperationType extends OperationType,
   TFields extends AnyFields,
-  TProjections extends AnySliceResultProjections<TAdapter>,
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
   TVariables extends InputTypeRefs,
 > = {
-  _output: Hidden<InferSliceResultProjection<TAdapter, TProjections>>;
+  _output: Hidden<InferExecutionResultProjection<TAdapter, TProjections>>;
   operationType: TOperationType;
   variables: AssignableInput<TSchema, TVariables>;
   fields: TFields;
@@ -77,7 +80,7 @@ export type SliceResultProjectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TFields extends AnyFields,
-  TProjection extends AnySliceResultProjections<TAdapter>,
+  TProjection extends AnyExecutionResultProjections<TAdapter>,
 > = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TProjection;
 
 /** Helper passed to selection builders for choosing a field path and projector. */
@@ -87,4 +90,4 @@ type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends Grap
 >(
   path: TPath,
   projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TAdapter>) => TProjected,
-) => SliceResultProjection<TAdapter, TPath, InferByFieldPath<TSchema, TFields, TPath>, TProjected>;
+) => ExecutionResultProjection<TAdapter, TPath, InferByFieldPath<TSchema, TFields, TPath>, TProjected>;

@@ -1,12 +1,15 @@
-import { DocumentNode } from "graphql";
+import type { DocumentNode } from "graphql";
 import {
-  hidden,
-  Operation,
+  type AnyExecutionResultProjectionSingle,
   type AnyGraphqlSchema,
   type AnyOperationSlice,
   type EmptyObject,
+  ExecutionResultProjection,
+  type ExecutionResultProjectionPathGraph,
   type GraphqlAdapter,
+  hidden,
   type InputTypeRefs,
+  type Operation,
   type OperationBuilder,
   type OperationFn,
   type OperationType,
@@ -41,6 +44,23 @@ export const createOperationFactory =
         fields: Object.fromEntries(fields.map(({ labeledKey, reference }) => [labeledKey, reference])),
       });
 
+      const sliceEntries = Object.entries(slices).map(([label, slice]) => ({
+        label,
+        slice,
+        rawProjection: slice.getProjections(),
+      }));
+
+      const projections = sliceEntries.flatMap(({ label, rawProjection: raw }) =>
+        raw instanceof ExecutionResultProjection
+          ? [{ label, projection: raw }]
+          : Object.values(raw).map((projection) => ({
+              label,
+              projection,
+            })),
+      );
+
+      const projectionPathGraph = createPathGraphFromLabeledProjections(projections);
+
       const operation: Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices> = {
         _input: hidden(),
         _raw: hidden(),
@@ -48,7 +68,8 @@ export const createOperationFactory =
         type: operationType,
         name,
         document: document as Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices>["document"],
-        parse: hidden(),
+        projectionPathGraph,
+        parse: hidden(), // TODO: implement
       };
 
       return operation;
@@ -56,3 +77,41 @@ export const createOperationFactory =
 
     return operationFn;
   };
+
+type ExecutionResultProjectionPathGraphIntermediate = {
+  [segment: string]: { label: string; path: string; segments: string[] }[];
+};
+
+const createPathGraph = (paths: ExecutionResultProjectionPathGraphIntermediate[string]): ExecutionResultProjectionPathGraph => {
+  const intermediate = paths.reduce(
+    (acc: ExecutionResultProjectionPathGraphIntermediate, { label, path, segments: [first, ...rest] }) => {
+      if (first) {
+        (acc[first] || (acc[first] = [])).push({ label, path, segments: rest });
+      }
+      return acc;
+    },
+    {},
+  );
+
+  return Object.fromEntries(
+    Object.entries(intermediate).map(([segment, paths]) => [
+      segment,
+      {
+        matches: paths.map(({ label, path }) => ({ label, path })),
+        children: createPathGraph(paths),
+      } satisfies ExecutionResultProjectionPathGraph[string],
+    ]),
+  );
+};
+
+const createPathGraphFromLabeledProjections = <TAdapter extends GraphqlAdapter>(
+  projections: { label: string; projection: AnyExecutionResultProjectionSingle<TAdapter> }[],
+) => {
+  const paths = projections.map(({ label, projection }) => ({
+    label,
+    path: projection.path,
+    segments: projection.path.replace("$.", `${label}_`).split("."),
+  }));
+
+  return createPathGraph(paths);
+};

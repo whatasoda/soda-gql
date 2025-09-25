@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "typecheck": "tsc -b",
-    "biome:check": "biome check --write .",
+    "biome:check": "biome check --write packages/**/*",
     "quality": "bun run biome:check && bun run typecheck",
     "soda-gql": "bun run packages/cli/src/index.ts"
   },

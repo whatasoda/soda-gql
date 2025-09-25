@@ -1,9 +1,10 @@
 import {
+  type AnyExecutionResultProjections,
   type AnyFields,
   type AnyGraphqlSchema,
-  type AnySliceResultProjections,
   type AssignableInput,
   type EmptyObject,
+  ExecutionResultProjection,
   type FieldsBuilder,
   type GraphqlAdapter,
   hidden,
@@ -11,13 +12,11 @@ import {
   type OperationSlice,
   type OperationSliceFn,
   type OperationType,
-  SliceResultProjection,
   type SliceResultProjectionsBuilder,
   type VoidIfEmptyObject,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
-import { evaluateSelections } from "./slice-result-selection";
 
 export const createOperationSliceFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(schema: TSchema, _adapter: TAdapter) =>
@@ -27,7 +26,7 @@ export const createOperationSliceFactory =
 
     const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
-      TSelection extends AnySliceResultProjections<TAdapter>,
+      TSelection extends AnyExecutionResultProjections<TAdapter>,
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       variableDefinitionsAndExtras: [TVariableDefinitions?],
@@ -51,7 +50,7 @@ export const createOperationSliceFactory =
           operationType,
           variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
           fields,
-          getProjections: () => selectionBuilder({ select: (path, projector) => new SliceResultProjection(path, projector) }),
+          getProjections: () => selectionBuilder({ select: (path, projector) => new ExecutionResultProjection(path, projector) }),
         };
 
         return slice;

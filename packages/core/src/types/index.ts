@@ -1,6 +1,7 @@
 export * from "./adapter";
 export * from "./const-value";
 export * from "./directives";
+export * from "./execution-result-projection";
 export * from "./field-path";
 export * from "./fields";
 export * from "./fields-builder";
@@ -10,7 +11,6 @@ export * from "./operation";
 export * from "./operation-slice";
 export * from "./schema";
 export * from "./slice-result";
-export * from "./slice-result-projection";
 export * from "./type-modifier";
 export * from "./type-ref";
 export * from "./utility";

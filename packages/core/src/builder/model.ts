@@ -1,9 +1,9 @@
 import {
-  hidden,
   type AnyFields,
   type AnyGraphqlSchema,
   type EmptyObject,
   type FieldsBuilder,
+  hidden,
   type InferFields,
   type InputTypeRefs,
   type Model,

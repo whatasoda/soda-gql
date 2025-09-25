@@ -41,12 +41,20 @@ export type Operation<
   }>;
   type: TOperationType;
   name: TName;
+  projectionPathGraph: ExecutionResultProjectionPathGraph;
   document: TypedQueryDocumentNode<
     InferOperationRawData<TSchema, TAdapter, TOperationType, TSlices>,
     AssignableConstInput<TSchema, TVariableDefinitions>
   >;
   parse: (result: ExecutionResult<InferOperationRawData<TSchema, TAdapter, TOperationType, TSlices>>) => {
     [K in keyof TSlices]: ReturnType<TSlices[K]["_output"]>;
+  };
+};
+
+export type ExecutionResultProjectionPathGraph = {
+  [segment: string]: {
+    matches: { label: string; path: string }[];
+    children: ExecutionResultProjectionPathGraph;
   };
 };
 
