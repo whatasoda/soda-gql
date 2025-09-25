@@ -1,10 +1,10 @@
+import { gqlRuntime } from "../runtime";
 import {
   type AnyExecutionResultProjections,
   type AnyFields,
   type AnyGraphqlSchema,
   type AssignableInput,
   type EmptyObject,
-  ExecutionResultProjection,
   type FieldsBuilder,
   type GraphqlAdapter,
   hidden,
@@ -26,14 +26,15 @@ export const createOperationSliceFactory =
 
     const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
-      TSelection extends AnyExecutionResultProjections<TAdapter>,
+      TProjection extends AnyExecutionResultProjections<TAdapter>,
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       variableDefinitionsAndExtras: [TVariableDefinitions?],
       builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-      selectionBuilder: SliceResultProjectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
+      projectionBuilder: SliceResultProjectionsBuilder<TSchema, TAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
+      const getProjections = gqlRuntime.wrapProjectionBuilder(projectionBuilder);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);
@@ -45,12 +46,12 @@ export const createOperationSliceFactory =
           $,
         });
 
-        const slice: OperationSlice<TSchema, TAdapter, TOperationType, TFields, TSelection, TVariableDefinitions> = {
+        const slice: OperationSlice<TSchema, TAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
           _output: hidden(),
           operationType,
           variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
-          fields,
-          getProjections: () => selectionBuilder({ select: (path, projector) => new ExecutionResultProjection(path, projector) }),
+          getFields: () => fields,
+          getProjections,
         };
 
         return slice;

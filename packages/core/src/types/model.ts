@@ -20,7 +20,7 @@ export type ModelFn<TSchema extends AnyGraphqlSchema> = <
 >(
   target: TTypeName | [TTypeName, TVariableDefinitions],
   builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-  transform: (selected: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
+  transform: (raw: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
 ) => NoInfer<Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed>>;
 
 /** Internal representation returned by `gql.model`. */
@@ -35,5 +35,5 @@ export type Model<
   _output: Hidden<TTransformed>;
   typename: TTypeName;
   fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
-  transform: (selected: InferFields<TSchema, TFields>) => TTransformed;
+  transform: (raw: InferFields<TSchema, TFields>) => TTransformed;
 };

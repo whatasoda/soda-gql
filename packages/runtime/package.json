@@ -11,5 +11,8 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     }
+  },
+  "dependencies": {
+    "@soda-gql/core": "workspace:*"
   }
 }

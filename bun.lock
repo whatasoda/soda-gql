@@ -95,6 +95,9 @@
     "packages/runtime": {
       "name": "@soda-gql/runtime",
       "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/core": "workspace:*",
+      },
     },
   },
   "packages": {

@@ -34,7 +34,7 @@ export const createOperationFactory =
 
       const slices = builder({ $ });
       const fields = Object.entries(slices).flatMap(([label, slice]) =>
-        Object.entries(slice.fields).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
+        Object.entries(slice.getFields()).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
       );
 
       const document: DocumentNode = buildDocument({

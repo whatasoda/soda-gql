@@ -71,7 +71,7 @@ export type OperationSlice<
   _output: Hidden<InferExecutionResultProjection<TAdapter, TProjections>>;
   operationType: TOperationType;
   variables: AssignableInput<TSchema, TVariables>;
-  fields: TFields;
+  getFields: () => TFields;
   getProjections: () => TProjections;
 };
 

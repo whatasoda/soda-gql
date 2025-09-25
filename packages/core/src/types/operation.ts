@@ -67,7 +67,10 @@ type InferOperationRawData<
   UnionToIntersection<
     {
       [TLabel in keyof TSlices & string]: {
-        [K in keyof TSlices[TLabel]["fields"] & string as `${TLabel}_${K}`]: InferField<TSchema, TSlices[TLabel]["fields"][K]>;
+        [K in keyof ReturnType<TSlices[TLabel]["getFields"]> & string as `${TLabel}_${K}`]: InferField<
+          TSchema,
+          ReturnType<TSlices[TLabel]["getFields"]>[K]
+        >;
       };
     }[keyof TSlices & string]
   >

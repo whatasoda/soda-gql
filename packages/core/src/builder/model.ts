@@ -21,7 +21,7 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
   >(
     target: TTypeName | [TTypeName, TVariableDefinitions],
     builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-    transform: (selected: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
+    transform: (raw: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
   ) => {
     const [typename, variablesDefinition] = Array.isArray(target)
       ? [target[0] as TTypeName, target[1] ?? ({} as TVariableDefinitions)]

@@ -951,7 +951,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   properties.push(
     t.objectProperty(
       t.identifier("getProjections"),
-      t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")), [
+      t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("wrapProjectionBuilder")), [
         resolvedBuilder,
       ]),
     ),
