@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
@@ -13,17 +12,11 @@ import {
 } from "../../../packages/builder/src/index.ts";
 
 const withArtifactFile = async (artifact: BuilderArtifact): Promise<string> => {
-  const artifactFile = join(process.cwd(), "tests", ".tmp", `babel-plugin-artifact-${randomUUID()}.json`);
+  const artifactDir = join(process.cwd(), "tests", ".tmp");
+  mkdirSync(artifactDir, { recursive: true });
+  const artifactFile = join(artifactDir, "babel-plugin-artifact.json");
   await Bun.write(artifactFile, JSON.stringify(artifact));
   return artifactFile;
-};
-
-const writeTransformedOutput = async (label: string, contents: string) => {
-  const outputDir = join(process.cwd(), "tests", ".tmp", "unit-plugin-transforms");
-  mkdirSync(outputDir, { recursive: true });
-  const fileName = `${label}-${Date.now()}-${randomUUID()}.ts`;
-  const filePath = join(outputDir, fileName);
-  await Bun.write(filePath, contents);
 };
 
 const runTransform = async (source: string, filename: string, artifact: BuilderArtifact) => {
@@ -125,8 +118,6 @@ export const profileQuery = gql.query("ProfilePageQuery", {}, () => ({}));
 `;
 
     const transformed = await runTransform(source, sourcePath, artifact);
-    await writeTransformedOutput(`${queryRuntimeName}-profile`, transformed);
-
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).not.toContain("gql.query");
@@ -202,8 +193,6 @@ export const userSliceCatalog = {
 `;
 
     const transformed = await runTransform(source, sourcePath, artifact);
-    await writeTransformedOutput(`${nestedSliceRuntimeName}-nested`, transformed);
-
     expect(transformed).not.toContain("gql.model");
     expect(transformed).not.toContain("gql.querySlice");
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
@@ -233,37 +222,12 @@ export const userSliceCatalog = {
       },
     };
 
-    const runtimeModuleSource = `\
-import { gql } from "@/graphql-system";
-import { createModel, createSlice } from "@soda-gql/runtime";
+    const runtimeModulePath = join(process.cwd(), "tests/fixtures/plugin/runtime-module/user.runtime.ts");
+    const expectedPath = join(process.cwd(), "tests/fixtures/plugin/runtime-module/user.runtime.transformed.ts");
+    const source = await Bun.file(runtimeModulePath).text();
+    const transformed = await runTransform(source, runtimeModulePath, artifact);
+    const expected = await Bun.file(expectedPath).text();
 
-export const models = {
-  "${modelId}": createModel("${modelId}", () => (
-    gql.model("User", () => ({}), () => {
-      /* runtime function */
-      return {};
-    })
-  )),
-} as const;
-
-export const slices = {
-  "${sliceId}": createSlice("${sliceId}", () => (
-    gql.querySlice([], () => ({}), ({ select }) =>
-      select("$.users", () => {
-        /* runtime function */
-        return {};
-      }),
-    )
-  )),
-} as const;
-`;
-
-    const filename = join(process.cwd(), "tests/.tmp", `runtime-module-${Date.now()}.ts`);
-    const transformed = await runTransform(runtimeModuleSource, filename, artifact);
-
-    expect(transformed).toContain("posts.map(post => ({");
-    expect(transformed).toContain("result.safeUnwrap(data => data.map(user => userModel.transform(user)))");
-    expect(transformed).not.toContain("/* runtime function */");
-    expect(transformed).not.toContain(": UserModel");
+    expect(transformed.trim()).toBe(expected.trim());
   });
 });
