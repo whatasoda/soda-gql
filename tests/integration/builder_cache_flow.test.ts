@@ -3,6 +3,9 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { runCodegen } from "../../packages/codegen/src/index.ts";
+import { runBuilder } from "../../packages/builder/src/index.ts";
+
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "builder-cache-flow");
@@ -49,85 +52,46 @@ export const adapter = {
   await Bun.write(outFile, contents);
 };
 
-type CliResult = {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-};
-
-type RunCliOptions = {
-  readonly env?: Record<string, string>;
-};
-
-const runCli = async (args: readonly string[], options: RunCliOptions = {}): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      ...options.env,
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
-};
-
-const runCodegen = async (workspaceRoot: string, schemaPath: string, outFile: string) => {
+const generateGraphqlSystem = async (workspaceRoot: string, schemaPath: string) => {
   const injectPath = join(workspaceRoot, "graphql-inject.ts");
   await writeInjectModule(injectPath);
 
-  const result = await runCli([
-    "soda-gql",
-    "codegen",
-    "--schema",
+  const outPath = join(workspaceRoot, "graphql-system", "index.ts");
+  const result = runCodegen({
     schemaPath,
-    "--out",
-    outFile,
-    "--format",
-    "json",
-    "--inject-from",
-    injectPath,
-  ]);
-  expect(result.exitCode).toBe(0);
-};
-
-const runBuilder = async (workspaceRoot: string, entry: string, outFile: string, debugDir: string) => {
-  const nodePath = [
-    join(workspaceRoot, "node_modules"),
-    join(projectRoot, "node_modules"),
-    process.env.NODE_PATH ?? "",
-  ]
-    .filter(Boolean)
-    .join(":");
-
-  const result = await runCli([
-    "soda-gql",
-    "builder",
-    "--mode",
-    "runtime",
-    "--entry",
-    entry,
-    "--out",
-    outFile,
-    "--format",
-    "json",
-    "--debug-dir",
-    debugDir,
-  ], {
-    env: {
-      NODE_PATH: nodePath,
-    },
+    outPath,
+    format: "json",
+    injectFromPath: injectPath,
   });
 
-  expect(result.exitCode).toBe(0);
+  if (result.isErr()) {
+    throw new Error(`codegen failed: ${result.error.code}`);
+  }
+
+  return outPath;
+};
+
+const executeBuilder = async (workspaceRoot: string, entry: string, outFile: string, debugDir: string) => {
+  const originalCwd = process.cwd();
+  process.chdir(workspaceRoot);
+  try {
+    const result = await runBuilder({
+      mode: "runtime",
+      entry: [entry],
+      outPath: outFile,
+      format: "json",
+      analyzer: "ts",
+      debugDir,
+    });
+
+    if (result.isErr()) {
+      throw new Error(`builder failed: ${result.error.code}`);
+    }
+
+    return result.value;
+  } finally {
+    process.chdir(originalCwd);
+  }
 };
 
 describe("builder cache flow integration", () => {
@@ -142,27 +106,21 @@ describe("builder cache flow integration", () => {
 
   it("emits documents with field selections and records cache hits on successive runs", async () => {
     const schemaPath = join(workspaceRoot, "schema.graphql");
-    const graphqlSystemFile = join(workspaceRoot, "node_modules", "@", "graphql-system", "index.ts");
-    mkdirSync(join(workspaceRoot, "node_modules", "@", "graphql-system"), { recursive: true });
+    await generateGraphqlSystem(workspaceRoot, schemaPath);
 
-    await runCodegen(workspaceRoot, schemaPath, graphqlSystemFile);
-
-    const entryGlob = join(workspaceRoot, "src", "pages", "profile.page.ts");
+    const entryPath = join(workspaceRoot, "src", "pages", "profile.page.ts");
     const artifactFile = join(workspaceRoot, ".cache", "builder", "artifact.json");
     mkdirSync(join(workspaceRoot, ".cache", "builder"), { recursive: true });
     const debugDir = join(workspaceRoot, ".cache", "builder", "debug");
 
-    await runBuilder(workspaceRoot, entryGlob, artifactFile, debugDir);
-
-    const firstArtifact = JSON.parse(await Bun.file(artifactFile).text());
+    const firstResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
+    const firstArtifact = firstResult.artifact;
     expect(firstArtifact.documents.ProfilePageQuery.text).toContain("users");
     expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
 
-    await runBuilder(workspaceRoot, entryGlob, artifactFile, debugDir);
-
-    const secondArtifact = JSON.parse(await Bun.file(artifactFile).text());
+    const secondResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
+    const secondArtifact = secondResult.artifact;
     expect(secondArtifact.report.cache?.hits ?? 0).toBeGreaterThan(0);
-    await Bun.write(join(debugDir, "artifact-second.json"), JSON.stringify(secondArtifact, null, 2));
   });
 
   afterAll(() => {

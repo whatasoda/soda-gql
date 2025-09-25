@@ -5,13 +5,13 @@
 **Spec**: `/specs/001-zero-runtime-gql-in-js/spec.md`
 
 ## Summary
-The core builder pipeline now emits placeholder runtime modules, canonical dependency graphs, and cache metadata via SWC-driven analysis. Tests for analyzer, resolver, caching, and builder CLI flows are green. The next push focuses on aligning the Babel-based transform pipeline with the zero-runtime builder outputs so application code receives pre-built GraphQL documents without shipping transformation logic to production.
+The core builder pipeline now emits placeholder intermediate modules, canonical dependency graphs, and cache metadata via SWC-driven analysis. Tests for analyzer, resolver, caching, and builder CLI flows are green. The next push focuses on aligning the Babel-based transform pipeline with the zero-runtime builder outputs so application code receives pre-built GraphQL documents without shipping transformation logic to production.
 
 ## Current Snapshot (2025-09-24)
-- **Runtime module generation**: `packages/builder/src/runtime-module.ts` injects placeholder functions for `gql.model` and `gql.querySlice` resolver transforms to enforce zero-runtime semantics.
+- **Intermediate module generation**: `packages/builder/src/intermediate-module.ts` injects placeholder functions for `gql.model` and `gql.querySlice` resolver transforms to enforce zero-runtime semantics.
 - **Analyzers**: TypeScript and SWC analyzers share parity, with SWC falling back to TS when the entry expression is not `gql.*`.
 - **Dependency graph**: Graph nodes capture references and canonical dependencies, enabling deterministic rewrites and cache reuse.
-- **Builder CLI**: Full `bun test` suite passes; cache/integration tests confirm runtime module scaffolding.
+- **Builder CLI**: Full `bun test` suite passes; cache/integration tests confirm intermediate module scaffolding.
 - **Gaps**: Babel plugin currently only rewrites `gql.query` calls, injects unused imports, and cannot expose generated documents/transformers to consuming apps. Intermediate file generation still depends on TypeScript AST APIs, preventing a consistent SWC-based build path.
 
 ## Key Problems To Solve
@@ -22,7 +22,7 @@ The core builder pipeline now emits placeholder runtime modules, canonical depen
 
 ## Implementation Roadmap
 1. **Plugin Coverage & Contracts**
-   - Extend Babel plugin detection and rewrite logic to handle `gql.model` definitions (third argument) and `gql.querySlice` resolvers in step with builder-produced runtime modules.
+   - Extend Babel plugin detection and rewrite logic to handle `gql.model` definitions (third argument) and `gql.querySlice` resolvers in step with builder-produced intermediate modules.
    - Align plugin output with builder manifests so canonical IDs resolve to emitted GraphQL documents.
    - Add integration tests ensuring all three `gql.*` entry points produce zero-runtime code with no runtime `gql` calls left behind.
 
@@ -32,7 +32,7 @@ The core builder pipeline now emits placeholder runtime modules, canonical depen
    - Validate with smoke fixtures that applications can import the generated documents/functions without referencing builder internals.
 
 ### Runtime Export Surface Sketch (2025-09-24)
-- Builder runtime modules emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export uses the sanitized export name plus an 8-character hash of the canonical ID (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId_a1b2c3d4`) to avoid collisions across modules.
+- Builder intermediate modules emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export uses the sanitized export name plus an 8-character hash of the canonical ID (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId_a1b2c3d4`) to avoid collisions across modules.
 - Operations expose `{ document, variables, transform }` tuples; slices expose `{ invoke, document }` bindings; models expose `{ fragment, transform }` helpers. Each named export proxies the corresponding entry in the aggregated map to keep imports ergonomic, and companion `...Document` bindings surface GraphQL document nodes.
 - Generated modules also re-export compiled GraphQL documents under `Document` suffixes (e.g., `ProfilePageQueryDocument`) to support tooling that needs raw documents.
 - Babel plugin will import these named bindings (defaulting to `@/graphql-system/runtime` unless overridden) and rewrite `gql.*` call sites to reference the generated exports, removing the original `gql` import when no runtime helpers remain.
@@ -52,7 +52,7 @@ The core builder pipeline now emits placeholder runtime modules, canonical depen
 
 ## Dependencies & Notes
 - Plugin coverage (Step 1) must land before runtime export packaging and SWC artifact generation can be finalised.
-- SWC artifact work should coordinate with T021 to keep emitted runtime modules consumable without Bun's TS loader.
+- SWC artifact work should coordinate with T021 to keep emitted intermediate modules consumable without Bun's TS loader.
 - Continue enforcing neverthrow-based error handling and Zod validation for external inputs.
 - Maintain strict TDD: add or update tests before implementing each roadmap item.
 

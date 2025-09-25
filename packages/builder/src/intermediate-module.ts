@@ -1,5 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
@@ -457,12 +457,24 @@ export const createIntermediateModule = async ({ graph, outDir }: CreateIntermed
 
   const exportSections = [namedExports, operationDocumentExports].filter((section) => section.length > 0).join("\n");
 
-  const imports = [`import { gql } from "@/graphql-system";`];
+  const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
+  const filePath = join(outDir, fileName);
+
+  const graphqlSystemIndex = join(process.cwd(), "graphql-system", "index.ts");
+  let gqlImportPath = "@/graphql-system";
+
+  if (existsSync(graphqlSystemIndex)) {
+    const relativePath = relative(dirname(filePath), graphqlSystemIndex).replace(/\\/g, "/");
+    let sanitized = relativePath.length > 0 ? relativePath : "./index.ts";
+    if (!sanitized.startsWith(".")) {
+      sanitized = `./${sanitized}`;
+    }
+    gqlImportPath = sanitized.endsWith(".ts") ? sanitized.slice(0, -3) : sanitized;
+  }
+
+  const imports = [`import { gql } from "${gqlImportPath}";`];
 
   const content = `${imports.join("\n")}\n\n${sections}\n\n${exportSections}\n`;
-
-  const fileName = `runtime-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
-  const filePath = join(outDir, fileName);
 
   try {
     await Bun.write(filePath, content);

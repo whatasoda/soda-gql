@@ -4,13 +4,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
+import { runCodegen } from "../../packages/codegen/src/index.ts";
+import { runBuilder } from "../../packages/builder/src/index.ts";
 import { createCanonicalId, createRuntimeBindingName } from "../../packages/builder/src/index.ts";
-
-type CliResult = {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-};
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -58,48 +54,6 @@ export const adapter = {
   await Bun.write(outFile, contents);
 };
 
-const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "codegen", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
-};
-
-const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "builder", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        join(projectRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
-        .filter(Boolean)
-        .join(":"),
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
-};
-
 const loadPlugin = async () => {
   const module = await import("../../packages/plugin-babel/src/index.ts");
   const plugin = (module as { default?: babel.PluginItem }).default;
@@ -121,50 +75,50 @@ describe("zero-runtime transform", () => {
   it("rewrites profile.query.ts using builder artifact", async () => {
     const workspace = copyFixtureWorkspace("zero-runtime");
     const schemaPath = join(workspace, "schema.graphql");
-    const graphqlSystemDir = join(workspace, "node_modules", "@", "graphql-system");
-    mkdirSync(graphqlSystemDir, { recursive: true });
+    const graphqlSystemDir = join(workspace, "graphql-system");
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
     const injectPath = join(workspace, "graphql-inject.ts");
 
     await writeInjectModule(injectPath);
 
-    const codegenResult = await runCodegenCli([
-      "--schema",
+    const codegenResult = runCodegen({
       schemaPath,
-      "--out",
-      graphqlSystemEntry,
-      "--format",
-      "json",
-      "--inject-from",
-      injectPath,
-    ]);
+      outPath: graphqlSystemEntry,
+      format: "json",
+      injectFromPath: injectPath,
+    });
 
-    expect(codegenResult.exitCode).toBe(0);
-    const generatedExists = await Bun.file(graphqlSystemEntry).exists();
-    expect(generatedExists).toBe(true);
+    if (codegenResult.isErr()) {
+      throw new Error(`codegen failed: ${codegenResult.error.code}`);
+    }
+
+    expect(await Bun.file(graphqlSystemEntry).exists()).toBe(true);
 
     const cacheDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(cacheDir, { recursive: true });
     const artifactPath = join(cacheDir, "runtime.json");
     const debugDir = join(cacheDir, "debug");
 
-    const builderResult = await runBuilderCli(workspace, [
-      "--mode",
-      "runtime",
-      "--entry",
-      join(workspace, "src", "pages", "profile.page.ts"),
-      "--out",
-      artifactPath,
-      "--format",
-      "json",
-      "--debug-dir",
-      debugDir,
-    ]);
+    const originalCwd = process.cwd();
+    process.chdir(workspace);
+    try {
+      const builderResult = await runBuilder({
+        mode: "runtime",
+        entry: [join(workspace, "src", "pages", "profile.page.ts")],
+        outPath: artifactPath,
+        format: "json",
+        analyzer: "ts",
+        debugDir,
+      });
 
-    expect(builderResult.exitCode).toBe(0);
-    const artifactExists = await Bun.file(artifactPath).exists();
-    expect(artifactExists).toBe(true);
-    await Bun.write(join(debugDir, "stdout.txt"), builderResult.stdout);
+      if (builderResult.isErr()) {
+        throw new Error(`builder failed: ${builderResult.error.code}`);
+      }
+    } finally {
+      process.chdir(originalCwd);
+    }
+
+    expect(await Bun.file(artifactPath).exists()).toBe(true);
 
     const plugin = await loadPlugin();
     const transformOutDir = join(cacheDir, "plugin-output");

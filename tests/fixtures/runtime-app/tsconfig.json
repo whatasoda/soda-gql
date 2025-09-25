@@ -23,7 +23,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/graphql-system": ["./node_modules/@/graphql-system/index.ts"],
+      "@/graphql-system": ["./graphql-system/index.ts"],
       "@soda-gql/core": [
         "../../../packages/core/src/index.ts",
         "../../../../packages/core/src/index.ts"
@@ -34,5 +34,5 @@
       ]
     }
   },
-  "include": ["src/**/*.ts", "node_modules/@/graphql-system/**/*.ts"]
+  "include": ["src/**/*.ts", "graphql-system/**/*.ts"]
 }
