@@ -180,7 +180,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
   });
 
-  it("hydrates runtime-module placeholders using original source definitions", async () => {
+  it("hydrates intermediate-module placeholders using original source definitions", async () => {
     const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
     const modelId = createCanonicalId(sourcePath, "userModel");
     const sliceId = createCanonicalId(sourcePath, "userSlice");
@@ -249,7 +249,7 @@ export const slices = {
 } as const;
 `;
 
-    const transformed = await runTransform(source, join(process.cwd(), "tests/.tmp", "runtime-module.ts"), artifact);
+    const transformed = await runTransform(source, join(process.cwd(), "tests/.tmp", "intermediate-module.ts"), artifact);
 
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain("gqlRuntime.model({");

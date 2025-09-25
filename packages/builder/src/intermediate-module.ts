@@ -352,12 +352,12 @@ const renderSection = (label: string, entries: readonly string[]): string => {
   return `export const ${label} = {\n${body}\n} as const;`;
 };
 
-export type CreateRuntimeModuleInput = {
+export type CreateIntermediateModuleInput = {
   readonly graph: DependencyGraph;
   readonly outDir: string;
 };
 
-export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModuleInput): Promise<Result<string, BuilderError>> => {
+export const createIntermediateModule = async ({ graph, outDir }: CreateIntermediateModuleInput): Promise<Result<string, BuilderError>> => {
   try {
     mkdirSync(outDir, { recursive: true });
   } catch (error) {

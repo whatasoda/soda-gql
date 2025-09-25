@@ -6,7 +6,7 @@ import { err } from "neverthrow";
 import { buildArtifact } from "./artifact";
 import { buildDependencyGraph } from "./dependency-graph";
 import { loadModules } from "./module-loader";
-import { createRuntimeModule } from "./runtime-module";
+import { createIntermediateModule } from "./intermediate-module";
 import type { BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
@@ -27,7 +27,7 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
   }
 
   const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-  const runtimeModule = await createRuntimeModule({
+  const runtimeModule = await createIntermediateModule({
     graph: dependencyGraph.value,
     outDir: runtimeDir,
   });
@@ -48,7 +48,7 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
       JSON.stringify(Array.from(dependencyGraph.value.entries()), null, 2),
     );
     await Bun.write(
-      resolve(debugPath, "runtime-module.ts"),
+      resolve(debugPath, "intermediate-module.ts"),
       await Bun.file(runtimeModule.value).text(),
     );
   }
