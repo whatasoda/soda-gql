@@ -211,4 +211,59 @@ export const userSliceCatalog = {
     expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
     expect(transformed).not.toMatch(/import\s+{\s*gql\b/);
   });
+
+  it("hydrates runtime-module placeholders using original source definitions", async () => {
+    const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
+    const modelId = createCanonicalId(sourcePath, "userModel");
+    const sliceId = createCanonicalId(sourcePath, "userSlice");
+
+    const artifact: BuilderArtifact = {
+      documents: {},
+      refs: {},
+      report: {
+        documents: 0,
+        models: 0,
+        slices: 0,
+        durationMs: 0,
+        warnings: [],
+        cache: {
+          hits: 0,
+          misses: 0,
+        },
+      },
+    };
+
+    const runtimeModuleSource = `\
+import { gql } from "@/graphql-system";
+import { createModel, createSlice } from "@soda-gql/runtime";
+
+export const models = {
+  "${modelId}": createModel("${modelId}", () => (
+    gql.model("User", () => ({}), () => {
+      /* runtime function */
+      return {};
+    })
+  )),
+} as const;
+
+export const slices = {
+  "${sliceId}": createSlice("${sliceId}", () => (
+    gql.querySlice([], () => ({}), ({ select }) =>
+      select("$.users", () => {
+        /* runtime function */
+        return {};
+      }),
+    )
+  )),
+} as const;
+`;
+
+    const filename = join(process.cwd(), "tests/.tmp", `runtime-module-${Date.now()}.ts`);
+    const transformed = await runTransform(runtimeModuleSource, filename, artifact);
+
+    expect(transformed).toContain("posts.map(post => ({");
+    expect(transformed).toContain("result.safeUnwrap(data => data.map(user => userModel.transform(user)))");
+    expect(transformed).not.toContain("/* runtime function */");
+    expect(transformed).not.toContain(": UserModel");
+  });
 });

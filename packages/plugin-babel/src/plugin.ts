@@ -1,14 +1,22 @@
+import { readFileSync } from "node:fs";
+
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
-import type { NodePath } from "@babel/traverse";
+import { parse } from "@babel/parser";
+import traverse, { type NodePath } from "@babel/traverse";
 import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import type { SodaGqlBabelOptions } from "./types";
 
+type SourceCacheEntry = {
+  readonly calls: Map<SupportedMethod, Map<string, t.CallExpression>>;
+};
+
 export type PluginState = {
   readonly options: SodaGqlBabelOptions;
   readonly artifact: BuilderArtifact;
+  readonly sourceCache: Map<string, SourceCacheEntry>;
 };
 
 type PluginPassState = PluginPass & { _state?: PluginState };
@@ -100,6 +108,100 @@ const makeExportName = (segments: readonly string[]): string | null => {
   }
 
   return segments.join(".");
+};
+
+const parserOptions: Parameters<typeof parse>[1] = {
+  sourceType: "module",
+  plugins: ["typescript", "jsx"],
+};
+
+const cloneCallExpression = (call: t.CallExpression): t.CallExpression => t.cloneNode(call, /* deep */ true);
+
+const loadSourceCacheEntry = (state: PluginState, filePath: string): SourceCacheEntry | null => {
+  const existing = state.sourceCache.get(filePath);
+  if (existing) {
+    return existing;
+  }
+
+  let contents: string;
+  try {
+    contents = readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+
+  let ast: t.File;
+  try {
+    ast = parse(contents, parserOptions);
+  } catch {
+    return null;
+  }
+
+  const entry: SourceCacheEntry = {
+    calls: new Map(),
+  };
+
+  traverse(ast, {
+    CallExpression(callPath) {
+      const method = asSupportedMethod(callPath.node);
+      if (!method) {
+        return;
+      }
+
+      const segments = collectExportSegments(callPath);
+      if (!segments) {
+        return;
+      }
+
+      const exportName = makeExportName(segments);
+      if (!exportName) {
+        return;
+      }
+
+      const methodCalls = entry.calls.get(method) ?? new Map<string, t.CallExpression>();
+      if (!methodCalls.has(exportName)) {
+        methodCalls.set(exportName, cloneCallExpression(callPath.node));
+        entry.calls.set(method, methodCalls);
+      }
+    },
+  });
+
+  state.sourceCache.set(filePath, entry);
+  return entry;
+};
+
+const getOriginalArgument = (
+  state: PluginState,
+  canonicalId: string,
+  method: SupportedMethod,
+  argumentIndex: number,
+): t.Expression | null => {
+  const [filePath, exportName] = canonicalId.split("::");
+  if (!filePath || !exportName) {
+    return null;
+  }
+
+  const cache = loadSourceCacheEntry(state, filePath);
+  if (!cache) {
+    return null;
+  }
+
+  const methodCalls = cache.calls.get(method);
+  if (!methodCalls) {
+    return null;
+  }
+
+  const call = methodCalls.get(exportName);
+  if (!call) {
+    return null;
+  }
+
+  const argument = call.arguments[argumentIndex];
+  if (!argument || !t.isExpression(argument)) {
+    return null;
+  }
+
+  return t.cloneNode(argument, /* deep */ true);
 };
 
 const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
@@ -267,8 +369,170 @@ const convertSliceVariables = (node: t.Expression | undefined): t.Expression | n
   return convertVariablesObject(element);
 };
 
-const buildModelRuntimeCall = (args: t.Expression[]): t.Expression => {
-  const [target, , transform] = args;
+const isRuntimePlaceholderFunction = (node: t.ArrowFunctionExpression | t.FunctionExpression): boolean => {
+  if (!t.isBlockStatement(node.body)) {
+    return false;
+  }
+
+  if (node.body.body.length !== 1) {
+    return false;
+  }
+
+  const [statement] = node.body.body;
+  if (!t.isReturnStatement(statement)) {
+    return false;
+  }
+
+  if (!statement.argument || !t.isObjectExpression(statement.argument) || statement.argument.properties.length > 0) {
+    return false;
+  }
+
+  const comments = [...(statement.leadingComments ?? []), ...(node.body.leadingComments ?? []), ...(node.leadingComments ?? [])];
+  return comments.some((comment) => comment.value.includes("runtime function"));
+};
+
+const expressionContainsPlaceholder = (expression: t.Expression): boolean => {
+  let found = false;
+
+  const visit = (node: t.Node) => {
+    if (found) {
+      return;
+    }
+
+    if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
+      if (isRuntimePlaceholderFunction(node)) {
+        found = true;
+        return;
+      }
+    }
+
+    const keys = t.VISITOR_KEYS[node.type] ?? [];
+    for (const key of keys) {
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          if (child && typeof child === "object") {
+            visit(child as t.Node);
+            if (found) {
+              return;
+            }
+          }
+        }
+      } else if (value && typeof value === "object") {
+        visit(value as t.Node);
+        if (found) {
+          return;
+        }
+      }
+    }
+  };
+
+  visit(expression);
+  return found;
+};
+
+const stripTypeAnnotations = <T extends t.Expression>(expression: T): T => {
+  const stripNode = (node: t.Node): t.Node => {
+    if (t.isTSAsExpression(node) || t.isTSNonNullExpression(node) || t.isTSTypeAssertion(node) || t.isTSInstantiationExpression(node)) {
+      return stripNode(node.expression as t.Node);
+    }
+
+    if (t.isIdentifier(node)) {
+      node.typeAnnotation = null;
+    }
+
+    if (t.isObjectPattern(node) || t.isArrayPattern(node)) {
+      node.typeAnnotation = null;
+    }
+
+    if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
+      node.returnType = null;
+      node.typeParameters = null;
+    }
+
+    const keys = t.VISITOR_KEYS[node.type] ?? [];
+    keys.forEach((key) => {
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        (node as unknown as Record<string, unknown>)[key] = value.map((child) =>
+          child && typeof child === "object" ? stripNode(child as t.Node) : child,
+        );
+        return;
+      }
+
+      if (value && typeof value === "object") {
+        (node as unknown as Record<string, unknown>)[key] = stripNode(value as t.Node);
+      }
+    });
+
+    return node;
+  };
+
+  return stripNode(expression) as T;
+};
+
+const getRuntimeCanonicalId = (
+  callPath: NodePath<t.CallExpression>,
+  method: SupportedMethod,
+): string | null => {
+  const factoryName = method === "model" ? "createModel" : method === "querySlice" ? "createSlice" : "createOperation";
+
+  const factoryCall = callPath.findParent((parent) =>
+    parent.isCallExpression() && t.isIdentifier(parent.node.callee, { name: factoryName }),
+  );
+
+  if (!factoryCall || !factoryCall.isCallExpression()) {
+    return null;
+  }
+
+  const [idArg] = factoryCall.node.arguments;
+  if (!idArg || !t.isStringLiteral(idArg)) {
+    return null;
+  }
+
+  return idArg.value;
+};
+
+const resolveModelTransform = (
+  callPath: NodePath<t.CallExpression>,
+  state: PluginState,
+  transform: t.Expression,
+): t.Expression => {
+  if (t.isArrowFunctionExpression(transform) || t.isFunctionExpression(transform)) {
+    if (isRuntimePlaceholderFunction(transform)) {
+      const canonicalId = getRuntimeCanonicalId(callPath, "model");
+      if (canonicalId) {
+        const original = getOriginalArgument(state, canonicalId, "model", 2);
+        if (original) {
+          return stripTypeAnnotations(original);
+        }
+      }
+    }
+  }
+
+  return clone(transform);
+};
+
+const resolveSliceProjectionBuilder = (
+  callPath: NodePath<t.CallExpression>,
+  state: PluginState,
+  builder: t.Expression,
+): t.Expression => {
+  if (expressionContainsPlaceholder(builder)) {
+    const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
+    if (canonicalId) {
+      const original = getOriginalArgument(state, canonicalId, "querySlice", 2);
+      if (original) {
+        return stripTypeAnnotations(original);
+      }
+    }
+  }
+
+  return clone(builder);
+};
+
+const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState): t.Expression => {
+  const [target, , transform] = callPath.node.arguments;
   if (!target || !transform) {
     throw new Error("gql.model requires a target and transform");
   }
@@ -290,16 +554,21 @@ const buildModelRuntimeCall = (args: t.Expression[]): t.Expression => {
     throw new Error("Unsupported target for gql.model");
   }
 
-  properties.push(t.objectProperty(t.identifier("transform"), clone(transform)));
+  if (!t.isExpression(transform)) {
+    throw new Error("Unsupported transform for gql.model");
+  }
+
+  const resolvedTransform = resolveModelTransform(callPath, state, transform);
+  properties.push(t.objectProperty(t.identifier("transform"), resolvedTransform));
 
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
     t.objectExpression(properties),
   ]);
 };
 
-const buildSliceRuntimeCall = (args: t.Expression[]): t.Expression => {
-  const [variables, , projectionBuilder] = args;
-  if (!projectionBuilder) {
+const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState): t.Expression => {
+  const [variables, , projectionBuilder] = callPath.node.arguments;
+  if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("gql.querySlice requires a projection builder");
   }
 
@@ -309,11 +578,12 @@ const buildSliceRuntimeCall = (args: t.Expression[]): t.Expression => {
     properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
   }
 
+  const resolvedBuilder = resolveSliceProjectionBuilder(callPath, state, projectionBuilder);
   properties.push(
     t.objectProperty(
       t.identifier("getProjections"),
       t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")), [
-        clone(projectionBuilder),
+        resolvedBuilder,
       ]),
     ),
   );
@@ -391,6 +661,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
     this._state = {
       options,
       artifact,
+      sourceCache: new Map(),
     } satisfies PluginState;
   },
   visitor: {
@@ -422,8 +693,8 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
               ensureGqlRuntimeImport(programPath);
               const replacement =
                 method === "model"
-                  ? buildModelRuntimeCall(callPath.node.arguments)
-                  : buildSliceRuntimeCall(callPath.node.arguments);
+                  ? buildModelRuntimeCall(callPath, pluginState)
+                  : buildSliceRuntimeCall(callPath, pluginState);
               callPath.replaceWith(replacement);
               mutated = true;
               return;
@@ -443,8 +714,8 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
             ensureGqlRuntimeImport(programPath);
             const replacement =
               method === "model"
-                ? buildModelRuntimeCall(callPath.node.arguments)
-                : buildSliceRuntimeCall(callPath.node.arguments);
+                ? buildModelRuntimeCall(callPath, pluginState)
+                : buildSliceRuntimeCall(callPath, pluginState);
             callPath.replaceWith(replacement);
             mutated = true;
             return;
