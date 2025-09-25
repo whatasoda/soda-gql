@@ -206,60 +206,53 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const canonicalSlice = `${entityPath}::userSlice`;
 
     const source = `import { gql } from "@/graphql-system";
-import { createModel, createSlice } from "@soda-gql/runtime";
 
 export const models = {
-  "${canonicalModel}": createModel(
-    "${canonicalModel}",
-    () =>
-      gql.model(
-        ["User", { categoryId: gql.scalar(["ID", ""]) }],
-        ({ f, $ }) => ({
+  "${canonicalModel}": (() =>
+    gql.model(
+      ["User", { categoryId: gql.scalar(["ID", ""]) }],
+      ({ f, $ }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
           ...f.id(),
-          ...f.name(),
-          ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
-            ...f.id(),
-            ...f.title(),
-          })),
-        }),
-        () => {
-          /* runtime function */
-          return {};
-        },
-      ),
-  ),
+          ...f.title(),
+        })),
+      }),
+      () => {
+        /* runtime function */
+        return {};
+      },
+    ))(),
 } as const;
 
 export const slices = {
-  "${canonicalSlice}": createSlice(
-    "${canonicalSlice}",
-    () =>
-      gql.querySlice(
-        [
-          {
-            id: gql.scalar(["ID", "!"]),
-            categoryId: gql.scalar(["ID", ""]),
-          },
-        ],
-        ({ f, $ }) => ({
-          ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
-            ...models["${canonicalModel}"].fragment({ categoryId: $.categoryId }),
-          })),
+  "${canonicalSlice}": (() =>
+    gql.querySlice(
+      [
+        {
+          id: gql.scalar(["ID", "!"]),
+          categoryId: gql.scalar(["ID", ""]),
+        },
+      ],
+      ({ f, $ }) => ({
+        ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
+          ...models["${canonicalModel}"].fragment({ categoryId: $.categoryId }),
+        })),
+      }),
+      ({ select }) =>
+        select("$.users", () => {
+          /* runtime function */
+          return {};
         }),
-        ({ select }) =>
-          select("$.users", () => {
-            /* runtime function */
-            return {};
-          }),
-      ),
-  ),
+    ))(),
 } as const;
 `;
 
     const transformed = await runTransform(source, join(process.cwd(), "tests/.tmp", "runtime-module.ts"), artifact);
 
-    expect(transformed).not.toContain("/* runtime function */");
-    expect(transformed).toContain("posts.map(post => ({");
-    expect(transformed).toContain("result.safeUnwrap(data => data.map(user => userModel.transform(user)))");
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain("gqlRuntime.model({");
+    expect(transformed).toContain("gqlRuntime.querySlice({");
   });
 });

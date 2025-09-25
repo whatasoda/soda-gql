@@ -295,10 +295,7 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const normalised = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
   const factory = formatFactory(normalised);
 
-  const runtimeCall =
-    node.definition.kind === "model" ? "createModel" : node.definition.kind === "slice" ? "createSlice" : "createOperation";
-
-  return `  "${node.id}": ${runtimeCall}("${node.id}", ${factory}),`;
+  return `  "${node.id}": (${factory})(),`;
 };
 
 const replaceModelTransform = (expression: string): string => {
@@ -461,7 +458,9 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
 
   const exportSections = [namedExports, operationDocumentExports].filter((section) => section.length > 0).join("\n");
 
-  const content = `import { gql } from "@/graphql-system";\nimport { createModel, createOperation, createSlice } from "@soda-gql/runtime";\n\n${sections}\n\n${exportSections}\n`;
+  const imports = [`import { gql } from "@/graphql-system";`];
+
+  const content = `${imports.join("\n")}\n\n${sections}\n\n${exportSections}\n`;
 
   const fileName = `runtime-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
   const filePath = join(outDir, fileName);
