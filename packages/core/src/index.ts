@@ -4,7 +4,7 @@ import { createOperationSliceFactory } from "./builder/operation-slice";
 import { createGqlHelpers } from "./builder/schema";
 import type { AnyGraphqlSchema, GraphqlAdapter } from "./types";
 
-export { define, defineOperationTypeNames, defineScalar } from "./builder/schema";
+export { define, defineOperationRoots, defineScalar } from "./builder/schema";
 export { unsafeInputRef, unsafeOutputRef } from "./builder/type-ref";
 export * from "./types";
 

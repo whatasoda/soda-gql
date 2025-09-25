@@ -23,7 +23,8 @@ describe("document registry", () => {
       id,
       kind: "slice",
       metadata: {
-        canonicalDocument: "ProfilePageQuery",
+        dependencies: [],
+        canonicalDocuments: ["ProfilePageQuery"],
       },
       loader: () => ok("userSlice"),
     });
@@ -34,7 +35,8 @@ describe("document registry", () => {
       id,
       kind: "slice",
       metadata: {
-        canonicalDocument: "OtherQuery",
+        dependencies: [],
+        canonicalDocuments: ["OtherQuery"],
       },
       loader: () => ok("duplicate"),
     });
@@ -60,6 +62,7 @@ describe("document registry", () => {
       kind: "operation",
       metadata: {
         canonicalDocument: "ProfilePageQuery",
+        dependencies: [],
       },
       loader: () => ok("profileQuery"),
     });
@@ -86,6 +89,7 @@ describe("document registry", () => {
       kind: "operation",
       metadata: {
         canonicalDocument: "ProfilePageQuery",
+        dependencies: [],
       },
       loader: () => ok("profileQuery"),
     });
@@ -105,6 +109,7 @@ describe("document registry", () => {
     expect(snapshot.documents.ProfilePageQuery.variables).toEqual({ userId: "ID!" });
     expect(snapshot.refs[id].kind).toBe("operation");
     expect(snapshot.refs[id].metadata.canonicalDocument).toBe("ProfilePageQuery");
+    expect(snapshot.refs[id].metadata.dependencies).toEqual([]);
   });
 
   it("fails to register document duplicates", () => {

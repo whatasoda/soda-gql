@@ -390,7 +390,7 @@ const pageQuery = gql.query(
 );
 
 // for now, way to handle built query document is not implemented. But we can confirm that type inference works correctly.
-const a = pageQuery.transform({});
+const a = pageQuery.parse({});
 a.users;
 a.users2;
 a.users3;

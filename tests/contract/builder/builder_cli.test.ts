@@ -83,7 +83,13 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     env: {
       ...process.env,
       NODE_ENV: "test",
-      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
+      NODE_PATH: [
+        join(workspaceRoot, "node_modules"),
+        join(projectRoot, "node_modules"),
+        process.env.NODE_PATH ?? "",
+      ]
+        .filter(Boolean)
+        .join(":"),
     },
   });
 
@@ -210,7 +216,7 @@ import { userSlice } from "../entities/user";
 
 export const duplicated = gql.query(
   "DuplicatedName",
-  { userId: gql.scalar("ID", "!") },
+  { userId: gql.scalar(["ID", "!"]) },
   ({ $ }) => ({
     users: userSlice({ id: $.userId }),
   }),
@@ -268,6 +274,143 @@ export const duplicated = gql.query(
     const parsed = JSON.parse(artifactContents);
     expect(parsed.documents.ProfilePageQuery.text).toContain("query ProfilePageQuery");
     expect(parsed.report.documents).toBeGreaterThanOrEqual(1);
+  });
+
+  it("supports --analyzer swc", async () => {
+    const workspace = prepareWorkspace("runtime-success");
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `runtime-swc-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+    const debugDir = join(workspace, ".cache", "debug-swc");
+
+    const result = await runBuilderCli(workspace, [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "profile.page.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "json",
+      "--analyzer",
+      "swc",
+      "--debug-dir",
+      debugDir,
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    const artifact = JSON.parse(await Bun.file(artifactPath).text());
+    expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
+  });
+
+  it("prints human diagnostics with cache summary when format is human", async () => {
+    const workspace = prepareWorkspace("runtime-success");
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `human-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+    const debugDir = join(workspace, ".cache", "debug");
+
+    const result = await runBuilderCli(workspace, [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "profile.page.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+      "--debug-dir",
+      debugDir,
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Documents:");
+    expect(result.stdout).toMatch(/Cache: hits 0, misses \d+/);
+    await Bun.write(join(debugDir, "stdout.txt"), result.stdout);
+    const debugExists = await Bun.file(join(debugDir, "modules.json")).exists();
+    expect(debugExists).toBe(true);
+  });
+
+  it("logs cache hits on repeated runs of the same entry set", async () => {
+    const workspace = prepareWorkspace("runtime-success");
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `cache-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+    const debugDir = join(workspace, ".cache", "debug-cache");
+
+    const entryArgs = [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "profile.page.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+      "--debug-dir",
+      debugDir,
+    ] as const;
+
+    const firstRun = await runBuilderCli(workspace, entryArgs);
+    expect(firstRun.exitCode).toBe(0);
+
+    const secondRun = await runBuilderCli(workspace, entryArgs);
+    expect(secondRun.exitCode).toBe(0);
+    expect(secondRun.stdout).toMatch(/Cache: hits \d+, misses 0/);
+    await Bun.write(join(debugDir, "stdout.txt"), `${firstRun.stdout}\n---\n${secondRun.stdout}`);
+  });
+
+  it("emits slice-count warnings when exceeding threshold", async () => {
+    const workspace = prepareWorkspace("slice-warning");
+    const entitiesDir = join(workspace, "src", "entities");
+    const pagesDir = join(workspace, "src", "pages");
+
+    mkdirSync(entitiesDir, { recursive: true });
+    mkdirSync(pagesDir, { recursive: true });
+
+    const slicesSource = Array.from({ length: 17 }, (_, index) => {
+      return `export const slice${index} = gql.querySlice([], () => ({}), () => ({}));`;
+    }).join("\n");
+
+    await Bun.write(
+      join(entitiesDir, "slices.ts"),
+      `import { gql } from "@/graphql-system";\n${slicesSource}\n`,
+    );
+
+    await Bun.write(
+      join(pagesDir, "slice.page.ts"),
+      `import { gql } from "@/graphql-system";\nimport * as slices from "../entities/slices";\n\nexport const sliceWarningQuery = gql.query("SliceWarningQuery", {}, () => ({\n  slice0: slices.slice0(),\n}));\n`,
+    );
+
+    await ensureGraphqlSystem(workspace);
+
+    const artifactPath = join(workspace, ".cache", `slice-warning-${Date.now()}.json`);
+    mkdirSync(join(workspace, ".cache"), { recursive: true });
+    const debugDir = join(workspace, ".cache", "debug-slices");
+
+    const result = await runBuilderCli(workspace, [
+      "--mode",
+      "runtime",
+      "--entry",
+      join(workspace, "src", "pages", "**/*.ts"),
+      "--out",
+      artifactPath,
+      "--format",
+      "human",
+      "--debug-dir",
+      debugDir,
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    const warningMatch = result.stdout.match(/Warning: slice count (\d+)/);
+    expect(warningMatch).not.toBeNull();
+    if (warningMatch) {
+      expect(Number.parseInt(warningMatch[1], 10)).toBeGreaterThanOrEqual(16);
+    }
+    await Bun.write(join(debugDir, "stdout.txt"), result.stdout);
   });
 
   afterAll(() => {

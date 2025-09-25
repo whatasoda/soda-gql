@@ -3,6 +3,9 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { runCodegen } from "../../packages/codegen/src/index.ts";
+import { runBuilder } from "../../packages/builder/src/index.ts";
+
 type CliResult = {
   readonly stdout: string;
   readonly stderr: string;
@@ -55,40 +58,47 @@ export const adapter = {
   await Bun.write(outFile, contents);
 };
 
-const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "codegen", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
+const generateGraphqlSystem = async (workspaceRoot: string) => {
+  const schemaPath = join(workspaceRoot, "schema.graphql");
+  const injectPath = join(workspaceRoot, "graphql-inject.ts");
+  await writeInjectModule(injectPath);
+
+  const outPath = join(workspaceRoot, "graphql-system", "index.ts");
+  const result = runCodegen({
+    schemaPath,
+    outPath,
+    format: "json",
+    injectFromPath: injectPath,
   });
 
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
+  if (result.isErr()) {
+    throw new Error(`codegen failed: ${result.error.code}`);
+  }
 
-  return { stdout, stderr, exitCode };
+  return outPath;
 };
 
-const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "builder", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_PATH: [join(workspaceRoot, "node_modules"), process.env.NODE_PATH ?? ""].filter(Boolean).join(":"),
-    },
-  });
+const executeBuilder = async (workspaceRoot: string, entry: string, outPath: string, debugDir: string) => {
+  const originalCwd = process.cwd();
+  process.chdir(workspaceRoot);
+  try {
+    const result = await runBuilder({
+      mode: "runtime",
+      entry: [entry],
+      outPath,
+      format: "json",
+      analyzer: "ts",
+      debugDir,
+    });
 
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
+    if (result.isErr()) {
+      throw new Error(`builder failed: ${result.error.code}`);
+    }
 
-  return { stdout, stderr, exitCode };
+    return result.value;
+  } finally {
+    process.chdir(originalCwd);
+  }
 };
 
 const runTypecheck = async (workspaceRoot: string): Promise<CliResult> => {
@@ -120,27 +130,7 @@ describe("runtime builder flow", () => {
   it("runs codegen then builder runtime to produce artifact", async () => {
     const workspace = copyFixtureWorkspace("runtime-flow");
 
-    const graphqlSystemDir = join(workspace, "node_modules", "@", "graphql-system");
-    mkdirSync(graphqlSystemDir, { recursive: true });
-    const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
-    const injectPath = join(workspace, "graphql-inject.ts");
-
-    await writeInjectModule(injectPath);
-
-    const codegenResult = await runCodegenCli([
-      "--schema",
-      join(workspace, "schema.graphql"),
-      "--out",
-      graphqlSystemEntry,
-      "--format",
-      "json",
-      "--inject-from",
-      injectPath,
-    ]);
-
-    expect(codegenResult.exitCode).toBe(0);
-    const generatedExists = await Bun.file(graphqlSystemEntry).exists();
-    expect(generatedExists).toBe(true);
+    const graphqlSystemEntry = await generateGraphqlSystem(workspace);
 
     const typecheckResult = await runTypecheck(workspace);
     expect(typecheckResult.exitCode).toBe(0);
@@ -148,25 +138,45 @@ describe("runtime builder flow", () => {
     const artifactDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(artifactDir, { recursive: true });
     const artifactPath = join(artifactDir, "runtime.json");
+    const debugDir = join(artifactDir, "debug");
 
-    const builderResult = await runBuilderCli(workspace, [
-      "--mode",
-      "runtime",
-      "--entry",
+    const builderSuccess = await executeBuilder(
+      workspace,
       join(workspace, "src", "pages", "profile.page.ts"),
-      "--out",
       artifactPath,
-      "--format",
-      "json",
-    ]);
+      debugDir,
+    );
 
-    expect(builderResult.exitCode).toBe(0);
-    const artifactExists = await Bun.file(artifactPath).exists();
-    expect(artifactExists).toBe(true);
+    expect(await Bun.file(artifactPath).exists()).toBe(true);
 
-    const artifact = JSON.parse(await Bun.file(artifactPath).text());
+    const artifact = builderSuccess.artifact;
     expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(artifact.refs).toHaveProperty(`${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`);
+    expect(artifact.documents.ProfilePageQuery.text).toContain("remoteUsers");
+    expect(artifact.documents.ProfilePageQuery.text).toContain("catalogUsers");
+    const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
+    expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
+    expect(artifact.report.models).toBe(2);
+    expect(artifact.report.slices).toBe(3);
+
+    const userModelId = `${join(workspace, "src", "entities", "user.ts")}::userModel`;
+    const catalogModelId = `${join(workspace, "src", "entities", "user.ts")}::userRemote.forIterate`;
+    const userSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSlice`;
+    const catalogSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSliceCatalog.byId`;
+    const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::collections.byCategory`;
+
+    expect(artifact.refs[userModelId].kind).toBe("model");
+    expect(artifact.refs[catalogModelId].kind).toBe("model");
+    expect(artifact.refs[userSliceId].kind).toBe("slice");
+    expect(artifact.refs[catalogSliceId].kind).toBe("slice");
+    expect(artifact.refs[collectionsSliceId].kind).toBe("slice");
+    expect(artifact.refs[canonicalId].kind).toBe("operation");
+
+    expect(artifact.refs[userSliceId].metadata.dependencies).toContain(userModelId);
+    expect(artifact.refs[catalogSliceId].metadata.dependencies).toContain(catalogModelId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(userSliceId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(catalogSliceId);
+    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(collectionsSliceId);
+    await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });
 });

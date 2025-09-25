@@ -28,10 +28,20 @@ const formatSuccess = (format: BuilderFormat, success: BuilderSuccess, mode: Bui
     return;
   }
 
-  outputHuman(`Wrote artifact → ${success.outPath}`);
+  const { report } = success.artifact;
+
+  outputHuman(`Documents: ${report.documents}`);
+  outputHuman(`Slices: ${report.slices}`);
+  outputHuman(`Cache: hits ${report.cache.hits}, misses ${report.cache.misses}`);
+
+  report.warnings.forEach((warning) => {
+    outputHuman(warning);
+  });
+
+  outputHuman(`Artifact: ${success.outPath}`);
 };
 
-export const runBuilderCli = (argv: readonly string[]): number => {
+export const runBuilderCli = async (argv: readonly string[]): Promise<number> => {
   const parsed = parseBuilderArgs(argv);
 
   if (parsed.isErr()) {
@@ -40,7 +50,7 @@ export const runBuilderCli = (argv: readonly string[]): number => {
   }
 
   const options: BuilderOptions = parsed.value;
-  const result = runBuilder(options);
+  const result = await runBuilder(options);
 
   if (result.isErr()) {
     formatError(options.format, result.error);

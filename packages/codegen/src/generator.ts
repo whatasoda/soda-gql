@@ -549,7 +549,7 @@ import {
   type AnyGraphqlSchema,
   createGql,
   define,
-  defineOperationTypeNames,
+  defineOperationRoots,
   type GraphqlAdapter,
   unsafeInputRef,
   unsafeOutputRef,
@@ -557,7 +557,7 @@ import {
 ${extraImports}
 
 export const schema = {
-  operations: defineOperationTypeNames({
+  operations: defineOperationRoots({
     query: "${$$.queryType}",
     mutation: "${$$.mutationType}",
     subscription: "${$$.subscriptionType}",

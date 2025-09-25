@@ -1,57 +1,71 @@
-# Tasks: Zero-runtime GraphQL Query Generation System
+# Tasks: Zero-runtime GraphQL Query Generation System — Builder + Plugin Alignment
 
 **Input**: Design documents from `/specs/001-zero-runtime-gql-in-js/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 ## Phase 3.1: Setup
-- [x] T001 Prepare integration fixture project under `tests/fixtures/runtime-app/` (schema SDL, entry modules, Babel config skeleton) to exercise runtime→zero-runtime workflows.
+- [x] T001 Align builder dependencies with SWC-based pipeline by adding `@swc/core` and `@swc/types` to `packages/builder/package.json` and updating `packages/builder/tsconfig.json` for new AST modules. *(Done — packages now include SWC deps and build succeeds.)*
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE PHASE 3.3
-- [x] T002 [P] Write failing contract tests for `soda-gql codegen` CLI scenarios (missing schema, invalid schema, success snapshot) in `tests/contract/codegen/codegen_cli.test.ts`.
-- [x] T003 [P] Write failing contract tests for `soda-gql builder` CLI (cycle detection, duplicate document, successful artifact) in `tests/contract/builder/builder_cli.test.ts`.
-- [x] T004 [P] Write failing contract tests for `@soda-gql/plugin-babel` (missing artifact, missing document, zero-runtime transform snapshot) in `tests/contract/plugin-babel/plugin_babel.test.ts`.
-- [x] T005 [P] Author failing integration test validating runtime builder flow (`codegen` → `builder --mode runtime`) in `tests/integration/runtime_builder_flow.test.ts` using the fixture project.
-- [x] T006 [P] Author failing integration test covering zero-runtime Babel transform using builder artifact in `tests/integration/zero_runtime_transform.test.ts`.
-- [x] T007 [P] Create failing unit tests for canonical identifier + document registry utilities in `tests/unit/builder/document_registry.test.ts`.
-- [x] T008 [P] Create failing unit tests for `createGql` helper bundle wiring (model/querySlice/query factories) in `tests/unit/core/createGql.test.ts`.
+- [x] T002 [P] Add failing unit tests exercising SWC module analysis (top-level enforcement, identifier extraction) in `tests/unit/builder/module_analysis.test.ts`. *(SWC parity tests in place and passing.)*
+- [x] T003 [P] Add failing unit tests covering dependency graph resolution (re-exports, canonical IDs, cycle diagnostics) in `tests/unit/builder/dependency_resolver.test.ts`. *(Extended suite verifies namespace and barrel behaviour.)*
+- [x] T004 [P] Add failing unit tests for cache invalidation semantics (hash reuse vs change) in `tests/unit/builder/cache_manager.test.ts`. *(Cache tests updated for new analysis payloads.)*
+- [x] T005 Extend `tests/contract/builder/builder_cli.test.ts` with failing scenarios for human-readable diagnostics, cache hit logging, and slice-count warnings. *(Human output & warnings asserted.)*
+- [x] T006 Add failing integration test `tests/integration/builder_cache_flow.test.ts` validating runtime builder reruns with cached modules and real document emission. *(Integration flows exercising the intermediate module are passing.)*
 
-## Phase 3.3: Core Implementation (only after Phase 3.2 tests are RED)
-- [x] T009 Implement canonical identifier helpers and document registry in `packages/builder/src/registry.ts` (exported via `packages/builder/src/index.ts`) to satisfy T007.
-- [x] T010 Implement `createGql` factory and helper exports in `packages/core/src/index.ts` to satisfy T008 and quickstart usage.
-- [x] T011 Implement builder pipeline (discovery, evaluation, artifact emission) plus CLI handler in `packages/builder/src/index.ts` backed by registry utilities to satisfy T003/T005.
-- [x] T012 Implement schema ingestion + `graphql-system` bundle emission for `soda-gql codegen` in `packages/codegen/src/index.ts`, including neverthrow/zod validation, to satisfy T002/T005.
-- [x] T013 Implement `@soda-gql/plugin-babel` transform logic in `packages/plugin-babel/src/index.ts`, consuming builder artifacts for zero-runtime replacement to satisfy T004/T006.
+## Phase 3.3: Core Implementation (post-RED from Phase 3.2)
+- [x] T007 Implement SWC parser wrapper and AST helper exports in the analyzer to satisfy T002. *(SWC-based `analyze-module-swc` now mirrors TS analyser with fallback support.)*
+- [x] T008 Replace `discover`-based regex parsing with SWC-driven module analysis capturing canonical IDs. *(Loader now consumes analyzer output; legacy discover logic only used for CLI scans and slated for removal.)*
+- [x] T009 Implement dependency resolver + canonical ID graph builder in `packages/builder/src/dependency-graph.ts`, including re-export resolution and enhanced cycle errors, to satisfy T003. *(Graph nodes now hold dependency edges and symbol maps.)*
+- [x] T010 Integrate analyzer + resolver into builder pipeline by rewriting `packages/builder/src/runner.ts` and `packages/builder/src/artifact.ts` to evaluate refs and emit real documents, satisfying T005/T006. *(Builder executes via generated intermediate module.)*
+- [x] T011 Implement cache manager in `packages/builder/src/cache.ts` and wire into runner execution to satisfy T004/T006. *(Cache hits/misses reported in artifact.)*
+- [ ] T012 Update CLI handling (`packages/builder/src/cli.ts`, `packages/builder/src/options.ts`) to support watch mode reuse, cache logging, and zod-validated options per roadmap Step 4. *(Pending — current CLI lacks watch-mode wiring and stronger validation.)*
+- [ ] T013 Extend artifact writers (`packages/builder/src/writer.ts` and new `packages/builder/src/reporters/human.ts`) with human-readable diagnostics, duration metrics, and slice-count warnings to satisfy T005 once transform outputs stabilise. *(Basic human output exists via CLI, but dedicated reporter + metrics refactor still outstanding.)*
+
+## Phase 3.3b: Plugin Alignment (Zero-runtime Transforms)
+- [ ] T023 [P] Add failing Babel plugin tests covering `gql.model`, `gql.querySlice`, and `gql.query` replacements to assert zero-runtime behaviour and import shape. Target `tests/unit/plugin/gql_transform.test.ts` (create if absent).
+- [ ] T024 Implement Babel plugin rewrites so `gql.model` third arguments and `gql.querySlice` resolver functions emit builder-aligned placeholders/documents, satisfying T023.
+- [ ] T025 [P] Add failing integration tests (e.g., `tests/integration/runtime_transform_alignment.test.ts`) verifying transformed application code imports generated documents/transformers without unused bindings.
+- [ ] T026 Refactor builder + plugin output wiring to expose GraphQL documents, transformers, and metadata through stable imports, removing redundant application-level imports and making integration tests from T025 pass.
+
+## Phase 3.3c: SWC Artifact Emission
+- [ ] T027 [P] Add failing unit/integration tests ensuring intermediate file generation uses SWC pipelines and emits executable JavaScript (no TS syntax), linked to intermediate module emission. Prefer coverage in `tests/unit/builder/artifact_emitter.test.ts` and fixtures mirroring current TS path.
+- [ ] T028 Replace TypeScript compiler API usage in intermediate artifact generation with SWC transforms, guaranteeing JS output and addressing T027 as well as follow-up T021.
 
 ## Phase 3.4: Integration & Tooling
-- [ ] T014 Wire CLI entry points for codegen and builder (`package.json` bin fields in `packages/codegen`/`packages/builder` and root `package.json` scripts) and add test helper `tests/helpers/runCli.ts` used by contract/integration tests.
-- [ ] T015 Implement shared integration helper `tests/integration/helpers/runtime_fixture.ts` to orchestrate quickstart steps (codegen → builder → plugin) for T005/T006.
-- [ ] T016 Add fixture-specific Babel/TS configs and ensure generated `graphql-system` module is resolved inside `tests/fixtures/runtime-app/` to support integration tests.
+- [ ] T014 Wire builder and codegen binaries in `packages/builder/package.json`, `packages/codegen/package.json`, and root `package.json` scripts; author reusable CLI helper in `tests/helpers/runCli.ts`.
+- [ ] T015 Implement shared integration helper `tests/integration/helpers/runtime_fixture.ts` orchestrating codegen → builder → plugin flow with cache resets, and refactor integration tests to use it.
+- [ ] T016 Finalise fixture configs (`tests/fixtures/runtime-app/tsconfig.json`, Babel settings, module aliases) so generated `@/graphql-system` resolves consistently during cached runs.
 
 ## Phase 3.5: Polish & Validation
-- [ ] T017 [P] Update `docs/runtime-to-zero-runtime.md` and `specs/001-zero-runtime-gql-in-js/quickstart.md` with final CLI commands and troubleshooting tips.
-- [ ] T018 [P] Document new CLI commands and Babel plugin usage in `README.md` and package-level READMEs.
-- [ ] T019 [P] Implement performance guard/warning reporting in builder (warn ≥16 slices, error >32) and cover via additional assertions in `tests/contract/builder/builder_cli.test.ts`.
-- [ ] T020 Run full verification (`bun test`, `bun run soda-gql codegen`, `bun run soda-gql builder`, zero-runtime transform on fixture) and capture results in `docs/validation/runtime-to-zero-runtime.md`.
+- [ ] T017 [P] Update `docs/runtime-to-zero-runtime.md` and `specs/001-zero-runtime-gql-in-js/quickstart.md` with SWC analyzer workflow, cache directory details, transform coverage, and watch guidance.
+- [ ] T018 [P] Refresh developer docs (`README.md`, `packages/builder/README.md`) to describe new CLI flags, diagnostics formats, transform coverage, and cache behaviour.
+- [ ] T019 Extend `tests/contract/builder/builder_cli.test.ts` and builder runtime to enforce slice-count warning/error thresholds with metrics recorded in artifact report.
+- [ ] T020 Run full verification (`bun test`, targeted CLI commands, zero-runtime transform) and capture output in `docs/validation/runtime-to-zero-runtime.md`.
+
+## Newly Identified Follow-ups
+- **T021** Ensure generated intermediate modules are emitted as executable JavaScript (strip TypeScript-only syntax or transpile prior to import) so downstream consumers do not rely on Bun's TS loader. *(Will be resolved alongside T028.)*
+- **T022** Refine CLI option handling to surface the new runtime-module workflow (e.g., `--runtime-out`, watch-mode) and document the placeholder behaviour expected by plugins. *(Handled in tandem with T012 when CLI refactor proceeds.)*
 
 ## Dependencies
-- T002–T008 must be completed (and failing) before starting T009–T013.
-- T009 precedes T011; T012 precedes T005 integration pass; T013 precedes T006.
-- T014 depends on T002–T013 for context; T015 depends on T005/T006 scaffolding; T016 depends on T001.
-- Polish tasks (T017–T020) run only after all prior tasks are GREEN; T020 depends on T017–T019.
+- T002–T006 must fail before starting T007–T013 (already respected).
+- T023 must fail before implementing T024; both must complete before beginning T025/T026.
+- T025 provides RED state for T026 and must land before T027/T028.
+- T027 feeds directly into T028 and is required before treating T021 as done.
+- T014–T016 depend on plugin alignment tasks (T023–T026) and SWC emission work (T027/T028).
+- T017–T020 execute after implementation and integration tasks are GREEN; T019 precedes T020.
+- T012/T013 should complete before documentation tasks to stabilise CLI outputs; they also incorporate T022.
 
 ## Parallel Execution Example
 ```
-# Run initial RED test authoring in parallel (separate files, no shared deps)
-Task: "T002 [P] Write failing contract tests for soda-gql codegen CLI..."
-Task: "T003 [P] Write failing contract tests for soda-gql builder CLI..."
-Task: "T004 [P] Write failing contract tests for @soda-gql/plugin-babel..."
-Task: "T005 [P] Author failing integration test validating runtime builder flow..."
-Task: "T006 [P] Author failing integration test covering zero-runtime Babel transform..."
-Task: "T007 [P] Create failing unit tests for canonical identifier + document registry..."
-Task: "T008 [P] Create failing unit tests for createGql helper bundle wiring..."
+# Parallel RED phase across new plugin and emitter tests
+Task: "T023 [P] Add failing Babel plugin tests covering gql.model, gql.querySlice, and gql.query replacements..."
+Task: "T025 [P] Add failing integration tests verifying transformed application code imports generated documents/transformers..."
+Task: "T027 [P] Add failing unit/integration tests ensuring intermediate file generation uses SWC pipelines..."
 ```
 
 ## Notes
-- All [P] tasks touch distinct files and can be delegated concurrently.
-- Maintain strict TDD: ensure each test added in Phase 3.2 fails before implementing corresponding functionality.
-- Use `bun test <path>` for targeted Red/Green cycles; document results in commit messages aligned with t_wada methodology.
+- Maintain strict TDD: ensure each new test fails before implementing corresponding functionality.
+- Cache artifacts should stay under `.cache/soda-gql/builder/`; avoid polluting fixture directories.
+- Use Bun-native APIs (`Bun.file`, `Bun.hash`, `Bun.watch`) when implementing runtime and caching logic.
+- Avoid importing from `/specs/`; replicate needed types inside packages.

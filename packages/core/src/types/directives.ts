@@ -1,6 +1,6 @@
 /** Directive support utilities shared by field selection builders. */
 import type { ConstValues } from "./const-value";
-import type { AnyAssignableInput } from "./input";
+import type { AnyAssignableInput } from "./input-value";
 
 /**
  * Representation of directive arguments keyed by directive name. Concrete

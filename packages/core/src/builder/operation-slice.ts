@@ -1,39 +1,40 @@
+import { gqlRuntime } from "../runtime";
 import {
+  type AnyExecutionResultProjections,
   type AnyFields,
   type AnyGraphqlSchema,
-  type AnySliceResultSelections,
   type AssignableInput,
   type EmptyObject,
   type FieldsBuilder,
   type GraphqlAdapter,
+  hidden,
   type InputTypeRefs,
   type OperationSlice,
   type OperationSliceFn,
   type OperationType,
-  SliceResultSelection,
-  type SliceResultSelectionsBuilder,
+  type SliceResultProjectionsBuilder,
   type VoidIfEmptyObject,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
-import { evaluateSelections } from "./slice-result-selection";
 
 export const createOperationSliceFactory =
   <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(schema: TSchema, _adapter: TAdapter) =>
-  <TOperation extends OperationType>(operation: TOperation) => {
-    type TTypeName = TSchema["operations"][TOperation] & keyof TSchema["object"];
-    const operationTypeName: TTypeName = schema.operations[operation];
+  <TOperationType extends OperationType>(operationType: TOperationType) => {
+    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"];
+    const operationTypeName: TTypeName = schema.operations[operationType];
 
-    const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperation, TTypeName> = <
+    const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
-      TSelection extends AnySliceResultSelections<TAdapter>,
+      TProjection extends AnyExecutionResultProjections<TAdapter>,
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       variableDefinitionsAndExtras: [TVariableDefinitions?],
       builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-      selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
+      projectionBuilder: SliceResultProjectionsBuilder<TSchema, TAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
+      const getProjections = gqlRuntime.wrapProjectionBuilder(projectionBuilder);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);
@@ -45,13 +46,12 @@ export const createOperationSliceFactory =
           $,
         });
 
-        const selections = selectionBuilder({ select: (path, projector) => new SliceResultSelection(path, projector) });
-
-        const slice: OperationSlice<TAdapter, TOperation, TFields, TSelection> = {
-          operation,
-          object: fields,
-          selections,
-          transform: ({ results }) => evaluateSelections<TAdapter, TSelection>(selections, results),
+        const slice: OperationSlice<TSchema, TAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
+          _output: hidden(),
+          operationType,
+          variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
+          getFields: () => fields,
+          getProjections,
         };
 
         return slice;

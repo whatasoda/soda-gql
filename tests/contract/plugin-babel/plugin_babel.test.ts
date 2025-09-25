@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
+import { createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
+
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
   readonly artifactsPath: string;
@@ -69,7 +71,7 @@ describe("@soda-gql/plugin-babel", () => {
   it("throws when document is not present in artifact refs", async () => {
     mkdirSync(tmpRoot, { recursive: true });
     const artifactPath = join(tmpRoot, `missing-doc-${Date.now()}.json`);
-    const canonicalId = `${profileQueryPath}::profileQuery`;
+    const canonicalId = createCanonicalId(profileQueryPath, "profileQuery");
 
     await Bun.write(
       artifactPath,
@@ -78,8 +80,11 @@ describe("@soda-gql/plugin-babel", () => {
           documents: {},
           refs: {
             [canonicalId]: {
-              kind: "query",
-              document: "ProfilePageQuery",
+              kind: "operation",
+              metadata: {
+                canonicalDocument: "ProfilePageQuery",
+                dependencies: [],
+              },
             },
           },
           report: {
@@ -88,6 +93,10 @@ describe("@soda-gql/plugin-babel", () => {
             slices: 0,
             durationMs: 0,
             warnings: [],
+            cache: {
+              hits: 0,
+              misses: 0,
+            },
           },
         },
         null,
@@ -120,12 +129,19 @@ describe("@soda-gql/plugin-babel", () => {
               variables: {
                 userId: "ID!",
               },
+              ast: {
+                kind: "Document",
+                definitions: [],
+              },
             },
           },
           refs: {
             [canonicalId]: {
-              kind: "query",
-              document: "ProfilePageQuery",
+              kind: "operation",
+              metadata: {
+                canonicalDocument: "ProfilePageQuery",
+                dependencies: [],
+              },
             },
           },
           report: {
@@ -134,6 +150,10 @@ describe("@soda-gql/plugin-babel", () => {
             slices: 1,
             durationMs: 1,
             warnings: [],
+            cache: {
+              hits: 0,
+              misses: 0,
+            },
           },
         },
         null,
@@ -150,8 +170,15 @@ describe("@soda-gql/plugin-babel", () => {
 
     expect(result).not.toBeNull();
     const transformed = result?.code ?? "";
-    expect(transformed).toContain('import { profileQuery as profileQueryArtifact } from "@/graphql-system"');
+    const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
+    const aliasName = `${runtimeName}Artifact`;
+
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain(`const ${runtimeName}Document = {`);
     expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain("export const profileQuery = profileQueryArtifact;");
+    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
+    const outputDir = join(tmpRoot, "transforms");
+    mkdirSync(outputDir, { recursive: true });
+    await Bun.write(join(outputDir, `${runtimeName}.${Date.now()}.ts`), transformed);
   });
 });

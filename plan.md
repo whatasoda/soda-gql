@@ -1,245 +1,60 @@
-# Implementation Plan: Zero-runtime GraphQL Query Generation System (Revised)
+# Implementation Plan: Zero-runtime GraphQL Query Generation System (Builder + Plugin Alignment)
 
-**Branch**: `001-zero-runtime-gql-in-js` | **Date**: 2025-09-14 | **Spec**: `/specs/001-zero-runtime-gql-in-js/spec.md`
+**Branch**: `001-zero-runtime-gql-in-js`  
+**Updated**: 2025-09-24  
+**Spec**: `/specs/001-zero-runtime-gql-in-js/spec.md`
 
 ## Summary
+The core builder pipeline now emits placeholder intermediate modules, canonical dependency graphs, and cache metadata via SWC-driven analysis. Tests for analyzer, resolver, caching, and builder CLI flows are green. The next push focuses on aligning the Babel-based transform pipeline with the zero-runtime builder outputs so application code receives pre-built GraphQL documents without shipping transformation logic to production.
 
-Develop a zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach. The system allows developers to write GraphQL queries in TypeScript with full type safety, which are then statically analyzed and transformed at build time into optimized GraphQL documents.
+## Current Snapshot (2025-09-24)
+- **Intermediate module generation**: `packages/builder/src/intermediate-module.ts` injects placeholder functions for `gql.model` and `gql.querySlice` resolver transforms to enforce zero-runtime semantics.
+- **Analyzers**: TypeScript and SWC analyzers share parity, with SWC falling back to TS when the entry expression is not `gql.*`.
+- **Dependency graph**: Graph nodes capture references and canonical dependencies, enabling deterministic rewrites and cache reuse.
+- **Builder CLI**: Full `bun test` suite passes; cache/integration tests confirm intermediate module scaffolding.
+- **Gaps**: Babel plugin currently only rewrites `gql.query` calls, injects unused imports, and cannot expose generated documents/transformers to consuming apps. Intermediate file generation still depends on TypeScript AST APIs, preventing a consistent SWC-based build path.
 
-## Core Type System Architecture
+## Key Problems To Solve
+- Expand transform coverage so `gql.model`, `gql.querySlice`, and `gql.query` all produce zero-runtime outputs that align with builder metadata.
+- Provide a coherent runtime-facing module surface (documents, transformers, helpers) without dangling placeholder imports.
+- Replace TypeScript-only AST emission paths with SWC equivalents to keep the pipeline consistent and faster.
+- Follow through on CLI/reporting polish (watch mode, metrics) once core transforms land.
 
-The implementation is built around three foundational type definition files in `packages/core/src/types`:
+## Implementation Roadmap
+1. **Plugin Coverage & Contracts**
+   - Extend Babel plugin detection and rewrite logic to handle `gql.model` definitions (third argument) and `gql.querySlice` resolvers in step with builder-produced intermediate modules.
+   - Align plugin output with builder manifests so canonical IDs resolve to emitted GraphQL documents.
+   - Add integration tests ensuring all three `gql.*` entry points produce zero-runtime code with no runtime `gql` calls left behind.
 
-### schema.ts - GraphQL Schema Type System
-- **GraphqlSchema**: Core type representing the entire GraphQL schema
-- **Type Factories**: `defineScalar`, `defineEnum`, `defineInputType`, `defineObjectType`, `defineUnionType`
-- **Type References**: System for referencing types with nullability and list modifiers
-- **Type Inference**: Utilities for inferring TypeScript types from GraphQL schema
+2. **Runtime Export Packaging**
+   - Refactor builder emission to expose generated GraphQL documents, transformers, and metadata via explicit imports (`@/graphql-system` or generated runtime module).
+   - Prune superfluous imports from transformed application files; ensure generated bindings map cleanly onto runtime exports.
+   - Validate with smoke fixtures that applications can import the generated documents/functions without referencing builder internals.
 
-### document.ts - GraphQL Document Structure
-- **GraphqlDocument**: Type-safe representation of GraphQL queries/mutations/subscriptions
-- **FieldSelection**: Type system for selecting fields with arguments and directives
-- **InlineFragment**: Support for union types and interfaces
-- **Type Inference**: `InferFromSelectedFields` for deriving result types
+### Runtime Export Surface Sketch (2025-09-24)
+- Builder intermediate modules emit stable named exports per canonical ID alongside aggregated `models`, `slices`, and `operations` maps. Each export uses the sanitized export name plus an 8-character hash of the canonical ID (e.g., `userSliceCatalog.byId` → `userSliceCatalog_byId_a1b2c3d4`) to avoid collisions across modules.
+- Operations expose `{ document, variables, transform }` tuples; slices expose `{ invoke, document }` bindings; models expose `{ fragment, transform }` helpers. Each named export proxies the corresponding entry in the aggregated map to keep imports ergonomic, and companion `...Document` bindings surface GraphQL document nodes.
+- Generated modules also re-export compiled GraphQL documents under `Document` suffixes (e.g., `ProfilePageQueryDocument`) to support tooling that needs raw documents.
+- Babel plugin will import these named bindings (defaulting to `@/graphql-system/runtime` unless overridden) and rewrite `gql.*` call sites to reference the generated exports, removing the original `gql` import when no runtime helpers remain.
 
-### model.ts - Model API Interface
-- **ModelFn**: Main function type for creating reusable GraphQL models
-- **InlineModelFn**: Function type for inline model composition
-- **ModelFactory**: Factory pattern for field selection with type safety
-- **Transform Functions**: Data normalization at model level
+3. **SWC-based Artifact Generation**
+   - Re-implement intermediate artifact writers currently relying on the TypeScript compiler API using SWC transforms.
+   - Guarantee emitted files are executable JavaScript (strip TS syntax) to unblock non-Bun consumers and satisfy T021 follow-up.
+   - Benchmark SWC generation to confirm parity with existing TS path.
 
-## Implementation Phases
+4. **CLI & Reporting Enhancements**
+   - Complete watch-mode reuse, cache logging, and zod-validated option handling (T012/T022).
+   - Introduce human-readable reporters with metrics and slice-count warnings (T013/T019) once transform outputs stabilise.
 
-### Phase 1: Codegen Package - Schema Parser
-**Goal**: Parse GraphQL schema files and generate TypeScript `GraphqlSchema` objects
+5. **Integration, Docs, and Validation**
+   - Wire codegen ↔ builder binaries (T014–T016) using updated transform outputs.
+   - Refresh documentation and validation artefacts (T017–T020) to describe the unified zero-runtime workflow.
 
-**Key Components**:
-1. **GraphQL Schema Parser**
-   - Parse `.graphql` schema files using GraphQL AST
-   - Extract all types (scalars, enums, inputs, objects, unions)
-   - Handle field arguments and type modifiers (nullable, lists)
-
-2. **TypeScript Code Generation**
-   - Generate `defineScalar()`, `defineEnum()`, etc. calls
-   - Create proper type inference with generic parameters
-   - Handle type references with correct nullability
-
-3. **Schema Structure** (as shown in debug.test.ts):
-   ```typescript
-   export const schema = {
-     operations: { query: "query_root", mutation: "mutation_root", subscription: "subscription_root" },
-     scalar: { /* generated scalars */ },
-     enum: { /* generated enums */ },
-     input: { /* generated inputs */ },
-     object: { /* generated objects */ },
-     union: { /* generated unions */ }
-   } satisfies GraphqlSchema;
-   ```
-
-### Phase 2: Core Package Implementation
-**Goal**: Implement runtime GraphQL utilities using the type system
-
-**Key Components**:
-1. **gql.model() Implementation**
-   - Accept typed schema from Phase 1
-   - Provide field selection tools with full type inference
-   - Support argument passing and directives
-   - Return structured model objects
-
-2. **gql.inlineModel() Implementation**
-   - Simplified model for inline composition
-   - Type-safe nested selections
-   - Integration with parent models
-
-3. **Query/Mutation/Subscription Builders**
-   - Compose multiple models into documents
-   - Handle variable definitions
-   - Generate executable GraphQL strings
-
-4. **Document Generation**
-   - Convert type-safe selections to GraphQL AST
-   - Optimize query structure
-   - Handle deduplication
-
-### Phase 3: Codegen Package - gql Instance Generation
-**Goal**: Generate the complete `graphql-system` directory with configured gql instance
-
-**Key Components**:
-1. **gql Instance Creation**
-   - Instantiate gql with generated schema
-   - Export all utilities (model, inlineModel, query, mutation, etc.)
-   - Provide type inference helpers
-
-2. **Directory Structure**:
-   ```
-   graphql-system/
-   ├── index.ts        # Main export with configured gql
-   ├── schema.ts       # Generated GraphqlSchema
-   ├── types.ts        # Type exports for user code
-   └── utilities.ts    # Helper functions
-   ```
-
-3. **Type Exports**
-   - Export inferred types for all schema types
-   - Provide utility types for common patterns
-   - Enable `gql.infer<typeof model>` pattern
-
-### Phase 4: Builder Package - Static Analysis
-**Goal**: Analyze TypeScript code to extract and optimize GraphQL operations
-
-**Key Components**:
-1. **AST Analysis**
-   - Parse TypeScript files using TypeScript Compiler API
-   - Identify all gql.model() and related calls
-   - Extract selection patterns and transforms
-
-2. **Dependency Resolution**
-   - Track model dependencies across files
-   - Handle re-exports and barrel files
-   - Create dependency graph
-
-3. **Document Generation**
-   - Execute extracted model code
-   - Generate optimized GraphQL documents
-   - Create mapping for transformation
-
-4. **Output Format**
-   - JSON manifest with document mappings
-   - Preserved transform functions
-   - Source location tracking
-
-### Phase 5: Plugin-babel Package - Build Transformation
-**Goal**: Transform runtime code to zero-runtime using builder output
-
-**Key Components**:
-1. **Babel Plugin**
-   - Visitor pattern for AST transformation
-   - Replace gql calls with pre-generated documents
-   - Hoist query definitions to module level
-
-2. **Code Transformation**
-   - Runtime model calls → static documents
-   - Preserve transform functions
-   - Optimize for tree-shaking
-
-3. **React Optimization**
-   - Move queries outside render functions
-   - Prevent re-creation on re-renders
-   - Maintain referential stability
-
-### Phase 6: CLI Package - Developer Tools
-**Goal**: Provide user-friendly commands for schema generation and validation
-
-**Key Components**:
-1. **Commands**
-   - `soda-gql init`: Initialize project configuration
-   - `soda-gql generate`: Generate graphql-system from schema
-   - `soda-gql watch`: Watch mode for development
-   - `soda-gql check`: Validate without generation
-
-2. **Configuration**
-   - Schema file location
-   - Output directory settings
-   - Plugin-specific options
-
-3. **Developer Experience**
-   - Clear error messages with context
-   - Progress indicators
-   - Schema change detection
-
-## Key Implementation Principles
-
-### Type Safety First
-- No type tests needed - focus on implementation tests
-- Let TypeScript's type system validate correctness
-- Use discriminated unions for better inference
-
-### Progressive Enhancement
-1. Start with runtime implementation (immediate value)
-2. Add build-time optimization (performance)
-3. Maintain backward compatibility
-
-### Testing Strategy
-- Skip unit tests for type definitions
-- Focus on integration tests with real schemas
-- Test actual GraphQL document generation
-- Use debug.test.ts pattern for validation
-
-## Technical Constraints
-
-### No External Type Imports
-- Types in packages/core/src/types are canonical
-- No imports from /specs directory
-- Each package self-contained
-
-### Pure Functions
-- All utilities as pure functions
-- No class-based state management
-- Dependency injection for testability
-
-### Error Handling
-- Use Result types (neverthrow)
-- No exceptions in normal flow
-- Detailed error context
-
-## Development Workflow
-
-### Monorepo Structure
-```
-packages/
-├── core/           # Runtime utilities with type system
-├── codegen/        # Schema parsing and generation
-├── builder/        # Static analysis engine
-├── plugin-babel/   # Babel transformation
-└── cli/            # Command-line interface
-```
-
-### TypeScript Configuration
-- Direct TS imports during development
-- Bun's native TypeScript support
-- Build configuration deferred until publishing
-
-### Import Conventions
-- No file extensions in imports
-- Workspace protocol for internal deps
-- TypeScript project references
-
-## Success Criteria
-
-1. **Type Safety**: Full inference from schema to query results
-2. **Zero Runtime**: No query parsing in production builds
-3. **Developer Experience**: Intuitive API matching examples
-4. **Performance**: Instant type feedback during development
-5. **Compatibility**: Works with existing GraphQL servers
-
-## Next Steps
-
-1. Implement GraphQL schema parser in codegen package
-2. Build core gql.model() function with type inference
-3. Create document generation from model selections
-4. Develop static analysis in builder package
-5. Implement Babel plugin for transformation
-6. Package as CLI with user-friendly commands
+## Dependencies & Notes
+- Plugin coverage (Step 1) must land before runtime export packaging and SWC artifact generation can be finalised.
+- SWC artifact work should coordinate with T021 to keep emitted intermediate modules consumable without Bun's TS loader.
+- Continue enforcing neverthrow-based error handling and Zod validation for external inputs.
+- Maintain strict TDD: add or update tests before implementing each roadmap item.
 
 ---
-*Based on existing plan.md structure with adaptations for new type-driven architecture*
+This plan realigns the next iteration around closing the zero-runtime gap between builder outputs and the Babel transform layer, while preserving the existing analyzer and cache foundation.

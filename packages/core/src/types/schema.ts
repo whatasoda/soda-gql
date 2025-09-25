@@ -20,13 +20,13 @@ import type { Hidden } from "./utility";
 /**
  * Core schema DSL used by generated hel
  */
-export type OperationType = keyof OperationTypeNames;
+export type OperationType = keyof OperationRoots;
 export type AnyTypeName = string;
 export type AnyFieldName = string;
 
 /** Root schema shape describing scalars, objects, unions, and inputs. */
 export type AnyGraphqlSchema = {
-  operations: OperationTypeNames;
+  operations: OperationRoots;
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
   scalar: { [name: string]: ScalarDef<any> };
   // biome-ignore lint/suspicious/noExplicitAny: abstract types
@@ -42,7 +42,7 @@ export type AnyGraphqlSchema = {
   // };
 };
 
-export type OperationTypeNames = {
+export type OperationRoots = {
   query: string;
   mutation: string;
   subscription: string;

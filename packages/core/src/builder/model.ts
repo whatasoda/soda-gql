@@ -1,12 +1,13 @@
-import type {
-  AnyFields,
-  AnyGraphqlSchema,
-  EmptyObject,
-  FieldsBuilder,
-  InferFields,
-  InputTypeRefs,
-  Model,
-  ModelFn,
+import {
+  type AnyFields,
+  type AnyGraphqlSchema,
+  type EmptyObject,
+  type FieldsBuilder,
+  hidden,
+  type InferFields,
+  type InputTypeRefs,
+  type Model,
+  type ModelFn,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
@@ -20,7 +21,7 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
   >(
     target: TTypeName | [TTypeName, TVariableDefinitions],
     builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-    transform: (selected: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
+    transform: (raw: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
   ) => {
     const [typename, variablesDefinition] = Array.isArray(target)
       ? [target[0] as TTypeName, target[1] ?? ({} as TVariableDefinitions)]
@@ -29,8 +30,9 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
     const fieldFactories = createFieldFactories(schema, typename);
 
     const model: Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed> = {
+      _input: hidden(),
+      _output: hidden(),
       typename,
-      variables: variablesDefinition,
       fragment: (assignments) =>
         builder({
           _: fieldFactories,

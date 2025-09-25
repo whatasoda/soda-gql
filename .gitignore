@@ -159,3 +159,5 @@ coverage/
 # Bun specific
 bun.lockb
 .tmp
+
+.prompts

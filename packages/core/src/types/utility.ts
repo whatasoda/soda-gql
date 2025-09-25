@@ -21,3 +21,8 @@ export const wrapValueByKey = <TName extends string, TValue>(name: TName, value:
   ({ [name]: value }) as {
     [K in TName]: TValue;
   };
+
+// REF: https://stackoverflow.com/questions/50374908/transform-union-type-to-intersection-type
+export type UnionToIntersection<U> =
+  // biome-ignore lint/suspicious/noExplicitAny: idiom
+  (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I : never;

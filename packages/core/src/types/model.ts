@@ -2,10 +2,10 @@
 
 import type { AnyFields, InferFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
-import type { AssignableInput } from "./input";
+import type { AssignableInput } from "./input-value";
 import type { AnyGraphqlSchema } from "./schema";
 import type { InputTypeRefs } from "./type-ref";
-import type { EmptyObject, VoidIfEmptyObject } from "./utility";
+import type { EmptyObject, Hidden, VoidIfEmptyObject } from "./utility";
 
 /**
  * Describes the userland `gql.model` helper. It binds a schema type, a field
@@ -16,23 +16,24 @@ export type ModelFn<TSchema extends AnyGraphqlSchema> = <
   TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyFields,
   TTransformed extends object,
-  TVariables extends InputTypeRefs = EmptyObject,
+  TVariableDefinitions extends InputTypeRefs = EmptyObject,
 >(
-  target: TTypeName | [TTypeName, TVariables],
-  builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
-  transform: (selected: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
-) => NoInfer<Model<TSchema, TTypeName, TVariables, TFields, TTransformed>>;
+  target: TTypeName | [TTypeName, TVariableDefinitions],
+  builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
+  transform: (raw: NoInfer<InferFields<TSchema, TFields>>) => TTransformed,
+) => NoInfer<Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed>>;
 
 /** Internal representation returned by `gql.model`. */
 export type Model<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariables extends InputTypeRefs,
+  TVariableDefinitions extends InputTypeRefs,
   TFields extends AnyFields,
   TTransformed extends object,
 > = {
+  _input: Hidden<AssignableInput<TSchema, TVariableDefinitions>>;
+  _output: Hidden<TTransformed>;
   typename: TTypeName;
-  variables: TVariables;
-  fragment: (variables: VoidIfEmptyObject<TVariables> | AssignableInput<TSchema, TVariables>) => TFields;
-  transform: (selected: InferFields<TSchema, TFields>) => TTransformed;
+  fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
+  transform: (raw: InferFields<TSchema, TFields>) => TTransformed;
 };

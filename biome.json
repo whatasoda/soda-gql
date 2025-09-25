@@ -39,6 +39,17 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "experimentalScannerIgnores": ["node_modules", "dist", "build", "coverage", ".next", ".turbo", "bun.lock", "specs"]
+    "experimentalScannerIgnores": [
+      "node_modules",
+      "dist",
+      "build",
+      "coverage",
+      ".next",
+      ".turbo",
+      "bun.lock",
+      "specs",
+      "tests/.tmp",
+      ".cache"
+    ]
   }
 }

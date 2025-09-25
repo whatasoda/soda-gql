@@ -31,6 +31,20 @@ export const userModel = gql.model(
   }),
 );
 
+export const userRemote = {
+  forIterate: gql.model(
+    "User",
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+    (selection) => ({
+      id: selection.id,
+      name: selection.name,
+    }),
+  ),
+};
+
 export const userSlice = gql.querySlice(
   [
     {
@@ -45,3 +59,24 @@ export const userSlice = gql.querySlice(
   }),
   ({ select }) => select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
 );
+
+export const userSliceCatalog = {
+  byId: gql.querySlice(
+    [
+      {
+        id: gql.scalar(["ID", "!"]),
+        categoryId: gql.scalar(["ID", ""]),
+      },
+    ],
+    ({ f, $ }) => ({
+      ...f.users({ id: [$.id], categoryId: $.categoryId }, ({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
+    ({ select }) =>
+      select("$.users", (result) =>
+        result.safeUnwrap((data) => data.map((user) => userRemote.forIterate.transform(user))),
+      ),
+  ),
+};

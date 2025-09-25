@@ -93,7 +93,7 @@ const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null =>
 };
 
 const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
-  Object.entries(args)
+  Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
       const valueNode = buildArgumentValue(value);
       return valueNode ? { kind: Kind.ARGUMENT, name: { kind: Kind.NAME, value: name }, value: valueNode } : null;
@@ -237,12 +237,12 @@ const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => 
 
 export const buildDocument = ({
   name,
-  operation,
+  operationType,
   variables,
   fields,
 }: {
   name: string;
-  operation: OperationType;
+  operationType: OperationType;
   variables: InputTypeRefs;
   fields: AnyFields;
 }): DocumentNode => ({
@@ -250,7 +250,7 @@ export const buildDocument = ({
   definitions: [
     {
       kind: Kind.OPERATION_DEFINITION,
-      operation: buildOperationTypeNode(operation),
+      operation: buildOperationTypeNode(operationType),
       name: { kind: Kind.NAME, value: name },
       variableDefinitions: buildVariables(variables),
       selectionSet: {

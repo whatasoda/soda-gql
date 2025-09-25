@@ -7,7 +7,7 @@ import type {
   AnyNestedUnion,
   FieldReferenceOf,
 } from "./fields";
-import type { AssignableInput } from "./input";
+import type { AssignableInput } from "./input-value";
 import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "./schema";
 import type {
   InputTypeRefs,

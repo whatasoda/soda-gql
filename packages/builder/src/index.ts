@@ -4,6 +4,7 @@ import { runBuilderCli } from "./cli";
 export { runBuilderCli } from "./cli";
 export type { CanonicalId } from "./registry";
 export { createCanonicalId, createDocumentRegistry } from "./registry";
+export { createRuntimeBindingName, createRuntimeDocumentName } from "./runtime-names";
 export { runBuilder } from "./runner";
 export type {
   BuilderArtifact,
@@ -16,6 +17,13 @@ export type {
 } from "./types";
 
 if (import.meta.main) {
-  const exitCode = runBuilderCli(Bun.argv.slice(2));
-  process.exit(exitCode);
+  runBuilderCli(Bun.argv.slice(2))
+    .then((exitCode) => {
+      process.exit(exitCode);
+    })
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`${message}\n`);
+      process.exit(1);
+    });
 }

@@ -1,15 +1,18 @@
 /** Operation slice builders (`gql.querySlice`, etc.). */
 import type { GraphqlAdapter } from "./adapter";
-import type { SliceResultSelection } from "./branded-classes";
+import type {
+  AnyExecutionResultProjections,
+  ExecutionResultProjection,
+  InferExecutionResultProjection,
+} from "./execution-result-projection";
 import type { FieldPaths, InferByFieldPath } from "./field-path";
 import type { AnyFields } from "./fields";
 import type { FieldsBuilder } from "./fields-builder";
-import type { AssignableInput } from "./input";
+import type { AssignableInput } from "./input-value";
 import type { AnyGraphqlSchema, OperationType } from "./schema";
-import type { AnySliceResultRecord, SliceResult } from "./slice-result";
-import type { AnySliceResultSelections, InferSliceResultSelection } from "./slice-result-selection";
+import type { SliceResult } from "./slice-result";
 import type { InputTypeRefs } from "./type-ref";
-import type { EmptyObject, VoidIfEmptyObject } from "./utility";
+import type { EmptyObject, Hidden, VoidIfEmptyObject } from "./utility";
 
 /**
  * Describes the query/mutation/subscription slice helper. Each slice captures
@@ -19,59 +22,72 @@ import type { EmptyObject, VoidIfEmptyObject } from "./utility";
 export type OperationSliceFn<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
-  TOperation extends OperationType,
-  TTypeName extends TSchema["operations"][TOperation] & keyof TSchema["object"] = TSchema["operations"][TOperation] &
+  TOperationType extends OperationType,
+  TTypeName extends TSchema["operations"][TOperationType] & keyof TSchema["object"] = TSchema["operations"][TOperationType] &
     keyof TSchema["object"],
 > = <
   TFields extends AnyFields,
-  TSelection extends AnySliceResultSelections<TAdapter>,
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
   TVariables extends InputTypeRefs = EmptyObject,
 >(
   variables: [TVariables?],
   builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
-  selectionBuilder: SliceResultSelectionsBuilder<TSchema, TAdapter, TFields, TSelection>,
+  projectionsBuilder: SliceResultProjectionsBuilder<TSchema, TAdapter, TFields, TProjections>,
 ) => (
   variables: VoidIfEmptyObject<TVariables> | AssignableInput<TSchema, TVariables>,
-) => OperationSlice<TAdapter, TOperation, TFields, TSelection>;
+) => OperationSlice<TSchema, TAdapter, TOperationType, TFields, TProjections, TVariables>;
 
 /** Nominal type representing any slice instance regardless of schema specifics. */
-export type AnyOperationSlice<TAdapter extends GraphqlAdapter, TOperation extends OperationType> = OperationSlice<
+export type AnyOperationSlice<
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends GraphqlAdapter,
+  TOperationType extends OperationType,
+> = OperationSlice<
+  TSchema,
   TAdapter,
-  TOperation,
+  TOperationType,
   AnyFields,
+  AnyExecutionResultProjections<TAdapter>,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;
+export type AnyOperationSlices<
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends GraphqlAdapter,
+  TOperationType extends OperationType,
+> = {
+  [key: string]: AnyOperationSlice<TSchema, TAdapter, TOperationType>;
+};
 
 /** Concrete slice value returned by the builder. */
 export type OperationSlice<
+  TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
-  TOperation extends OperationType,
+  TOperationType extends OperationType,
   TFields extends AnyFields,
-  TSelection extends AnySliceResultSelections<TAdapter>,
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
+  TVariables extends InputTypeRefs,
 > = {
-  operation: TOperation;
-  object: TFields;
-  selections: TSelection;
-  transform: (input: {
-    prefix: string;
-    results: AnySliceResultRecord<TAdapter>;
-  }) => InferSliceResultSelection<TAdapter, TSelection>;
+  _output: Hidden<InferExecutionResultProjection<TAdapter, TProjections>>;
+  operationType: TOperationType;
+  variables: AssignableInput<TSchema, TVariables>;
+  getFields: () => TFields;
+  getProjections: () => TProjections;
 };
 
 /** Builder used to declare how slice results are projected. */
-export type SliceResultSelectionsBuilder<
+export type SliceResultProjectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TAdapter extends GraphqlAdapter,
   TFields extends AnyFields,
-  TSelection extends AnySliceResultSelections<TAdapter>,
-> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TSelection;
+  TProjections extends AnyExecutionResultProjections<TAdapter>,
+> = (tools: { select: SliceResultSelector<TSchema, TAdapter, TFields> }) => TProjections;
 
 /** Helper passed to selection builders for choosing a field path and projector. */
 type SliceResultSelector<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter, TFields extends AnyFields> = <
   TPath extends FieldPaths<TSchema, TFields>,
-  TTransformed,
+  TProjected,
 >(
   path: TPath,
-  transform: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TAdapter>) => TTransformed,
-) => SliceResultSelection<TAdapter, TPath, InferByFieldPath<TSchema, TFields, TPath>, TTransformed>;
+  projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TAdapter>) => TProjected,
+) => ExecutionResultProjection<TAdapter, TPath, TProjected>;

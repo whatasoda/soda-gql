@@ -2,7 +2,7 @@
 import { runBuilderCli } from "@soda-gql/builder";
 import { runCodegenCli } from "@soda-gql/codegen";
 
-const dispatch = (argv: readonly string[]): number => {
+const dispatch = async (argv: readonly string[]): Promise<number> => {
   const [command, ...rest] = argv;
 
   if (!command || command === "--help" || command === "-h") {
@@ -26,8 +26,15 @@ const dispatch = (argv: readonly string[]): number => {
 };
 
 if (import.meta.main) {
-  const exitCode = dispatch(Bun.argv.slice(2));
-  process.exit(exitCode);
+  dispatch(Bun.argv.slice(2))
+    .then((exitCode) => {
+      process.exit(exitCode);
+    })
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`${message}\n`);
+      process.exit(1);
+    });
 }
 
 export { dispatch };
