@@ -4,19 +4,22 @@ import {
   type AnyFields,
   type AnyGraphqlSchema,
   ExecutionResultProjection,
-  type GraphqlAdapter,
-  hidden,
+  type GraphqlRuntimeAdapter,
+  pseudoTypeAnnotation,
   type OperationType,
   type SliceResultProjectionsBuilder,
+  OperationSlice,
+  InputTypeRefs,
 } from "../types";
 
 type GeneratedOperationSlice = {
-  getProjections: () => AnyExecutionResultProjections<GraphqlAdapter>;
+  rootFieldKeys: string[];
+  getProjections: () => AnyExecutionResultProjections<GraphqlRuntimeAdapter>;
 };
 
 type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
   AnyGraphqlSchema,
-  GraphqlAdapter,
+  GraphqlRuntimeAdapter,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
@@ -32,9 +35,10 @@ export const wrapProjectionBuilder =
 
 export const runtimeOperationSlice =
   (operationType: OperationType) => (generated: GeneratedOperationSlice) => (variables?: AnyAssignableInput) => ({
-    _output: hidden(),
+    _output: pseudoTypeAnnotation(),
     operationType,
     variables: (variables ?? {}) as AnyAssignableInput,
-    getFields: hidden<AnyFields>(),
-    getProjections: generated.getProjections,
-  });
+    getFields: pseudoTypeAnnotation<AnyFields>(),
+    rootFieldKeys: generated.rootFieldKeys,
+    projections: generated.getProjections(),
+  }) satisfies OperationSlice<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType, AnyFields, AnyExecutionResultProjections<GraphqlRuntimeAdapter>, InputTypeRefs>;

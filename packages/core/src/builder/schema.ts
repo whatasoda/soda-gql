@@ -2,28 +2,28 @@ import type {
   AnyConstDirectiveAttachments,
   AnyGraphqlSchema,
   EnumDef,
-  Hidden,
   InputDef,
   ObjectDef,
   OperationRoots,
+  PseudoTypeAnnotation,
   ScalarDef,
   UnionDef,
 } from "../types";
-import { hidden, wrapValueByKey } from "../types";
+import { pseudoTypeAnnotation, wrapValueByKey } from "../types";
 import { createInputTypeRefFactory, unsafeOutputRef } from "./type-ref";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
   name: TName,
-  definition: (tool: { type: typeof hidden }) => {
-    input: Hidden<TInput>;
-    output: Hidden<TOutput>;
+  definition: (tool: { type: typeof pseudoTypeAnnotation }) => {
+    input: PseudoTypeAnnotation<TInput>;
+    output: PseudoTypeAnnotation<TOutput>;
     directives: TDirectives;
   },
 ) =>
   wrapValueByKey(name, {
-    _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
+    _type: pseudoTypeAnnotation() as PseudoTypeAnnotation<{ input: TInput; output: TOutput }>,
     name,
-    directives: definition({ type: hidden }).directives,
+    directives: definition({ type: pseudoTypeAnnotation }).directives,
   } satisfies ScalarDef<{ input: TInput; output: TOutput }>);
 
 export const define = <const TName extends string>(name: TName) => ({
@@ -32,7 +32,7 @@ export const define = <const TName extends string>(name: TName) => ({
     directives: TDirectives,
   ) =>
     wrapValueByKey(name, {
-      _type: hidden(),
+      _type: pseudoTypeAnnotation(),
       name,
       values,
       directives,

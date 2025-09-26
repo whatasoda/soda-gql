@@ -1,8 +1,8 @@
-const _hiddenFn = () => {
-  throw new Error("DO NOT CALL THIS FUNCTION -- property for type inference");
+const _dummy = () => {
+  throw new Error("DO NOT CALL THIS FUNCTION -- we use function to safely transfer type information");
 };
-export const hidden = <T>(): (() => T) => _hiddenFn;
-export type Hidden<T> = () => T;
+export const pseudoTypeAnnotation = <T>(): (() => T) => _dummy;
+export type PseudoTypeAnnotation<T> = () => T;
 
 export type Prettify<T> = {
   [K in keyof T]: T[K];

@@ -26,7 +26,6 @@ export const createVariableAssignments = <TSchema extends AnyGraphqlSchema, TVar
 export const createVariableReferences = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeRefs>(
   definitions: TVariableDefinitions,
 ) =>
-  Object.fromEntries(Object.entries(definitions).map(([name, ref]) => [name, VariableReference.create(ref)])) as AssignableInput<
-    TSchema,
-    TVariableDefinitions
-  >;
+  Object.fromEntries(
+    Object.entries(definitions).map(([name, ref]) => [name, VariableReference.create<typeof ref>(name)]),
+  ) as AssignableInput<TSchema, TVariableDefinitions>;

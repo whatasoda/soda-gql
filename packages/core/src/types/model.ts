@@ -5,7 +5,7 @@ import type { FieldsBuilder } from "./fields-builder";
 import type { AssignableInput } from "./input-value";
 import type { AnyGraphqlSchema } from "./schema";
 import type { InputTypeRefs } from "./type-ref";
-import type { EmptyObject, Hidden, VoidIfEmptyObject } from "./utility";
+import type { EmptyObject, PseudoTypeAnnotation, VoidIfEmptyObject } from "./utility";
 
 /**
  * Describes the userland `gql.model` helper. It binds a schema type, a field
@@ -31,8 +31,8 @@ export type Model<
   TFields extends AnyFields,
   TTransformed extends object,
 > = {
-  _input: Hidden<AssignableInput<TSchema, TVariableDefinitions>>;
-  _output: Hidden<TTransformed>;
+  _input: PseudoTypeAnnotation<AssignableInput<TSchema, TVariableDefinitions>>;
+  _output: PseudoTypeAnnotation<TTransformed>;
   typename: TTypeName;
   fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
   transform: (raw: InferFields<TSchema, TFields>) => TTransformed;

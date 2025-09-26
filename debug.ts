@@ -2,7 +2,7 @@ import { createGql, define, defineScalar, unsafeInputRef, unsafeOutputRef } from
 import type { GraphqlAdapter } from "./packages/core/src/types/adapter";
 import type { FieldPaths } from "./packages/core/src/types/field-path";
 import type { InferFields } from "./packages/core/src/types/fields";
-import { type AnyGraphqlSchema } from "./packages/core/src/types/schema";
+import type { AnyGraphqlSchema } from "./packages/core/src/types/schema";
 
 const scalars = {
   ...defineScalar("String", ({ type }) => ({

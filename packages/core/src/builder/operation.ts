@@ -1,75 +1,76 @@
 import type { DocumentNode } from "graphql";
 import {
-  type AnyExecutionResultProjectionSingle,
+  type AnyFields,
   type AnyGraphqlSchema,
   type AnyOperationSlice,
+  type AnyOperationSlices,
   type EmptyObject,
   ExecutionResultProjection,
-  type ExecutionResultProjectionPathGraph,
-  type GraphqlAdapter,
-  hidden,
+  type ExecutionResultProjectionPathGraphNode,
+  type GraphqlRuntimeAdapter,
   type InputTypeRefs,
   type Operation,
   type OperationBuilder,
   type OperationFn,
   type OperationType,
+  pseudoTypeAnnotation,
 } from "../types";
 import { buildDocument } from "./document-builder";
 import { createVariableReferences } from "./input";
 
 export const createOperationFactory =
-  <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(_schema: TSchema, _adapter: TAdapter) =>
-  <TOperationType extends OperationType>(operationType: TOperationType): OperationFn<TSchema, TAdapter, TOperationType> => {
-    const operationFn: OperationFn<TSchema, TAdapter, TOperationType> = <
+  <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>(
+    _schema: TSchema,
+    _adapter: TRuntimeAdapter,
+  ) =>
+  <TOperationType extends OperationType>(
+    operationType: TOperationType,
+  ): OperationFn<TSchema, TRuntimeAdapter, TOperationType> => {
+    const operationFn: OperationFn<TSchema, TRuntimeAdapter, TOperationType> = <
       TName extends string,
-      TSlices extends { [key: string]: AnyOperationSlice<TSchema, TAdapter, TOperationType> },
+      TSlices extends { [key: string]: AnyOperationSlice<TSchema, TRuntimeAdapter, TOperationType> },
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       name: TName,
       variablesDefinitions: TVariableDefinitions | null,
-      builder: OperationBuilder<TSchema, TAdapter, TOperationType, TVariableDefinitions, TSlices>,
+      builder: OperationBuilder<TSchema, TRuntimeAdapter, TOperationType, TVariableDefinitions, TSlices>,
     ) => {
       const variables = (variablesDefinitions ?? {}) as TVariableDefinitions;
       const $ = createVariableReferences<TSchema, TVariableDefinitions>(variables);
-
       const slices = builder({ $ });
-      const fields = Object.entries(slices).flatMap(([label, slice]) =>
-        Object.entries(slice.getFields()).map(([key, reference]) => ({ labeledKey: `${label}_${key}`, key, reference })),
+
+      const fields: AnyFields = Object.fromEntries(
+        Object.entries(slices).flatMap(([label, slice]) =>
+          Object.entries(slice.getFields()).map(([key, reference]) => [`${label}_${key}`, reference]),
+        ),
       );
 
       const document: DocumentNode = buildDocument({
         name,
-        operationType: operationType,
+        operationType,
         variables,
-        fields: Object.fromEntries(fields.map(({ labeledKey, reference }) => [labeledKey, reference])),
+        fields,
       });
 
-      const sliceEntries = Object.entries(slices).map(([label, slice]) => ({
-        label,
-        slice,
-        rawProjection: slice.getProjections(),
-      }));
+      const projectionPathGraph = createPathGraphFromSliceEntries(slices);
 
-      const projections = sliceEntries.flatMap(({ label, rawProjection: raw }) =>
-        raw instanceof ExecutionResultProjection
-          ? [{ label, projection: raw }]
-          : Object.values(raw).map((projection) => ({
-              label,
-              projection,
-            })),
-      );
-
-      const projectionPathGraph = createPathGraphFromLabeledProjections(projections);
-
-      const operation: Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices> = {
-        _input: hidden(),
-        _raw: hidden(),
-        _output: hidden(),
+      const operation: Operation<TSchema, TRuntimeAdapter, TOperationType, TName, TVariableDefinitions, TSlices> = {
+        _input: pseudoTypeAnnotation(),
+        _raw: pseudoTypeAnnotation(),
+        _output: pseudoTypeAnnotation(),
         type: operationType,
         name,
-        document: document as Operation<TSchema, TAdapter, TOperationType, TName, TVariableDefinitions, TSlices>["document"],
+        variableNames: Object.keys(variables),
+        document: document as Operation<
+          TSchema,
+          TRuntimeAdapter,
+          TOperationType,
+          TName,
+          TVariableDefinitions,
+          TSlices
+        >["document"],
         projectionPathGraph,
-        parse: hidden(), // TODO: implement
+        parse: pseudoTypeAnnotation(), // TODO: implement
       };
 
       return operation;
@@ -82,36 +83,45 @@ type ExecutionResultProjectionPathGraphIntermediate = {
   [segment: string]: { label: string; path: string; segments: string[] }[];
 };
 
-const createPathGraph = (paths: ExecutionResultProjectionPathGraphIntermediate[string]): ExecutionResultProjectionPathGraph => {
+function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[string]): ExecutionResultProjectionPathGraphNode {
   const intermediate = paths.reduce(
-    (acc: ExecutionResultProjectionPathGraphIntermediate, { label, path, segments: [first, ...rest] }) => {
-      if (first) {
-        (acc[first] || (acc[first] = [])).push({ label, path, segments: rest });
+    (acc: ExecutionResultProjectionPathGraphIntermediate, { label, path, segments: [segment, ...segments] }) => {
+      if (segment) {
+        (acc[segment] || (acc[segment] = [])).push({ label, path, segments });
       }
       return acc;
     },
     {},
   );
 
-  return Object.fromEntries(
-    Object.entries(intermediate).map(([segment, paths]) => [
-      segment,
-      {
-        matches: paths.map(({ label, path }) => ({ label, path })),
-        children: createPathGraph(paths),
-      } satisfies ExecutionResultProjectionPathGraph[string],
-    ]),
-  );
-};
+  return {
+    matches: paths.map(({ label, path, segments }) => ({ label, path, exact: segments.length === 0 })),
+    children: Object.fromEntries(Object.entries(intermediate).map(([segment, paths]) => [segment, createPathGraph(paths)])),
+  } satisfies ExecutionResultProjectionPathGraphNode;
+}
 
-const createPathGraphFromLabeledProjections = <TAdapter extends GraphqlAdapter>(
-  projections: { label: string; projection: AnyExecutionResultProjectionSingle<TAdapter> }[],
-) => {
-  const paths = projections.map(({ label, projection }) => ({
-    label,
-    path: projection.path,
-    segments: projection.path.replace("$.", `${label}_`).split("."),
-  }));
+function createPathGraphFromSliceEntries<
+  TSchema extends AnyGraphqlSchema,
+  TRuntimeAdapter extends GraphqlRuntimeAdapter,
+  TOperationType extends OperationType,
+>(slices: AnyOperationSlices<TSchema, TRuntimeAdapter, TOperationType>) {
+  const paths = Object.entries(slices).flatMap(([label, slice]) => {
+    const projections =
+      slice.projections instanceof ExecutionResultProjection ? [slice.projections] : Object.values(slice.projections);
+    const uniquePaths = Array.from(new Map(projections.map(({ path, pathSegments }) => [path, { path, pathSegments }])).values());
+
+    return uniquePaths.flatMap(({ path, pathSegments }) => {
+      const [first, ...rest] = pathSegments;
+
+      // NOTE: To avoid incorrectly catch error on a field defined by other slices,
+      //       we need to create path entries for all labeled field keys in the current slice.
+      if (first == null) {
+        return slice.rootFieldKeys.map((rootKey) => ({ label, path, segments: [`${label}_${rootKey}`] }));
+      }
+
+      return [{ label, path, segments: [`${label}_${first}`, ...rest] }];
+    });
+  });
 
   return createPathGraph(paths);
-};
+}

@@ -10,7 +10,7 @@ import type {
   InputTypeRefs,
   StripTailingListFromTypeRef,
 } from "./type-ref";
-import type { Hidden, Prettify } from "./utility";
+import type { Prettify, PseudoTypeAnnotation } from "./utility";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 // biome-ignore lint/suspicious/noExplicitAny: abstract types
@@ -33,12 +33,12 @@ type VariableReferenceMetaOf<TRef extends InputTypeRef> = Prettify<{
 
 /** Nominal reference used to defer variable binding while carrying type info. */
 export class VariableReference<TMeta extends VariableReferenceMeta> {
-  declare readonly [__VARIABLE_REFERENCE_BRAND__]: Hidden<TMeta>;
+  declare readonly [__VARIABLE_REFERENCE_BRAND__]: PseudoTypeAnnotation<TMeta>;
 
   private constructor(public readonly name: string) {}
 
-  static create<TRef extends InputTypeRef>(ref: TRef): VariableReferenceOf<TRef> {
-    return new VariableReference<VariableReferenceMetaOf<TRef>>(ref.name);
+  static create<TRef extends InputTypeRef>(name: string): VariableReferenceOf<TRef> {
+    return new VariableReference<VariableReferenceMetaOf<TRef>>(name);
   }
 }
 

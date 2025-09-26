@@ -1,69 +1,123 @@
 /** Result-like wrapper types returned from slice projections. */
-import type { GraphqlAdapter } from "./adapter";
-import type { Prettify } from "./utility";
+import type { GraphqlRuntimeAdapter } from "./adapter";
+import type { NormalizedError } from "./execution-result";
 
 /**
  * Internal discriminated union describing the Result-like wrapper exposed to
  * slice selection callbacks. The adapter decides how raw errors are
  * materialized.
  */
-export type AnySliceResultRecord<TAdapter extends GraphqlAdapter> = {
+export type AnySliceResultRecord<TRuntimeAdapter extends GraphqlRuntimeAdapter> = {
   [path: string]: SliceResult<
     // biome-ignore lint/suspicious/noExplicitAny: abstract type
     any,
-    TAdapter
+    TRuntimeAdapter
   >;
 };
 
-/** Public union used by selection callbacks to inspect data, empty, or error states. */
-export type SliceResult<TData, TAdapter extends GraphqlAdapter> =
-  | SliceResultEmpty<TData, TAdapter>
-  | SliceResultSuccess<TData, TAdapter>
-  | SliceResultError<TData, TAdapter>;
-
-/** Runtime guard interface shared by all slice result variants. */
-type SliceResultGuards<TData, TAdapter extends GraphqlAdapter> = {
-  isEmpty(): this is SliceResultEmpty<TData, TAdapter>;
-  isSuccess(): this is SliceResultSuccess<TData, TAdapter>;
-  isError(): this is SliceResultError<TData, TAdapter>;
+/** Utility signature returned by the safe unwrap helper. */
+type SliceResultCommon<TData, TError> = {
+  safeUnwrap<TTransformed>(transform: (data: TData) => TTransformed):
+    | {
+        data?: never;
+        error?: never;
+      }
+    | {
+        data: NoInfer<TTransformed>;
+        error?: never;
+      }
+    | {
+        data?: never;
+        error: TError;
+      };
 };
 
-/** Variant representing an empty payload (no data, no error). */
-export type SliceResultEmpty<TData, TAdapter extends GraphqlAdapter> = Prettify<
-  SliceResultGuards<TData, TAdapter> & {
-    unwrap: () => null;
-    safeUnwrap: SliceResultSafeUnwrapFn<TData, ReturnType<TAdapter["createError"]>>;
+/** Public union used by selection callbacks to inspect data, empty, or error states. */
+export type SliceResult<TData, TRuntimeAdapter extends GraphqlRuntimeAdapter> =
+  | SliceResultEmpty<TData, TRuntimeAdapter>
+  | SliceResultSuccess<TData, TRuntimeAdapter>
+  | SliceResultError<TData, TRuntimeAdapter>;
+
+/** Runtime guard interface shared by all slice result variants. */
+class SliceResultGuards<TData, TRuntimeAdapter extends GraphqlRuntimeAdapter> {
+  isSuccess(): this is SliceResultSuccess<TData, TRuntimeAdapter> {
+    return this.type === "success";
   }
->;
+  isError(): this is SliceResultError<TData, TRuntimeAdapter> {
+    return this.type === "error";
+  }
+  isEmpty(): this is SliceResultEmpty<TData, TRuntimeAdapter> {
+    return this.type === "empty";
+  }
+
+  constructor(private readonly type: "success" | "error" | "empty") {}
+}
+
+/** Variant representing an empty payload (no data, no error). */
+export class SliceResultEmpty<TData, TRuntimeAdapter extends GraphqlRuntimeAdapter>
+  extends SliceResultGuards<TData, TRuntimeAdapter>
+  implements SliceResultCommon<TData, NormalizedError<TRuntimeAdapter>>
+{
+  constructor() {
+    super("empty");
+  }
+
+  unwrap(): null {
+    return null;
+  }
+
+  safeUnwrap() {
+    return {
+      data: undefined,
+      error: undefined,
+    };
+  }
+}
 
 /** Variant representing a successful payload. */
-export type SliceResultSuccess<TData, TAdapter extends GraphqlAdapter> = Prettify<
-  SliceResultGuards<TData, TAdapter> & {
-    data: TData;
-    unwrap: () => TData;
-    safeUnwrap: SliceResultSafeUnwrapFn<TData, ReturnType<TAdapter["createError"]>>;
+export class SliceResultSuccess<TData, TRuntimeAdapter extends GraphqlRuntimeAdapter>
+  extends SliceResultGuards<TData, TRuntimeAdapter>
+  implements SliceResultCommon<TData, NormalizedError<TRuntimeAdapter>>
+{
+  constructor(
+    public readonly data: TData,
+    public readonly extensions?: unknown,
+  ) {
+    super("success");
   }
->;
+
+  unwrap(): TData {
+    return this.data;
+  }
+
+  safeUnwrap<TTransformed>(transform: (data: TData) => TTransformed) {
+    return {
+      data: transform(this.data),
+      error: undefined,
+    };
+  }
+}
 
 /** Variant representing an error payload created by the adapter. */
-export type SliceResultError<TData, TAdapter extends GraphqlAdapter> = Prettify<
-  SliceResultGuards<TData, TAdapter> & {
-    error: ReturnType<TAdapter["createError"]>;
-    safeUnwrap: SliceResultSafeUnwrapFn<TData, ReturnType<TAdapter["createError"]>>;
+export class SliceResultError<TData, TRuntimeAdapter extends GraphqlRuntimeAdapter>
+  extends SliceResultGuards<TData, TRuntimeAdapter>
+  implements SliceResultCommon<TData, NormalizedError<TRuntimeAdapter>>
+{
+  constructor(
+    public readonly error: NormalizedError<TRuntimeAdapter>,
+    public readonly extensions?: unknown,
+  ) {
+    super("error");
   }
->;
 
-/** Utility signature returned by the safe unwrap helper. */
-type SliceResultSafeUnwrapFn<TData, TError> = <TTransformed>(transform: (data: TData) => TTransformed) =>
-  | {
-      data?: never;
-      error?: never;
-    }
-  | {
-      data: NoInfer<TTransformed>;
-      error?: never;
-    }
-  | {
-      data?: never;
-      error: TError;
+  unwrap(): never {
+    throw this.error;
+  }
+
+  safeUnwrap() {
+    return {
+      data: undefined,
+      error: this.error,
     };
+  }
+}

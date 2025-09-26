@@ -1,5 +1,6 @@
 import { gqlRuntime } from "@soda-gql/runtime";
 import { DocumentNode } from "graphql";
+import { ExecutionResultProjectionPathGraphNode } from "./packages/core/src/types";
 
 const userModel = gqlRuntime.model({
   typename: "User",
@@ -28,6 +29,7 @@ const userModel = gqlRuntime.model({
 });
 
 const userQuerySlice = gqlRuntime.querySlice({
+  rootFieldKeys: ["users"],
   getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
     // select path of result to handle
     select(
@@ -53,6 +55,7 @@ const userQuerySlice = gqlRuntime.querySlice({
 });
 
 const userQuerySlice2 = gqlRuntime.querySlice({
+  rootFieldKeys: ["users"],
   getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
     select("$.users", (result) => {
       if (result.isError()) {
@@ -67,6 +70,7 @@ const userQuerySlice2 = gqlRuntime.querySlice({
 });
 
 const userQuerySlice3 = gqlRuntime.querySlice({
+  rootFieldKeys: ["users"],
   getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) => ({
     // multiple results are allowed, duplication is also allowed
     a: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
@@ -77,7 +81,8 @@ const userQuerySlice3 = gqlRuntime.querySlice({
 const pageQuery = gqlRuntime.query({
   name: "PageQuery",
   document: { /* omitted in this sample */ } as DocumentNode,
-  projectionPathGraph: {},
+  variableNames: ["userId", "x", "y"],
+  projectionPathGraph: { matches: [], children: {} } as ExecutionResultProjectionPathGraphNode,
   getSlices: ({ $ }) => ({
     // define query document with slices
     users: userQuerySlice({

@@ -2,25 +2,25 @@ import { createModelFactory } from "./builder/model";
 import { createOperationFactory } from "./builder/operation";
 import { createOperationSliceFactory } from "./builder/operation-slice";
 import { createGqlHelpers } from "./builder/schema";
-import type { AnyGraphqlSchema, GraphqlAdapter } from "./types";
+import type { AnyGraphqlSchema, GraphqlRuntimeAdapter } from "./types";
 
 export { define, defineOperationRoots, defineScalar } from "./builder/schema";
 export { unsafeInputRef, unsafeOutputRef } from "./builder/type-ref";
 export * from "./types";
 
-export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter> = {
+export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter> = {
   readonly schema: TSchema;
-  readonly adapter: TAdapter;
+  readonly adapter: TRuntimeAdapter;
 };
 
-export const createGql = <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>({
+export const createGql = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>({
   schema,
   adapter,
-}: CreateGqlConfig<TSchema, TAdapter>) => {
+}: CreateGqlConfig<TSchema, TRuntimeAdapter>) => {
   const helpers = createGqlHelpers(schema);
   const model = createModelFactory(schema);
-  const sliceFactory = createOperationSliceFactory(schema, adapter);
-  const operationFactory = createOperationFactory(schema, adapter);
+  const sliceFactory = createOperationSliceFactory<TSchema, TRuntimeAdapter>(schema, adapter);
+  const operationFactory = createOperationFactory<TSchema, TRuntimeAdapter>(schema, adapter);
 
   return {
     ...helpers,
