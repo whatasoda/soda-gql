@@ -33,7 +33,7 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 
 const createInjectModule = async (outFile: string) => {
   const contents = `\
-import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -63,11 +63,11 @@ export const scalar = {
   })),
 } as const;
 
-const createError: GraphqlAdapter["createError"] = (raw) => raw;
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
 
 export const adapter = {
-  createError,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 `;
 
   await Bun.write(outFile, contents);

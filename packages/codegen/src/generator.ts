@@ -540,7 +540,7 @@ const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
     .join("\n");
 
   const adapterBlock =
-    $$.injection.mode === "inject" ? "" : `const adapter = {\n  createError: (raw) => raw,\n} satisfies GraphqlAdapter;`;
+    $$.injection.mode === "inject" ? "" : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
 
   const scalarEntry = $$.injection.mode === "inject" ? "scalar" : $$.scalarBlock;
 
@@ -550,7 +550,7 @@ import {
   createGql,
   define,
   defineOperationRoots,
-  type GraphqlAdapter,
+  type GraphqlRuntimeAdapter,\n  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "@soda-gql/core";

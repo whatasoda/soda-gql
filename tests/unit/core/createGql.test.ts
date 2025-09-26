@@ -8,7 +8,8 @@ import {
   defineOperationRoots,
   defineScalar,
   empty,
-  GraphqlAdapter,
+  GraphqlRuntimeAdapter,
+  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../../packages/core";
@@ -61,9 +62,11 @@ const schema = {
 
 type Schema = typeof schema;
 
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
+
 const adapter = {
-  createError: (raw: unknown) => raw,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 
 describe("createGql", () => {
   const gql = createGql<Schema, typeof adapter>({ schema, adapter });

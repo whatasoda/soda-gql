@@ -1,5 +1,5 @@
-import { createGql, define, defineScalar, unsafeInputRef, unsafeOutputRef } from "./packages/core/src";
-import type { GraphqlAdapter } from "./packages/core/src/types/adapter";
+import { createGql, define, defineScalar, pseudoTypeAnnotation, unsafeInputRef, unsafeOutputRef } from "./packages/core/src";
+import type { GraphqlRuntimeAdapter } from "./packages/core/src/types/adapter";
 import type { FieldPaths } from "./packages/core/src/types/field-path";
 import type { InferFields } from "./packages/core/src/types/fields";
 import type { AnyGraphqlSchema } from "./packages/core/src/types/schema";
@@ -153,11 +153,11 @@ export const schema = {
   union: unions,
 } satisfies AnyGraphqlSchema;
 
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
+
 export const adapter = {
-  createError: (raw: unknown) => ({
-    raw,
-  }),
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
