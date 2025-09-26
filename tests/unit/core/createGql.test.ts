@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   AnyGraphqlSchema,
+  ExecutionResultProjection,
   createGql,
   define,
   defineOperationRoots,
@@ -132,7 +133,7 @@ describe("createGql", () => {
 
     const slice = userSliceFactory({ id: "1" });
     expect(slice.operationType).toBe("query");
-    expect(typeof slice.getProjections).toBe("function");
+    expect(slice.projections).toBeInstanceOf(ExecutionResultProjection);
 
     const profileQuery = gql.query(
       "ProfilePageQuery",

@@ -30,7 +30,7 @@ const userModel = gqlRuntime.model({
 
 const userQuerySlice = gqlRuntime.querySlice({
   rootFieldKeys: ["users"],
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) =>
     // select path of result to handle
     select(
       "$.users",
@@ -56,7 +56,7 @@ const userQuerySlice = gqlRuntime.querySlice({
 
 const userQuerySlice2 = gqlRuntime.querySlice({
   rootFieldKeys: ["users"],
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) =>
     select("$.users", (result) => {
       if (result.isError()) {
         return { error: result.error };
@@ -71,7 +71,7 @@ const userQuerySlice2 = gqlRuntime.querySlice({
 
 const userQuerySlice3 = gqlRuntime.querySlice({
   rootFieldKeys: ["users"],
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) => ({
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) => ({
     // multiple results are allowed, duplication is also allowed
     a: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
     b: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),

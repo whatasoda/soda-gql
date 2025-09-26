@@ -34,7 +34,7 @@ export const createOperationSliceFactory =
       projectionBuilder: SliceResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
-      const projections = gqlRuntime.wrapProjectionBuilder(projectionBuilder)();
+      const projections = gqlRuntime.handleProjectionBuilder(projectionBuilder);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);

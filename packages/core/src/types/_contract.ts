@@ -158,7 +158,7 @@ export namespace BuilderContract {
     operationType: string;
     variables: AssignableInput;
     fields: Fields;
-    getProjections: () => SliceResultProjections;
+    projections: SliceResultProjections;
   };
 
   export type Operation = {

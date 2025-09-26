@@ -118,8 +118,11 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
     expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
+    expect(transformed).toContain("variableNames: [");
     expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
-    expect(transformed).toContain("projectionPathGraph");
+    expect(transformed).toContain("projectionPathGraph: {\n    matches: [{");
+    expect(transformed).toContain("exact: false");
+    expect(transformed).toContain('"users_users"');
   });
 
   it("replaces nested gql helpers exposed via object properties", async () => {

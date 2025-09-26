@@ -6,6 +6,7 @@ import { types as t } from "@babel/core";
 import { parse } from "@babel/parser";
 import traverse, { type Binding, type NodePath } from "@babel/traverse";
 import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
+import type { DefinitionNode, DocumentNode, FieldNode, SelectionNode } from "graphql";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import type { SodaGqlBabelOptions } from "./types";
@@ -585,9 +586,7 @@ const resolveSliceCanonicalId = (
   return null;
 };
 
-const getSliceBuilderObjectExpression = (
-  builderPath: NodePath<t.Expression>,
-): NodePath<t.ObjectExpression> | null => {
+const getSliceBuilderObjectExpression = (builderPath: NodePath<t.Expression>): NodePath<t.ObjectExpression> | null => {
   if (builderPath.isObjectExpression()) {
     return builderPath;
   }
@@ -620,28 +619,80 @@ const getSliceBuilderObjectExpression = (
 type ProjectionEntry = {
   readonly label: string;
   readonly path: string;
+  readonly rootFieldKeys: readonly string[];
 };
 
 type ProjectionPathGraphNode = {
-  readonly matches: readonly { readonly label: string; readonly path: string }[];
-  readonly children: ProjectionPathGraph;
+  readonly matches: readonly { readonly label: string; readonly path: string; readonly exact: boolean }[];
+  readonly children: Record<string, ProjectionPathGraphNode>;
 };
 
-type ProjectionPathGraph = Record<string, ProjectionPathGraphNode>;
+const createFieldPathSegments = (path: string): readonly string[] => {
+  if (path === "$") {
+    return [];
+  }
 
-const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): ProjectionPathGraph => {
-  const normalized = entries.map(({ label, path }) => ({
-    label,
-    path,
-    segments: path.replace("$.", `${label}_`).split("."),
-  }));
+  const segments = path.split(".");
+  if (segments[0] !== "$") {
+    throw new Error("Field path must start with $");
+  }
 
-  const build = (
-    paths: { readonly label: string; readonly path: string; readonly segments: readonly string[] }[],
-  ): ProjectionPathGraph => {
-    const buckets = new Map<string, { label: string; path: string; segments: readonly string[] }[]>();
+  return segments.slice(1);
+};
 
-    paths.forEach(({ label, path, segments: [first, ...rest] }) => {
+const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): ProjectionPathGraphNode => {
+  type NormalizedPath = { readonly label: string; readonly path: string; readonly segments: readonly string[] };
+
+  const deduped = Array.from(
+    entries
+      .reduce((acc, entry) => {
+        const key = `${entry.label}::${entry.path}`;
+        if (!acc.has(key)) {
+          acc.set(key, entry);
+        }
+        return acc;
+      }, new Map<string, ProjectionEntry>())
+      .values(),
+  );
+
+  const normalized = deduped.flatMap<NormalizedPath>(({ label, path, rootFieldKeys }) => {
+    const segments = createFieldPathSegments(path);
+
+    if (segments.length === 0) {
+      if (rootFieldKeys.length === 0) {
+        return [];
+      }
+
+      return rootFieldKeys.map((rootKey) => ({ label, path, segments: [`${label}_${rootKey}`] }));
+    }
+
+    const [first, ...rest] = segments;
+    return [{ label, path, segments: [`${label}_${first}`, ...rest] }];
+  });
+
+  const build = (paths: readonly NormalizedPath[]): ProjectionPathGraphNode => {
+    const sortedPaths = [...paths].sort((a, b) => {
+      const aSegment = a.segments[0] ?? "";
+      const bSegment = b.segments[0] ?? "";
+      if (aSegment !== bSegment) {
+        return aSegment.localeCompare(bSegment);
+      }
+      if (a.label !== b.label) {
+        return a.label.localeCompare(b.label);
+      }
+      return a.path.localeCompare(b.path);
+    });
+
+    const matches = sortedPaths.map(({ label, path, segments }) => ({
+      label,
+      path,
+      exact: segments.length === 0,
+    }));
+
+    const buckets = new Map<string, NormalizedPath[]>();
+
+    sortedPaths.forEach(({ label, path, segments }) => {
+      const [first, ...rest] = segments;
       if (!first) {
         return;
       }
@@ -650,46 +701,44 @@ const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): Projecti
       buckets.set(first, bucket);
     });
 
-    const result: ProjectionPathGraph = {};
+    const children = Object.fromEntries(
+      Array.from(buckets.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([segment, bucket]) => [segment, build(bucket)]),
+    );
 
-    Array.from(buckets.keys())
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((segment) => {
-        const bucket = buckets.get(segment)!;
-        result[segment] = {
-          matches: bucket.map(({ label, path }) => ({ label, path })),
-          children: build(bucket),
-        } satisfies ProjectionPathGraphNode;
-      });
-
-    return result;
+    return {
+      matches,
+      children,
+    } satisfies ProjectionPathGraphNode;
   };
 
   return build(normalized);
 };
 
-const projectionGraphToAst = (graph: ProjectionPathGraph): t.Expression =>
-  t.objectExpression(
-    Object.entries(graph).map(([segment, node]) =>
-      t.objectProperty(
-        t.stringLiteral(segment),
-        t.objectExpression([
-          t.objectProperty(
-            t.identifier("matches"),
-            t.arrayExpression(
-              node.matches.map(({ label, path }) =>
-                t.objectExpression([
-                  t.objectProperty(t.identifier("label"), t.stringLiteral(label)),
-                  t.objectProperty(t.identifier("path"), t.stringLiteral(path)),
-                ]),
-              ),
-            ),
-          ),
-          t.objectProperty(t.identifier("children"), projectionGraphToAst(node.children)),
-        ]),
+const projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
+  t.objectExpression([
+    t.objectProperty(
+      t.identifier("matches"),
+      t.arrayExpression(
+        graph.matches.map(({ label, path, exact }) =>
+          t.objectExpression([
+            t.objectProperty(t.identifier("label"), t.stringLiteral(label)),
+            t.objectProperty(t.identifier("path"), t.stringLiteral(path)),
+            t.objectProperty(t.identifier("exact"), t.booleanLiteral(exact)),
+          ]),
+        ),
       ),
     ),
-  );
+    t.objectProperty(
+      t.identifier("children"),
+      t.objectExpression(
+        Object.entries(graph.children).map(([segment, node]) =>
+          t.objectProperty(t.stringLiteral(segment), projectionGraphToAst(node)),
+        ),
+      ),
+    ),
+  ]);
 
 const collectSliceUsageEntries = (
   slicesBuilderPath: NodePath<t.Expression>,
@@ -728,10 +777,10 @@ const collectSliceUsageEntries = (
     if (!projectionBuilder) {
       return;
     }
-
+    const rootFieldKeys = getSliceRootFieldKeys(state.artifact, canonicalId);
     const paths = collectSelectPaths(projectionBuilder);
     paths.forEach((path) => {
-      entries.push({ label, path });
+      entries.push({ label, path, rootFieldKeys });
     });
   });
 
@@ -802,7 +851,12 @@ const expressionContainsPlaceholder = (expression: t.Expression): boolean => {
 
 const stripTypeAnnotations = <T extends t.Expression>(expression: T): T => {
   const stripNode = (node: t.Node): t.Node => {
-    if (t.isTSAsExpression(node) || t.isTSNonNullExpression(node) || t.isTSTypeAssertion(node) || t.isTSInstantiationExpression(node)) {
+    if (
+      t.isTSAsExpression(node) ||
+      t.isTSNonNullExpression(node) ||
+      t.isTSTypeAssertion(node) ||
+      t.isTSInstantiationExpression(node)
+    ) {
       return stripNode(node.expression as t.Node);
     }
 
@@ -840,14 +894,95 @@ const stripTypeAnnotations = <T extends t.Expression>(expression: T): T => {
   return stripNode(expression) as T;
 };
 
-const getRuntimeCanonicalId = (
-  callPath: NodePath<t.CallExpression>,
-  method: SupportedMethod,
-): string | null => {
+const isFieldSelection = (selection: SelectionNode): selection is FieldNode => selection.kind === "Field";
+
+const collectRootFieldKeysFromDefinition = (definition: DefinitionNode, registry: string[]) => {
+  if (definition.kind !== "OperationDefinition" && definition.kind !== "FragmentDefinition") {
+    return;
+  }
+
+  const selectionSet = definition.selectionSet;
+  if (!selectionSet) {
+    return;
+  }
+
+  selectionSet.selections.forEach((selectionNode) => {
+    if (!isFieldSelection(selectionNode)) {
+      return;
+    }
+
+    const name = selectionNode.name?.value;
+    if (typeof name !== "string" || name.length === 0) {
+      return;
+    }
+
+    if (!registry.includes(name)) {
+      registry.push(name);
+    }
+  });
+};
+
+const getSliceRootFieldKeys = (artifact: BuilderArtifact, canonicalId: string): readonly string[] => {
+  const refEntry = lookupRef(artifact, canonicalId);
+  if (!refEntry || refEntry.kind !== "slice") {
+    return [];
+  }
+
+  const documentName = refEntry.document;
+  if (typeof documentName !== "string" || documentName.length === 0) {
+    return [];
+  }
+
+  const documentEntry = artifact.documents?.[documentName];
+  if (!documentEntry) {
+    return [];
+  }
+
+  const documentAst = documentEntry.ast as DocumentNode | undefined;
+  if (!documentAst || documentAst.kind !== "Document" || !Array.isArray(documentAst.definitions)) {
+    return [];
+  }
+
+  const rootKeys: string[] = [];
+  documentAst.definitions.forEach((definition) => {
+    collectRootFieldKeysFromDefinition(definition, rootKeys);
+  });
+
+  return rootKeys;
+};
+
+const extractOperationVariableNames = (documentAst: DocumentNode | undefined): readonly string[] => {
+  if (!documentAst || documentAst.kind !== "Document" || !Array.isArray(documentAst.definitions)) {
+    return [];
+  }
+
+  const variableNames: string[] = [];
+
+  documentAst.definitions.forEach((definition) => {
+    if (definition.kind !== "OperationDefinition" || !Array.isArray(definition.variableDefinitions)) {
+      return;
+    }
+
+    definition.variableDefinitions.forEach((variableDefinition) => {
+      const name = variableDefinition.variable?.name?.value;
+      if (typeof name !== "string" || name.length === 0) {
+        return;
+      }
+
+      if (!variableNames.includes(name)) {
+        variableNames.push(name);
+      }
+    });
+  });
+
+  return variableNames;
+};
+
+const getRuntimeCanonicalId = (callPath: NodePath<t.CallExpression>, method: SupportedMethod): string | null => {
   const factoryName = method === "model" ? "createModel" : method === "querySlice" ? "createSlice" : "createOperation";
 
-  const factoryCall = callPath.findParent((parent) =>
-    parent.isCallExpression() && t.isIdentifier(parent.node.callee, { name: factoryName }),
+  const factoryCall = callPath.findParent(
+    (parent) => parent.isCallExpression() && t.isIdentifier(parent.node.callee, { name: factoryName }),
   );
 
   if (!factoryCall || !factoryCall.isCallExpression()) {
@@ -942,16 +1077,22 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   }
 
   const properties: t.ObjectProperty[] = [];
+  const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
+  const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
   const variablesExpr = convertSliceVariables(variables);
   if (variablesExpr) {
     properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
   }
 
+  properties.push(
+    t.objectProperty(t.identifier("rootFieldKeys"), t.arrayExpression(rootFieldKeys.map((key) => t.stringLiteral(key)))),
+  );
+
   const resolvedBuilder = resolveSliceProjectionBuilder(callPath, state, projectionBuilder);
   properties.push(
     t.objectProperty(
-      t.identifier("getProjections"),
-      t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("wrapProjectionBuilder")), [
+      t.identifier("projections"),
+      t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")), [
         resolvedBuilder,
       ]),
     ),
@@ -970,7 +1111,7 @@ const buildQueryRuntimeComponents = (
   state: PluginState,
   filename: string,
 ) => {
-  const [nameArg, variablesArg, slicesBuilder] = callPath.node.arguments;
+  const [nameArg, _variablesArg, slicesBuilder] = callPath.node.arguments;
   if (!nameArg || !t.isStringLiteral(nameArg) || !slicesBuilder) {
     throw new Error("gql.query requires a name, variables, and slices builder");
   }
@@ -1003,14 +1144,18 @@ const buildQueryRuntimeComponents = (
     t.variableDeclarator(t.identifier(documentIdentifier), documentExpression),
   ]);
 
+  const variableNames = extractOperationVariableNames(documentEntry.ast as DocumentNode | undefined);
   const properties: t.ObjectProperty[] = [
     t.objectProperty(t.identifier("name"), clone(nameArg)),
     t.objectProperty(t.identifier("document"), t.identifier(documentIdentifier)),
   ];
 
-  if (variablesArg && !t.isNullLiteral(variablesArg)) {
-    properties.push(t.objectProperty(t.identifier("variables"), convertVariablesObject(variablesArg)));
-  }
+  properties.push(
+    t.objectProperty(
+      t.identifier("variableNames"),
+      t.arrayExpression(variableNames.map((variableName) => t.stringLiteral(variableName))),
+    ),
+  );
 
   properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
 
@@ -1071,9 +1216,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
             if (method === "model" || method === "querySlice") {
               ensureGqlRuntimeImport(programPath);
               const replacement =
-                method === "model"
-                  ? buildModelRuntimeCall(callPath, pluginState)
-                  : buildSliceRuntimeCall(callPath, pluginState);
+                method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState);
               callPath.replaceWith(replacement);
               mutated = true;
               return;
@@ -1092,9 +1235,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
           if (method === "model" || method === "querySlice") {
             ensureGqlRuntimeImport(programPath);
             const replacement =
-              method === "model"
-                ? buildModelRuntimeCall(callPath, pluginState)
-                : buildSliceRuntimeCall(callPath, pluginState);
+              method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState);
             callPath.replaceWith(replacement);
             mutated = true;
             return;
