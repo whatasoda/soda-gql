@@ -17,7 +17,7 @@ export type GraphqlExecutionResult<TData, TExtensions> = {
 
 export type NonGraphqlErrorResult<TRuntimeAdapter extends GraphqlRuntimeAdapter> = {
   type: "non-graphql-error";
-  error: ReturnType<TRuntimeAdapter["createError"]>;
+  error: ReturnType<TRuntimeAdapter["nonGraphqlErrorType"]>;
 };
 
 export type NormalizedError<TRuntimeAdapter extends GraphqlRuntimeAdapter> =
@@ -27,7 +27,7 @@ export type NormalizedError<TRuntimeAdapter extends GraphqlRuntimeAdapter> =
     }
   | {
       type: "non-graphql-error";
-      error: ReturnType<TRuntimeAdapter["createError"]>;
+      error: ReturnType<TRuntimeAdapter["nonGraphqlErrorType"]>;
     }
   | {
       type: "parse-error";
