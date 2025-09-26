@@ -20,7 +20,7 @@ export class ExecutionResultProjection<TRuntimeAdapter extends GraphqlRuntimeAda
   ) {
     this.pathSegments = createFieldPathSegments(this.path);
   }
-  
+
   public readonly pathSegments: string[];
 }
 
@@ -33,7 +33,7 @@ function createFieldPathSegments(path: string): string[] {
   if (segments[0] !== "$") {
     throw new Error("Field path must start with $");
   }
-  
+
   return segments.slice(1);
 }
 

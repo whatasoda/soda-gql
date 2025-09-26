@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { err } from "neverthrow";
 import type { BuilderError } from "../../../packages/builder/src/types";
 

@@ -7,11 +7,11 @@ import {
   type EmptyObject,
   type FieldsBuilder,
   type GraphqlRuntimeAdapter,
-  pseudoTypeAnnotation,
   type InputTypeRefs,
   type OperationSlice,
   type OperationSliceFn,
   type OperationType,
+  pseudoTypeAnnotation,
   type SliceResultProjectionsBuilder,
   type VoidIfEmptyObject,
 } from "../types";

@@ -2,9 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import { runCodegen } from "../../packages/codegen/src/index.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
+import { runCodegen } from "../../packages/codegen/src/index.ts";
 
 type CliResult = {
   readonly stdout: string;
@@ -154,7 +153,7 @@ describe("runtime builder flow", () => {
     expect(artifact.documents.ProfilePageQuery.text).toContain("remoteUsers");
     expect(artifact.documents.ProfilePageQuery.text).toContain("catalogUsers");
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
-    expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
+    expect(Object.hasOwn(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
     expect(artifact.report.models).toBe(2);
     expect(artifact.report.slices).toBe(3);

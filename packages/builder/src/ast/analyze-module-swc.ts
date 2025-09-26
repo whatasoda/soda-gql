@@ -22,6 +22,7 @@ import type {
 
 import {
   type AnalyzeModuleInput,
+  analyzeModule as analyzeModuleTs,
   type GqlDefinitionKind,
   type ModuleAnalysis,
   type ModuleDefinition,
@@ -30,7 +31,6 @@ import {
   type ModuleImport,
   type SourceLocation,
   type SourcePosition,
-  analyzeModule as analyzeModuleTs,
 } from "./analyze-module";
 
 const gqlCallKinds: Record<string, GqlDefinitionKind> = {
@@ -135,9 +135,11 @@ const collectImports = (module: Module): ModuleImport[] => {
 const collectExports = (module: Module): ModuleExport[] => {
   const exports: ModuleExport[] = [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const handle = (declaration: any) => {
     if (declaration.type === "ExportDeclaration") {
       if (declaration.declaration.type === "VariableDeclaration") {
+        // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
         declaration.declaration.declarations.forEach((decl: any) => {
           if (decl.id.type === "Identifier") {
             exports.push({
@@ -165,6 +167,7 @@ const collectExports = (module: Module): ModuleExport[] => {
 
     if (declaration.type === "ExportNamedDeclaration") {
       const source = declaration.source?.value;
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
       declaration.specifiers?.forEach((specifier: any) => {
         if (specifier.type !== "ExportSpecifier") {
           return;
@@ -260,7 +263,9 @@ const isGqlCall = (
     expression = callee;
   } else if (callee.type === "Super" || callee.type === "Import") {
     return null;
+    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   } else if ((callee as any).expression && (callee as any).expression.type === "MemberExpression") {
+    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
     expression = (callee as any).expression as MemberExpression;
   } else {
     return null;
@@ -348,9 +353,7 @@ const collectReferencesFromExpression = (
 
   const references = new Set<string>();
 
-  const resolveMemberPath = (
-    node: MemberExpression,
-  ): { readonly root: string; readonly segments: readonly string[] } | null => {
+  const resolveMemberPath = (node: MemberExpression): { readonly root: string; readonly segments: readonly string[] } | null => {
     const segments: string[] = [];
     let current: MemberExpression["object"] | MemberExpression = node;
 
@@ -405,6 +408,7 @@ const collectReferencesFromExpression = (
     references.add(`${root}.${suffix}`);
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const visit = (node: any, exclusions: Set<string>) => {
     if (!node || typeof node !== "object") {
       return;
@@ -472,13 +476,19 @@ const collectReferencesFromExpression = (
     }
 
     if (node.type === "BlockStatement") {
-      node.statements?.forEach((statement: any) => visit(statement, exclusions));
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.statements?.forEach((statement: any) => {
+        visit(statement, exclusions);
+      });
       return;
     }
 
     if (node.type === "CallExpression") {
       visit(node.callee, exclusions);
-      node.arguments?.forEach((arg: any) => visit(arg.expression ?? arg, exclusions));
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.arguments?.forEach((arg: any) => {
+        visit(arg.expression ?? arg, exclusions);
+      });
       return;
     }
 
@@ -487,6 +497,7 @@ const collectReferencesFromExpression = (
     }
 
     if (node.type === "ArrayExpression") {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
       node.elements?.forEach((element: any) => {
         if (element?.expression) {
           visit(element.expression, exclusions);
@@ -496,6 +507,7 @@ const collectReferencesFromExpression = (
     }
 
     if (node.type === "ObjectExpression") {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
       node.properties?.forEach((prop: any) => {
         if (prop.type === "KeyValueProperty") {
           visit(prop.value, exclusions);
@@ -515,7 +527,10 @@ const collectReferencesFromExpression = (
     }
 
     if (node.type === "TemplateLiteral") {
-      node.expressions?.forEach((expr: any) => visit(expr, exclusions));
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.expressions?.forEach((expr: any) => {
+        visit(expr, exclusions);
+      });
       return;
     }
 
@@ -527,7 +542,9 @@ const collectReferencesFromExpression = (
 
     Object.values(node).forEach((value) => {
       if (Array.isArray(value)) {
-        value.forEach((child) => visit(child, exclusions));
+        value.forEach((child) => {
+          visit(child, exclusions);
+        });
       } else {
         visit(value, exclusions);
       }
@@ -550,6 +567,7 @@ const collectTopLevelDefinitions = (
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: Set<CallExpression>;
 } => {
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const getPropertyName = (property: any): string | null => {
     if (!property) {
       return null;
@@ -601,7 +619,9 @@ const collectTopLevelDefinitions = (
     });
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const handleVariableDeclaration = (declaration: any) => {
+    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
     declaration.declarations?.forEach((decl: any) => {
       if (decl.id.type !== "Identifier" || !decl.init) {
         return;
@@ -619,6 +639,7 @@ const collectTopLevelDefinitions = (
       }
 
       if (decl.init.type === "ObjectExpression") {
+        // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
         decl.init.properties?.forEach((prop: any) => {
           if (prop.type !== "KeyValueProperty") {
             return;
@@ -653,20 +674,27 @@ const collectTopLevelDefinitions = (
       if (declaration.type === "ExportDeclaration" && declaration.declaration.type === "VariableDeclaration") {
         handleVariableDeclaration(declaration.declaration);
       }
-      if (declaration.type === "ExportNamedDeclaration" && declaration.declaration && declaration.declaration.type === "VariableDeclaration") {
+      if (
+        declaration.type === "ExportNamedDeclaration" &&
+        declaration.declaration &&
+        declaration.declaration.type === "VariableDeclaration"
+      ) {
         handleVariableDeclaration(declaration.declaration);
       }
     }
   });
 
   const definitionNames = new Set(pending.map((item) => item.exportName));
-  const definitions = pending.map((item) => ({
-    kind: item.kind,
-    exportName: item.exportName,
-    loc: toLocation(resolvePosition, item.span),
-    references: Array.from(collectReferencesFromExpression(item.initializer, imports, definitionNames, gqlIdentifiers)),
-    expression: item.expression,
-  } satisfies ModuleDefinition));
+  const definitions = pending.map(
+    (item) =>
+      ({
+        kind: item.kind,
+        exportName: item.exportName,
+        loc: toLocation(resolvePosition, item.span),
+        references: Array.from(collectReferencesFromExpression(item.initializer, imports, definitionNames, gqlIdentifiers)),
+        expression: item.expression,
+      }) satisfies ModuleDefinition,
+  );
 
   return { definitions, handledCalls: handled };
 };

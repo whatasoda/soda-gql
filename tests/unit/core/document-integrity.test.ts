@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "../../../packages/core/src/builder/document-builder";
-import type { TypeModifier } from "../../../packages/core/src/types/type-ref";
 import { Kind } from "graphql";
+import {
+  buildArgumentValue,
+  buildConstValueNode,
+  buildDocument,
+  buildWithTypeModifier,
+} from "../../../packages/core/src/builder/document-builder";
+import type { TypeModifier } from "../../../packages/core/src/types/type-ref";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -131,30 +136,28 @@ describe("Document Integrity Tests", () => {
 
   describe("buildDocument with invalid operation types", () => {
     it("should throw on invalid operation type", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: test with invalid operation type
       const invalidOperation = "queryish" as any;
 
       expect(() => {
-        buildDocument(
-          invalidOperation,
-          "TestOperation",
-          [],
-          [],
-          []
-        );
+        buildDocument(invalidOperation, "TestOperation", [], [], []);
       }).toThrow();
     });
 
     it("should handle valid operation types", () => {
       const queryDoc = buildDocument("query", "TestQuery", [], [], []);
       expect(queryDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
+      // biome-ignore lint/suspicious/noExplicitAny: test assertion
       expect((queryDoc.definitions[0] as any).operation).toBe("query");
 
       const mutationDoc = buildDocument("mutation", "TestMutation", [], [], []);
       expect(mutationDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
+      // biome-ignore lint/suspicious/noExplicitAny: test assertion
       expect((mutationDoc.definitions[0] as any).operation).toBe("mutation");
 
       const subscriptionDoc = buildDocument("subscription", "TestSubscription", [], [], []);
       expect(subscriptionDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
+      // biome-ignore lint/suspicious/noExplicitAny: test assertion
       expect((subscriptionDoc.definitions[0] as any).operation).toBe("subscription");
     });
   });
@@ -169,6 +172,7 @@ describe("Document Integrity Tests", () => {
       };
 
       const doc = buildDocument("query", "TestQuery", [variableWithDefault], [], []);
+      // biome-ignore lint/suspicious/noExplicitAny: test assertion
       const varDef = (doc.definitions[0] as any).variableDefinitions[0];
       expect(varDef.defaultValue).toBeDefined();
       expect(varDef.defaultValue.kind).toBe(Kind.STRING);
@@ -189,6 +193,7 @@ describe("Document Integrity Tests", () => {
       };
 
       const doc = buildDocument("query", "TestQuery", [variableWithComplexDefault], [], []);
+      // biome-ignore lint/suspicious/noExplicitAny: test assertion
       const varDef = (doc.definitions[0] as any).variableDefinitions[0];
       expect(varDef.defaultValue).toBeDefined();
       expect(varDef.defaultValue.kind).toBe(Kind.OBJECT);

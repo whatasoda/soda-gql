@@ -2,13 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
-
+import { type BuilderArtifact, createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
 import createPlugin from "../../../packages/plugin-babel/src/index.ts";
-import {
-  createCanonicalId,
-  createRuntimeBindingName,
-  type BuilderArtifact,
-} from "../../../packages/builder/src/index.ts";
 
 const withArtifactFile = async (artifact: BuilderArtifact): Promise<string> => {
   const artifactDir = join(process.cwd(), "tests", ".tmp");
@@ -42,10 +37,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const queryId = createCanonicalId(sourcePath, "profileQuery");
     const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
-    const userSliceId = createCanonicalId(
-      join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
-      "userSlice",
-    );
+    const userSliceId = createCanonicalId(join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"), "userSlice");
     const userSliceCatalogId = createCanonicalId(
       join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
       "userSliceCatalog.byId",
@@ -130,8 +122,8 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const nestedModelId = createCanonicalId(sourcePath, "userRemote.forIterate");
     const nestedSliceId = createCanonicalId(sourcePath, "userSliceCatalog.byId");
 
-    const nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
-    const nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
+    // const _nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
+    // const _nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
 
     const artifact: BuilderArtifact = {
       documents: {
@@ -184,9 +176,9 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   });
 
   it("hydrates intermediate-module placeholders using original source definitions", async () => {
-    const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
-    const modelId = createCanonicalId(sourcePath, "userModel");
-    const sliceId = createCanonicalId(sourcePath, "userSlice");
+    // const _sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
+    // const _modelId = createCanonicalId(_sourcePath, "userModel");
+    // const _sliceId = createCanonicalId(_sourcePath, "userSlice");
 
     const artifact: BuilderArtifact = {
       documents: {},

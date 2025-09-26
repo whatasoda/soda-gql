@@ -1,11 +1,10 @@
 import { join } from "node:path";
-import { type Result } from "neverthrow";
-
+import type { Result } from "neverthrow";
+import type { ModuleAnalysis } from "./ast/analyze-module";
 import { analyzeModule as analyzeModuleTs } from "./ast/analyze-module";
 import { analyzeModule as analyzeModuleSwc } from "./ast/analyze-module-swc";
 import { createModuleCache } from "./cache";
 import { collectSources, resolveEntryPaths } from "./discover";
-import type { ModuleAnalysis } from "./ast/analyze-module";
 import type { BuilderAnalyzer, BuilderError } from "./types";
 
 export type ModuleLoadStats = {

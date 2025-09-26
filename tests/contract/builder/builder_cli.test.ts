@@ -83,11 +83,7 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     env: {
       ...process.env,
       NODE_ENV: "test",
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        join(projectRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
+      NODE_PATH: [join(workspaceRoot, "node_modules"), join(projectRoot, "node_modules"), process.env.NODE_PATH ?? ""]
         .filter(Boolean)
         .join(":"),
     },
@@ -375,10 +371,7 @@ export const duplicated = gql.query(
       return `export const slice${index} = gql.querySlice([], () => ({}), () => ({}));`;
     }).join("\n");
 
-    await Bun.write(
-      join(entitiesDir, "slices.ts"),
-      `import { gql } from "@/graphql-system";\n${slicesSource}\n`,
-    );
+    await Bun.write(join(entitiesDir, "slices.ts"), `import { gql } from "@/graphql-system";\n${slicesSource}\n`);
 
     await Bun.write(
       join(pagesDir, "slice.page.ts"),

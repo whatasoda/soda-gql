@@ -85,10 +85,11 @@ export type SliceResultProjectionsBuilder<
 > = (tools: { select: SliceResultSelector<TSchema, TRuntimeAdapter, TFields> }) => TProjections;
 
 /** Helper passed to selection builders for choosing a field path and projector. */
-type SliceResultSelector<TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter, TFields extends AnyFields> = <
-  TPath extends FieldPaths<TSchema, TFields>,
-  TProjected,
->(
+type SliceResultSelector<
+  TSchema extends AnyGraphqlSchema,
+  TRuntimeAdapter extends GraphqlRuntimeAdapter,
+  TFields extends AnyFields,
+> = <TPath extends FieldPaths<TSchema, TFields>, TProjected>(
   path: TPath,
   projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TRuntimeAdapter>) => TProjected,
 ) => ExecutionResultProjection<TRuntimeAdapter, TPath, TProjected>;

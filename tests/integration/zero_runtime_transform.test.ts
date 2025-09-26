@@ -3,10 +3,8 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
-
+import { createCanonicalId, createRuntimeBindingName, runBuilder } from "../../packages/builder/src/index.ts";
 import { runCodegen } from "../../packages/codegen/src/index.ts";
-import { runBuilder } from "../../packages/builder/src/index.ts";
-import { createCanonicalId, createRuntimeBindingName } from "../../packages/builder/src/index.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");

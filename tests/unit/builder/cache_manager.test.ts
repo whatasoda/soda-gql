@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-
-import { createModuleCache } from "../../../packages/builder/src/cache";
+import { join } from "node:path";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
+import { createModuleCache } from "../../../packages/builder/src/cache";
 
 describe("module cache manager", () => {
   let cacheDir: string;

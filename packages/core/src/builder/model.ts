@@ -3,11 +3,11 @@ import {
   type AnyGraphqlSchema,
   type EmptyObject,
   type FieldsBuilder,
-  pseudoTypeAnnotation,
   type InferFields,
   type InputTypeRefs,
   type Model,
   type ModelFn,
+  pseudoTypeAnnotation,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";

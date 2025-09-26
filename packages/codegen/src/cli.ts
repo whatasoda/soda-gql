@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
+import { writeInjectTemplate } from "./inject-template";
 import { parseCodegenArgs } from "./options";
 import { runCodegen } from "./runner";
-import { writeInjectTemplate } from "./inject-template";
 import type { CodegenCliCommand, CodegenError, CodegenFormat, CodegenOptions, CodegenSuccess } from "./types";
 
 const outputJson = (payload: unknown) => {

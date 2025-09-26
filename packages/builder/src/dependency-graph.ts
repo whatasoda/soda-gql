@@ -1,9 +1,9 @@
-import { normalize, dirname, resolve as resolvePath, join } from "node:path";
+import { dirname, join, normalize, resolve as resolvePath } from "node:path";
 import { err, ok, type Result } from "neverthrow";
 
 import type { ModuleAnalysis, ModuleDefinition } from "./ast/analyze-module";
-import { createCanonicalId } from "./registry";
 import type { CanonicalId } from "./registry";
+import { createCanonicalId } from "./registry";
 
 export type DependencyGraphNode = {
   readonly id: CanonicalId;
@@ -82,7 +82,7 @@ const buildExportTable = (
   // Resolve re-exports in a second pass
   modules.forEach((mod) => {
     const modulePath = normalisePath(mod.filePath);
-    const exports = table.get(modulePath)!;
+    const exports = table.get(modulePath) ?? new Map<string, CanonicalId>();
 
     mod.exports.forEach((entry) => {
       if (entry.kind !== "reexport") {
@@ -221,9 +221,7 @@ const detectCycles = (graph: DependencyGraph): Result<void, DependencyGraphError
   return ok(undefined);
 };
 
-export const buildDependencyGraph = (
-  modules: readonly ModuleAnalysis[],
-): Result<DependencyGraph, DependencyGraphError> => {
+export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result<DependencyGraph, DependencyGraphError> => {
   const graph: DependencyGraph = new Map();
 
   const moduleLookup = new Map<string, ModuleAnalysis>();
@@ -235,7 +233,7 @@ export const buildDependencyGraph = (
 
   modules.forEach((module) => {
     const referenceMap = buildModuleImportMap(module, exportTable, moduleLookup);
-    const modulePath = normalisePath(module.filePath);
+    // const _modulePath = normalisePath(module.filePath); // unused variable
 
     module.definitions.forEach((definition) => {
       const id = createCanonicalId(module.filePath, definition.exportName);

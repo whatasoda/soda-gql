@@ -32,7 +32,10 @@ const evaluateSliceSelectionMultiple = <
     Object.entries(selection).map(([key, value]) => [key, evaluateSliceSelectionSingle(value, results)]),
   ) as InferExecutionResultProjection<TRuntimeAdapter, TSelection>;
 
-export const evaluateSelections = <TRuntimeAdapter extends GraphqlRuntimeAdapter, TSelection extends AnyExecutionResultProjections<TRuntimeAdapter>>(
+export const evaluateSelections = <
+  TRuntimeAdapter extends GraphqlRuntimeAdapter,
+  TSelection extends AnyExecutionResultProjections<TRuntimeAdapter>,
+>(
   selection: TSelection,
   results: AnySliceResultRecord<TRuntimeAdapter>,
 ): InferExecutionResultProjection<TRuntimeAdapter, TSelection> =>

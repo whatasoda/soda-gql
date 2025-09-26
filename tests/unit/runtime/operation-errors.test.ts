@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { pseudoTypeAnnotation } from "../../../packages/core/src/types/utility";
+import { createParse } from "../../../packages/core/src/runtime/operation";
 import type { GraphqlRuntimeAdapter } from "../../../packages/core/src/types/adapter";
 import type { NormalizedExecutionResult } from "../../../packages/core/src/types/execution-result";
-import { createParse } from "../../../packages/core/src/runtime/operation";
-import { SliceResultError, SliceResultEmpty, SliceResultSuccess } from "../../../packages/core/src/types/slice-result";
-import { ExecutionResultProjection, type ExecutionResultProjectionPathGraphNode } from "../../../packages/core/src/types/execution-result-projection";
+import {
+  ExecutionResultProjection,
+  type ExecutionResultProjectionPathGraphNode,
+} from "../../../packages/core/src/types/execution-result-projection";
+import { pseudoTypeAnnotation } from "../../../packages/core/src/types/utility";
 
 describe("Runtime Operation Error Handling", () => {
   const adapter = {
@@ -18,16 +20,14 @@ describe("Runtime Operation Error Handling", () => {
           projections: {
             test: new ExecutionResultProjection(
               "$.test",
-              (result) => result // Return raw SliceResult for testing
+              (result) => result, // Return raw SliceResult for testing
             ),
           },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [
-          { label: "test", projection: slices.test.projections.test },
-        ],
+        matches: [{ label: "test", projection: slices.test.projections.test }],
         children: new Map(),
       };
 
@@ -52,18 +52,13 @@ describe("Runtime Operation Error Handling", () => {
       const slices = {
         test: {
           projections: {
-            test: new ExecutionResultProjection(
-              "$.test",
-              (result) => result
-            ),
+            test: new ExecutionResultProjection("$.test", (result) => result),
           },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [
-          { label: "test", projection: slices.test.projections.test },
-        ],
+        matches: [{ label: "test", projection: slices.test.projections.test }],
         children: new Map(),
       };
 
@@ -85,23 +80,21 @@ describe("Runtime Operation Error Handling", () => {
       const slices = {
         test: {
           projections: {
-            test: new ExecutionResultProjection(
-              "$.data",
-              (result) => result
-            ),
+            test: new ExecutionResultProjection("$.data", (result) => result),
           },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [
-          { label: "test", projection: slices.test.projections.test, path: ["data"] },
-        ],
+        matches: [{ label: "test", projection: slices.test.projections.test, path: ["data"] }],
         children: new Map([
-          ["data", {
-            matches: [],
-            children: new Map(),
-          }],
+          [
+            "data",
+            {
+              matches: [],
+              children: new Map(),
+            },
+          ],
         ]),
       };
 
@@ -126,18 +119,13 @@ describe("Runtime Operation Error Handling", () => {
       const slices = {
         test: {
           projections: {
-            test: new ExecutionResultProjection(
-              "$.data",
-              (result) => result
-            ),
+            test: new ExecutionResultProjection("$.data", (result) => result),
           },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [
-          { label: "test", projection: slices.test.projections.test },
-        ],
+        matches: [{ label: "test", projection: slices.test.projections.test }],
         children: new Map(),
       };
 
@@ -168,18 +156,13 @@ describe("Runtime Operation Error Handling", () => {
       const slices = {
         test: {
           projections: {
-            test: new ExecutionResultProjection(
-              "$.test",
-              (result) => result
-            ),
+            test: new ExecutionResultProjection("$.test", (result) => result),
           },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [
-          { label: "test", projection: slices.test.projections.test },
-        ],
+        matches: [{ label: "test", projection: slices.test.projections.test }],
         children: new Map(),
       };
 
@@ -191,6 +174,7 @@ describe("Runtime Operation Error Handling", () => {
       const invalidResult = {
         type: "unknown-type",
         something: "weird",
+        // biome-ignore lint/suspicious/noExplicitAny: test with invalid type
       } as any;
 
       expect(() => parse(invalidResult)).toThrow("Invalid result type");

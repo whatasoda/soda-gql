@@ -1,6 +1,6 @@
 import { gqlRuntime } from "@soda-gql/runtime";
-import { DocumentNode } from "graphql";
-import { ExecutionResultProjectionPathGraphNode } from "./packages/core/src/types";
+import type { DocumentNode } from "graphql";
+import type { ExecutionResultProjectionPathGraphNode } from "./packages/core/src/types";
 
 const userModel = gqlRuntime.model({
   typename: "User",
@@ -78,9 +78,11 @@ const userQuerySlice3 = gqlRuntime.querySlice({
   })),
 });
 
-const pageQuery = gqlRuntime.query({
+const _pageQuery = gqlRuntime.query({
   name: "PageQuery",
-  document: { /* omitted in this sample */ } as DocumentNode,
+  document: {
+    /* omitted in this sample */
+  } as DocumentNode,
   variableNames: ["userId", "x", "y"],
   projectionPathGraph: { matches: [], children: {} } as ExecutionResultProjectionPathGraphNode,
   getSlices: ({ $ }) => ({

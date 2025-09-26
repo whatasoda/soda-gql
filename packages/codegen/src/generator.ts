@@ -540,7 +540,9 @@ const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
     .join("\n");
 
   const adapterBlock =
-    $$.injection.mode === "inject" ? "" : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
+    $$.injection.mode === "inject"
+      ? ""
+      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
 
   const scalarEntry = $$.injection.mode === "inject" ? "scalar" : $$.scalarBlock;
 

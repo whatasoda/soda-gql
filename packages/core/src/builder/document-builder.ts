@@ -245,8 +245,8 @@ export function buildDocument(
   operation: OperationType,
   name: string,
   variables: VariableDefinitionNode[],
-  directives: any[],
-  selections: FieldNode[]
+  // directives: any[],
+  selections: FieldNode[],
 ): DocumentNode;
 export function buildDocument(options: {
   name: string;
@@ -258,8 +258,8 @@ export function buildDocument(
   operationOrOptions: OperationType | { name: string; operationType: OperationType; variables: InputTypeRefs; fields: AnyFields },
   name?: string,
   variables?: VariableDefinitionNode[],
-  directives?: any[],
-  selections?: FieldNode[]
+  // directives?: any[],
+  selections?: FieldNode[],
 ): DocumentNode {
   if (typeof operationOrOptions === "object") {
     // Object-based call
@@ -286,10 +286,10 @@ export function buildDocument(
           operation: buildOperationTypeNode(operationOrOptions),
           name: name ? { kind: Kind.NAME, value: name } : undefined,
           variableDefinitions: variables || [],
-          directives: directives || [],
+          // directives: directives || [],
           selectionSet: {
             kind: Kind.SELECTION_SET,
-            selections: selections || []
+            selections: selections || [],
           },
         },
       ],

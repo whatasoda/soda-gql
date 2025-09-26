@@ -15,8 +15,6 @@ export const collections = {
       })),
     }),
     ({ select }) =>
-      select("$.users", (result) =>
-        result.safeUnwrap((users) => users.map((user) => userRemote.forIterate.transform(user))),
-      ),
+      select("$.users", (result) => result.safeUnwrap((users) => users.map((user) => userRemote.forIterate.transform(user)))),
   ),
 };

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
 import {
-  AnyGraphqlSchema,
-  ExecutionResultProjection,
+  type AnyGraphqlSchema,
   createGql,
   define,
   defineOperationRoots,
   defineScalar,
+  ExecutionResultProjection,
   empty,
-  GraphqlRuntimeAdapter,
+  type GraphqlRuntimeAdapter,
   pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,

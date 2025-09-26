@@ -1,6 +1,5 @@
+import { extname } from "node:path";
 import ts from "typescript";
-import { extname, dirname, resolve as resolvePath } from "node:path";
-import { ok } from "neverthrow";
 
 export type SourcePosition = {
   readonly line: number;
@@ -173,9 +172,7 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
 
   sourceFile.statements.forEach((statement) => {
     if (ts.isExportDeclaration(statement)) {
-      const moduleSpecifier = statement.moduleSpecifier
-        ? (statement.moduleSpecifier as ts.StringLiteral).text
-        : undefined;
+      const moduleSpecifier = statement.moduleSpecifier ? (statement.moduleSpecifier as ts.StringLiteral).text : undefined;
 
       if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
         statement.exportClause.elements.forEach((element) => {
@@ -220,7 +217,10 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
       });
     }
 
-    if (ts.isVariableStatement(statement) && statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
+    if (
+      ts.isVariableStatement(statement) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
       statement.declarationList.declarations.forEach((declaration) => {
         if (ts.isIdentifier(declaration.name)) {
           exports.push({
@@ -233,7 +233,11 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
       });
     }
 
-    if (ts.isFunctionDeclaration(statement) && statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) && statement.name) {
+    if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) &&
+      statement.name
+    ) {
       exports.push({
         kind: "named",
         exported: statement.name.text,
@@ -246,7 +250,10 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
   return exports;
 };
 
-const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: ts.CallExpression): { readonly method: string } | null => {
+const isGqlDefinitionCall = (
+  identifiers: ReadonlySet<string>,
+  callExpression: ts.CallExpression,
+): { readonly method: string } | null => {
   const expression = callExpression.expression;
   if (!ts.isPropertyAccessExpression(expression)) {
     return null;
@@ -373,7 +380,9 @@ const collectReferencesFromCall = (
       if (ts.isArrowFunction(node) && node.equalsGreaterThanToken) {
         if (node.body) {
           if (ts.isBlock(node.body)) {
-            node.body.statements.forEach((statement) => visitNode(statement, nextExclusions));
+            node.body.statements.forEach((statement) => {
+              visitNode(statement, nextExclusions);
+            });
           } else {
             visitNode(node.body, nextExclusions);
           }
@@ -382,7 +391,9 @@ const collectReferencesFromCall = (
       }
 
       if (node.body && ts.isBlock(node.body)) {
-        node.body.statements.forEach((statement) => visitNode(statement, nextExclusions));
+        node.body.statements.forEach((statement) => {
+          visitNode(statement, nextExclusions);
+        });
       }
       return;
     }
@@ -527,13 +538,16 @@ const collectTopLevelDefinitions = (
 
   const definitionNames = new Set<string>(pending.map((item) => item.exportName));
 
-  const definitions = pending.map((item) => ({
-    kind: item.kind,
-    exportName: item.exportName,
-    loc: item.loc,
-    references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
-    expression: item.expression,
-  } satisfies ModuleDefinition));
+  const definitions = pending.map(
+    (item) =>
+      ({
+        kind: item.kind,
+        exportName: item.exportName,
+        loc: item.loc,
+        references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
+        expression: item.expression,
+      }) satisfies ModuleDefinition,
+  );
 
   return { definitions, handledCalls };
 };

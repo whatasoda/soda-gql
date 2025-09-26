@@ -75,8 +75,6 @@ export const userSliceCatalog = {
       })),
     }),
     ({ select }) =>
-      select("$.users", (result) =>
-        result.safeUnwrap((data) => data.map((user) => userRemote.forIterate.transform(user))),
-      ),
+      select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userRemote.forIterate.transform(user)))),
   ),
 };

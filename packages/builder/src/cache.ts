@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import type { ModuleAnalysis } from "./ast/analyze-module";
 
@@ -41,7 +41,7 @@ export const createModuleCache = ({ rootDir }: ModuleCacheOptions): ModuleCache 
           return null;
         }
         return parsed;
-      } catch (error) {
+      } catch {
         return null;
       }
     },

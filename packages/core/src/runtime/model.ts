@@ -1,4 +1,4 @@
-import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, pseudoTypeAnnotation, type Model } from "../types";
+import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, type Model, pseudoTypeAnnotation } from "../types";
 
 type GeneratedModel = {
   typename: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
+// import { SliceResultError } from "../../../packages/core/src/runtime/operation-slice"; // unused import
 import type { ExecutionResultProjection } from "../../../packages/core/src/types/execution-result-projection";
-import { SliceResultError } from "../../../packages/core/src/runtime/operation-slice";
 
 describe("Type Safety Violations", () => {
   describe("ExecutionResultProjection validation", () => {
@@ -38,7 +38,7 @@ describe("Type Safety Violations", () => {
 
       // Parse the path to check for numeric segments
       const segments = projectionWithNumeric.projectFrom.split(".");
-      const hasNumericSegment = segments.some(seg => /^\d+$/.test(seg));
+      const hasNumericSegment = segments.some((seg) => /^\d+$/.test(seg));
 
       expect(hasNumericSegment).toBe(true);
     });
@@ -56,6 +56,7 @@ describe("Type Safety Violations", () => {
         if (typeof value !== "object" || value === null) {
           throw new Error("Expected object but got primitive");
         }
+        // biome-ignore lint/suspicious/noExplicitAny: test with invalid type assertion
         return (value as any).name; // Would fail
       };
 
@@ -120,7 +121,7 @@ describe("Type Safety Violations", () => {
 
       const validateArray = () => {
         if (!Array.isArray(data.items)) {
-          throw new Error("Expected array but got " + typeof data.items);
+          throw new Error(`Expected array but got ${typeof data.items}`);
         }
         return data.items;
       };

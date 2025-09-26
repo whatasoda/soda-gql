@@ -1,6 +1,6 @@
 import { createGql, define, defineScalar, pseudoTypeAnnotation, unsafeInputRef, unsafeOutputRef } from "./packages/core/src";
 import type { GraphqlRuntimeAdapter } from "./packages/core/src/types/adapter";
-import type { FieldPaths } from "./packages/core/src/types/field-path";
+// import type { FieldPaths } from "./packages/core/src/types/field-path"; // unused type import
 import type { InferFields } from "./packages/core/src/types/fields";
 import type { AnyGraphqlSchema } from "./packages/core/src/types/schema";
 
@@ -414,4 +414,4 @@ const _a: InferFields<Schema, ReturnType<typeof userModel.fragment>> = {
   ],
 };
 
-type a = FieldPaths<Schema, ReturnType<typeof userModel.fragment>>;
+// type _a = FieldPaths<Schema, ReturnType<typeof userModel.fragment>>; // debug type

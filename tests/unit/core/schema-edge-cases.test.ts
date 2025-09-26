@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeInputRef, unsafeOutputRef } from "../../../packages/core/src";
-import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
-import { createGqlHelpers } from "../../../packages/core/src/builder/schema";
 import { createFieldFactories } from "../../../packages/core/src/builder/fields-builder";
+import { createGqlHelpers } from "../../../packages/core/src/builder/schema";
+import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Non-existent field arguments", () => {
@@ -80,6 +80,7 @@ describe("Schema Edge Cases", () => {
             {
               // Create a field with an invalid kind by casting
               weirdField: {
+                // biome-ignore lint/suspicious/noExplicitAny: test with invalid field kind
                 kind: "invalid" as any,
                 type: ["String", "!"],
                 args: {},
