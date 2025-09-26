@@ -325,7 +325,7 @@ const collectIdentifiersFromPattern = (pattern: Pattern | null | undefined, into
   }
 };
 
-const collectParameterIdentifiers = (params: readonly Param[]): Set<string> => {
+const _collectParameterIdentifiers = (params: readonly Param[]): Set<string> => {
   const identifiers = new Set<string>();
   params.forEach((param) => {
     collectIdentifiersFromPattern(param.pat, identifiers);
@@ -707,6 +707,7 @@ const collectDiagnostics = (
 ): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const visit = (node: any) => {
     if (!node || typeof node !== "object") {
       return;
@@ -732,7 +733,9 @@ const collectDiagnostics = (
     });
   };
 
-  module.body.forEach((item) => visit(item));
+  module.body.forEach((item) => {
+    visit(item);
+  });
   return diagnostics;
 };
 

@@ -174,7 +174,6 @@ describe("Runtime Operation Error Handling", () => {
       const invalidResult = {
         type: "unknown-type",
         something: "weird",
-        // biome-ignore lint/suspicious/noExplicitAny: test with invalid type
       } as any;
 
       expect(() => parse(invalidResult)).toThrow("Invalid result type");

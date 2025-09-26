@@ -80,7 +80,6 @@ describe("Schema Edge Cases", () => {
             {
               // Create a field with an invalid kind by casting
               weirdField: {
-                // biome-ignore lint/suspicious/noExplicitAny: test with invalid field kind
                 kind: "invalid" as any,
                 type: ["String", "!"],
                 args: {},

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__codex__codex",
+      "mcp__codex__codex-reply",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(bun test:*)",
+      "Bash(bun quality:*)",
+      "Bash(bun typecheck:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

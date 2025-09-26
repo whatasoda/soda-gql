@@ -56,7 +56,6 @@ describe("Type Safety Violations", () => {
         if (typeof value !== "object" || value === null) {
           throw new Error("Expected object but got primitive");
         }
-        // biome-ignore lint/suspicious/noExplicitAny: test with invalid type assertion
         return (value as any).name; // Would fail
       };
 

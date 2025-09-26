@@ -367,7 +367,9 @@ const collectReferencesFromCall = (
   const visitNode = (node: ts.Node, exclusions: Set<string>) => {
     if (ts.isCallExpression(node)) {
       visitNode(node.expression, exclusions);
-      node.arguments.forEach((argument) => visitNode(argument, exclusions));
+      node.arguments.forEach((argument) => {
+        visitNode(argument, exclusions);
+      });
       return;
     }
 
