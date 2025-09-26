@@ -117,7 +117,7 @@ const accessDataByPathSegments = (data: object, pathSegments: string[]) => {
   return { data: current };
 };
 
-const createParse = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter, TOperationType extends OperationType>({
+export const createParse = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter, TOperationType extends OperationType>({
   slices,
   projectionPathGraph,
 }: {
