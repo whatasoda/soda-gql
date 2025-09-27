@@ -1,6 +1,5 @@
 import type { CallExpression, Expression, Identifier, MemberExpression } from "@babel/types";
 import * as t from "@babel/types";
-import type { PlainObject } from "../types";
 
 export const buildModelRuntimeCall = (
   runtimeId: Identifier,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const DocumentNodeSchema = z.object({
+const _DocumentNodeSchema = z.object({
   kind: z.literal("Document"),
   definitions: z.array(z.unknown()),
 });
