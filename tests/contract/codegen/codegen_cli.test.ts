@@ -2,34 +2,10 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runCodegenCli, assertCliSuccess, assertCliError, getProjectRoot } from "../../utils/cli";
+import { writeTestFile } from "../../utils";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-
-type CliResult = {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-};
-
-const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "codegen", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
-};
+const projectRoot = getProjectRoot();
 
 const createInjectModule = async (outFile: string) => {
   const contents = `\
@@ -116,10 +92,7 @@ describe("soda-gql codegen CLI", () => {
       injectFile,
     ]);
 
-    expect(result.exitCode).toBe(1);
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const payload = JSON.parse(result.stdout);
-    expect(payload.error.code).toBe("SCHEMA_NOT_FOUND");
+    assertCliError(result, "SCHEMA_NOT_FOUND");
   });
 
   it("returns schema validation error details for invalid schema", async () => {
