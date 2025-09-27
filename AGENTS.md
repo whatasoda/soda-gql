@@ -232,16 +232,25 @@ Both agents MUST maintain awareness of:
 
 ---
 
-## Use Bun instead of Node.js, npm, pnpm, or vite.
+## Package Management and Execution
 
-Default to using Bun instead of Node.js.
+### Use Bun as Package Manager
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
+Use Bun for package management and script execution:
+
 - Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Bun automatically loads .env, so don't use dotenv.
+- Use `bun test` instead of `jest` or `vitest`
+- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
+
+### Use Node.js APIs for Implementation
+
+For code implementation, use standard Node.js APIs:
+
+- Use Node.js `fs/promises` for file operations
+- Use Node.js `path` for path operations
+- Use Node.js runtime features and APIs
+- Keep code compatible with standard Node.js runtime
 
 ## Project: Zero-runtime GraphQL Query Generation
 
@@ -360,12 +369,11 @@ bun typecheck
   - Preserves type information
   - Better tree-shaking
 
-### Bun Specific
+### Runtime and Testing
 
-- Use Bun's built-in APIs over Node.js equivalents
-- `Bun.file()` over `fs.readFile()`
-- `bun:test` for testing
-- `bun:sqlite` for SQLite
+- Use Node.js APIs for implementation (`fs/promises`, `path`, etc.)
+- Use `bun:test` for testing framework
+- Maintain Node.js compatibility in production code
 
 ## Tool Utilities
 
