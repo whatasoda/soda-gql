@@ -1,5 +1,5 @@
+import type { BuilderArtifact } from "@soda-gql/builder";
 import type { NormalizedOptions } from "./options";
-import type { BuilderArtifact } from "./schemas/artifact";
 
 export type SodaGqlBabelOptions = {
   readonly mode: "runtime" | "zero-runtime";
