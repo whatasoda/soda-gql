@@ -243,6 +243,12 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 
   const transformed = ts.transform(sourceFile, [transformer]);
   const [transformedFile] = transformed.transformed;
+
+  if (!transformedFile) {
+    transformed.dispose();
+    throw new Error("RUNTIME_MODULE_TRANSFORM_FAILURE");
+  }
+
   const expressionStatement = transformedFile.statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
@@ -321,7 +327,13 @@ const replaceModelTransform = (expression: string): string => {
   };
 
   const transformed = ts.transform(sourceFile, [transformer]);
-  const transformedFile = transformed.transformed[0] as ts.SourceFile;
+  const [transformedFile] = transformed.transformed;
+
+  if (!transformedFile) {
+    transformed.dispose();
+    return expression;
+  }
+
   const expressionStatement = transformedFile.statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {

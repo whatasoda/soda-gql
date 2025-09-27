@@ -1,6 +1,15 @@
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
-import type { CallExpression, ImportDeclaration, MemberExpression, Module, Param, Pattern, Span } from "@swc/types";
+import type {
+  CallExpression,
+  ImportDeclaration,
+  MemberExpression,
+  Module,
+  Param,
+  Pattern,
+  Span,
+  VariableDeclaration,
+} from "@swc/types";
 
 import {
   type AnalyzeModuleInput,
@@ -112,9 +121,11 @@ const collectImports = (module: Module): ModuleImport[] => {
       "declaration" in item &&
       item.declaration &&
       "type" in item.declaration &&
-      item.declaration.type === "ImportDeclaration"
+      // biome-ignore lint/suspicious/noExplicitAny: SWC type cast
+      (item.declaration as any).type === "ImportDeclaration"
     ) {
-      handle(item.declaration as ImportDeclaration);
+      // biome-ignore lint/suspicious/noExplicitAny: SWC type cast
+      handle(item.declaration as any as ImportDeclaration);
     }
   });
 
@@ -156,7 +167,6 @@ const collectExports = (module: Module): ModuleExport[] => {
 
     if (declaration.type === "ExportNamedDeclaration") {
       const source = declaration.source?.value;
-      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
       // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
       declaration.specifiers?.forEach((specifier: any) => {
         if (specifier.type !== "ExportSpecifier") {
@@ -208,7 +218,8 @@ const collectExports = (module: Module): ModuleExport[] => {
         declaration.type === "ExportNamedDeclaration" ||
         declaration.type === "ExportAllDeclaration"
       ) {
-        handle(declaration as ExportDeclaration | ExportNamedDeclaration | ExportAllDeclaration);
+        // biome-ignore lint/suspicious/noExplicitAny: Complex SWC AST type
+        handle(declaration as any);
       }
     }
   });
@@ -222,8 +233,10 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     const declaration =
       item.type === "ImportDeclaration"
         ? item
-        : "declaration" in item && item.declaration && (item.declaration as any).type === "ImportDeclaration"
-          ? (item.declaration as ImportDeclaration)
+        : // biome-ignore lint/suspicious/noExplicitAny: SWC AST type checking
+          "declaration" in item && item.declaration && (item.declaration as any).type === "ImportDeclaration"
+          ? // biome-ignore lint/suspicious/noExplicitAny: SWC type cast
+            (item.declaration as any as ImportDeclaration)
           : null;
     if (!declaration) {
       return;

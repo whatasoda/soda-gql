@@ -446,12 +446,14 @@ export const createIntermediateModule = async ({
   }
 
   if (exportCollision) {
-    const filePath = exportCollision.incoming.split("::")[0] ?? outDir;
+    // biome-ignore lint/style/noNonNullAssertion: Type narrowing issue
+    const collision = exportCollision!;
+    const filePath = collision.incoming.split("::")[0] ?? outDir;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
-      exportName: exportCollision.name,
-      message: `RUNTIME_EXPORT_NAME_COLLISION:${exportCollision.existing}`,
+      exportName: collision.name,
+      message: `RUNTIME_EXPORT_NAME_COLLISION:${collision.existing}`,
     });
   }
 

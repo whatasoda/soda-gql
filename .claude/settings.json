@@ -8,6 +8,7 @@
       "Bash(bun test:*)",
       "Bash(bun quality:*)",
       "Bash(bun typecheck:*)",
+      "Bash(bun run biome:check:*)",
       "WebSearch"
     ],
     "deny": [],
