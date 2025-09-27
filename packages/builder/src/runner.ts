@@ -13,7 +13,7 @@ import { writeArtifact } from "./writer";
 export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult> => {
   const modules = loadModules({ entry: options.entry, analyzer: options.analyzer });
   if (modules.isErr()) {
-    return modules;
+    return err(modules.error);
   }
 
   const { stats, modules: analyses } = modules.value;
@@ -33,7 +33,7 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
   });
 
   if (runtimeModule.isErr()) {
-    return runtimeModule;
+    return err(runtimeModule.error);
   }
 
   if (options.debugDir) {
@@ -51,7 +51,7 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
   });
 
   if (artifactResult.isErr()) {
-    return artifactResult;
+    return err(artifactResult.error);
   }
 
   if (options.debugDir) {
