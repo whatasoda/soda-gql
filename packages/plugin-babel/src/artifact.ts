@@ -1,18 +1,42 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
-import { createCanonicalId } from "@soda-gql/builder";
+import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
+import { err, ok, type Result } from "neverthrow";
+import { BuilderArtifactSchema } from "./schemas/artifact";
 
-export const loadArtifact = (path: string): BuilderArtifact => {
+export type ArtifactError = {
+  type: "ArtifactError";
+  code: "NOT_FOUND" | "PARSE_FAILED" | "VALIDATION_FAILED";
+  path: string;
+  message: string;
+};
+
+export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactError> => {
   const resolvedPath = resolve(path);
 
   if (!existsSync(resolvedPath)) {
-    throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
+    return err({
+      type: "ArtifactError",
+      code: "NOT_FOUND",
+      path: resolvedPath,
+      message: "Artifact file not found",
+    });
   }
 
-  const contents = readFileSync(resolvedPath, "utf8");
-  return JSON.parse(contents) as BuilderArtifact;
+  try {
+    const contents = readFileSync(resolvedPath, "utf8");
+    const parsed = JSON.parse(contents);
+    const validated = BuilderArtifactSchema.parse(parsed);
+    return ok(validated as unknown as BuilderArtifact);
+  } catch (error) {
+    return err({
+      type: "ArtifactError",
+      code: error instanceof SyntaxError ? "PARSE_FAILED" : "VALIDATION_FAILED",
+      path: resolvedPath,
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 };
 
 export const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =>
@@ -30,18 +54,20 @@ export const lookupRef = (
   }
 
   if (entry.kind === "operation") {
+    const metadata = entry.metadata as { readonly canonicalDocument: string; readonly dependencies: readonly string[] };
     return {
       kind: "query",
-      document: entry.metadata.canonicalDocument,
-      dependencies: entry.metadata.dependencies,
+      document: metadata.canonicalDocument,
+      dependencies: metadata.dependencies,
     };
   }
 
   if (entry.kind === "slice") {
+    const metadata = entry.metadata as { readonly dependencies: readonly string[]; readonly canonicalDocuments: readonly string[] };
     return {
       kind: "slice",
-      document: entry.metadata.canonicalDocuments[0],
-      dependencies: entry.metadata.dependencies,
+      document: metadata.canonicalDocuments[0],
+      dependencies: metadata.dependencies,
     };
   }
 

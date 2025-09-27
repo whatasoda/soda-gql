@@ -79,7 +79,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   ): expression is ts.ArrowFunction | ts.FunctionExpression =>
     Boolean(expression && (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)));
 
-  const maybeSanitiseTransform = (call: ts.CallExpression): ts.CallExpression => {
+  const maybesanitizeTransform = (call: ts.CallExpression): ts.CallExpression => {
     if (!ts.isPropertyAccessExpression(call.expression)) {
       return call;
     }
@@ -198,7 +198,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
       }
 
       if (ts.isCallExpression(node)) {
-        const updated = maybeSanitiseTransform(node);
+        const updated = maybesanitizeTransform(node);
         if (updated !== node) {
           return ts.visitEachChild(updated, visit, context);
         }
@@ -209,9 +209,9 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
             const args = [...node.arguments];
             const resolver = args[2];
             if (resolver && shouldReplaceTransform(resolver)) {
-              const sanitised = sanitizeSelectResolver(resolver);
-              if (sanitised !== resolver) {
-                args[2] = sanitised;
+              const sanitized = sanitizeSelectResolver(resolver);
+              if (sanitized !== resolver) {
+                args[2] = sanitized;
                 return ts.visitEachChild(
                   ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args),
                   visit,
@@ -315,7 +315,10 @@ const replaceModelTransform = (expression: string): string => {
           (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) ||
             ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))
         ) {
-          args[2] = createRuntimePlaceholder(unwrapNullish(args[2], "safe-array-item-access"));
+          const transform = unwrapNullish(args[2], "safe-array-item-access");
+          if (ts.isArrowFunction(transform) || ts.isFunctionExpression(transform)) {
+            args[2] = createRuntimePlaceholder(transform);
+          }
           return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
         }
       }
@@ -442,13 +445,14 @@ export const createIntermediateModule = async ({
     });
   }
 
-  if (exportCollision) {
-    const filePath = exportCollision.incoming.split("::")[0] ?? outDir;
+  if (exportCollision !== null) {
+    const collision = exportCollision as { readonly name: string; readonly existing: string; readonly incoming: string };
+    const filePath = collision.incoming.split("::")[0] ?? outDir;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
-      exportName: exportCollision.name,
-      message: `RUNTIME_EXPORT_NAME_COLLISION:${exportCollision.existing}`,
+      exportName: collision.name,
+      message: `RUNTIME_EXPORT_NAME_COLLISION:${collision.existing}`,
     });
   }
 

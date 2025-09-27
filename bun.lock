@@ -15,8 +15,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@soda-gql/codegen": "workspace:*",
-        "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "@soda-gql/tool-utils": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",
@@ -34,7 +32,6 @@
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
-        "commander": "^12.0.0",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
       },
@@ -211,8 +208,6 @@
     "bun-types": ["bun-types@1.2.21", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-sa2Tj77Ijc/NTLS0/Odjq/qngmEPZfbfnOERi0KRUYhT9R8M4VBioWVmMWE5GrYbKMc+5lVybXygLdibHaqVqw=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001741", "", {}, "sha512-QGUGitqsc8ARjLdgAfxETDhRbJ0REsP6O3I96TAth/mVjh2cYzN2u+3AzPP3aVSm2FehEItaJw1xd+IGBXWeSw=="],
-
-    "commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 

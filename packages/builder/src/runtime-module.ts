@@ -25,7 +25,7 @@ const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) 
   return ts.factory.updateFunctionExpression(fn, fn.modifiers, undefined, fn.name, [], [], undefined, block);
 };
 
-const indentLines = (value: string, indent: string): string =>
+const _indentLines = (value: string, indent: string): string =>
   value
     .split("\n")
     .map((line, index) => (index === 0 ? line : `${indent}${line}`))
@@ -38,9 +38,7 @@ const formatFactory = (expression: string): string => {
   }
 
   const lines = trimmed.split("\n").map((line) => line.trimEnd());
-  const indented = lines
-    .map((line, index) => (index === 0 ? line : `    ${line}`))
-    .join("\n");
+  const indented = lines.map((line, index) => (index === 0 ? line : `    ${line}`)).join("\n");
 
   return `(\n    ${indented}\n  )`;
 };
@@ -81,7 +79,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   ): expression is ts.ArrowFunction | ts.FunctionExpression =>
     Boolean(expression && (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)));
 
-  const maybeSanitiseTransform = (call: ts.CallExpression): ts.CallExpression => {
+  const maybesanitizeTransform = (call: ts.CallExpression): ts.CallExpression => {
     if (!ts.isPropertyAccessExpression(call.expression)) {
       return call;
     }
@@ -200,7 +198,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
       }
 
       if (ts.isCallExpression(node)) {
-        const updated = maybeSanitiseTransform(node);
+        const updated = maybesanitizeTransform(node);
         if (updated !== node) {
           return ts.visitEachChild(updated, visit, context);
         }
@@ -211,9 +209,9 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
             const args = [...node.arguments];
             const resolver = args[2];
             if (resolver && shouldReplaceTransform(resolver)) {
-              const sanitised = sanitizeSelectResolver(resolver);
-              if (sanitised !== resolver) {
-                args[2] = sanitised;
+              const sanitized = sanitizeSelectResolver(resolver);
+              if (sanitized !== resolver) {
+                args[2] = sanitized;
                 return ts.visitEachChild(
                   ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args),
                   visit,
@@ -245,6 +243,12 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 
   const transformed = ts.transform(sourceFile, [transformer]);
   const [transformedFile] = transformed.transformed;
+
+  if (!transformedFile) {
+    transformed.dispose();
+    throw new Error("RUNTIME_MODULE_TRANSFORM_FAILURE");
+  }
+
   const expressionStatement = transformedFile.statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
@@ -310,8 +314,9 @@ const replaceModelTransform = (expression: string): string => {
     const visit: ts.Visitor = (node) => {
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "model") {
         const args = [...node.arguments];
-        if (args.length >= 3 && (ts.isArrowFunction(args[2]) || ts.isFunctionExpression(args[2]))) {
-          args[2] = createRuntimePlaceholder(args[2]);
+        const thirdArg = args[2];
+        if (args.length >= 3 && thirdArg && (ts.isArrowFunction(thirdArg) || ts.isFunctionExpression(thirdArg))) {
+          args[2] = createRuntimePlaceholder(thirdArg);
           return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
         }
       }
@@ -323,7 +328,13 @@ const replaceModelTransform = (expression: string): string => {
   };
 
   const transformed = ts.transform(sourceFile, [transformer]);
-  const transformedFile = transformed.transformed[0] as ts.SourceFile;
+  const [transformedFile] = transformed.transformed;
+
+  if (!transformedFile) {
+    transformed.dispose();
+    return expression;
+  }
+
   const expressionStatement = transformedFile.statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
@@ -373,7 +384,11 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   const slices: string[] = [];
   const operations: string[] = [];
   const missing: DependencyGraphNode[] = [];
-  const namedExportEntries: Array<{ readonly accessor: "models" | "slices" | "operations"; readonly name: string; readonly canonicalId: string }> = [];
+  const namedExportEntries: Array<{
+    readonly accessor: "models" | "slices" | "operations";
+    readonly name: string;
+    readonly canonicalId: string;
+  }> = [];
   const documentExports: Array<{ readonly name: string; readonly canonicalId: string }> = [];
   const usedExportNames = new Map<string, string>();
   let exportCollision: { readonly name: string; readonly existing: string; readonly incoming: string } | null = null;
@@ -432,12 +447,15 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   }
 
   if (exportCollision) {
-    const filePath = exportCollision.incoming.split("::")[0] ?? outDir;
+    // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
+    const filePath = (exportCollision as any).incoming.split("::")[0] ?? outDir;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
-      exportName: exportCollision.name,
-      message: `RUNTIME_EXPORT_NAME_COLLISION:${exportCollision.existing}`,
+      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
+      exportName: (exportCollision as any).name,
+      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
+      message: `RUNTIME_EXPORT_NAME_COLLISION:${(exportCollision as any).existing}`,
     });
   }
 

@@ -5,11 +5,14 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import { parse } from "@babel/parser";
 import traverse, { type Binding, type NodePath } from "@babel/traverse";
-import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
+import { type BuilderArtifact, type CanonicalId, createRuntimeBindingName } from "@soda-gql/builder";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import type { DefinitionNode, DocumentNode, FieldNode, SelectionNode } from "graphql";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
+import { buildLiteralFromValue, clone } from "./transform/ast-builders";
+import { collectSelectPaths } from "./transform/projection-utils";
+import { extractOperationVariableNames } from "./transform/variable-utils";
 import type { SodaGqlBabelOptions } from "./types";
 
 type SourceCacheEntry = {
@@ -23,8 +26,6 @@ export type PluginState = {
 };
 
 type PluginPassState = PluginPass & { _state?: PluginState };
-
-type PlainObject = Record<string, unknown>;
 
 type SupportedMethod = "model" | "querySlice" | "query";
 
@@ -56,7 +57,7 @@ const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly s
   const segments: string[] = [];
 
   while (current) {
-    const parent = current.parentPath;
+    const parent: NodePath<t.Node> | null = current.parentPath;
     if (!parent) {
       return null;
     }
@@ -212,7 +213,7 @@ const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
     (statement) => statement.type === "ImportDeclaration" && statement.source.value === "@soda-gql/runtime",
   );
 
-  if (existing) {
+  if (existing && t.isImportDeclaration(existing)) {
     const hasSpecifier = existing.specifiers.some(
       (specifier) =>
         specifier.type === "ImportSpecifier" &&
@@ -261,43 +262,6 @@ const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
   declaration.replaceWith(t.importDeclaration(remainingSpecifiers, declaration.node.source));
 };
 
-const clone = <T extends t.Node>(node: T): T => t.cloneNode(node, /* deep */ true);
-
-const buildLiteralFromValue = (value: unknown): t.Expression => {
-  if (value === null) {
-    return t.nullLiteral();
-  }
-
-  if (value === undefined) {
-    return t.unaryExpression("void", t.numericLiteral(0));
-  }
-
-  if (typeof value === "string") {
-    return t.stringLiteral(value);
-  }
-
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? t.numericLiteral(value) : t.numericLiteral(value);
-  }
-
-  if (typeof value === "boolean") {
-    return t.booleanLiteral(value);
-  }
-
-  if (Array.isArray(value)) {
-    return t.arrayExpression(value.map((entry) => buildLiteralFromValue(entry)));
-  }
-
-  if (typeof value === "object") {
-    const props = Object.entries(value as PlainObject).map(([key, entry]) =>
-      t.objectProperty(t.stringLiteral(key), buildLiteralFromValue(entry)),
-    );
-    return t.objectExpression(props);
-  }
-
-  throw new Error(`Unsupported literal value in builder artifact: ${String(value)}`);
-};
-
 const convertTypeRefCall = (expression: t.Expression): t.Expression => {
   if (!t.isCallExpression(expression) || !t.isMemberExpression(expression.callee)) {
     throw new Error("Expected gql.* call in type reference");
@@ -327,14 +291,14 @@ const convertTypeRefCall = (expression: t.Expression): t.Expression => {
     t.objectProperty(t.identifier("modifier"), modifier),
   ];
 
-  if (defaultArg) {
+  if (defaultArg && !t.isArgumentPlaceholder(defaultArg) && !t.isSpreadElement(defaultArg)) {
     properties.push(t.objectProperty(t.identifier("defaultValue"), clone(defaultArg)));
   }
 
   return t.objectExpression(properties);
 };
 
-const convertVariablesObject = (node: t.Expression): t.Expression => {
+const convertVariablesObjectExpression = (node: t.Expression): t.Expression => {
   if (t.isNullLiteral(node)) {
     return t.nullLiteral();
   }
@@ -353,63 +317,6 @@ const convertVariablesObject = (node: t.Expression): t.Expression => {
   });
 
   return t.objectExpression(props);
-};
-
-const convertSliceVariables = (node: t.Expression | undefined): t.Expression | null => {
-  if (!node) {
-    return null;
-  }
-
-  if (!t.isArrayExpression(node) || node.elements.length === 0) {
-    return null;
-  }
-
-  const [element] = node.elements;
-  if (!element || !t.isObjectExpression(element)) {
-    return null;
-  }
-
-  return convertVariablesObject(element);
-};
-
-const collectSelectPaths = (expression: t.Expression): readonly string[] => {
-  const paths: string[] = [];
-
-  const visit = (node: t.Node) => {
-    if (t.isCallExpression(node)) {
-      const callee = node.callee;
-      const isSelect =
-        (t.isIdentifier(callee) && callee.name === "select") ||
-        (t.isMemberExpression(callee) && t.isIdentifier(callee.property, { name: "select" }));
-
-      if (isSelect) {
-        const [first] = node.arguments;
-        if (first && t.isStringLiteral(first)) {
-          paths.push(first.value);
-        }
-      }
-    }
-
-    const keys = t.VISITOR_KEYS[node.type] ?? [];
-    for (const key of keys) {
-      const value = (node as unknown as Record<string, unknown>)[key];
-      if (Array.isArray(value)) {
-        value.forEach((child) => {
-          if (child && typeof child === "object") {
-            visit(child as t.Node);
-          }
-        });
-        continue;
-      }
-
-      if (value && typeof value === "object") {
-        visit(value as t.Node);
-      }
-    }
-  };
-
-  visit(expression);
-  return paths;
 };
 
 const collectCalleeSegments = (callee: t.Expression): readonly string[] => {
@@ -476,7 +383,8 @@ const resolveCanonicalIdFromBinding = (
 
     const importSource = importDeclaration.node.source.value;
     const resolved = resolveImportPath(filename, importSource);
-    const importedName = bindingPath.node.imported?.name ?? bindingPath.node.local.name;
+    const imported = bindingPath.node.imported;
+    const importedName = imported ? (t.isIdentifier(imported) ? imported.name : imported.value) : bindingPath.node.local.name;
     const exportPath = [importedName, ...segments.slice(1)].join(".");
 
     if (resolved) {
@@ -563,10 +471,13 @@ const resolveSliceCanonicalId = (
   const exportPath = segments.join(".");
   const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0] ?? null;
   }
 
   const root = segments[0];
+  if (!root) {
+    return null;
+  }
   const binding = calleePath.scope.getBinding(root);
   if (binding) {
     const resolved = resolveCanonicalIdFromBinding(binding, segments, dependencies, filename);
@@ -576,7 +487,7 @@ const resolveSliceCanonicalId = (
   }
 
   if (matches.length > 0) {
-    return matches[0];
+    return matches[0] ?? null;
   }
 
   const localCanonical = resolveCanonicalId(filename, exportPath);
@@ -641,7 +552,7 @@ const createFieldPathSegments = (path: string): readonly string[] => {
   return segments.slice(1);
 };
 
-const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): ProjectionPathGraphNode => {
+const _buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): ProjectionPathGraphNode => {
   type NormalizedPath = { readonly label: string; readonly path: string; readonly segments: readonly string[] };
 
   const deduped = Array.from(
@@ -717,7 +628,7 @@ const buildProjectionPathGraph = (entries: readonly ProjectionEntry[]): Projecti
   return build(normalized);
 };
 
-const projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
+const _projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
   t.objectExpression([
     t.objectProperty(
       t.identifier("matches"),
@@ -735,7 +646,7 @@ const projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
       t.identifier("children"),
       t.objectExpression(
         Object.entries(graph.children).map(([segment, node]) =>
-          t.objectProperty(t.stringLiteral(segment), projectionGraphToAst(node)),
+          t.objectProperty(t.stringLiteral(segment), _projectionGraphToAst(node)),
         ),
       ),
     ),
@@ -775,13 +686,13 @@ const collectSliceUsageEntries = (
     }
 
     const projectionBuilder = getOriginalArgument(state, canonicalId, "querySlice", 2);
-    if (!projectionBuilder) {
+    if (!projectionBuilder || !t.isObjectExpression(projectionBuilder)) {
       return;
     }
     const rootFieldKeys = getSliceRootFieldKeys(state.artifact, canonicalId);
     const paths = collectSelectPaths(projectionBuilder);
-    paths.forEach((path) => {
-      entries.push({ label, path, rootFieldKeys });
+    paths.forEach((entry) => {
+      entries.push({ label, path: entry.path, rootFieldKeys });
     });
   });
 
@@ -952,33 +863,6 @@ const getSliceRootFieldKeys = (artifact: BuilderArtifact, canonicalId: string): 
   return rootKeys;
 };
 
-const extractOperationVariableNames = (documentAst: DocumentNode | undefined): readonly string[] => {
-  if (!documentAst || documentAst.kind !== "Document" || !Array.isArray(documentAst.definitions)) {
-    return [];
-  }
-
-  const variableNames: string[] = [];
-
-  documentAst.definitions.forEach((definition) => {
-    if (definition.kind !== "OperationDefinition" || !Array.isArray(definition.variableDefinitions)) {
-      return;
-    }
-
-    definition.variableDefinitions.forEach((variableDefinition) => {
-      const name = variableDefinition.variable?.name?.value;
-      if (typeof name !== "string" || name.length === 0) {
-        return;
-      }
-
-      if (!variableNames.includes(name)) {
-        variableNames.push(name);
-      }
-    });
-  });
-
-  return variableNames;
-};
-
 const getRuntimeCanonicalId = (callPath: NodePath<t.CallExpression>, method: SupportedMethod): string | null => {
   const factoryName = method === "model" ? "createModel" : method === "querySlice" ? "createSlice" : "createOperation";
 
@@ -1053,7 +937,7 @@ const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
     }
     properties.push(t.objectProperty(t.identifier("typename"), clone(typenameNode)));
     if (variablesNode && t.isObjectExpression(variablesNode)) {
-      properties.push(t.objectProperty(t.identifier("variables"), convertVariablesObject(variablesNode)));
+      properties.push(t.objectProperty(t.identifier("variables"), convertVariablesObjectExpression(variablesNode)));
     }
   } else {
     throw new Error("Unsupported target for gql.model");
@@ -1080,7 +964,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   const properties: t.ObjectProperty[] = [];
   const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
-  const variablesExpr = convertSliceVariables(variables);
+  const variablesExpr = variables && t.isExpression(variables) ? convertVariablesObjectExpression(variables) : undefined;
   if (variablesExpr) {
     properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
   }
@@ -1135,17 +1019,18 @@ const buildQueryRuntimeComponents = (
   const dependencies = Array.isArray(refEntry.dependencies) ? refEntry.dependencies : [];
   const slicesBuilderPath = callPath.get("arguments")[2] as NodePath<t.Expression>;
   const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
-  const projectionGraph = projectionEntries.length > 0 ? buildProjectionPathGraph(projectionEntries) : null;
+  const projectionGraph = projectionEntries.length > 0 ? _buildProjectionPathGraph(projectionEntries) : null;
 
-  const runtimeName = createRuntimeBindingName(canonicalId, exportName);
+  const runtimeName = createRuntimeBindingName(canonicalId as CanonicalId, exportName);
   const documentIdentifier = `${runtimeName}Document`;
 
-  const documentExpression = buildLiteralFromValue(documentEntry.ast as PlainObject);
+  // biome-ignore lint/suspicious/noExplicitAny: Complex type conversion
+  const documentExpression = buildLiteralFromValue(documentEntry.ast as any as Record<string, unknown>);
   const documentDeclaration = t.variableDeclaration("const", [
     t.variableDeclarator(t.identifier(documentIdentifier), documentExpression),
   ]);
 
-  const variableNames = extractOperationVariableNames(documentEntry.ast as DocumentNode | undefined);
+  const variableNames = extractOperationVariableNames(JSON.stringify(documentEntry.ast));
   const properties: t.ObjectProperty[] = [
     t.objectProperty(t.identifier("name"), clone(nameArg)),
     t.objectProperty(t.identifier("document"), t.identifier(documentIdentifier)),
@@ -1158,10 +1043,12 @@ const buildQueryRuntimeComponents = (
     ),
   );
 
-  properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
+  if (t.isExpression(slicesBuilder)) {
+    properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
+  }
 
   if (projectionGraph) {
-    properties.push(t.objectProperty(t.identifier("projectionPathGraph"), projectionGraphToAst(projectionGraph)));
+    properties.push(t.objectProperty(t.identifier("projectionPathGraph"), _projectionGraphToAst(projectionGraph)));
   }
 
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("query")), [
@@ -1180,8 +1067,17 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
   name: "@soda-gql/plugin-babel",
   pre() {
     const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
-    const options = normalizeOptions(rawOptions);
-    const artifact = loadArtifact(options.artifactsPath);
+    const optionsResult = normalizeOptions(rawOptions);
+    if (!optionsResult.isOk()) {
+      throw new Error(optionsResult.error.message);
+    }
+    const options = optionsResult.value;
+
+    const artifactResult = loadArtifact(options.artifactsPath);
+    if (!artifactResult.isOk()) {
+      throw new Error(artifactResult.error.message);
+    }
+    const artifact = artifactResult.value;
 
     this._state = {
       options,
