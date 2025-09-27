@@ -2,97 +2,33 @@ import { resolve } from "node:path";
 import type { CodegenCliCommand, CodegenError, CodegenFormat, CodegenOptions, CodegenSuccess } from "@soda-gql/codegen";
 import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { err, ok } from "neverthrow";
+import { CodegenArgsSchema } from "../schemas/args";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
+import { parseArgs } from "../utils/parse-args";
 
 const parseCodegenArgs = (argv: readonly string[]) => {
-  const args = [...argv];
-  let schemaPath: string | undefined;
-  let outPath: string | undefined;
-  let format: CodegenFormat = "human";
-  let injectFromPath: string | undefined;
-  let injectTemplatePath: string | undefined;
+  const parsed = parseArgs([...argv], CodegenArgsSchema);
 
-  while (args.length > 0) {
-    const current = args.shift();
-    if (!current) {
-      break;
-    }
-
-    switch (current) {
-      case "--schema": {
-        const value = args.shift();
-        if (!value) {
-          return err<CodegenCliCommand, CodegenError>({
-            code: "SCHEMA_NOT_FOUND",
-            message: "Schema path not provided",
-            schemaPath: "",
-          });
-        }
-        schemaPath = value;
-        break;
-      }
-      case "--out": {
-        const value = args.shift();
-        if (!value) {
-          return err<CodegenCliCommand, CodegenError>({
-            code: "EMIT_FAILED",
-            message: "Output path not provided",
-            outPath: "",
-          });
-        }
-        outPath = value;
-        break;
-      }
-      case "--inject-from": {
-        const value = args.shift();
-        if (!value) {
-          return err<CodegenCliCommand, CodegenError>({
-            code: "INJECT_MODULE_REQUIRED",
-            message: "Inject module path not provided",
-          });
-        }
-        injectFromPath = value;
-        break;
-      }
-      case "--emit-inject-template": {
-        const value = args.shift();
-        if (!value) {
-          return err<CodegenCliCommand, CodegenError>({
-            code: "INJECT_TEMPLATE_FAILED",
-            message: "Inject template output path not provided",
-            outPath: "",
-          });
-        }
-        injectTemplatePath = value;
-        break;
-      }
-      case "--format": {
-        const value = args.shift();
-        const supportedFormats = ["json", "human"];
-        if (!value || !supportedFormats.includes(value)) {
-          return err<CodegenCliCommand, CodegenError>({
-            code: "SCHEMA_INVALID",
-            message: `Unsupported format: ${value ?? ""}`,
-            schemaPath: schemaPath ?? "",
-          });
-        }
-        format = value as CodegenFormat;
-        break;
-      }
-      default:
-        break;
-    }
+  if (!parsed.isOk()) {
+    return err<CodegenCliCommand, CodegenError>({
+      code: "EMIT_FAILED",
+      message: parsed.error,
+      outPath: "",
+    });
   }
 
-  if (injectTemplatePath) {
+  const args = parsed.value;
+  const format = args.format as CodegenFormat;
+
+  if (args["emit-inject-template"]) {
     return ok<CodegenCliCommand, CodegenError>({
       kind: "emitInjectTemplate",
-      outPath: injectTemplatePath,
+      outPath: args["emit-inject-template"],
       format,
     });
   }
 
-  if (!schemaPath) {
+  if (!args.schema) {
     return err<CodegenCliCommand, CodegenError>({
       code: "SCHEMA_NOT_FOUND",
       message: "Schema path not provided",
@@ -100,7 +36,7 @@ const parseCodegenArgs = (argv: readonly string[]) => {
     });
   }
 
-  if (!outPath) {
+  if (!args.out) {
     return err<CodegenCliCommand, CodegenError>({
       code: "EMIT_FAILED",
       message: "Output path not provided",
@@ -108,7 +44,7 @@ const parseCodegenArgs = (argv: readonly string[]) => {
     });
   }
 
-  if (!injectFromPath) {
+  if (!args["inject-from"]) {
     return err<CodegenCliCommand, CodegenError>({
       code: "INJECT_MODULE_REQUIRED",
       message: "--inject-from is required",
@@ -118,10 +54,10 @@ const parseCodegenArgs = (argv: readonly string[]) => {
   return ok<CodegenCliCommand, CodegenError>({
     kind: "generate",
     options: {
-      schemaPath,
-      outPath,
+      schemaPath: args.schema,
+      outPath: args.out,
       format,
-      injectFromPath,
+      injectFromPath: args["inject-from"],
     },
   });
 };

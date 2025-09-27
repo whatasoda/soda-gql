@@ -1,18 +1,43 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/builder";
 import { createCanonicalId } from "@soda-gql/builder";
+import { err, ok, type Result } from "neverthrow";
+import { type BuilderArtifact, BuilderArtifactSchema } from "./schemas/artifact";
 
-export const loadArtifact = (path: string): BuilderArtifact => {
+export type ArtifactError = {
+  type: "ArtifactError";
+  code: "NOT_FOUND" | "PARSE_FAILED" | "VALIDATION_FAILED";
+  path: string;
+  message: string;
+};
+
+export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactError> => {
   const resolvedPath = resolve(path);
 
   if (!existsSync(resolvedPath)) {
-    throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
+    return err({
+      type: "ArtifactError",
+      code: "NOT_FOUND",
+      path: resolvedPath,
+      message: "Artifact file not found",
+    });
   }
 
-  const contents = readFileSync(resolvedPath, "utf8");
-  return JSON.parse(contents) as BuilderArtifact;
+  try {
+    const contents = readFileSync(resolvedPath, "utf8");
+    const parsed = JSON.parse(contents);
+    const validated = BuilderArtifactSchema.parse(parsed);
+    return ok(validated);
+  } catch (error) {
+    return err({
+      type: "ArtifactError",
+      code: error instanceof SyntaxError ? "PARSE_FAILED" : "VALIDATION_FAILED",
+      path: resolvedPath,
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 };
 
 export const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =>

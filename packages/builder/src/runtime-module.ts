@@ -38,9 +38,7 @@ const formatFactory = (expression: string): string => {
   }
 
   const lines = trimmed.split("\n").map((line) => line.trimEnd());
-  const indented = lines
-    .map((line, index) => (index === 0 ? line : `    ${line}`))
-    .join("\n");
+  const indented = lines.map((line, index) => (index === 0 ? line : `    ${line}`)).join("\n");
 
   return `(\n    ${indented}\n  )`;
 };
@@ -373,7 +371,11 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   const slices: string[] = [];
   const operations: string[] = [];
   const missing: DependencyGraphNode[] = [];
-  const namedExportEntries: Array<{ readonly accessor: "models" | "slices" | "operations"; readonly name: string; readonly canonicalId: string }> = [];
+  const namedExportEntries: Array<{
+    readonly accessor: "models" | "slices" | "operations";
+    readonly name: string;
+    readonly canonicalId: string;
+  }> = [];
   const documentExports: Array<{ readonly name: string; readonly canonicalId: string }> = [];
   const usedExportNames = new Map<string, string>();
   let exportCollision: { readonly name: string; readonly existing: string; readonly incoming: string } | null = null;
