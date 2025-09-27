@@ -31,15 +31,15 @@ export const cloneCallExpression = (node: t.CallExpression): t.CallExpression =>
 
 export const stripTypeAnnotations = (node: t.Node): void => {
   if ("typeParameters" in node) {
-    // biome-ignore lint/performance/noDelete: babel requires deletion
+    // @ts-expect-error - babel requires deletion
     delete node.typeParameters;
   }
   if ("typeAnnotation" in node) {
-    // biome-ignore lint/performance/noDelete: babel requires deletion
+    // @ts-expect-error - babel requires deletion
     delete node.typeAnnotation;
   }
   if ("returnType" in node) {
-    // biome-ignore lint/performance/noDelete: babel requires deletion
+    // @ts-expect-error - babel requires deletion
     delete node.returnType;
   }
 };

@@ -1,4 +1,3 @@
-import type { types as BabelTypes, NodePath } from "@babel/core";
 import type { Expression, ObjectExpression, ObjectProperty } from "@babel/types";
 import * as t from "@babel/types";
 import type { ProjectionEntry, ProjectionPathGraphNode } from "../types";

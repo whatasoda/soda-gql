@@ -25,7 +25,7 @@ const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) 
   return ts.factory.updateFunctionExpression(fn, fn.modifiers, undefined, fn.name, [], [], undefined, block);
 };
 
-const indentLines = (value: string, indent: string): string =>
+const _indentLines = (value: string, indent: string): string =>
   value
     .split("\n")
     .map((line, index) => (index === 0 ? line : `${indent}${line}`))
