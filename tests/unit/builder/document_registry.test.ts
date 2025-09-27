@@ -4,7 +4,7 @@ import { ok } from "neverthrow";
 import { createCanonicalId, createDocumentRegistry } from "../../../packages/builder/src/registry";
 
 describe("canonical identifier helpers", () => {
-  it("normalises absolute file paths and export names", () => {
+  it("normalizes absolute file paths and export names", () => {
     const id = createCanonicalId("/app/src/../src/entities/user.ts", "userSlice");
     expect(id).toBe("/app/src/entities/user.ts::userSlice");
   });

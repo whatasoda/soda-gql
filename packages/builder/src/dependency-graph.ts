@@ -19,7 +19,7 @@ export type DependencyGraphError = {
   readonly chain: readonly CanonicalId[];
 };
 
-const normalisePath = (value: string): string => normalize(value).replace(/\\/g, "/");
+const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
 const resolveModuleSpecifier = (
   currentFile: string,
@@ -30,7 +30,7 @@ const resolveModuleSpecifier = (
     return null;
   }
 
-  const base = normalisePath(resolvePath(dirname(currentFile), specifier));
+  const base = normalizePath(resolvePath(dirname(currentFile), specifier));
   const possible = [
     base,
     `${base}.ts`,
@@ -42,7 +42,7 @@ const resolveModuleSpecifier = (
   ];
 
   for (const candidate of possible) {
-    const module = candidates.get(normalisePath(candidate));
+    const module = candidates.get(normalizePath(candidate));
     if (module) {
       return module;
     }
@@ -58,7 +58,7 @@ const buildExportTable = (
   const table = new Map<string, Map<string, CanonicalId>>();
 
   modules.forEach((mod) => {
-    const modulePath = normalisePath(mod.filePath);
+    const modulePath = normalizePath(mod.filePath);
     const exports = table.get(modulePath) ?? new Map<string, CanonicalId>();
 
     mod.definitions.forEach((definition) => {
@@ -81,7 +81,7 @@ const buildExportTable = (
 
   // Resolve re-exports in a second pass
   modules.forEach((mod) => {
-    const modulePath = normalisePath(mod.filePath);
+    const modulePath = normalizePath(mod.filePath);
     const exports = table.get(modulePath) ?? new Map<string, CanonicalId>();
 
     mod.exports.forEach((entry) => {
@@ -94,7 +94,7 @@ const buildExportTable = (
         return;
       }
 
-      const targetExports = table.get(normalisePath(targetModule.filePath));
+      const targetExports = table.get(normalizePath(targetModule.filePath));
       if (!targetExports) {
         return;
       }
@@ -123,7 +123,7 @@ const buildModuleImportMap = (
   moduleLookup: ReadonlyMap<string, ModuleAnalysis>,
 ): Map<string, CanonicalId> => {
   const map = new Map<string, CanonicalId>();
-  const modulePath = normalisePath(module.filePath);
+  const modulePath = normalizePath(module.filePath);
   const selfExports = exportTable.get(modulePath) ?? new Map<string, CanonicalId>();
 
   selfExports.forEach((canonicalId, exportName) => {
@@ -140,7 +140,7 @@ const buildModuleImportMap = (
       return;
     }
 
-    const targetExports = exportTable.get(normalisePath(targetModule.filePath));
+    const targetExports = exportTable.get(normalizePath(targetModule.filePath));
     if (!targetExports) {
       return;
     }
@@ -226,14 +226,14 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
 
   const moduleLookup = new Map<string, ModuleAnalysis>();
   modules.forEach((module) => {
-    moduleLookup.set(normalisePath(module.filePath), module);
+    moduleLookup.set(normalizePath(module.filePath), module);
   });
 
   const exportTable = buildExportTable(modules, moduleLookup);
 
   modules.forEach((module) => {
     const referenceMap = buildModuleImportMap(module, exportTable, moduleLookup);
-    // const _modulePath = normalisePath(module.filePath); // unused variable
+    // const _modulePath = normalizePath(module.filePath); // unused variable
 
     module.definitions.forEach((definition) => {
       const id = createCanonicalId(module.filePath, definition.exportName);
