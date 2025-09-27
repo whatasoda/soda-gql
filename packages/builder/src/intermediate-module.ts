@@ -315,7 +315,10 @@ const replaceModelTransform = (expression: string): string => {
           (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) ||
             ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))
         ) {
-          args[2] = createRuntimePlaceholder(unwrapNullish(args[2], "safe-array-item-access"));
+          const transform = unwrapNullish(args[2], "safe-array-item-access");
+          if (ts.isArrowFunction(transform) || ts.isFunctionExpression(transform)) {
+            args[2] = createRuntimePlaceholder(transform);
+          }
           return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
         }
       }

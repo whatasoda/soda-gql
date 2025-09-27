@@ -157,7 +157,7 @@ export const buildArtifact = async ({
 
     let text: string;
     try {
-      text = print(operationDescriptor.document as unknown);
+      text = print(operationDescriptor.document);
     } catch (error) {
       return err({
         code: "MODULE_EVALUATION_FAILED",

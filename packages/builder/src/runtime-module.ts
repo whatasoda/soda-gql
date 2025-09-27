@@ -434,12 +434,12 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   }
 
   if (exportCollision) {
-    const filePath = exportCollision.incoming.split("::")[0] ?? outDir;
+    const filePath = (exportCollision as any).incoming.split("::")[0] ?? outDir;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
-      exportName: exportCollision.name,
-      message: `RUNTIME_EXPORT_NAME_COLLISION:${exportCollision.existing}`,
+      exportName: (exportCollision as any).name,
+      message: `RUNTIME_EXPORT_NAME_COLLISION:${(exportCollision as any).existing}`,
     });
   }
 

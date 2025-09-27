@@ -67,7 +67,7 @@ const collectImports = (module: Module): ModuleImport[] => {
 
   const handle = (declaration: ImportDeclaration) => {
     const source = declaration.source.value;
-    declaration.specifiers?.forEach((specifier) => {
+    declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
         const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
         imports.push({
@@ -106,8 +106,9 @@ const collectImports = (module: Module): ModuleImport[] => {
       handle(item);
       return;
     }
-    if (item.type === "ModuleDeclaration" && item.declaration.type === "ImportDeclaration") {
-      handle(item.declaration);
+    // Handle module declarations with import declarations
+    if ("declaration" in item && item.declaration && "type" in item.declaration && item.declaration.type === "ImportDeclaration") {
+      handle(item.declaration as ImportDeclaration);
     }
   });
 
@@ -192,14 +193,14 @@ const collectExports = (module: Module): ModuleExport[] => {
       return;
     }
 
-    if (item.type === "ModuleDeclaration") {
-      const declaration = item.declaration;
+    if ("declaration" in item && item.declaration) {
+      const declaration = item.declaration as any;
       if (
         declaration.type === "ExportDeclaration" ||
         declaration.type === "ExportNamedDeclaration" ||
         declaration.type === "ExportAllDeclaration"
       ) {
-        handle(declaration);
+        handle(declaration as ExportDeclaration | ExportNamedDeclaration | ExportAllDeclaration);
       }
     }
   });
@@ -213,8 +214,8 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     const declaration =
       item.type === "ImportDeclaration"
         ? item
-        : item.type === "ModuleDeclaration" && item.declaration.type === "ImportDeclaration"
-          ? item.declaration
+        : "declaration" in item && item.declaration && (item.declaration as any).type === "ImportDeclaration"
+          ? (item.declaration as ImportDeclaration)
           : null;
     if (!declaration) {
       return;
@@ -222,7 +223,7 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     if (!declaration.source.value.endsWith("/graphql-system")) {
       return;
     }
-    declaration.specifiers?.forEach((specifier) => {
+    declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
         const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
         if (imported === "gql") {
@@ -345,8 +346,8 @@ const collectReferencesFromExpression = (
         const property = current.property;
         if (property.type === "Identifier") {
           segments.unshift(property.value);
-        } else if (property.type === "StringLiteral" || property.type === "NumericLiteral") {
-          segments.unshift(String(property.value));
+        } else if ((property as any).type === "StringLiteral" || (property as any).type === "NumericLiteral") {
+          segments.unshift(String((property as any).value));
         } else {
           return null;
         }
@@ -656,15 +657,15 @@ const collectTopLevelDefinitions = (
       return;
     }
 
-    if (item.type === "ExportNamedDeclaration" && item.declaration && item.declaration.type === "VariableDeclaration") {
-      handleVariableDeclaration(item.declaration);
+    if (item.type === "ExportNamedDeclaration" && "declaration" in item && item.declaration && (item.declaration as any).type === "VariableDeclaration") {
+      handleVariableDeclaration(item.declaration as VariableDeclaration);
       return;
     }
 
-    if (item.type === "ModuleDeclaration") {
-      const declaration = item.declaration;
-      if (declaration.type === "ExportDeclaration" && declaration.declaration.type === "VariableDeclaration") {
-        handleVariableDeclaration(declaration.declaration);
+    if ("declaration" in item && item.declaration) {
+      const declaration = item.declaration as any;
+      if (declaration.type === "ExportDeclaration" && declaration.declaration && declaration.declaration.type === "VariableDeclaration") {
+        handleVariableDeclaration(declaration.declaration as VariableDeclaration);
       }
       if (
         declaration.type === "ExportNamedDeclaration" &&

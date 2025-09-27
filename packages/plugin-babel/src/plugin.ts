@@ -5,12 +5,15 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import { parse } from "@babel/parser";
 import traverse, { type Binding, type NodePath } from "@babel/traverse";
-import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
+import { type BuilderArtifact, type CanonicalId, createRuntimeBindingName } from "@soda-gql/builder";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import type { DefinitionNode, DocumentNode, FieldNode, SelectionNode } from "graphql";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
-import type { SodaGqlBabelOptions } from "./types";
+import { buildLiteralFromValue, clone } from "./transform/ast-builders";
+import { convertVariablesObject, extractOperationVariableNames } from "./transform/variable-utils";
+import { buildProjectionPathGraph, projectionGraphToAst, collectSelectPaths as collectSelectPathsUtil } from "./transform/projection-utils";
+import type { PlainObject, ProjectionEntry, SodaGqlBabelOptions } from "./types";
 
 type SourceCacheEntry = {
   readonly calls: Map<SupportedMethod, Map<string, t.CallExpression>>;
@@ -1080,7 +1083,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   const properties: t.ObjectProperty[] = [];
   const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
-  const variablesExpr = convertSliceVariables(variables);
+  const variablesExpr = variables ? convertVariablesObject(variables) : undefined;
   if (variablesExpr) {
     properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
   }
@@ -1137,15 +1140,15 @@ const buildQueryRuntimeComponents = (
   const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
   const projectionGraph = projectionEntries.length > 0 ? buildProjectionPathGraph(projectionEntries) : null;
 
-  const runtimeName = createRuntimeBindingName(canonicalId, exportName);
+  const runtimeName = createRuntimeBindingName(canonicalId as CanonicalId, exportName);
   const documentIdentifier = `${runtimeName}Document`;
 
-  const documentExpression = buildLiteralFromValue(documentEntry.ast as PlainObject);
+  const documentExpression = buildLiteralFromValue((documentEntry.ast as unknown) as PlainObject);
   const documentDeclaration = t.variableDeclaration("const", [
     t.variableDeclarator(t.identifier(documentIdentifier), documentExpression),
   ]);
 
-  const variableNames = extractOperationVariableNames(documentEntry.ast as DocumentNode | undefined);
+  const variableNames = extractOperationVariableNames(JSON.stringify(documentEntry.ast));
   const properties: t.ObjectProperty[] = [
     t.objectProperty(t.identifier("name"), clone(nameArg)),
     t.objectProperty(t.identifier("document"), t.identifier(documentIdentifier)),
@@ -1158,7 +1161,9 @@ const buildQueryRuntimeComponents = (
     ),
   );
 
-  properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
+  if (t.isExpression(slicesBuilder)) {
+    properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
+  }
 
   if (projectionGraph) {
     properties.push(t.objectProperty(t.identifier("projectionPathGraph"), projectionGraphToAst(projectionGraph)));
@@ -1180,8 +1185,17 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
   name: "@soda-gql/plugin-babel",
   pre() {
     const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
-    const options = normalizeOptions(rawOptions);
-    const artifact = loadArtifact(options.artifactsPath);
+    const optionsResult = normalizeOptions(rawOptions);
+    if (!optionsResult.isOk()) {
+      throw new Error(optionsResult.error.message);
+    }
+    const options = optionsResult.value;
+
+    const artifactResult = loadArtifact(options.artifactsPath);
+    if (!artifactResult.isOk()) {
+      throw new Error(artifactResult.error.message);
+    }
+    const artifact = artifactResult.value;
 
     this._state = {
       options,

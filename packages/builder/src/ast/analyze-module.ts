@@ -393,8 +393,8 @@ const collectReferencesFromCall = (
         return;
       }
 
-      if (node.body && ts.isBlock(node.body)) {
-        node.body.statements.forEach((statement) => {
+      if ("body" in node && node.body && ts.isBlock(node.body)) {
+        node.body.statements.forEach((statement: any) => {
           visitNode(statement, nextExclusions);
         });
       }

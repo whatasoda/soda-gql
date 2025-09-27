@@ -13,4 +13,5 @@
  */
 
 export { ensureDir, type FileSystemError, fileExists, readTextFile, writeTextFile } from "./fs-utils";
+export { bypassTypeCheck, createInvalidValue, createTypeMismatch, forceType, violateType } from "./test-utils";
 export { UnwrapNullishError, unwrapNullish } from "./unwrap-nullish";
