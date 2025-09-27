@@ -434,11 +434,14 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   }
 
   if (exportCollision) {
+    // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
     const filePath = (exportCollision as any).incoming.split("::")[0] ?? outDir;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
+      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
       exportName: (exportCollision as any).name,
+      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
       message: `RUNTIME_EXPORT_NAME_COLLISION:${(exportCollision as any).existing}`,
     });
   }

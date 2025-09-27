@@ -11,8 +11,12 @@ import type { DefinitionNode, DocumentNode, FieldNode, SelectionNode } from "gra
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import { buildLiteralFromValue, clone } from "./transform/ast-builders";
+import {
+  buildProjectionPathGraph,
+  collectSelectPaths as collectSelectPathsUtil,
+  projectionGraphToAst,
+} from "./transform/projection-utils";
 import { convertVariablesObject, extractOperationVariableNames } from "./transform/variable-utils";
-import { buildProjectionPathGraph, projectionGraphToAst, collectSelectPaths as collectSelectPathsUtil } from "./transform/projection-utils";
 import type { PlainObject, ProjectionEntry, SodaGqlBabelOptions } from "./types";
 
 type SourceCacheEntry = {
@@ -1143,7 +1147,8 @@ const buildQueryRuntimeComponents = (
   const runtimeName = createRuntimeBindingName(canonicalId as CanonicalId, exportName);
   const documentIdentifier = `${runtimeName}Document`;
 
-  const documentExpression = buildLiteralFromValue((documentEntry.ast as unknown) as PlainObject);
+  // biome-ignore lint/suspicious/noExplicitAny: Complex type conversion
+  const documentExpression = buildLiteralFromValue(documentEntry.ast as any as PlainObject);
   const documentDeclaration = t.variableDeclaration("const", [
     t.variableDeclarator(t.identifier(documentIdentifier), documentExpression),
   ]);

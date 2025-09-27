@@ -394,6 +394,7 @@ const collectReferencesFromCall = (
       }
 
       if ("body" in node && node.body && ts.isBlock(node.body)) {
+        // biome-ignore lint/suspicious/noExplicitAny: TypeScript AST types are complex
         node.body.statements.forEach((statement: any) => {
           visitNode(statement, nextExclusions);
         });

@@ -67,6 +67,7 @@ const collectImports = (module: Module): ModuleImport[] => {
 
   const handle = (declaration: ImportDeclaration) => {
     const source = declaration.source.value;
+    // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
     declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
         const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
@@ -107,7 +108,12 @@ const collectImports = (module: Module): ModuleImport[] => {
       return;
     }
     // Handle module declarations with import declarations
-    if ("declaration" in item && item.declaration && "type" in item.declaration && item.declaration.type === "ImportDeclaration") {
+    if (
+      "declaration" in item &&
+      item.declaration &&
+      "type" in item.declaration &&
+      item.declaration.type === "ImportDeclaration"
+    ) {
       handle(item.declaration as ImportDeclaration);
     }
   });
@@ -151,6 +157,7 @@ const collectExports = (module: Module): ModuleExport[] => {
     if (declaration.type === "ExportNamedDeclaration") {
       const source = declaration.source?.value;
       // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
       declaration.specifiers?.forEach((specifier: any) => {
         if (specifier.type !== "ExportSpecifier") {
           return;
@@ -194,6 +201,7 @@ const collectExports = (module: Module): ModuleExport[] => {
     }
 
     if ("declaration" in item && item.declaration) {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
       const declaration = item.declaration as any;
       if (
         declaration.type === "ExportDeclaration" ||
@@ -223,6 +231,7 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     if (!declaration.source.value.endsWith("/graphql-system")) {
       return;
     }
+    // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
     declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
         const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
@@ -346,7 +355,9 @@ const collectReferencesFromExpression = (
         const property = current.property;
         if (property.type === "Identifier") {
           segments.unshift(property.value);
+          // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
         } else if ((property as any).type === "StringLiteral" || (property as any).type === "NumericLiteral") {
+          // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
           segments.unshift(String((property as any).value));
         } else {
           return null;
@@ -657,14 +668,25 @@ const collectTopLevelDefinitions = (
       return;
     }
 
-    if (item.type === "ExportNamedDeclaration" && "declaration" in item && item.declaration && (item.declaration as any).type === "VariableDeclaration") {
+    if (
+      item.type === "ExportNamedDeclaration" &&
+      "declaration" in item &&
+      item.declaration &&
+      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
+      (item.declaration as any).type === "VariableDeclaration"
+    ) {
       handleVariableDeclaration(item.declaration as VariableDeclaration);
       return;
     }
 
     if ("declaration" in item && item.declaration) {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
       const declaration = item.declaration as any;
-      if (declaration.type === "ExportDeclaration" && declaration.declaration && declaration.declaration.type === "VariableDeclaration") {
+      if (
+        declaration.type === "ExportDeclaration" &&
+        declaration.declaration &&
+        declaration.declaration.type === "VariableDeclaration"
+      ) {
         handleVariableDeclaration(declaration.declaration as VariableDeclaration);
       }
       if (
