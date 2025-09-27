@@ -5,12 +5,12 @@ import type { PlainObject } from "../types";
 export const buildModelRuntimeCall = (
   runtimeId: Identifier,
   name: string,
-  options: PlainObject | undefined,
+  options: Expression | undefined,
   transform: Expression | undefined,
 ): CallExpression => {
   const args: Expression[] = [t.stringLiteral(name)];
   if (options) {
-    args.push(options as Expression);
+    args.push(options);
   }
   if (transform) {
     args.push(transform);
@@ -21,12 +21,12 @@ export const buildModelRuntimeCall = (
 export const buildSliceRuntimeCall = (
   runtimeId: Identifier,
   sliceDocument: string,
-  variables: PlainObject | undefined,
+  variables: Expression | undefined,
   projectionBuilder: Expression | undefined,
 ): CallExpression => {
   const args: Expression[] = [t.stringLiteral(sliceDocument)];
   if (variables) {
-    args.push(variables as Expression);
+    args.push(variables);
   }
   if (projectionBuilder) {
     args.push(projectionBuilder);

@@ -8,32 +8,44 @@ const DocumentNodeSchema = z.object({
 const SliceRefMetadataSchema = z.object({
   type: z.literal("slice"),
   name: z.string(),
-  canonicalDocument: DocumentNodeSchema,
+  canonicalDocuments: z.array(z.string()),
+  dependencies: z.array(z.string()),
 });
 
 const ModelRefMetadataSchema = z.object({
   type: z.literal("model"),
-  name: z.string(),
-  canonicalDocuments: z.record(DocumentNodeSchema),
+  hash: z.string(),
+  dependencies: z.array(z.string()),
 });
 
 const OperationRefMetadataSchema = z.object({
-  type: z.literal("operation"),
-  name: z.string(),
-  canonicalDocument: DocumentNodeSchema,
+  canonicalDocument: z.string(),
+  dependencies: z.array(z.string()),
 });
 
-const MetadataSchema = z.discriminatedUnion("type", [SliceRefMetadataSchema, ModelRefMetadataSchema, OperationRefMetadataSchema]);
+const RefEntrySchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("model"),
+    metadata: ModelRefMetadataSchema,
+  }),
+  z.object({
+    kind: z.literal("slice"),
+    metadata: SliceRefMetadataSchema,
+  }),
+  z.object({
+    kind: z.literal("operation"),
+    metadata: OperationRefMetadataSchema,
+  }),
+]);
 
 export const BuilderArtifactSchema = z.object({
-  version: z.string(),
-  timestamp: z.string(),
-  entries: z.record(
-    z.object({
-      metadata: MetadataSchema,
-      dependencies: z.array(z.string()),
-    }),
-  ),
+  documents: z.record(z.string()),
+  refs: z.record(RefEntrySchema),
+  report: z.object({
+    sliceCount: z.number(),
+    modelCount: z.number(),
+    operationCount: z.number(),
+  }),
 });
 
 export type BuilderArtifact = z.infer<typeof BuilderArtifactSchema>;
