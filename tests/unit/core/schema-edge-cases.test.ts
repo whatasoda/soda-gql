@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeInputRef, unsafeOutputRef } from "../../../packages/core/src";
+import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
 import { createFieldFactories } from "../../../packages/core/src/builder/fields-builder";
 import { createGqlHelpers } from "../../../packages/core/src/builder/schema";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";

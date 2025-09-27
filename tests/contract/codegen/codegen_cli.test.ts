@@ -177,7 +177,7 @@ describe("soda-gql codegen CLI", () => {
     const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
     const coreEntryPath = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src", "index.ts")));
-    const coreEntryWildcard = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src")) + "/*");
+    const coreEntryWildcard = toPosix(`${relative(tmpRoot, join(projectRoot, "packages", "core", "src"))}/*`);
     const generatedRelative = toPosix(relative(tmpRoot, outFile));
 
     const tsconfig = {

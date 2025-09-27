@@ -129,7 +129,7 @@ describe("runtime builder flow", () => {
   it("runs codegen then builder runtime to produce artifact", async () => {
     const workspace = copyFixtureWorkspace("runtime-flow");
 
-    const graphqlSystemEntry = await generateGraphqlSystem(workspace);
+    await generateGraphqlSystem(workspace);
 
     const typecheckResult = await runTypecheck(workspace);
     expect(typecheckResult.exitCode).toBe(0);

@@ -1,24 +1,5 @@
 import { parseSync } from "@swc/core";
-import type {
-  ArrowFunctionExpression,
-  CallExpression,
-  Callee,
-  ExportDeclaration,
-  ExportSpecifier,
-  FnDecl,
-  Identifier,
-  ImportDeclaration,
-  ImportSpecifier,
-  MemberExpression,
-  Module,
-  ModuleDeclaration,
-  ModuleItem,
-  Param,
-  Pattern,
-  Program,
-  Span,
-  Statement,
-} from "@swc/types";
+import type { CallExpression, ImportDeclaration, MemberExpression, Module, Param, Pattern, Span } from "@swc/types";
 
 import {
   type AnalyzeModuleInput,

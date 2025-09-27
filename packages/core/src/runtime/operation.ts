@@ -1,13 +1,8 @@
-import type { DocumentNode, ExecutionResult, GraphQLError, GraphQLFormattedError } from "graphql";
+import type { DocumentNode, GraphQLFormattedError } from "graphql";
 import { createVariableReferences } from "../builder/input";
 import {
   type AnyAssignableInput,
-  AnyExecutionResultProjectionSingle,
-  type AnyExecutionResultProjections,
-  AnyFieldReference,
-  AnyFields,
   type AnyGraphqlSchema,
-  type AnyOperationSlice,
   type AnyOperationSlices,
   ExecutionResultProjection,
   type ExecutionResultProjectionPathGraphNode,

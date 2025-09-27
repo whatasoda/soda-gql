@@ -1,6 +1,6 @@
 import { err, ok } from "neverthrow";
 
-import type { CodegenCliCommand, CodegenError, CodegenFormat, CodegenOptions } from "./types";
+import type { CodegenCliCommand, CodegenError, CodegenFormat } from "./types";
 
 const isFormat = (value: string): value is CodegenFormat => value === "json" || value === "human";
 

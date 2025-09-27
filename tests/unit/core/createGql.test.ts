@@ -7,7 +7,6 @@ import {
   defineOperationRoots,
   defineScalar,
   ExecutionResultProjection,
-  empty,
   type GraphqlRuntimeAdapter,
   pseudoTypeAnnotation,
   unsafeInputRef,
