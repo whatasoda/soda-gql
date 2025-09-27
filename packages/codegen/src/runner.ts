@@ -10,8 +10,7 @@ const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const fromDir = dirname(fromPath);
   const raw = relative(fromDir, targetPath);
   const normalized = raw.replace(/\\/g, "/");
-  const stripExtension = (value: string): string =>
-    value.replace(/\.(?:ts|tsx)$/u, "");
+  const stripExtension = (value: string): string => value.replace(/\.(?:ts|tsx)$/u, "");
 
   if (normalized.length === 0) {
     return `./${stripExtension(basename(targetPath))}`;

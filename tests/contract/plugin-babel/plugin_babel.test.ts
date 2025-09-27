@@ -171,7 +171,7 @@ describe("@soda-gql/plugin-babel", () => {
     expect(result).not.toBeNull();
     const transformed = result?.code ?? "";
     const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
-    const aliasName = `${runtimeName}Artifact`;
+    const _aliasName = `${runtimeName}Artifact`;
 
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain(`const ${runtimeName}Document = {`);

@@ -1,10 +1,10 @@
+import { resolve } from "node:path";
+import type { CodegenCliCommand, CodegenError, CodegenFormat, CodegenOptions, CodegenSuccess } from "@soda-gql/codegen";
+import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { err, ok } from "neverthrow";
+import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
-import type { CodegenCliCommand, CodegenError, CodegenFormat, CodegenOptions } from "./types";
-
-const isFormat = (value: string): value is CodegenFormat => value === "json" || value === "human";
-
-export const parseCodegenArgs = (argv: readonly string[]) => {
+const parseCodegenArgs = (argv: readonly string[]) => {
   const args = [...argv];
   let schemaPath: string | undefined;
   let outPath: string | undefined;
@@ -68,14 +68,15 @@ export const parseCodegenArgs = (argv: readonly string[]) => {
       }
       case "--format": {
         const value = args.shift();
-        if (!value || !isFormat(value)) {
+        const supportedFormats = ["json", "human"];
+        if (!value || !supportedFormats.includes(value)) {
           return err<CodegenCliCommand, CodegenError>({
             code: "SCHEMA_INVALID",
             message: `Unsupported format: ${value ?? ""}`,
             schemaPath: schemaPath ?? "",
           });
         }
-        format = value;
+        format = value as CodegenFormat;
         break;
       }
       default:
@@ -123,4 +124,64 @@ export const parseCodegenArgs = (argv: readonly string[]) => {
       injectFromPath,
     },
   });
+};
+
+const formatCodegenSuccess = (format: OutputFormat, success: CodegenSuccess) => {
+  if (format === "json") {
+    return formatOutput(success, "json");
+  }
+  return `Generated ${success.objects} objects → ${success.outPath}`;
+};
+
+const formatTemplateSuccess = (format: OutputFormat, outPath: string) => {
+  if (format === "json") {
+    return formatOutput({ outPath }, "json");
+  }
+  return `Created inject template → ${outPath}`;
+};
+
+const formatCodegenError = (format: OutputFormat, error: CodegenError) => {
+  if (format === "json") {
+    return formatError(error, "json");
+  }
+  return `${error.code}: ${"message" in error ? error.message : "Unknown error"}`;
+};
+
+export const codegenCommand = (argv: readonly string[]): number => {
+  const parsed = parseCodegenArgs(argv);
+
+  if (parsed.isErr()) {
+    process.stdout.write(`${formatCodegenError("json", parsed.error)}\n`);
+    return 1;
+  }
+
+  const command = parsed.value;
+
+  if (command.kind === "emitInjectTemplate") {
+    const outPath = resolve(command.outPath);
+    const result = writeInjectTemplate(outPath);
+    if (result.isErr()) {
+      process.stdout.write(`${formatCodegenError(command.format, result.error)}\n`);
+      return 1;
+    }
+    process.stdout.write(`${formatTemplateSuccess(command.format, outPath)}\n`);
+    return 0;
+  }
+
+  const options: CodegenOptions = {
+    ...command.options,
+    schemaPath: resolve(command.options.schemaPath),
+    outPath: resolve(command.options.outPath),
+    injectFromPath: resolve(command.options.injectFromPath),
+  };
+
+  const result = runCodegen(options);
+
+  if (result.isErr()) {
+    process.stdout.write(`${formatCodegenError(options.format, result.error)}\n`);
+    return 1;
+  }
+
+  process.stdout.write(`${formatCodegenSuccess(options.format, result.value)}\n`);
+  return 0;
 };

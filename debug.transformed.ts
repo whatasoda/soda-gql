@@ -1,4 +1,6 @@
 import { gqlRuntime } from "@soda-gql/runtime";
+import type { DocumentNode } from "graphql";
+import type { ExecutionResultProjectionPathGraphNode } from "./packages/core/src/types";
 
 const userModel = gqlRuntime.model({
   typename: "User",
@@ -27,7 +29,8 @@ const userModel = gqlRuntime.model({
 });
 
 const userQuerySlice = gqlRuntime.querySlice({
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
+  rootFieldKeys: ["users"],
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) =>
     // select path of result to handle
     select(
       "$.users",
@@ -52,7 +55,8 @@ const userQuerySlice = gqlRuntime.querySlice({
 });
 
 const userQuerySlice2 = gqlRuntime.querySlice({
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) =>
+  rootFieldKeys: ["users"],
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) =>
     select("$.users", (result) => {
       if (result.isError()) {
         return { error: result.error };
@@ -66,18 +70,21 @@ const userQuerySlice2 = gqlRuntime.querySlice({
 });
 
 const userQuerySlice3 = gqlRuntime.querySlice({
-  getProjections: gqlRuntime.wrapProjectionBuilder(({ select }) => ({
+  rootFieldKeys: ["users"],
+  projections: gqlRuntime.handleProjectionBuilder(({ select }) => ({
     // multiple results are allowed, duplication is also allowed
     a: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
     b: select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
   })),
 });
 
-const pageQuery = gqlRuntime.query({
+const _pageQuery = gqlRuntime.query({
   name: "PageQuery",
   document: {
     /* omitted in this sample */
-  },
+  } as DocumentNode,
+  variableNames: ["userId", "x", "y"],
+  projectionPathGraph: { matches: [], children: {} } as ExecutionResultProjectionPathGraphNode,
   getSlices: ({ $ }) => ({
     // define query document with slices
     users: userQuerySlice({

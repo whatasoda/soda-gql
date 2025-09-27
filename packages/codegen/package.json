@@ -12,18 +12,10 @@
       "default": "./src/index.ts"
     }
   },
-  "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
-  },
   "dependencies": {
     "@soda-gql/core": "workspace:*",
     "graphql": "^16.8.1",
     "neverthrow": "^8.1.1",
     "zod": "^4.1.5"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
   }
 }

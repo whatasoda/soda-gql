@@ -1,5 +1,5 @@
 import type { DocumentNode } from "graphql";
-import type { Hidden } from "./utility";
+import type { PseudoTypeAnnotation } from "./utility";
 
 /**
  * Type declarations in this namespace is to show overall architecture of the library.
@@ -21,7 +21,7 @@ export namespace BuilderContract {
     assignability: unknown;
   };
   export type VariableReference = {
-    [__VARIABLE_REFERENCE_BRAND__]: Hidden<VariableReferenceMeta>;
+    [__VARIABLE_REFERENCE_BRAND__]: PseudoTypeAnnotation<VariableReferenceMeta>;
     name: string;
   };
 
@@ -63,12 +63,12 @@ export namespace BuilderContract {
 
   // schema
   export type ScalarDef = {
-    _type: Hidden<{ input: unknown; output: unknown }>;
+    _type: PseudoTypeAnnotation<{ input: unknown; output: unknown }>;
     name: string;
     directives: ConstDirectiveAttachments;
   };
   export type EnumDef = {
-    _type: Hidden<string>;
+    _type: PseudoTypeAnnotation<string>;
     name: string;
     values: { [key: string]: true };
     directives: ConstDirectiveAttachments;
@@ -146,7 +146,7 @@ export namespace BuilderContract {
   // slice-result-selection
   declare const __SLICE_RESULT_PROJECTION_BRAND__: unique symbol;
   export type SliceResultProjection = {
-    [__SLICE_RESULT_PROJECTION_BRAND__]: Hidden<never>;
+    [__SLICE_RESULT_PROJECTION_BRAND__]: PseudoTypeAnnotation<never>;
     path: FieldPath;
     projector: (result: SliceResult) => unknown;
   };
@@ -154,17 +154,17 @@ export namespace BuilderContract {
 
   // operation-slice
   export type OperationSlice = {
-    _output: Hidden<unknown>;
+    _output: PseudoTypeAnnotation<unknown>;
     operationType: string;
     variables: AssignableInput;
     fields: Fields;
-    getProjections: () => SliceResultProjections;
+    projections: SliceResultProjections;
   };
 
   export type Operation = {
-    _input: Hidden<ConstValues>;
-    _raw: Hidden<unknown>;
-    _output: Hidden<unknown>;
+    _input: PseudoTypeAnnotation<ConstValues>;
+    _raw: PseudoTypeAnnotation<unknown>;
+    _output: PseudoTypeAnnotation<unknown>;
     type: string;
     name: string;
     document: DocumentNode;

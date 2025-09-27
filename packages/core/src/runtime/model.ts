@@ -1,4 +1,4 @@
-import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, hidden, type Model } from "../types";
+import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, type Model, pseudoTypeAnnotation } from "../types";
 
 type GeneratedModel = {
   typename: string;
@@ -7,9 +7,9 @@ type GeneratedModel = {
 };
 
 export const runtimeModel = (generated: GeneratedModel): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
-  _input: hidden(),
-  _output: hidden(),
+  _input: pseudoTypeAnnotation(),
+  _output: pseudoTypeAnnotation(),
   typename: generated.typename,
-  fragment: hidden(),
+  fragment: pseudoTypeAnnotation(),
   transform: generated.transform,
 });

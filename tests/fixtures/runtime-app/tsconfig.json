@@ -24,14 +24,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/graphql-system": ["./graphql-system/index.ts"],
-      "@soda-gql/core": [
-        "../../../packages/core/src/index.ts",
-        "../../../../packages/core/src/index.ts"
-      ],
-      "@soda-gql/core/*": [
-        "../../../packages/core/src/*",
-        "../../../../packages/core/src/*"
-      ]
+      "@soda-gql/core": ["../../../packages/core/src/index.ts", "../../../../packages/core/src/index.ts"],
+      "@soda-gql/core/*": ["../../../packages/core/src/*", "../../../../packages/core/src/*"]
     }
   },
   "include": ["src/**/*.ts", "graphql-system/**/*.ts"]

@@ -6,12 +6,12 @@ import {
   type AssignableInput,
   type EmptyObject,
   type FieldsBuilder,
-  type GraphqlAdapter,
-  hidden,
+  type GraphqlRuntimeAdapter,
   type InputTypeRefs,
   type OperationSlice,
   type OperationSliceFn,
   type OperationType,
+  pseudoTypeAnnotation,
   type SliceResultProjectionsBuilder,
   type VoidIfEmptyObject,
 } from "../types";
@@ -19,22 +19,22 @@ import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
 
 export const createOperationSliceFactory =
-  <TSchema extends AnyGraphqlSchema, TAdapter extends GraphqlAdapter>(schema: TSchema, _adapter: TAdapter) =>
+  <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>(schema: TSchema, _adapter: TRuntimeAdapter) =>
   <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"];
     const operationTypeName: TTypeName = schema.operations[operationType];
 
-    const sliceFn: OperationSliceFn<TSchema, TAdapter, TOperationType, TTypeName> = <
+    const sliceFn: OperationSliceFn<TSchema, TRuntimeAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
-      TProjection extends AnyExecutionResultProjections<TAdapter>,
+      TProjection extends AnyExecutionResultProjections<TRuntimeAdapter>,
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       variableDefinitionsAndExtras: [TVariableDefinitions?],
       builder: FieldsBuilder<TSchema, TTypeName, TVariableDefinitions, TFields>,
-      projectionBuilder: SliceResultProjectionsBuilder<TSchema, TAdapter, TFields, TProjection>,
+      projectionBuilder: SliceResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
-      const getProjections = gqlRuntime.wrapProjectionBuilder(projectionBuilder);
+      const projections = gqlRuntime.handleProjectionBuilder(projectionBuilder);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);
@@ -45,13 +45,15 @@ export const createOperationSliceFactory =
           fields: fieldFactories,
           $,
         });
+        const rootFieldKeys = Object.keys(fields);
 
-        const slice: OperationSlice<TSchema, TAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
-          _output: hidden(),
+        const slice: OperationSlice<TSchema, TRuntimeAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
+          _output: pseudoTypeAnnotation(),
           operationType,
           variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
           getFields: () => fields,
-          getProjections,
+          rootFieldKeys,
+          projections,
         };
 
         return slice;

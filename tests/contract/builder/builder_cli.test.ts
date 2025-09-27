@@ -35,7 +35,7 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 
 const writeInjectModule = async (outFile: string) => {
   const contents = `\
-import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -65,11 +65,11 @@ export const scalar = {
   })),
 } as const;
 
-const createError: GraphqlAdapter["createError"] = (raw) => raw;
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
 
 export const adapter = {
-  createError,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 `;
 
   await Bun.write(outFile, contents);
@@ -83,11 +83,7 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     env: {
       ...process.env,
       NODE_ENV: "test",
-      NODE_PATH: [
-        join(workspaceRoot, "node_modules"),
-        join(projectRoot, "node_modules"),
-        process.env.NODE_PATH ?? "",
-      ]
+      NODE_PATH: [join(workspaceRoot, "node_modules"), join(projectRoot, "node_modules"), process.env.NODE_PATH ?? ""]
         .filter(Boolean)
         .join(":"),
     },
@@ -375,10 +371,7 @@ export const duplicated = gql.query(
       return `export const slice${index} = gql.querySlice([], () => ({}), () => ({}));`;
     }).join("\n");
 
-    await Bun.write(
-      join(entitiesDir, "slices.ts"),
-      `import { gql } from "@/graphql-system";\n${slicesSource}\n`,
-    );
+    await Bun.write(join(entitiesDir, "slices.ts"), `import { gql } from "@/graphql-system";\n${slicesSource}\n`);
 
     await Bun.write(
       join(pagesDir, "slice.page.ts"),

@@ -1,13 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
 import {
-  AnyGraphqlSchema,
+  type AnyGraphqlSchema,
   createGql,
   define,
   defineOperationRoots,
   defineScalar,
-  empty,
-  GraphqlAdapter,
+  ExecutionResultProjection,
+  type GraphqlRuntimeAdapter,
+  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../../packages/core";
@@ -60,9 +61,11 @@ const schema = {
 
 type Schema = typeof schema;
 
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
+
 const adapter = {
-  createError: (raw: unknown) => raw,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 
 describe("createGql", () => {
   const gql = createGql<Schema, typeof adapter>({ schema, adapter });
@@ -132,7 +135,7 @@ describe("createGql", () => {
 
     const slice = userSliceFactory({ id: "1" });
     expect(slice.operationType).toBe("query");
-    expect(typeof slice.getProjections).toBe("function");
+    expect(slice.projections).toBeInstanceOf(ExecutionResultProjection);
 
     const profileQuery = gql.query(
       "ProfilePageQuery",

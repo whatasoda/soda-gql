@@ -3,11 +3,11 @@ import {
   type AnyGraphqlSchema,
   type EmptyObject,
   type FieldsBuilder,
-  hidden,
   type InferFields,
   type InputTypeRefs,
   type Model,
   type ModelFn,
+  pseudoTypeAnnotation,
 } from "../types";
 import { createFieldFactories } from "./fields-builder";
 import { createVariableAssignments } from "./input";
@@ -30,8 +30,8 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: TSc
     const fieldFactories = createFieldFactories(schema, typename);
 
     const model: Model<TSchema, TTypeName, TVariableDefinitions, TFields, TTransformed> = {
-      _input: hidden(),
-      _output: hidden(),
+      _input: pseudoTypeAnnotation(),
+      _output: pseudoTypeAnnotation(),
       typename,
       fragment: (assignments) =>
         builder({

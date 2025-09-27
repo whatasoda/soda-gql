@@ -2,9 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import { runCodegen } from "../../packages/codegen/src/index.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
+import { runCodegen } from "../../packages/codegen/src/index.ts";
 
 type CliResult = {
   readonly stdout: string;
@@ -18,7 +17,7 @@ const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
 
 const writeInjectModule = async (outFile: string) => {
   const contents = `\
-import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -48,11 +47,11 @@ export const scalar = {
   })),
 } as const;
 
-const createError: GraphqlAdapter["createError"] = (raw) => raw;
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
 
 export const adapter = {
-  createError,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 `;
 
   await Bun.write(outFile, contents);
@@ -130,7 +129,7 @@ describe("runtime builder flow", () => {
   it("runs codegen then builder runtime to produce artifact", async () => {
     const workspace = copyFixtureWorkspace("runtime-flow");
 
-    const graphqlSystemEntry = await generateGraphqlSystem(workspace);
+    await generateGraphqlSystem(workspace);
 
     const typecheckResult = await runTypecheck(workspace);
     expect(typecheckResult.exitCode).toBe(0);
@@ -154,7 +153,7 @@ describe("runtime builder flow", () => {
     expect(artifact.documents.ProfilePageQuery.text).toContain("remoteUsers");
     expect(artifact.documents.ProfilePageQuery.text).toContain("catalogUsers");
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
-    expect(Object.prototype.hasOwnProperty.call(artifact.refs, canonicalId)).toBe(true);
+    expect(Object.hasOwn(artifact.refs, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
     expect(artifact.report.models).toBe(2);
     expect(artifact.report.slices).toBe(3);

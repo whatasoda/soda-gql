@@ -6,7 +6,7 @@ export type CanonicalId = string & { readonly __brand: "CanonicalId" };
 
 const canonicalIdSeparator = "::" as const;
 
-const normalisePath = (value: string): string => normalize(value).replace(/\\/g, "/");
+const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
 export const createCanonicalId = (filePath: string, exportName: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
@@ -14,8 +14,8 @@ export const createCanonicalId = (filePath: string, exportName: string): Canonic
   }
 
   const resolved = resolve(filePath);
-  const normalised = normalisePath(resolved);
-  return `${normalised}${canonicalIdSeparator}${exportName}` as CanonicalId;
+  const normalized = normalizePath(resolved);
+  return `${normalized}${canonicalIdSeparator}${exportName}` as CanonicalId;
 };
 
 export type RegistryRefKind = "model" | "slice" | "operation";

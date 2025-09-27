@@ -1,5 +1,5 @@
-import { print, type DocumentNode } from "graphql";
 import { pathToFileURL } from "node:url";
+import { type DocumentNode, print } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
@@ -29,7 +29,11 @@ export type BuildArtifactInput = {
   readonly runtimeModulePath: string;
 };
 
-export const buildArtifact = async ({ graph, cache, runtimeModulePath }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+export const buildArtifact = async ({
+  graph,
+  cache,
+  runtimeModulePath,
+}: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
   const registry = createDocumentRegistry<unknown>();
 
   const modelNodes: DependencyGraphNode[] = [];
@@ -126,7 +130,9 @@ export const buildArtifact = async ({ graph, cache, runtimeModulePath }: BuildAr
     let documentName: string | undefined = typeof operationDescriptor.name === "string" ? operationDescriptor.name : undefined;
 
     if (!documentName) {
-      const document = operationDescriptor.document as { readonly definitions?: Array<{ readonly name?: { readonly value?: string } }> };
+      const document = operationDescriptor.document as {
+        readonly definitions?: Array<{ readonly name?: { readonly value?: string } }>;
+      };
       const definition = Array.isArray(document?.definitions)
         ? document.definitions.find((entry) => entry?.name?.value)
         : undefined;
@@ -215,7 +221,9 @@ export const buildArtifact = async ({ graph, cache, runtimeModulePath }: BuildAr
       }
 
       const consumers = sliceConsumers.get(dependency) ?? new Set<string>();
-      consumers.add(documentName!);
+      if (documentName) {
+        consumers.add(documentName);
+      }
       sliceConsumers.set(dependency, consumers);
     });
   }

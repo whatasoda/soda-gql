@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { runBuilderCli } from "@soda-gql/builder";
-import { runCodegenCli } from "@soda-gql/codegen";
+import { builderCommand } from "./commands/builder";
+import { codegenCommand } from "./commands/codegen";
 
 const dispatch = async (argv: readonly string[]): Promise<number> => {
   const [command, ...rest] = argv;
@@ -14,11 +14,11 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   }
 
   if (command === "codegen") {
-    return runCodegenCli(rest);
+    return codegenCommand(rest);
   }
 
   if (command === "builder") {
-    return runBuilderCli(rest);
+    return builderCommand(rest);
   }
 
   process.stderr.write(`Unknown command: ${command}\n`);

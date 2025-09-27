@@ -1,12 +1,19 @@
+import type {
+  BuilderAnalyzer,
+  BuilderError,
+  BuilderFormat,
+  BuilderMode,
+  BuilderOptions,
+  BuilderSuccess,
+} from "@soda-gql/builder";
+import { runBuilder } from "@soda-gql/builder";
 import { err, ok } from "neverthrow";
-
-import type { BuilderAnalyzer, BuilderError, BuilderFormat, BuilderMode, BuilderOptions } from "./types";
+import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
-const isFormat = (value: string): value is BuilderFormat => value === "json" || value === "human";
 const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
 
-export const parseBuilderArgs = (argv: readonly string[]) => {
+const parseBuilderArgs = (argv: readonly string[]) => {
   const args = [...argv];
   const entries: string[] = [];
   let outPath: string | undefined;
@@ -60,14 +67,15 @@ export const parseBuilderArgs = (argv: readonly string[]) => {
       }
       case "--format": {
         const value = args.shift();
-        if (!value || !isFormat(value)) {
+        const supportedFormats = ["json", "human"];
+        if (!value || !supportedFormats.includes(value)) {
           return err<BuilderOptions, BuilderError>({
             code: "ENTRY_NOT_FOUND",
             message: `Unsupported format: ${value ?? ""}`,
             entry: "",
           });
         }
-        format = value;
+        format = value as BuilderFormat;
         break;
       }
       case "--analyzer": {
@@ -123,4 +131,56 @@ export const parseBuilderArgs = (argv: readonly string[]) => {
     analyzer,
     debugDir,
   });
+};
+
+const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mode: BuilderOptions["mode"]) => {
+  if (mode !== "runtime") {
+    return "";
+  }
+
+  if (format === "json") {
+    return formatOutput(success.artifact, "json");
+  }
+
+  const { report } = success.artifact;
+  const lines = [
+    `Documents: ${report.documents}`,
+    `Slices: ${report.slices}`,
+    `Cache: hits ${report.cache.hits}, misses ${report.cache.misses}`,
+    ...report.warnings,
+    `Artifact: ${success.outPath}`,
+  ];
+
+  return lines.join("\n");
+};
+
+const formatBuilderError = (format: OutputFormat, error: BuilderError) => {
+  if (format === "json") {
+    return formatError(error, "json");
+  }
+  return `${error.code}: ${"message" in error ? error.message : ""}`;
+};
+
+export const builderCommand = async (argv: readonly string[]): Promise<number> => {
+  const parsed = parseBuilderArgs(argv);
+
+  if (parsed.isErr()) {
+    process.stdout.write(`${formatBuilderError("json", parsed.error)}\n`);
+    return 1;
+  }
+
+  const options: BuilderOptions = parsed.value;
+  const result = await runBuilder(options);
+
+  if (result.isErr()) {
+    process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
+    return 1;
+  }
+
+  const output = formatBuilderSuccess(options.format, result.value, options.mode);
+  if (output) {
+    process.stdout.write(`${output}\n`);
+  }
+
+  return 0;
 };

@@ -19,7 +19,7 @@ The ecosystem revolves around a generated `gql` helper bundle (from `codegen`), 
 
 ### `gql` Helper Bundle
 - **Shape**: `{ ...createHelpers<Schema>, ...createRefFactories<Schema>(), model: ModelFn<Schema>, querySlice: OperationSliceFn<Schema, Adapter, "query">, query: OperationFn<Schema, Adapter, "query">, ... }`.
-- **Dependencies**: Requires an adapter implementing `GraphqlAdapter.createError`. Adapter is generated per project so transformations can surface framework-specific errors.
+- **Dependencies**: Requires an adapter implementing `GraphqlRuntimeAdapter` with `nonGraphqlErrorType`. Adapter is generated per project so transformations can surface framework-specific errors.
 - **Guarantees**: Each factory is already generic over the loaded schema; no additional type parameters needed in user modules.
 
 ### ModelDefinition (`ModelFn` result)
@@ -62,7 +62,7 @@ The ecosystem revolves around a generated `gql` helper bundle (from `codegen`), 
   2. **Load**: Executes a generated script that imports the user modules and registers entries into a `refs` registry shaped as `{ [id]: () => OperationSlice | ModelDefinition | OperationDefinition }`.
   3. **Evaluate**: Lazily invokes refs in dependency order, building `documents` and structured transform metadata.
   4. **Emit**: Writes JSON artifact with diagnostics (counts, duration, warnings for ≥16 slices, errors for >32).
-- **Error Surfaces**: Cycle detection, duplicate document names, missing variables, runtime throws wrapped via `GraphqlAdapter.createError`.
+- **Error Surfaces**: Cycle detection, duplicate document names, missing variables, runtime throws with error types defined by `GraphqlRuntimeAdapter.nonGraphqlErrorType`.
 
 ### Builder Artifact JSON
 - **documents**: `{ [documentName: string]: { text: string; variables: Record<string, string>; sourceMap?: SourceMapPayload } }`

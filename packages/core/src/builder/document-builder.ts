@@ -25,7 +25,7 @@ import {
   VariableReference,
 } from "../types";
 
-const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
+export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -76,8 +76,10 @@ const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null =>
   }
 
   if (typeof value === "number") {
+    // Distinguish between INT and FLOAT
+    const isFloat = !Number.isInteger(value) || value.toString().includes(".");
     return {
-      kind: Kind.INT,
+      kind: isFloat ? Kind.FLOAT : Kind.INT,
       value: value.toString(),
     };
   }
@@ -134,7 +136,7 @@ const buildField = (field: AnyFields): FieldNode[] =>
     }),
   );
 
-const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
+export const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -152,7 +154,9 @@ const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
   }
 
   if (typeof value === "number") {
-    return { kind: Kind.INT, value: value.toString() };
+    // Distinguish between INT and FLOAT
+    const isFloat = !Number.isInteger(value) || value.toString().includes(".");
+    return { kind: isFloat ? Kind.FLOAT : Kind.INT, value: value.toString() };
   }
 
   if (Array.isArray(value)) {
@@ -180,12 +184,14 @@ const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
 };
 
-const buildWithTypeModifier = (input: { modifier: TypeModifier; type: NamedTypeNode }): TypeNode => {
-  if (input.modifier === "") {
-    return input.type;
+export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => NamedTypeNode): TypeNode => {
+  const baseType = buildType();
+
+  if (modifier === "") {
+    return baseType;
   }
 
-  let curr: Readonly<{ modifier: TypeModifier; type: TypeNode }> = { modifier: input.modifier, type: input.type };
+  let curr: Readonly<{ modifier: TypeModifier; type: TypeNode }> = { modifier, type: baseType };
 
   while (curr.modifier.length > 0) {
     if (curr.modifier.startsWith("!")) {
@@ -216,15 +222,12 @@ const buildVariables = (variables: InputTypeRefs): VariableDefinitionNode[] => {
       kind: Kind.VARIABLE_DEFINITION,
       variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
       defaultValue: (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) || undefined,
-      type: buildWithTypeModifier({
-        modifier: ref.modifier,
-        type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: ref.name } },
-      }),
+      type: buildWithTypeModifier(ref.modifier, () => ({ kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: ref.name } })),
     }),
   );
 };
 
-const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => {
+export const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => {
   switch (operation) {
     case "query":
       return OperationTypeNode.QUERY;
@@ -232,31 +235,64 @@ const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => 
       return OperationTypeNode.MUTATION;
     case "subscription":
       return OperationTypeNode.SUBSCRIPTION;
+    default:
+      throw new Error(`Unknown operation type: ${operation}`);
   }
 };
 
-export const buildDocument = ({
-  name,
-  operationType,
-  variables,
-  fields,
-}: {
+// Overloaded function signatures for flexible usage
+export function buildDocument(
+  operation: OperationType,
+  name: string,
+  variables: VariableDefinitionNode[],
+  // directives: any[],
+  selections: FieldNode[],
+): DocumentNode;
+export function buildDocument(options: {
   name: string;
   operationType: OperationType;
   variables: InputTypeRefs;
   fields: AnyFields;
-}): DocumentNode => ({
-  kind: Kind.DOCUMENT,
-  definitions: [
-    {
-      kind: Kind.OPERATION_DEFINITION,
-      operation: buildOperationTypeNode(operationType),
-      name: { kind: Kind.NAME, value: name },
-      variableDefinitions: buildVariables(variables),
-      selectionSet: {
-        kind: Kind.SELECTION_SET,
-        selections: buildField(fields),
-      },
-    },
-  ],
-});
+}): DocumentNode;
+export function buildDocument(
+  operationOrOptions: OperationType | { name: string; operationType: OperationType; variables: InputTypeRefs; fields: AnyFields },
+  name?: string,
+  variables?: VariableDefinitionNode[],
+  // directives?: any[],
+  selections?: FieldNode[],
+): DocumentNode {
+  if (typeof operationOrOptions === "object") {
+    // Object-based call
+    const { name, operationType, variables, fields } = operationOrOptions;
+    return {
+      kind: Kind.DOCUMENT,
+      definitions: [
+        {
+          kind: Kind.OPERATION_DEFINITION,
+          operation: buildOperationTypeNode(operationType),
+          name: { kind: Kind.NAME, value: name },
+          variableDefinitions: buildVariables(variables),
+          selectionSet: { kind: Kind.SELECTION_SET, selections: buildField(fields) },
+        },
+      ],
+    };
+  } else {
+    // Direct parameters call (for tests)
+    return {
+      kind: Kind.DOCUMENT,
+      definitions: [
+        {
+          kind: Kind.OPERATION_DEFINITION,
+          operation: buildOperationTypeNode(operationOrOptions),
+          name: name ? { kind: Kind.NAME, value: name } : undefined,
+          variableDefinitions: variables || [],
+          // directives: directives || [],
+          selectionSet: {
+            kind: Kind.SELECTION_SET,
+            selections: selections || [],
+          },
+        },
+      ],
+    };
+  }
+}

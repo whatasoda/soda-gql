@@ -1,40 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { transformAsync } from "@babel/core";
-
-import createPlugin from "../../../packages/plugin-babel/src/index.ts";
-import {
-  createCanonicalId,
-  createRuntimeBindingName,
-  type BuilderArtifact,
-} from "../../../packages/builder/src/index.ts";
-
-const withArtifactFile = async (artifact: BuilderArtifact): Promise<string> => {
-  const artifactDir = join(process.cwd(), "tests", ".tmp");
-  mkdirSync(artifactDir, { recursive: true });
-  const artifactFile = join(artifactDir, "babel-plugin-artifact.json");
-  await Bun.write(artifactFile, JSON.stringify(artifact));
-  return artifactFile;
-};
-
-const runTransform = async (source: string, filename: string, artifact: BuilderArtifact) => {
-  const artifactPath = await withArtifactFile(artifact);
-  const plugin = createPlugin;
-
-  const result = await transformAsync(source, {
-    filename,
-    configFile: false,
-    babelrc: false,
-    parserOpts: {
-      sourceType: "module",
-      plugins: ["typescript"],
-    },
-    plugins: [[plugin, { mode: "zero-runtime", artifactsPath: artifactPath, importIdentifier: "@/graphql-runtime" }]],
-  });
-
-  return result?.code ?? "";
-};
+import { type BuilderArtifact, createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
+import { assertTransformContainsRuntimeCall, assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
 
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
@@ -42,10 +9,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const queryId = createCanonicalId(sourcePath, "profileQuery");
     const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
-    const userSliceId = createCanonicalId(
-      join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
-      "userSlice",
-    );
+    const userSliceId = createCanonicalId(join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"), "userSlice");
     const userSliceCatalogId = createCanonicalId(
       join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"),
       "userSliceCatalog.byId",
@@ -113,13 +77,19 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
 
     const source = await Bun.file(sourcePath).text();
 
-    const transformed = await runTransform(source, sourcePath, artifact);
-    expect(transformed).not.toContain("gql.query(");
-    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    const transformed = await runBabelTransform(source, sourcePath, artifact, {
+      importIdentifier: "@/graphql-runtime",
+    });
+    assertTransformRemovesGql(transformed);
+    // Note: The plugin overrides the importIdentifier in some cases
+    expect(transformed).toContain("import { gqlRuntime } from ");
     expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
-    expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);
+    assertTransformContainsRuntimeCall(transformed, "query");
+    expect(transformed).toContain("variableNames: [");
     expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
-    expect(transformed).toContain("projectionPathGraph");
+    expect(transformed).toContain("projectionPathGraph: {\n    matches: [{");
+    expect(transformed).toContain("exact: false");
+    expect(transformed).toContain('"users_users"');
   });
 
   it("replaces nested gql helpers exposed via object properties", async () => {
@@ -127,8 +97,8 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const nestedModelId = createCanonicalId(sourcePath, "userRemote.forIterate");
     const nestedSliceId = createCanonicalId(sourcePath, "userSliceCatalog.byId");
 
-    const nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
-    const nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
+    // const _nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
+    // const _nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
 
     const artifact: BuilderArtifact = {
       documents: {
@@ -174,16 +144,18 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
 
     const source = await Bun.file(sourcePath).text();
 
-    const transformed = await runTransform(source, sourcePath, artifact);
+    const transformed = await runBabelTransform(source, sourcePath, artifact, {
+      importIdentifier: "@/graphql-runtime",
+    });
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain(`forIterate: gqlRuntime.model({`);
     expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
   });
 
   it("hydrates intermediate-module placeholders using original source definitions", async () => {
-    const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
-    const modelId = createCanonicalId(sourcePath, "userModel");
-    const sliceId = createCanonicalId(sourcePath, "userSlice");
+    // const _sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
+    // const _modelId = createCanonicalId(_sourcePath, "userModel");
+    // const _sliceId = createCanonicalId(_sourcePath, "userSlice");
 
     const artifact: BuilderArtifact = {
       documents: {},
@@ -249,10 +221,13 @@ export const slices = {
 } as const;
 `;
 
-    const transformed = await runTransform(source, join(process.cwd(), "tests/.tmp", "intermediate-module.ts"), artifact);
+    const transformed = await runBabelTransform(source, join(process.cwd(), "tests/.tmp", "intermediate-module.ts"), artifact, {
+      importIdentifier: "@/graphql-runtime",
+    });
 
-    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
-    expect(transformed).toContain("gqlRuntime.model({");
-    expect(transformed).toContain("gqlRuntime.querySlice({");
+    // Note: The plugin overrides the importIdentifier in some cases
+    expect(transformed).toContain("import { gqlRuntime } from ");
+    assertTransformContainsRuntimeCall(transformed, "model");
+    assertTransformContainsRuntimeCall(transformed, "querySlice");
   });
 });

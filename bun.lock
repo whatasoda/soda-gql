@@ -6,10 +6,8 @@
       "devDependencies": {
         "@biomejs/biome": "2.2.3",
         "@types/bun": "latest",
-        "zod": "^4.1.5",
-      },
-      "peerDependencies": {
         "typescript": "^5",
+        "zod": "^4.1.5",
       },
     },
     "packages/builder": {
@@ -19,14 +17,12 @@
         "@soda-gql/codegen": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
+        "@soda-gql/tool-utils": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",
         "neverthrow": "^8.1.1",
         "typescript": "^5.0.0",
         "zod": "^4.1.5",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
       },
     },
     "packages/cli": {
@@ -42,10 +38,6 @@
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
       },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
     },
     "packages/codegen": {
       "name": "@soda-gql/codegen",
@@ -56,22 +48,12 @@
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
       },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
     },
     "packages/core": {
       "name": "@soda-gql/core",
       "version": "0.1.0",
       "dependencies": {
         "graphql": "^16.8.1",
-        "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
       },
     },
     "packages/plugin-babel": {
@@ -83,13 +65,12 @@
         "@babel/traverse": "^7.24.0",
         "@babel/types": "^7.24.0",
         "@soda-gql/builder": "workspace:*",
+        "@soda-gql/tool-utils": "workspace:*",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
       },
       "devDependencies": {
         "@types/babel__core": "^7.20.5",
-        "@types/bun": "latest",
-        "typescript": "^5",
       },
     },
     "packages/runtime": {
@@ -97,6 +78,14 @@
       "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
+      },
+    },
+    "packages/tool-utils": {
+      "name": "@soda-gql/tool-utils",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.1.14",
+        "typescript": "^5.7.3",
       },
     },
   },
@@ -174,6 +163,8 @@
     "@soda-gql/plugin-babel": ["@soda-gql/plugin-babel@workspace:packages/plugin-babel"],
 
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
+
+    "@soda-gql/tool-utils": ["@soda-gql/tool-utils@workspace:packages/tool-utils"],
 
     "@swc/core": ["@swc/core@1.13.5", "", { "dependencies": { "@swc/counter": "^0.1.3", "@swc/types": "^0.1.24" }, "optionalDependencies": { "@swc/core-darwin-arm64": "1.13.5", "@swc/core-darwin-x64": "1.13.5", "@swc/core-linux-arm-gnueabihf": "1.13.5", "@swc/core-linux-arm64-gnu": "1.13.5", "@swc/core-linux-arm64-musl": "1.13.5", "@swc/core-linux-x64-gnu": "1.13.5", "@swc/core-linux-x64-musl": "1.13.5", "@swc/core-win32-arm64-msvc": "1.13.5", "@swc/core-win32-ia32-msvc": "1.13.5", "@swc/core-win32-x64-msvc": "1.13.5" }, "peerDependencies": { "@swc/helpers": ">=0.5.17" }, "optionalPeers": ["@swc/helpers"] }, "sha512-WezcBo8a0Dg2rnR82zhwoR6aRNxeTGfK5QCD6TQ+kg3xx/zNT02s/0o+81h/3zhvFSB24NtqEr8FTw88O5W/JQ=="],
 
@@ -264,21 +255,5 @@
     "yallist": ["yallist@3.1.1", "", {}, "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="],
 
     "zod": ["zod@4.1.5", "", {}, "sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg=="],
-
-    "@soda-gql/builder/@types/bun": ["@types/bun@1.2.22", "", { "dependencies": { "bun-types": "1.2.22" } }, "sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA=="],
-
-    "@soda-gql/codegen/@types/bun": ["@types/bun@1.2.22", "", { "dependencies": { "bun-types": "1.2.22" } }, "sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA=="],
-
-    "@soda-gql/core/@types/bun": ["@types/bun@1.2.22", "", { "dependencies": { "bun-types": "1.2.22" } }, "sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA=="],
-
-    "@soda-gql/plugin-babel/@types/bun": ["@types/bun@1.2.22", "", { "dependencies": { "bun-types": "1.2.22" } }, "sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA=="],
-
-    "@soda-gql/builder/@types/bun/bun-types": ["bun-types@1.2.22", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-hwaAu8tct/Zn6Zft4U9BsZcXkYomzpHJX28ofvx7k0Zz2HNz54n1n+tDgxoWFGB4PcFvJXJQloPhaV2eP3Q6EA=="],
-
-    "@soda-gql/codegen/@types/bun/bun-types": ["bun-types@1.2.22", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-hwaAu8tct/Zn6Zft4U9BsZcXkYomzpHJX28ofvx7k0Zz2HNz54n1n+tDgxoWFGB4PcFvJXJQloPhaV2eP3Q6EA=="],
-
-    "@soda-gql/core/@types/bun/bun-types": ["bun-types@1.2.22", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-hwaAu8tct/Zn6Zft4U9BsZcXkYomzpHJX28ofvx7k0Zz2HNz54n1n+tDgxoWFGB4PcFvJXJQloPhaV2eP3Q6EA=="],
-
-    "@soda-gql/plugin-babel/@types/bun/bun-types": ["bun-types@1.2.22", "", { "dependencies": { "@types/node": "*" }, "peerDependencies": { "@types/react": "^19" } }, "sha512-hwaAu8tct/Zn6Zft4U9BsZcXkYomzpHJX28ofvx7k0Zz2HNz54n1n+tDgxoWFGB4PcFvJXJQloPhaV2eP3Q6EA=="],
   }
 }

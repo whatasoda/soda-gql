@@ -1,39 +1,13 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { assertCliError, getProjectRoot, runCodegenCli } from "../../utils/cli";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-
-type CliResult = {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-};
-
-const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "codegen", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
-};
+const projectRoot = getProjectRoot();
 
 const createInjectModule = async (outFile: string) => {
   const contents = `\
-import { defineScalar, type GraphqlAdapter } from "@soda-gql/core";
+import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -63,11 +37,11 @@ export const scalar = {
   })),
 } as const;
 
-const createError: GraphqlAdapter["createError"] = (raw) => raw;
+const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
 
 export const adapter = {
-  createError,
-} satisfies GraphqlAdapter;
+  nonGraphqlErrorType,
+} satisfies GraphqlRuntimeAdapter;
 `;
 
   await Bun.write(outFile, contents);
@@ -116,10 +90,7 @@ describe("soda-gql codegen CLI", () => {
       injectFile,
     ]);
 
-    expect(result.exitCode).toBe(1);
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const payload = JSON.parse(result.stdout);
-    expect(payload.error.code).toBe("SCHEMA_NOT_FOUND");
+    assertCliError(result, "SCHEMA_NOT_FOUND");
   });
 
   it("returns schema validation error details for invalid schema", async () => {
@@ -177,7 +148,7 @@ describe("soda-gql codegen CLI", () => {
     const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
     const coreEntryPath = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src", "index.ts")));
-    const coreEntryWildcard = toPosix(relative(tmpRoot, join(projectRoot, "packages", "core", "src")) + "/*");
+    const coreEntryWildcard = toPosix(`${relative(tmpRoot, join(projectRoot, "packages", "core", "src"))}/*`);
     const generatedRelative = toPosix(relative(tmpRoot, outFile));
 
     const tsconfig = {

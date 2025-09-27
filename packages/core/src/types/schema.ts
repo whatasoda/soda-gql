@@ -15,7 +15,7 @@ import type {
   OutputTypeRefs,
   OutputUnionRef,
 } from "./type-ref";
-import type { Hidden } from "./utility";
+import type { PseudoTypeAnnotation } from "./utility";
 
 /**
  * Core schema DSL used by generated hel
@@ -50,7 +50,7 @@ export type OperationRoots = {
 
 /** Scalar definition carries a phantom type for inference. */
 export type ScalarDef<T extends { input: unknown; output: unknown }> = {
-  _type: Hidden<{ input: T["input"]; output: T["output"] }>;
+  _type: PseudoTypeAnnotation<{ input: T["input"]; output: T["output"] }>;
 
   name: string;
 
@@ -59,7 +59,7 @@ export type ScalarDef<T extends { input: unknown; output: unknown }> = {
 
 /** Enum definition capturing the literal union of values. */
 export type EnumDef<T extends string> = {
-  _type: Hidden<T>;
+  _type: PseudoTypeAnnotation<T>;
 
   name: string;
 

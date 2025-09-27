@@ -1,8 +1,7 @@
 import { describe, expect, it } from "bun:test";
-
+import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
 import { buildDependencyGraph } from "../../../packages/builder/src/dependency-graph";
 import { createCanonicalId } from "../../../packages/builder/src/registry";
-import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
 
 describe("dependency graph resolver", () => {
   const baseAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({
@@ -69,9 +68,7 @@ describe("dependency graph resolver", () => {
           isTypeOnly: false,
         },
       ],
-      exports: [
-        { kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false }],
     });
 
     const result = buildDependencyGraph([sliceModule, pageModule]);
@@ -107,16 +104,12 @@ describe("dependency graph resolver", () => {
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
-      exports: [
-        { kind: "named", exported: "userSlice", local: "userSlice", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "userSlice", local: "userSlice", isTypeOnly: false }],
     });
 
     const barrelModule = baseAnalysis({
       filePath: "/app/src/queries/index.ts",
-      exports: [
-        { kind: "reexport", exported: "userSlice", source: "../entities/user", isTypeOnly: false },
-      ],
+      exports: [{ kind: "reexport", exported: "userSlice", source: "../entities/user", isTypeOnly: false }],
     });
 
     const pageModule = baseAnalysis({
@@ -139,9 +132,7 @@ describe("dependency graph resolver", () => {
           isTypeOnly: false,
         },
       ],
-      exports: [
-        { kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false }],
     });
 
     const result = buildDependencyGraph([sliceModule, barrelModule, pageModule]);
@@ -183,9 +174,7 @@ describe("dependency graph resolver", () => {
           isTypeOnly: false,
         },
       ],
-      exports: [
-        { kind: "named", exported: "sliceA", local: "sliceA", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "sliceA", local: "sliceA", isTypeOnly: false }],
     });
 
     const sliceBModule = baseAnalysis({
@@ -208,9 +197,7 @@ describe("dependency graph resolver", () => {
           isTypeOnly: false,
         },
       ],
-      exports: [
-        { kind: "named", exported: "sliceB", local: "sliceB", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "sliceB", local: "sliceB", isTypeOnly: false }],
     });
 
     const result = buildDependencyGraph([sliceAModule, sliceBModule]);
@@ -244,9 +231,7 @@ describe("dependency graph resolver", () => {
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
-      exports: [
-        { kind: "named", exported: "userSliceCatalog", local: "userSliceCatalog", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "userSliceCatalog", local: "userSliceCatalog", isTypeOnly: false }],
     });
 
     const userCatalogModule = baseAnalysis({
@@ -260,9 +245,7 @@ describe("dependency graph resolver", () => {
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
-      exports: [
-        { kind: "named", exported: "collections", local: "collections", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "collections", local: "collections", isTypeOnly: false }],
     });
 
     const profileModule = baseAnalysis({
@@ -292,9 +275,7 @@ describe("dependency graph resolver", () => {
           isTypeOnly: false,
         },
       ],
-      exports: [
-        { kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false },
-      ],
+      exports: [{ kind: "named", exported: "profileQuery", local: "profileQuery", isTypeOnly: false }],
     });
 
     const result = buildDependencyGraph([userModule, userCatalogModule, profileModule]);

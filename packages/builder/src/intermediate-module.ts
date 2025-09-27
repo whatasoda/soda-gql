@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-
+import { unwrapNullish } from "@soda-gql/tool-utils";
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
 
@@ -25,11 +25,11 @@ const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) 
   return ts.factory.updateFunctionExpression(fn, fn.modifiers, undefined, fn.name, [], [], undefined, block);
 };
 
-const indentLines = (value: string, indent: string): string =>
-  value
-    .split("\n")
-    .map((line, index) => (index === 0 ? line : `${indent}${line}`))
-    .join("\n");
+// const _indentLines = (value: string, indent: string): string =>
+//   value
+//     .split("\n")
+//     .map((line, index) => (index === 0 ? line : `${indent}${line}`))
+//     .join("\n");
 
 const formatFactory = (expression: string): string => {
   const trimmed = expression.trim();
@@ -38,9 +38,7 @@ const formatFactory = (expression: string): string => {
   }
 
   const lines = trimmed.split("\n").map((line) => line.trimEnd());
-  const indented = lines
-    .map((line, index) => (index === 0 ? line : `    ${line}`))
-    .join("\n");
+  const indented = lines.map((line, index) => (index === 0 ? line : `    ${line}`)).join("\n");
 
   return `(\n    ${indented}\n  )`;
 };
@@ -245,7 +243,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 
   const transformed = ts.transform(sourceFile, [transformer]);
   const [transformedFile] = transformed.transformed;
-  const expressionStatement = transformedFile.statements[0];
+  const expressionStatement = unwrapNullish(transformedFile, "safe-array-item-access").statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
     transformed.dispose();
@@ -253,7 +251,9 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   }
 
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  let printed = printer.printNode(ts.EmitHint.Expression, expressionStatement.expression, transformedFile).trim();
+  let printed = printer
+    .printNode(ts.EmitHint.Expression, expressionStatement.expression, unwrapNullish(transformedFile, "safe-array-item-access"))
+    .trim();
 
   if (printed.startsWith("(") && printed.endsWith(")")) {
     printed = printed.slice(1, -1).trim();
@@ -291,8 +291,8 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const expressionText = node.definition.expression.trim();
   const replacements = createReplacementMap(node, graph);
   const rewritten = rewriteExpression(expressionText, replacements);
-  const normalised = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
-  const factory = formatFactory(normalised);
+  const normalized = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
+  const factory = formatFactory(normalized);
 
   return `  "${node.id}": ${factory},`;
 };
@@ -310,8 +310,12 @@ const replaceModelTransform = (expression: string): string => {
     const visit: ts.Visitor = (node) => {
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "model") {
         const args = [...node.arguments];
-        if (args.length >= 3 && (ts.isArrowFunction(args[2]) || ts.isFunctionExpression(args[2]))) {
-          args[2] = createRuntimePlaceholder(args[2]);
+        if (
+          args.length >= 3 &&
+          (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) ||
+            ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))
+        ) {
+          args[2] = createRuntimePlaceholder(unwrapNullish(args[2], "safe-array-item-access"));
           return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
         }
       }
@@ -323,7 +327,7 @@ const replaceModelTransform = (expression: string): string => {
   };
 
   const transformed = ts.transform(sourceFile, [transformer]);
-  const transformedFile = transformed.transformed[0] as ts.SourceFile;
+  const transformedFile = unwrapNullish(transformed.transformed[0], "safe-array-item-access") as ts.SourceFile;
   const expressionStatement = transformedFile.statements[0];
 
   if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
@@ -357,7 +361,10 @@ export type CreateIntermediateModuleInput = {
   readonly outDir: string;
 };
 
-export const createIntermediateModule = async ({ graph, outDir }: CreateIntermediateModuleInput): Promise<Result<string, BuilderError>> => {
+export const createIntermediateModule = async ({
+  graph,
+  outDir,
+}: CreateIntermediateModuleInput): Promise<Result<string, BuilderError>> => {
   try {
     mkdirSync(outDir, { recursive: true });
   } catch (error) {
@@ -373,7 +380,11 @@ export const createIntermediateModule = async ({ graph, outDir }: CreateIntermed
   const slices: string[] = [];
   const operations: string[] = [];
   const missing: DependencyGraphNode[] = [];
-  const namedExportEntries: Array<{ readonly accessor: "models" | "slices" | "operations"; readonly name: string; readonly canonicalId: string }> = [];
+  const namedExportEntries: Array<{
+    readonly accessor: "models" | "slices" | "operations";
+    readonly name: string;
+    readonly canonicalId: string;
+  }> = [];
   const documentExports: Array<{ readonly name: string; readonly canonicalId: string }> = [];
   const usedExportNames = new Map<string, string>();
   let exportCollision: { readonly name: string; readonly existing: string; readonly incoming: string } | null = null;

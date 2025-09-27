@@ -1,31 +1,28 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-
-import { createModuleCache } from "../../../packages/builder/src/cache";
+import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
+import { createModuleCache } from "../../../packages/builder/src/cache";
+import { createTestSuite, TestSuite } from "../../utils/base";
+
+class CacheManagerTestSuite extends TestSuite {
+  createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
+    return {
+      filePath: "/dev/null",
+      sourceHash: "",
+      definitions: [],
+      diagnostics: [],
+      imports: [],
+      exports: [],
+      ...overrides,
+    };
+  }
+}
 
 describe("module cache manager", () => {
-  let cacheDir: string;
-
-  beforeEach(() => {
-    cacheDir = mkdtempSync(join(tmpdir(), "builder-cache-"));
-  });
-
-  const createAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({
-    filePath: "/dev/null",
-    sourceHash: "",
-    definitions: [],
-    diagnostics: [],
-    imports: [],
-    exports: [],
-    ...overrides,
-  });
+  const suite = createTestSuite(CacheManagerTestSuite);
 
   it("returns cached analysis when file hash matches", () => {
-    const cache = createModuleCache({ rootDir: cacheDir });
-    const analysis = createAnalysis({
+    const cache = createModuleCache({ rootDir: suite.getTempPath() });
+    const analysis = suite.createAnalysis({
       filePath: "/app/src/entities/user.ts",
       sourceHash: "hash-1",
       definitions: [
@@ -46,8 +43,8 @@ describe("module cache manager", () => {
   });
 
   it("misses cache when hash differs", () => {
-    const cache = createModuleCache({ rootDir: cacheDir });
-    const analysis = createAnalysis({
+    const cache = createModuleCache({ rootDir: suite.getTempPath() });
+    const analysis = suite.createAnalysis({
       filePath: "/app/src/entities/user.ts",
       sourceHash: "hash-1",
     });
@@ -59,13 +56,13 @@ describe("module cache manager", () => {
   });
 
   it("overwrites cache entries when storing newer analysis", () => {
-    const cache = createModuleCache({ rootDir: cacheDir });
-    const initial = createAnalysis({
+    const cache = createModuleCache({ rootDir: suite.getTempPath() });
+    const initial = suite.createAnalysis({
       filePath: "/app/src/entities/user.ts",
       sourceHash: "hash-1",
     });
 
-    const updated = createAnalysis({
+    const updated = suite.createAnalysis({
       filePath: "/app/src/entities/user.ts",
       sourceHash: "hash-2",
       definitions: [
@@ -84,9 +81,5 @@ describe("module cache manager", () => {
 
     const hit = cache.load("/app/src/entities/user.ts", "hash-2");
     expect(hit).toEqual(updated);
-  });
-
-  afterEach(() => {
-    rmSync(cacheDir, { recursive: true, force: true });
   });
 });
