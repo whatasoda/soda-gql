@@ -1,6 +1,6 @@
 import { extname } from "node:path";
-import ts from "typescript";
 import { unwrapNullish } from "@soda-gql/tool-utils";
+import ts from "typescript";
 
 export type SourcePosition = {
   readonly line: number;
@@ -533,7 +533,12 @@ const collectTopLevelDefinitions = (
             return;
           }
 
-          register(`${exportName}.${name}`, property.initializer, property, unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"));
+          register(
+            `${exportName}.${name}`,
+            property.initializer,
+            property,
+            unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"),
+          );
         });
       }
     });

@@ -45,10 +45,7 @@ export class TestSuite {
   /**
    * Write content to a file in the temp directory
    */
-  protected async writeTempFile(
-    relativePath: string,
-    content: string
-  ): Promise<string> {
+  protected async writeTempFile(relativePath: string, content: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
     await Bun.write(fullPath, content);
     return fullPath;
@@ -81,9 +78,7 @@ export class TestSuite {
 /**
  * Create a test suite with automatic setup
  */
-export const createTestSuite = <T extends TestSuite>(
-  SuiteClass: new () => T
-): T => {
+export const createTestSuite = <T extends TestSuite>(SuiteClass: new () => T): T => {
   const suite = new SuiteClass();
   suite.setup();
   return suite;

@@ -1,9 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
-import { runCodegenCli, assertCliSuccess, assertCliError, getProjectRoot } from "../../utils/cli";
-import { writeTestFile } from "../../utils";
+import { assertCliError, getProjectRoot, runCodegenCli } from "../../utils/cli";
 
 const projectRoot = getProjectRoot();
 

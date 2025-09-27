@@ -12,4 +12,4 @@
  * intended to be executed in end-user applications.
  */
 
-export { unwrapNullish, UnwrapNullishError } from "./unwrap-nullish";
+export { UnwrapNullishError, unwrapNullish } from "./unwrap-nullish";

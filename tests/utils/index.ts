@@ -1,8 +1,8 @@
+import { expect } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect } from "bun:test";
 
 /**
  * Get the project root directory
@@ -45,10 +45,7 @@ export const assertFileExists = async (path: string): Promise<void> => {
 /**
  * Assert that a file contains specific content
  */
-export const assertFileContains = async (
-  path: string,
-  content: string
-): Promise<void> => {
+export const assertFileContains = async (path: string, content: string): Promise<void> => {
   await assertFileExists(path);
   const fileContent = await Bun.file(path).text();
   expect(fileContent).toContain(content);
@@ -57,10 +54,7 @@ export const assertFileContains = async (
 /**
  * Assert that a file does not contain specific content
  */
-export const assertFileDoesNotContain = async (
-  path: string,
-  content: string
-): Promise<void> => {
+export const assertFileDoesNotContain = async (path: string, content: string): Promise<void> => {
   await assertFileExists(path);
   const fileContent = await Bun.file(path).text();
   expect(fileContent).not.toContain(content);
@@ -85,9 +79,6 @@ export const readTestFile = async (path: string): Promise<string> => {
 /**
  * Write file content
  */
-export const writeTestFile = async (
-  path: string,
-  content: string
-): Promise<void> => {
+export const writeTestFile = async (path: string, content: string): Promise<void> => {
   await Bun.write(path, content);
 };

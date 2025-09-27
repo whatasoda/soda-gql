@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
 import { type BuilderArtifact, createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
-import { runBabelTransform, assertTransformRemovesGql, assertTransformAddsRuntimeImport, assertTransformContainsRuntimeCall } from "../../utils/transform";
+import { assertTransformContainsRuntimeCall, assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
 
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
@@ -78,11 +78,11 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const source = await Bun.file(sourcePath).text();
 
     const transformed = await runBabelTransform(source, sourcePath, artifact, {
-      importIdentifier: "@/graphql-runtime"
+      importIdentifier: "@/graphql-runtime",
     });
     assertTransformRemovesGql(transformed);
     // Note: The plugin overrides the importIdentifier in some cases
-    expect(transformed).toContain('import { gqlRuntime } from ');
+    expect(transformed).toContain("import { gqlRuntime } from ");
     expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
     assertTransformContainsRuntimeCall(transformed, "query");
     expect(transformed).toContain("variableNames: [");
@@ -145,7 +145,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const source = await Bun.file(sourcePath).text();
 
     const transformed = await runBabelTransform(source, sourcePath, artifact, {
-      importIdentifier: "@/graphql-runtime"
+      importIdentifier: "@/graphql-runtime",
     });
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain(`forIterate: gqlRuntime.model({`);
@@ -222,11 +222,11 @@ export const slices = {
 `;
 
     const transformed = await runBabelTransform(source, join(process.cwd(), "tests/.tmp", "intermediate-module.ts"), artifact, {
-      importIdentifier: "@/graphql-runtime"
+      importIdentifier: "@/graphql-runtime",
     });
 
     // Note: The plugin overrides the importIdentifier in some cases
-    expect(transformed).toContain('import { gqlRuntime } from ');
+    expect(transformed).toContain("import { gqlRuntime } from ");
     assertTransformContainsRuntimeCall(transformed, "model");
     assertTransformContainsRuntimeCall(transformed, "querySlice");
   });

@@ -21,11 +21,7 @@ export { getProjectRoot } from "./index.ts";
 /**
  * Run the soda-gql CLI with timeout and proper cleanup
  */
-export const runSodaGqlCli = async (
-  command: string,
-  args: readonly string[],
-  options: CliOptions = {}
-): Promise<CliResult> => {
+export const runSodaGqlCli = async (command: string, args: readonly string[], options: CliOptions = {}): Promise<CliResult> => {
   const {
     timeout = 30000, // 30 second default timeout
     env = {},
@@ -53,11 +49,7 @@ export const runSodaGqlCli = async (
 
   try {
     const [stdout, stderr, exitCode] = await Promise.race([
-      Promise.all([
-        new Response(subprocess.stdout).text(),
-        new Response(subprocess.stderr).text(),
-        subprocess.exited,
-      ]),
+      Promise.all([new Response(subprocess.stdout).text(), new Response(subprocess.stderr).text(), subprocess.exited]),
       timeoutPromise,
     ]);
 
@@ -71,18 +63,14 @@ export const runSodaGqlCli = async (
 /**
  * Run codegen CLI command
  */
-export const runCodegenCli = (
-  args: readonly string[],
-  options?: CliOptions
-): Promise<CliResult> => runSodaGqlCli("codegen", args, options);
+export const runCodegenCli = (args: readonly string[], options?: CliOptions): Promise<CliResult> =>
+  runSodaGqlCli("codegen", args, options);
 
 /**
  * Run builder CLI command
  */
-export const runBuilderCli = (
-  args: readonly string[],
-  options?: CliOptions
-): Promise<CliResult> => runSodaGqlCli("builder", args, options);
+export const runBuilderCli = (args: readonly string[], options?: CliOptions): Promise<CliResult> =>
+  runSodaGqlCli("builder", args, options);
 
 /**
  * Assert CLI command succeeded
@@ -98,10 +86,7 @@ export const assertCliSuccess = (result: CliResult): void => {
 /**
  * Assert CLI command failed with expected error
  */
-export const assertCliError = (
-  result: CliResult,
-  expectedErrorCode?: string
-): void => {
+export const assertCliError = (result: CliResult, expectedErrorCode?: string): void => {
   expect(result.exitCode).toBe(1);
   if (expectedErrorCode) {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
@@ -114,10 +99,7 @@ export const assertCliError = (
 /**
  * Assert CLI output contains specific text
  */
-export const assertCliOutputContains = (
-  result: CliResult,
-  text: string
-): void => {
+export const assertCliOutputContains = (result: CliResult, text: string): void => {
   const combined = result.stdout + result.stderr;
   expect(combined).toContain(text);
 };
@@ -130,8 +112,6 @@ export const parseCliJsonOutput = <T>(result: CliResult): T => {
   try {
     return JSON.parse(result.stdout) as T;
   } catch (error) {
-    throw new Error(
-      `Failed to parse CLI JSON output: ${(error as Error).message}\nOutput: ${result.stdout}`
-    );
+    throw new Error(`Failed to parse CLI JSON output: ${(error as Error).message}\nOutput: ${result.stdout}`);
   }
 };

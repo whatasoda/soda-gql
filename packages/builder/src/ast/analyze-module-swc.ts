@@ -1,6 +1,6 @@
+import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, MemberExpression, Module, Param, Pattern, Span } from "@swc/types";
-import { unwrapNullish } from "@soda-gql/tool-utils";
 
 import {
   type AnalyzeModuleInput,
@@ -616,7 +616,12 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        register(baseName, decl.init, decl.span ?? decl.init.span, unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"));
+        register(
+          baseName,
+          decl.init,
+          decl.span ?? decl.init.span,
+          unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"),
+        );
         return;
       }
 
@@ -634,7 +639,12 @@ const collectTopLevelDefinitions = (
           if (!gqlCall) {
             return;
           }
-          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"));
+          register(
+            `${baseName}.${name}`,
+            prop.value,
+            prop.value.span ?? prop.span ?? decl.span,
+            unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"),
+          );
         });
       }
     });

@@ -1,7 +1,7 @@
-import { transformAsync } from "@babel/core";
 import { expect } from "bun:test";
-import createPlugin from "../../packages/plugin-babel/src/index.ts";
+import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
+import createPlugin from "../../packages/plugin-babel/src/index.ts";
 import { TestTempDir } from "./index.ts";
 
 export type TransformOptions = {
@@ -17,16 +17,12 @@ export const runBabelTransform = async (
   source: string,
   filename: string,
   artifact: BuilderArtifact,
-  options: TransformOptions = {}
+  options: TransformOptions = {},
 ): Promise<string> => {
   const tempDir = new TestTempDir("babel-transform");
 
   try {
-    const {
-      mode = "zero-runtime",
-      importIdentifier = "@soda-gql/runtime",
-      artifactsPath,
-    } = options;
+    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath } = options;
 
     const actualArtifactsPath = artifactsPath ?? tempDir.join("artifact.json");
 
@@ -73,10 +69,7 @@ export const assertTransformRemovesGql = (transformed: string): void => {
 /**
  * Assert that transform adds runtime import
  */
-export const assertTransformAddsRuntimeImport = (
-  transformed: string,
-  identifier = "@soda-gql/runtime"
-): void => {
+export const assertTransformAddsRuntimeImport = (transformed: string, identifier = "@soda-gql/runtime"): void => {
   expect(transformed).toContain(`import { gqlRuntime } from "${identifier}"`);
 };
 
@@ -84,19 +77,14 @@ export const assertTransformAddsRuntimeImport = (
  * Assert that transform uses runtime calls
  */
 export const assertTransformUsesRuntime = (transformed: string): void => {
-  const hasRuntimeCall = /gqlRuntime\.(query|model|querySlice|fragment)\(/.test(
-    transformed
-  );
+  const hasRuntimeCall = /gqlRuntime\.(query|model|querySlice|fragment)\(/.test(transformed);
   expect(hasRuntimeCall).toBe(true);
 };
 
 /**
  * Assert complete zero-runtime transformation
  */
-export const assertZeroRuntimeTransform = (
-  transformed: string,
-  importIdentifier = "@soda-gql/runtime"
-): void => {
+export const assertZeroRuntimeTransform = (transformed: string, importIdentifier = "@soda-gql/runtime"): void => {
   assertTransformRemovesGql(transformed);
   assertTransformAddsRuntimeImport(transformed, importIdentifier);
   assertTransformUsesRuntime(transformed);
@@ -105,10 +93,7 @@ export const assertZeroRuntimeTransform = (
 /**
  * Assert that transform preserves imports
  */
-export const assertTransformPreservesImports = (
-  transformed: string,
-  imports: string[]
-): void => {
+export const assertTransformPreservesImports = (transformed: string, imports: string[]): void => {
   for (const importStr of imports) {
     expect(transformed).toContain(importStr);
   }
@@ -120,21 +105,16 @@ export const assertTransformPreservesImports = (
 export const assertTransformContainsRuntimeCall = (
   transformed: string,
   method: "query" | "model" | "querySlice" | "fragment",
-  expectedArgs?: string
+  expectedArgs?: string,
 ): void => {
-  const pattern = expectedArgs
-    ? `gqlRuntime.${method}(${expectedArgs})`
-    : `gqlRuntime.${method}(`;
+  const pattern = expectedArgs ? `gqlRuntime.${method}(${expectedArgs})` : `gqlRuntime.${method}(`;
   expect(transformed).toContain(pattern);
 };
 
 /**
  * Create a simple source code for testing transforms
  */
-export const createTestSource = (
-  content: string,
-  imports = 'import { gql } from "@soda-gql/core";'
-): string => {
+export const createTestSource = (content: string, imports = 'import { gql } from "@soda-gql/core";'): string => {
   return `${imports}
 
 ${content}`;
@@ -143,12 +123,10 @@ ${content}`;
 /**
  * Parse transformed code and extract runtime calls
  */
-export const extractRuntimeCalls = (
-  transformed: string
-): Array<{ method: string; args: string }> => {
+export const extractRuntimeCalls = (transformed: string): Array<{ method: string; args: string }> => {
   const calls: Array<{ method: string; args: string }> = [];
   const regex = /gqlRuntime\.(\w+)\(([\s\S]*?)\)/g;
-  let match;
+  let match: RegExpExecArray | null;
 
   while ((match = regex.exec(transformed)) !== null) {
     calls.push({

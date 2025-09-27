@@ -1,9 +1,8 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-
+import { unwrapNullish } from "@soda-gql/tool-utils";
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
-import { unwrapNullish } from "@soda-gql/tool-utils";
 
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import { createRuntimeBindingName, createRuntimeDocumentName } from "./runtime-names";
@@ -252,7 +251,9 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   }
 
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  let printed = printer.printNode(ts.EmitHint.Expression, expressionStatement.expression, unwrapNullish(transformedFile, "safe-array-item-access")).trim();
+  let printed = printer
+    .printNode(ts.EmitHint.Expression, expressionStatement.expression, unwrapNullish(transformedFile, "safe-array-item-access"))
+    .trim();
 
   if (printed.startsWith("(") && printed.endsWith(")")) {
     printed = printed.slice(1, -1).trim();
@@ -309,7 +310,11 @@ const replaceModelTransform = (expression: string): string => {
     const visit: ts.Visitor = (node) => {
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "model") {
         const args = [...node.arguments];
-        if (args.length >= 3 && (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) || ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))) {
+        if (
+          args.length >= 3 &&
+          (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) ||
+            ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))
+        ) {
           args[2] = createRuntimePlaceholder(unwrapNullish(args[2], "safe-array-item-access"));
           return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
         }

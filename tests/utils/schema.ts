@@ -1,12 +1,12 @@
 import {
-  defineScalar,
-  defineOperationRoots,
-  define,
-  unsafeOutputRef,
-  unsafeInputRef,
-  pseudoTypeAnnotation,
   type AnyGraphqlSchema,
+  define,
+  defineOperationRoots,
+  defineScalar,
   type GraphqlRuntimeAdapter,
+  pseudoTypeAnnotation,
+  unsafeInputRef,
+  unsafeOutputRef,
 } from "../../packages/core/src/index.ts";
 
 /**
@@ -43,9 +43,7 @@ export const createStandardScalars = () => ({
 /**
  * Create a basic GraphQL schema with standard operations
  */
-export const createBasicSchema = (
-  overrides: Partial<AnyGraphqlSchema> = {}
-): AnyGraphqlSchema => ({
+export const createBasicSchema = (overrides: Partial<AnyGraphqlSchema> = {}): AnyGraphqlSchema => ({
   operations: defineOperationRoots({
     query: "Query",
     mutation: "Mutation",
@@ -67,9 +65,7 @@ export const createBasicSchema = (
 /**
  * Create a minimal query-only schema
  */
-export const createQueryOnlySchema = (
-  overrides: Partial<AnyGraphqlSchema> = {}
-): AnyGraphqlSchema => ({
+export const createQueryOnlySchema = (overrides: Partial<AnyGraphqlSchema> = {}): AnyGraphqlSchema => ({
   operations: defineOperationRoots({
     query: "Query",
     mutation: null,
@@ -121,15 +117,11 @@ export const createUserSchema = (): AnyGraphqlSchema => {
             {
               id: unsafeInputRef.scalar(["ID", "!"], null, {}),
             },
-            {}
-          ),
-          users: unsafeOutputRef.object(
-            ["User", "!", "[]", "!"],
             {},
-            {}
           ),
+          users: unsafeOutputRef.object(["User", "!", "[]", "!"], {}, {}),
         },
-        {}
+        {},
       ),
       ...define("User").object(
         {
@@ -137,7 +129,7 @@ export const createUserSchema = (): AnyGraphqlSchema => {
           name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
           email: unsafeOutputRef.scalar(["String"], {}, {}),
         },
-        {}
+        {},
       ),
     },
     union: {},
@@ -173,15 +165,11 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
             {
               id: unsafeInputRef.scalar(["ID", "!"], null, {}),
             },
-            {}
-          ),
-          posts: unsafeOutputRef.object(
-            ["Post", "!", "[]", "!"],
             {},
-            {}
           ),
+          posts: unsafeOutputRef.object(["Post", "!", "[]", "!"], {}, {}),
         },
-        {}
+        {},
       ),
       ...define("Mutation").object(
         {
@@ -190,10 +178,10 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
             {
               input: unsafeInputRef.object(["CreatePostInput", "!"], null, {}),
             },
-            {}
+            {},
           ),
         },
-        {}
+        {},
       ),
       ...define("Post").object(
         {
@@ -203,7 +191,7 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
           author: unsafeOutputRef.object(["Author", "!"], {}, {}),
           createdAt: unsafeOutputRef.scalar(["String", "!"], {}, {}),
         },
-        {}
+        {},
       ),
       ...define("Author").object(
         {
@@ -211,7 +199,7 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
           name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
           posts: unsafeOutputRef.object(["Post", "!", "[]", "!"], {}, {}),
         },
-        {}
+        {},
       ),
     },
     union: {},

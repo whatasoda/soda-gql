@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
 import { createModuleCache } from "../../../packages/builder/src/cache";
-import { TestSuite, createTestSuite } from "../../utils/base";
+import { createTestSuite, TestSuite } from "../../utils/base";
 
 class CacheManagerTestSuite extends TestSuite {
   createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
@@ -82,5 +82,4 @@ describe("module cache manager", () => {
     const hit = cache.load("/app/src/entities/user.ts", "hash-2");
     expect(hit).toEqual(updated);
   });
-
 });
