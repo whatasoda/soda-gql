@@ -1,25 +1,25 @@
-# unwrap-nullish ユーティリティ
+# unwrap-nullish Utility
 
-## 概要
+## Overview
 
-`unwrapNullish` は、型システム上は nullable（`T | null | undefined`）として扱われるが、コードの実装上では確実に値が存在することが保証されている場合に、その値を安全に unwrap（非 null 値として取り出す）するためのユーティリティ関数です。
+`unwrapNullish` is a utility function for safely unwrapping (extracting as non-null values) values that are treated as nullable (`T | null | undefined`) in the type system but are guaranteed to exist in the code implementation.
 
-## なぜ必要か
+## Why is it needed?
 
-TypeScript の型システムは、配列アクセスや Map の lookup など、多くの操作で安全側に倒して nullable な型を返します。これは一般的には良い設計ですが、開発者が事前の検証によって値の存在を保証している場合には、冗長な null チェックを強いることになります。
+TypeScript's type system errs on the safe side and returns nullable types for many operations such as array access and Map lookups. While this is generally good design, it forces redundant null checks when developers have guaranteed the existence of values through prior validation.
 
-### 典型的な例
+### Typical Example
 
 ```typescript
-// 型システム的には arr[2] は string | undefined
+// Type system treats arr[2] as string | undefined
 const arr: string[] = ["a", "b", "c"];
 if (arr.length >= 3) {
   const thirdItem = arr[2]; // string | undefined 😕
-  // 本来は string として扱いたい
+  // We want to treat this as string
 }
 ```
 
-## 使用方法
+## Usage
 
 ```typescript
 import { unwrapNullish } from "@soda-gql/tool-utils";
@@ -27,41 +27,41 @@ import { unwrapNullish } from "@soda-gql/tool-utils";
 const arr: string[] = ["a", "b", "c"];
 if (arr.length >= 3) {
   const thirdItem = unwrapNullish(arr[2], "safe-array-item-access");
-  // thirdItem は string として扱える ✅
+  // thirdItem can be treated as string ✅
 }
 ```
 
-## 承認済みの理由（ApprovedFairReasonToStripNullish）
+## Approved Reasons (ApprovedFairReasonToStripNullish)
 
-`unwrapNullish` を使用する際は、必ず事前定義された「理由」を指定する必要があります。これにより、なぜその値が null でないと断言できるのかを明示的に文書化します。
+When using `unwrapNullish`, you must specify a pre-defined "reason". This explicitly documents why the value can be asserted as non-null.
 
-### 現在承認されている理由
+### Currently Approved Reasons
 
-| key | 説明 |
-|-----|------|
-| `safe-array-item-access` | 配列の長さを事前に検証し、アクセスするインデックスに値が存在することが保証されている場合 |
-| `validated-map-lookup` | Map や Object のキーの存在を事前に検証済みの場合 |
-| `guaranteed-by-control-flow` | 制御フロー解析により値が非 null であることが保証されている場合 |
-| `validated-string-split` | 文字列の split 結果が期待する数の要素を持つことが保証されている場合 |
+| key | Description |
+|-----|-------------|
+| `safe-array-item-access` | When the array length has been validated beforehand and the existence of a value at the accessed index is guaranteed |
+| `validated-map-lookup` | When the existence of a key in a Map or Object has been validated beforehand |
+| `guaranteed-by-control-flow` | When control flow analysis guarantees that a value is non-null |
+| `validated-string-split` | When the result of string split is guaranteed to have the expected number of elements |
 
-### 新しい理由の追加
+### Adding New Reasons
 
-新しい使用ケースが発生した場合、`ApprovedFairReasonToStripNullish` 型に新しいエントリを追加できます：
+When new use cases arise, you can add a new entry to the `ApprovedFairReasonToStripNullish` type:
 
 ```typescript
 type ApprovedFairReasonToStripNullish =
-  | // ... 既存の理由
+  | // ... existing reasons
   | {
       key: "your-new-reason";
-      description: "詳細な説明";
+      description: "Detailed description";
     };
 ```
 
-**注意**: 新しい理由は定期的に人間によるレビューの対象となります。
+**Note**: New reasons are subject to regular human review.
 
-## エラーハンドリング
+## Error Handling
 
-万が一、値が null または undefined だった場合は、`UnwrapNullishError` が throw されます。このエラーには、指定された理由が含まれるため、デバッグが容易になります。
+If a value is null or undefined, `UnwrapNullishError` will be thrown. This error includes the specified reason, making debugging easier.
 
 ```typescript
 try {
@@ -74,43 +74,43 @@ try {
 }
 ```
 
-## 使用上の注意
+## Usage Notes
 
-### ⚠️ 重要な制限事項
+### ⚠️ Important Limitations
 
-1. **ツールチェインでのみ使用**: この関数は builder、cli などの開発ツールでのみ使用してください
-2. **ランタイムでの使用禁止**: アプリケーションのランタイムコードでは使用しないでください
-3. **core/runtime パッケージでの使用禁止**: @soda-gql/core と @soda-gql/runtime では使用しないでください
+1. **Use only in toolchain**: Use this function only in development tools like builder and cli
+2. **Prohibited in runtime**: Do not use in application runtime code
+3. **Prohibited in core/runtime packages**: Do not use in @soda-gql/core and @soda-gql/runtime
 
-### なぜこれらの制限があるのか
+### Why These Limitations Exist
 
-`unwrapNullish` は開発者の意図を明確にし、ツールチェインのコードを簡潔にするためのものです。エンドユーザーのアプリケーションでは、適切なエラーハンドリングや防御的プログラミングが必要であり、このような assertion 的な関数は適していません。
+`unwrapNullish` is designed to clarify developer intent and make toolchain code more concise. End-user applications require proper error handling and defensive programming, making such assertion-like functions inappropriate.
 
-## 使用例
+## Usage Examples
 
-### 配列アクセス
+### Array Access
 
 ```typescript
 const tokens = input.split(",");
 if (tokens.length >= 2) {
   const secondToken = unwrapNullish(tokens[1], "safe-array-item-access");
-  // secondToken を string として使用
+  // Use secondToken as string
 }
 ```
 
-### Map の lookup
+### Map Lookup
 
 ```typescript
 const cache = new Map<string, Value>();
-// ... cache にデータを追加
+// ... add data to cache
 
 if (cache.has(key)) {
   const value = unwrapNullish(cache.get(key), "validated-map-lookup");
-  // value を Value として使用
+  // Use value as Value
 }
 ```
 
-### 制御フローによる保証
+### Control Flow Guarantees
 
 ```typescript
 let value: string | null = null;
@@ -120,11 +120,11 @@ if (condition) {
 }
 
 if (condition) {
-  // 同じ condition なので value は必ず非 null
+  // Same condition so value is definitely non-null
   const nonNullValue = unwrapNullish(value, "guaranteed-by-control-flow");
 }
 ```
 
-## まとめ
+## Summary
 
-`unwrapNullish` は、型システムの限界を補い、開発者の意図を明確に表現するためのツールです。適切に使用することで、ツールチェインのコードをより読みやすく、保守しやすくできます。ただし、使用は開発ツールに限定し、エンドユーザーのコードでは従来通りの null チェックを行ってください。
+`unwrapNullish` is a tool to compensate for the limitations of the type system and clearly express developer intent. When used appropriately, it can make toolchain code more readable and maintainable. However, use is limited to development tools, and conventional null checking should be performed in end-user code.

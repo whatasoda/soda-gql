@@ -1,21 +1,21 @@
 /**
  * unwrap-nullish utility
  *
- * このユーティリティは、型的にはnullableであるが、コードの実装上nullishになることがあり得ない値を
- * 安全にunwrapするための関数です。
+ * This utility is a function to safely unwrap values that are nullable in the type system
+ * but cannot actually be nullish in the code implementation.
  *
- * 使用例:
- * - 配列の長さが3以上であることを確認済みの場合、arr[2]はstring | undefinedではなくstringとして扱いたい
+ * Use cases:
+ * - When array length is confirmed to be 3 or more, we want to treat arr[2] as string, not string | undefined
  *
- * 重要な制約:
- * - 利用できる理由（fairReasonToStripNullish）は事前に定義されたもののみ
- * - ApprovedFairReasonToStripNullishに定義され、定期的に人間がレビューを行う
- * - AIは必要であればエントリを追加可能
+ * Important constraints:
+ * - Available reasons (fairReasonToStripNullish) are limited to pre-defined ones
+ * - Defined in ApprovedFairReasonToStripNullish and subject to regular human review
+ * - AI may add entries as needed
  *
- * 使用制限:
- * - ツールチェイン上でのみ使用すること
- * - soda-gqlを使うアプリケーションのランタイム上で実行されないようにすること
- * - coreパッケージとruntimeパッケージでは絶対に使用しないこと
+ * Usage restrictions:
+ * - Use only in the toolchain
+ * - Must not be executed in the runtime of applications using soda-gql
+ * - NEVER use in core and runtime packages
  */
 
 export class UnwrapNullishError extends Error {
@@ -26,12 +26,12 @@ export class UnwrapNullishError extends Error {
 }
 
 /**
- * 承認済みのnullish除去理由の定義
+ * Definition of approved reasons for nullish removal
  *
- * 新しい理由を追加する際は:
- * 1. keyに一意な識別子を設定
- * 2. descriptionに理由の詳細な説明を記載
- * 3. 定期的な人間によるレビューの対象となることを理解する
+ * When adding a new reason:
+ * 1. Set a unique identifier for the key
+ * 2. Provide a detailed description of the reason
+ * 3. Understand that it will be subject to regular human review
  */
 type ApprovedFairReasonToStripNullish =
   | {
@@ -52,19 +52,19 @@ type ApprovedFairReasonToStripNullish =
     };
 
 /**
- * nullishな値を安全にunwrapする関数
+ * Function to safely unwrap nullish values
  *
- * @param value - unwrapしたい値（nullable）
- * @param fairReasonToStripNullish - nullishでないことが保証される理由（ApprovedFairReasonToStripNullishのkeyを指定）
- * @returns unwrapされた非null値
- * @throws {UnwrapNullishError} 値がnullまたはundefinedの場合
+ * @param value - The value to unwrap (nullable)
+ * @param fairReasonToStripNullish - The reason why the value is guaranteed to be non-nullish (specify a key from ApprovedFairReasonToStripNullish)
+ * @returns The unwrapped non-null value
+ * @throws {UnwrapNullishError} If the value is null or undefined
  *
  * @example
  * ```typescript
  * const arr = ["a", "b", "c"];
  * if (arr.length >= 3) {
  *   const thirdItem = unwrapNullish(arr[2], "safe-array-item-access");
- *   // thirdItemはstringとして扱える
+ *   // thirdItem can be treated as string
  * }
  * ```
  */

@@ -78,6 +78,14 @@ bun quality
 bun typecheck
 ```
 
+## Documentation Standards
+
+### Language Requirements
+
+- **ALL documentation MUST be in English**: Code comments, commit messages, README files, and inline documentation
+- **No mixed languages**: Never mix English and other languages in the same document
+- **Consistency is mandatory**: Once started in English, continue in English throughout
+
 ## Universal Code Conventions
 
 ### Type Safety
@@ -149,11 +157,11 @@ bun typecheck
 
 ### @soda-gql/tool-utils Package
 
-ツールチェイン専用のユーティリティコレクション。**core と runtime パッケージでは絶対に使用しないこと**。
+A utility collection exclusively for the toolchain. **NEVER use in core and runtime packages**.
 
 #### Available Utilities
 
-- **[unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md)**: 型的に nullable だが実装上 null にならない値を安全に unwrap するユーティリティ
+- **[unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md)**: A utility to safely unwrap values that are nullable in the type system but will never be null in the implementation
 
 ## Documentation
 

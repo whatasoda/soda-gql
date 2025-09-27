@@ -1,15 +1,15 @@
 /**
  * @soda-gql/tool-utils
  *
- * ツールチェイン専用のユーティリティコレクション
+ * Utility collection exclusively for the toolchain
  *
- * ⚠️ 重要な制限事項:
- * - このパッケージはツールチェイン（builder、cliなど）でのみ使用すること
- * - coreパッケージとruntimeパッケージでは絶対に使用しないこと
- * - アプリケーションのランタイムコードに含まれないようにすること
+ * ⚠️ Important Limitations:
+ * - Use this package only in the toolchain (builder, cli, etc.)
+ * - NEVER use in core and runtime packages
+ * - Ensure it is not included in application runtime code
  *
- * これらのユーティリティは開発時のツールでの使用を前提としており、
- * エンドユーザーのアプリケーションで実行されることを想定していません。
+ * These utilities are designed for use in development tools and are not
+ * intended to be executed in end-user applications.
  */
 
 export { unwrapNullish, UnwrapNullishError } from "./unwrap-nullish";
