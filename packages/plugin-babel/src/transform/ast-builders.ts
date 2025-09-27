@@ -31,15 +31,12 @@ export const cloneCallExpression = (node: t.CallExpression): t.CallExpression =>
 
 export const stripTypeAnnotations = (node: t.Node): void => {
   if ("typeParameters" in node) {
-    // @ts-expect-error - babel requires deletion
     delete node.typeParameters;
   }
   if ("typeAnnotation" in node) {
-    // @ts-expect-error - babel requires deletion
     delete node.typeAnnotation;
   }
   if ("returnType" in node) {
-    // @ts-expect-error - babel requires deletion
     delete node.returnType;
   }
 };

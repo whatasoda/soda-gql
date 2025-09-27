@@ -122,7 +122,7 @@ export const buildArtifact = async ({
     }
 
     const operationDescriptor = descriptor as {
-      readonly document: unknown;
+      readonly document: DocumentNode;
       readonly variables?: Record<string, string>;
       readonly name?: string;
     };
@@ -130,7 +130,7 @@ export const buildArtifact = async ({
     let documentName: string | undefined = typeof operationDescriptor.name === "string" ? operationDescriptor.name : undefined;
 
     if (!documentName) {
-      const document = operationDescriptor.document as {
+      const document = operationDescriptor.document as unknown as {
         readonly definitions?: Array<{ readonly name?: { readonly value?: string } }>;
       };
       const definition = Array.isArray(document?.definitions)

@@ -57,7 +57,7 @@ const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly s
   const segments: string[] = [];
 
   while (current) {
-    const parent = current.parentPath;
+    const parent: NodePath<t.Node> | null = current.parentPath;
     if (!parent) {
       return null;
     }
@@ -291,7 +291,7 @@ const convertTypeRefCall = (expression: t.Expression): t.Expression => {
     t.objectProperty(t.identifier("modifier"), modifier),
   ];
 
-  if (defaultArg) {
+  if (defaultArg && !t.isArgumentPlaceholder(defaultArg) && !t.isSpreadElement(defaultArg)) {
     properties.push(t.objectProperty(t.identifier("defaultValue"), clone(defaultArg)));
   }
 
@@ -383,7 +383,8 @@ const resolveCanonicalIdFromBinding = (
 
     const importSource = importDeclaration.node.source.value;
     const resolved = resolveImportPath(filename, importSource);
-    const importedName = bindingPath.node.imported?.name ?? bindingPath.node.local.name;
+    const imported = bindingPath.node.imported;
+    const importedName = imported ? (t.isIdentifier(imported) ? imported.name : imported.value) : bindingPath.node.local.name;
     const exportPath = [importedName, ...segments.slice(1)].join(".");
 
     if (resolved) {
@@ -470,10 +471,13 @@ const resolveSliceCanonicalId = (
   const exportPath = segments.join(".");
   const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0] ?? null;
   }
 
   const root = segments[0];
+  if (!root) {
+    return null;
+  }
   const binding = calleePath.scope.getBinding(root);
   if (binding) {
     const resolved = resolveCanonicalIdFromBinding(binding, segments, dependencies, filename);
@@ -483,7 +487,7 @@ const resolveSliceCanonicalId = (
   }
 
   if (matches.length > 0) {
-    return matches[0];
+    return matches[0] ?? null;
   }
 
   const localCanonical = resolveCanonicalId(filename, exportPath);
@@ -682,13 +686,13 @@ const collectSliceUsageEntries = (
     }
 
     const projectionBuilder = getOriginalArgument(state, canonicalId, "querySlice", 2);
-    if (!projectionBuilder) {
+    if (!projectionBuilder || !t.isObjectExpression(projectionBuilder)) {
       return;
     }
     const rootFieldKeys = getSliceRootFieldKeys(state.artifact, canonicalId);
     const paths = collectSelectPaths(projectionBuilder);
-    paths.forEach((path) => {
-      entries.push({ label, path, rootFieldKeys });
+    paths.forEach((entry) => {
+      entries.push({ label, path: entry.path, rootFieldKeys });
     });
   });
 

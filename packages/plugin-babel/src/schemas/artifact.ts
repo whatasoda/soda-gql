@@ -39,12 +39,18 @@ const RefEntrySchema = z.discriminatedUnion("kind", [
 ]);
 
 export const BuilderArtifactSchema = z.object({
-  documents: z.record(z.string()),
-  refs: z.record(RefEntrySchema),
+  documents: z.record(z.string(), z.unknown()),
+  refs: z.record(z.string(), RefEntrySchema),
   report: z.object({
-    sliceCount: z.number(),
-    modelCount: z.number(),
-    operationCount: z.number(),
+    documents: z.number(),
+    models: z.number(),
+    slices: z.number(),
+    durationMs: z.number(),
+    warnings: z.array(z.string()),
+    cache: z.object({
+      hits: z.number(),
+      misses: z.number(),
+    }),
   }),
 });
 
