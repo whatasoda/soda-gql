@@ -1,8 +1,35 @@
+# 🚨 CRITICAL: Agent Task Delegation (MUST FOLLOW)
+
+## ⚠️ MANDATORY Task Division Strategy
+
+**THIS SECTION MUST BE FOLLOWED WITHOUT EXCEPTION**. When working on ANY development task, you MUST divide responsibilities between agents as follows:
+
+### **Codex MUST Handle**:
+- **ALL code analysis** - Deep understanding of existing codebase patterns
+- **ALL implementation details** - Technical decisions and approach determination
+- **ALL result evaluation** - Quality assessment and validation
+
+### **Claude MUST Handle**:
+- **Task progression** - Managing workflow and task coordination
+- **Code implementation** - Executing the actual code changes
+- **Integration** - Ensuring smooth component integration
+
+### **MANDATORY Communication Protocol**:
+**ALL inter-agent coordination MUST be conducted in ENGLISH**. No exceptions.
+
+### **Required Workflow** (DO NOT SKIP ANY STEP):
+1. Claude receives user request
+2. Claude **MUST** delegate analysis to Codex (in English)
+3. Codex analyzes and returns implementation strategy
+4. Claude executes implementation based on Codex's guidance
+5. Codex **MUST** evaluate results
+6. Claude adjusts implementation based on feedback
+
+**FAILURE TO FOLLOW THIS DELEGATION WILL RESULT IN SUBOPTIMAL IMPLEMENTATIONS**
+
 ---
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-alwaysApply: false
----
+
+## Use Bun instead of Node.js, npm, pnpm, or vite.
 
 Default to using Bun instead of Node.js.
 
