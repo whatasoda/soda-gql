@@ -1,8 +1,8 @@
 import type { CanonicalId } from "./registry";
 
 const sanitizeExportName = (value: string): string => {
-  const sanitised = value.replace(/[^A-Za-z0-9_$]/g, "_");
-  return sanitised.length > 0 ? sanitised : "gqlExport";
+  const sanitized = value.replace(/[^A-Za-z0-9_$]/g, "_");
+  return sanitized.length > 0 ? sanitized : "gqlExport";
 };
 
 const toHash = (input: string): string => {
