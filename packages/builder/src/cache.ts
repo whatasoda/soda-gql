@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { type ModuleAnalysis, ModuleAnalysisSchema } from "./schemas/cache";
+import type { ModuleAnalysis } from "./ast/analyze-module";
+import { ModuleAnalysisSchema } from "./schemas/cache";
 
 export type ModuleCache = {
   readonly store: (analysis: ModuleAnalysis) => void;
@@ -40,7 +41,7 @@ export const createModuleCache = ({ rootDir }: ModuleCacheOptions): ModuleCache 
         if (parsed.sourceHash !== sourceHash) {
           return null;
         }
-        return parsed;
+        return parsed as ModuleAnalysis;
       } catch {
         return null;
       }

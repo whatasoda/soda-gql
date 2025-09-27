@@ -1,8 +1,13 @@
 import { z } from "zod";
 
+const SourcePositionSchema = z.object({
+  line: z.number(),
+  column: z.number(),
+});
+
 const SourceLocationSchema = z.object({
-  start: z.number(),
-  end: z.number(),
+  start: SourcePositionSchema,
+  end: SourcePositionSchema,
 });
 
 const ModuleDefinitionSchema = z.object({
@@ -36,22 +41,10 @@ const ModuleExportSchema = z.discriminatedUnion("kind", [
     isTypeOnly: z.boolean(),
   }),
   z.object({
-    kind: z.literal("namespace"),
+    kind: z.literal("reexport"),
     exported: z.string(),
     source: z.string(),
-    isTypeOnly: z.boolean(),
-  }),
-  z.object({
-    kind: z.literal("default"),
-    exported: z.literal("default"),
-    local: z.string(),
-    source: z.undefined().optional(),
-    isTypeOnly: z.boolean(),
-  }),
-  z.object({
-    kind: z.literal("all"),
-    source: z.string(),
-    exported: z.string().optional(),
+    local: z.string().optional(),
     isTypeOnly: z.boolean(),
   }),
 ]);
