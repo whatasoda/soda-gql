@@ -86,6 +86,17 @@ bun typecheck
 - **No mixed languages**: Never mix English and other languages in the same document
 - **Consistency is mandatory**: Once started in English, continue in English throughout
 
+### Spelling Standards
+
+- **Use American English spelling**: Always use American English spelling conventions, not British English
+- **Examples of correct spelling**:
+  - Use "color" not "colour"
+  - Use "organize" not "organise"
+  - Use "center" not "centre"
+  - Use "analyze" not "analyse"
+  - Use "behavior" not "behaviour"
+- **Apply consistently**: All code, comments, and documentation must follow American English spelling
+
 ## Universal Code Conventions
 
 ### Type Safety
