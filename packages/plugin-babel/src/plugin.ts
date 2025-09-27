@@ -6,6 +6,7 @@ import { types as t } from "@babel/core";
 import { parse } from "@babel/parser";
 import traverse, { type Binding, type NodePath } from "@babel/traverse";
 import { type BuilderArtifact, createRuntimeBindingName } from "@soda-gql/builder";
+import { unwrapNullish } from "@soda-gql/tool-utils";
 import type { DefinitionNode, DocumentNode, FieldNode, SelectionNode } from "graphql";
 import { loadArtifact, lookupRef, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
@@ -487,7 +488,7 @@ const resolveCanonicalIdFromBinding = (
 
     const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
     if (matches.length === 1) {
-      return matches[0];
+      return unwrapNullish(matches[0], "safe-array-item-access");
     }
   }
 
@@ -510,7 +511,7 @@ const resolveCanonicalIdFromBinding = (
 
     const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
     if (matches.length === 1) {
-      return matches[0];
+      return unwrapNullish(matches[0], "safe-array-item-access");
     }
   }
 
@@ -533,7 +534,7 @@ const resolveCanonicalIdFromBinding = (
 
     const matches = dependencies.filter((entry) => entry.endsWith(`::${exportPath}`));
     if (matches.length === 1) {
-      return matches[0];
+      return unwrapNullish(matches[0], "safe-array-item-access");
     }
   }
 

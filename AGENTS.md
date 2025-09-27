@@ -145,6 +145,16 @@ bun typecheck
 - `bun:test` for testing
 - `bun:sqlite` for SQLite
 
+## Tool Utilities
+
+### @soda-gql/tool-utils Package
+
+ツールチェイン専用のユーティリティコレクション。**core と runtime パッケージでは絶対に使用しないこと**。
+
+#### Available Utilities
+
+- **[unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md)**: 型的に nullable だが実装上 null にならない値を安全に unwrap するユーティリティ
+
 ## Documentation
 
 ### Architecture Decision Records (ADRs)

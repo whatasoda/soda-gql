@@ -1,5 +1,6 @@
 import { extname } from "node:path";
 import ts from "typescript";
+import { unwrapNullish } from "@soda-gql/tool-utils";
 
 export type SourcePosition = {
   readonly line: number;
@@ -508,7 +509,7 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        register(exportName, initializer, declaration, gqlDefinitionKinds[gqlCall.method]);
+        register(exportName, initializer, declaration, unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"));
         return;
       }
 
@@ -532,7 +533,7 @@ const collectTopLevelDefinitions = (
             return;
           }
 
-          register(`${exportName}.${name}`, property.initializer, property, gqlDefinitionKinds[gqlCall.method]);
+          register(`${exportName}.${name}`, property.initializer, property, unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"));
         });
       }
     });

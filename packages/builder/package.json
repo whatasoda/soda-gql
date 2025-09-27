@@ -16,6 +16,7 @@
     "@soda-gql/core": "workspace:*",
     "@soda-gql/codegen": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
+    "@soda-gql/tool-utils": "workspace:*",
     "@swc/core": "^1.6.3",
     "@swc/types": "^0.1.6",
     "neverthrow": "^8.1.1",

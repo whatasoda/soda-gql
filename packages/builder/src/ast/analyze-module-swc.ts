@@ -1,5 +1,6 @@
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, MemberExpression, Module, Param, Pattern, Span } from "@swc/types";
+import { unwrapNullish } from "@soda-gql/tool-utils";
 
 import {
   type AnalyzeModuleInput,
@@ -39,8 +40,8 @@ const toPositionResolver = (source: string) => {
     let high = lineStarts.length - 1;
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const start = lineStarts[mid];
-      const next = mid + 1 < lineStarts.length ? lineStarts[mid + 1] : source.length + 1;
+      const start = unwrapNullish(lineStarts[mid], "safe-array-item-access");
+      const next = mid + 1 < lineStarts.length ? unwrapNullish(lineStarts[mid + 1], "safe-array-item-access") : source.length + 1;
       if (offset < start) {
         high = mid - 1;
       } else if (offset >= next) {
@@ -51,7 +52,7 @@ const toPositionResolver = (source: string) => {
     }
     return {
       line: lineStarts.length,
-      column: offset - lineStarts[lineStarts.length - 1] + 1,
+      column: offset - unwrapNullish(lineStarts[lineStarts.length - 1], "safe-array-item-access") + 1,
     } satisfies SourcePosition;
   };
 };
@@ -615,7 +616,7 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        register(baseName, decl.init, decl.span ?? decl.init.span, gqlCallKinds[gqlCall.method]);
+        register(baseName, decl.init, decl.span ?? decl.init.span, unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"));
         return;
       }
 
@@ -633,7 +634,7 @@ const collectTopLevelDefinitions = (
           if (!gqlCall) {
             return;
           }
-          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, gqlCallKinds[gqlCall.method]);
+          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"));
         });
       }
     });

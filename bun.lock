@@ -17,6 +17,7 @@
         "@soda-gql/codegen": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
+        "@soda-gql/tool-utils": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",
         "neverthrow": "^8.1.1",
@@ -64,6 +65,7 @@
         "@babel/traverse": "^7.24.0",
         "@babel/types": "^7.24.0",
         "@soda-gql/builder": "workspace:*",
+        "@soda-gql/tool-utils": "workspace:*",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
       },
@@ -76,6 +78,14 @@
       "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
+      },
+    },
+    "packages/tool-utils": {
+      "name": "@soda-gql/tool-utils",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.1.14",
+        "typescript": "^5.7.3",
       },
     },
   },
@@ -153,6 +163,8 @@
     "@soda-gql/plugin-babel": ["@soda-gql/plugin-babel@workspace:packages/plugin-babel"],
 
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
+
+    "@soda-gql/tool-utils": ["@soda-gql/tool-utils@workspace:packages/tool-utils"],
 
     "@swc/core": ["@swc/core@1.13.5", "", { "dependencies": { "@swc/counter": "^0.1.3", "@swc/types": "^0.1.24" }, "optionalDependencies": { "@swc/core-darwin-arm64": "1.13.5", "@swc/core-darwin-x64": "1.13.5", "@swc/core-linux-arm-gnueabihf": "1.13.5", "@swc/core-linux-arm64-gnu": "1.13.5", "@swc/core-linux-arm64-musl": "1.13.5", "@swc/core-linux-x64-gnu": "1.13.5", "@swc/core-linux-x64-musl": "1.13.5", "@swc/core-win32-arm64-msvc": "1.13.5", "@swc/core-win32-ia32-msvc": "1.13.5", "@swc/core-win32-x64-msvc": "1.13.5" }, "peerDependencies": { "@swc/helpers": ">=0.5.17" }, "optionalPeers": ["@swc/helpers"] }, "sha512-WezcBo8a0Dg2rnR82zhwoR6aRNxeTGfK5QCD6TQ+kg3xx/zNT02s/0o+81h/3zhvFSB24NtqEr8FTw88O5W/JQ=="],
 
