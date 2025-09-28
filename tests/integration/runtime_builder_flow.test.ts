@@ -151,9 +151,7 @@ describe("runtime builder flow", () => {
     const artifact = builderSuccess.artifact;
 
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(artifact.operations).find(
-      (op) => op.prebuild.name === "ProfilePageQuery"
-    );
+    const profileQueryOp = Object.values(artifact.operations).find((op) => op.prebuild.name === "ProfilePageQuery");
     expect(profileQueryOp).toBeDefined();
     expect(profileQueryOp?.prebuild.document).toBeDefined();
 
