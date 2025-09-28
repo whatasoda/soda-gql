@@ -5,54 +5,13 @@ import { fileURLToPath } from "node:url";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
+import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
 import { runBabelTransform } from "../utils/transform.ts";
 import { typeCheckFiles } from "../utils/type-check.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "integration-zero-runtime");
-
-const writeInjectModule = async (outFile: string) => {
-  const contents = `\
-import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
-
-export const scalar = {
-  ...defineScalar("ID", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("String", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("Int", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Float", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Boolean", ({ type }) => ({
-    input: type<boolean>(),
-    output: type<boolean>(),
-    directives: {},
-  })),
-} as const;
-
-const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
-
-export const adapter = {
-  nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
-`;
-
-  await Bun.write(outFile, contents);
-};
 
 const copyFixtureWorkspace = (name: string) => {
   mkdirSync(tmpRoot, { recursive: true });
@@ -70,7 +29,7 @@ describe("zero-runtime transform", () => {
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
     const injectPath = join(workspace, "graphql-inject.ts");
 
-    await writeInjectModule(injectPath);
+    copyDefaultInjectModule(injectPath);
 
     // Use multi-schema codegen with a single "default" schema
     const codegenResult = await runMultiSchemaCodegen({
