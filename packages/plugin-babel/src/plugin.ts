@@ -1212,9 +1212,14 @@ const buildQueryRuntimeComponents = (
   const slicesBuilderPath = innerCall
     ? ((callPath.get("arguments")[0] as NodePath).get("body.arguments.2") as NodePath<t.Expression>)
     : (callPath.get("arguments")[2] as NodePath<t.Expression>);
-  // TODO: projectionPathGraph extraction doesn't work properly in zero-runtime mode
-  // The collectSliceUsageEntries relies on accessing original source which is already transformed
-  // The builder needs to record projection information in the artifact
+  // LIMITATION: projectionPathGraph is not fully supported in zero-runtime mode
+  // The projection graph is used for mapping GraphQL errors to specific projection paths.
+  // In zero-runtime mode, this would require:
+  // 1. Analyzing slice usage labels in operations at build time
+  // 2. Storing projection path information for each slice
+  // 3. Reconstructing the graph from metadata
+  // Currently, an empty graph is provided which means error mapping won't work optimally
+  // but core functionality is unaffected.
   const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
   const projectionGraph = projectionEntries.length > 0 ? _buildProjectionPathGraph(projectionEntries) : null;
 
