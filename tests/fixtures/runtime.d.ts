@@ -28,36 +28,24 @@ declare module "@soda-gql/runtime" {
   };
 
   export const gqlRuntime: {
-    model: (config: {
-      typename: string;
-      transform: (raw: any) => any;
-    }) => Model;
+    model: (config: { typename: string; transform: (raw: any) => any }) => Model;
 
     query: (config: {
       name: string;
       document: any;
+      projectionPathGraph: any; // Required, not optional
       variableNames: readonly string[];
       getSlices: (...args: any[]) => any;
-      projectionPathGraph?: any;
     }) => any;
 
     mutation: (config: any) => any;
     subscription: (config: any) => any;
 
-    querySlice: (config: {
-      rootFieldKeys: readonly string[];
-      projections: any;
-    }) => OperationSlice;
+    querySlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => OperationSlice;
 
-    mutationSlice: (config: {
-      rootFieldKeys: readonly string[];
-      projections: any;
-    }) => OperationSlice;
+    mutationSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => OperationSlice;
 
-    subscriptionSlice: (config: {
-      rootFieldKeys: readonly string[];
-      projections: any;
-    }) => OperationSlice;
+    subscriptionSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => OperationSlice;
 
     handleProjectionBuilder: <T>(builder: T) => any;
   };

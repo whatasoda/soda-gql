@@ -1,7 +1,7 @@
 import { expect } from "bun:test";
-import { transformAsync } from "@babel/core";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
 import createPlugin from "../../packages/plugin-babel/src/index.ts";
 import { getProjectRoot, TestTempDir } from "./index.ts";
@@ -58,7 +58,13 @@ export const runBabelTransform = async (
   const tempDir = new TestTempDir("babel-transform");
 
   try {
-    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath, skipTypeCheck = false, additionalFiles = [] } = options;
+    const {
+      mode = "zero-runtime",
+      importIdentifier = "@soda-gql/runtime",
+      artifactsPath,
+      skipTypeCheck = false,
+      additionalFiles = [],
+    } = options;
 
     const actualArtifactsPath = artifactsPath ?? tempDir.join("artifact.json");
 

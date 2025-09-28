@@ -1214,9 +1214,15 @@ const buildQueryRuntimeComponents = (
     properties.push(t.objectProperty(t.identifier("getSlices"), clone(slicesBuilder)));
   }
 
-  if (projectionGraph) {
-    properties.push(t.objectProperty(t.identifier("projectionPathGraph"), _projectionGraphToAst(projectionGraph)));
-  }
+  // Always include projectionPathGraph - it's required by the runtime
+  // When no projection graph exists, provide an empty structure
+  const projectionPathGraphAst = projectionGraph
+    ? _projectionGraphToAst(projectionGraph)
+    : t.objectExpression([
+        t.objectProperty(t.identifier("matches"), t.arrayExpression([])),
+        t.objectProperty(t.identifier("children"), t.objectExpression([])),
+      ]);
+  properties.push(t.objectProperty(t.identifier("projectionPathGraph"), projectionPathGraphAst));
 
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("query")), [
     t.objectExpression(properties),

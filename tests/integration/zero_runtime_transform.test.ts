@@ -2,10 +2,11 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCanonicalId, createRuntimeBindingName, runBuilder } from "../../packages/builder/src/index.ts";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
+import { createCanonicalId, createRuntimeBindingName, runBuilder } from "../../packages/builder/src/index.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 import { runBabelTransform } from "../utils/transform.ts";
+import { typeCheckFiles } from "../utils/type-check.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -172,7 +173,6 @@ describe("zero-runtime transform", () => {
     }
 
     // Type check all transformed files together
-    const { typeCheckFiles } = await import("../utils/type-check.ts");
     await typeCheckFiles(transformedFiles);
   });
 });
