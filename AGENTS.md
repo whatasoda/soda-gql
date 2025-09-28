@@ -110,22 +110,6 @@ Before ANY code-related action, you MUST:
 6. Continue Until Complete
 ```
 
-### ⚡ Quick Reference Commands:
-
-```typescript
-// ALWAYS START WITH THIS:
-mcp__codex__codex({
-  prompt: "[User's request in English]",
-  sandbox: "workspace-write"
-})
-
-// FOR FOLLOW-UPS:
-mcp__codex__codex-reply({
-  conversationId: "[from previous response]",
-  prompt: "[follow-up question]"
-})
-```
-
 ### 🔁 MANDATORY RETRY POLICY FOR CODEX MCP FAILURES
 
 **NEVER GIVE UP ON THE FIRST FAILURE** - You MUST retry Codex MCP calls when they fail:
@@ -139,21 +123,6 @@ mcp__codex__codex-reply({
 - **MAINTAIN SAME PROMPT**: Use identical parameters for each retry
 - **WAIT BETWEEN RETRIES**: Use increasing delays (2s, 3s) to avoid overwhelming the service
 - **DOCUMENT FAILURES**: If all 3 attempts fail, clearly explain the issue to the user
-
-**Example Retry Pattern**:
-```typescript
-// Attempt 1
-mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
-// If fails → Wait 2 seconds
-
-// Attempt 2
-mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
-// If fails → Wait 3 seconds
-
-// Attempt 3
-mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
-// If fails → Report to user with detailed error information
-```
 
 **IMPORTANT**: Connection failures, timeouts, or temporary errors are NOT valid reasons to skip Codex. You MUST retry as specified above.
 
@@ -482,3 +451,7 @@ See [ADR-000](docs/decisions/000-adr-process.md) for the full process.
 
 ## Recent Changes
 - 2025-09-20 (001-zero-runtime-gql-in-js): Document staged runtime → zero-runtime plan, added codegen/builder commands.
+
+## Codex MCP Usage Reference
+
+For detailed guidance on using Codex MCP effectively, including troubleshooting common issues and best practices, refer to [CODEX_MCP_GUIDE.md](./CODEX_MCP_GUIDE.md).
