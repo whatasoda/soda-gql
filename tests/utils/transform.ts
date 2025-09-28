@@ -43,6 +43,7 @@ export type TransformOptions = {
   importIdentifier?: string;
   artifactsPath?: string;
   skipTypeCheck?: boolean;
+  additionalFiles?: Array<{ path: string; content: string }>; // Additional files for type checking context
 };
 
 /**
@@ -57,7 +58,7 @@ export const runBabelTransform = async (
   const tempDir = new TestTempDir("babel-transform");
 
   try {
-    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath, skipTypeCheck = false } = options;
+    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath, skipTypeCheck = false, additionalFiles = [] } = options;
 
     const actualArtifactsPath = artifactsPath ?? tempDir.join("artifact.json");
 
@@ -91,7 +92,9 @@ export const runBabelTransform = async (
     // Type-check unless explicitly skipped
     if (!skipTypeCheck) {
       try {
-        await typeCheckFiles([{ path: filename, content: formatted }]);
+        // Include the main file and any additional files for comprehensive type checking
+        const allFiles = [{ path: filename, content: formatted }, ...additionalFiles];
+        await typeCheckFiles(allFiles);
       } catch (error) {
         console.error(`Type check failed for ${filename}.\n-----\n${formatted}\n-----`);
         throw error;

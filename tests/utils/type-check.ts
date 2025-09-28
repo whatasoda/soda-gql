@@ -1,5 +1,5 @@
-import ts from "typescript";
 import { dirname, isAbsolute, join } from "node:path";
+import ts from "typescript";
 import { getProjectRoot } from "./index.ts";
 
 export type TypeCheckInput = {
@@ -11,10 +11,7 @@ export type TypeCheckOptions = {
   tsconfigPath?: string;
 };
 
-const createFormatHost = (
-  projectRoot: string,
-  useCaseSensitiveFileNames: boolean,
-): ts.FormatDiagnosticsHost => {
+const createFormatHost = (projectRoot: string, useCaseSensitiveFileNames: boolean): ts.FormatDiagnosticsHost => {
   return {
     getCanonicalFileName: (fileName) => (useCaseSensitiveFileNames ? fileName : fileName.toLowerCase()),
     getCurrentDirectory: () => projectRoot,
@@ -22,10 +19,7 @@ const createFormatHost = (
   };
 };
 
-export const typeCheckFiles = async (
-  files: TypeCheckInput[],
-  options: TypeCheckOptions = {},
-): Promise<void> => {
+export const typeCheckFiles = async (files: TypeCheckInput[], options: TypeCheckOptions = {}): Promise<void> => {
   if (files.length === 0) {
     return;
   }

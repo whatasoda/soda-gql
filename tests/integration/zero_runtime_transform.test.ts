@@ -150,12 +150,15 @@ describe("zero-runtime transform", () => {
       },
     ];
 
+    // Transform all files and write to disk
+    const transformedFiles: Array<{ path: string; content: string }> = [];
+
     for (const target of targets) {
       const sourceCode = await Bun.file(target.filePath).text();
       const transformed = await runBabelTransform(sourceCode, target.filePath, artifact, {
         mode: "zero-runtime",
         artifactsPath: artifactPath,
-        skipTypeCheck: true, // Skip type check as files are transformed individually
+        skipTypeCheck: true, // Skip individual type check - we'll check all together
       });
       target.verify(transformed);
 
@@ -163,6 +166,13 @@ describe("zero-runtime transform", () => {
       const outputPath = join(transformOutDir, relativePath);
       mkdirSync(dirname(outputPath), { recursive: true });
       await Bun.write(outputPath, transformed);
+
+      // Collect for comprehensive type checking
+      transformedFiles.push({ path: outputPath, content: transformed });
     }
+
+    // Type check all transformed files together
+    const { typeCheckFiles } = await import("../utils/type-check.ts");
+    await typeCheckFiles(transformedFiles);
   });
 });
