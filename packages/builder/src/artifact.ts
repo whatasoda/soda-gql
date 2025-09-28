@@ -233,12 +233,13 @@ export const buildArtifact = async ({
     const documents = Array.from(sliceConsumers.get(slice.id) ?? []);
 
     // Extract rootFieldKeys from the runtime slice if available
+    // Note: slices in the intermediate module are functions that return slice factories
     let rootFieldKeys: string[] = [];
-    const sliceDescriptor = runtimeSlices[slice.id];
-    if (sliceDescriptor && typeof sliceDescriptor === "function") {
+    const sliceFactory = runtimeSlices[slice.id];
+    if (sliceFactory && typeof sliceFactory === "function") {
       try {
-        // Call the slice with empty variables to get the slice object
-        const sliceInstance = sliceDescriptor({});
+        // Call the slice factory with empty variables to get the slice instance
+        const sliceInstance = sliceFactory({});
         if (sliceInstance && typeof sliceInstance === "object" && Array.isArray(sliceInstance.rootFieldKeys)) {
           rootFieldKeys = sliceInstance.rootFieldKeys;
         }

@@ -5,7 +5,6 @@ import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
 
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
-import { createRuntimeBindingName, createRuntimeDocumentName } from "./runtime-names";
 import type { BuilderError } from "./types";
 
 const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
@@ -384,14 +383,6 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
   const slices: string[] = [];
   const operations: string[] = [];
   const missing: DependencyGraphNode[] = [];
-  const namedExportEntries: Array<{
-    readonly accessor: "models" | "slices" | "operations";
-    readonly name: string;
-    readonly canonicalId: string;
-  }> = [];
-  const documentExports: Array<{ readonly name: string; readonly canonicalId: string }> = [];
-  const usedExportNames = new Map<string, string>();
-  let exportCollision: { readonly name: string; readonly existing: string; readonly incoming: string } | null = null;
 
   graph.forEach((node) => {
     if (!node.definition.expression || node.definition.expression.trim().length === 0) {
@@ -399,22 +390,6 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
       return;
     }
     const entry = renderEntry(node, graph);
-    const runtimeBindingName = createRuntimeBindingName(node.id, node.definition.exportName);
-
-    const previous = usedExportNames.get(runtimeBindingName);
-    if (previous && previous !== node.id && exportCollision === null) {
-      exportCollision = { name: runtimeBindingName, existing: previous, incoming: node.id };
-    } else {
-      usedExportNames.set(runtimeBindingName, node.id);
-    }
-
-    const accessor = node.definition.kind === "model" ? "models" : node.definition.kind === "slice" ? "slices" : "operations";
-    namedExportEntries.push({ accessor, name: runtimeBindingName, canonicalId: node.id });
-
-    if (node.definition.kind === "operation") {
-      const documentName = createRuntimeDocumentName(node.id, node.definition.exportName);
-      documentExports.push({ name: documentName, canonicalId: node.id });
-    }
 
     switch (node.definition.kind) {
       case "model": {
@@ -446,38 +421,13 @@ export const createRuntimeModule = async ({ graph, outDir }: CreateRuntimeModule
     });
   }
 
-  if (exportCollision) {
-    // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
-    const filePath = (exportCollision as any).incoming.split("::")[0] ?? outDir;
-    return err({
-      code: "MODULE_EVALUATION_FAILED",
-      filePath,
-      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
-      exportName: (exportCollision as any).name,
-      // biome-ignore lint/suspicious/noExplicitAny: Type narrowing issue
-      message: `RUNTIME_EXPORT_NAME_COLLISION:${(exportCollision as any).existing}`,
-    });
-  }
-
   const sections = [renderSection("models", models), renderSection("slices", slices), renderSection("operations", operations)]
     .map((section) => section.trimEnd())
     .join("\n\n");
 
-  const namedExports = namedExportEntries
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((entry) => `export const ${entry.name} = ${entry.accessor}["${entry.canonicalId}"];`)
-    .join("\n");
-
-  const operationDocumentExports = documentExports
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((entry) => `export const ${entry.name} = operations["${entry.canonicalId}"].document;`)
-    .join("\n");
-
-  const exportSections = [namedExports, operationDocumentExports].filter((section) => section.length > 0).join("\n");
-
   const imports = [`import { gql } from "@/graphql-system";`];
 
-  const content = `${imports.join("\n")}\n\n${sections}\n\n${exportSections}\n`;
+  const content = `${imports.join("\n")}\n\n${sections}\n`;
 
   const fileName = `runtime-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
   const filePath = join(outDir, fileName);
