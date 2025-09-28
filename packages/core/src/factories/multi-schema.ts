@@ -28,7 +28,7 @@ export const createGql = <
   return invokers as GqlFactory<SchemaInstances<TConfigs>>;
 
   function assignInvoker<TSchemaName extends keyof TConfigs & string>(schemaName: TSchemaName, config: TConfigs[TSchemaName]) {
-    const helpers = createGqlSingle(config) as SchemaConfigToInstance<TConfigs[TSchemaName]>;;
+    const helpers = createGqlSingle(config) as SchemaConfigToInstance<TConfigs[TSchemaName]>;
 
     invokers[schemaName] = ((factory) => factory(helpers)) as GqlFactory<SchemaInstances<TConfigs>>[TSchemaName];
   }

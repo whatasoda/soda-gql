@@ -275,40 +275,41 @@ const isGqlCall = (
   } else {
     return null;
   }
-  
+
   if (expression.object.type !== "Identifier") {
     return null;
   }
-  
+
   if (!identifiers.has(expression.object.value)) {
     return null;
   }
-  
+
   if (expression.property.type !== "Identifier") {
     return null;
   }
-  
+
   const method = expression.property.value;
-  
+
   // Check if it's a direct method call (old pattern)
   if (method in gqlCallKinds) {
     return { method, callee: expression };
   }
-  
+
   // Check if it's a schema factory call (new pattern like gql.default or gql.admin)
   if (method === "default" || method === "admin") {
     // This is a factory call, we need to look inside for the actual method
     if (call.arguments.length > 0) {
       const firstArg = call.arguments[0];
-      
+
       // Check if it's an arrow function
-      if (firstArg && firstArg.expression && firstArg.expression.type === "ArrowFunctionExpression") {
+      if (firstArg?.expression && firstArg.expression.type === "ArrowFunctionExpression") {
+        // biome-ignore lint/suspicious/noExplicitAny: SWC AST types are complex
         const arrowFunc = firstArg.expression as any;
-        
+
         // Check if the body is a call expression
         if (arrowFunc.body && arrowFunc.body.type === "CallExpression") {
           const innerCall = arrowFunc.body as CallExpression;
-          
+
           // Check if it's calling a method directly
           if (innerCall.callee.type === "Identifier") {
             const innerMethod = innerCall.callee.value;
@@ -330,9 +331,9 @@ const isGqlCall = (
       }
     }
   }
-  
+
   return null;
-};;
+};
 
 const collectIdentifiersFromPattern = (pattern: Pattern | null | undefined, into: Set<string>) => {
   if (!pattern) {
@@ -658,7 +659,13 @@ const collectTopLevelDefinitions = (
     return raw;
   };
 
-  const register = (exportName: string, initializer: CallExpression, span: Span, kind: GqlDefinitionKind, schemaName?: string) => {
+  const register = (
+    exportName: string,
+    initializer: CallExpression,
+    span: Span,
+    kind: GqlDefinitionKind,
+    schemaName?: string,
+  ) => {
     handled.add(initializer);
     const expression = expressionFromCall(initializer);
     pending.push({

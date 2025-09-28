@@ -15,18 +15,19 @@ export const profileQuery = gql.default(({ query, scalar }) =>
       categoryId: scalar(["ID", ""]),
     },
     ({ $ }) => ({
-    users: userSlice({
-      id: $.userId,
-      categoryId: $.categoryId,
+      users: userSlice({
+        id: $.userId,
+        categoryId: $.categoryId,
+      }),
+      remoteUsers: userSliceCatalog.byId({
+        id: $.userId,
+        categoryId: $.categoryId,
+      }),
+      catalogUsers: userCatalog.collections.byCategory({
+        categoryId: $.categoryId,
+      }),
     }),
-    remoteUsers: userSliceCatalog.byId({
-      id: $.userId,
-      categoryId: $.categoryId,
-    }),
-    catalogUsers: userCatalog.collections.byCategory({
-      categoryId: $.categoryId,
-    }),
-  })),
+  ),
 );
 
 export type ProfileQuery = typeof profileQuery;

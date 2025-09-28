@@ -6,7 +6,7 @@ import { assertTransformContainsRuntimeCall, assertTransformRemovesGql, runBabel
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
     const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/pages/profile.query.ts");
-    const queryId = createCanonicalId(sourcePath, "profileQuery");
+    const queryId = createCanonicalId(sourcePath, "profileQuery", "default");
     const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
     const userSliceId = createCanonicalId(join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"), "userSlice");

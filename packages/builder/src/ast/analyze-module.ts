@@ -264,15 +264,15 @@ const isGqlDefinitionCall = (
   // Check for gql.{schema}(({ helper }) => helper.method(...)) pattern
   if (ts.isIdentifier(expression.expression) && identifiers.has(expression.expression.text)) {
     const schemaName = expression.name.text;
-    
+
     // Check if this could be a schema name (not a method name)
     if (!(schemaName in gqlDefinitionKinds)) {
       // This is a schema invoker call, we need to look inside the factory function
       if (callExpression.arguments.length > 0) {
         const firstArg = callExpression.arguments[0];
-        
+
         // Check if it's an arrow function
-        if (ts.isArrowFunction(firstArg) && firstArg.body) {
+        if (firstArg && ts.isArrowFunction(firstArg) && firstArg.body) {
           // If body is a call expression, check if it's calling a gql method
           if (ts.isCallExpression(firstArg.body)) {
             const innerCall = firstArg.body;
@@ -338,7 +338,7 @@ const isGqlDefinitionCall = (
   }
 
   return { method };
-};;;
+};
 
 const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
   if (ts.isIdentifier(parameter)) {
