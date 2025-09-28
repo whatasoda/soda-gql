@@ -1,0 +1,26 @@
+# Default GraphQL Schema
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+  publishedAt: String
+}
+
+type Query {
+  user(id: ID!): User
+  posts(limit: Int = 10): [Post!]!
+}
+
+type Mutation {
+  createPost(title: String!, content: String!): Post!
+  updateUser(id: ID!, name: String, email: String): User!
+}

@@ -39,8 +39,8 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
   }
 };
 
-export const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =>
-  createCanonicalId(resolve(filename), exportName);
+export const resolveCanonicalId = (filename: string, exportName: string, schemaName?: string): CanonicalId =>
+  createCanonicalId(resolve(filename), exportName, schemaName);
 
 export const lookupRef = (
   artifact: BuilderArtifact,
@@ -63,7 +63,10 @@ export const lookupRef = (
   }
 
   if (entry.kind === "slice") {
-    const metadata = entry.metadata as { readonly dependencies: readonly string[]; readonly canonicalDocuments: readonly string[] };
+    const metadata = entry.metadata as {
+      readonly dependencies: readonly string[];
+      readonly canonicalDocuments: readonly string[];
+    };
     return {
       kind: "slice",
       document: metadata.canonicalDocuments[0],

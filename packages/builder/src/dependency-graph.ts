@@ -62,7 +62,7 @@ const buildExportTable = (
     const exports = table.get(modulePath) ?? new Map<string, CanonicalId>();
 
     mod.definitions.forEach((definition) => {
-      const id = createCanonicalId(mod.filePath, definition.exportName);
+      const id = createCanonicalId(mod.filePath, definition.exportName, definition.schemaName);
       exports.set(definition.exportName, id);
     });
 
@@ -236,7 +236,7 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
     // const _modulePath = normalizePath(module.filePath); // unused variable
 
     module.definitions.forEach((definition) => {
-      const id = createCanonicalId(module.filePath, definition.exportName);
+      const id = createCanonicalId(module.filePath, definition.exportName, definition.schemaName);
       const dependencySet = new Set<CanonicalId>();
       const resolvedReferences: Record<string, CanonicalId> = {};
 

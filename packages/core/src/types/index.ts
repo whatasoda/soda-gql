@@ -7,6 +7,7 @@ export * from "./fields";
 export * from "./fields-builder";
 export * from "./input-value";
 export * from "./model";
+export * from "./multi-schema";
 export * from "./operation";
 export * from "./operation-slice";
 export * from "./schema";

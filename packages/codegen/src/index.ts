@@ -1,5 +1,5 @@
 export { writeInjectTemplate } from "./inject-template";
-export { runCodegen } from "./runner";
+export { runCodegen, runMultiSchemaCodegen } from "./runner";
 export type {
   CodegenCliCommand,
   CodegenError,
@@ -7,4 +7,7 @@ export type {
   CodegenOptions,
   CodegenResult,
   CodegenSuccess,
+  MultiSchemaCodegenOptions,
+  MultiSchemaCodegenResult,
+  MultiSchemaCodegenSuccess,
 } from "./types";

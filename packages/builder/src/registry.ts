@@ -8,14 +8,18 @@ const canonicalIdSeparator = "::" as const;
 
 const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
-export const createCanonicalId = (filePath: string, exportName: string): CanonicalId => {
+export const createCanonicalId = (filePath: string, exportName: string, schemaName?: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
     throw new Error("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
   }
 
   const resolved = resolve(filePath);
   const normalized = normalizePath(resolved);
-  return `${normalized}${canonicalIdSeparator}${exportName}` as CanonicalId;
+
+  // Include schema name in canonical ID if present
+  const idParts = schemaName ? [normalized, schemaName, exportName] : [normalized, exportName];
+
+  return idParts.join(canonicalIdSeparator) as CanonicalId;
 };
 
 export type RegistryRefKind = "model" | "slice" | "operation";

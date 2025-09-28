@@ -17,6 +17,7 @@ export type GqlDefinitionKind = "model" | "slice" | "operation";
 export type ModuleDefinition = {
   readonly kind: GqlDefinitionKind;
   readonly exportName: string;
+  readonly schemaName?: string;
   readonly loc: SourceLocation;
   readonly references: readonly string[];
   readonly expression: string;
@@ -254,12 +255,29 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
 const isGqlDefinitionCall = (
   identifiers: ReadonlySet<string>,
   callExpression: ts.CallExpression,
-): { readonly method: string } | null => {
+): { readonly method: string; readonly schemaName?: string } | null => {
   const expression = callExpression.expression;
   if (!ts.isPropertyAccessExpression(expression)) {
     return null;
   }
 
+  // Check for gql.{schema}.{method} pattern
+  if (ts.isPropertyAccessExpression(expression.expression)) {
+    const innerExpression = expression.expression;
+    if (ts.isIdentifier(innerExpression.expression) && identifiers.has(innerExpression.expression.text)) {
+      const schemaName = innerExpression.name.text;
+      const method = expression.name.text;
+
+      if (!(method in gqlDefinitionKinds)) {
+        return null;
+      }
+
+      return { method, schemaName };
+    }
+    return null;
+  }
+
+  // Check for gql.{method} pattern (backward compatibility)
   if (!ts.isIdentifier(expression.expression) || !identifiers.has(expression.expression.text)) {
     return null;
   }
@@ -469,6 +487,7 @@ const collectTopLevelDefinitions = (
   type PendingDefinition = {
     readonly exportName: string;
     readonly kind: GqlDefinitionKind;
+    readonly schemaName?: string;
     readonly loc: SourceLocation;
     readonly initializer: ts.CallExpression;
     readonly expression: string;
@@ -477,11 +496,18 @@ const collectTopLevelDefinitions = (
   const pending: PendingDefinition[] = [];
   const handledCalls = new Set<ts.CallExpression>();
 
-  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node, kind: GqlDefinitionKind) => {
+  const register = (
+    exportName: string,
+    initializer: ts.CallExpression,
+    span: ts.Node,
+    kind: GqlDefinitionKind,
+    schemaName?: string,
+  ) => {
     handledCalls.add(initializer);
     pending.push({
       exportName,
       kind,
+      schemaName,
       loc: toLocation(sourceFile, span),
       initializer,
       expression: initializer.getText(sourceFile),
@@ -510,7 +536,13 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        register(exportName, initializer, declaration, unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"));
+        register(
+          exportName,
+          initializer,
+          declaration,
+          unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"),
+          gqlCall.schemaName,
+        );
         return;
       }
 
@@ -539,6 +571,7 @@ const collectTopLevelDefinitions = (
             property.initializer,
             property,
             unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup"),
+            gqlCall.schemaName,
           );
         });
       }
@@ -552,6 +585,7 @@ const collectTopLevelDefinitions = (
       ({
         kind: item.kind,
         exportName: item.exportName,
+        schemaName: item.schemaName,
         loc: item.loc,
         references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
         expression: item.expression,

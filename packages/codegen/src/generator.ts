@@ -153,7 +153,7 @@ const updateOperationTypes = (
   }
 };
 
-const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
+export const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
   const objects = new Map<string, ObjectRecord>();
   const inputs = new Map<string, InputRecord>();
   const enums = new Map<string, EnumRecord>();
@@ -658,5 +658,178 @@ export const generateRuntimeModule = (document: DocumentNode, options?: RuntimeG
       inputs: inputDefinitions.length,
       unions: unionDefinitions.length,
     },
+  };
+};
+
+type MultiRuntimeTemplateOptions = {
+  readonly schemas: Record<
+    string,
+    {
+      readonly queryType: string;
+      readonly mutationType: string;
+      readonly subscriptionType: string;
+      readonly scalarBlock: string;
+      readonly enumBlock: string;
+      readonly inputBlock: string;
+      readonly objectBlock: string;
+      readonly unionBlock: string;
+    }
+  >;
+  readonly injection: RuntimeTemplateInjection;
+};
+
+const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
+  const extraImports = [$$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : ""]
+    .filter((line) => line.length > 0)
+    .join("\n");
+
+  const adapterBlock =
+    $$.injection.mode === "inject"
+      ? ""
+      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
+
+  // Generate per-schema definitions
+  const schemaBlocks: string[] = [];
+  const schemaTypes: string[] = [];
+  const gqlEntries: string[] = [];
+
+  for (const [name, config] of Object.entries($$.schemas)) {
+    const schemaVar = `${name}Schema`;
+    const instanceVar = `${name}Instance`;
+    const scalarBlock = $$.injection.mode === "inject" ? "scalar" : config.scalarBlock;
+
+    schemaBlocks.push(`
+const ${schemaVar} = {
+  operations: defineOperationRoots({
+    query: "${config.queryType}",
+    mutation: "${config.mutationType}",
+    subscription: "${config.subscriptionType}",
+  }),
+  scalar: ${scalarBlock},
+  enum: ${config.enumBlock},
+  input: ${config.inputBlock},
+  object: ${config.objectBlock},
+  union: ${config.unionBlock},
+} satisfies AnyGraphqlSchema;
+
+const ${instanceVar} = createGql({ schema: ${schemaVar}, adapter });`);
+
+    schemaTypes.push(`export type ${name.charAt(0).toUpperCase() + name.slice(1)}Schema = typeof ${schemaVar} & { _?: never };`);
+    gqlEntries.push(`  ${name}: <T>(fn: (helpers: typeof ${instanceVar}) => T): T => fn(${instanceVar})`);
+  }
+
+  return `\
+import {
+  type AnyGraphqlSchema,
+  createGql,
+  define,
+  defineOperationRoots,
+  type GraphqlRuntimeAdapter,
+  pseudoTypeAnnotation,
+  unsafeInputRef,
+  unsafeOutputRef,
+} from "@soda-gql/core";
+${extraImports}
+
+${adapterBlock}
+
+${schemaBlocks.join("\n")}
+
+${schemaTypes.join("\n")}
+export type Adapter = typeof adapter & { _?: never };
+
+export const gql = {
+${gqlEntries.join(",\n")}
+};
+`;
+};
+
+export const generateMultiSchemaModule = (
+  schemas: Map<string, DocumentNode>,
+  options?: RuntimeGenerationOptions,
+): GeneratedModule => {
+  // biome-ignore lint/suspicious/noExplicitAny: complex schema config type
+  const schemaConfigs: Record<string, any> = {};
+  const allStats = {
+    objects: 0,
+    enums: 0,
+    inputs: 0,
+    unions: 0,
+  };
+
+  for (const [name, document] of schemas.entries()) {
+    const schema = createSchemaIndex(document);
+
+    const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
+      renderScalarDefinition(schema.scalars.get(name) ?? { name, directives: [] }),
+    );
+
+    const customScalarDefinitions = collectScalarNames(schema)
+      .filter((name) => !builtinScalarTypes.has(name))
+      .map((name) => {
+        const record = schema.scalars.get(name);
+        return record ? renderScalarDefinition(record) : "";
+      })
+      .filter((definition) => definition.length > 0);
+
+    const allScalarDefinitions = builtinScalarDefinitions.concat(customScalarDefinitions);
+
+    const objectTypeNames = collectObjectTypeNames(schema);
+    const enumTypeNames = collectEnumTypeNames(schema);
+    const inputTypeNames = collectInputTypeNames(schema);
+    const unionTypeNames = collectUnionTypeNames(schema);
+
+    const scalarBlock = renderPropertyLines({ entries: allScalarDefinitions, indentSize: 4 });
+    const enumDefinitions = enumTypeNames
+      .map((name) => renderEnumDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const enumBlock = renderPropertyLines({ entries: enumDefinitions, indentSize: 4 });
+    const inputDefinitions = inputTypeNames
+      .map((name) => renderInputDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const inputBlock = renderPropertyLines({ entries: inputDefinitions, indentSize: 4 });
+    const objectDefinitions = objectTypeNames
+      .map((name) => renderObjectDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const objectBlock = renderPropertyLines({ entries: objectDefinitions, indentSize: 4 });
+    const unionDefinitions = unionTypeNames
+      .map((name) => renderUnionDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
+
+    const queryType = schema.operationTypes.query ?? "Query";
+    const mutationType = schema.operationTypes.mutation ?? "Mutation";
+    const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
+
+    schemaConfigs[name] = {
+      queryType,
+      mutationType,
+      subscriptionType,
+      scalarBlock,
+      enumBlock,
+      inputBlock,
+      objectBlock,
+      unionBlock,
+    };
+
+    // Accumulate stats
+    allStats.objects += objectDefinitions.length;
+    allStats.enums += enumDefinitions.length;
+    allStats.inputs += inputDefinitions.length;
+    allStats.unions += unionDefinitions.length;
+  }
+
+  const injection: RuntimeTemplateInjection = options?.injection
+    ? { mode: "inject", importPath: options.injection.importPath }
+    : { mode: "inline" };
+
+  const code = multiRuntimeTemplate({
+    schemas: schemaConfigs,
+    injection,
+  });
+
+  return {
+    code,
+    stats: allStats,
   };
 };

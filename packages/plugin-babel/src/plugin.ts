@@ -29,13 +29,46 @@ type PluginPassState = PluginPass & { _state?: PluginState };
 
 type SupportedMethod = "model" | "querySlice" | "query";
 
+type GqlCallInfo = {
+  method: SupportedMethod;
+  schemaName?: string;
+};
+
 const gqlMethodNames = new Set<SupportedMethod>(["model", "querySlice", "query"]);
 
-const asSupportedMethod = (node: t.CallExpression): SupportedMethod | null => {
+const parseGqlCall = (node: t.CallExpression): GqlCallInfo | null => {
   if (!t.isMemberExpression(node.callee)) {
     return null;
   }
 
+  // Check for gql.{schema}.{method} pattern
+  if (t.isMemberExpression(node.callee.object)) {
+    const innerExpression = node.callee.object;
+    if (!t.isIdentifier(innerExpression.object, { name: "gql" })) {
+      return null;
+    }
+
+    const schemaProperty = innerExpression.property;
+    if (!t.isIdentifier(schemaProperty)) {
+      return null;
+    }
+
+    const methodProperty = node.callee.property;
+    if (!t.isIdentifier(methodProperty)) {
+      return null;
+    }
+
+    if (!gqlMethodNames.has(methodProperty.name as SupportedMethod)) {
+      return null;
+    }
+
+    return {
+      method: methodProperty.name as SupportedMethod,
+      schemaName: schemaProperty.name,
+    };
+  }
+
+  // Check for gql.{method} pattern (backward compatibility)
   if (!t.isIdentifier(node.callee.object, { name: "gql" })) {
     return null;
   }
@@ -49,7 +82,15 @@ const asSupportedMethod = (node: t.CallExpression): SupportedMethod | null => {
     return null;
   }
 
-  return property.name as SupportedMethod;
+  return {
+    method: property.name as SupportedMethod,
+  };
+};
+
+// Keep the old function for backward compatibility in code that might still use it
+const asSupportedMethod = (node: t.CallExpression): SupportedMethod | null => {
+  const callInfo = parseGqlCall(node);
+  return callInfo ? callInfo.method : null;
 };
 
 const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly string[] | null => {
@@ -1103,10 +1144,12 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
       programPath.traverse({
         CallExpression(callPath) {
-          const method = asSupportedMethod(callPath.node);
-          if (!method) {
+          const callInfo = parseGqlCall(callPath.node);
+          if (!callInfo) {
             return;
           }
+
+          const { method, schemaName } = callInfo;
 
           const segments = collectExportSegments(callPath);
           if (!segments) {
@@ -1127,7 +1170,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
             throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
           }
 
-          const canonicalId = resolveCanonicalId(filename, exportName);
+          const canonicalId = resolveCanonicalId(filename, exportName, schemaName);
 
           if (method === "model" || method === "querySlice") {
             ensureGqlRuntimeImport(programPath);
