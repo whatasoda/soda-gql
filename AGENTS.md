@@ -126,6 +126,37 @@ mcp__codex__codex-reply({
 })
 ```
 
+### 🔁 MANDATORY RETRY POLICY FOR CODEX MCP FAILURES
+
+**NEVER GIVE UP ON THE FIRST FAILURE** - You MUST retry Codex MCP calls when they fail:
+
+1. **First Attempt Fails**: Wait 2 seconds, then retry with the same parameters
+2. **Second Attempt Fails**: Wait 3 seconds, then retry with the same parameters
+3. **Third Attempt Fails**: Only after 3 failures can you report the issue to the user
+
+**Retry Requirements**:
+- **MINIMUM 3 ATTEMPTS**: Always try at least 3 times before giving up
+- **MAINTAIN SAME PROMPT**: Use identical parameters for each retry
+- **WAIT BETWEEN RETRIES**: Use increasing delays (2s, 3s) to avoid overwhelming the service
+- **DOCUMENT FAILURES**: If all 3 attempts fail, clearly explain the issue to the user
+
+**Example Retry Pattern**:
+```typescript
+// Attempt 1
+mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
+// If fails → Wait 2 seconds
+
+// Attempt 2
+mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
+// If fails → Wait 3 seconds
+
+// Attempt 3
+mcp__codex__codex({ prompt: "...", sandbox: "workspace-write" })
+// If fails → Report to user with detailed error information
+```
+
+**IMPORTANT**: Connection failures, timeouts, or temporary errors are NOT valid reasons to skip Codex. You MUST retry as specified above.
+
 ### 🚫 COMMON VIOLATIONS TO AVOID:
 - ❌ Analyzing code without Codex
 - ❌ Making implementation decisions independently
