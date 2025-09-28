@@ -1,4 +1,4 @@
-import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
+import { defineScalar, type GraphqlRuntimeAdapter, pseudoTypeAnnotation } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
