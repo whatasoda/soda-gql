@@ -321,7 +321,10 @@ const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
 
   programPath.node.body.unshift(
     t.importDeclaration(
-      [t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime"))],
+      [
+        t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime")),
+        Object.assign(t.importSpecifier(t.identifier("graphql"), t.identifier("graphql")), { importKind: "type" }),
+      ],
       t.stringLiteral("@soda-gql/runtime"),
     ),
   );
@@ -1112,7 +1115,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   const innerCall = extractInnerCallFromFactory(callPath.node);
   const actualCall = innerCall || callPath.node;
 
-  const [variables, , projectionBuilder] = actualCall.arguments;
+  const [, , projectionBuilder] = actualCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("gql.querySlice requires a projection builder");
   }
@@ -1121,16 +1124,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
 
-  // Only convert variables if it's an object expression
-  if (variables && t.isExpression(variables)) {
-    if (t.isObjectExpression(variables)) {
-      const variablesExpr = convertVariablesObjectExpression(variables);
-      properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
-    } else if (!t.isNullLiteral(variables) && !t.isIdentifier(variables, { name: "undefined" })) {
-      // If it's not an object expression but also not null/undefined, pass it through
-      properties.push(t.objectProperty(t.identifier("variables"), variables));
-    }
-  }
+  // Variables are not passed to the runtime querySlice - they're provided at call time
 
   properties.push(
     t.objectProperty(t.identifier("rootFieldKeys"), t.arrayExpression(rootFieldKeys.map((key) => t.stringLiteral(key)))),
@@ -1194,10 +1188,15 @@ const buildQueryRuntimeComponents = (
   const runtimeName = createRuntimeBindingName(canonicalId as CanonicalId, exportName);
   const documentIdentifier = `${runtimeName}Document`;
 
-  // biome-ignore lint/suspicious/noExplicitAny: Complex type conversion
-  const documentExpression = buildLiteralFromValue(documentEntry.ast as any as Record<string, unknown>);
+  const documentExpression = buildLiteralFromValue(documentEntry.ast);
   const documentDeclaration = t.variableDeclaration("const", [
-    t.variableDeclarator(t.identifier(documentIdentifier), documentExpression),
+    t.variableDeclarator(
+      t.identifier(documentIdentifier),
+      t.tsAsExpression(
+        documentExpression,
+        t.tsTypeReference(t.tsQualifiedName(t.identifier("graphql"), t.identifier("DocumentNode"))),
+      ),
+    ),
   ]);
 
   const variableNames = extractOperationVariableNames(JSON.stringify(documentEntry.ast));

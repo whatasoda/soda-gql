@@ -1,13 +1,48 @@
 import { expect } from "bun:test";
 import { transformAsync } from "@babel/core";
+import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
 import createPlugin from "../../packages/plugin-babel/src/index.ts";
-import { TestTempDir } from "./index.ts";
+import { getProjectRoot, TestTempDir } from "./index.ts";
+import { typeCheckFiles } from "./type-check.ts";
+
+const resolveBiomeBinary = (): string => {
+  const projectRoot = getProjectRoot();
+  const binaryName = process.platform === "win32" ? "biome.cmd" : "biome";
+  return join(projectRoot, "node_modules", ".bin", binaryName);
+};
+
+const formatWithBiome = (code: string, filePath: string): string => {
+  const biomeBinary = resolveBiomeBinary();
+  const result = spawnSync(biomeBinary, ["format", "--stdin-file-path", filePath], {
+    cwd: getProjectRoot(),
+    input: code,
+    encoding: "utf-8",
+    maxBuffer: 5 * 1024 * 1024,
+  });
+
+  if (result.error) {
+    throw new Error(`Failed to spawn Biome CLI at ${biomeBinary}`, { cause: result.error });
+  }
+
+  if (typeof result.status === "number" && result.status !== 0) {
+    const details = (result.stderr ?? result.stdout ?? "").trim();
+    throw new Error(`Biome formatting failed for ${filePath} (exit ${result.status}).\n${details}`);
+  }
+
+  if (!result.stdout) {
+    return code;
+  }
+
+  return result.stdout.length > 0 ? result.stdout : code;
+};
 
 export type TransformOptions = {
   mode?: "zero-runtime" | "runtime";
   importIdentifier?: string;
   artifactsPath?: string;
+  skipTypeCheck?: boolean;
 };
 
 /**
@@ -22,7 +57,7 @@ export const runBabelTransform = async (
   const tempDir = new TestTempDir("babel-transform");
 
   try {
-    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath } = options;
+    const { mode = "zero-runtime", importIdentifier = "@soda-gql/runtime", artifactsPath, skipTypeCheck = false } = options;
 
     const actualArtifactsPath = artifactsPath ?? tempDir.join("artifact.json");
 
@@ -50,7 +85,20 @@ export const runBabelTransform = async (
       ],
     });
 
-    return result?.code ?? "";
+    const transformed = result?.code ?? "";
+    const formatted = formatWithBiome(transformed, filename);
+
+    // Type-check unless explicitly skipped
+    if (!skipTypeCheck) {
+      try {
+        await typeCheckFiles([{ path: filename, content: formatted }]);
+      } catch (error) {
+        console.error(`Type check failed for ${filename}.\n-----\n${formatted}\n-----`);
+        throw error;
+      }
+    }
+
+    return formatted;
   } finally {
     tempDir.cleanup();
   }
@@ -70,7 +118,7 @@ export const assertTransformRemovesGql = (transformed: string): void => {
  * Assert that transform adds runtime import
  */
 export const assertTransformAddsRuntimeImport = (transformed: string, identifier = "@soda-gql/runtime"): void => {
-  expect(transformed).toContain(`import { gqlRuntime } from "${identifier}"`);
+  expect(transformed).toContain(`import { gqlRuntime, type graphql } from "${identifier}"`);
 };
 
 /**

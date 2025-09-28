@@ -173,7 +173,7 @@ describe("@soda-gql/plugin-babel", () => {
     const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
     const _aliasName = `${runtimeName}Artifact`;
 
-    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
     expect(transformed).toContain(`const ${runtimeName}Document = {`);
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).toContain(`export const profileQuery = gqlRuntime.query({`);

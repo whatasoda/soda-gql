@@ -79,10 +79,11 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
 
     const transformed = await runBabelTransform(source, sourcePath, artifact, {
       importIdentifier: "@/graphql-runtime",
+      skipTypeCheck: true, // Skip type check as this file imports untransformed dependencies
     });
     assertTransformRemovesGql(transformed);
     // Note: The plugin overrides the importIdentifier in some cases
-    expect(transformed).toContain("import { gqlRuntime } from ");
+    expect(transformed).toContain("import { gqlRuntime, type graphql } from ");
     expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
     assertTransformContainsRuntimeCall(transformed, "query");
     expect(transformed).toContain("variableNames: [");
@@ -147,7 +148,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const transformed = await runBabelTransform(source, sourcePath, artifact, {
       importIdentifier: "@/graphql-runtime",
     });
-    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
     expect(transformed).toContain(`forIterate: gqlRuntime.model({`);
     expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
   });
@@ -226,7 +227,7 @@ export const slices = {
     });
 
     // Note: The plugin overrides the importIdentifier in some cases
-    expect(transformed).toContain("import { gqlRuntime } from ");
+    expect(transformed).toContain("import { gqlRuntime, type graphql } from ");
     assertTransformContainsRuntimeCall(transformed, "model");
     assertTransformContainsRuntimeCall(transformed, "querySlice");
   });
