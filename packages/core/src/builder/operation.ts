@@ -5,7 +5,6 @@ import {
   type AnyOperationSlice,
   type AnyOperationSlices,
   type EmptyObject,
-  ExecutionResultProjection,
   type ExecutionResultProjectionPathGraphNode,
   type GraphqlRuntimeAdapter,
   type InputTypeRefs,
@@ -80,14 +79,14 @@ export const createOperationFactory =
   };
 
 type ExecutionResultProjectionPathGraphIntermediate = {
-  [segment: string]: { label: string; path: string; segments: string[] }[];
+  [segment: string]: { label: string; raw: string; segments: string[] }[];
 };
 
 function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[string]): ExecutionResultProjectionPathGraphNode {
   const intermediate = paths.reduce(
-    (acc: ExecutionResultProjectionPathGraphIntermediate, { label, path, segments: [segment, ...segments] }) => {
+    (acc: ExecutionResultProjectionPathGraphIntermediate, { label, raw, segments: [segment, ...segments] }) => {
       if (segment) {
-        (acc[segment] || (acc[segment] = [])).push({ label, path, segments });
+        (acc[segment] || (acc[segment] = [])).push({ label, raw, segments });
       }
       return acc;
     },
@@ -95,7 +94,7 @@ function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[s
   );
 
   return {
-    matches: paths.map(({ label, path, segments }) => ({ label, path, exact: segments.length === 0 })),
+    matches: paths.map(({ label, raw, segments }) => ({ label, path: raw, exact: segments.length === 0 })),
     children: Object.fromEntries(Object.entries(intermediate).map(([segment, paths]) => [segment, createPathGraph(paths)])),
   } satisfies ExecutionResultProjectionPathGraphNode;
 }
@@ -105,23 +104,10 @@ function createPathGraphFromSliceEntries<
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
   TOperationType extends OperationType,
 >(slices: AnyOperationSlices<TSchema, TRuntimeAdapter, TOperationType>) {
-  const paths = Object.entries(slices).flatMap(([label, slice]) => {
-    const projections =
-      slice.projections instanceof ExecutionResultProjection ? [slice.projections] : Object.values(slice.projections);
-    const uniquePaths = Array.from(new Map(projections.map(({ path, pathSegments }) => [path, { path, pathSegments }])).values());
-
-    return uniquePaths.flatMap(({ path, pathSegments }) => {
-      const [first, ...rest] = pathSegments;
-
-      // NOTE: To avoid incorrectly catch error on a field defined by other slices,
-      //       we need to create path entries for all labeled field keys in the current slice.
-      if (first == null) {
-        return slice.rootFieldKeys.map((rootKey) => ({ label, path, segments: [`${label}_${rootKey}`] }));
-      }
-
-      return [{ label, path, segments: [`${label}_${first}`, ...rest] }];
-    });
-  });
+  const paths = Object.entries(slices).flatMap(([label, slice]) => Array.from(new Map(slice.projection.paths.map(({ raw, segments }) => {
+    const [first, ...rest] = segments;
+    return [raw, { label, raw, segments: [`${label}_${first}`, ...rest] }];
+  })).values()));
 
   return createPathGraph(paths);
 }

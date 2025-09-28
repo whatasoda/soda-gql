@@ -4,7 +4,6 @@ import {
   type AnyAssignableInput,
   type AnyGraphqlSchema,
   type AnyOperationSlices,
-  ExecutionResultProjection,
   type ExecutionResultProjectionPathGraphNode,
   type GraphqlRuntimeAdapter,
   type InputTypeRef,
@@ -166,50 +165,36 @@ export const createParse = <
     const prepared = prepare(result);
 
     const entries = Object.entries(slices).map(([label, slice]) => {
-      const projections =
-        slice.projections instanceof ExecutionResultProjection ? [slice.projections] : Object.values(slice.projections);
+      const { projection } = slice;
+        
+      if (prepared.type === "graphql") {
+        const matchedErrors = projection.paths.flatMap(({ raw }) => prepared.errorMaps[label]?.[raw] ?? []);
+        const uniqueErrors = Array.from(new Set(matchedErrors.map(({ error }) => error)).values());
 
-      const projectionResults = new Map(
-        projections.map((projection) => {
-          if (prepared.type === "graphql") {
-            const errors = prepared.errorMaps[label]?.[projection.path];
-            if (errors) {
-              return [
-                projection,
-                projection.projector(new SliceResultError({ type: "graphql-error", errors: errors.map(({ error }) => error) })),
-              ];
-            }
+        if (uniqueErrors.length > 0) {
+          return [label, projection.projector(new SliceResultError({ type: "graphql-error", errors: uniqueErrors }))];
+        }
 
-            const dataResult = prepared.body.data
-              ? accessDataByPathSegments(prepared.body.data, projection.pathSegments)
-              : { error: new Error("No data") };
-            if (dataResult.error) {
-              return [projection, projection.projector(new SliceResultError({ type: "parse-error", error: dataResult.error }))];
-            }
+        const dataResults = projection.paths.map(({ segments }) => prepared.body.data
+          ? accessDataByPathSegments(prepared.body.data, segments)
+          : { error: new Error("No data") });
+        if (dataResults.some(({ error }) => error)) {
+          return [label, projection.projector(new SliceResultError({ type: "parse-error", errors: dataResults.flatMap(({ error }) => error ? [error] : []) }))];
+        }
 
-            return [projection, projection.projector(new SliceResultSuccess(dataResult.data))];
-          }
+        const dataList = dataResults.map(({ data }) => data);
+        return [label, projection.projector(new SliceResultSuccess(dataList))];
+      }
+      
+      if (prepared.type === "non-graphql-error") {
+        return [label, projection.projector(prepared.error)];
+      }
 
-          if (prepared.type === "non-graphql-error") {
-            return [projection, projection.projector(prepared.error)];
-          }
+      if (prepared.type === "empty") {
+        return [label, projection.projector(prepared.error)];
+      }
 
-          if (prepared.type === "empty") {
-            return [projection, projection.projector(prepared.error)];
-          }
-
-          throw new Error("Invalid result type", { cause: prepared satisfies never });
-        }),
-      );
-
-      return [
-        label,
-        slice.projections instanceof ExecutionResultProjection
-          ? projectionResults.get(slice.projections)
-          : Object.fromEntries(
-              Object.entries(slice.projections).map(([key, projection]) => [key, projectionResults.get(projection)]),
-            ),
-      ] satisfies [unknown, unknown];
+      throw new Error("Invalid result type", { cause: prepared satisfies never });
     });
 
     return Object.fromEntries(entries);

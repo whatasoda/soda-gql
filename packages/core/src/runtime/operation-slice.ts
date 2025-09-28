@@ -1,6 +1,6 @@
 import {
   type AnyAssignableInput,
-  type AnyExecutionResultProjections,
+  type AnyExecutionResultProjection,
   type AnyFields,
   type AnyGraphqlSchema,
   ExecutionResultProjection,
@@ -13,8 +13,7 @@ import {
 } from "../types";
 
 type GeneratedOperationSlice = {
-  rootFieldKeys: string[];
-  projections: AnyExecutionResultProjections<GraphqlRuntimeAdapter>;
+  projections: AnyExecutionResultProjection<GraphqlRuntimeAdapter>;
 };
 
 type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
@@ -40,13 +39,12 @@ export const runtimeOperationSlice =
       operationType,
       variables: (variables ?? {}) as AnyAssignableInput,
       getFields: pseudoTypeAnnotation<AnyFields>(),
-      rootFieldKeys: generated.rootFieldKeys,
-      projections: generated.projections,
+      projection: generated.projections,
     }) satisfies OperationSlice<
       AnyGraphqlSchema,
       GraphqlRuntimeAdapter,
       OperationType,
       AnyFields,
-      AnyExecutionResultProjections<GraphqlRuntimeAdapter>,
+      AnyExecutionResultProjection<GraphqlRuntimeAdapter>,
       InputTypeRefs
     >;

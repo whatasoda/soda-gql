@@ -1,7 +1,7 @@
 /** Slice selection descriptors produced by `gql.querySlice`. */
 import type { GraphqlRuntimeAdapter } from "./adapter";
 import type { SliceResult } from "./slice-result";
-import type { PseudoTypeAnnotation } from "./utility";
+import type { PseudoTypeAnnotation, Tuple } from "./utility";
 
 declare const __EXECUTION_RESULT_PROJECTION_BRAND__: unique symbol;
 
@@ -14,52 +14,47 @@ export class ExecutionResultProjection<TRuntimeAdapter extends GraphqlRuntimeAda
   declare readonly [__EXECUTION_RESULT_PROJECTION_BRAND__]: PseudoTypeAnnotation<never>;
 
   constructor(
-    public readonly path: TPath,
+    paths: Tuple<TPath>,
     // biome-ignore lint/suspicious/noExplicitAny: abstract type
     public readonly projector: (result: SliceResult<any, TRuntimeAdapter>) => TTransformed,
   ) {
-    this.pathSegments = createFieldPathSegments(this.path);
+    this.paths = createProjectionPaths(paths);
   }
 
-  public readonly pathSegments: string[];
+  public readonly paths: ProjectionPath[];
 }
 
-function createFieldPathSegments(path: string): string[] {
-  if (path === "$") {
-    return [];
-  }
+export type ProjectionPath = {
+  raw: string;
+  segments: Tuple<string>;
+};
 
+function createProjectionPath(path: string): ProjectionPath {
   const segments = path.split(".");
-  if (segments[0] !== "$") {
-    throw new Error("Field path must start with $");
+  if (path === "$" || segments.length <= 1) {
+    throw new Error("Field path must not be only $ or empty");
   }
 
-  return segments.slice(1);
+  return {
+    raw: path,
+    segments: segments.slice(1) as Tuple<string>,
+  };
 }
 
-/** Either a single selection or a container of multiple named selections. */
-export type AnyExecutionResultProjections<TRuntimeAdapter extends GraphqlRuntimeAdapter> =
-  | AnyExecutionResultProjectionSingle<TRuntimeAdapter>
-  | AnyExecutionResultProjectionMultiple<TRuntimeAdapter>;
+function createProjectionPaths(paths: Tuple<string>): ProjectionPath[] {
+  return paths.map((path) => createProjectionPath(path));
+}
 
 /** Shape of a single selection slice projection. */
-export type AnyExecutionResultProjectionSingle<TRuntimeAdapter extends GraphqlRuntimeAdapter> = ExecutionResultProjection<
+export type AnyExecutionResultProjection<TRuntimeAdapter extends GraphqlRuntimeAdapter> = ExecutionResultProjection<
   TRuntimeAdapter,
   string,
   // biome-ignore lint/suspicious/noExplicitAny: abstract type
   any
 >;
 
-export type AnyExecutionResultProjectionMultiple<TRuntimeAdapter extends GraphqlRuntimeAdapter> = {
-  [key: string]: AnyExecutionResultProjectionSingle<TRuntimeAdapter>;
-};
-
 /** Infer the output type produced by a selection or multi-selection. */
 export type InferExecutionResultProjection<
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
-  TSelection extends AnyExecutionResultProjections<TRuntimeAdapter>,
-> = TSelection extends AnyExecutionResultProjectionSingle<TRuntimeAdapter>
-  ? ReturnType<TSelection["projector"]>
-  : TSelection extends AnyExecutionResultProjectionMultiple<TRuntimeAdapter>
-    ? { [K in keyof TSelection]: ReturnType<TSelection[K]["projector"]> }
-    : never;
+  TSelection extends AnyExecutionResultProjection<TRuntimeAdapter>,
+> = ReturnType<TSelection["projector"]>;

@@ -1,6 +1,6 @@
 import { gqlRuntime } from "../runtime";
 import {
-  type AnyExecutionResultProjections,
+  type AnyExecutionResultProjection,
   type AnyFields,
   type AnyGraphqlSchema,
   type AssignableInput,
@@ -26,7 +26,7 @@ export const createOperationSliceFactory =
 
     const sliceFn: OperationSliceFn<TSchema, TRuntimeAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
-      TProjection extends AnyExecutionResultProjections<TRuntimeAdapter>,
+      TProjection extends AnyExecutionResultProjection<TRuntimeAdapter>,
       TVariableDefinitions extends InputTypeRefs = EmptyObject,
     >(
       variableDefinitionsAndExtras: [TVariableDefinitions?],
@@ -34,26 +34,24 @@ export const createOperationSliceFactory =
       projectionBuilder: SliceResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
-      const projections = gqlRuntime.handleProjectionBuilder(projectionBuilder);
+      const projection = gqlRuntime.handleProjectionBuilder(projectionBuilder);
+      const fieldFactories = createFieldFactories(schema, operationTypeName);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);
-        const fieldFactories = createFieldFactories(schema, operationTypeName);
         const fields = builder({
           _: fieldFactories,
           f: fieldFactories,
           fields: fieldFactories,
           $,
         });
-        const rootFieldKeys = Object.keys(fields);
 
         const slice: OperationSlice<TSchema, TRuntimeAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
           _output: pseudoTypeAnnotation(),
           operationType,
           variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
           getFields: () => fields,
-          rootFieldKeys,
-          projections,
+          projection,
         };
 
         return slice;

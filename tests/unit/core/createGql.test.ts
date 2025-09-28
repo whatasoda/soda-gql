@@ -135,7 +135,7 @@ describe("createGql", () => {
 
     const slice = userSliceFactory({ id: "1" });
     expect(slice.operationType).toBe("query");
-    expect(slice.projections).toBeInstanceOf(ExecutionResultProjection);
+    expect(slice.projection).toBeInstanceOf(ExecutionResultProjection);
 
     const profileQuery = gql.query(
       "ProfilePageQuery",

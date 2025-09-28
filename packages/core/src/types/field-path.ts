@@ -1,15 +1,12 @@
 /** Utilities for computing type-safe field path selectors and projections. */
-import type { AnyFields, AnyNestedObject, InferField, InferFields } from "./fields";
+import type { AnyFields, AnyNestedObject, InferField } from "./fields";
 import type { AnyGraphqlSchema } from "./schema";
 
 /**
  * Computes strongly typed "$.foo.bar" style selectors for a set of fields so
  * slice result transforms can reference response paths safely.
  */
-export type FieldPaths<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = (
-  | "$"
-  | FieldPathsInner<TSchema, TFields, "$">
-) &
+export type FieldPaths<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = FieldPathsInner<TSchema, TFields, "$"> &
   string;
 
 /** Recursive helper used to build path strings for nested selections. */
@@ -30,7 +27,7 @@ export type InferByFieldPath<
   ? // biome-ignore lint/suspicious/noExplicitAny: abstract type
     any
   : TPath extends "$"
-    ? InferFields<TSchema, TFields>
+    ? never
     : InferByFieldPathInner<TSchema, TFields, TPath, "$">;
 
 /** Internal helper that walks a field tree while matching a path literal. */

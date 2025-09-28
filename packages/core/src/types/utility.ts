@@ -26,3 +26,5 @@ export const wrapValueByKey = <TName extends string, TValue>(name: TName, value:
 export type UnionToIntersection<U> =
   // biome-ignore lint/suspicious/noExplicitAny: idiom
   (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
+
+export type Tuple<T> = [T, ...T[]];

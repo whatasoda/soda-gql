@@ -62,7 +62,7 @@ export const userSlice = gql.default(({ querySlice, scalar }) =>
         ...userModel.fragment({ categoryId: $.categoryId }),
       })),
     }),
-    ({ select }) => select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userModel.transform(user)))),
+    ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userModel.transform(user)))),
   ),
 );
 
@@ -82,7 +82,7 @@ export const userSliceCatalog = {
         })),
       }),
       ({ select }) =>
-        select("$.users", (result) => result.safeUnwrap((data) => data.map((user) => userRemote.forIterate.transform(user)))),
+        select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.transform(user)))),
     ),
   ),
 };
