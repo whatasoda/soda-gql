@@ -12,13 +12,13 @@
     "paths": {
       "@soda-gql/core": ["packages/core/src/index.ts"],
       "@soda-gql/core/*": ["packages/core/src/*"],
-      "@soda-gql/runtime": ["tests/fixtures/runtime.d.ts"],
+      "@soda-gql/runtime": ["tests/fixtures/runtime-types.d.ts"],
       "@soda-gql/builder": ["packages/builder/src/index.ts"],
       "@soda-gql/codegen": ["packages/codegen/src/index.ts"],
       "@soda-gql/plugin-babel": ["packages/plugin-babel/src/index.ts"],
       "@soda-gql/tool-utils": ["packages/tool-utils/src/index.ts"],
-      "@/graphql-runtime": ["tests/fixtures/runtime.d.ts"],
-      "@/graphql-runtime/*": ["tests/fixtures/runtime.d.ts"],
+      "@/graphql-runtime": ["tests/fixtures/runtime-types.d.ts"],
+      "@/graphql-runtime/*": ["tests/fixtures/runtime-types.d.ts"],
       "@/graphql-system": ["tests/fixtures/runtime-app/graphql-system/index.ts"],
       "@/graphql-system/*": ["tests/fixtures/runtime-app/graphql-system/*"]
     }

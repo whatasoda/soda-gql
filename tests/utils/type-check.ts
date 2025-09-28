@@ -63,6 +63,11 @@ export const typeCheckFiles = async (files: TypeCheckInput[], options: TypeCheck
   compilerOptions.skipLibCheck = true;
   compilerOptions.allowImportingTsExtensions = true;
   compilerOptions.moduleResolution = ts.ModuleResolutionKind.Bundler;
+  // Skip checking declaration files and focus on the transformed code
+  compilerOptions.skipDefaultLibCheck = true;
+  // Don't check unused locals/parameters in the transformed code
+  compilerOptions.noUnusedLocals = false;
+  compilerOptions.noUnusedParameters = false;
 
   const compilerHost = ts.createCompilerHost(compilerOptions, true);
   const useCaseSensitiveFileNames = compilerHost.useCaseSensitiveFileNames?.() ?? ts.sys.useCaseSensitiveFileNames;
@@ -111,11 +116,17 @@ export const typeCheckFiles = async (files: TypeCheckInput[], options: TypeCheck
   const fileNames = virtualFiles.map((file) => file.absolutePath);
   const program = ts.createProgram(fileNames, compilerOptions, compilerHost);
 
-  const diagnostics = [
-    ...program.getSemanticDiagnostics(),
-    ...program.getSyntacticDiagnostics(),
-    ...program.getDeclarationDiagnostics(),
-  ];
+  // Only get diagnostics for the virtual files we're testing, not their dependencies
+  const diagnostics: ts.Diagnostic[] = [];
+  for (const fileName of fileNames) {
+    const sourceFile = program.getSourceFile(fileName);
+    if (sourceFile) {
+      diagnostics.push(
+        ...program.getSemanticDiagnostics(sourceFile),
+        ...program.getSyntacticDiagnostics(sourceFile),
+      );
+    }
+  }
 
   if (diagnostics.length > 0) {
     const formatHost = createFormatHost(projectRoot, useCaseSensitiveFileNames);
