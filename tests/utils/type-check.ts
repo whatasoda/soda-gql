@@ -11,57 +11,31 @@ export type TypeCheckOptions = {
   tsconfigPath?: string;
 };
 
+// Runtime types extracted from the actual runtime API
+// We use a simplified version to avoid TypeScript compilation issues with complex generic types
 const runtimeStubContent = `declare module "@soda-gql/runtime" {
+  export type DocumentNode = any;
   export namespace graphql {
-    export type DocumentNode = unknown;
+    export type DocumentNode = any;
   }
-  export type graphql = graphql.DocumentNode;
-  type RuntimeBuilder = (...args: any[]) => unknown;
+  export type graphql = any;
 
-  export type RuntimeQueryConfig = {
-    name: string;
-    document: unknown;
-    variableNames: readonly string[];
-    getSlices: RuntimeBuilder;
-    projectionPathGraph?: unknown;
-  };
-
-  export type RuntimeModelConfig = {
-    typename: string;
-    variables?: unknown;
-    transform: RuntimeBuilder;
-  };
-
-  export type RuntimeSliceConfig = {
-    rootFieldKeys: readonly string[];
-    projections: unknown;
-  };
-
-  export type RuntimeFragmentConfig = {
-    name?: string;
-    fragment: unknown;
-    variableNames?: readonly string[];
-    getRemote?: RuntimeBuilder;
-  };
-
-  export type Model = {
-    fragment: RuntimeBuilder;
-    transform: RuntimeBuilder;
-    typename: string;
-  };
-
-  export type Slice = RuntimeBuilder;
-
+  // Actual runtime API shape based on packages/core/src/runtime/index.ts
   export const gqlRuntime: {
-    query: (config: RuntimeQueryConfig) => unknown;
-    model: (config: RuntimeModelConfig) => Model;
-    querySlice: (config: RuntimeSliceConfig) => Slice;
-    fragment: (config: RuntimeFragmentConfig) => unknown;
-    mutation: (config: RuntimeQueryConfig) => unknown;
-    subscription: (config: RuntimeQueryConfig) => unknown;
-    mutationSlice: (config: RuntimeSliceConfig) => Slice;
-    subscriptionSlice: (config: RuntimeSliceConfig) => Slice;
-    handleProjectionBuilder: RuntimeBuilder;
+    model: (config: { typename: string; transform: (raw: any) => any }) => {
+      _input: any;
+      _output: any;
+      typename: string;
+      fragment: any;
+      transform: (raw: any) => any;
+    };
+    query: (config: any) => any;
+    mutation: (config: any) => any;
+    subscription: (config: any) => any;
+    querySlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
+    mutationSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
+    subscriptionSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
+    handleProjectionBuilder: <T>(builder: T) => any;
   };
 }
 

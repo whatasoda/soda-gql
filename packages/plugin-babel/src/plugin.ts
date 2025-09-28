@@ -1086,14 +1086,12 @@ const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   if (t.isStringLiteral(target)) {
     properties.push(t.objectProperty(t.identifier("typename"), clone(target)));
   } else if (t.isArrayExpression(target)) {
-    const [typenameNode, variablesNode] = target.elements;
+    const [typenameNode] = target.elements;
     if (!typenameNode || !t.isStringLiteral(typenameNode)) {
       throw new Error("Expected string literal typename in gql.model");
     }
     properties.push(t.objectProperty(t.identifier("typename"), clone(typenameNode)));
-    if (variablesNode && t.isObjectExpression(variablesNode)) {
-      properties.push(t.objectProperty(t.identifier("variables"), convertVariablesObjectExpression(variablesNode)));
-    }
+    // Variables are not needed at runtime for models
   } else {
     throw new Error("Unsupported target for gql.model");
   }
