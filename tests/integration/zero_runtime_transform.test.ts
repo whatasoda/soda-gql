@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
-import { createCanonicalId, createRuntimeBindingName, runBuilder } from "../../packages/builder/src/index.ts";
+import { runBuilder } from "../../packages/builder/src/index.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 import { runBabelTransform } from "../utils/transform.ts";
 import { typeCheckFiles } from "../utils/type-check.ts";
@@ -104,8 +104,6 @@ describe("zero-runtime transform", () => {
       });
 
       if (builderResult.isErr()) {
-        console.log(builderResult.error);
-
         throw new Error(`builder failed: ${builderResult.error.code}`);
       }
     } finally {
