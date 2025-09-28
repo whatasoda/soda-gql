@@ -1197,7 +1197,17 @@ const buildQueryRuntimeComponents = (
     ),
   ]);
 
-  const variableNames = extractOperationVariableNames(JSON.stringify(documentEntry.ast));
+  // Extract variable names from the AST's variableDefinitions
+  const variableNames: string[] = [];
+  const ast = documentEntry.ast as any;
+  if (ast?.definitions?.[0]?.variableDefinitions) {
+    for (const varDef of ast.definitions[0].variableDefinitions) {
+      if (varDef.variable?.name?.value) {
+        variableNames.push(varDef.variable.name.value);
+      }
+    }
+  }
+
   const properties: t.ObjectProperty[] = [
     t.objectProperty(t.identifier("name"), clone(nameArg)),
     t.objectProperty(t.identifier("document"), t.identifier(documentIdentifier)),
