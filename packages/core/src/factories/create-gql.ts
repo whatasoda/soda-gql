@@ -10,7 +10,7 @@ export type CreateGqlConfig<TSchema extends AnyGraphqlSchema, TRuntimeAdapter ex
   TRuntimeAdapter
 >;
 
-export const createGql = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>({
+export const createGqlSingle = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>({
   schema,
   adapter,
 }: CreateGqlConfig<TSchema, TRuntimeAdapter>) => {
@@ -33,5 +33,5 @@ export const createGql = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter exte
 };
 
 export type GqlInstance<TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter> = ReturnType<
-  typeof createGql<TSchema, TRuntimeAdapter>
+  typeof createGqlSingle<TSchema, TRuntimeAdapter>
 >;

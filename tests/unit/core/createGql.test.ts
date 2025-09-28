@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   type AnyGraphqlSchema,
-  createGql,
+  createGqlSingle,
   define,
   defineOperationRoots,
   defineScalar,
@@ -68,7 +68,7 @@ const adapter = {
 } satisfies GraphqlRuntimeAdapter;
 
 describe("createGql", () => {
-  const gql = createGql<Schema, typeof adapter>({ schema, adapter });
+  const gql = createGqlSingle<Schema, typeof adapter>({ schema, adapter });
 
   it("exposes ref factories and schema helpers", () => {
     expect(typeof gql.scalar).toBe("function");

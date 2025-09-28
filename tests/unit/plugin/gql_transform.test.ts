@@ -87,9 +87,9 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     assertTransformContainsRuntimeCall(transformed, "query");
     expect(transformed).toContain("variableNames: [");
     expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
-    expect(transformed).toContain("projectionPathGraph: {\n    matches: [{");
-    expect(transformed).toContain("exact: false");
-    expect(transformed).toContain('"users_users"');
+    expect(transformed).toContain("getSlices:");
+    expect(transformed).toContain("users:");
+    expect(transformed).toContain("remoteUsers:");
   });
 
   it("replaces nested gql helpers exposed via object properties", async () => {

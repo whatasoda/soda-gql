@@ -14,7 +14,7 @@ export const UserModel = gql.default(({ model, scalar }) =>
     email: f.email(),
     // Only fetch posts when explicitly needed
     posts: f.posts({ model: PostModel }),
-  }))
+  })),
 );
 
 // Define a model for Post from the default schema
@@ -25,18 +25,16 @@ export const PostModel = gql.default(({ model }) =>
     content: f.content(),
     publishedAt: f.publishedAt(),
     author: f.author({ model: UserModel }),
-  }))
+  })),
 );
 
 // Create a query slice for user operations
 export const userSlice = gql.default(({ querySlice }) =>
   querySlice({
-    getUserWithPosts: ({ query }, userId: string) =>
-      query({ user: { $: { id: userId }, ...UserModel } }),
+    getUserWithPosts: ({ query }, userId: string) => query({ user: { $: { id: userId }, ...UserModel } }),
 
-    getRecentPosts: ({ query }, limit: number) =>
-      query({ posts: { $: { limit }, ...PostModel } }),
-  })
+    getRecentPosts: ({ query }, limit: number) => query({ posts: { $: { limit }, ...PostModel } }),
+  }),
 );
 
 // ============================================
@@ -52,7 +50,7 @@ export const AdminUserModel = gql.admin(({ model }) =>
     role: f.role(),
     permissions: f.permissions({ model: PermissionModel }),
     lastLogin: f.lastLogin(),
-  }))
+  })),
 );
 
 export const PermissionModel = gql.admin(({ model }) =>
@@ -61,7 +59,7 @@ export const PermissionModel = gql.admin(({ model }) =>
     name: f.name(),
     resource: f.resource(),
     action: f.action(),
-  }))
+  })),
 );
 
 // Admin-specific query slice
@@ -92,7 +90,7 @@ export const adminSlice = gql.admin(({ querySlice }) =>
           },
         },
       }),
-  })
+  }),
 );
 
 // Admin mutations
@@ -121,7 +119,7 @@ export const PublicUserModel = gql._(({ model }) =>
     id: f.id(),
     name: f.name(),
     // Public schema might have limited fields
-  }))
+  })),
 );
 
 // ============================================
@@ -143,11 +141,7 @@ async function fetchUserDashboard(userId: string) {
 
 async function createNewAdmin(username: string, email: string) {
   // Use admin schema mutations
-  const newAdmin = await adminMutations.createAdmin(
-    username,
-    email,
-    "MODERATOR"
-  );
+  const newAdmin = await adminMutations.createAdmin(username, email, "MODERATOR");
 
   return newAdmin.createAdminUser;
 }

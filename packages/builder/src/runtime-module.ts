@@ -79,7 +79,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   ): expression is ts.ArrowFunction | ts.FunctionExpression =>
     Boolean(expression && (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)));
 
-  const maybesanitizeTransform = (call: ts.CallExpression): ts.CallExpression => {
+  const maybeSanitizeTransform = (call: ts.CallExpression): ts.CallExpression => {
     if (!ts.isPropertyAccessExpression(call.expression)) {
       return call;
     }
@@ -198,7 +198,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
       }
 
       if (ts.isCallExpression(node)) {
-        const updated = maybesanitizeTransform(node);
+        const updated = maybeSanitizeTransform(node);
         if (updated !== node) {
           return ts.visitEachChild(updated, visit, context);
         }

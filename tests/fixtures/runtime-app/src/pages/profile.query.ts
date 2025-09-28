@@ -7,13 +7,14 @@ type ProfileQueryVariables = {
   readonly categoryId?: string;
 };
 
-export const profileQuery = gql.query(
-  "ProfilePageQuery",
-  {
-    userId: gql.scalar(["ID", "!"]),
-    categoryId: gql.scalar(["ID", ""]),
-  },
-  ({ $ }) => ({
+export const profileQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    {
+      userId: scalar(["ID", "!"]),
+      categoryId: scalar(["ID", ""]),
+    },
+    ({ $ }) => ({
     users: userSlice({
       id: $.userId,
       categoryId: $.categoryId,
@@ -25,7 +26,7 @@ export const profileQuery = gql.query(
     catalogUsers: userCatalog.collections.byCategory({
       categoryId: $.categoryId,
     }),
-  }),
+  })),
 );
 
 export type ProfileQuery = typeof profileQuery;

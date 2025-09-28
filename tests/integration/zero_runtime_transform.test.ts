@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 import { createCanonicalId, createRuntimeBindingName, runBuilder } from "../../packages/builder/src/index.ts";
-import { runCodegen } from "../../packages/codegen/src/index.ts";
+import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -79,8 +79,9 @@ describe("zero-runtime transform", () => {
 
     await writeInjectModule(injectPath);
 
-    const codegenResult = runCodegen({
-      schemaPath,
+    // Use multi-schema codegen with a single "default" schema
+    const codegenResult = await runMultiSchemaCodegen({
+      schemas: { default: schemaPath },
       outPath: graphqlSystemEntry,
       format: "json",
       injectFromPath: injectPath,
@@ -134,7 +135,7 @@ describe("zero-runtime transform", () => {
           expect(code).toContain(`const ${runtimeName}Document = {`);
           expect(code).toContain(`export const profileQuery = gqlRuntime.query({`);
           expect(code).toContain(`document: ${runtimeName}Document`);
-          expect(code).toContain("projectionPathGraph");
+          expect(code).toContain("getSlices");
         },
       },
       {

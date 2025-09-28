@@ -6,14 +6,11 @@ const _DocumentNodeSchema = z.object({
 });
 
 const SliceRefMetadataSchema = z.object({
-  type: z.literal("slice"),
-  name: z.string(),
   canonicalDocuments: z.array(z.string()),
   dependencies: z.array(z.string()),
 });
 
 const ModelRefMetadataSchema = z.object({
-  type: z.literal("model"),
   hash: z.string(),
   dependencies: z.array(z.string()),
 });

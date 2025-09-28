@@ -261,7 +261,57 @@ const isGqlDefinitionCall = (
     return null;
   }
 
-  // Check for gql.{schema}.{method} pattern
+  // Check for gql.{schema}(({ helper }) => helper.method(...)) pattern
+  if (ts.isIdentifier(expression.expression) && identifiers.has(expression.expression.text)) {
+    const schemaName = expression.name.text;
+    
+    // Check if this could be a schema name (not a method name)
+    if (!(schemaName in gqlDefinitionKinds)) {
+      // This is a schema invoker call, we need to look inside the factory function
+      if (callExpression.arguments.length > 0) {
+        const firstArg = callExpression.arguments[0];
+        
+        // Check if it's an arrow function
+        if (ts.isArrowFunction(firstArg) && firstArg.body) {
+          // If body is a call expression, check if it's calling a gql method
+          if (ts.isCallExpression(firstArg.body)) {
+            const innerCall = firstArg.body;
+            if (ts.isPropertyAccessExpression(innerCall.expression)) {
+              const method = innerCall.expression.name.text;
+              if (method in gqlDefinitionKinds) {
+                return { method, schemaName };
+              }
+            } else if (ts.isIdentifier(innerCall.expression)) {
+              // The method is called directly (e.g., model(...) instead of helpers.model(...))
+              const method = innerCall.expression.text;
+              if (method in gqlDefinitionKinds) {
+                return { method, schemaName };
+              }
+            }
+          }
+          // If body is parenthesized, unwrap and check
+          else if (ts.isParenthesizedExpression(firstArg.body)) {
+            const innerExpr = firstArg.body.expression;
+            if (ts.isCallExpression(innerExpr)) {
+              if (ts.isPropertyAccessExpression(innerExpr.expression)) {
+                const method = innerExpr.expression.name.text;
+                if (method in gqlDefinitionKinds) {
+                  return { method, schemaName };
+                }
+              } else if (ts.isIdentifier(innerExpr.expression)) {
+                const method = innerExpr.expression.text;
+                if (method in gqlDefinitionKinds) {
+                  return { method, schemaName };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Check for gql.{schema}.{method} pattern (for direct multi-schema calls)
   if (ts.isPropertyAccessExpression(expression.expression)) {
     const innerExpression = expression.expression;
     if (ts.isIdentifier(innerExpression.expression) && identifiers.has(innerExpression.expression.text)) {
@@ -288,7 +338,7 @@ const isGqlDefinitionCall = (
   }
 
   return { method };
-};
+};;;
 
 const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
   if (ts.isIdentifier(parameter)) {

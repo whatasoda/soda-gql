@@ -1005,9 +1005,16 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   const properties: t.ObjectProperty[] = [];
   const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
-  const variablesExpr = variables && t.isExpression(variables) ? convertVariablesObjectExpression(variables) : undefined;
-  if (variablesExpr) {
-    properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
+
+  // Only convert variables if it's an object expression
+  if (variables && t.isExpression(variables)) {
+    if (t.isObjectExpression(variables)) {
+      const variablesExpr = convertVariablesObjectExpression(variables);
+      properties.push(t.objectProperty(t.identifier("variables"), variablesExpr));
+    } else if (!t.isNullLiteral(variables) && !t.isIdentifier(variables, { name: "undefined" })) {
+      // If it's not an object expression but also not null/undefined, pass it through
+      properties.push(t.objectProperty(t.identifier("variables"), variables));
+    }
   }
 
   properties.push(
@@ -1116,7 +1123,11 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
     const artifactResult = loadArtifact(options.artifactsPath);
     if (!artifactResult.isOk()) {
-      throw new Error(artifactResult.error.message);
+      const errorCode =
+        artifactResult.error.code === "NOT_FOUND"
+          ? "SODA_GQL_ARTIFACT_NOT_FOUND"
+          : `SODA_GQL_ARTIFACT_${artifactResult.error.code}`;
+      throw new Error(errorCode);
     }
     const artifact = artifactResult.value;
 

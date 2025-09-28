@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runBuilder } from "../../packages/builder/src/index.ts";
-import { runCodegen } from "../../packages/codegen/src/index.ts";
+import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 
 type CliResult = {
   readonly stdout: string;
@@ -63,8 +63,8 @@ const generateGraphqlSystem = async (workspaceRoot: string) => {
   await writeInjectModule(injectPath);
 
   const outPath = join(workspaceRoot, "graphql-system", "index.ts");
-  const result = runCodegen({
-    schemaPath,
+  const result = await runMultiSchemaCodegen({
+    schemas: { default: schemaPath },
     outPath,
     format: "json",
     injectFromPath: injectPath,

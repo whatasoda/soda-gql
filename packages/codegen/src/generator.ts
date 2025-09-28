@@ -549,7 +549,7 @@ const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
   return `\
 import {
   type AnyGraphqlSchema,
-  createGql,
+  createGqlSingle,
   define,
   defineOperationRoots,
   type GraphqlRuntimeAdapter,\n  pseudoTypeAnnotation,
@@ -576,7 +576,7 @@ ${adapterBlock}
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
 
-export const gql = createGql<Schema, Adapter>({ schema, adapter });
+export const gql = createGqlSingle<Schema, Adapter>({ schema, adapter });
 `;
 };
 
@@ -712,7 +712,7 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-const ${instanceVar} = createGql({ schema: ${schemaVar}, adapter });`);
+const ${instanceVar} = createGqlSingle({ schema: ${schemaVar}, adapter });`);
 
     schemaTypes.push(`export type ${name.charAt(0).toUpperCase() + name.slice(1)}Schema = typeof ${schemaVar} & { _?: never };`);
     gqlEntries.push(`  ${name}: <T>(fn: (helpers: typeof ${instanceVar}) => T): T => fn(${instanceVar})`);
@@ -721,7 +721,7 @@ const ${instanceVar} = createGql({ schema: ${schemaVar}, adapter });`);
   return `\
 import {
   type AnyGraphqlSchema,
-  createGql,
+  createGqlSingle,
   define,
   defineOperationRoots,
   type GraphqlRuntimeAdapter,

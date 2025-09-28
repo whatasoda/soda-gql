@@ -1,7 +1,7 @@
 import type { AnyGraphqlSchema, GraphqlRuntimeAdapter } from "../types";
 import type { GqlFactory, MultiSchemaConfig, SchemaConfig } from "../types/multi-schema";
 import type { GqlInstance } from "./create-gql";
-import { createGql } from "./create-gql";
+import { createGqlSingle } from "./create-gql";
 
 /** Maps schema configuration entries to their corresponding gql helper bundle. */
 type SchemaInstances<TConfigs extends MultiSchemaConfig<Record<string, SchemaConfig<AnyGraphqlSchema, GraphqlRuntimeAdapter>>>> =
@@ -13,7 +13,7 @@ type SchemaConfigToInstance<TConfig> = TConfig extends SchemaConfig<infer TSchem
   ? GqlInstance<TSchema, TRuntimeAdapter>
   : never;
 
-export const createMultiSchemaGql = <
+export const createGql = <
   TConfigs extends MultiSchemaConfig<Record<string, SchemaConfig<AnyGraphqlSchema, GraphqlRuntimeAdapter>>>,
 >(
   configs: TConfigs,
@@ -28,7 +28,7 @@ export const createMultiSchemaGql = <
   return invokers as GqlFactory<SchemaInstances<TConfigs>>;
 
   function assignInvoker<TSchemaName extends keyof TConfigs & string>(schemaName: TSchemaName, config: TConfigs[TSchemaName]) {
-    const helpers = createGql(config) as SchemaConfigToInstance<TConfigs[TSchemaName]>;
+    const helpers = createGqlSingle(config) as SchemaConfigToInstance<TConfigs[TSchemaName]>;;
 
     invokers[schemaName] = ((factory) => factory(helpers)) as GqlFactory<SchemaInstances<TConfigs>>[TSchemaName];
   }

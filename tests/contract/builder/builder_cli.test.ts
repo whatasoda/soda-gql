@@ -115,7 +115,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   const injectFile = join(workspaceRoot, "graphql-inject.ts");
   await writeInjectModule(injectFile);
 
-  const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json", "--inject-from", injectFile]);
+  const result = await runCodegenCli(["--schema:default", schemaPath, "--out", outFile, "--format", "json", "--inject-from", injectFile]);
 
   expect(result.exitCode).toBe(0);
   const exists = await Bun.file(outFile).exists();
@@ -138,37 +138,43 @@ describe("soda-gql builder CLI", () => {
       `import { gql } from "@/graphql-system";
 import { userSlice } from "./user";
 
-export const cycleSliceA = gql.querySlice(
-  [
-    {
-      id: gql.scalar("ID", "!"),
-    },
-  ],
-  ({ $ }) => ({
-    users: userSlice({ id: $.id }),
-    echo: cycleSliceB({ id: $.id }),
-  }),
-  ({ select }) => select("$.echo", (result) => result),
+export const cycleSliceA = gql.default(({ querySlice, scalar }) =>
+  querySlice(
+    [
+      {
+        id: scalar("ID", "!"),
+      },
+    ],
+    ({ $ }) => ({
+      users: userSlice({ id: $.id }),
+      echo: cycleSliceB({ id: $.id }),
+    }),
+    ({ select }) => select("$.echo", (result) => result),
+  ),
 );
 
-export const cycleSliceB = gql.querySlice(
-  [
-    {
-      id: gql.scalar("ID", "!"),
-    },
-  ],
-  ({ $ }) => ({
-    echo: cycleSliceA({ id: $.id }),
-  }),
-  ({ select }) => select("$.echo", (result) => result),
+export const cycleSliceB = gql.default(({ querySlice, scalar }) =>
+  querySlice(
+    [
+      {
+        id: scalar("ID", "!"),
+      },
+    ],
+    ({ $ }) => ({
+      echo: cycleSliceA({ id: $.id }),
+    }),
+    ({ select }) => select("$.echo", (result) => result),
+  ),
 );
 
-export const cyclePageQuery = gql.query(
-  "CyclePageQuery",
-  { id: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    cycle: cycleSliceA({ id: $.id }),
-  }),
+export const cyclePageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "CyclePageQuery",
+    { id: scalar("ID", "!") },
+    ({ $ }) => ({
+      cycle: cycleSliceA({ id: $.id }),
+    }),
+  ),
 );
 `,
     );
@@ -210,12 +216,14 @@ export const cyclePageQuery = gql.query(
     const duplicateQuerySource = `import { gql } from "@/graphql-system";
 import { userSlice } from "../entities/user";
 
-export const duplicated = gql.query(
-  "DuplicatedName",
-  { userId: gql.scalar(["ID", "!"]) },
-  ({ $ }) => ({
-    users: userSlice({ id: $.userId }),
-  }),
+export const duplicated = gql.default(({ query, scalar }) =>
+  query(
+    "DuplicatedName",
+    { userId: scalar(["ID", "!"]) },
+    ({ $ }) => ({
+      users: userSlice({ id: $.userId }),
+    }),
+  ),
 );
 `;
 
@@ -368,14 +376,14 @@ export const duplicated = gql.query(
     mkdirSync(pagesDir, { recursive: true });
 
     const slicesSource = Array.from({ length: 17 }, (_, index) => {
-      return `export const slice${index} = gql.querySlice([], () => ({}), () => ({}));`;
+      return `export const slice${index} = gql.default(({ querySlice }) => querySlice([], () => ({}), () => ({})));`;
     }).join("\n");
 
     await Bun.write(join(entitiesDir, "slices.ts"), `import { gql } from "@/graphql-system";\n${slicesSource}\n`);
 
     await Bun.write(
       join(pagesDir, "slice.page.ts"),
-      `import { gql } from "@/graphql-system";\nimport * as slices from "../entities/slices";\n\nexport const sliceWarningQuery = gql.query("SliceWarningQuery", {}, () => ({\n  slice0: slices.slice0(),\n}));\n`,
+      `import { gql } from "@/graphql-system";\nimport * as slices from "../entities/slices";\n\nexport const sliceWarningQuery = gql.default(({ query }) => query("SliceWarningQuery", {}, () => ({\n  slice0: slices.slice0(),\n})));\n`,
     );
 
     await ensureGraphqlSystem(workspace);
