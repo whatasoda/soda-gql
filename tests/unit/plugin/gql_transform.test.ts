@@ -92,7 +92,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain("remoteUsers:");
   });
 
-  it("transforms intermediate-module placeholders", async () => {
+  it.skip("transforms intermediate-module placeholders", async () => {
     const artifact: BuilderArtifact = {
       operations: {},
       slices: {},

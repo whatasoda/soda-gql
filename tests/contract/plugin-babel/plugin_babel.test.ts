@@ -169,6 +169,6 @@ describe("@soda-gql/plugin-babel", () => {
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });
-    await Bun.write(join(outputDir, `${runtimeName}.${Date.now()}.ts`), transformed);
+    await Bun.write(join(outputDir, `transform.${Date.now()}.ts`), transformed);
   });
 });
