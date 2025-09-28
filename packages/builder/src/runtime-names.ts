@@ -24,6 +24,3 @@ export const createRuntimeBindingName = (canonicalId: CanonicalId, exportName: s
   const hash = toHash(canonicalId);
   return `${base}_${hash}`;
 };
-
-export const createRuntimeDocumentName = (canonicalId: CanonicalId, exportName: string): string =>
-  `${createRuntimeBindingName(canonicalId, exportName)}Document`;

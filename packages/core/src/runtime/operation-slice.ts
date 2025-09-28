@@ -13,7 +13,7 @@ import {
 } from "../types";
 
 type GeneratedOperationSlice = {
-  projections: AnyExecutionResultProjection<GraphqlRuntimeAdapter>;
+  projection: AnyExecutionResultProjection<GraphqlRuntimeAdapter>;
 };
 
 type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
@@ -29,7 +29,7 @@ export const handleProjectionBuilder = <TBuilder extends AnySliceResultProjectio
   projectionBuilder: TBuilder,
 ): ReturnType<TBuilder> =>
   projectionBuilder({
-    select: (path, projector) => new ExecutionResultProjection(path, projector),
+    select: (path, projector) => new ExecutionResultProjection([path], projector),
   });
 
 export const runtimeOperationSlice =
@@ -39,7 +39,7 @@ export const runtimeOperationSlice =
       operationType,
       variables: (variables ?? {}) as AnyAssignableInput,
       getFields: pseudoTypeAnnotation<AnyFields>(),
-      projection: generated.projections,
+      projection: generated.projection,
     }) satisfies OperationSlice<
       AnyGraphqlSchema,
       GraphqlRuntimeAdapter,

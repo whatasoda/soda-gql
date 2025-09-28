@@ -231,21 +231,15 @@ export const buildArtifact = async ({
 
   for (const slice of sliceNodes) {
     const documents = Array.from(sliceConsumers.get(slice.id) ?? []);
+    const descriptor = runtimeSlices[slice.id];
 
-    // Extract rootFieldKeys from the runtime slice if available
-    // Note: slices in the intermediate module are functions that return slice factories
-    let rootFieldKeys: string[] = [];
-    const sliceFactory = runtimeSlices[slice.id];
-    if (sliceFactory && typeof sliceFactory === "function") {
-      try {
-        // Call the slice factory with empty variables to get the slice instance
-        const sliceInstance = sliceFactory({});
-        if (sliceInstance && typeof sliceInstance === "object" && Array.isArray(sliceInstance.rootFieldKeys)) {
-          rootFieldKeys = sliceInstance.rootFieldKeys;
-        }
-      } catch {
-        // If evaluation fails, continue with empty rootFieldKeys
-      }
+    if (!descriptor || typeof descriptor !== "object") {
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: canonicalToFilePath(slice.id),
+        exportName: slice.definition.exportName,
+        message: "SLICE_NOT_FOUND_IN_RUNTIME_MODULE",
+      });
     }
 
     const result = registry.registerRef({
@@ -254,9 +248,8 @@ export const buildArtifact = async ({
       metadata: {
         dependencies: slice.dependencies,
         canonicalDocuments: documents,
-        rootFieldKeys,
       },
-      loader: () => ok(undefined),
+      loader: () => ok(descriptor),
     });
 
     if (result.isErr()) {

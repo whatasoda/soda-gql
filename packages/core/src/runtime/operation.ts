@@ -179,7 +179,9 @@ export const createParse = <
           ? accessDataByPathSegments(prepared.body.data, segments)
           : { error: new Error("No data") });
         if (dataResults.some(({ error }) => error)) {
-          return [label, projection.projector(new SliceResultError({ type: "parse-error", errors: dataResults.flatMap(({ error }) => error ? [error] : []) }))];
+          const errors = dataResults.flatMap(({ error }) => error ? [error] : []);
+          const combinedError = new Error(`Parse errors: ${errors.map(e => e.message).join(', ')}`);
+          return [label, projection.projector(new SliceResultError({ type: "parse-error", errors: combinedError }))];
         }
 
         const dataList = dataResults.map(({ data }) => data);

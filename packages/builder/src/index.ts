@@ -1,7 +1,7 @@
 export type { CanonicalId } from "./registry";
 export { createCanonicalId, createDocumentRegistry } from "./registry";
 export { runBuilder } from "./runner";
-export { createRuntimeBindingName, createRuntimeDocumentName } from "./runtime-names";
+export { createRuntimeBindingName } from "./runtime-names";
 export type {
   BuilderAnalyzer,
   BuilderArtifact,

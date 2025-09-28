@@ -27,13 +27,13 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
   }
 
   const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-  const runtimeModule = await createIntermediateModule({
+  const intermediateModule = await createIntermediateModule({
     graph: dependencyGraph.value,
     outDir: runtimeDir,
   });
 
-  if (runtimeModule.isErr()) {
-    return err(runtimeModule.error);
+  if (intermediateModule.isErr()) {
+    return err(intermediateModule.error);
   }
 
   if (options.debugDir) {
@@ -41,13 +41,13 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
     mkdirSync(debugPath, { recursive: true });
     await Bun.write(resolve(debugPath, "modules.json"), JSON.stringify(analyses, null, 2));
     await Bun.write(resolve(debugPath, "graph.json"), JSON.stringify(Array.from(dependencyGraph.value.entries()), null, 2));
-    await Bun.write(resolve(debugPath, "intermediate-module.ts"), await Bun.file(runtimeModule.value).text());
+    await Bun.write(resolve(debugPath, "intermediate-module.ts"), await Bun.file(intermediateModule.value).text());
   }
 
   const artifactResult = await buildArtifact({
     graph: dependencyGraph.value,
     cache: stats,
-    runtimeModulePath: runtimeModule.value,
+    runtimeModulePath: intermediateModule.value,
   });
 
   if (artifactResult.isErr()) {

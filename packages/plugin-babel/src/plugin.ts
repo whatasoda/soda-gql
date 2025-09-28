@@ -794,10 +794,9 @@ const collectSliceUsageEntries = (
     if (!projectionBuilder || !t.isObjectExpression(projectionBuilder)) {
       return;
     }
-    const rootFieldKeys = getSliceRootFieldKeys(state.artifact, canonicalId);
     const paths = collectSelectPaths(projectionBuilder);
     paths.forEach((entry) => {
-      entries.push({ label, path: entry.path, rootFieldKeys });
+      entries.push({ label, path: entry.path, rootFieldKeys: [] });
     });
   });
 
@@ -937,41 +936,6 @@ const collectRootFieldKeysFromDefinition = (definition: DefinitionNode, registry
       registry.push(name);
     }
   });
-};
-
-const getSliceRootFieldKeys = (artifact: BuilderArtifact, canonicalId: string): readonly string[] => {
-  const refEntry = lookupRef(artifact, canonicalId);
-  if (!refEntry || refEntry.kind !== "slice") {
-    return [];
-  }
-
-  // Use rootFieldKeys from artifact if available
-  if ("rootFieldKeys" in refEntry && Array.isArray(refEntry.rootFieldKeys)) {
-    return refEntry.rootFieldKeys;
-  }
-
-  // Fallback to extracting from document (though this doesn't work well)
-  const documentName = refEntry.document;
-  if (typeof documentName !== "string" || documentName.length === 0) {
-    return [];
-  }
-
-  const documentEntry = artifact.documents?.[documentName];
-  if (!documentEntry) {
-    return [];
-  }
-
-  const documentAst = documentEntry.ast as DocumentNode | undefined;
-  if (!documentAst || documentAst.kind !== "Document" || !Array.isArray(documentAst.definitions)) {
-    return [];
-  }
-
-  const rootKeys: string[] = [];
-  documentAst.definitions.forEach((definition) => {
-    collectRootFieldKeysFromDefinition(definition, rootKeys);
-  });
-
-  return rootKeys;
 };
 
 const getRuntimeCanonicalId = (callPath: NodePath<t.CallExpression>, method: SupportedMethod): string | null => {
@@ -1130,7 +1094,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   let canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
 
   // If not found, try to resolve from export context
-  if (!canonicalId && state.filename) {
+  if (!canonicalId && filename) {
     const segments = collectExportSegments(callPath);
     if (segments) {
       const exportName = makeExportName(segments);
@@ -1147,23 +1111,17 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
             }
           }
         }
-        canonicalId = resolveCanonicalId(state.filename, exportName, schemaName);
+        canonicalId = resolveCanonicalId(filename, exportName, schemaName);
       }
     }
   }
 
-  const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
-
   // Variables are not passed to the runtime querySlice - they're provided at call time
-
-  properties.push(
-    t.objectProperty(t.identifier("rootFieldKeys"), t.arrayExpression(rootFieldKeys.map((key) => t.stringLiteral(key)))),
-  );
 
   const resolvedBuilder = resolveSliceProjectionBuilder(callPath, state, projectionBuilder);
   properties.push(
     t.objectProperty(
-      t.identifier("projections"),
+      t.identifier("projection"),
       t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("handleProjectionBuilder")), [
         resolvedBuilder,
       ]),

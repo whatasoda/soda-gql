@@ -88,11 +88,8 @@ type SliceResultSelector<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
   TFields extends AnyFields,
-> = <TPaths extends Tuple<FieldPaths<TSchema, TFields>>, TProjected>(
-  paths: TPaths,
-  projector: (result: SliceResult<InferBySliceResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>) => TProjected,
-) => ExecutionResultProjection<TRuntimeAdapter, TPaths[number], TProjected>;
+> = <TPath extends FieldPaths<TSchema, TFields>, TProjected>(
+  path: TPath,
+  projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TRuntimeAdapter>) => TProjected,
+) => ExecutionResultProjection<TRuntimeAdapter, TPath, TProjected>;
 
-type InferBySliceResultSelectorPaths<TSchema extends AnyGraphqlSchema, TFields extends AnyFields, TPaths extends Tuple<FieldPaths<TSchema, TFields>>> = TPaths extends string[] ? {
-  [K in keyof TPaths]: TPaths[K] extends string ? InferByFieldPath<TSchema, TFields, TPaths[K]> : never
-} : never;

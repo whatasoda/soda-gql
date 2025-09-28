@@ -17,17 +17,16 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle non-graphql-error results", () => {
       const slices = {
         test: {
-          projections: {
-            test: new ExecutionResultProjection(
-              "$.test",
+          projection:
+            new ExecutionResultProjection(
+              ["$.test"],
               (result) => result, // Return raw SliceResult for testing
             ),
-          },
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [{ label: "test", projection: slices.test.projections.test }],
+        matches: [{ label: "test", projection: slices.test.projection }],
         children: new Map(),
       };
 
@@ -51,14 +50,13 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle empty results", () => {
       const slices = {
         test: {
-          projections: {
-            test: new ExecutionResultProjection("$.test", (result) => result),
-          },
+          projection:
+            new ExecutionResultProjection(["$.test"], (result) => result),
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [{ label: "test", projection: slices.test.projections.test }],
+        matches: [{ label: "test", projection: slices.test.projection }],
         children: new Map(),
       };
 
@@ -79,14 +77,13 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle graphql results with data", () => {
       const slices = {
         test: {
-          projections: {
-            test: new ExecutionResultProjection("$.data", (result) => result),
-          },
+          projection:
+            new ExecutionResultProjection(["$.data"], (result) => result),
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [{ label: "test", projection: slices.test.projections.test, path: ["data"] }],
+        matches: [{ label: "test", projection: slices.test.projection, path: ["data"] }],
         children: new Map([
           [
             "data",
@@ -118,14 +115,13 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle graphql results with errors", () => {
       const slices = {
         test: {
-          projections: {
-            test: new ExecutionResultProjection("$.data", (result) => result),
-          },
+          projection:
+            new ExecutionResultProjection(["$.data"], (result) => result),
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [{ label: "test", projection: slices.test.projections.test }],
+        matches: [{ label: "test", projection: slices.test.projection }],
         children: new Map(),
       };
 
@@ -155,14 +151,13 @@ describe("Runtime Operation Error Handling", () => {
     it("should throw on invalid result type", () => {
       const slices = {
         test: {
-          projections: {
-            test: new ExecutionResultProjection("$.test", (result) => result),
-          },
+          projection:
+            new ExecutionResultProjection(["$.test"], (result) => result),
         },
       };
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
-        matches: [{ label: "test", projection: slices.test.projections.test }],
+        matches: [{ label: "test", projection: slices.test.projection }],
         children: new Map(),
       };
 
