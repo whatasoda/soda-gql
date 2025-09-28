@@ -123,16 +123,13 @@ export const typeCheckFiles = async (files: TypeCheckInput[], options: TypeCheck
   for (const fileName of fileNames) {
     const sourceFile = program.getSourceFile(fileName);
     if (sourceFile) {
-      diagnostics.push(
-        ...program.getSemanticDiagnostics(sourceFile),
-        ...program.getSyntacticDiagnostics(sourceFile),
-      );
+      diagnostics.push(...program.getSemanticDiagnostics(sourceFile), ...program.getSyntacticDiagnostics(sourceFile));
     }
   }
 
   // Filter out type instantiation depth errors (TS2589) which are TypeScript limitations
   // These occur with complex generic types but don't indicate actual problems in transformed code
-  const relevantDiagnostics = diagnostics.filter(d => d.code !== 2589);
+  const relevantDiagnostics = diagnostics.filter((d) => d.code !== 2589);
 
   if (relevantDiagnostics.length > 0) {
     const formatHost = createFormatHost(projectRoot, useCaseSensitiveFileNames);

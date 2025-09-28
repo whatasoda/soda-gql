@@ -47,7 +47,7 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
   const artifactResult = await buildArtifact({
     graph: dependencyGraph.value,
     cache: stats,
-    runtimeModulePath: intermediateModule.value,
+    intermediateModulePath: intermediateModule.value,
   });
 
   if (artifactResult.isErr()) {

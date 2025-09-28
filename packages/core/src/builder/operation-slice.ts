@@ -1,4 +1,4 @@
-import { gqlRuntime } from "../runtime";
+import { handleProjectionBuilder } from "../runtime/operation-slice";
 import {
   type AnyExecutionResultProjection,
   type AnyFields,
@@ -23,6 +23,17 @@ export const createOperationSliceFactory =
   <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"];
     const operationTypeName: TTypeName = schema.operations[operationType];
+    const getFieldFactories = (() => {
+      const get = () => createFieldFactories(schema, operationTypeName);
+
+      let cache: ReturnType<typeof get> | null = null;
+      return () => {
+        if (cache === null) {
+          cache = get();
+        }
+        return cache;
+      };
+    })();
 
     const sliceFn: OperationSliceFn<TSchema, TRuntimeAdapter, TOperationType, TTypeName> = <
       TFields extends AnyFields,
@@ -34,11 +45,11 @@ export const createOperationSliceFactory =
       projectionBuilder: SliceResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
       const variableDefinitions = (variableDefinitionsAndExtras?.[0] ?? {}) as TVariableDefinitions;
-      const projection = gqlRuntime.handleProjectionBuilder(projectionBuilder);
-      const fieldFactories = createFieldFactories(schema, operationTypeName);
+      const projection = handleProjectionBuilder(projectionBuilder);
 
       return (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => {
         const $ = createVariableAssignments<TSchema, TVariableDefinitions>(variableDefinitions, variables);
+        const fieldFactories = getFieldFactories();
         const fields = builder({
           _: fieldFactories,
           f: fieldFactories,
@@ -47,8 +58,8 @@ export const createOperationSliceFactory =
         });
 
         const slice: OperationSlice<TSchema, TRuntimeAdapter, TOperationType, TFields, TProjection, TVariableDefinitions> = {
+          _metadata: pseudoTypeAnnotation(),
           _output: pseudoTypeAnnotation(),
-          operationType,
           variables: (variables ?? {}) as AssignableInput<TSchema, TVariableDefinitions>,
           getFields: () => fields,
           projection,

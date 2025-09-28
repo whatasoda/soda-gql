@@ -1,34 +1,48 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import type {
+  AnyExecutionResultProjection,
+  AnyFields,
+  AnyGraphqlSchema,
+  AnyOperationSlices,
+  GraphqlRuntimeAdapter,
+  InputTypeRefs,
+  Model,
+  Operation,
+  OperationSliceFactory,
+  OperationType,
+} from "@soda-gql/core";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
-
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
-const createRuntimePlaceholder = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
-  const returnStatement = ts.factory.createReturnStatement(ts.factory.createObjectLiteralExpression([], false));
-  const commentedReturn = ts.addSyntheticLeadingComment(
-    returnStatement,
-    ts.SyntaxKind.MultiLineCommentTrivia,
-    " runtime function ",
-    true,
-  );
-  const block = ts.factory.createBlock([commentedReturn], true);
-
-  if (ts.isArrowFunction(fn)) {
-    return ts.factory.updateArrowFunction(fn, fn.modifiers, [], [], undefined, fn.equalsGreaterThanToken, block);
-  }
-
-  return ts.factory.updateFunctionExpression(fn, fn.modifiers, undefined, fn.name, [], [], undefined, block);
+export type IntermediateModule = {
+  readonly models: Record<string, Model<AnyGraphqlSchema, string, InputTypeRefs, AnyFields, object>>;
+  readonly slices: Record<
+    string,
+    OperationSliceFactory<
+      AnyGraphqlSchema,
+      GraphqlRuntimeAdapter,
+      OperationType,
+      InputTypeRefs,
+      AnyFields,
+      AnyExecutionResultProjection<GraphqlRuntimeAdapter>
+    >
+  >;
+  readonly operations: Record<
+    string,
+    Operation<
+      AnyGraphqlSchema,
+      GraphqlRuntimeAdapter,
+      OperationType,
+      string,
+      InputTypeRefs,
+      AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
+    >
+  >;
 };
-
-// const _indentLines = (value: string, indent: string): string =>
-//   value
-//     .split("\n")
-//     .map((line, index) => (index === 0 ? line : `${indent}${line}`))
-//     .join("\n");
 
 const formatFactory = (expression: string): string => {
   const trimmed = expression.trim();
@@ -73,118 +87,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
       ts.factory.createStringLiteral(replacement.canonicalId),
     );
 
-  const shouldReplaceTransform = (
-    expression: ts.Expression | undefined,
-  ): expression is ts.ArrowFunction | ts.FunctionExpression =>
-    Boolean(expression && (ts.isArrowFunction(expression) || ts.isFunctionExpression(expression)));
-
-  const maybesanitizeTransform = (call: ts.CallExpression): ts.CallExpression => {
-    if (!ts.isPropertyAccessExpression(call.expression)) {
-      return call;
-    }
-
-    const method = call.expression.name.text;
-    const args = [...call.arguments];
-
-    const replaceTransformAt = (index: number) => {
-      const candidate = args[index];
-      if (shouldReplaceTransform(candidate)) {
-        args[index] = createRuntimePlaceholder(candidate);
-      }
-    };
-
-    if (method === "model" && args.length >= 3) {
-      replaceTransformAt(2);
-    }
-
-    if (args.every((arg, index) => arg === call.arguments[index])) {
-      return call;
-    }
-
-    return ts.factory.updateCallExpression(call, call.expression, call.typeArguments, args);
-  };
-
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    const sanitizeSelectResolver = (fn: ts.ArrowFunction | ts.FunctionExpression) => {
-      let changed = false;
-
-      const transformNode = (node: ts.Node): ts.Node => {
-        if (ts.isCallExpression(node)) {
-          const callee = node.expression;
-          const isSelectCall =
-            (ts.isPropertyAccessExpression(callee) && callee.name.text === "select") ||
-            (ts.isIdentifier(callee) && callee.text === "select");
-
-          if (isSelectCall) {
-            const args = [...node.arguments];
-            if (args.length >= 2 && shouldReplaceTransform(args[1])) {
-              args[1] = createRuntimePlaceholder(args[1]);
-              changed = true;
-              if (ts.isPropertyAccessExpression(callee)) {
-                return ts.factory.updateCallExpression(node, callee, node.typeArguments, args);
-              }
-              return ts.factory.updateCallExpression(node, callee, node.typeArguments, args);
-            }
-          }
-        }
-
-        if (
-          ts.isCallExpression(node) &&
-          ts.isPropertyAccessExpression(node.expression) &&
-          node.expression.name.text === "select"
-        ) {
-          const args = [...node.arguments];
-          if (args.length >= 2 && shouldReplaceTransform(args[1])) {
-            args[1] = createRuntimePlaceholder(args[1]);
-            changed = true;
-            return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
-          }
-        }
-
-        return ts.visitEachChild(node, transformNode, context);
-      };
-
-      let newBody: ts.ConciseBody = fn.body;
-      if (ts.isBlock(fn.body)) {
-        const statements = fn.body.statements.map((statement) => transformNode(statement) as ts.Statement);
-        if (changed) {
-          newBody = ts.factory.updateBlock(fn.body, statements);
-        }
-      } else {
-        const expressionBody = transformNode(fn.body) as ts.Expression;
-        if (changed) {
-          newBody = expressionBody;
-        }
-      }
-
-      if (!changed) {
-        return fn;
-      }
-
-      if (ts.isArrowFunction(fn)) {
-        return ts.factory.updateArrowFunction(
-          fn,
-          fn.modifiers,
-          fn.typeParameters,
-          fn.parameters,
-          fn.type,
-          fn.equalsGreaterThanToken,
-          newBody,
-        );
-      }
-
-      return ts.factory.updateFunctionExpression(
-        fn,
-        fn.modifiers,
-        fn.asteriskToken,
-        fn.name,
-        fn.typeParameters,
-        fn.parameters,
-        fn.type,
-        newBody as ts.Block,
-      );
-    };
-
     const visit: ts.Visitor = (node) => {
       if (ts.isPropertyAccessExpression(node)) {
         const path = getPropertyAccessPath(node);
@@ -192,32 +95,6 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
           const replacement = replacements.get(path);
           if (replacement) {
             return createAccessorExpression(replacement);
-          }
-        }
-      }
-
-      if (ts.isCallExpression(node)) {
-        const updated = maybesanitizeTransform(node);
-        if (updated !== node) {
-          return ts.visitEachChild(updated, visit, context);
-        }
-
-        if (ts.isPropertyAccessExpression(node.expression)) {
-          const calleeName = node.expression.name.text;
-          if (calleeName === "querySlice" || calleeName === "mutationSlice" || calleeName === "subscriptionSlice") {
-            const args = [...node.arguments];
-            const resolver = args[2];
-            if (resolver && shouldReplaceTransform(resolver)) {
-              const sanitized = sanitizeSelectResolver(resolver);
-              if (sanitized !== resolver) {
-                args[2] = sanitized;
-                return ts.visitEachChild(
-                  ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args),
-                  visit,
-                  context,
-                );
-              }
-            }
           }
         }
       }
@@ -290,63 +167,9 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const expressionText = node.definition.expression.trim();
   const replacements = createReplacementMap(node, graph);
   const rewritten = rewriteExpression(expressionText, replacements);
-  const normalized = node.definition.kind === "model" ? replaceModelTransform(rewritten) : rewritten;
-  const factory = formatFactory(normalized);
+  const factory = formatFactory(rewritten);
 
   return `  "${node.id}": ${factory},`;
-};
-
-const replaceModelTransform = (expression: string): string => {
-  const target = expression.trimStart();
-  if (!target.startsWith("gql.model")) {
-    return expression;
-  }
-
-  const sourceText = `(${expression})`;
-  const sourceFile = ts.createSourceFile("model.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
-
-  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    const visit: ts.Visitor = (node) => {
-      if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "model") {
-        const args = [...node.arguments];
-        if (
-          args.length >= 3 &&
-          (ts.isArrowFunction(unwrapNullish(args[2], "safe-array-item-access")) ||
-            ts.isFunctionExpression(unwrapNullish(args[2], "safe-array-item-access")))
-        ) {
-          const transform = unwrapNullish(args[2], "safe-array-item-access");
-          if (ts.isArrowFunction(transform) || ts.isFunctionExpression(transform)) {
-            args[2] = createRuntimePlaceholder(transform);
-          }
-          return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, args);
-        }
-      }
-
-      return ts.visitEachChild(node, visit, context);
-    };
-
-    return (node) => ts.visitEachChild(node, visit, context);
-  };
-
-  const transformed = ts.transform(sourceFile, [transformer]);
-  const transformedFile = unwrapNullish(transformed.transformed[0], "safe-array-item-access") as ts.SourceFile;
-  const expressionStatement = transformedFile.statements[0];
-
-  if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
-    transformed.dispose();
-    return expression;
-  }
-
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  let printed = printer.printNode(ts.EmitHint.Expression, expressionStatement.expression, transformedFile).trim();
-
-  if (printed.startsWith("(") && printed.endsWith(")")) {
-    printed = printed.slice(1, -1).trim();
-  }
-
-  transformed.dispose();
-
-  return printed;
 };
 
 const renderSection = (label: string, entries: readonly string[]): string => {
@@ -419,7 +242,6 @@ export const createIntermediateModule = async ({
       message: "MISSING_EXPRESSION",
     });
   }
-
 
   const sections = [renderSection("models", models), renderSection("slices", slices), renderSection("operations", operations)]
     .map((section) => section.trimEnd())

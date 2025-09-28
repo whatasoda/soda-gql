@@ -1,5 +1,6 @@
+import type { RuntimeModelInput, RuntimeOperationInput, RuntimeOperationSliceInput } from "@soda-gql/core/runtime";
 import type { Result } from "neverthrow";
-import type { CanonicalId, DocumentEntry, RegistryRefKind, RegistryRefMetadataMap } from "./registry";
+import type { CanonicalId } from "./registry";
 
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";
@@ -42,17 +43,31 @@ export type BuilderError =
       readonly message: string;
     };
 
+export type BuilderArtifactOperation = {
+  readonly id: CanonicalId;
+  readonly prebuild: RuntimeOperationInput["prebuild"];
+  readonly dependencies: readonly CanonicalId[];
+};
+
+export type BuilderArtifactSlice = {
+  readonly id: CanonicalId;
+  readonly prebuild: RuntimeOperationSliceInput["prebuild"];
+  readonly dependencies: readonly CanonicalId[];
+};
+
+export type BuilderArtifactModel = {
+  readonly id: CanonicalId;
+  readonly prebuild: RuntimeModelInput["prebuild"];
+  readonly dependencies: readonly CanonicalId[];
+};
+
 export type BuilderArtifact = {
-  readonly documents: Record<string, DocumentEntry & { readonly variables: Record<string, string> }>;
-  readonly refs: Record<
-    CanonicalId,
-    {
-      readonly kind: RegistryRefKind;
-      readonly metadata: RegistryRefMetadataMap[RegistryRefKind];
-    }
-  >;
+  readonly operations: Record<CanonicalId, BuilderArtifactOperation>;
+  readonly slices: Record<CanonicalId, BuilderArtifactSlice>;
+  readonly models: Record<CanonicalId, BuilderArtifactModel>;
+
   readonly report: {
-    readonly documents: number;
+    readonly operations: number;
     readonly models: number;
     readonly slices: number;
     readonly durationMs: number;

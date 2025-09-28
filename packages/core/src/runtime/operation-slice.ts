@@ -12,8 +12,11 @@ import {
   type SliceResultProjectionsBuilder,
 } from "../types";
 
-type GeneratedOperationSlice = {
-  projection: AnyExecutionResultProjection<GraphqlRuntimeAdapter>;
+export type RuntimeOperationSliceInput = {
+  prebuild: null;
+  runtime: {
+    buildProjection: AnySliceResultProjectionsBuilder;
+  };
 };
 
 type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
@@ -29,22 +32,21 @@ export const handleProjectionBuilder = <TBuilder extends AnySliceResultProjectio
   projectionBuilder: TBuilder,
 ): ReturnType<TBuilder> =>
   projectionBuilder({
-    select: (path, projector) => new ExecutionResultProjection([path], projector),
+    select: (path, projector) => new ExecutionResultProjection(path, projector),
   });
 
-export const runtimeOperationSlice =
-  (operationType: OperationType) => (generated: GeneratedOperationSlice) => (variables?: AnyAssignableInput) =>
-    ({
-      _output: pseudoTypeAnnotation(),
-      operationType,
-      variables: (variables ?? {}) as AnyAssignableInput,
-      getFields: pseudoTypeAnnotation<AnyFields>(),
-      projection: generated.projection,
-    }) satisfies OperationSlice<
-      AnyGraphqlSchema,
-      GraphqlRuntimeAdapter,
-      OperationType,
-      AnyFields,
-      AnyExecutionResultProjection<GraphqlRuntimeAdapter>,
-      InputTypeRefs
-    >;
+export const runtimeOperationSlice = (input: RuntimeOperationSliceInput) => (variables?: AnyAssignableInput) =>
+  ({
+    _metadata: pseudoTypeAnnotation(),
+    _output: pseudoTypeAnnotation(),
+    variables: (variables ?? {}) as AnyAssignableInput,
+    getFields: pseudoTypeAnnotation<AnyFields>(),
+    projection: handleProjectionBuilder(input.runtime.buildProjection),
+  }) satisfies OperationSlice<
+    AnyGraphqlSchema,
+    GraphqlRuntimeAdapter,
+    OperationType,
+    AnyFields,
+    AnyExecutionResultProjection<GraphqlRuntimeAdapter>,
+    InputTypeRefs
+  >;

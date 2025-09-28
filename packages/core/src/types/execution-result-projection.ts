@@ -42,6 +42,8 @@ function createProjectionPath(path: string): ProjectionPath {
 }
 
 function createProjectionPaths(paths: Tuple<string>): ProjectionPath[] {
+  console.log(paths);
+
   return paths.map((path) => createProjectionPath(path));
 }
 

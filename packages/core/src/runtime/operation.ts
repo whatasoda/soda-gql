@@ -14,25 +14,40 @@ import {
   SliceResultEmpty,
   SliceResultError,
   SliceResultSuccess,
+  type StripFunctions,
 } from "../types";
 import type { NormalizedExecutionResult } from "../types/execution-result";
+import { registerOperation } from "./registry";
 
-type GeneratedOperation = {
-  name: string;
-  document: DocumentNode;
-  projectionPathGraph: ExecutionResultProjectionPathGraphNode;
-  variableNames: string[];
-  getSlices: (tools: { $: AnyAssignableInput }) => AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>;
+export type RuntimeOperationInput = {
+  prebuild: Omit<
+    StripFunctions<
+      Operation<
+        AnyGraphqlSchema,
+        GraphqlRuntimeAdapter,
+        OperationType,
+        string,
+        InputTypeRefs,
+        AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
+      >
+    >,
+    "document"
+  > & {
+    document: DocumentNode;
+  };
+  runtime: {
+    getSlices: (tools: { $: AnyAssignableInput }) => AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>;
+  };
 };
 
-export const runtimeOperation = (operationType: OperationType) => (generated: GeneratedOperation) =>
-  ({
+export const runtimeOperation = (input: RuntimeOperationInput) => {
+  const operation = {
+    _metadata: pseudoTypeAnnotation(),
     _input: pseudoTypeAnnotation(),
     _raw: pseudoTypeAnnotation(),
     _output: pseudoTypeAnnotation(),
-    type: operationType,
-    name: generated.name,
-    document: generated.document as Operation<
+    name: input.prebuild.name,
+    document: input.prebuild.document as Operation<
       AnyGraphqlSchema,
       GraphqlRuntimeAdapter,
       OperationType,
@@ -40,17 +55,17 @@ export const runtimeOperation = (operationType: OperationType) => (generated: Ge
       InputTypeRefs,
       AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
     >["document"],
-    projectionPathGraph: generated.projectionPathGraph,
-    variableNames: generated.variableNames,
+    projectionPathGraph: input.prebuild.projectionPathGraph,
+    variableNames: input.prebuild.variableNames,
     parse: createParse({
-      slices: generated.getSlices({
+      slices: input.runtime.getSlices({
         $: createVariableReferences<AnyGraphqlSchema, InputTypeRefs>(
-          Object.fromEntries(generated.variableNames.map((name) => [name, null as unknown as InputTypeRef])),
+          Object.fromEntries(input.prebuild.variableNames.map((name) => [name, null as unknown as InputTypeRef])),
         ),
       }),
-      projectionPathGraph: generated.projectionPathGraph,
+      projectionPathGraph: input.prebuild.projectionPathGraph,
     }),
-  }) satisfies Operation<
+  } satisfies Operation<
     AnyGraphqlSchema,
     GraphqlRuntimeAdapter,
     OperationType,
@@ -58,6 +73,11 @@ export const runtimeOperation = (operationType: OperationType) => (generated: Ge
     InputTypeRefs,
     AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
   >;
+
+  registerOperation(operation);
+
+  return operation;
+};
 
 function* generateErrorMapEntries(
   errors: readonly GraphQLFormattedError[],
@@ -166,7 +186,7 @@ export const createParse = <
 
     const entries = Object.entries(slices).map(([label, slice]) => {
       const { projection } = slice;
-        
+
       if (prepared.type === "graphql") {
         const matchedErrors = projection.paths.flatMap(({ raw }) => prepared.errorMaps[label]?.[raw] ?? []);
         const uniqueErrors = Array.from(new Set(matchedErrors.map(({ error }) => error)).values());
@@ -175,19 +195,18 @@ export const createParse = <
           return [label, projection.projector(new SliceResultError({ type: "graphql-error", errors: uniqueErrors }))];
         }
 
-        const dataResults = projection.paths.map(({ segments }) => prepared.body.data
-          ? accessDataByPathSegments(prepared.body.data, segments)
-          : { error: new Error("No data") });
+        const dataResults = projection.paths.map(({ segments }) =>
+          prepared.body.data ? accessDataByPathSegments(prepared.body.data, segments) : { error: new Error("No data") },
+        );
         if (dataResults.some(({ error }) => error)) {
-          const errors = dataResults.flatMap(({ error }) => error ? [error] : []);
-          const combinedError = new Error(`Parse errors: ${errors.map(e => e.message).join(', ')}`);
-          return [label, projection.projector(new SliceResultError({ type: "parse-error", errors: combinedError }))];
+          const errors = dataResults.flatMap(({ error }) => (error ? [error] : []));
+          return [label, projection.projector(new SliceResultError({ type: "parse-error", errors }))];
         }
 
         const dataList = dataResults.map(({ data }) => data);
         return [label, projection.projector(new SliceResultSuccess(dataList))];
       }
-      
+
       if (prepared.type === "non-graphql-error") {
         return [label, projection.projector(prepared.error)];
       }

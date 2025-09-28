@@ -104,6 +104,8 @@ describe("zero-runtime transform", () => {
       });
 
       if (builderResult.isErr()) {
+        console.log(builderResult.error);
+
         throw new Error(`builder failed: ${builderResult.error.code}`);
       }
     } finally {

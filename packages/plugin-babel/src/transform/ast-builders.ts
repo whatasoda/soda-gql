@@ -40,3 +40,10 @@ export const stripTypeAnnotations = (node: t.Node): void => {
     delete node.returnType;
   }
 };
+
+export const buildObjectExpression = <K extends string>(
+  properties: Record<K, t.Expression | t.PatternLike>,
+): t.ObjectExpression =>
+  t.objectExpression(
+    Object.entries<t.Expression | t.PatternLike>(properties).map(([key, value]) => t.objectProperty(t.identifier(key), value)),
+  );

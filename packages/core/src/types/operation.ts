@@ -35,12 +35,12 @@ export type Operation<
   TVariableDefinitions extends InputTypeRefs,
   TSlices extends { [key: string]: AnyOperationSlice<TSchema, TRuntimeAdapter, TOperationType> },
 > = {
+  _metadata: PseudoTypeAnnotation<{ type: TOperationType }>;
   _input: PseudoTypeAnnotation<AssignableConstInput<TSchema, TVariableDefinitions>>;
   _raw: PseudoTypeAnnotation<InferOperationRawData<TSchema, TRuntimeAdapter, TOperationType, TSlices>>;
   _output: PseudoTypeAnnotation<{
     [K in keyof TSlices]: ReturnType<TSlices[K]["_output"]>;
   }>;
-  type: TOperationType;
   name: TName;
   variableNames: (keyof TVariableDefinitions & string)[];
   projectionPathGraph: ExecutionResultProjectionPathGraphNode;

@@ -33,10 +33,18 @@ export type OperationSliceFn<
   variables: [TVariables?],
   builder: FieldsBuilder<TSchema, TTypeName, TVariables, TFields>,
   projectionBuilder: SliceResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
-) => (
+) => OperationSliceFactory<TSchema, TRuntimeAdapter, TOperationType, TVariables, TFields, TProjection>;
+
+export type OperationSliceFactory<
+  TSchema extends AnyGraphqlSchema,
+  TRuntimeAdapter extends GraphqlRuntimeAdapter,
+  TOperationType extends OperationType,
+  TVariables extends InputTypeRefs,
+  TFields extends AnyFields,
+  TProjection extends AnyExecutionResultProjection<TRuntimeAdapter>,
+> = (
   variables: VoidIfEmptyObject<TVariables> | AssignableInput<TSchema, TVariables>,
 ) => OperationSlice<TSchema, TRuntimeAdapter, TOperationType, TFields, TProjection, TVariables>;
-
 /** Nominal type representing any slice instance regardless of schema specifics. */
 export type AnyOperationSlice<
   TSchema extends AnyGraphqlSchema,
@@ -68,8 +76,8 @@ export type OperationSlice<
   TProjection extends AnyExecutionResultProjection<TRuntimeAdapter>,
   TVariables extends InputTypeRefs,
 > = {
+  _metadata: PseudoTypeAnnotation<{ operationType: TOperationType }>;
   _output: PseudoTypeAnnotation<InferExecutionResultProjection<TRuntimeAdapter, TProjection>>;
-  operationType: TOperationType;
   variables: AssignableInput<TSchema, TVariables>;
   getFields: () => TFields;
   projection: TProjection;
@@ -88,8 +96,17 @@ type SliceResultSelector<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
   TFields extends AnyFields,
-> = <TPath extends FieldPaths<TSchema, TFields>, TProjected>(
-  path: TPath,
-  projector: (result: SliceResult<InferByFieldPath<TSchema, TFields, TPath>, TRuntimeAdapter>) => TProjected,
-) => ExecutionResultProjection<TRuntimeAdapter, TPath, TProjected>;
+> = <TPaths extends Tuple<FieldPaths<TSchema, TFields>>, TProjected>(
+  paths: TPaths,
+  projector: (result: SliceResult<InferBySliceResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>) => TProjected,
+) => ExecutionResultProjection<TRuntimeAdapter, TPaths[number], TProjected>;
 
+type InferBySliceResultSelectorPaths<
+  TSchema extends AnyGraphqlSchema,
+  TFields extends AnyFields,
+  TPaths extends Tuple<FieldPaths<TSchema, TFields>>,
+> = TPaths extends string[]
+  ? {
+      [K in keyof TPaths]: TPaths[K] extends string ? InferByFieldPath<TSchema, TFields, TPaths[K]> : never;
+    }
+  : never;

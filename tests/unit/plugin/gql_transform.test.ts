@@ -20,7 +20,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     );
 
     const artifact: BuilderArtifact = {
-      documents: {
+      operations: {
         ProfilePageQuery: {
           name: "ProfilePageQuery",
           text: "query ProfilePageQuery { viewer { id } }",
@@ -36,7 +36,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
         [queryId]: {
           kind: "operation",
           metadata: {
-            canonicalDocument: "ProfilePageQuery",
+            documentName: "ProfilePageQuery",
             dependencies: [userSliceId, userSliceCatalogId, userCatalogCollectionId],
           },
         },
@@ -63,7 +63,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
         },
       },
       report: {
-        documents: 2,
+        operations: 2,
         models: 1,
         slices: 1,
         durationMs: 0,
@@ -102,7 +102,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     // const _nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
 
     const artifact: BuilderArtifact = {
-      documents: {
+      operations: {
         UserSliceCatalogDocument: {
           name: "UserSliceCatalogDocument",
           text: "fragment UserSliceCatalogDocument on Query { users { id } }",
@@ -131,7 +131,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
         },
       },
       report: {
-        documents: 1,
+        operations: 1,
         models: 1,
         slices: 1,
         durationMs: 0,
@@ -159,10 +159,10 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     // const _sliceId = createCanonicalId(_sourcePath, "userSlice");
 
     const artifact: BuilderArtifact = {
-      documents: {},
+      operations: {},
       refs: {},
       report: {
-        documents: 0,
+        operations: 0,
         models: 0,
         slices: 0,
         durationMs: 0,
@@ -214,7 +214,7 @@ export const slices = {
         })),
       }),
       ({ select }) =>
-        select("$.users", () => {
+        select(["$.users"], () => {
           /* runtime function */
           return {};
         }),

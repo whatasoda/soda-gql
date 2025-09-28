@@ -1,6 +1,8 @@
 import { isAbsolute, normalize, resolve } from "node:path";
+import type { ExecutionResultProjectionPathGraphNode } from "@soda-gql/core";
 import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
+import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "./types";
 
 export type CanonicalId = string & { readonly __brand: "CanonicalId" };
 
@@ -35,7 +37,7 @@ export type SliceRefMetadata = {
 };
 
 export type OperationRefMetadata = {
-  readonly canonicalDocument: string;
+  readonly documentName: string;
   readonly dependencies: readonly CanonicalId[];
 };
 
@@ -53,50 +55,47 @@ export type RegistryRefLoadError = {
   readonly error: unknown;
 };
 
-export type RegistryRefInput<TKind extends RegistryRefKind, TValue> = {
+export type RegistryRefInput<TKind extends RegistryRefKind> = {
   readonly id: CanonicalId;
   readonly kind: TKind;
   readonly metadata: RegistryRefMetadataMap[TKind];
-  readonly loader: RegistryRefLoader<TValue>;
 };
 
-export type RegistryRefEntry<TKind extends RegistryRefKind, TValue> = RegistryRefInput<TKind, TValue>;
+export type RegistryRefEntry<TKind extends RegistryRefKind> = RegistryRefInput<TKind>;
 
-export type RegisterRefResult<TValue> = Result<RegistryRefEntry<RegistryRefKind, TValue>, RegistryRefError>;
+export type RegisterRefResult = Result<RegistryRefEntry<RegistryRefKind>, RegistryRefError>;
 
 export type RegistryRefError = {
-  readonly code: "REF_ALREADY_REGISTERED";
+  readonly code:
+    | "REF_ALREADY_REGISTERED"
+    | "MODEL_ALREADY_REGISTERED"
+    | "SLICE_ALREADY_REGISTERED"
+    | "OPERATION_ALREADY_REGISTERED";
   readonly id: CanonicalId;
 };
 
-export type DocumentEntry = {
+export type OperationEntry = {
   readonly name: string;
   readonly text: string;
-  readonly variables: Readonly<Record<string, string>>;
+  readonly variableNames: string[];
+  readonly projectionPathGraph: ExecutionResultProjectionPathGraphNode;
   readonly sourcePath?: string;
   readonly ast: DocumentNode;
 };
 
-export type RegisterDocumentInput = DocumentEntry;
+export type RegisterDocumentInput = OperationEntry;
 
 export type DocumentRegisterError = {
   readonly code: "DOCUMENT_ALREADY_REGISTERED";
   readonly name: string;
 };
 
-export type RegisterDocumentResult = Result<DocumentEntry, DocumentRegisterError>;
+export type RegisterDocumentResult = Result<OperationEntry, DocumentRegisterError>;
 
 export type RegistrySnapshot = {
-  readonly documents: Readonly<Record<string, DocumentEntry>>;
-  readonly refs: Readonly<
-    Record<
-      CanonicalId,
-      {
-        readonly kind: RegistryRefKind;
-        readonly metadata: RegistryRefMetadataMap[RegistryRefKind];
-      }
-    >
-  >;
+  readonly operations: Readonly<Record<CanonicalId, BuilderArtifactOperation>>;
+  readonly slices: Readonly<Record<CanonicalId, BuilderArtifactSlice>>;
+  readonly models: Readonly<Record<CanonicalId, BuilderArtifactModel>>;
 };
 
 export type RegistryGetRefError = {
@@ -109,96 +108,58 @@ export type DocumentLookupError = {
   readonly name: string;
 };
 
-export type RegistryRefLookupResult<TValue> = Result<RegistryRefEntry<RegistryRefKind, TValue>, RegistryGetRefError>;
+export type RegistryRefLookupResult = Result<RegistryRefEntry<RegistryRefKind>, RegistryGetRefError>;
 
-export type DocumentRegistry<TValue> = {
-  readonly registerRef: <TKind extends RegistryRefKind>(input: RegistryRefInput<TKind, TValue>) => RegisterRefResult<TValue>;
-  readonly getRef: (id: CanonicalId) => RegistryRefLookupResult<TValue>;
-  readonly registerDocument: (input: RegisterDocumentInput) => RegisterDocumentResult;
-  readonly getDocument: (name: string) => Result<DocumentEntry, DocumentLookupError>;
+export type OperationRegistry = {
+  readonly registerModel: (input: BuilderArtifactModel) => Result<BuilderArtifactModel, RegistryRefError>;
+  readonly registerSlice: (input: BuilderArtifactSlice) => Result<BuilderArtifactSlice, RegistryRefError>;
+  readonly registerOperation: (input: BuilderArtifactOperation) => Result<BuilderArtifactOperation, RegistryRefError>;
   readonly snapshot: () => RegistrySnapshot;
 };
 
-const toSnapshotEntry = (entry: RegistryRefEntry<RegistryRefKind, unknown>) => ({
-  kind: entry.kind,
-  metadata: entry.metadata,
-});
-
-export const createDocumentRegistry = <TValue>(): DocumentRegistry<TValue> => {
-  const refs = new Map<CanonicalId, RegistryRefEntry<RegistryRefKind, TValue>>();
-  const documents = new Map<string, DocumentEntry>();
+export const createOperationRegistry = (): OperationRegistry => {
+  const models = new Map<CanonicalId, BuilderArtifactModel>();
+  const slices = new Map<CanonicalId, BuilderArtifactSlice>();
+  const operations = new Map<CanonicalId, BuilderArtifactOperation>();
 
   return {
-    registerRef: (input) => {
-      if (refs.has(input.id)) {
+    registerModel: (input) => {
+      if (models.has(input.id)) {
         return err({
-          code: "REF_ALREADY_REGISTERED",
+          code: "MODEL_ALREADY_REGISTERED",
           id: input.id,
         } satisfies RegistryRefError);
       }
-
-      refs.set(input.id, input as RegistryRefEntry<RegistryRefKind, TValue>);
-      return ok(input as RegistryRefEntry<RegistryRefKind, TValue>);
+      models.set(input.id, input);
+      return ok(input);
     },
-
-    getRef: (id) => {
-      const entry = refs.get(id);
-
-      if (!entry) {
+    registerSlice: (input) => {
+      if (slices.has(input.id)) {
         return err({
-          code: "REF_NOT_FOUND",
-          id,
-        } satisfies RegistryGetRefError);
+          code: "SLICE_ALREADY_REGISTERED",
+          id: input.id,
+        } satisfies RegistryRefError);
       }
-
-      return ok(entry);
+      slices.set(input.id, input);
+      return ok(input);
     },
-
-    registerDocument: (input) => {
-      if (documents.has(input.name)) {
+    registerOperation: (input) => {
+      if (operations.has(input.id)) {
         return err({
-          code: "DOCUMENT_ALREADY_REGISTERED",
-          name: input.name,
-        } satisfies DocumentRegisterError);
+          code: "OPERATION_ALREADY_REGISTERED",
+          id: input.id,
+        } satisfies RegistryRefError);
       }
-
-      const value = {
-        name: input.name,
-        text: input.text,
-        variables: { ...input.variables },
-        sourcePath: input.sourcePath,
-        ast: input.ast,
-      };
-
-      documents.set(input.name, value);
-
-      return ok(value);
-    },
-
-    getDocument: (name) => {
-      const entry = documents.get(name);
-
-      if (!entry) {
-        return err({
-          code: "DOCUMENT_NOT_FOUND",
-          name,
-        } satisfies DocumentLookupError);
-      }
-
-      return ok(entry);
+      operations.set(input.id, input);
+      return ok(input);
     },
 
     snapshot: () => {
-      const documentRecord = Object.fromEntries(documents.entries());
-      const refRecord = Object.fromEntries(Array.from(refs.entries(), ([id, entry]) => [id, toSnapshotEntry(entry)])) as Record<
-        CanonicalId,
-        { kind: RegistryRefKind; metadata: RegistryRefMetadataMap[RegistryRefKind] }
-      >;
-
       return {
-        documents: documentRecord,
-        refs: refRecord,
+        operations: Object.fromEntries(operations.entries()) as Record<CanonicalId, BuilderArtifactOperation>,
+        slices: Object.fromEntries(slices.entries()) as Record<CanonicalId, BuilderArtifactSlice>,
+        models: Object.fromEntries(models.entries()) as Record<CanonicalId, BuilderArtifactModel>,
       } satisfies RegistrySnapshot;
     },
-  } satisfies DocumentRegistry<TValue>;
+  } satisfies OperationRegistry;
 };

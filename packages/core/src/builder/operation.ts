@@ -54,10 +54,10 @@ export const createOperationFactory =
       const projectionPathGraph = createPathGraphFromSliceEntries(slices);
 
       const operation: Operation<TSchema, TRuntimeAdapter, TOperationType, TName, TVariableDefinitions, TSlices> = {
+        _metadata: pseudoTypeAnnotation(),
         _input: pseudoTypeAnnotation(),
         _raw: pseudoTypeAnnotation(),
         _output: pseudoTypeAnnotation(),
-        type: operationType,
         name,
         variableNames: Object.keys(variables),
         document: document as Operation<
@@ -104,10 +104,16 @@ function createPathGraphFromSliceEntries<
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
   TOperationType extends OperationType,
 >(slices: AnyOperationSlices<TSchema, TRuntimeAdapter, TOperationType>) {
-  const paths = Object.entries(slices).flatMap(([label, slice]) => Array.from(new Map(slice.projection.paths.map(({ raw, segments }) => {
-    const [first, ...rest] = segments;
-    return [raw, { label, raw, segments: [`${label}_${first}`, ...rest] }];
-  })).values()));
+  const paths = Object.entries(slices).flatMap(([label, slice]) =>
+    Array.from(
+      new Map(
+        slice.projection.paths.map(({ raw, segments }) => {
+          const [first, ...rest] = segments;
+          return [raw, { label, raw, segments: [`${label}_${first}`, ...rest] }];
+        }),
+      ).values(),
+    ),
+  );
 
   return createPathGraph(paths);
 }

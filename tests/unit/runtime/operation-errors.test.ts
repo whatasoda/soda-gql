@@ -17,11 +17,10 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle non-graphql-error results", () => {
       const slices = {
         test: {
-          projection:
-            new ExecutionResultProjection(
-              ["$.test"],
-              (result) => result, // Return raw SliceResult for testing
-            ),
+          projection: new ExecutionResultProjection(
+            ["$.test"],
+            (result) => result, // Return raw SliceResult for testing
+          ),
         },
       };
 
@@ -50,8 +49,7 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle empty results", () => {
       const slices = {
         test: {
-          projection:
-            new ExecutionResultProjection(["$.test"], (result) => result),
+          projection: new ExecutionResultProjection(["$.test"], (result) => result),
         },
       };
 
@@ -77,8 +75,7 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle graphql results with data", () => {
       const slices = {
         test: {
-          projection:
-            new ExecutionResultProjection(["$.data"], (result) => result),
+          projection: new ExecutionResultProjection(["$.data"], (result) => result),
         },
       };
 
@@ -115,8 +112,7 @@ describe("Runtime Operation Error Handling", () => {
     it("should handle graphql results with errors", () => {
       const slices = {
         test: {
-          projection:
-            new ExecutionResultProjection(["$.data"], (result) => result),
+          projection: new ExecutionResultProjection(["$.data"], (result) => result),
         },
       };
 
@@ -151,8 +147,7 @@ describe("Runtime Operation Error Handling", () => {
     it("should throw on invalid result type", () => {
       const slices = {
         test: {
-          projection:
-            new ExecutionResultProjection(["$.test"], (result) => result),
+          projection: new ExecutionResultProjection(["$.test"], (result) => result),
         },
       };
 

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "bun:test";
+import { parse } from "graphql";
 import { ok } from "neverthrow";
 
-import { createCanonicalId, createDocumentRegistry } from "../../../packages/builder/src/registry";
+import { type CanonicalId, createCanonicalId, createOperationRegistry } from "../../../packages/builder/src/registry";
 
 describe("canonical identifier helpers", () => {
   it("normalizes absolute file paths and export names", () => {
     const id = createCanonicalId("/app/src/../src/entities/user.ts", "userSlice");
-    expect(id).toBe("/app/src/entities/user.ts::userSlice");
+    expect(id).toBe("/app/src/entities/user.ts::userSlice" as unknown as CanonicalId);
   });
 
   it("guards against relative paths", () => {
@@ -16,7 +17,7 @@ describe("canonical identifier helpers", () => {
 
 describe("document registry", () => {
   it("registers refs once and rejects duplicates", () => {
-    const registry = createDocumentRegistry();
+    const registry = createOperationRegistry();
     const id = createCanonicalId("/app/src/entities/user.ts", "userSlice");
 
     const first = registry.registerRef({
@@ -54,7 +55,7 @@ describe("document registry", () => {
   });
 
   it("provides lookup for registered refs", () => {
-    const registry = createDocumentRegistry();
+    const registry = createOperationRegistry();
     const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     registry.registerRef({
@@ -71,8 +72,15 @@ describe("document registry", () => {
 
     ref.match(
       (entry) => {
-        expect(entry.kind).toBe("operation");
-        expect(entry.metadata.canonicalDocument).toBe("ProfilePageQuery");
+        expect(entry).toEqual({
+          id: expect.any(String),
+          kind: "operation",
+          metadata: {
+            canonicalDocument: "ProfilePageQuery",
+            dependencies: [],
+          },
+          loader: expect.any(Function),
+        });
       },
       () => {
         throw new Error("expected ref to be present");
@@ -81,7 +89,7 @@ describe("document registry", () => {
   });
 
   it("registers documents and exposes snapshot", () => {
-    const registry = createDocumentRegistry();
+    const registry = createOperationRegistry();
     const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     registry.registerRef({
@@ -96,29 +104,33 @@ describe("document registry", () => {
 
     const registered = registry.registerDocument({
       name: "ProfilePageQuery",
-      text: "query ProfilePageQuery { users { id } }",
-      variables: {
-        userId: "ID!",
-      },
+      text: "query ProfilePageQuery($userId: ID!) { users { id } }",
+      variableNames: ["userId"],
+      ast: parse("query ProfilePageQuery($userId: ID!) { users { id } }"),
     });
 
     expect(registered.isOk()).toBe(true);
 
     const snapshot = registry.snapshot();
     expect(snapshot.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(snapshot.documents.ProfilePageQuery.variables).toEqual({ userId: "ID!" });
-    expect(snapshot.refs[id].kind).toBe("operation");
-    expect(snapshot.refs[id].metadata.canonicalDocument).toBe("ProfilePageQuery");
-    expect(snapshot.refs[id].metadata.dependencies).toEqual([]);
+    expect(snapshot.documents.ProfilePageQuery.variableNames).toEqual(["userId"]);
+    expect(snapshot.refs[id]).toEqual({
+      kind: "operation",
+      metadata: {
+        canonicalDocument: "ProfilePageQuery",
+        dependencies: [],
+      },
+    });
   });
 
   it("fails to register document duplicates", () => {
-    const registry = createDocumentRegistry();
+    const registry = createOperationRegistry();
 
     const first = registry.registerDocument({
       name: "ProfilePageQuery",
       text: "query ProfilePageQuery { users { id } }",
-      variables: {},
+      variableNames: [],
+      ast: parse("query ProfilePageQuery { users { id } }"),
     });
 
     expect(first.isOk()).toBe(true);
@@ -126,7 +138,8 @@ describe("document registry", () => {
     const duplicate = registry.registerDocument({
       name: "ProfilePageQuery",
       text: "query ProfilePageQuery { users { id name } }",
-      variables: {},
+      variableNames: [],
+      ast: parse("query ProfilePageQuery { users { id name } }"),
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -142,8 +155,8 @@ describe("document registry", () => {
   });
 
   it("produces errors when looking up missing refs", () => {
-    const registry = createDocumentRegistry();
-    const lookup = registry.getRef("/app/src/entities/missing.ts::missingRef");
+    const registry = createOperationRegistry();
+    const lookup = registry.getRef("/app/src/entities/missing.ts::missingRef" as unknown as CanonicalId);
 
     expect(lookup.isErr()).toBe(true);
     lookup.match(

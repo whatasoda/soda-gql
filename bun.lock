@@ -15,6 +15,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/core": "workspace:*",
         "@soda-gql/tool-utils": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",

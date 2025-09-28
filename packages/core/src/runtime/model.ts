@@ -1,15 +1,23 @@
-import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, type Model, pseudoTypeAnnotation } from "../types";
+import {
+  type AnyFields,
+  type AnyGraphqlSchema,
+  type EmptyObject,
+  type Model,
+  pseudoTypeAnnotation,
+  type StripFunctions,
+} from "../types";
 
-type GeneratedModel = {
-  typename: string;
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  transform: (raw: any) => object;
+export type RuntimeModelInput = {
+  prebuild: StripFunctions<Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object>>;
+  runtime: {
+    transform: (raw: any) => object;
+  };
 };
 
-export const runtimeModel = (generated: GeneratedModel): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
+export const runtimeModel = (input: RuntimeModelInput): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
   _input: pseudoTypeAnnotation(),
   _output: pseudoTypeAnnotation(),
-  typename: generated.typename,
+  typename: input.prebuild.typename,
   fragment: pseudoTypeAnnotation(),
-  transform: generated.transform,
+  transform: input.runtime.transform,
 });
