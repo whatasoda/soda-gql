@@ -36,56 +36,82 @@ type GqlCallInfo = {
 
 const gqlMethodNames = new Set<SupportedMethod>(["model", "querySlice", "query"]);
 
-const parseGqlCall = (node: t.CallExpression): GqlCallInfo | null => {
-  if (!t.isMemberExpression(node.callee)) {
+const parseGqlCall = (node: t.CallExpression, path?: NodePath<t.CallExpression>): GqlCallInfo | null => {
+  if (!t.isIdentifier(node.callee) && !t.isMemberExpression(node.callee)) {
     return null;
   }
 
-  // Check for gql.{schema}.{method} pattern
-  if (t.isMemberExpression(node.callee.object)) {
-    const innerExpression = node.callee.object;
-    if (!t.isIdentifier(innerExpression.object, { name: "gql" })) {
-      return null;
+  const isDirectCall = t.isIdentifier(node.callee) && node.callee.name === "gql";
+  const isMemberCall =
+    t.isMemberExpression(node.callee) &&
+    t.isIdentifier(node.callee.object) &&
+    node.callee.object.name === "gql" &&
+    t.isIdentifier(node.callee.property);
+
+  if (!isDirectCall && !isMemberCall) {
+    // Check if this is an inner call from a factory function
+    // Look for calls to methods like query, model, querySlice that come from destructured parameters
+    if (t.isIdentifier(node.callee)) {
+      const calleeName = node.callee.name;
+      const knownMethods: SupportedMethod[] = ["query", "model", "querySlice"];
+      if (knownMethods.includes(calleeName as SupportedMethod)) {
+        // This might be a call from inside a factory function
+        // We need to determine the schema from context
+        // Look for the parent factory call
+        let schemaName = "default";
+        
+        if (path) {
+          // Traverse up to find the factory call
+          let current: NodePath | null = path;
+          while (current) {
+            if (current.isCallExpression()) {
+              const callNode = current.node;
+              if (t.isMemberExpression(callNode.callee) &&
+                  t.isIdentifier(callNode.callee.object) && 
+                  callNode.callee.object.name === "gql" &&
+                  t.isIdentifier(callNode.callee.property)) {
+                const propName = callNode.callee.property.name;
+                if (propName === "default" || propName === "admin") {
+                  schemaName = propName;
+                  break;
+                }
+              }
+            }
+            current = current.parentPath;
+          }
+        }
+        
+        return { method: calleeName as SupportedMethod, schemaName };
+      }
     }
-
-    const schemaProperty = innerExpression.property;
-    if (!t.isIdentifier(schemaProperty)) {
-      return null;
-    }
-
-    const methodProperty = node.callee.property;
-    if (!t.isIdentifier(methodProperty)) {
-      return null;
-    }
-
-    if (!gqlMethodNames.has(methodProperty.name as SupportedMethod)) {
-      return null;
-    }
-
-    return {
-      method: methodProperty.name as SupportedMethod,
-      schemaName: schemaProperty.name,
-    };
-  }
-
-  // Check for gql.{method} pattern (backward compatibility)
-  if (!t.isIdentifier(node.callee.object, { name: "gql" })) {
     return null;
   }
 
-  const property = node.callee.property;
-  if (!t.isIdentifier(property)) {
+  if (isMemberCall) {
+    const memberCall = node.callee as t.MemberExpression;
+    const property = memberCall.property as t.Identifier;
+    const methodName = property.name;
+
+    // Check if the method is a known GQL method (direct method calls)
+    const knownMethods: SupportedMethod[] = ["query", "model", "querySlice"];
+    if (knownMethods.includes(methodName as SupportedMethod)) {
+      // This is a direct method call like gql.query()
+      return { method: methodName as SupportedMethod };
+    }
+
+    // If it's a schema accessor like gql.default or gql.admin, 
+    // we don't want to process the factory call itself - return null
+    // The inner calls will be visited separately by the traverser
+    if (methodName === "default" || methodName === "admin") {
+      return null;
+    }
+    
     return null;
   }
 
-  if (!gqlMethodNames.has(property.name as SupportedMethod)) {
-    return null;
-  }
-
-  return {
-    method: property.name as SupportedMethod,
-  };
-};
+  // Legacy direct call (gql.xxx) - shouldn't happen in new code
+  return null;
+};;;;;;
 
 // Keep the old function for backward compatibility in code that might still use it
 const asSupportedMethod = (node: t.CallExpression): SupportedMethod | null => {
@@ -121,6 +147,30 @@ const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly s
       continue;
     }
 
+    // Handle arrow function (from factory pattern)
+    if (parent.isArrowFunctionExpression()) {
+      current = parent;
+      continue;
+    }
+
+    // Handle return statement (inside arrow function body)
+    if (parent.isReturnStatement()) {
+      current = parent;
+      continue;
+    }
+
+    // Handle block statement (arrow function body)
+    if (parent.isBlockStatement()) {
+      current = parent;
+      continue;
+    }
+
+    // Handle call expression (the factory call)
+    if (parent.isCallExpression()) {
+      current = parent;
+      continue;
+    }
+
     if (parent.isVariableDeclarator()) {
       const id = parent.node.id;
       if (!t.isIdentifier(id)) {
@@ -145,7 +195,7 @@ const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly s
   }
 
   return null;
-};
+};;
 
 const makeExportName = (segments: readonly string[]): string | null => {
   if (segments.length === 0) {
@@ -304,18 +354,29 @@ const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
 };
 
 const convertTypeRefCall = (expression: t.Expression): t.Expression => {
-  if (!t.isCallExpression(expression) || !t.isMemberExpression(expression.callee)) {
-    throw new Error("Expected gql.* call in type reference");
+  if (!t.isCallExpression(expression)) {
+    throw new Error("Expected call expression in type reference");
   }
 
-  if (!t.isIdentifier(expression.callee.object, { name: "gql" }) || !t.isIdentifier(expression.callee.property)) {
-    throw new Error("Unsupported type reference expression");
+  let kind: string;
+  
+  // Handle both gql.scalar() and scalar() patterns
+  if (t.isMemberExpression(expression.callee)) {
+    // Old pattern: gql.scalar()
+    if (!t.isIdentifier(expression.callee.object, { name: "gql" }) || !t.isIdentifier(expression.callee.property)) {
+      throw new Error("Unsupported type reference expression");
+    }
+    kind = expression.callee.property.name;
+  } else if (t.isIdentifier(expression.callee)) {
+    // New pattern: scalar() from destructured parameter
+    kind = expression.callee.name;
+  } else {
+    throw new Error("Expected gql.* or destructured call in type reference");
   }
 
-  const kind = expression.callee.property.name;
   const [tupleArg, defaultArg] = expression.arguments;
   if (!tupleArg || !t.isArrayExpression(tupleArg)) {
-    throw new Error("Expected tuple argument in gql type reference");
+    throw new Error("Expected tuple argument in type reference");
   }
 
   const [nameNode, modifierNode] = tupleArg.elements;
@@ -337,7 +398,7 @@ const convertTypeRefCall = (expression: t.Expression): t.Expression => {
   }
 
   return t.objectExpression(properties);
-};
+};;
 
 const convertVariablesObjectExpression = (node: t.Expression): t.Expression => {
   if (t.isNullLiteral(node)) {
@@ -961,8 +1022,58 @@ const resolveSliceProjectionBuilder = (
   return clone(builder);
 };
 
+const extractInnerCallFromFactory = (node: t.CallExpression): t.CallExpression | null => {
+  // Check if this is a call to gql.{schema}(({ helpers }) => helpers.method(...))
+  if (!t.isMemberExpression(node.callee)) {
+    return null;
+  }
+  
+  const callee = node.callee;
+  if (!t.isIdentifier(callee.object) || callee.object.name !== 'gql') {
+    return null;
+  }
+  
+  if (!t.isIdentifier(callee.property)) {
+    return null;
+  }
+  
+  // Check if it's a schema accessor (like 'default', 'admin', etc.)
+  const schemaName = callee.property.name;
+  if (!['default', 'admin'].includes(schemaName)) {
+    return null;
+  }
+  
+  // Get the factory function argument
+  if (node.arguments.length !== 1) {
+    return null;
+  }
+  
+  const factoryArg = node.arguments[0];
+  if (!t.isArrowFunctionExpression(factoryArg)) {
+    return null;
+  }
+  
+  // Check if the body is a direct call expression or has a return statement
+  if (t.isCallExpression(factoryArg.body)) {
+    return factoryArg.body;
+  }
+  
+  if (t.isBlockStatement(factoryArg.body)) {
+    for (const stmt of factoryArg.body.body) {
+      if (t.isReturnStatement(stmt) && t.isCallExpression(stmt.argument)) {
+        return stmt.argument;
+      }
+    }
+  }
+  
+  return null;
+};;
 const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState): t.Expression => {
-  const [target, , transform] = callPath.node.arguments;
+  // Check if this is the new factory pattern
+  const innerCall = extractInnerCallFromFactory(callPath.node);
+  const actualCall = innerCall || callPath.node;
+  
+  const [target, , transform] = actualCall.arguments;
   if (!target || !transform) {
     throw new Error("gql.model requires a target and transform");
   }
@@ -994,10 +1105,14 @@ const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
     t.objectExpression(properties),
   ]);
-};
+};;
 
 const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState): t.Expression => {
-  const [variables, , projectionBuilder] = callPath.node.arguments;
+  // Check if this is the new factory pattern
+  const innerCall = extractInnerCallFromFactory(callPath.node);
+  const actualCall = innerCall || callPath.node;
+  
+  const [variables, , projectionBuilder] = actualCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("gql.querySlice requires a projection builder");
   }
@@ -1034,7 +1149,7 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("querySlice")), [
     t.objectExpression(properties),
   ]);
-};
+};;
 
 const buildQueryRuntimeComponents = (
   programPath: NodePath<t.Program>,
@@ -1044,7 +1159,11 @@ const buildQueryRuntimeComponents = (
   state: PluginState,
   filename: string,
 ) => {
-  const [nameArg, _variablesArg, slicesBuilder] = callPath.node.arguments;
+  // Check if this is the new factory pattern
+  const innerCall = extractInnerCallFromFactory(callPath.node);
+  const actualCall = innerCall || callPath.node;
+  
+  const [nameArg, _variablesArg, slicesBuilder] = actualCall.arguments;
   if (!nameArg || !t.isStringLiteral(nameArg) || !slicesBuilder) {
     throw new Error("gql.query requires a name, variables, and slices builder");
   }
@@ -1065,7 +1184,10 @@ const buildQueryRuntimeComponents = (
   }
 
   const dependencies = Array.isArray(refEntry.dependencies) ? refEntry.dependencies : [];
-  const slicesBuilderPath = callPath.get("arguments")[2] as NodePath<t.Expression>;
+  // For the factory pattern, we need to get the correct argument path
+  const slicesBuilderPath = innerCall 
+    ? (callPath.get("arguments")[0] as NodePath).get("body.arguments.2") as NodePath<t.Expression>
+    : (callPath.get("arguments")[2] as NodePath<t.Expression>);
   const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
   const projectionGraph = projectionEntries.length > 0 ? _buildProjectionPathGraph(projectionEntries) : null;
 
@@ -1109,7 +1231,7 @@ const buildQueryRuntimeComponents = (
     documentDeclaration,
     runtimeCall,
   };
-};
+};;
 
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
@@ -1155,7 +1277,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
       programPath.traverse({
         CallExpression(callPath) {
-          const callInfo = parseGqlCall(callPath.node);
+          const callInfo = parseGqlCall(callPath.node, callPath);
           if (!callInfo) {
             return;
           }

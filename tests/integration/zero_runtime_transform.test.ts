@@ -128,7 +128,7 @@ describe("zero-runtime transform", () => {
       {
         filePath: join(workspace, "src", "pages", "profile.query.ts"),
         verify: (code: string) => {
-          const canonicalId = createCanonicalId(join(workspace, "src", "pages", "profile.query.ts"), "profileQuery");
+          const canonicalId = createCanonicalId(join(workspace, "src", "pages", "profile.query.ts"), "profileQuery", "default");
           const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
           expect(code).not.toContain("gql.query(");
           expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');

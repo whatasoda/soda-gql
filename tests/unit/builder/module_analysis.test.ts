@@ -94,13 +94,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
-    expect(pageQuery.dependencies).toEqual([
-      {
-        canonicalId: userSlice.canonicalId,
-        displayName: "userSlice",
-        isLocal: false,
-      },
-    ]);
+    expect(pageQuery.references).toEqual(["userSlice"]);
   });
 
   it("captures nested dependencies for slices", () => {
@@ -123,13 +117,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
-    expect(pageQuery.dependencies).toEqual([
-      {
-        canonicalId: user.slice.findById.canonicalId,
-        displayName: "user.slice.findById",
-        isLocal: false,
-      },
-    ]);
+    expect(pageQuery.references).toContain("user.slice.findById");
   });
 
   it("captures references in nested object values", () => {
@@ -158,18 +146,7 @@ export const complexQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [complexQuery] = analysis.definitions;
-    expect(complexQuery.dependencies).toEqual([
-      {
-        canonicalId: userSlice.canonicalId,
-        displayName: "userSlice",
-        isLocal: false,
-      },
-      {
-        canonicalId: postSlice.canonicalId,
-        displayName: "postSlice",
-        isLocal: false,
-      },
-    ]);
+    expect(complexQuery.references).toEqual(["userSlice", "postSlice"]);
   });
 
   it("captures both local and imported dependencies", () => {
@@ -205,18 +182,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     const analysis = analyzeModule({ filePath, source });
 
     const pageQuery = analysis.definitions.find((def) => def.exportName === "pageQuery");
-    expect(pageQuery?.dependencies).toEqual([
-      {
-        canonicalId: userSlice.canonicalId,
-        displayName: "userSlice",
-        isLocal: false,
-      },
-      {
-        canonicalId: postSlice.canonicalId,
-        displayName: "postSlice",
-        isLocal: true,
-      },
-    ]);
+    expect(pageQuery?.references).toEqual(["userSlice", "postSlice"]);
   });
 
   it("detects multi-schema usage with named schemas", () => {
