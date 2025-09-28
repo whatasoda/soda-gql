@@ -73,6 +73,7 @@ export const buildArtifact = async ({
   }
 
   const runtimeOperations = (runtimeModule.operations ?? {}) as Record<string, Record<string, unknown>>;
+  const runtimeSlices = (runtimeModule.slices ?? {}) as Record<string, Record<string, unknown>>;
 
   for (const model of modelNodes) {
     const hash = computeModelHash(model.id, model.dependencies);
@@ -230,12 +231,29 @@ export const buildArtifact = async ({
 
   for (const slice of sliceNodes) {
     const documents = Array.from(sliceConsumers.get(slice.id) ?? []);
+
+    // Extract rootFieldKeys from the runtime slice if available
+    let rootFieldKeys: string[] = [];
+    const sliceDescriptor = runtimeSlices[slice.id];
+    if (sliceDescriptor && typeof sliceDescriptor === "function") {
+      try {
+        // Call the slice with empty variables to get the slice object
+        const sliceInstance = sliceDescriptor({});
+        if (sliceInstance && typeof sliceInstance === "object" && Array.isArray(sliceInstance.rootFieldKeys)) {
+          rootFieldKeys = sliceInstance.rootFieldKeys;
+        }
+      } catch {
+        // If evaluation fails, continue with empty rootFieldKeys
+      }
+    }
+
     const result = registry.registerRef({
       id: slice.id,
       kind: "slice",
       metadata: {
         dependencies: slice.dependencies,
         canonicalDocuments: documents,
+        rootFieldKeys,
       },
       loader: () => ok(undefined),
     });

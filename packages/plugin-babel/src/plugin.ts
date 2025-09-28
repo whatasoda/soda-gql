@@ -945,6 +945,12 @@ const getSliceRootFieldKeys = (artifact: BuilderArtifact, canonicalId: string): 
     return [];
   }
 
+  // Use rootFieldKeys from artifact if available
+  if ("rootFieldKeys" in refEntry && Array.isArray(refEntry.rootFieldKeys)) {
+    return refEntry.rootFieldKeys;
+  }
+
+  // Fallback to extracting from document (though this doesn't work well)
   const documentName = refEntry.document;
   if (typeof documentName !== "string" || documentName.length === 0) {
     return [];
@@ -1108,7 +1114,7 @@ const buildModelRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   ]);
 };
 
-const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState): t.Expression => {
+const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: PluginState, filename: string): t.Expression => {
   // Check if this is the new factory pattern
   const innerCall = extractInnerCallFromFactory(callPath.node);
   const actualCall = innerCall || callPath.node;
@@ -1119,9 +1125,33 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
   }
 
   const properties: t.ObjectProperty[] = [];
-  const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
-  // TODO: rootFieldKeys extraction doesn't work properly in zero-runtime mode
-  // The builder needs to record this information in the artifact
+
+  // Try to get canonicalId from runtime context first
+  let canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
+
+  // If not found, try to resolve from export context
+  if (!canonicalId && state.filename) {
+    const segments = collectExportSegments(callPath);
+    if (segments) {
+      const exportName = makeExportName(segments);
+      if (exportName) {
+        // For factory pattern, extract schema name
+        let schemaName: string | undefined;
+        const factoryCall = callPath.findParent((p) => p.isCallExpression());
+        if (factoryCall?.isCallExpression()) {
+          const callee = factoryCall.node.callee;
+          if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
+            const propName = callee.property.name;
+            if (propName !== "querySlice") {
+              schemaName = propName;
+            }
+          }
+        }
+        canonicalId = resolveCanonicalId(state.filename, exportName, schemaName);
+      }
+    }
+  }
+
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
 
   // Variables are not passed to the runtime querySlice - they're provided at call time
@@ -1323,7 +1353,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
                     const replacement =
                       method === "model"
                         ? buildModelRuntimeCall(callPath, pluginState)
-                        : buildSliceRuntimeCall(callPath, pluginState);
+                        : buildSliceRuntimeCall(callPath, pluginState, filename);
                     callPath.replaceWith(replacement);
                     mutated = true;
                     return;
@@ -1354,7 +1384,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
             if (method === "model" || method === "querySlice") {
               ensureGqlRuntimeImport(programPath);
               const replacement =
-                method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState);
+                method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState, filename);
               callPath.replaceWith(replacement);
               mutated = true;
               return;
@@ -1373,7 +1403,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
           if (method === "model" || method === "querySlice") {
             ensureGqlRuntimeImport(programPath);
             const replacement =
-              method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState);
+              method === "model" ? buildModelRuntimeCall(callPath, pluginState) : buildSliceRuntimeCall(callPath, pluginState, filename);
             callPath.replaceWith(replacement);
             mutated = true;
             return;

@@ -46,7 +46,8 @@ export const lookupRef = (
   artifact: BuilderArtifact,
   canonicalId: string,
 ):
-  | { readonly kind: "query" | "slice" | "model"; readonly document?: string; readonly dependencies?: readonly string[] }
+  | { readonly kind: "query" | "model"; readonly document?: string; readonly dependencies?: readonly string[] }
+  | { readonly kind: "slice"; readonly document?: string; readonly dependencies?: readonly string[]; readonly rootFieldKeys?: readonly string[] }
   | undefined => {
   const entry = artifact.refs[canonicalId as CanonicalId];
   if (!entry) {
@@ -66,11 +67,13 @@ export const lookupRef = (
     const metadata = entry.metadata as {
       readonly dependencies: readonly string[];
       readonly canonicalDocuments: readonly string[];
+      readonly rootFieldKeys?: readonly string[];
     };
     return {
       kind: "slice",
       document: metadata.canonicalDocuments[0],
       dependencies: metadata.dependencies,
+      rootFieldKeys: metadata.rootFieldKeys ?? [],
     };
   }
 
