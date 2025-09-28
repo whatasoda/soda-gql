@@ -11,61 +11,6 @@ export type TypeCheckOptions = {
   tsconfigPath?: string;
 };
 
-// Runtime types extracted from the actual runtime API
-// We use a simplified version to avoid TypeScript compilation issues with complex generic types
-const runtimeStubContent = `declare module "@soda-gql/runtime" {
-  export type DocumentNode = any;
-  export namespace graphql {
-    export type DocumentNode = any;
-  }
-  export type graphql = any;
-
-  // Actual runtime API shape based on packages/core/src/runtime/index.ts
-  export const gqlRuntime: {
-    model: (config: { typename: string; transform: (raw: any) => any }) => {
-      _input: any;
-      _output: any;
-      typename: string;
-      fragment: any;
-      transform: (raw: any) => any;
-    };
-    query: (config: any) => any;
-    mutation: (config: any) => any;
-    subscription: (config: any) => any;
-    querySlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
-    mutationSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
-    subscriptionSlice: (config: { rootFieldKeys: readonly string[]; projections: any }) => (variables?: any) => any;
-    handleProjectionBuilder: <T>(builder: T) => any;
-  };
-}
-
-declare module "@/graphql-runtime" {
-  export * from "@soda-gql/runtime";
-}
-`;
-
-const graphqlSystemStubContent = `declare module "@/graphql-system" {
-  type ScalarHelper = (...args: any[]) => unknown;
-
-  type GraphqlHelpers = {
-    query: (...args: any[]) => unknown;
-    model: (...args: any[]) => unknown;
-    querySlice: (...args: any[]) => unknown;
-    fragment: (...args: any[]) => unknown;
-    scalar: ScalarHelper;
-  };
-
-  export const gql: {
-    default: (factory: (helpers: GraphqlHelpers) => unknown) => unknown;
-    query: (...args: any[]) => unknown;
-    model: (...args: any[]) => unknown;
-    querySlice: (...args: any[]) => unknown;
-    fragment: (...args: any[]) => unknown;
-    scalar: ScalarHelper;
-  };
-}
-`;
-
 const createFormatHost = (
   projectRoot: string,
   useCaseSensitiveFileNames: boolean,
@@ -85,29 +30,31 @@ export const typeCheckFiles = async (
     return;
   }
 
+  const { tsconfigPath } = options;
   const projectRoot = getProjectRoot();
-  const tsconfigPath = options.tsconfigPath ?? join(projectRoot, "tsconfig.base.json");
+  // Use the typecheck config that has proper path mappings to real modules
+  const actualTsconfigPath = tsconfigPath ?? join(projectRoot, "tests/tsconfig.typecheck.json");
 
-  const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+  const configFile = ts.readConfigFile(actualTsconfigPath, ts.sys.readFile);
   if (configFile.error) {
     const formatHost = createFormatHost(projectRoot, ts.sys.useCaseSensitiveFileNames);
     throw new Error(
-      `Failed to read TypeScript config at ${tsconfigPath}:\n${ts.formatDiagnosticsWithColorAndContext([configFile.error], formatHost)}`,
+      `Failed to read TypeScript config at ${actualTsconfigPath}:\n${ts.formatDiagnosticsWithColorAndContext([configFile.error], formatHost)}`,
     );
   }
 
   const parsedConfig = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
-    dirname(tsconfigPath),
+    dirname(actualTsconfigPath),
     undefined,
-    tsconfigPath,
+    actualTsconfigPath,
   );
 
   if (parsedConfig.errors.length > 0) {
     const formatHost = createFormatHost(projectRoot, ts.sys.useCaseSensitiveFileNames);
     throw new Error(
-      `Failed to parse TypeScript config at ${tsconfigPath}:\n${ts.formatDiagnosticsWithColorAndContext(parsedConfig.errors, formatHost)}`,
+      `Failed to parse TypeScript config at ${actualTsconfigPath}:\n${ts.formatDiagnosticsWithColorAndContext(parsedConfig.errors, formatHost)}`,
     );
   }
 
@@ -116,83 +63,22 @@ export const typeCheckFiles = async (
     noEmit: true,
   };
 
+  // Override some compiler options for testing
   compilerOptions.strict = false;
   compilerOptions.noImplicitAny = false;
-
-  const projectBaseUrl = compilerOptions.baseUrl ?? projectRoot;
-  const typeCheckPathPrefix = "tests/__typecheck__";
-  const runtimeStubPath = join(projectRoot, typeCheckPathPrefix, "runtime.d.ts");
-  const graphqlSystemStubPath = join(projectRoot, typeCheckPathPrefix, "graphql-system.d.ts");
-
-  compilerOptions.baseUrl = projectBaseUrl;
-  compilerOptions.paths = {
-    ...(compilerOptions.paths ?? {}),
-    "@soda-gql/runtime": [join(typeCheckPathPrefix, "runtime")],
-    "@/graphql-runtime": [join(typeCheckPathPrefix, "runtime")],
-    "@/graphql-runtime/*": [join(typeCheckPathPrefix, "runtime")],
-    "@/graphql-system": [join(typeCheckPathPrefix, "graphql-system")],
-    "@/graphql-system/*": [join(typeCheckPathPrefix, "graphql-system")],
-  };
+  compilerOptions.skipLibCheck = true;
+  compilerOptions.allowImportingTsExtensions = true;
+  compilerOptions.moduleResolution = ts.ModuleResolutionKind.Bundler;
 
   const compilerHost = ts.createCompilerHost(compilerOptions, true);
   const useCaseSensitiveFileNames = compilerHost.useCaseSensitiveFileNames?.() ?? ts.sys.useCaseSensitiveFileNames;
-
-  const stubModuleEntries = new Map<string, string>([
-    ["@soda-gql/runtime", runtimeStubPath],
-    ["@/graphql-runtime", runtimeStubPath],
-    ["@/graphql-system", graphqlSystemStubPath],
-  ]);
-
-  const originalResolveModuleNames = compilerHost.resolveModuleNames?.bind(compilerHost);
-  compilerHost.resolveModuleNames = (moduleNames, containingFile, ...rest) => {
-    const fallbackResolutions = originalResolveModuleNames?.(moduleNames, containingFile, ...rest) ?? [];
-
-    return moduleNames.map((moduleName, index) => {
-      const directStub = stubModuleEntries.get(moduleName);
-      if (directStub) {
-        return {
-          resolvedFileName: directStub,
-          extension: ts.Extension.Dts,
-          isExternalLibraryImport: false,
-        } satisfies ts.ResolvedModuleFull;
-      }
-
-      if (moduleName.startsWith("@/graphql-system/")) {
-        return {
-          resolvedFileName: graphqlSystemStubPath,
-          extension: ts.Extension.Dts,
-          isExternalLibraryImport: false,
-        } satisfies ts.ResolvedModuleFull;
-      }
-
-      if (moduleName.startsWith("@/graphql-runtime/")) {
-        return {
-          resolvedFileName: runtimeStubPath,
-          extension: ts.Extension.Dts,
-          isExternalLibraryImport: false,
-        } satisfies ts.ResolvedModuleFull;
-      }
-
-      const fallbackResolution = fallbackResolutions[index];
-      if (fallbackResolution) {
-        return fallbackResolution;
-      }
-
-      const resolution = ts.resolveModuleName(moduleName, containingFile, compilerOptions, ts.sys);
-      return resolution.resolvedModule;
-    });
-  };
 
   const normalizePath = (filePath: string): string => {
     const resolved = ts.sys.resolvePath(filePath);
     return useCaseSensitiveFileNames ? resolved : resolved.toLowerCase();
   };
 
-  const allFiles = [
-    ...files,
-    { path: runtimeStubPath, content: runtimeStubContent },
-    { path: graphqlSystemStubPath, content: graphqlSystemStubContent },
-  ];
+  const allFiles = files;
 
   const virtualFiles = allFiles.map((file, index) => {
     const absolutePath = isAbsolute(file.path) ? file.path : join(projectRoot, file.path);
@@ -203,61 +89,38 @@ export const typeCheckFiles = async (
       absolutePath: resolvedPath,
       normalizedPath: normalizePath(resolvedPath),
       content: file.content,
+      version: 1,
     };
   });
 
-  const fileContentMap = new Map<string, { path: string; content: string }>();
-  for (const file of virtualFiles) {
-    fileContentMap.set(file.normalizedPath, { path: file.absolutePath, content: file.content });
-  }
+  const fileRegistry = new Map(virtualFiles.map((file) => [file.normalizedPath, file]));
 
-  const originalReadFile = compilerHost.readFile?.bind(compilerHost) ?? ts.sys.readFile;
-  const originalFileExists = compilerHost.fileExists?.bind(compilerHost) ?? ts.sys.fileExists;
-  const originalGetSourceFile = compilerHost.getSourceFile.bind(compilerHost);
-
-  compilerHost.readFile = (fileName: string): string | undefined => {
-    const normalized = normalizePath(fileName);
-    const virtualFile = fileContentMap.get(normalized);
+  const originalReadFile = compilerHost.readFile;
+  compilerHost.readFile = (fileName) => {
+    const normalizedFileName = normalizePath(fileName);
+    const virtualFile = fileRegistry.get(normalizedFileName);
     if (virtualFile) {
       return virtualFile.content;
     }
-
     return originalReadFile(fileName);
   };
 
-  compilerHost.fileExists = (fileName: string): boolean => {
-    const normalized = normalizePath(fileName);
-    if (fileContentMap.has(normalized)) {
+  const originalFileExists = compilerHost.fileExists;
+  compilerHost.fileExists = (fileName) => {
+    const normalizedFileName = normalizePath(fileName);
+    if (fileRegistry.has(normalizedFileName)) {
       return true;
     }
-
     return originalFileExists(fileName);
   };
 
-  compilerHost.getSourceFile = (
-    fileName,
-    languageVersion,
-    onError,
-    shouldCreateNewSourceFile,
-  ) => {
-    const normalized = normalizePath(fileName);
-    const virtualFile = fileContentMap.get(normalized);
-    if (virtualFile) {
-      return ts.createSourceFile(virtualFile.path, virtualFile.content, languageVersion, true, ts.ScriptKind.TS);
-    }
-
-    return originalGetSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
-  };
-
-  const rootNames = virtualFiles.map((file) => file.absolutePath);
-  const program = ts.createProgram(rootNames, compilerOptions, compilerHost);
+  const fileNames = virtualFiles.map((file) => file.absolutePath);
+  const program = ts.createProgram(fileNames, compilerOptions, compilerHost);
 
   const diagnostics = [
-    ...program.getConfigFileParsingDiagnostics(),
-    ...program.getOptionsDiagnostics(),
-    ...program.getSyntacticDiagnostics(),
-    ...program.getGlobalDiagnostics(),
     ...program.getSemanticDiagnostics(),
+    ...program.getSyntacticDiagnostics(),
+    ...program.getDeclarationDiagnostics(),
   ];
 
   if (diagnostics.length > 0) {
@@ -265,4 +128,8 @@ export const typeCheckFiles = async (
     const formatted = ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost);
     throw new Error(`TypeScript type check failed:\n${formatted}`);
   }
+};
+
+export const typeCheckFile = async (path: string, content: string, options?: TypeCheckOptions): Promise<void> => {
+  return typeCheckFiles([{ path, content }], options);
 };
