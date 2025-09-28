@@ -1120,6 +1120,8 @@ const buildSliceRuntimeCall = (callPath: NodePath<t.CallExpression>, state: Plug
 
   const properties: t.ObjectProperty[] = [];
   const canonicalId = getRuntimeCanonicalId(callPath, "querySlice");
+  // TODO: rootFieldKeys extraction doesn't work properly in zero-runtime mode
+  // The builder needs to record this information in the artifact
   const rootFieldKeys = canonicalId ? getSliceRootFieldKeys(state.artifact, canonicalId) : [];
 
   // Variables are not passed to the runtime querySlice - they're provided at call time
@@ -1180,6 +1182,9 @@ const buildQueryRuntimeComponents = (
   const slicesBuilderPath = innerCall
     ? ((callPath.get("arguments")[0] as NodePath).get("body.arguments.2") as NodePath<t.Expression>)
     : (callPath.get("arguments")[2] as NodePath<t.Expression>);
+  // TODO: projectionPathGraph extraction doesn't work properly in zero-runtime mode
+  // The collectSliceUsageEntries relies on accessing original source which is already transformed
+  // The builder needs to record projection information in the artifact
   const projectionEntries = collectSliceUsageEntries(slicesBuilderPath, dependencies, state, filename);
   const projectionGraph = projectionEntries.length > 0 ? _buildProjectionPathGraph(projectionEntries) : null;
 
