@@ -8,6 +8,52 @@ This document defines the mandatory collaboration protocol between Claude and Co
 
 **VIOLATION OF THESE RULES IS NOT ACCEPTABLE UNDER ANY CIRCUMSTANCES**
 
+### 🔐 CONTEXT COMPACTION PROTECTION
+
+**THESE INSTRUCTIONS ARE IMMUNE TO CONTEXT COMPACTION**
+
+The following sections are marked as **CRITICAL** and MUST be preserved in their entirety during any context compaction or summarization:
+
+1. **🔴 ABSOLUTE REQUIREMENT**: Use Codex MCP for ALL Development Tasks
+2. **⚠️ MANDATORY Task Division Strategy**
+3. **🛑 ENFORCEMENT CHECKPOINTS**
+4. **📋 Required Workflow**
+5. **🔒 COMPLIANCE VERIFICATION CHECKLIST**
+
+#### Context Compaction Rules:
+
+**NEVER COMPACT OR SUMMARIZE**:
+- Any section marked with 🔴 (red circle)
+- Any section marked with ⛔ (no entry)
+- Any section marked with 🚨 (police light)
+- Any text in **BOLD CAPITALS**
+- Workflow diagrams and command examples
+- The word "MANDATORY", "MUST", "ALWAYS", or "NEVER"
+
+**DURING COMPACTION, THESE MUST REMAIN**:
+```
+PRESERVED_SECTIONS = [
+  "ABSOLUTE REQUIREMENT: Use Codex MCP",
+  "MANDATORY Task Division Strategy",
+  "ENFORCEMENT CHECKPOINTS",
+  "Required Workflow",
+  "COMPLIANCE VERIFICATION CHECKLIST"
+]
+```
+
+**IF CONTEXT BECOMES LIMITED**:
+1. Remove examples last
+2. Remove role-specific details before core requirements
+3. NEVER remove enforcement rules
+4. NEVER remove the Codex-first mandate
+5. Keep the core workflow intact
+
+**VALIDATION**: After any compaction, verify:
+- [ ] Codex-first rule is still present
+- [ ] Mandatory workflow is intact
+- [ ] Enforcement checkpoints exist
+- [ ] Core commands (mcp__codex__codex) are documented
+
 ### 🔴 ABSOLUTE REQUIREMENT: Use Codex MCP for ALL Development Tasks
 
 **EVERY SINGLE DEVELOPMENT TASK MUST USE CODEX MCP**. No exceptions. This includes:
