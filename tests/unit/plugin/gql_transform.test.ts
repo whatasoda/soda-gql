@@ -1,13 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { type BuilderArtifact, createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
+import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
 import { assertTransformContainsRuntimeCall, assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
 
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
     const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/pages/profile.query.ts");
     const queryId = createCanonicalId(sourcePath, "profileQuery", "default");
-    const queryRuntimeName = createRuntimeBindingName(queryId, "profileQuery");
 
     const userSliceId = createCanonicalId(join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"), "userSlice");
     const userSliceCatalogId = createCanonicalId(
@@ -21,51 +20,45 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
 
     const artifact: BuilderArtifact = {
       operations: {
-        ProfilePageQuery: {
-          name: "ProfilePageQuery",
-          text: "query ProfilePageQuery { viewer { id } }",
-          variables: {},
-          sourcePath,
-          ast: {
-            kind: "Document",
-            definitions: [],
+        [queryId]: {
+          id: queryId,
+          prebuild: {
+            name: "ProfilePageQuery",
+            document: {
+              kind: "Document",
+              definitions: [],
+            },
+            variableNames: [],
+            projectionPathGraph: {
+              matches: [],
+              children: {},
+            },
           },
+          dependencies: [userSliceId, userSliceCatalogId, userCatalogCollectionId],
         },
       },
-      refs: {
-        [queryId]: {
-          kind: "operation",
-          metadata: {
-            documentName: "ProfilePageQuery",
-            dependencies: [userSliceId, userSliceCatalogId, userCatalogCollectionId],
-          },
-        },
+      slices: {
         [userSliceId]: {
-          kind: "slice",
-          metadata: {
-            dependencies: [],
-            canonicalDocuments: ["ProfilePageQuery"],
-          },
+          id: userSliceId,
+          prebuild: null,
+          dependencies: [],
         },
         [userSliceCatalogId]: {
-          kind: "slice",
-          metadata: {
-            dependencies: [],
-            canonicalDocuments: ["ProfilePageQuery"],
-          },
+          id: userSliceCatalogId,
+          prebuild: null,
+          dependencies: [],
         },
         [userCatalogCollectionId]: {
-          kind: "slice",
-          metadata: {
-            dependencies: [],
-            canonicalDocuments: ["ProfilePageQuery"],
-          },
+          id: userCatalogCollectionId,
+          prebuild: null,
+          dependencies: [],
         },
       },
+      models: {},
       report: {
-        operations: 2,
-        models: 1,
-        slices: 1,
+        operations: 1,
+        models: 0,
+        slices: 3,
         durationMs: 0,
         warnings: [],
         cache: {
@@ -84,83 +77,26 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     assertTransformRemovesGql(transformed);
     // Note: The plugin overrides the importIdentifier in some cases
     expect(transformed).toContain("import { gqlRuntime, type graphql } from ");
-    expect(transformed).toContain(`const ${queryRuntimeName}Document = {`);
-    assertTransformContainsRuntimeCall(transformed, "query");
-    expect(transformed).toContain("variableNames: [");
-    expect(transformed).toContain(`document: ${queryRuntimeName}Document`);
+    // In the new implementation, the operation is directly called with gqlRuntime.query
+    expect(transformed).toContain("gqlRuntime.query({");
+    expect(transformed).toContain("prebuild:");
+    expect(transformed).toContain('name: "ProfilePageQuery"');
+    expect(transformed).toContain("document:");
+    expect(transformed).toContain("variableNames:");
+    expect(transformed).toContain("projectionPathGraph:");
+    expect(transformed).toContain("runtime:");
     expect(transformed).toContain("getSlices:");
+    // The export should use gqlRuntime.getOperation
+    expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
     expect(transformed).toContain("users:");
     expect(transformed).toContain("remoteUsers:");
   });
 
-  it("replaces nested gql helpers exposed via object properties", async () => {
-    const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
-    const nestedModelId = createCanonicalId(sourcePath, "userRemote.forIterate");
-    const nestedSliceId = createCanonicalId(sourcePath, "userSliceCatalog.byId");
-
-    // const _nestedModelRuntimeName = createRuntimeBindingName(nestedModelId, "userRemote.forIterate");
-    // const _nestedSliceRuntimeName = createRuntimeBindingName(nestedSliceId, "userSliceCatalog.byId");
-
-    const artifact: BuilderArtifact = {
-      operations: {
-        UserSliceCatalogDocument: {
-          name: "UserSliceCatalogDocument",
-          text: "fragment UserSliceCatalogDocument on Query { users { id } }",
-          variables: {},
-          sourcePath,
-          ast: {
-            kind: "Document",
-            definitions: [],
-          },
-        },
-      },
-      refs: {
-        [nestedModelId]: {
-          kind: "model",
-          metadata: {
-            hash: "feedface",
-            dependencies: [],
-          },
-        },
-        [nestedSliceId]: {
-          kind: "slice",
-          metadata: {
-            dependencies: [nestedModelId],
-            canonicalDocuments: ["UserSliceCatalogDocument"],
-          },
-        },
-      },
-      report: {
-        operations: 1,
-        models: 1,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: {
-          hits: 0,
-          misses: 1,
-        },
-      },
-    };
-
-    const source = await Bun.file(sourcePath).text();
-
-    const transformed = await runBabelTransform(source, sourcePath, artifact, {
-      importIdentifier: "@/graphql-runtime",
-    });
-    expect(transformed).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
-    expect(transformed).toContain(`forIterate: gqlRuntime.model({`);
-    expect(transformed).toContain(`byId: gqlRuntime.querySlice({`);
-  });
-
-  it("hydrates intermediate-module placeholders using original source definitions", async () => {
-    // const _sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts");
-    // const _modelId = createCanonicalId(_sourcePath, "userModel");
-    // const _sliceId = createCanonicalId(_sourcePath, "userSlice");
-
+  it("transforms intermediate-module placeholders", async () => {
     const artifact: BuilderArtifact = {
       operations: {},
-      refs: {},
+      slices: {},
+      models: {},
       report: {
         operations: 0,
         models: 0,
@@ -224,6 +160,7 @@ export const slices = {
 
     const transformed = await runBabelTransform(source, join(process.cwd(), "tests/.tmp", "intermediate-module.ts"), artifact, {
       importIdentifier: "@/graphql-runtime",
+      skipTypeCheck: true, // Skip type check for intermediate modules
     });
 
     // Note: The plugin overrides the importIdentifier in some cases

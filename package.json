@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
     "quality": "bun run biome:check && bun run typecheck",
-    "soda-gql": "bun run packages/cli/src/index.ts"
+    "soda-gql": "bun run packages/cli/src/index.ts",
+    "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",

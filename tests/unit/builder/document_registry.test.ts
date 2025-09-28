@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
-import { ok } from "neverthrow";
 
 import { type CanonicalId, createCanonicalId, createOperationRegistry } from "../../../packages/builder/src/registry";
 
@@ -15,31 +14,27 @@ describe("canonical identifier helpers", () => {
   });
 });
 
-describe("document registry", () => {
-  it("registers refs once and rejects duplicates", () => {
+describe("operation registry", () => {
+  it("registers models once and rejects duplicates", () => {
     const registry = createOperationRegistry();
-    const id = createCanonicalId("/app/src/entities/user.ts", "userSlice");
+    const id = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
-    const first = registry.registerRef({
+    const first = registry.registerModel({
       id,
-      kind: "slice",
-      metadata: {
-        dependencies: [],
-        canonicalDocuments: ["ProfilePageQuery"],
+      prebuild: {
+        typename: "User",
       },
-      loader: () => ok("userSlice"),
+      dependencies: [],
     });
 
     expect(first.isOk()).toBe(true);
 
-    const duplicate = registry.registerRef({
+    const duplicate = registry.registerModel({
       id,
-      kind: "slice",
-      metadata: {
-        dependencies: [],
-        canonicalDocuments: ["OtherQuery"],
+      prebuild: {
+        typename: "User",
       },
-      loader: () => ok("duplicate"),
+      dependencies: [],
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -48,124 +43,134 @@ describe("document registry", () => {
         throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("REF_ALREADY_REGISTERED");
+        expect(error.code).toBe("MODEL_ALREADY_REGISTERED");
         expect(error.id).toBe(id);
       },
     );
   });
 
-  it("provides lookup for registered refs", () => {
+  it("registers slices once and rejects duplicates", () => {
     const registry = createOperationRegistry();
-    const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
+    const id = createCanonicalId("/app/src/entities/user.ts", "userSlice");
 
-    registry.registerRef({
+    const first = registry.registerSlice({
       id,
-      kind: "operation",
-      metadata: {
-        canonicalDocument: "ProfilePageQuery",
-        dependencies: [],
-      },
-      loader: () => ok("profileQuery"),
-    });
-
-    const ref = registry.getRef(id);
-
-    ref.match(
-      (entry) => {
-        expect(entry).toEqual({
-          id: expect.any(String),
-          kind: "operation",
-          metadata: {
-            canonicalDocument: "ProfilePageQuery",
-            dependencies: [],
-          },
-          loader: expect.any(Function),
-        });
-      },
-      () => {
-        throw new Error("expected ref to be present");
-      },
-    );
-  });
-
-  it("registers documents and exposes snapshot", () => {
-    const registry = createOperationRegistry();
-    const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
-
-    registry.registerRef({
-      id,
-      kind: "operation",
-      metadata: {
-        canonicalDocument: "ProfilePageQuery",
-        dependencies: [],
-      },
-      loader: () => ok("profileQuery"),
-    });
-
-    const registered = registry.registerDocument({
-      name: "ProfilePageQuery",
-      text: "query ProfilePageQuery($userId: ID!) { users { id } }",
-      variableNames: ["userId"],
-      ast: parse("query ProfilePageQuery($userId: ID!) { users { id } }"),
-    });
-
-    expect(registered.isOk()).toBe(true);
-
-    const snapshot = registry.snapshot();
-    expect(snapshot.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(snapshot.documents.ProfilePageQuery.variableNames).toEqual(["userId"]);
-    expect(snapshot.refs[id]).toEqual({
-      kind: "operation",
-      metadata: {
-        canonicalDocument: "ProfilePageQuery",
-        dependencies: [],
-      },
-    });
-  });
-
-  it("fails to register document duplicates", () => {
-    const registry = createOperationRegistry();
-
-    const first = registry.registerDocument({
-      name: "ProfilePageQuery",
-      text: "query ProfilePageQuery { users { id } }",
-      variableNames: [],
-      ast: parse("query ProfilePageQuery { users { id } }"),
+      prebuild: null,
+      dependencies: [],
     });
 
     expect(first.isOk()).toBe(true);
 
-    const duplicate = registry.registerDocument({
-      name: "ProfilePageQuery",
-      text: "query ProfilePageQuery { users { id name } }",
-      variableNames: [],
-      ast: parse("query ProfilePageQuery { users { id name } }"),
+    const duplicate = registry.registerSlice({
+      id,
+      prebuild: null,
+      dependencies: [],
     });
 
     expect(duplicate.isErr()).toBe(true);
     duplicate.match(
       () => {
-        throw new Error("expected duplicate document to err");
+        throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("DOCUMENT_ALREADY_REGISTERED");
-        expect(error.name).toBe("ProfilePageQuery");
+        expect(error.code).toBe("SLICE_ALREADY_REGISTERED");
+        expect(error.id).toBe(id);
       },
     );
   });
 
-  it("produces errors when looking up missing refs", () => {
+  it("registers operations once and rejects duplicates", () => {
     const registry = createOperationRegistry();
-    const lookup = registry.getRef("/app/src/entities/missing.ts::missingRef" as unknown as CanonicalId);
+    const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
-    expect(lookup.isErr()).toBe(true);
-    lookup.match(
+    const first = registry.registerOperation({
+      id,
+      prebuild: {
+        name: "ProfilePageQuery",
+        document: parse("query ProfilePageQuery { users { id } }"),
+        variableNames: [],
+        projectionPathGraph: {
+          matches: [],
+          children: {},
+        },
+      },
+      dependencies: [],
+    });
+
+    expect(first.isOk()).toBe(true);
+
+    const duplicate = registry.registerOperation({
+      id,
+      prebuild: {
+        name: "ProfilePageQuery",
+        document: parse("query ProfilePageQuery { users { id name } }"),
+        variableNames: [],
+        projectionPathGraph: {
+          matches: [],
+          children: {},
+        },
+      },
+      dependencies: [],
+    });
+
+    expect(duplicate.isErr()).toBe(true);
+    duplicate.match(
       () => {
-        throw new Error("expected lookup to fail");
+        throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("REF_NOT_FOUND");
+        expect(error.code).toBe("OPERATION_ALREADY_REGISTERED");
+        expect(error.id).toBe(id);
       },
     );
+  });
+
+  it("provides snapshot of all registered entities", () => {
+    const registry = createOperationRegistry();
+
+    const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
+    const sliceId = createCanonicalId("/app/src/entities/user.ts", "userSlice");
+    const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
+
+    registry.registerModel({
+      id: modelId,
+      prebuild: {
+        typename: "User",
+      },
+      dependencies: [],
+    });
+
+    registry.registerSlice({
+      id: sliceId,
+      prebuild: null,
+      dependencies: [modelId],
+    });
+
+    registry.registerOperation({
+      id: operationId,
+      prebuild: {
+        name: "ProfilePageQuery",
+        document: parse("query ProfilePageQuery($userId: ID!) { users { id } }"),
+        variableNames: ["userId"],
+        projectionPathGraph: {
+          matches: [],
+          children: {},
+        },
+      },
+      dependencies: [sliceId],
+    });
+
+    const snapshot = registry.snapshot();
+
+    expect(snapshot.models[modelId]).toBeDefined();
+    expect(snapshot.models[modelId]?.prebuild.typename).toBe("User");
+
+    expect(snapshot.slices[sliceId]).toBeDefined();
+    expect(snapshot.slices[sliceId]?.dependencies).toEqual([modelId]);
+
+    expect(snapshot.operations[operationId]).toBeDefined();
+    expect(snapshot.operations[operationId]?.prebuild.name).toBe("ProfilePageQuery");
+    expect(snapshot.operations[operationId]?.prebuild.variableNames).toEqual(["userId"]);
+    expect(snapshot.operations[operationId]?.dependencies).toEqual([sliceId]);
   });
 });

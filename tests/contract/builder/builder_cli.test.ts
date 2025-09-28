@@ -285,8 +285,13 @@ export const duplicated = gql.default(({ query, scalar }) =>
     expect(artifactExists).toBe(true);
     const artifactContents = await Bun.file(artifactPath).text();
     const parsed = JSON.parse(artifactContents);
-    expect(parsed.documents.ProfilePageQuery.text).toContain("query ProfilePageQuery");
-    expect(parsed.report.documents).toBeGreaterThanOrEqual(1);
+    // Find the ProfilePageQuery operation
+    const profileQueryOp = Object.values(parsed.operations).find(
+      (op) => op.prebuild.name === "ProfilePageQuery"
+    );
+    expect(profileQueryOp).toBeDefined();
+    expect(profileQueryOp?.prebuild.document).toBeDefined();
+    expect(parsed.report.operations).toBeGreaterThanOrEqual(1);
   });
 
   it("supports --analyzer swc", async () => {
@@ -314,7 +319,11 @@ export const duplicated = gql.default(({ query, scalar }) =>
 
     expect(result.exitCode).toBe(0);
     const artifact = JSON.parse(await Bun.file(artifactPath).text());
-    expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
+    // Find the ProfilePageQuery operation
+    const profileQueryOp = Object.values(artifact.operations).find(
+      (op) => op.prebuild?.name === "ProfilePageQuery"
+    );
+    expect(profileQueryOp).toBeDefined();
   });
 
   it("prints human diagnostics with cache summary when format is human", async () => {

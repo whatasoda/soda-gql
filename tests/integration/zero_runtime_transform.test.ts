@@ -124,14 +124,18 @@ describe("zero-runtime transform", () => {
       {
         filePath: join(workspace, "src", "pages", "profile.query.ts"),
         verify: (code: string) => {
-          const canonicalId = createCanonicalId(join(workspace, "src", "pages", "profile.query.ts"), "profileQuery", "default");
-          const runtimeName = createRuntimeBindingName(canonicalId, "profileQuery");
           expect(code).not.toContain("gql.query(");
+          expect(code).not.toContain("gql.default(");
           expect(code).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
-          expect(code).toContain(`const ${runtimeName}Document = {`);
-          expect(code).toContain(`export const profileQuery = gqlRuntime.query({`);
-          expect(code).toContain(`document: ${runtimeName}Document`);
-          expect(code).toContain("getSlices");
+          expect(code).toContain("gqlRuntime.query({");
+          expect(code).toContain("prebuild:");
+          expect(code).toContain('name: "ProfilePageQuery"');
+          expect(code).toContain("document:");
+          expect(code).toContain("variableNames:");
+          expect(code).toContain("projectionPathGraph:");
+          expect(code).toContain("runtime:");
+          expect(code).toContain("getSlices:");
+          expect(code).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
         },
       },
       {

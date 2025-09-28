@@ -114,7 +114,14 @@ describe("builder cache flow integration", () => {
 
     const firstResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
     const firstArtifact = firstResult.artifact;
-    expect(firstArtifact.documents.ProfilePageQuery.text).toContain("users");
+
+    // Find the ProfilePageQuery operation by searching through operations
+    const profileQueryOp = Object.values(firstArtifact.operations).find(
+      (op) => op.prebuild.name === "ProfilePageQuery"
+    );
+    expect(profileQueryOp).toBeDefined();
+    expect(profileQueryOp?.prebuild.document).toBeDefined();
+
     expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
 
     const secondResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);

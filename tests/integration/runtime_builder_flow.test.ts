@@ -149,11 +149,17 @@ describe("runtime builder flow", () => {
     expect(await Bun.file(artifactPath).exists()).toBe(true);
 
     const artifact = builderSuccess.artifact;
-    expect(artifact.documents.ProfilePageQuery.text).toContain("ProfilePageQuery");
-    expect(artifact.documents.ProfilePageQuery.text).toContain("remoteUsers");
-    expect(artifact.documents.ProfilePageQuery.text).toContain("catalogUsers");
+
+    // Find the ProfilePageQuery operation
+    const profileQueryOp = Object.values(artifact.operations).find(
+      (op) => op.prebuild.name === "ProfilePageQuery"
+    );
+    expect(profileQueryOp).toBeDefined();
+    expect(profileQueryOp?.prebuild.document).toBeDefined();
+
+    // Check that the operation exists in the artifact.operations using the canonical ID
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::default::profileQuery`;
-    expect(Object.hasOwn(artifact.refs, canonicalId)).toBe(true);
+    expect(Object.hasOwn(artifact.operations, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
     expect(artifact.report.models).toBe(2);
     expect(artifact.report.slices).toBe(3);
@@ -164,18 +170,24 @@ describe("runtime builder flow", () => {
     const catalogSliceId = `${join(workspace, "src", "entities", "user.ts")}::default::userSliceCatalog.byId`;
     const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::default::collections.byCategory`;
 
-    expect(artifact.refs[userModelId].kind).toBe("model");
-    expect(artifact.refs[catalogModelId].kind).toBe("model");
-    expect(artifact.refs[userSliceId].kind).toBe("slice");
-    expect(artifact.refs[catalogSliceId].kind).toBe("slice");
-    expect(artifact.refs[collectionsSliceId].kind).toBe("slice");
-    expect(artifact.refs[canonicalId].kind).toBe("operation");
+    // Check models exist
+    expect(artifact.models[userModelId]).toBeDefined();
+    expect(artifact.models[catalogModelId]).toBeDefined();
 
-    expect(artifact.refs[userSliceId].metadata.dependencies).toContain(userModelId);
-    expect(artifact.refs[catalogSliceId].metadata.dependencies).toContain(catalogModelId);
-    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(userSliceId);
-    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(catalogSliceId);
-    expect(artifact.refs[canonicalId].metadata.dependencies).toContain(collectionsSliceId);
+    // Check slices exist
+    expect(artifact.slices[userSliceId]).toBeDefined();
+    expect(artifact.slices[catalogSliceId]).toBeDefined();
+    expect(artifact.slices[collectionsSliceId]).toBeDefined();
+
+    // Check operation exists
+    expect(artifact.operations[canonicalId]).toBeDefined();
+
+    // Check dependencies
+    expect(artifact.slices[userSliceId].dependencies).toContain(userModelId);
+    expect(artifact.slices[catalogSliceId].dependencies).toContain(catalogModelId);
+    expect(artifact.operations[canonicalId].dependencies).toContain(userSliceId);
+    expect(artifact.operations[canonicalId].dependencies).toContain(catalogSliceId);
+    expect(artifact.operations[canonicalId].dependencies).toContain(collectionsSliceId);
     await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });
 });

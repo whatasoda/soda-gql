@@ -31,5 +31,5 @@ export type NormalizedError<TRuntimeAdapter extends GraphqlRuntimeAdapter> =
     }
   | {
       type: "parse-error";
-      errors: Error;
+      errors: Error[];
     };

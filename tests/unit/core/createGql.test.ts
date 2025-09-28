@@ -134,7 +134,7 @@ describe("createGql", () => {
     );
 
     const slice = userSliceFactory({ id: "1" });
-    expect(slice.operationType).toBe("query");
+    // operationType is now in _metadata which is a type annotation, not runtime data
     expect(slice.projection).toBeInstanceOf(ExecutionResultProjection);
 
     const profileQuery = gql.query(
