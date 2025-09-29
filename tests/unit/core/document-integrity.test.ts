@@ -131,13 +131,13 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle valid const values", () => {
-      expect(buildConstValueNode(null).kind).toBe(Kind.NULL);
-      expect(buildConstValueNode(true).kind).toBe(Kind.BOOLEAN);
-      expect(buildConstValueNode("string").kind).toBe(Kind.STRING);
-      expect(buildConstValueNode(42).kind).toBe(Kind.INT);
-      expect(buildConstValueNode(3.14).kind).toBe(Kind.FLOAT);
-      expect(buildConstValueNode([1, 2]).kind).toBe(Kind.LIST);
-      expect(buildConstValueNode({ key: "value" }).kind).toBe(Kind.OBJECT);
+      expect(buildConstValueNode(null)?.kind).toBe(Kind.NULL);
+      expect(buildConstValueNode(true)?.kind).toBe(Kind.BOOLEAN);
+      expect(buildConstValueNode("string")?.kind).toBe(Kind.STRING);
+      expect(buildConstValueNode(42)?.kind).toBe(Kind.INT);
+      expect(buildConstValueNode(3.14)?.kind).toBe(Kind.FLOAT);
+      expect(buildConstValueNode([1, 2])?.kind).toBe(Kind.LIST);
+      expect(buildConstValueNode({ key: "value" })?.kind).toBe(Kind.OBJECT);
     });
   });
 
@@ -152,16 +152,16 @@ describe("Document Integrity Tests", () => {
 
     it("should handle valid operation types", () => {
       const queryDoc = buildDocument("query", "TestQuery", [], [], []);
-      expect(queryDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
-      expect((queryDoc.definitions[0] as any).operation).toBe("query");
+      expect(queryDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
+      expect((queryDoc.definitions[0] as any)?.operation).toBe("query");
 
       const mutationDoc = buildDocument("mutation", "TestMutation", [], [], []);
-      expect(mutationDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
-      expect((mutationDoc.definitions[0] as any).operation).toBe("mutation");
+      expect(mutationDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
+      expect((mutationDoc.definitions[0] as any)?.operation).toBe("mutation");
 
       const subscriptionDoc = buildDocument("subscription", "TestSubscription", [], [], []);
-      expect(subscriptionDoc.definitions[0].kind).toBe(Kind.OPERATION_DEFINITION);
-      expect((subscriptionDoc.definitions[0] as any).operation).toBe("subscription");
+      expect(subscriptionDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
+      expect((subscriptionDoc.definitions[0] as any)?.operation).toBe("subscription");
     });
   });
 
