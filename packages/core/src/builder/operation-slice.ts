@@ -21,10 +21,16 @@ import { createVariableAssignments } from "./input";
 export const createOperationSliceFactory =
   <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends GraphqlRuntimeAdapter>(schema: TSchema, _adapter: TRuntimeAdapter) =>
   <TOperationType extends OperationType>(operationType: TOperationType) => {
-    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"];
-    const operationTypeName: TTypeName = schema.operations[operationType];
+    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
+    const operationTypeName: TTypeName | null = schema.operations[operationType];
     const getFieldFactories = (() => {
-      const get = () => createFieldFactories(schema, operationTypeName);
+      const get = () => {
+        if (operationTypeName === null) {
+          throw new Error(`Operation type ${operationType} is not defined in schema roots`);
+        }
+
+        return createFieldFactories(schema, operationTypeName)
+      };
 
       let cache: ReturnType<typeof get> | null = null;
       return () => {

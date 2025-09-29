@@ -43,9 +43,9 @@ export type AnyGraphqlSchema = {
 };
 
 export type OperationRoots = {
-  query: string;
-  mutation: string;
-  subscription: string;
+  query: string | null;
+  mutation: string | null;
+  subscription: string | null;
 };
 
 /** Scalar definition carries a phantom type for inference. */

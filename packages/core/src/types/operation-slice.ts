@@ -23,8 +23,8 @@ export type OperationSliceFn<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends GraphqlRuntimeAdapter,
   TOperationType extends OperationType,
-  TTypeName extends TSchema["operations"][TOperationType] & keyof TSchema["object"] = TSchema["operations"][TOperationType] &
-    keyof TSchema["object"],
+  TTypeName extends TSchema["operations"][TOperationType] & keyof TSchema["object"] & string = TSchema["operations"][TOperationType] &
+    keyof TSchema["object"] & string,
 > = <
   TFields extends AnyFields,
   TProjection extends AnyExecutionResultProjection<TRuntimeAdapter>,
