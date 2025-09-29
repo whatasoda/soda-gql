@@ -110,7 +110,7 @@ describe("@soda-gql/plugin-babel", () => {
   it("replaces gql.query definitions with zero-runtime import", async () => {
     mkdirSync(tmpRoot, { recursive: true });
     const artifactPath = join(tmpRoot, `artifact-${Date.now()}.json`);
-    const canonicalId = `${profileQueryPath}::default::profileQuery`;
+    const canonicalId = `${profileQueryPath}::profileQuery`;
 
     await Bun.write(
       artifactPath,

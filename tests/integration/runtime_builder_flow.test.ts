@@ -119,17 +119,17 @@ describe("runtime builder flow", () => {
     expect(profileQueryOp?.prebuild.document).toBeDefined();
 
     // Check that the operation exists in the artifact.operations using the canonical ID
-    const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::default::profileQuery`;
+    const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
     expect(Object.hasOwn(artifact.operations, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
     expect(artifact.report.models).toBe(2);
     expect(artifact.report.slices).toBe(3);
 
-    const userModelId = `${join(workspace, "src", "entities", "user.ts")}::default::userModel`;
-    const catalogModelId = `${join(workspace, "src", "entities", "user.ts")}::default::userRemote.forIterate`;
-    const userSliceId = `${join(workspace, "src", "entities", "user.ts")}::default::userSlice`;
-    const catalogSliceId = `${join(workspace, "src", "entities", "user.ts")}::default::userSliceCatalog.byId`;
-    const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::default::collections.byCategory`;
+    const userModelId = `${join(workspace, "src", "entities", "user.ts")}::userModel`;
+    const catalogModelId = `${join(workspace, "src", "entities", "user.ts")}::userRemote.forIterate`;
+    const userSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSlice`;
+    const catalogSliceId = `${join(workspace, "src", "entities", "user.ts")}::userSliceCatalog.byId`;
+    const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::collections.byCategory`;
 
     // Check models exist
     expect(artifact.models[userModelId as CanonicalId]).toBeDefined();

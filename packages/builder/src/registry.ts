@@ -18,8 +18,9 @@ export const createCanonicalId = (filePath: string, exportName: string, schemaNa
   const resolved = resolve(filePath);
   const normalized = normalizePath(resolved);
 
-  // Include schema name in canonical ID if present
-  const idParts = schemaName ? [normalized, schemaName, exportName] : [normalized, exportName];
+  // Schema name is now ignored in canonical ID - only used for type generation
+  // Always create a 2-part ID: {absPath}::{exportName}
+  const idParts = [normalized, exportName];
 
   return idParts.join(canonicalIdSeparator) as CanonicalId;
 };
