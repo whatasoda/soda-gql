@@ -29,7 +29,7 @@ export const createOperationSliceFactory =
           throw new Error(`Operation type ${operationType} is not defined in schema roots`);
         }
 
-        return createFieldFactories(schema, operationTypeName)
+        return createFieldFactories(schema, operationTypeName);
       };
 
       let cache: ReturnType<typeof get> | null = null;

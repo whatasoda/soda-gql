@@ -75,7 +75,10 @@ describe("Document Integrity Tests", () => {
 
   describe("buildWithTypeModifier invalid modifiers", () => {
     it("should throw on invalid modifier strings", () => {
-      const buildType = () => ({ kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "String" } });
+      const buildType = () => ({
+        kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME as Kind.NAME, value: "String" },
+      });
 
       // "![]" is actually a valid modifier (list of non-null), not invalid
       // So let's test actual invalid modifiers
@@ -89,7 +92,10 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle valid modifiers correctly", () => {
-      const buildType = () => ({ kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "String" } });
+      const buildType = () => ({
+        kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME as Kind.NAME, value: "String" },
+      });
 
       const nonNull = buildWithTypeModifier("!", buildType);
       expect(nonNull.kind).toBe(Kind.NON_NULL_TYPE);
@@ -168,9 +174,10 @@ describe("Document Integrity Tests", () => {
   describe("Variable default value validation", () => {
     it("should handle various default value types", () => {
       const variableWithDefault = {
-        name: { kind: Kind.NAME as const, value: "testVar" },
-        type: { kind: Kind.NAMED_TYPE as const, name: { kind: Kind.NAME as const, value: "String" } },
-        defaultValue: buildConstValueNode("default"),
+        kind: Kind.VARIABLE_DEFINITION as Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE as Kind.VARIABLE, name: { kind: Kind.NAME as Kind.NAME, value: "testVar" } },
+        type: { kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE, name: { kind: Kind.NAME as Kind.NAME, value: "String" } },
+        defaultValue: buildConstValueNode("default") || undefined,
         directives: [],
       };
 
@@ -188,9 +195,10 @@ describe("Document Integrity Tests", () => {
       };
 
       const variableWithComplexDefault = {
-        name: { kind: Kind.NAME as const, value: "input" },
-        type: { kind: Kind.NAMED_TYPE as const, name: { kind: Kind.NAME as const, value: "InputType" } },
-        defaultValue: buildConstValueNode(complexDefault),
+        kind: Kind.VARIABLE_DEFINITION as Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE as Kind.VARIABLE, name: { kind: Kind.NAME as Kind.NAME, value: "input" } },
+        type: { kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE, name: { kind: Kind.NAME as Kind.NAME, value: "InputType" } },
+        defaultValue: buildConstValueNode(complexDefault) || undefined,
         directives: [],
       };
 

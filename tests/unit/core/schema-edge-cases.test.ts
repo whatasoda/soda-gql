@@ -37,6 +37,7 @@ describe("Schema Edge Cases", () => {
 
       // Trying to get an argument that doesn't exist
       expect(() => {
+        // @ts-expect-error - Testing runtime error handling for non-existent argument
         helpers.fieldArg("Query", "user", "nonExistentArg");
       }).toThrow("Argument nonExistentArg not found");
     });
@@ -59,7 +60,8 @@ describe("Schema Edge Cases", () => {
 
       // Attempting to create field factories for non-existent object
       expect(() => {
-        createFieldFactories(schema, "NonExistentObject", {});
+        // @ts-expect-error - Testing runtime error handling for non-existent type
+        createFieldFactories(schema, "NonExistentObject");
       }).toThrow();
     });
   });
@@ -81,10 +83,11 @@ describe("Schema Edge Cases", () => {
               // Create a field with an invalid kind by casting
               weirdField: {
                 kind: "invalid" as any,
-                type: ["String", "!"],
-                args: {},
+                name: "String",
+                modifier: "!",
                 directives: {},
-              },
+                arguments: {},
+              } as any,
             },
             {},
           ),
@@ -93,7 +96,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactories(schema, "Query", {});
+        createFieldFactories(schema, "Query");
       }).toThrow("Unsupported field type");
     });
   });
@@ -129,7 +132,7 @@ describe("Schema Edge Cases", () => {
 
       // The current implementation doesn't throw, it handles it gracefully
       // We should test that it doesn't crash instead
-      const factories = createFieldFactories(schema, "Query", {});
+      const factories = createFieldFactories(schema, "Query");
       expect(factories).toBeDefined();
       expect(factories.result).toBeDefined();
     });
@@ -172,7 +175,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       // Should handle circular references without infinite loop
-      const factories = createFieldFactories(schema, "Node", {});
+      const factories = createFieldFactories(schema, "Node");
       expect(factories).toBeDefined();
       expect(factories.parent).toBeDefined();
       expect(factories.children).toBeDefined();

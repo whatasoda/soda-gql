@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 // import { SliceResultError } from "../../../packages/core/src/runtime/operation-slice"; // unused import
-import type { ExecutionResultProjection } from "../../../packages/core/src/types/execution-result-projection";
 
 describe("Type Safety Violations", () => {
   describe("ExecutionResultProjection validation", () => {

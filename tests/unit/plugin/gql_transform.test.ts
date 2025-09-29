@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
+import { Kind } from "graphql";
 import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
-import { assertTransformContainsRuntimeCall, assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
+import { assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
 
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
@@ -25,7 +26,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           prebuild: {
             name: "ProfilePageQuery",
             document: {
-              kind: "Document",
+              kind: Kind.DOCUMENT,
               definitions: [],
             },
             variableNames: [],
@@ -91,5 +92,4 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain("users:");
     expect(transformed).toContain("remoteUsers:");
   });
-
 });

@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { copyDefaultInjectModule } from "../../fixtures/inject-module/index.ts";
 import type { CliResult } from "../../utils/cli.ts";
-import { runCodegenCli as runCodegenCliUtil, runBuilderCli as runBuilderCliUtil, getProjectRoot } from "../../utils/cli.ts";
+import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as runCodegenCliUtil } from "../../utils/cli.ts";
 
 const projectRoot = getProjectRoot();
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -20,8 +20,8 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
     env: {
       NODE_PATH: [join(workspaceRoot, "node_modules"), join(projectRoot, "node_modules"), process.env.NODE_PATH ?? ""]
         .filter(Boolean)
-        .join(":")
-    }
+        .join(":"),
+    },
   });
 };
 
@@ -31,7 +31,7 @@ const prepareWorkspace = (name: string) => {
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {
     recursive: true,
-    filter: (src) => !src.includes("graphql-system")
+    filter: (src) => !src.includes("graphql-system"),
   });
   return workspaceRoot;
 };

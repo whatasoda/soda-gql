@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CanonicalId } from "../../packages/builder/src/registry.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
+import type { CanonicalId } from "../../packages/builder/src/registry.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
 
@@ -16,7 +16,6 @@ type CliResult = {
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
-
 
 const generateGraphqlSystem = async (workspaceRoot: string) => {
   const schemaPath = join(workspaceRoot, "schema.graphql");
@@ -84,7 +83,7 @@ const copyFixtureWorkspace = (name: string) => {
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {
     recursive: true,
-    filter: (src) => !src.includes("graphql-system")
+    filter: (src) => !src.includes("graphql-system"),
   });
   return workspaceRoot;
 };

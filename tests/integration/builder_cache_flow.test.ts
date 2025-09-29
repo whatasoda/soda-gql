@@ -61,7 +61,7 @@ describe("builder cache flow integration", () => {
     rmSync(workspaceRoot, { recursive: true, force: true });
     cpSync(fixturesRoot, workspaceRoot, {
       recursive: true,
-      filter: (src) => !src.includes("graphql-system")
+      filter: (src) => !src.includes("graphql-system"),
     });
   });
 
