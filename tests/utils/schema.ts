@@ -68,8 +68,8 @@ export const createBasicSchema = (overrides: Partial<AnyGraphqlSchema> = {}): An
 export const createQueryOnlySchema = (overrides: Partial<AnyGraphqlSchema> = {}): AnyGraphqlSchema => ({
   operations: defineOperationRoots({
     query: "Query",
-    mutation: "Mutation",
-    subscription: "Subscription",
+    mutation: null,
+    subscription: null,
   }),
   scalar: createStandardScalars(),
   enum: {},
@@ -103,8 +103,8 @@ export const createUserSchema = (): AnyGraphqlSchema => {
   return {
     operations: defineOperationRoots({
       query: "Query",
-      mutation: "Mutation",
-      subscription: "Subscription",
+      mutation: null,
+      subscription: null,
     }),
     scalar,
     enum: {},
@@ -146,7 +146,7 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
     operations: defineOperationRoots({
       query: "Query",
       mutation: "Mutation",
-      subscription: "Subscription",
+      subscription: null,
     }),
     scalar,
     enum: {},

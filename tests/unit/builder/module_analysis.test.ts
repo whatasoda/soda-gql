@@ -69,9 +69,10 @@ export const userSlice = buildSlice();
     expect(analysis.definitions).toEqual([]);
     expect(analysis.diagnostics).toHaveLength(1);
     const [diagnostic] = analysis.diagnostics;
-    expect(diagnostic.code).toBe("NON_TOP_LEVEL_DEFINITION");
-    expect(diagnostic.loc.start.line).toBeGreaterThan(0);
-    expect(diagnostic.loc.start.column).toBeGreaterThan(0);
+    expect(diagnostic).toBeDefined();
+    expect(diagnostic!.code).toBe("NON_TOP_LEVEL_DEFINITION");
+    expect(diagnostic!.loc.start.line).toBeGreaterThan(0);
+    expect(diagnostic!.loc.start.column).toBeGreaterThan(0);
   });
 
   it("captures references to imported slices and models", () => {
@@ -94,7 +95,8 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
-    expect(pageQuery.references).toEqual(["userSlice"]);
+    expect(pageQuery).toBeDefined();
+    expect(pageQuery!.references).toEqual(["userSlice"]);
   });
 
   it("captures nested dependencies for slices", () => {
@@ -117,7 +119,8 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
-    expect(pageQuery.references).toContain("user.slice.findById");
+    expect(pageQuery).toBeDefined();
+    expect(pageQuery!.references).toContain("user.slice.findById");
   });
 
   it("captures references in nested object values", () => {
@@ -146,7 +149,8 @@ export const complexQuery = gql.default(({ query, scalar }) =>
 
     expect(analysis.definitions).toHaveLength(1);
     const [complexQuery] = analysis.definitions;
-    expect(complexQuery.references).toEqual(["userSlice", "postSlice"]);
+    expect(complexQuery).toBeDefined();
+    expect(complexQuery!.references).toEqual(["userSlice", "postSlice"]);
   });
 
   it("captures both local and imported dependencies", () => {

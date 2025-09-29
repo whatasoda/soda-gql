@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CanonicalId } from "../../packages/core/src/types/utility.ts";
+import type { CanonicalId } from "../../packages/builder/src/registry.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";

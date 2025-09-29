@@ -361,7 +361,7 @@ export const duplicated = gql.default(({ query, scalar }) =>
     const output = result.stdout || result.stderr;
     const warningMatch = output.match(/Warning: slice count (\d+)/);
     // Warning may not always appear depending on the build configuration
-    if (warningMatch) {
+    if (warningMatch && warningMatch[1]) {
       expect(Number.parseInt(warningMatch[1], 10)).toBeGreaterThanOrEqual(16);
     }
     await Bun.write(join(debugDir, "stdout.txt"), result.stdout || "");

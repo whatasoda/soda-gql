@@ -6,7 +6,7 @@ import {
   buildDocument,
   buildWithTypeModifier,
 } from "../../../packages/core/src/builder/document-builder";
-import type { TypeModifier } from "../../../packages/core/src/types/type-ref";
+import type { TypeModifier } from "../../../packages/core/src/types/type-modifier";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -14,7 +14,7 @@ describe("Document Integrity Tests", () => {
       const symbolValue = Symbol("test");
 
       expect(() => {
-        buildArgumentValue(symbolValue);
+        buildArgumentValue(symbolValue as unknown as never);
       }).toThrow("Unknown value type");
     });
 
@@ -22,46 +22,53 @@ describe("Document Integrity Tests", () => {
       const functionValue = () => "test";
 
       expect(() => {
-        buildArgumentValue(functionValue);
+        buildArgumentValue(functionValue as unknown as never);
       }).toThrow("Unknown value type");
     });
 
     it("should handle null values", () => {
       const result = buildArgumentValue(null);
-      expect(result.kind).toBe(Kind.NULL);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.NULL);
     });
 
     it("should handle boolean values", () => {
       const result = buildArgumentValue(true);
-      expect(result.kind).toBe(Kind.BOOLEAN);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.BOOLEAN);
       expect((result as any).value).toBe(true);
     });
 
     it("should handle string values", () => {
       const result = buildArgumentValue("test");
-      expect(result.kind).toBe(Kind.STRING);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.STRING);
       expect((result as any).value).toBe("test");
     });
 
     it("should handle number values", () => {
       const result = buildArgumentValue(42);
-      expect(result.kind).toBe(Kind.INT);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.INT);
       expect((result as any).value).toBe("42");
 
       const floatResult = buildArgumentValue(3.14);
-      expect(floatResult.kind).toBe(Kind.FLOAT);
+      expect(floatResult).not.toBeNull();
+      expect(floatResult!.kind).toBe(Kind.FLOAT);
       expect((floatResult as any).value).toBe("3.14");
     });
 
     it("should handle array values", () => {
       const result = buildArgumentValue([1, 2, 3]);
-      expect(result.kind).toBe(Kind.LIST);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.LIST);
       expect((result as any).values).toHaveLength(3);
     });
 
     it("should handle object values", () => {
       const result = buildArgumentValue({ field: "value" });
-      expect(result.kind).toBe(Kind.OBJECT);
+      expect(result).not.toBeNull();
+      expect(result!.kind).toBe(Kind.OBJECT);
       expect((result as any).fields).toHaveLength(1);
     });
   });

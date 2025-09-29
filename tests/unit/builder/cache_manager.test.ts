@@ -15,6 +15,10 @@ class CacheManagerTestSuite extends TestSuite {
       ...overrides,
     };
   }
+
+  getTempPath(): string {
+    return this.tempDir.path;
+  }
 }
 
 describe("module cache manager", () => {
