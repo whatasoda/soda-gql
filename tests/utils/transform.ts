@@ -187,8 +187,8 @@ export const extractRuntimeCalls = (transformed: string): Array<{ method: string
 
   while ((match = regex.exec(transformed)) !== null) {
     calls.push({
-      method: match[1],
-      args: match[2].trim(),
+      method: match[1] ?? "",
+      args: match[2]?.trim() ?? "",
     });
   }
 

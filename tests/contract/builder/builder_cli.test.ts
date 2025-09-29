@@ -3,65 +3,36 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { copyDefaultInjectModule } from "../../fixtures/inject-module/index.ts";
+import type { CliResult } from "../../utils/cli.ts";
+import { runCodegenCli as runCodegenCliUtil, runBuilderCli as runBuilderCliUtil, getProjectRoot } from "../../utils/cli.ts";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const projectRoot = getProjectRoot();
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "builder-cli");
 
-type CliResult = {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-};
-
 const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "codegen", ...args],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-    },
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
+  return runCodegenCliUtil(args, { cwd: projectRoot });
 };
 
 const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", "builder", ...args],
+  return runBuilderCliUtil(args, {
     cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
     env: {
-      ...process.env,
-      NODE_ENV: "test",
       NODE_PATH: [join(workspaceRoot, "node_modules"), join(projectRoot, "node_modules"), process.env.NODE_PATH ?? ""]
         .filter(Boolean)
-        .join(":"),
-    },
+        .join(":")
+    }
   });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
 };
 
 const prepareWorkspace = (name: string) => {
   mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
-  cpSync(fixturesRoot, workspaceRoot, { recursive: true });
+  cpSync(fixturesRoot, workspaceRoot, {
+    recursive: true,
+    filter: (src) => !src.includes("graphql-system")
+  });
   return workspaceRoot;
 };
 
@@ -246,7 +217,10 @@ export const duplicated = gql.default(({ query, scalar }) =>
     const artifactExists = await Bun.file(artifactPath).exists();
     expect(artifactExists).toBe(true);
     const artifactContents = await Bun.file(artifactPath).text();
-    const parsed = JSON.parse(artifactContents);
+    const parsed = JSON.parse(artifactContents) as {
+      operations: Record<string, { prebuild: { name: string; document: string } }>;
+      report: { operations: number };
+    };
     // Find the ProfilePageQuery operation
     const profileQueryOp = Object.values(parsed.operations).find((op) => op.prebuild.name === "ProfilePageQuery");
     expect(profileQueryOp).toBeDefined();
@@ -278,7 +252,9 @@ export const duplicated = gql.default(({ query, scalar }) =>
     ]);
 
     expect(result.exitCode).toBe(0);
-    const artifact = JSON.parse(await Bun.file(artifactPath).text());
+    const artifact = JSON.parse(await Bun.file(artifactPath).text()) as {
+      operations: Record<string, { prebuild?: { name: string } }>;
+    };
     // Find the ProfilePageQuery operation
     const profileQueryOp = Object.values(artifact.operations).find((op) => op.prebuild?.name === "ProfilePageQuery");
     expect(profileQueryOp).toBeDefined();
@@ -308,7 +284,7 @@ export const duplicated = gql.default(({ query, scalar }) =>
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Documents:");
     expect(result.stdout).toMatch(/Cache: hits 0, misses \d+/);
-    await Bun.write(join(debugDir, "stdout.txt"), result.stdout);
+    await Bun.write(join(debugDir, "stdout.txt"), result.stdout || "");
     const debugExists = await Bun.file(join(debugDir, "modules.json")).exists();
     expect(debugExists).toBe(true);
   });
@@ -388,7 +364,7 @@ export const duplicated = gql.default(({ query, scalar }) =>
     if (warningMatch) {
       expect(Number.parseInt(warningMatch[1], 10)).toBeGreaterThanOrEqual(16);
     }
-    await Bun.write(join(debugDir, "stdout.txt"), result.stdout);
+    await Bun.write(join(debugDir, "stdout.txt"), result.stdout || "");
   });
 
   afterAll(() => {

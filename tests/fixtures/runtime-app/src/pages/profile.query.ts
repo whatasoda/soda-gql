@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { gql } from "@/graphql-system";
 import { userSlice, userSliceCatalog } from "../entities/user";
 import * as userCatalog from "../entities/user.catalog";

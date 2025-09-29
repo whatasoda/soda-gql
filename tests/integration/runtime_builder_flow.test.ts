@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { CanonicalId } from "../../packages/core/src/types/utility.ts";
 import { runBuilder } from "../../packages/builder/src/index.ts";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
 import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
@@ -81,7 +82,10 @@ const copyFixtureWorkspace = (name: string) => {
   mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
-  cpSync(fixturesRoot, workspaceRoot, { recursive: true });
+  cpSync(fixturesRoot, workspaceRoot, {
+    recursive: true,
+    filter: (src) => !src.includes("graphql-system")
+  });
   return workspaceRoot;
 };
 
@@ -129,20 +133,20 @@ describe("runtime builder flow", () => {
     const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::default::collections.byCategory`;
 
     // Check models exist
-    expect(artifact.models[userModelId]).toBeDefined();
-    expect(artifact.models[catalogModelId]).toBeDefined();
+    expect(artifact.models[userModelId as CanonicalId]).toBeDefined();
+    expect(artifact.models[catalogModelId as CanonicalId]).toBeDefined();
 
     // Check slices exist
-    expect(artifact.slices[userSliceId]).toBeDefined();
-    expect(artifact.slices[catalogSliceId]).toBeDefined();
-    expect(artifact.slices[collectionsSliceId]).toBeDefined();
+    expect(artifact.slices[userSliceId as CanonicalId]).toBeDefined();
+    expect(artifact.slices[catalogSliceId as CanonicalId]).toBeDefined();
+    expect(artifact.slices[collectionsSliceId as CanonicalId]).toBeDefined();
 
     // Check operation exists
     expect(artifact.operations[canonicalId]).toBeDefined();
 
     // Check dependencies
-    expect(artifact.slices[userSliceId].dependencies).toContain(userModelId);
-    expect(artifact.slices[catalogSliceId].dependencies).toContain(catalogModelId);
+    expect(artifact.slices[userSliceId as CanonicalId].dependencies).toContain(userModelId);
+    expect(artifact.slices[catalogSliceId as CanonicalId].dependencies).toContain(catalogModelId);
     expect(artifact.operations[canonicalId].dependencies).toContain(userSliceId);
     expect(artifact.operations[canonicalId].dependencies).toContain(catalogSliceId);
     expect(artifact.operations[canonicalId].dependencies).toContain(collectionsSliceId);

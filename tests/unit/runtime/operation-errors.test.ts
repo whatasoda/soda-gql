@@ -7,6 +7,7 @@ import {
   type ExecutionResultProjectionPathGraphNode,
 } from "../../../packages/core/src/types/execution-result-projection";
 import { pseudoTypeAnnotation } from "../../../packages/core/src/types/utility";
+import { createTestOperationSlices } from "../../utils/runtime";
 
 describe("Runtime Operation Error Handling", () => {
   const adapter = {
@@ -15,14 +16,12 @@ describe("Runtime Operation Error Handling", () => {
 
   describe("createParse basic functionality", () => {
     it("should handle non-graphql-error results", () => {
-      const slices = {
-        test: {
-          projection: new ExecutionResultProjection(
-            ["$.test"],
-            (result) => result, // Return raw SliceResult for testing
-          ),
-        },
-      };
+      const slices = createTestOperationSlices({
+        test: new ExecutionResultProjection(
+          ["$.test"],
+          (result) => result, // Return raw SliceResult for testing
+        ),
+      });
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
         matches: [{ label: "test", projection: slices.test.projection }],
@@ -47,11 +46,9 @@ describe("Runtime Operation Error Handling", () => {
     });
 
     it("should handle empty results", () => {
-      const slices = {
-        test: {
-          projection: new ExecutionResultProjection(["$.test"], (result) => result),
-        },
-      };
+      const slices = createTestOperationSlices({
+        test: new ExecutionResultProjection(["$.test"], (result) => result),
+      });
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
         matches: [{ label: "test", projection: slices.test.projection }],
@@ -73,11 +70,9 @@ describe("Runtime Operation Error Handling", () => {
     });
 
     it("should handle graphql results with data", () => {
-      const slices = {
-        test: {
-          projection: new ExecutionResultProjection(["$.data"], (result) => result),
-        },
-      };
+      const slices = createTestOperationSlices({
+        test: new ExecutionResultProjection(["$.data"], (result) => result),
+      });
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
         matches: [{ label: "test", projection: slices.test.projection, path: ["data"] }],
@@ -110,11 +105,9 @@ describe("Runtime Operation Error Handling", () => {
     });
 
     it("should handle graphql results with errors", () => {
-      const slices = {
-        test: {
-          projection: new ExecutionResultProjection(["$.data"], (result) => result),
-        },
-      };
+      const slices = createTestOperationSlices({
+        test: new ExecutionResultProjection(["$.data"], (result) => result),
+      });
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
         matches: [{ label: "test", projection: slices.test.projection }],
@@ -145,11 +138,9 @@ describe("Runtime Operation Error Handling", () => {
     });
 
     it("should throw on invalid result type", () => {
-      const slices = {
-        test: {
-          projection: new ExecutionResultProjection(["$.test"], (result) => result),
-        },
-      };
+      const slices = createTestOperationSlices({
+        test: new ExecutionResultProjection(["$.test"], (result) => result),
+      });
 
       const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
         matches: [{ label: "test", projection: slices.test.projection }],

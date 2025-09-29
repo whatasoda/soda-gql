@@ -17,7 +17,10 @@ const copyFixtureWorkspace = (name: string) => {
   mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
-  cpSync(fixturesRoot, workspaceRoot, { recursive: true });
+  cpSync(fixturesRoot, workspaceRoot, {
+    recursive: true,
+    filter: (src) => !src.includes("graphql-system")
+  });
   return workspaceRoot;
 };
 

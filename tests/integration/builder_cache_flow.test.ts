@@ -59,7 +59,10 @@ describe("builder cache flow integration", () => {
     mkdirSync(tmpRoot, { recursive: true });
     workspaceRoot = resolve(tmpRoot, `workspace-${Date.now()}`);
     rmSync(workspaceRoot, { recursive: true, force: true });
-    cpSync(fixturesRoot, workspaceRoot, { recursive: true });
+    cpSync(fixturesRoot, workspaceRoot, {
+      recursive: true,
+      filter: (src) => !src.includes("graphql-system")
+    });
   });
 
   it("emits documents with field selections and records cache hits on successive runs", async () => {

@@ -11,7 +11,7 @@ export class TestSuite {
   /**
    * Initialize the test suite with automatic setup/teardown
    */
-  protected setup(): void {
+  public setup(): void {
     beforeEach(() => {
       this.tempDir = new TestTempDir(this.constructor.name.toLowerCase());
       this.cleanupCallbacks = [];

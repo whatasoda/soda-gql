@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import { copyDefaultInjectModule } from "../../fixtures/inject-module/index.ts";
-import { assertCliError, getProjectRoot, runCodegenCli } from "../../utils/cli";
+import { assertCliError, getProjectRoot, runCodegenCli, type CliResult } from "../../utils/cli";
 
 const projectRoot = getProjectRoot();
 

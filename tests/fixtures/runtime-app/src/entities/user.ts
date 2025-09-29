@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { gql } from "@/graphql-system";
 
 type PostModel = {
