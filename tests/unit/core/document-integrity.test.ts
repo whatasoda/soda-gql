@@ -146,20 +146,20 @@ describe("Document Integrity Tests", () => {
       const invalidOperation = "queryish" as any;
 
       expect(() => {
-        buildDocument(invalidOperation, "TestOperation", [], [], []);
+        buildDocument(invalidOperation, "TestOperation", [], []);
       }).toThrow();
     });
 
     it("should handle valid operation types", () => {
-      const queryDoc = buildDocument("query", "TestQuery", [], [], []);
+      const queryDoc = buildDocument("query", "TestQuery", [], []);
       expect(queryDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((queryDoc.definitions[0] as any)?.operation).toBe("query");
 
-      const mutationDoc = buildDocument("mutation", "TestMutation", [], [], []);
+      const mutationDoc = buildDocument("mutation", "TestMutation", [], []);
       expect(mutationDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((mutationDoc.definitions[0] as any)?.operation).toBe("mutation");
 
-      const subscriptionDoc = buildDocument("subscription", "TestSubscription", [], [], []);
+      const subscriptionDoc = buildDocument("subscription", "TestSubscription", [], []);
       expect(subscriptionDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((subscriptionDoc.definitions[0] as any)?.operation).toBe("subscription");
     });
@@ -174,7 +174,7 @@ describe("Document Integrity Tests", () => {
         directives: [],
       };
 
-      const doc = buildDocument("query", "TestQuery", [variableWithDefault], [], []);
+      const doc = buildDocument("query", "TestQuery", [variableWithDefault], []);
       const varDef = (doc.definitions[0] as any).variableDefinitions[0];
       expect(varDef.defaultValue).toBeDefined();
       expect(varDef.defaultValue.kind).toBe(Kind.STRING);
@@ -194,7 +194,7 @@ describe("Document Integrity Tests", () => {
         directives: [],
       };
 
-      const doc = buildDocument("query", "TestQuery", [variableWithComplexDefault], [], []);
+      const doc = buildDocument("query", "TestQuery", [variableWithComplexDefault], []);
       const varDef = (doc.definitions[0] as any).variableDefinitions[0];
       expect(varDef.defaultValue).toBeDefined();
       expect(varDef.defaultValue.kind).toBe(Kind.OBJECT);

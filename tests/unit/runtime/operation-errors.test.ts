@@ -2,10 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { createParse } from "../../../packages/core/src/runtime/operation";
 import type { GraphqlRuntimeAdapter } from "../../../packages/core/src/types/adapter";
 import type { NormalizedExecutionResult } from "../../../packages/core/src/types/execution-result";
-import {
-  ExecutionResultProjection,
-  type ExecutionResultProjectionPathGraphNode,
-} from "../../../packages/core/src/types/execution-result-projection";
+import { ExecutionResultProjection } from "../../../packages/core/src/types/execution-result-projection";
+import type { ExecutionResultProjectionPathGraphNode } from "../../../packages/core/src/types/operation";
 import { pseudoTypeAnnotation } from "../../../packages/core/src/types/utility";
 import { createTestOperationSlices } from "../../utils/runtime";
 

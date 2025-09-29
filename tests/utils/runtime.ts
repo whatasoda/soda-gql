@@ -1,7 +1,6 @@
-import type { AnyOperationSlice, AnyOperationSlices } from "@soda-gql/core/types/operation";
-import type { AnyGraphqlSchema } from "@soda-gql/core/types/schema";
+import type { AnyOperationSlice, AnyOperationSlices } from "@soda-gql/core/types/operation-slice";
+import type { AnyGraphqlSchema, OperationRoots } from "@soda-gql/core/types/schema";
 import type { GraphqlRuntimeAdapter } from "@soda-gql/core/types/adapter";
-import type { OperationRoots } from "@soda-gql/core/types/operation-roots";
 import type { ExecutionResultProjection } from "@soda-gql/core/types/execution-result-projection";
 
 /**
