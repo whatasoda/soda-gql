@@ -13,6 +13,7 @@
     "biome:check": "biome check --write .",
     "quality": "bun run biome:check && bun run typecheck",
     "soda-gql": "bun run packages/cli/src/index.ts",
+    "fixture:setup": "bun soda-gql codegen --schema:default tests/fixtures/runtime-app/schema.graphql --out tests/fixtures/runtime-app/graphql-system/index.ts --inject-from tests/fixtures/inject-module/default-inject.ts",
     "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {
