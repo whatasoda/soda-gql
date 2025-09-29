@@ -1,89 +1,53 @@
-# Testing Strategy Implementation Guide
+# Testing Strategy Guide (Pre-release Reset)
 
-## Purpose and Scope
-This guide translates the P0 testing initiative from `docs/improvement-plan.md` into actionable tasks. It defines a multi-layer strategy covering builders, plugins, and CLI flows, with clear commands and rollback steps.
+## Intent
+Rebuild the test suite to validate the new IR-centric pipeline. Eliminate coverage for deprecated behaviours and assume we can delete or rename any public surface to support better tests.
 
-## Prerequisites
-- Bun v1.1+ (verify with `bun --version`).
-- Node-compatible environment for running integration fixtures under `tests/fixtures`.
-- Clean working tree (`git status`).
+## Principles
+- Tests should exercise the desired architecture, not the legacy implementations.
+- Prefer deterministic snapshots of IR, diagnostics, and runtime code over indirect behavioural assertions.
+- Remove brittle fixtures and regenerate them under the new package layout.
+- Gate merges on coverage thresholds that reflect the rewritten system, not historical baselines.
 
 ## Strategy Overview
-1. Strengthen unit coverage for AST helpers and error handling.
-2. Expand integration tests to cover zero-runtime and multi-schema flows.
-3. Add contract tests for plugin output stability.
-4. Wire coverage and watch workflows into CI/local scripts.
+1. Establish foundational unit tests for analyzer passes, IR validators, and diagnostic factories.
+2. Create contract suites that snapshot artifacts produced by the pipeline.
+3. Add end-to-end pipelines that run the CLI against representative projects using the new workflow.
+4. Integrate coverage and watch commands aligned with the rewritten packages.
 
-## Step-by-Step Implementation
+## Implementation Steps
 
-### Step 1 — Baseline Metrics
-1. Run `bun test --coverage` and copy the generated summary from `/Users/whatasoda/workspace/soda-gql/coverage/coverage-final.json`.
-2. Snapshot current failing tests (if any) with `bun test --reporter verbose`.
+### 1. Baseline the New World
+1. Delete obsolete coverage data and fixtures tied to `.ts` intermediate modules.
+2. Capture a fresh coverage baseline after the first IR-powered tests land.
 
-### Step 2 — Introduce Builder AST Unit Tests
-1. Create `tests/unit/builder/ast/collect_imports.test.ts` targeting the new helpers from `packages/builder/src/ast/shared/imports.ts`.
-2. Use fixtures from `tests/fixtures/analyzer/` (create if missing) to assert on parsed import/export metadata.
-3. Mock SWC modules with the existing helper in `tests/utils/transform.ts`.
+### 2. Unit Test Pillars
+1. `tests/unit/analyzer-swc/*`: Verify each analyzer pass with focused fixtures.
+2. `tests/unit/ir/*`: Ensure schema guards reject malformed IR.
+3. `tests/unit/diagnostics/*`: Validate severity handling, location attachment, and NDJSON formatting.
 
-#### Before / After Example
-```ts title="Before — no direct unit coverage"
-// Implicitly tested via integration only.
-```
-```ts title="After — tests/unit/builder/ast/collect_imports.test.ts"
-it("collects namespace imports", () => {
-  const module = parseFixture("namespace.ts");
-  expect(collectImports(module)).toContainEqual({
-    source: "./foo",
-    imported: "*",
-    kind: "namespace",
-  });
-});
-```
+### 3. Contract Snapshots
+1. Create `tests/contract/pipeline/` that runs `analyzeModule → emitArtifact` and snapshots both IR (`.json`) and generated runtime modules (`.ts`).
+2. Add Babel plugin snapshots that assert on the transformed code after consuming the new IR.
+3. Regenerate snapshots aggressively; we are free to change their shape when architecture evolves.
 
-### Step 3 — Harden Integration Flows
-1. Update `tests/integration/runtime_builder_flow.test.ts:73-95` to avoid manual `throw new Error` checks.
+### 4. End-to-end CLI Runs
+1. Build miniature fixture projects under `tests/fixtures/projects/*` with varying schema complexity.
+2. Run the new CLI (`bun run cli pipeline --format ndjson`) and assert on exit codes + diagnostics payloads.
+3. Capture artifact store outputs to ensure deterministic hashes.
 
-```ts title="Before — tests/integration/runtime_builder_flow.test.ts:73-95"
-if (result.isErr()) {
-  throw new Error(`builder failed: ${result.error.code}`);
-}
-```
-```ts title="After — tests/integration/runtime_builder_flow.test.ts"
-const builderResult = await runBuilder(...);
-expect(builderResult).toBeOk();
-```
-2. Add custom Jest-style matchers (`tests/utils/result-expect.ts`) and register them in `tests/setup.ts`.
-3. Mirror the matcher usage in `tests/integration/zero_runtime_transform.test.ts:84-107` and builder cache tests.
-
-### Step 4 — Add Contract Snapshots for Babel Plugin
-1. Extend `tests/contract/plugin-babel/plugin_babel.test.ts` to snapshot transformed output for `gql.model`, `gql.querySlice`, and `gql.query` builders.
-2. Store snapshot files under `tests/contract/plugin-babel/__snapshots__/`.
-3. Update fixtures in `tests/contract/plugin-babel/fixtures/` to cover error conditions surfaced by the new Result-based API.
-
-### Step 5 — Wire Commands into Developer Workflow
-1. Add npm scripts in `package.json`:
-   - `"test:unit": "bun test tests/unit"`
-   - `"test:integration": "bun test tests/integration"`
-   - `"test:watch": "bun test --watch"`
-2. Document the scripts in `README.md` under the "Contributing" section.
-3. Configure `.github/workflows/ci.yml` (if present) to run unit, integration, and contract jobs in parallel.
-
-### Step 6 — Maintain Coverage and Regression Gates
-1. Set a coverage threshold (e.g. 85%) in `bunfig.toml` or `jest.config.ts` equivalent.
-2. Fail CI when coverage drops below the threshold.
-3. Add a `tests/scripts/watch-module-analysis.ts` utility to rerun analyzer-specific tests in watch mode while refactoring.
+### 5. Tooling Integration
+1. Update `package.json` scripts: `test:unit`, `test:contract`, `test:integration`, `test:pipeline`.
+2. Add a `just verify` recipe that runs the full suite plus `bun run typecheck` and `bun run biome:check`.
+3. Configure coverage thresholds (e.g., `branches: 80`, `functions: 85`, `lines: 85`). Fail the build when thresholds are not met.
 
 ## Validation Commands
 ```bash
-bun test tests/unit/builder/ast --reporter spec
-bun test tests/integration/runtime_builder_flow.test.ts
-bun test tests/contract/plugin-babel --update-snapshots
-bun run typecheck
-bun run biome:check
+bun test tests/unit --reporter spec
+bun test tests/contract --update-snapshots
+bun test tests/integration/pipeline
+bun run coverage
 ```
 
-## Rollback Procedure
-1. `git restore tests unit tests/integration tests/contract`
-2. Remove newly added scripts: `git restore package.json README.md`
-3. Delete coverage threshold config changes: `git clean -f bunfig.toml jest.config.ts`
-4. Re-run `bun test --coverage` to confirm baseline parity.
+## Rollback Policy
+If a test becomes brittle because the architecture keeps evolving, delete it and replace it with coverage that matches the updated design. Do **not** cling to legacy assertions.

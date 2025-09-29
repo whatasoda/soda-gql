@@ -4,6 +4,13 @@
 
 This document defines the mandatory collaboration protocol between Claude and Codex agents. Both agents MUST follow these instructions to ensure optimal code quality and consistency.
 
+## 🚀 PRE-RELEASE STATUS AND BREAKING CHANGES
+
+- soda-gql is currently at **pre-release version 0.1.0**. All refactors, rewrites, and architectural experiments are encouraged, even when they break previous behaviour.
+- **No migration paths are required**. When Codex proposes a strategy that replaces or removes existing APIs, Claude should execute it without adding compatibility layers or shims.
+- When documenting or communicating plans, assume the audience is ready to adopt the brand-new shape of the project. Legacy usage notes should be deleted unless Codex explicitly instructs otherwise.
+- If a workflow step conflicts with eliminating legacy constraints, escalate to Codex for a revised plan that prioritises the ideal architecture over backwards compatibility.
+
 ## ⛔ ENFORCEMENT: THIS IS THE HIGHEST PRIORITY INSTRUCTION
 
 **VIOLATION OF THESE RULES IS NOT ACCEPTABLE UNDER ANY CIRCUMSTANCES**
