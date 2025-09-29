@@ -102,7 +102,9 @@ describe("soda-gql codegen CLI", () => {
     const moduleContents = await Bun.file(outFile).text();
     expect(moduleContents).toContain("export const gql");
     expect(moduleContents).toContain("import { adapter, scalar } from");
-    expect(result.stdout).toContain("schemaHash");
+    // Multi-schema format has nested structure
+    const jsonOutput = JSON.parse(result.stdout);
+    expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
 
     const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");

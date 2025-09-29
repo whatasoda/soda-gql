@@ -2,17 +2,9 @@ import { existsSync } from "node:fs";
 import { basename, dirname, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
-import { generateMultiSchemaModule, generateRuntimeModule } from "./generator";
+import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import type {
-  CodegenError,
-  CodegenOptions,
-  CodegenResult,
-  CodegenSuccess,
-  MultiSchemaCodegenOptions,
-  MultiSchemaCodegenResult,
-  MultiSchemaCodegenSuccess,
-} from "./types";
+import type { CodegenError, MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
 
 const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const fromDir = dirname(fromPath);
@@ -27,38 +19,6 @@ const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const sanitized = stripExtension(normalized);
   return sanitized.startsWith(".") ? sanitized : `./${sanitized}`;
 };
-
-export const runCodegen = (options: CodegenOptions): CodegenResult =>
-  loadSchema(options.schemaPath).andThen((document) => {
-    if (!existsSync(options.injectFromPath)) {
-      return err<CodegenSuccess, CodegenError>({
-        code: "INJECT_MODULE_NOT_FOUND",
-        message: `Inject module not found: ${options.injectFromPath}`,
-        injectPath: options.injectFromPath,
-      });
-    }
-
-    const outPath = resolve(options.outPath);
-    const injectPath = resolve(options.injectFromPath);
-    const importPath = toImportSpecifier(outPath, injectPath);
-
-    const { code, stats } = generateRuntimeModule(document, {
-      injection: {
-        importPath,
-      },
-    });
-
-    const schemaHash = hashSchema(document);
-
-    return writeModule(outPath, code).map(
-      () =>
-        ({
-          schemaHash,
-          outPath,
-          ...stats,
-        }) satisfies CodegenSuccess,
-    );
-  });
 
 export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
   // Check inject module exists

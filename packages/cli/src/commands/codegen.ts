@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import type { CodegenError, CodegenFormat, CodegenOptions, CodegenSuccess, MultiSchemaCodegenSuccess } from "@soda-gql/codegen";
-import { runCodegen, runMultiSchemaCodegen, writeInjectTemplate } from "@soda-gql/codegen";
+import type { CodegenError, CodegenFormat, MultiSchemaCodegenSuccess } from "@soda-gql/codegen";
+import { runMultiSchemaCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { err, ok, type Result } from "neverthrow";
 import { loadConfig } from "../config/loader";
 import { CodegenArgsSchema } from "../schemas/args";
@@ -12,10 +12,6 @@ type ParsedCommand =
       kind: "emitInjectTemplate";
       outPath: string;
       format: CodegenFormat;
-    }
-  | {
-      kind: "single";
-      options: CodegenOptions;
     }
   | {
       kind: "multi";
@@ -69,42 +65,16 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  // Check for schema:name arguments
-  const schemaArgs: Record<string, string> = {};
-  for (const [key, value] of Object.entries(args)) {
-    if (key.startsWith("schema:") && typeof value === "string") {
-      const schemaName = key.substring(7);
-      schemaArgs[schemaName] = value;
-    }
-  }
-
-  // If we have schema:name arguments, use multi-schema mode
-  if (Object.keys(schemaArgs).length > 0) {
-    if (!args.out) {
-      return err<ParsedCommand, CodegenError>({
-        code: "EMIT_FAILED",
-        message: "Output path not provided",
-        outPath: "",
-      });
-    }
-
-    if (!args["inject-from"]) {
-      return err<ParsedCommand, CodegenError>({
-        code: "INJECT_MODULE_REQUIRED",
-        message: "--inject-from is required",
-      });
-    }
-
-    return ok<ParsedCommand, CodegenError>({
-      kind: "multi",
-      schemas: schemaArgs,
-      outPath: args.out,
-      format,
-      injectFromPath: args["inject-from"],
+  // Reject deprecated schema:<name> flags
+  const deprecatedSchemaFlags = Object.keys(args).filter((key) => key.startsWith("schema:"));
+  if (deprecatedSchemaFlags.length > 0) {
+    return err<ParsedCommand, CodegenError>({
+      code: "EMIT_FAILED",
+      message: "Named schema flags (--schema:<name>) are no longer supported; use --schema instead.",
+      outPath: "",
     });
   }
 
-  // Fall back to single-schema mode
   if (!args.schema) {
     return err<ParsedCommand, CodegenError>({
       code: "SCHEMA_NOT_FOUND",
@@ -129,21 +99,14 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
   }
 
   return ok<ParsedCommand, CodegenError>({
-    kind: "single",
-    options: {
-      schemaPath: args.schema,
-      outPath: args.out,
-      format,
-      injectFromPath: args["inject-from"],
+    kind: "multi",
+    schemas: {
+      default: args.schema,
     },
+    outPath: args.out,
+    format,
+    injectFromPath: args["inject-from"],
   });
-};
-
-const formatCodegenSuccess = (format: OutputFormat, success: CodegenSuccess) => {
-  if (format === "json") {
-    return formatOutput(success, "json");
-  }
-  return `Generated ${success.objects} objects → ${success.outPath}`;
 };
 
 const formatMultiSchemaSuccess = (format: OutputFormat, success: MultiSchemaCodegenSuccess) => {
@@ -193,38 +156,18 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
     return 0;
   }
 
-  if (command.kind === "multi") {
-    const result = await runMultiSchemaCodegen({
-      schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
-      outPath: resolve(command.outPath),
-      format: command.format,
-      injectFromPath: resolve(command.injectFromPath),
-    });
-
-    if (result.isErr()) {
-      process.stdout.write(`${formatCodegenError(command.format, result.error)}\n`);
-      return 1;
-    }
-
-    process.stdout.write(`${formatMultiSchemaSuccess(command.format, result.value)}\n`);
-    return 0;
-  }
-
-  // Single schema mode
-  const options: CodegenOptions = {
-    ...command.options,
-    schemaPath: resolve(command.options.schemaPath),
-    outPath: resolve(command.options.outPath),
-    injectFromPath: resolve(command.options.injectFromPath),
-  };
-
-  const result = runCodegen(options);
+  const result = await runMultiSchemaCodegen({
+    schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
+    outPath: resolve(command.outPath),
+    format: command.format,
+    injectFromPath: resolve(command.injectFromPath),
+  });
 
   if (result.isErr()) {
-    process.stdout.write(`${formatCodegenError(options.format, result.error)}\n`);
+    process.stdout.write(`${formatCodegenError(command.format, result.error)}\n`);
     return 1;
   }
 
-  process.stdout.write(`${formatCodegenSuccess(options.format, result.value)}\n`);
+  process.stdout.write(`${formatMultiSchemaSuccess(command.format, result.value)}\n`);
   return 0;
 };

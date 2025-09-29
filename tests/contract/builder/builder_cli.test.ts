@@ -45,16 +45,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   const injectFile = join(workspaceRoot, "graphql-inject.ts");
   copyDefaultInjectModule(injectFile);
 
-  const result = await runCodegenCli([
-    "--schema:default",
-    schemaPath,
-    "--out",
-    outFile,
-    "--format",
-    "json",
-    "--inject-from",
-    injectFile,
-  ]);
+  const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json", "--inject-from", injectFile]);
 
   expect(result.exitCode).toBe(0);
   const exists = await Bun.file(outFile).exists();

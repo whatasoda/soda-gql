@@ -5,13 +5,18 @@ import { z } from "zod";
 
 // Config schema
 const ConfigSchema = z.object({
-  schemas: z.record(z.string(), z.string()),
+  schema: z.string(),
   "inject-from": z.string(),
   out: z.string(),
   format: z.enum(["human", "json"]).optional().default("human"),
 });
 
-export type Config = z.infer<typeof ConfigSchema>;
+export type Config = {
+  schemas: Record<string, string>;
+  "inject-from": string;
+  out: string;
+  format: "human" | "json";
+};
 
 export type ConfigError =
   | {
@@ -41,7 +46,21 @@ export const loadConfig = (path: string): Result<Config, ConfigError> => {
     const data = JSON.parse(content);
     const parsed = ConfigSchema.parse(data);
 
-    return ok(parsed);
+    // Transform single schema to default-keyed schemas for compatibility
+    const config = {
+      ...parsed,
+      schemas: { default: parsed.schema },
+    };
+    // Transform schema to schemas format
+    // biome-ignore lint/suspicious/noExplicitAny: necessary for type transformation
+    const transformedConfig = {
+      ...parsed,
+      schemas: { default: parsed.schema },
+    } as any;
+    // biome-ignore lint/performance/noDelete: necessary to remove schema field
+    delete transformedConfig.schema;
+
+    return ok(transformedConfig as Config);
   } catch (error) {
     return err({
       code: "CONFIG_INVALID",
@@ -54,7 +73,21 @@ export const loadConfig = (path: string): Result<Config, ConfigError> => {
 export const validateConfig = (config: unknown): Result<Config, ConfigError> => {
   try {
     const parsed = ConfigSchema.parse(config);
-    return ok(parsed);
+    // Transform single schema to default-keyed schemas for compatibility
+    const result = {
+      ...parsed,
+      schemas: { default: parsed.schema },
+    };
+    // Transform schema to schemas format
+    // biome-ignore lint/suspicious/noExplicitAny: necessary for type transformation
+    const transformedResult = {
+      ...parsed,
+      schemas: { default: parsed.schema },
+    } as any;
+    // biome-ignore lint/performance/noDelete: necessary to remove schema field
+    delete transformedResult.schema;
+
+    return ok(transformedResult as Config);
   } catch (error) {
     return err({
       code: "CONFIG_INVALID",
