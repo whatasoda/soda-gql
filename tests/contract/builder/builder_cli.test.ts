@@ -154,12 +154,16 @@ export const cyclePageQuery = gql.default(({ query, scalar }) =>
     const duplicateQuerySource = `import { gql } from "@/graphql-system";
 import { userSlice } from "../entities/user";
 
-export const duplicated = gql.default(({ query, scalar }) =>
-  query(
-    "DuplicatedName",
-    { userId: scalar(["ID", "!"]) },
+export const duplicated = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "DuplicatedName",
+      variables: {
+        ...$(\"userId\").scalar(\"ID:!\"),
+      },
+    },
     ({ $ }) => ({
-      users: userSlice({ id: $.userId }),
+      users: userSlice.build({ id: $.userId }),
     }),
   ),
 );
@@ -217,11 +221,11 @@ export const duplicated = gql.default(({ query, scalar }) =>
     expect(artifactExists).toBe(true);
     const artifactContents = await Bun.file(artifactPath).text();
     const parsed = JSON.parse(artifactContents) as {
-      operations: Record<string, { prebuild: { name: string; document: string } }>;
+      operations: Record<string, { type: string; prebuild: { operationName: string; document: unknown } }>;
       report: { operations: number };
     };
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(parsed.operations).find((op) => op.prebuild.name === "ProfilePageQuery");
+    const profileQueryOp = Object.values(parsed.operations).find((op) => op.prebuild.operationName === "ProfilePageQuery");
     expect(profileQueryOp).toBeDefined();
     expect(profileQueryOp?.prebuild.document).toBeDefined();
     expect(parsed.report.operations).toBeGreaterThanOrEqual(1);
@@ -252,10 +256,10 @@ export const duplicated = gql.default(({ query, scalar }) =>
 
     expect(result.exitCode).toBe(0);
     const artifact = JSON.parse(await Bun.file(artifactPath).text()) as {
-      operations: Record<string, { prebuild?: { name: string } }>;
+      operations: Record<string, { type: string; prebuild?: { operationName: string } }>;
     };
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(artifact.operations).find((op) => op.prebuild?.name === "ProfilePageQuery");
+    const profileQueryOp = Object.values(artifact.operations).find((op) => op.prebuild?.operationName === "ProfilePageQuery");
     expect(profileQueryOp).toBeDefined();
   });
 
