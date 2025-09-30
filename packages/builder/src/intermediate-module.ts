@@ -110,7 +110,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 };
 
 type ReplacementEntry = {
-  readonly prefix: "models" | "slices" | "operations";
+  readonly prefix: "all";
   readonly canonicalId: string;
 };
 
@@ -123,10 +123,7 @@ const createReplacementMap = (node: DependencyGraphNode, graph: DependencyGraph)
       return;
     }
 
-    const accessorPrefix =
-      target.definition.kind === "model" ? "models" : target.definition.kind === "slice" ? "slices" : "operations";
-
-    map.set(symbol, { prefix: accessorPrefix, canonicalId });
+    map.set(symbol, { prefix: "all", canonicalId });
   });
 
   return map;
@@ -139,37 +136,6 @@ const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string 
   const factory = formatFactory(rewritten);
 
   return `  "${node.id}": ${factory},`;
-};
-
-const renderSection = (label: string, entries: readonly string[]): string => {
-  if (entries.length === 0) {
-    return `export const ${label} = {} as const;`;
-  }
-
-  // Use two-step initialization to avoid TDZ errors when entries reference the object being built
-  const assignments = entries.map((entry) => {
-    // Match quoted string key: "..." or '...'
-    const quotedMatch = entry.match(/^\s*(["'])(.+?)\1\s*:/);
-    if (quotedMatch) {
-      const key = quotedMatch[2];
-      const colonIndex = entry.indexOf(":", quotedMatch[0].length - 1);
-      const value = entry.slice(colonIndex + 1).trim().replace(/,\s*$/, "");
-      return `${label}[${quotedMatch[1]}${key}${quotedMatch[1]}] = ${value};`;
-    }
-
-    // Match unquoted key
-    const unquotedMatch = entry.match(/^\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/);
-    if (unquotedMatch) {
-      const key = unquotedMatch[1];
-      const colonIndex = entry.indexOf(":");
-      const value = entry.slice(colonIndex + 1).trim().replace(/,\s*$/, "");
-      return `${label}["${key}"] = ${value};`;
-    }
-
-    throw new Error(`Could not extract key from entry: ${entry.slice(0, 100)}`);
-  });
-
-  return `export const ${label}: Record<string, any> = {};\n${assignments.join("\n")}`;
 };
 
 export type CreateIntermediateModuleInput = {
@@ -192,9 +158,7 @@ export const createIntermediateModule = async ({
     });
   }
 
-  const models: string[] = [];
-  const slices: string[] = [];
-  const operations: string[] = [];
+  const entries: string[] = [];
   const missing: DependencyGraphNode[] = [];
 
   graph.forEach((node) => {
@@ -203,23 +167,7 @@ export const createIntermediateModule = async ({
       return;
     }
     const entry = renderEntry(node, graph);
-
-    switch (node.definition.kind) {
-      case "model": {
-        models.push(entry);
-        break;
-      }
-      case "slice": {
-        slices.push(entry);
-        break;
-      }
-      case "operation": {
-        operations.push(entry);
-        break;
-      }
-      default:
-        break;
-    }
+    entries.push(entry);
   });
 
   if (missing.length > 0) {
@@ -233,10 +181,6 @@ export const createIntermediateModule = async ({
       message: "MISSING_EXPRESSION",
     });
   }
-
-  const sections = [renderSection("models", models), renderSection("slices", slices), renderSection("operations", operations)]
-    .map((section) => section.trimEnd())
-    .join("\n\n");
 
   const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
   const filePath = join(outDir, fileName);
@@ -253,9 +197,26 @@ export const createIntermediateModule = async ({
     gqlImportPath = sanitized.endsWith(".ts") ? sanitized.slice(0, -3) : sanitized;
   }
 
-  const imports = [`import { gql } from "${gqlImportPath}";`];
+  const imports = [
+    `import { gql } from "${gqlImportPath}";`,
+    `import { Model, OperationSlice, Operation } from "@soda-gql/core";`,
+  ];
 
-  const content = `${imports.join("\n")}\n\n${sections}\n`;
+  const allSection = `const all = {\n${entries.join("\n")}\n};`;
+
+  const classificationSection = `export const models = Object.fromEntries(
+  Object.entries(all).filter(([, v]) => v instanceof Model)
+);
+
+export const slices = Object.fromEntries(
+  Object.entries(all).filter(([, v]) => v instanceof OperationSlice)
+);
+
+export const operations = Object.fromEntries(
+  Object.entries(all).filter(([, v]) => v instanceof Operation)
+);`;
+
+  const content = `${imports.join("\n")}\n\n${allSection}\n\n${classificationSection}\n`;
 
   try {
     await Bun.write(filePath, content);
