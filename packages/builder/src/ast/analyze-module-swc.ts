@@ -32,6 +32,38 @@ const gqlCallKinds: Record<string, GqlDefinitionKind> = {
   subscription: "operation",
 };
 
+// Helper to check for two-level property access (e.g., slice.query, operation.mutation)
+const checkTwoLevelPropertyAccess = (call: CallExpression): GqlDefinitionKind | null => {
+  // Check if callee is a property access (e.g., slice.query)
+  if (call.callee.type !== "MemberExpression") {
+    return null;
+  }
+
+  const memberExpr = call.callee as MemberExpression;
+
+  // Get the method name (e.g., "query", "mutation", "subscription")
+  if (memberExpr.property.type !== "Identifier") {
+    return null;
+  }
+  const method = memberExpr.property.value;
+
+  // Get the category name (e.g., "slice", "operation")
+  if (memberExpr.object.type !== "Identifier") {
+    return null;
+  }
+  const category = memberExpr.object.value;
+
+  // Map category.method to kind
+  if (category === "slice" && (method === "query" || method === "mutation" || method === "subscription")) {
+    return "slice";
+  }
+  if (category === "operation" && (method === "query" || method === "mutation" || method === "subscription")) {
+    return "operation";
+  }
+
+  return null;
+};
+
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
   for (let index = 0; index < source.length; index += 1) {
@@ -260,7 +292,7 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
 const isGqlCall = (
   identifiers: ReadonlySet<string>,
   call: CallExpression,
-): { readonly method: string; readonly callee: MemberExpression; readonly schemaName?: string } | null => {
+): { readonly method: string; readonly callee: MemberExpression; readonly kind?: GqlDefinitionKind; readonly schemaName?: string } | null => {
   const callee = call.callee;
   let expression: MemberExpression | null = null;
 
@@ -310,6 +342,12 @@ const isGqlCall = (
         if (arrowFunc.body && arrowFunc.body.type === "CallExpression") {
           const innerCall = arrowFunc.body as CallExpression;
 
+          // Check for two-level property access (slice.query, operation.mutation)
+          const twoLevelKind = checkTwoLevelPropertyAccess(innerCall);
+          if (twoLevelKind) {
+            return { method: twoLevelKind, callee: expression, kind: twoLevelKind, schemaName: method };
+          }
+
           // Check if it's calling a method directly
           if (innerCall.callee.type === "Identifier") {
             const innerMethod = innerCall.callee.value;
@@ -317,7 +355,7 @@ const isGqlCall = (
               return { method: innerMethod, callee: expression, schemaName: method };
             }
           }
-          // Check if it's calling via property access
+          // Check if it's calling via property access (legacy: helper.model)
           else if (innerCall.callee.type === "MemberExpression") {
             const innerExpr = innerCall.callee as MemberExpression;
             if (innerExpr.property.type === "Identifier") {
@@ -693,11 +731,12 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
+        const kind = gqlCall.kind ?? unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup");
         register(
           baseName,
           decl.init,
           decl.span ?? decl.init.span,
-          unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"),
+          kind,
           gqlCall.schemaName,
         );
         return;
@@ -717,11 +756,12 @@ const collectTopLevelDefinitions = (
           if (!gqlCall) {
             return;
           }
+          const kind = gqlCall.kind ?? unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup");
           register(
             `${baseName}.${name}`,
             prop.value,
             prop.value.span ?? prop.span ?? decl.span,
-            unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup"),
+            kind,
             gqlCall.schemaName,
           );
         });
