@@ -1,0 +1,712 @@
+/**
+ * TypeScript adapter for the analyzer core.
+ * Implements parser-specific logic using the TypeScript compiler API.
+ */
+
+import { extname } from "node:path";
+import { unwrapNullish } from "@soda-gql/tool-utils";
+import ts from "typescript";
+
+import type { AnalyzerAdapter } from "../analyzer-core";
+import { analyzeModuleCore } from "../analyzer-core";
+import { gqlDefinitionKinds } from "../analyzer-types";
+import type {
+  AnalyzeModuleInput,
+  GqlDefinitionKind,
+  ModuleAnalysis,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+  SourceLocation,
+} from "../analyzer-types";
+
+const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
+  const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  return ts.createSourceFile(filePath, source, ts.ScriptTarget.ES2022, true, scriptKind);
+};
+
+const toLocation = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation => {
+  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+
+  return {
+    start: { line: start.line + 1, column: start.character + 1 },
+    end: { line: end.line + 1, column: end.character + 1 },
+  } satisfies SourceLocation;
+};
+
+const collectGqlImports = (sourceFile: ts.SourceFile): ReadonlySet<string> => {
+  const identifiers = new Set<string>();
+
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) {
+      return;
+    }
+
+    const moduleText = (statement.moduleSpecifier as ts.StringLiteral).text;
+    if (!moduleText.endsWith("/graphql-system")) {
+      return;
+    }
+
+    if (statement.importClause.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)) {
+      statement.importClause.namedBindings.elements.forEach((element) => {
+        const imported = element.propertyName ? element.propertyName.text : element.name.text;
+        if (imported === "gql") {
+          identifiers.add(element.name.text);
+        }
+      });
+    }
+  });
+
+  return identifiers;
+};
+
+const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
+  const imports: ModuleImport[] = [];
+
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) {
+      return;
+    }
+
+    const moduleText = (statement.moduleSpecifier as ts.StringLiteral).text;
+    const { importClause } = statement;
+
+    if (importClause.name) {
+      imports.push({
+        source: moduleText,
+        imported: "default",
+        local: importClause.name.text,
+        kind: "default",
+        isTypeOnly: Boolean(importClause.isTypeOnly),
+      });
+    }
+
+    const { namedBindings } = importClause;
+    if (!namedBindings) {
+      return;
+    }
+
+    if (ts.isNamespaceImport(namedBindings)) {
+      imports.push({
+        source: moduleText,
+        imported: "*",
+        local: namedBindings.name.text,
+        kind: "namespace",
+        isTypeOnly: Boolean(importClause.isTypeOnly),
+      });
+      return;
+    }
+
+    namedBindings.elements.forEach((element) => {
+      imports.push({
+        source: moduleText,
+        imported: element.propertyName ? element.propertyName.text : element.name.text,
+        local: element.name.text,
+        kind: "named",
+        isTypeOnly: Boolean(importClause.isTypeOnly || element.isTypeOnly),
+      });
+    });
+  });
+
+  return imports;
+};
+
+const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
+  const exports: ModuleExport[] = [];
+
+  sourceFile.statements.forEach((statement) => {
+    if (ts.isExportDeclaration(statement)) {
+      const moduleSpecifier = statement.moduleSpecifier ? (statement.moduleSpecifier as ts.StringLiteral).text : undefined;
+
+      if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+        statement.exportClause.elements.forEach((element) => {
+          if (moduleSpecifier) {
+            exports.push({
+              kind: "reexport",
+              exported: element.name.text,
+              local: element.propertyName ? element.propertyName.text : undefined,
+              source: moduleSpecifier,
+              isTypeOnly: Boolean(statement.isTypeOnly || element.isTypeOnly),
+            });
+          } else {
+            exports.push({
+              kind: "named",
+              exported: element.name.text,
+              local: element.propertyName ? element.propertyName.text : element.name.text,
+              isTypeOnly: Boolean(statement.isTypeOnly || element.isTypeOnly),
+            });
+          }
+        });
+        return;
+      }
+
+      if (moduleSpecifier) {
+        exports.push({
+          kind: "reexport",
+          exported: "*",
+          source: moduleSpecifier,
+          isTypeOnly: Boolean(statement.isTypeOnly),
+        });
+      }
+
+      return;
+    }
+
+    if (ts.isExportAssignment(statement)) {
+      exports.push({
+        kind: "named",
+        exported: "default",
+        local: "default",
+        isTypeOnly: false,
+      });
+    }
+
+    if (
+      ts.isVariableStatement(statement) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      statement.declarationList.declarations.forEach((declaration) => {
+        if (ts.isIdentifier(declaration.name)) {
+          exports.push({
+            kind: "named",
+            exported: declaration.name.text,
+            local: declaration.name.text,
+            isTypeOnly: false,
+          });
+        }
+      });
+    }
+
+    if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) &&
+      statement.name
+    ) {
+      exports.push({
+        kind: "named",
+        exported: statement.name.text,
+        local: statement.name.text,
+        isTypeOnly: false,
+      });
+    }
+  });
+
+  return exports;
+};
+
+const isGqlDefinitionCall = (
+  identifiers: ReadonlySet<string>,
+  callExpression: ts.CallExpression,
+): { readonly method: string; readonly kind?: GqlDefinitionKind; readonly schemaName?: string } | null => {
+  const expression = callExpression.expression;
+  if (!ts.isPropertyAccessExpression(expression)) {
+    return null;
+  }
+
+  // Helper to check for helper.category.method (e.g., slice.query, operation.mutation)
+  const checkTwoLevelPropertyAccess = (callExpr: ts.CallExpression): GqlDefinitionKind | null => {
+    if (!ts.isPropertyAccessExpression(callExpr.expression)) {
+      return null;
+    }
+
+    const outerProp = callExpr.expression;
+    const method = outerProp.name.text; // e.g., "query"
+
+    // Check if expression is category.method (e.g., slice.query)
+    // where category is an Identifier (from destructured parameter)
+    if (ts.isIdentifier(outerProp.expression)) {
+      const category = outerProp.expression.text; // e.g., "slice"
+
+      // Map category.method to kind
+      if (category === "slice" && (method === "query" || method === "mutation" || method === "subscription")) {
+        return "slice";
+      }
+      if (category === "operation" && (method === "query" || method === "mutation" || method === "subscription")) {
+        return "operation";
+      }
+    }
+
+    return null;
+  };
+
+  // Check for gql.{schema}(({ helper }) => helper.method(...)) pattern
+  if (ts.isIdentifier(expression.expression) && identifiers.has(expression.expression.text)) {
+    const schemaName = expression.name.text;
+
+    // Check if this could be a schema name (not a method name)
+    if (!(schemaName in gqlDefinitionKinds)) {
+      // This is a schema invoker call, we need to look inside the factory function
+      if (callExpression.arguments.length > 0) {
+        const firstArg = callExpression.arguments[0];
+
+        // Check if it's an arrow function
+        if (firstArg && ts.isArrowFunction(firstArg) && firstArg.body) {
+          // If body is a call expression, check if it's calling a gql method
+          if (ts.isCallExpression(firstArg.body)) {
+            const innerCall = firstArg.body;
+
+            // Check for two-level property access (slice.query, operation.mutation)
+            const twoLevelKind = checkTwoLevelPropertyAccess(innerCall);
+            if (twoLevelKind) {
+              return { method: twoLevelKind, kind: twoLevelKind, schemaName };
+            }
+
+            // Check for one-level property access (legacy: helper.model)
+            if (ts.isPropertyAccessExpression(innerCall.expression)) {
+              const method = innerCall.expression.name.text;
+              if (method in gqlDefinitionKinds) {
+                return { method, schemaName };
+              }
+            } else if (ts.isIdentifier(innerCall.expression)) {
+              // The method is called directly (e.g., model(...) instead of helpers.model(...))
+              const method = innerCall.expression.text;
+              if (method in gqlDefinitionKinds) {
+                return { method, schemaName };
+              }
+            }
+          }
+          // If body is parenthesized, unwrap and check
+          else if (ts.isParenthesizedExpression(firstArg.body)) {
+            const innerExpr = firstArg.body.expression;
+            if (ts.isCallExpression(innerExpr)) {
+              // Check for two-level property access
+              const twoLevelKind = checkTwoLevelPropertyAccess(innerExpr);
+              if (twoLevelKind) {
+                return { method: twoLevelKind, kind: twoLevelKind, schemaName };
+              }
+
+              // Check for one-level property access
+              if (ts.isPropertyAccessExpression(innerExpr.expression)) {
+                const method = innerExpr.expression.name.text;
+                if (method in gqlDefinitionKinds) {
+                  return { method, schemaName };
+                }
+              } else if (ts.isIdentifier(innerExpr.expression)) {
+                const method = innerExpr.expression.text;
+                if (method in gqlDefinitionKinds) {
+                  return { method, schemaName };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Check for gql.{schema}.{method} pattern (for direct multi-schema calls)
+  if (ts.isPropertyAccessExpression(expression.expression)) {
+    const innerExpression = expression.expression;
+    if (ts.isIdentifier(innerExpression.expression) && identifiers.has(innerExpression.expression.text)) {
+      const schemaName = innerExpression.name.text;
+      const method = expression.name.text;
+
+      if (!(method in gqlDefinitionKinds)) {
+        return null;
+      }
+
+      return { method, schemaName };
+    }
+    return null;
+  }
+
+  // Check for gql.{method} pattern (backward compatibility)
+  if (!ts.isIdentifier(expression.expression) || !identifiers.has(expression.expression.text)) {
+    return null;
+  }
+
+  const method = expression.name.text;
+  if (!(method in gqlDefinitionKinds)) {
+    return null;
+  }
+
+  return { method };
+};
+
+const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
+  if (ts.isIdentifier(parameter)) {
+    into.add(parameter.text);
+    return;
+  }
+
+  if (ts.isObjectBindingPattern(parameter)) {
+    parameter.elements.forEach((element) => {
+      if (element.name) {
+        collectParameterIdentifiers(element.name, into);
+      }
+    });
+    return;
+  }
+
+  if (ts.isArrayBindingPattern(parameter)) {
+    parameter.elements.forEach((element) => {
+      if (ts.isBindingElement(element) && element.name) {
+        collectParameterIdentifiers(element.name, into);
+      }
+    });
+  }
+};
+
+const collectReferencesFromCall = (
+  initializer: ts.CallExpression,
+  imports: readonly ModuleImport[],
+  definitionNames: ReadonlySet<string>,
+  identifiers: ReadonlySet<string>,
+): Set<string> => {
+  const namedImportLocals = new Set<string>();
+  const namespaceImportLocals = new Set<string>();
+
+  imports.forEach((entry) => {
+    if (entry.kind === "named" || entry.kind === "default") {
+      namedImportLocals.add(entry.local);
+    }
+    if (entry.kind === "namespace") {
+      namespaceImportLocals.add(entry.local);
+    }
+  });
+
+  const references = new Set<string>();
+  const baseExclusions = new Set<string>(["gql"]);
+
+  const resolvePropertyAccess = (
+    expression: ts.Expression,
+  ): { readonly root: string; readonly segments: readonly string[] } | null => {
+    const segments: string[] = [];
+    let current: ts.Expression = expression;
+
+    while (true) {
+      if (ts.isPropertyAccessExpression(current)) {
+        segments.unshift(current.name.text);
+        current = current.expression;
+        continue;
+      }
+
+      if (ts.isIdentifier(current)) {
+        return {
+          root: current.text,
+          segments,
+        } as const;
+      }
+
+      return null;
+    }
+  };
+
+  const registerNamespaceReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      return;
+    }
+
+    for (let index = 0; index < segments.length; index += 1) {
+      const slice = segments.slice(0, index + 1).join(".");
+      references.add(slice);
+      references.add(`${root}.${slice}`);
+    }
+  };
+
+  const registerNamedReference = (root: string, segments: readonly string[]) => {
+    if (segments.length === 0) {
+      if (!identifiers.has(root)) {
+        references.add(root);
+      }
+      return;
+    }
+
+    const suffix = segments.join(".");
+    references.add(`${root}.${suffix}`);
+  };
+
+  const visitNode = (node: ts.Node, exclusions: Set<string>) => {
+    if (ts.isCallExpression(node)) {
+      visitNode(node.expression, exclusions);
+      node.arguments.forEach((argument) => {
+        visitNode(argument, exclusions);
+      });
+      return;
+    }
+
+    if (ts.isFunctionLike(node) && node.parameters) {
+      const nextExclusions = new Set(exclusions);
+      node.parameters.forEach((parameter) => {
+        collectParameterIdentifiers(parameter.name, nextExclusions);
+      });
+
+      if (ts.isArrowFunction(node) && node.equalsGreaterThanToken) {
+        if (node.body) {
+          if (ts.isBlock(node.body)) {
+            node.body.statements.forEach((statement) => {
+              visitNode(statement, nextExclusions);
+            });
+          } else {
+            visitNode(node.body, nextExclusions);
+          }
+        }
+        return;
+      }
+
+      if ("body" in node && node.body && ts.isBlock(node.body)) {
+        // biome-ignore lint/suspicious/noExplicitAny: TypeScript AST types are complex
+        node.body.statements.forEach((statement: any) => {
+          visitNode(statement, nextExclusions);
+        });
+      }
+      return;
+    }
+
+    if (ts.isPropertyAccessExpression(node)) {
+      const resolved = resolvePropertyAccess(node);
+      if (resolved) {
+        const { root, segments } = resolved;
+        if (!exclusions.has(root)) {
+          if (namespaceImportLocals.has(root)) {
+            registerNamespaceReference(root, segments);
+          } else if (namedImportLocals.has(root)) {
+            registerNamedReference(root, segments);
+          } else {
+            const fullName = segments.length > 0 ? `${root}.${segments.join(".")}` : root;
+            if (definitionNames.has(fullName)) {
+              references.add(fullName);
+            } else if (definitionNames.has(root) && segments.length === 0 && !identifiers.has(root)) {
+              references.add(root);
+            }
+          }
+        }
+      }
+
+      visitNode(node.expression, exclusions);
+      return;
+    }
+
+    if (ts.isIdentifier(node)) {
+      const name = node.text;
+      if (exclusions.has(name)) {
+        return;
+      }
+
+      if (namedImportLocals.has(name) || definitionNames.has(name)) {
+        if (!identifiers.has(name)) {
+          references.add(name);
+        }
+      }
+      return;
+    }
+
+    ts.forEachChild(node, (child) => visitNode(child, exclusions));
+  };
+
+  visitNode(initializer, baseExclusions);
+
+  return references;
+};
+
+const collectTopLevelDefinitions = (
+  sourceFile: ts.SourceFile,
+  identifiers: ReadonlySet<string>,
+  imports: readonly ModuleImport[],
+  source: string,
+): {
+  readonly definitions: ModuleDefinition[];
+  readonly handledCalls: readonly ts.CallExpression[];
+} => {
+  const getPropertyName = (name: ts.PropertyName): string | null => {
+    if (ts.isIdentifier(name)) {
+      return name.text;
+    }
+    if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+      return name.text;
+    }
+    return null;
+  };
+
+  type PendingDefinition = {
+    readonly exportName: string;
+    readonly kind: GqlDefinitionKind;
+    readonly schemaName?: string;
+    readonly loc: SourceLocation;
+    readonly initializer: ts.CallExpression;
+    readonly expression: string;
+  };
+
+  const pending: PendingDefinition[] = [];
+  const handledCalls: ts.CallExpression[] = [];
+
+  const register = (
+    exportName: string,
+    initializer: ts.CallExpression,
+    span: ts.Node,
+    kind: GqlDefinitionKind,
+    schemaName?: string,
+  ) => {
+    handledCalls.push(initializer);
+    pending.push({
+      exportName,
+      kind,
+      schemaName,
+      loc: toLocation(sourceFile, span),
+      initializer,
+      expression: initializer.getText(sourceFile),
+    });
+  };
+
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isVariableStatement(statement)) {
+      return;
+    }
+
+    if (!statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
+      return;
+    }
+
+    statement.declarationList.declarations.forEach((declaration) => {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+        return;
+      }
+
+      const exportName = declaration.name.text;
+      const initializer = declaration.initializer;
+
+      if (ts.isCallExpression(initializer)) {
+        const gqlCall = isGqlDefinitionCall(identifiers, initializer);
+        if (!gqlCall) {
+          return;
+        }
+        const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
+        register(exportName, initializer, declaration, kind, gqlCall.schemaName);
+        return;
+      }
+
+      if (ts.isObjectLiteralExpression(initializer)) {
+        initializer.properties.forEach((property) => {
+          if (!ts.isPropertyAssignment(property)) {
+            return;
+          }
+
+          const name = getPropertyName(property.name);
+          if (!name) {
+            return;
+          }
+
+          if (!ts.isCallExpression(property.initializer)) {
+            return;
+          }
+
+          const gqlCall = isGqlDefinitionCall(identifiers, property.initializer);
+          if (!gqlCall) {
+            return;
+          }
+
+          const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
+          register(`${exportName}.${name}`, property.initializer, property, kind, gqlCall.schemaName);
+        });
+      }
+    });
+  });
+
+  const definitionNames = new Set<string>(pending.map((item) => item.exportName));
+
+  const definitions = pending.map(
+    (item) =>
+      ({
+        kind: item.kind,
+        exportName: item.exportName,
+        schemaName: item.schemaName,
+        loc: item.loc,
+        references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
+        expression: item.expression,
+      }) satisfies ModuleDefinition,
+  );
+
+  return { definitions, handledCalls };
+};
+
+const collectDiagnostics = (
+  sourceFile: ts.SourceFile,
+  identifiers: ReadonlySet<string>,
+  handledCalls: readonly ts.CallExpression[],
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+  const handledSet = new Set(handledCalls);
+
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      if (!handledSet.has(node)) {
+        const gqlCall = isGqlDefinitionCall(identifiers, node);
+        if (gqlCall) {
+          diagnostics.push({
+            code: "NON_TOP_LEVEL_DEFINITION",
+            message: "gql.* definitions must be declared at module top-level",
+            loc: toLocation(sourceFile, node),
+          });
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  sourceFile.statements.forEach((statement) => {
+    ts.forEachChild(statement, visit);
+  });
+
+  return diagnostics;
+};
+
+/**
+ * TypeScript adapter implementation
+ */
+export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression> = {
+  parse(input: AnalyzeModuleInput): ts.SourceFile | null {
+    return createSourceFile(input.filePath, input.source);
+  },
+
+  collectGqlIdentifiers(file: ts.SourceFile): ReadonlySet<string> {
+    return collectGqlImports(file);
+  },
+
+  collectImports(file: ts.SourceFile): readonly ModuleImport[] {
+    return collectImports(file);
+  },
+
+  collectExports(file: ts.SourceFile): readonly ModuleExport[] {
+    return collectExports(file);
+  },
+
+  collectDefinitions(
+    file: ts.SourceFile,
+    context: {
+      readonly gqlIdentifiers: ReadonlySet<string>;
+      readonly imports: readonly ModuleImport[];
+      readonly source: string;
+    },
+  ): {
+    readonly definitions: readonly ModuleDefinition[];
+    readonly handles: readonly ts.CallExpression[];
+  } {
+    const { definitions, handledCalls } = collectTopLevelDefinitions(
+      file,
+      context.gqlIdentifiers,
+      context.imports,
+      context.source,
+    );
+    return { definitions, handles: handledCalls };
+  },
+
+  collectDiagnostics(
+    file: ts.SourceFile,
+    context: {
+      readonly gqlIdentifiers: ReadonlySet<string>;
+      readonly handledCalls: readonly ts.CallExpression[];
+    },
+  ): readonly ModuleDiagnostic[] {
+    return collectDiagnostics(file, context.gqlIdentifiers, context.handledCalls);
+  },
+};
+
+/**
+ * Main exported analyzer function that uses the TypeScript adapter
+ */
+export const analyzeModule = (input: AnalyzeModuleInput): ModuleAnalysis => {
+  return analyzeModuleCore(input, typeScriptAdapter);
+};
