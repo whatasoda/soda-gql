@@ -101,7 +101,7 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         artifactsPath: artifactPath,
       }),
-    ).rejects.toThrow("SODA_GQL_DOCUMENT_NOT_FOUND");
+    ).rejects.toThrow("SODA_GQL_ARTIFACT_NOT_FOUND");
   });
 
   it("replaces gql.query definitions with zero-runtime import", async () => {
@@ -115,9 +115,11 @@ describe("@soda-gql/plugin-babel", () => {
         {
           operations: {
             [canonicalId]: {
+              type: "operation",
               id: canonicalId,
               prebuild: {
-                name: "ProfilePageQuery",
+                operationType: "query",
+                operationName: "ProfilePageQuery",
                 document: {
                   kind: "Document",
                   definitions: [],
@@ -159,10 +161,11 @@ describe("@soda-gql/plugin-babel", () => {
 
     expect(result).not.toBeNull();
     const transformed = result?.code ?? "";
-    expect(transformed).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).not.toContain("gql.default(");
-    expect(transformed).toContain("gqlRuntime.query({");
+    expect(transformed).toContain("gqlRuntime.operation({");
+    expect(transformed).toContain('operationType: "query"');
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });

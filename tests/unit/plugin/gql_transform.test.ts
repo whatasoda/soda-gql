@@ -22,8 +22,10 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     const artifact: BuilderArtifact = {
       operations: {
         [queryId]: {
+          type: "operation",
           id: queryId,
           prebuild: {
+            operationType: "query",
             operationName: "ProfilePageQuery",
             document: {
               kind: Kind.DOCUMENT,
@@ -40,18 +42,27 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
       },
       slices: {
         [userSliceId]: {
+          type: "slice",
           id: userSliceId,
-          prebuild: null,
+          prebuild: {
+            operationType: "query",
+          },
           dependencies: [],
         },
         [userSliceCatalogId]: {
+          type: "slice",
           id: userSliceCatalogId,
-          prebuild: null,
+          prebuild: {
+            operationType: "query",
+          },
           dependencies: [],
         },
         [userCatalogCollectionId]: {
+          type: "slice",
           id: userCatalogCollectionId,
-          prebuild: null,
+          prebuild: {
+            operationType: "query",
+          },
           dependencies: [],
         },
       },
@@ -76,20 +87,12 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
       skipTypeCheck: true, // Skip type check as this file imports untransformed dependencies
     });
     assertTransformRemovesGql(transformed);
-    // Note: The plugin overrides the importIdentifier in some cases
-    expect(transformed).toContain("import { gqlRuntime, type graphql } from ");
-    // In the new implementation, the operation is directly called with gqlRuntime.query
-    expect(transformed).toContain("gqlRuntime.query({");
-    expect(transformed).toContain("prebuild:");
-    expect(transformed).toContain('name: "ProfilePageQuery"');
-    expect(transformed).toContain("document:");
-    expect(transformed).toContain("variableNames:");
-    expect(transformed).toContain("projectionPathGraph:");
-    expect(transformed).toContain("runtime:");
-    expect(transformed).toContain("getSlices:");
-    // The export should use gqlRuntime.getOperation
+    // Verify gqlRuntime API usage
+    expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+    expect(transformed).toContain("gqlRuntime.operation({");
+    expect(transformed).toContain('operationType: "query"');
+    expect(transformed).toContain('operationName: "ProfilePageQuery"');
+    expect(transformed).toContain("gqlRuntime.castDocumentNode(");
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
-    expect(transformed).toContain("users:");
-    expect(transformed).toContain("remoteUsers:");
   });
 });
