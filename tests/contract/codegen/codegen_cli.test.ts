@@ -45,7 +45,9 @@ describe("soda-gql codegen CLI", () => {
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter",
+      injectFile,
+      "--scalar",
       injectFile,
     ]);
 
@@ -68,7 +70,9 @@ describe("soda-gql codegen CLI", () => {
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter",
+      injectFile,
+      "--scalar",
       injectFile,
     ]);
 
@@ -92,7 +96,9 @@ describe("soda-gql codegen CLI", () => {
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter",
+      injectFile,
+      "--scalar",
       injectFile,
     ]);
 
