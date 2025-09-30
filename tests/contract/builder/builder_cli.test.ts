@@ -1,7 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index.ts";
 import type { CliResult } from "../../utils/cli.ts";
 import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as runCodegenCliUtil } from "../../utils/cli.ts";
@@ -48,11 +47,16 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   copyDefaultScalar(scalarFile);
 
   const result = await runCodegenCli([
-    "--schema:default", schemaPath,
-    "--out", outFile,
-    "--format", "json",
-    "--runtime-adapter:default", runtimeAdapterFile,
-    "--scalar:default", scalarFile,
+    "--schema:default",
+    schemaPath,
+    "--out",
+    outFile,
+    "--format",
+    "json",
+    "--runtime-adapter:default",
+    runtimeAdapterFile,
+    "--scalar:default",
+    scalarFile,
   ]);
 
   expect(result.exitCode).toBe(0);
@@ -159,7 +163,7 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     {
       operationName: "DuplicatedName",
       variables: {
-        ...$(\"userId\").scalar(\"ID:!\"),
+        ...$("userId").scalar("ID:!"),
       },
     },
     ({ $ }) => ({
@@ -364,7 +368,7 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     const output = result.stdout || result.stderr;
     const warningMatch = output.match(/Warning: slice count (\d+)/);
     // Warning may not always appear depending on the build configuration
-    if (warningMatch && warningMatch[1]) {
+    if (warningMatch?.[1]) {
       expect(Number.parseInt(warningMatch[1], 10)).toBeGreaterThanOrEqual(16);
     }
     await Bun.write(join(debugDir, "stdout.txt"), result.stdout || "");

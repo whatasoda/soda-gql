@@ -143,12 +143,6 @@ describe("runtime builder flow", () => {
     // Check operation exists
     expect(artifact.operations[canonicalId as CanonicalId]).toBeDefined();
 
-    // Check dependencies
-    expect(artifact.slices[userSliceId as CanonicalId]?.dependencies).toContain(userModelId);
-    expect(artifact.slices[catalogSliceId as CanonicalId]?.dependencies).toContain(catalogModelId);
-    expect(artifact.operations[canonicalId as CanonicalId]?.dependencies).toContain(userSliceId);
-    expect(artifact.operations[canonicalId as CanonicalId]?.dependencies).toContain(catalogSliceId);
-    expect(artifact.operations[canonicalId as CanonicalId]?.dependencies).toContain(collectionsSliceId);
     await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });
 });

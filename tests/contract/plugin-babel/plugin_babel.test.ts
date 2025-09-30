@@ -130,7 +130,6 @@ describe("@soda-gql/plugin-babel", () => {
                   children: {},
                 },
               },
-              dependencies: [],
             },
           },
           slices: {},

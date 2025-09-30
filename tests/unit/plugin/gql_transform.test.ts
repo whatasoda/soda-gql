@@ -7,7 +7,7 @@ import { assertTransformRemovesGql, runBabelTransform } from "../../utils/transf
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
   it("replaces gql helpers with runtime bindings", async () => {
     const sourcePath = join(process.cwd(), "tests/fixtures/runtime-app/src/pages/profile.query.ts");
-    const queryId = createCanonicalId(sourcePath, "profileQuery", "default");
+    const queryId = createCanonicalId(sourcePath, "profileQuery");
 
     const userSliceId = createCanonicalId(join(process.cwd(), "tests/fixtures/runtime-app/src/entities/user.ts"), "userSlice");
     const userSliceCatalogId = createCanonicalId(
@@ -37,7 +37,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
               children: {},
             },
           },
-          dependencies: [userSliceId, userSliceCatalogId, userCatalogCollectionId],
         },
       },
       slices: {
@@ -47,7 +46,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           prebuild: {
             operationType: "query",
           },
-          dependencies: [],
         },
         [userSliceCatalogId]: {
           type: "slice",
@@ -55,7 +53,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           prebuild: {
             operationType: "query",
           },
-          dependencies: [],
         },
         [userCatalogCollectionId]: {
           type: "slice",
@@ -63,7 +60,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           prebuild: {
             operationType: "query",
           },
-          dependencies: [],
         },
       },
       models: {},

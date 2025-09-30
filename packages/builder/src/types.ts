@@ -47,21 +47,18 @@ export type BuilderArtifactOperation = {
   readonly type: "operation";
   readonly id: CanonicalId;
   readonly prebuild: RuntimeOperationInput["prebuild"];
-  readonly dependencies: readonly CanonicalId[];
 };
 
 export type BuilderArtifactSlice = {
   readonly type: "slice";
   readonly id: CanonicalId;
   readonly prebuild: RuntimeOperationSliceInput["prebuild"];
-  readonly dependencies: readonly CanonicalId[];
 };
 
 export type BuilderArtifactModel = {
   readonly type: "model";
   readonly id: CanonicalId;
   readonly prebuild: RuntimeModelInput["prebuild"];
-  readonly dependencies: readonly CanonicalId[];
 };
 
 export type BuilderArtifact = {

@@ -126,7 +126,7 @@ export const PublicUserModel = gql._(({ model }) =>
 // Usage in components/services
 // ============================================
 
-async function fetchUserDashboard(userId: string) {
+async function _fetchUserDashboard(userId: string) {
   // Use the default schema for user data
   const userData = await userSlice.getUserWithPosts(userId);
 
@@ -139,7 +139,7 @@ async function fetchUserDashboard(userId: string) {
   };
 }
 
-async function createNewAdmin(username: string, email: string) {
+async function _createNewAdmin(username: string, email: string) {
   // Use admin schema mutations
   const newAdmin = await adminMutations.createAdmin(username, email, "MODERATOR");
 

@@ -275,7 +275,7 @@ const isGqlDefinitionCall = (
     // where category is an Identifier (from destructured parameter)
     if (ts.isIdentifier(outerProp.expression)) {
       const category = outerProp.expression.text; // e.g., "slice"
-      
+
       // Map category.method to kind
       if (category === "slice" && (method === "query" || method === "mutation" || method === "subscription")) {
         return "slice";
@@ -303,13 +303,13 @@ const isGqlDefinitionCall = (
           // If body is a call expression, check if it's calling a gql method
           if (ts.isCallExpression(firstArg.body)) {
             const innerCall = firstArg.body;
-            
+
             // Check for two-level property access (slice.query, operation.mutation)
             const twoLevelKind = checkTwoLevelPropertyAccess(innerCall);
             if (twoLevelKind) {
               return { method: twoLevelKind, kind: twoLevelKind, schemaName };
             }
-            
+
             // Check for one-level property access (legacy: helper.model)
             if (ts.isPropertyAccessExpression(innerCall.expression)) {
               const method = innerCall.expression.name.text;
@@ -333,7 +333,7 @@ const isGqlDefinitionCall = (
               if (twoLevelKind) {
                 return { method: twoLevelKind, kind: twoLevelKind, schemaName };
               }
-              
+
               // Check for one-level property access
               if (ts.isPropertyAccessExpression(innerExpr.expression)) {
                 const method = innerExpr.expression.name.text;
@@ -629,13 +629,7 @@ const collectTopLevelDefinitions = (
           return;
         }
         const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-        register(
-          exportName,
-          initializer,
-          declaration,
-          kind,
-          gqlCall.schemaName,
-        );
+        register(exportName, initializer, declaration, kind, gqlCall.schemaName);
         return;
       }
 
@@ -660,13 +654,7 @@ const collectTopLevelDefinitions = (
           }
 
           const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-          register(
-            `${exportName}.${name}`,
-            property.initializer,
-            property,
-            kind,
-            gqlCall.schemaName,
-          );
+          register(`${exportName}.${name}`, property.initializer, property, kind, gqlCall.schemaName);
         });
       }
     });

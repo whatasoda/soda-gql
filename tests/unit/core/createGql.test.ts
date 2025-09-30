@@ -141,7 +141,7 @@ describe("createGqlInvoker", () => {
       slice.query(
         { variables: $("id").scalar("ID:!") },
         ({ f, $: $$ }) => ({
-          user: f.user({ id: $$["id"] }, () => ({
+          user: f.user({ id: $$.id }, () => ({
             ...userModel.fragment(),
           })),
         }),
@@ -159,7 +159,7 @@ describe("createGqlInvoker", () => {
           variables: $("userId").scalar("ID:!"),
         },
         ({ $: $$ }) => ({
-          user: userSlice.build({ id: $$["userId"] }),
+          user: userSlice.build({ id: $$.userId }),
         }),
       ),
     );

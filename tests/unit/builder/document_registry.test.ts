@@ -24,7 +24,6 @@ describe("operation registry", () => {
       prebuild: {
         typename: "User",
       },
-      dependencies: [],
     });
 
     expect(first.isOk()).toBe(true);
@@ -34,7 +33,6 @@ describe("operation registry", () => {
       prebuild: {
         typename: "User",
       },
-      dependencies: [],
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -56,7 +54,6 @@ describe("operation registry", () => {
     const first = registry.registerSlice({
       id,
       prebuild: null,
-      dependencies: [],
     });
 
     expect(first.isOk()).toBe(true);
@@ -64,7 +61,6 @@ describe("operation registry", () => {
     const duplicate = registry.registerSlice({
       id,
       prebuild: null,
-      dependencies: [],
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -94,7 +90,6 @@ describe("operation registry", () => {
           children: {},
         },
       },
-      dependencies: [],
     });
 
     expect(first.isOk()).toBe(true);
@@ -110,7 +105,6 @@ describe("operation registry", () => {
           children: {},
         },
       },
-      dependencies: [],
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -137,13 +131,11 @@ describe("operation registry", () => {
       prebuild: {
         typename: "User",
       },
-      dependencies: [],
     });
 
     registry.registerSlice({
       id: sliceId,
       prebuild: null,
-      dependencies: [modelId],
     });
 
     registry.registerOperation({
@@ -157,7 +149,6 @@ describe("operation registry", () => {
           children: {},
         },
       },
-      dependencies: [sliceId],
     });
 
     const snapshot = registry.snapshot();
@@ -166,11 +157,9 @@ describe("operation registry", () => {
     expect(snapshot.models[modelId]?.prebuild.typename).toBe("User");
 
     expect(snapshot.slices[sliceId]).toBeDefined();
-    expect(snapshot.slices[sliceId]?.dependencies).toEqual([modelId]);
 
     expect(snapshot.operations[operationId]).toBeDefined();
     expect(snapshot.operations[operationId]?.prebuild.operationName).toBe("ProfilePageQuery");
     expect(snapshot.operations[operationId]?.prebuild.variableNames).toEqual(["userId"]);
-    expect(snapshot.operations[operationId]?.dependencies).toEqual([sliceId]);
   });
 });

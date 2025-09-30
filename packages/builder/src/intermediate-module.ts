@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { transformSync } from "@swc/core";
 import type { AnyModel, AnyOperation, AnyOperationSlice, OperationType } from "@soda-gql/core";
 import { unwrapNullish } from "@soda-gql/tool-utils";
+import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";

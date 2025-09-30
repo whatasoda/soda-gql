@@ -91,7 +91,6 @@ export const buildArtifact = async ({
       prebuild: {
         typename: descriptor.typename,
       },
-      dependencies: model.dependencies,
     });
 
     if (result.isErr()) {
@@ -122,7 +121,6 @@ export const buildArtifact = async ({
       prebuild: {
         operationType: descriptor.operationType,
       },
-      dependencies: slice.dependencies,
     });
 
     if (result.isErr()) {
@@ -181,7 +179,6 @@ export const buildArtifact = async ({
         variableNames: descriptor.variableNames,
         projectionPathGraph: descriptor.projectionPathGraph,
       },
-      dependencies: operation.dependencies,
     });
 
     if (result.isErr()) {
