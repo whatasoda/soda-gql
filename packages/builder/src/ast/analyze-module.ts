@@ -1,80 +1,29 @@
 import { extname } from "node:path";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import ts from "typescript";
+import type {
+  AnalyzeModuleInput,
+  GqlDefinitionKind,
+  ModuleAnalysis,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+  SourceLocation,
+} from "./analyzer-types";
+import { gqlDefinitionKinds } from "./analyzer-types";
 
-export type SourcePosition = {
-  readonly line: number;
-  readonly column: number;
-};
-
-export type SourceLocation = {
-  readonly start: SourcePosition;
-  readonly end: SourcePosition;
-};
-
-export type GqlDefinitionKind = "model" | "slice" | "operation";
-
-export type ModuleDefinition = {
-  readonly kind: GqlDefinitionKind;
-  readonly exportName: string;
-  readonly schemaName?: string;
-  readonly loc: SourceLocation;
-  readonly references: readonly string[];
-  readonly expression: string;
-};
-
-export type ModuleDiagnostic = {
-  readonly code: "NON_TOP_LEVEL_DEFINITION";
-  readonly message: string;
-  readonly loc: SourceLocation;
-};
-
-export type ModuleImport = {
-  readonly source: string;
-  readonly imported: string;
-  readonly local: string;
-  readonly kind: "named" | "namespace" | "default";
-  readonly isTypeOnly: boolean;
-};
-
-export type ModuleExport =
-  | {
-      readonly kind: "named";
-      readonly exported: string;
-      readonly local: string;
-      readonly source?: undefined;
-      readonly isTypeOnly: boolean;
-    }
-  | {
-      readonly kind: "reexport";
-      readonly exported: string;
-      readonly source: string;
-      readonly local?: string;
-      readonly isTypeOnly: boolean;
-    };
-
-export type ModuleAnalysis = {
-  readonly filePath: string;
-  readonly sourceHash: string;
-  readonly definitions: readonly ModuleDefinition[];
-  readonly diagnostics: readonly ModuleDiagnostic[];
-  readonly imports: readonly ModuleImport[];
-  readonly exports: readonly ModuleExport[];
-};
-
-export type AnalyzeModuleInput = {
-  readonly filePath: string;
-  readonly source: string;
-};
-
-const gqlDefinitionKinds: Record<string, GqlDefinitionKind> = {
-  model: "model",
-  // Legacy patterns
-  querySlice: "slice",
-  query: "operation",
-  mutation: "operation",
-  subscription: "operation",
-};
+export type {
+  AnalyzeModuleInput,
+  GqlDefinitionKind,
+  ModuleAnalysis,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+  SourceLocation,
+  SourcePosition,
+} from "./analyzer-types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;

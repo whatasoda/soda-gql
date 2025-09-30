@@ -11,26 +11,19 @@ import type {
   VariableDeclaration,
 } from "@swc/types";
 
-import {
-  type AnalyzeModuleInput,
-  analyzeModule as analyzeModuleTs,
-  type GqlDefinitionKind,
-  type ModuleAnalysis,
-  type ModuleDefinition,
-  type ModuleDiagnostic,
-  type ModuleExport,
-  type ModuleImport,
-  type SourceLocation,
-  type SourcePosition,
-} from "./analyze-module";
-
-const gqlCallKinds: Record<string, GqlDefinitionKind> = {
-  model: "model",
-  querySlice: "slice",
-  query: "operation",
-  mutation: "operation",
-  subscription: "operation",
-};
+import { analyzeModule as analyzeModuleTs } from "./analyze-module";
+import type {
+  AnalyzeModuleInput,
+  GqlDefinitionKind,
+  ModuleAnalysis,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+  SourceLocation,
+  SourcePosition,
+} from "./analyzer-types";
+import { gqlDefinitionKinds } from "./analyzer-types";
 
 // Helper to check for two-level property access (e.g., slice.query, operation.mutation)
 const checkTwoLevelPropertyAccess = (call: CallExpression): GqlDefinitionKind | null => {
@@ -292,7 +285,12 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
 const isGqlCall = (
   identifiers: ReadonlySet<string>,
   call: CallExpression,
-): { readonly method: string; readonly callee: MemberExpression; readonly kind?: GqlDefinitionKind; readonly schemaName?: string } | null => {
+): {
+  readonly method: string;
+  readonly callee: MemberExpression;
+  readonly kind?: GqlDefinitionKind;
+  readonly schemaName?: string;
+} | null => {
   const callee = call.callee;
   let expression: MemberExpression | null = null;
 
@@ -323,7 +321,7 @@ const isGqlCall = (
   const method = expression.property.value;
 
   // Check if it's a direct method call (old pattern)
-  if (method in gqlCallKinds) {
+  if (method in gqlDefinitionKinds) {
     return { method, callee: expression };
   }
 
@@ -351,7 +349,7 @@ const isGqlCall = (
           // Check if it's calling a method directly
           if (innerCall.callee.type === "Identifier") {
             const innerMethod = innerCall.callee.value;
-            if (innerMethod in gqlCallKinds) {
+            if (innerMethod in gqlDefinitionKinds) {
               return { method: innerMethod, callee: expression, schemaName: method };
             }
           }
@@ -360,7 +358,7 @@ const isGqlCall = (
             const innerExpr = innerCall.callee as MemberExpression;
             if (innerExpr.property.type === "Identifier") {
               const innerMethod = innerExpr.property.value;
-              if (innerMethod in gqlCallKinds) {
+              if (innerMethod in gqlDefinitionKinds) {
                 return { method: innerMethod, callee: expression, schemaName: method };
               }
             }
@@ -731,14 +729,8 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        const kind = gqlCall.kind ?? unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup");
-        register(
-          baseName,
-          decl.init,
-          decl.span ?? decl.init.span,
-          kind,
-          gqlCall.schemaName,
-        );
+        const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
+        register(baseName, decl.init, decl.span ?? decl.init.span, kind, gqlCall.schemaName);
         return;
       }
 
@@ -756,14 +748,8 @@ const collectTopLevelDefinitions = (
           if (!gqlCall) {
             return;
           }
-          const kind = gqlCall.kind ?? unwrapNullish(gqlCallKinds[gqlCall.method], "validated-map-lookup");
-          register(
-            `${baseName}.${name}`,
-            prop.value,
-            prop.value.span ?? prop.span ?? decl.span,
-            kind,
-            gqlCall.schemaName,
-          );
+          const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
+          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, kind, gqlCall.schemaName);
         });
       }
     });
