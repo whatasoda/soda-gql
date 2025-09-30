@@ -47,6 +47,10 @@ type TypeModifierValidation<TModifier extends AnyTypeModifier> = TModifier exten
 export const parseModifiedTypeName = <TName extends string, TModifier extends AnyTypeModifier>(
   nameAndModifier: ModifiedTypeName<string, TName, TModifier>,
 ) => {
+  if (typeof nameAndModifier !== "string") {
+    throw new Error(`Invalid modified type name: ${nameAndModifier}`);
+  }
+
   const [name, modifier] = nameAndModifier.split(":") as [TName, TModifier];
   return { name, modifier };
 };

@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { copyDefaultInjectModule } from "../../fixtures/inject-module/index.ts";
+import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index.ts";
 import type { CliResult } from "../../utils/cli.ts";
 import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as runCodegenCliUtil } from "../../utils/cli.ts";
 
@@ -42,10 +42,18 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   mkdirSync(graphqlSystemDir, { recursive: true });
   const outFile = join(graphqlSystemDir, "index.ts");
 
-  const injectFile = join(workspaceRoot, "graphql-inject.ts");
-  copyDefaultInjectModule(injectFile);
+  const runtimeAdapterFile = join(workspaceRoot, "graphql-runtime-adapter.ts");
+  const scalarFile = join(workspaceRoot, "graphql-scalar.ts");
+  copyDefaultRuntimeAdapter(runtimeAdapterFile);
+  copyDefaultScalar(scalarFile);
 
-  const result = await runCodegenCli(["--schema", schemaPath, "--out", outFile, "--format", "json", "--inject-from", injectFile]);
+  const result = await runCodegenCli([
+    "--schema:default", schemaPath,
+    "--out", outFile,
+    "--format", "json",
+    "--runtime-adapter:default", runtimeAdapterFile,
+    "--scalar:default", scalarFile,
+  ]);
 
   expect(result.exitCode).toBe(0);
   const exists = await Bun.file(outFile).exists();

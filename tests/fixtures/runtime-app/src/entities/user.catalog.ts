@@ -6,7 +6,7 @@ export const collections = {
     slice.query(
       {
         variables: {
-          ...$("categoryId").scalar(["ID", ""]),
+          ...$("categoryId").scalar("ID:?"),
         },
       },
       ({ f, $ }) => ({
@@ -17,7 +17,7 @@ export const collections = {
       }),
       ({ select }) =>
         select(["$.users"], (result) =>
-          result.safeUnwrap(([users]) => users.map((user) => userRemote.forIterate.transform(user))),
+          result.safeUnwrap(([users]) => users.map((user) => userRemote.forIterate.normalize(user))),
         ),
     ),
   ),
