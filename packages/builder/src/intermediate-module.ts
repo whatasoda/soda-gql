@@ -146,8 +146,30 @@ const renderSection = (label: string, entries: readonly string[]): string => {
     return `export const ${label} = {} as const;`;
   }
 
-  const body = entries.join("\n");
-  return `export const ${label} = {\n${body}\n} as const;`;
+  // Use two-step initialization to avoid TDZ errors when entries reference the object being built
+  const assignments = entries.map((entry) => {
+    // Match quoted string key: "..." or '...'
+    const quotedMatch = entry.match(/^\s*(["'])(.+?)\1\s*:/);
+    if (quotedMatch) {
+      const key = quotedMatch[2];
+      const colonIndex = entry.indexOf(":", quotedMatch[0].length - 1);
+      const value = entry.slice(colonIndex + 1).trim().replace(/,\s*$/, "");
+      return `${label}[${quotedMatch[1]}${key}${quotedMatch[1]}] = ${value};`;
+    }
+
+    // Match unquoted key
+    const unquotedMatch = entry.match(/^\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/);
+    if (unquotedMatch) {
+      const key = unquotedMatch[1];
+      const colonIndex = entry.indexOf(":");
+      const value = entry.slice(colonIndex + 1).trim().replace(/,\s*$/, "");
+      return `${label}["${key}"] = ${value};`;
+    }
+
+    throw new Error(`Could not extract key from entry: ${entry.slice(0, 100)}`);
+  });
+
+  return `export const ${label}: Record<string, any> = {};\n${assignments.join("\n")}`;
 };
 
 export type CreateIntermediateModuleInput = {
