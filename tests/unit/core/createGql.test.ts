@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  type AnyGraphqlRuntimeAdapter,
   type AnyGraphqlSchema,
   createGqlInvoker,
   define,
   defineOperationRoots,
   defineScalar,
   ExecutionResultProjection,
-  type AnyGraphqlRuntimeAdapter,
   pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
@@ -147,10 +147,7 @@ describe("createGqlInvoker", () => {
             ...userModel.fragment(),
           })),
         }),
-        ({ select }) =>
-          select(["$.user"], (result) =>
-            result.safeUnwrap(([data]) => userModel.normalize(data)),
-          ),
+        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.normalize(data))),
       ),
     );
 

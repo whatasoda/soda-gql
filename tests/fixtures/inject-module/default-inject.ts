@@ -1,4 +1,4 @@
-import { defineScalar, type GraphqlRuntimeAdapter, pseudoTypeAnnotation } from "@soda-gql/core";
+import { type AnyGraphqlRuntimeAdapter, defineScalar, pseudoTypeAnnotation } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -32,4 +32,4 @@ const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; ca
 
 export const adapter = {
   nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
+} satisfies AnyGraphqlRuntimeAdapter;

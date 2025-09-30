@@ -7,7 +7,7 @@ export const collections = {
       {
         variables: {
           ...$("categoryId").scalar(["ID", ""]),
-        }
+        },
       },
       ({ f, $ }) => ({
         ...f.users({ categoryId: $.categoryId }, ({ f }) => ({

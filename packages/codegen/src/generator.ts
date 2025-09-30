@@ -517,12 +517,20 @@ export type GeneratedModule = {
   };
 };
 
-type RuntimeTemplateInjection = { readonly mode: "inline" } | { readonly mode: "inject"; readonly importPath: string };
+type PerSchemaInjection = {
+  readonly adapterImportPath: string;
+  readonly scalarImportPath: string;
+};
+
+type RuntimeTemplateInjection =
+  | { readonly mode: "inline" }
+  | {
+      readonly mode: "inject";
+      readonly perSchema: Map<string, PerSchemaInjection>;
+    };
 
 export type RuntimeGenerationOptions = {
-  readonly injection?: {
-    readonly importPath: string;
-  };
+  readonly injection?: Map<string, PerSchemaInjection>;
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -543,14 +551,25 @@ type MultiRuntimeTemplateOptions = {
 };
 
 const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
-  const extraImports = [$$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : ""]
-    .filter((line) => line.length > 0)
-    .join("\n");
+  // Build imports based on injection mode
+  const imports: string[] = [];
+  const adapterAliases = new Map<string, string>();
+  const scalarAliases = new Map<string, string>();
 
-  const adapterBlock =
-    $$.injection.mode === "inject"
-      ? ""
-      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies AnyGraphqlRuntimeAdapter;`;
+  if ($$.injection.mode === "inject") {
+    // Generate per-schema imports
+    for (const [schemaName, injection] of $$.injection.perSchema) {
+      const adapterAlias = `adapter_${schemaName}`;
+      const scalarAlias = `scalar_${schemaName}`;
+      adapterAliases.set(schemaName, adapterAlias);
+      scalarAliases.set(schemaName, scalarAlias);
+
+      imports.push(`import { adapter as ${adapterAlias} } from "${injection.adapterImportPath}";`);
+      imports.push(`import { scalar as ${scalarAlias} } from "${injection.scalarImportPath}";`);
+    }
+  }
+
+  const extraImports = imports.join("\n");
 
   // Generate per-schema definitions
   const schemaBlocks: string[] = [];
@@ -558,9 +577,16 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const schemaVar = `${name}Schema`;
-    const scalarBlock = $$.injection.mode === "inject" ? "scalar" : config.scalarBlock;
+    const adapterVar = $$.injection.mode === "inject" ? adapterAliases.get(name) : `adapter_${name}`;
+    const scalarBlock = $$.injection.mode === "inject" ? scalarAliases.get(name) : config.scalarBlock;
 
-    schemaBlocks.push(`
+    // Generate adapter if inline mode
+    const adapterDefinition =
+      $$.injection.mode === "inject"
+        ? ""
+        : `const nonGraphqlErrorType_${name} = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst ${adapterVar} = {\n  nonGraphqlErrorType: nonGraphqlErrorType_${name},\n} satisfies AnyGraphqlRuntimeAdapter;\n`;
+
+    schemaBlocks.push(`${adapterDefinition}
 const ${schemaVar} = {
   operations: defineOperationRoots({
     query: "${config.queryType}",
@@ -575,7 +601,7 @@ const ${schemaVar} = {
 } satisfies AnyGraphqlSchema;
 
 export type Schema_${name} = typeof ${schemaVar} & { _?: never };
-export type Adapter_${name} = typeof adapter & { _?: never };`);
+export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
 
     gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
   }
@@ -592,8 +618,6 @@ import {
   unsafeOutputRef,
 } from "@soda-gql/core";
 ${extraImports}
-
-${adapterBlock}
 
 ${schemaBlocks.join("\n")}
 
@@ -679,7 +703,7 @@ export const generateMultiSchemaModule = (
   }
 
   const injection: RuntimeTemplateInjection = options?.injection
-    ? { mode: "inject", importPath: options.injection.importPath }
+    ? { mode: "inject", perSchema: options.injection }
     : { mode: "inline" };
 
   const code = multiRuntimeTemplate({

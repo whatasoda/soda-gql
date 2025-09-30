@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { createExecutionResultParser } from "../../../packages/core/src/runtime/parse-execution-result";
-import type { AnyGraphqlRuntimeAdapter } from "../../../packages/core/src/types/runtime/runtime-adapter";
+import type { ExecutionResultProjectionPathGraphNode } from "../../../packages/core/src/types/operation/operation";
 import type { NormalizedExecutionResult } from "../../../packages/core/src/types/runtime/execution-result";
 import { ExecutionResultProjection } from "../../../packages/core/src/types/runtime/execution-result-projection";
-import type { ExecutionResultProjectionPathGraphNode } from "../../../packages/core/src/types/operation/operation";
+import type { AnyGraphqlRuntimeAdapter } from "../../../packages/core/src/types/runtime/runtime-adapter";
 import {
   SlicedExecutionResultEmpty,
   SlicedExecutionResultError,
@@ -219,8 +219,7 @@ describe("Runtime Operation Error Handling", () => {
         matches: [],
         children: {
           user: userGraph.children.user || { matches: [{ label: "user", path: "$.user", exact: true }], children: {} },
-          posts:
-            postsGraph.children.posts || { matches: [{ label: "posts", path: "$.posts", exact: true }], children: {} },
+          posts: postsGraph.children.posts || { matches: [{ label: "posts", path: "$.posts", exact: true }], children: {} },
         },
       };
 

@@ -18,7 +18,8 @@ type ParsedCommand =
       schemas: Record<string, string>;
       outPath: string;
       format: CodegenFormat;
-      injectFromPath: string;
+      runtimeAdapters: Record<string, string>;
+      scalars: Record<string, string>;
     };
 
 const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, CodegenError> => {
@@ -61,21 +62,46 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
       schemas: config.schemas,
       outPath: config.out,
       format: config.format as CodegenFormat,
-      injectFromPath: config["inject-from"],
+      runtimeAdapters: config.runtimeAdapters,
+      scalars: config.scalars,
     });
   }
 
-  // Reject deprecated schema:<name> flags
-  const deprecatedSchemaFlags = Object.keys(args).filter((key) => key.startsWith("schema:"));
-  if (deprecatedSchemaFlags.length > 0) {
-    return err<ParsedCommand, CodegenError>({
-      code: "EMIT_FAILED",
-      message: "Named schema flags (--schema:<name>) are no longer supported; use --schema instead.",
-      outPath: "",
-    });
+  // Parse multiple schemas, runtime-adapters, and scalars from args
+  const schemas: Record<string, string> = {};
+  const runtimeAdapters: Record<string, string> = {};
+  const scalars: Record<string, string> = {};
+
+  // Extract schema:name, runtime-adapter:name, and scalar:name flags
+  for (const [key, value] of Object.entries(args)) {
+    if (key.startsWith("schema:") && typeof value === "string") {
+      const name = key.slice(7);
+      schemas[name] = value;
+    } else if (key.startsWith("runtime-adapter:") && typeof value === "string") {
+      const name = key.slice(16);
+      runtimeAdapters[name] = value;
+    } else if (key.startsWith("scalar:") && typeof value === "string") {
+      const name = key.slice(7);
+      scalars[name] = value;
+    }
   }
 
-  if (!args.schema) {
+  // Handle single schema flag
+  if (args.schema) {
+    schemas.default = args.schema;
+  }
+
+  // Handle single runtime-adapter flag
+  if (args["runtime-adapter"]) {
+    runtimeAdapters.default = args["runtime-adapter"];
+  }
+
+  // Handle single scalar flag
+  if (args.scalar) {
+    scalars.default = args.scalar;
+  }
+
+  if (Object.keys(schemas).length === 0) {
     return err<ParsedCommand, CodegenError>({
       code: "SCHEMA_NOT_FOUND",
       message: "Schema path not provided",
@@ -91,21 +117,29 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  if (!args["inject-from"]) {
-    return err<ParsedCommand, CodegenError>({
-      code: "INJECT_MODULE_REQUIRED",
-      message: "--inject-from is required",
-    });
+  // Validate that all schemas have both runtime-adapter and scalar
+  for (const schemaName of Object.keys(schemas)) {
+    if (!runtimeAdapters[schemaName]) {
+      return err<ParsedCommand, CodegenError>({
+        code: "INJECT_MODULE_REQUIRED",
+        message: `--runtime-adapter${schemaName !== "default" ? `:${schemaName}` : ""} is required`,
+      });
+    }
+    if (!scalars[schemaName]) {
+      return err<ParsedCommand, CodegenError>({
+        code: "INJECT_MODULE_REQUIRED",
+        message: `--scalar${schemaName !== "default" ? `:${schemaName}` : ""} is required`,
+      });
+    }
   }
 
   return ok<ParsedCommand, CodegenError>({
     kind: "multi",
-    schemas: {
-      default: args.schema,
-    },
+    schemas,
     outPath: args.out,
     format,
-    injectFromPath: args["inject-from"],
+    runtimeAdapters,
+    scalars,
   });
 };
 
@@ -160,7 +194,8 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
     schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
     outPath: resolve(command.outPath),
     format: command.format,
-    injectFromPath: resolve(command.injectFromPath),
+    runtimeAdapters: Object.fromEntries(Object.entries(command.runtimeAdapters).map(([name, path]) => [name, resolve(path)])),
+    scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
   });
 
   if (result.isErr()) {

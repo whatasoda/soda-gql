@@ -3,17 +3,28 @@ import { resolve } from "node:path";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 
-// Config schema
-const ConfigSchema = z.object({
+// Config schema - supports both old and new formats
+const OldConfigSchema = z.object({
   schema: z.string(),
   "inject-from": z.string(),
   out: z.string(),
   format: z.enum(["human", "json"]).optional().default("human"),
 });
 
+const NewConfigSchema = z.object({
+  schemas: z.record(z.string(), z.string()),
+  runtimeAdapters: z.record(z.string(), z.string()),
+  scalars: z.record(z.string(), z.string()),
+  out: z.string(),
+  format: z.enum(["human", "json"]).optional().default("human"),
+});
+
+const ConfigSchema = z.union([OldConfigSchema, NewConfigSchema]);
+
 export type Config = {
   schemas: Record<string, string>;
-  "inject-from": string;
+  runtimeAdapters: Record<string, string>;
+  scalars: Record<string, string>;
   out: string;
   format: "human" | "json";
 };
@@ -46,21 +57,20 @@ export const loadConfig = (path: string): Result<Config, ConfigError> => {
     const data = JSON.parse(content);
     const parsed = ConfigSchema.parse(data);
 
-    // Transform single schema to default-keyed schemas for compatibility
-    const config = {
-      ...parsed,
-      schemas: { default: parsed.schema },
-    };
-    // Transform schema to schemas format
-    // biome-ignore lint/suspicious/noExplicitAny: necessary for type transformation
-    const transformedConfig = {
-      ...parsed,
-      schemas: { default: parsed.schema },
-    } as any;
-    // biome-ignore lint/performance/noDelete: necessary to remove schema field
-    delete transformedConfig.schema;
+    // Check if it's the old format and transform it
+    if ("schema" in parsed && "inject-from" in parsed) {
+      // Old format: transform to new format
+      return ok({
+        schemas: { default: parsed.schema },
+        runtimeAdapters: { default: parsed["inject-from"] },
+        scalars: { default: parsed["inject-from"] },
+        out: parsed.out,
+        format: parsed.format,
+      });
+    }
 
-    return ok(transformedConfig as Config);
+    // New format: return as-is
+    return ok(parsed as Config);
   } catch (error) {
     return err({
       code: "CONFIG_INVALID",
@@ -73,21 +83,21 @@ export const loadConfig = (path: string): Result<Config, ConfigError> => {
 export const validateConfig = (config: unknown): Result<Config, ConfigError> => {
   try {
     const parsed = ConfigSchema.parse(config);
-    // Transform single schema to default-keyed schemas for compatibility
-    const result = {
-      ...parsed,
-      schemas: { default: parsed.schema },
-    };
-    // Transform schema to schemas format
-    // biome-ignore lint/suspicious/noExplicitAny: necessary for type transformation
-    const transformedResult = {
-      ...parsed,
-      schemas: { default: parsed.schema },
-    } as any;
-    // biome-ignore lint/performance/noDelete: necessary to remove schema field
-    delete transformedResult.schema;
 
-    return ok(transformedResult as Config);
+    // Check if it's the old format and transform it
+    if ("schema" in parsed && "inject-from" in parsed) {
+      // Old format: transform to new format
+      return ok({
+        schemas: { default: parsed.schema },
+        runtimeAdapters: { default: parsed["inject-from"] },
+        scalars: { default: parsed["inject-from"] },
+        out: parsed.out,
+        format: parsed.format,
+      });
+    }
+
+    // New format: return as-is
+    return ok(parsed as Config);
   } catch (error) {
     return err({
       code: "CONFIG_INVALID",

@@ -1,10 +1,10 @@
-import type { AnyGraphqlRuntimeAdapter } from "../../packages/core/src/types/runtime/runtime-adapter";
-import type { ExecutionResultProjection } from "../../packages/core/src/types/runtime/execution-result-projection";
 import type {
   AnyOperationSliceFragment,
   AnyOperationSliceFragments,
   OperationSliceFragment,
 } from "../../packages/core/src/types/operation/operation-slice";
+import type { ExecutionResultProjection } from "../../packages/core/src/types/runtime/execution-result-projection";
+import type { AnyGraphqlRuntimeAdapter } from "../../packages/core/src/types/runtime/runtime-adapter";
 import type { AnyGraphqlSchema, OperationRoots } from "../../packages/core/src/types/schema";
 
 type OperationKeys<TSchema extends AnyGraphqlSchema> = keyof TSchema["operations"] & string;
@@ -27,17 +27,14 @@ export function createTestOperationSlice<
   return {
     projection,
     variables: {} as EmptyRecord<OperationKeys<TSchema>>,
-    getFields: () => ({} as EmptyRecord<keyof OperationRoots & string> & AdapterTag<TRuntimeAdapter>),
+    getFields: () => ({}) as EmptyRecord<keyof OperationRoots & string> & AdapterTag<TRuntimeAdapter>,
   };
 }
 
 export function createTestOperationSlices<
   TSchema extends AnyGraphqlSchema = AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter = AnyGraphqlRuntimeAdapter,
-  TSlices extends Record<string, ExecutionResultProjection<any>> = Record<
-    string,
-    ExecutionResultProjection<any>
-  >,
+  TSlices extends Record<string, ExecutionResultProjection<any>> = Record<string, ExecutionResultProjection<any>>,
 >(projections: TSlices): AnyOperationSliceFragments {
   const fragments: AnyOperationSliceFragments = {};
 

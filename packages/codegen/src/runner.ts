@@ -21,18 +21,35 @@ const toImportSpecifier = (fromPath: string, targetPath: string): string => {
 };
 
 export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
-  // Check inject module exists
-  if (!existsSync(options.injectFromPath)) {
-    return err({
-      code: "INJECT_MODULE_NOT_FOUND",
-      message: `Inject module not found: ${options.injectFromPath}`,
-      injectPath: options.injectFromPath,
-    });
+  const outPath = resolve(options.outPath);
+
+  // Validate that all adapter and scalar files exist
+  const adapterPaths = new Map<string, string>();
+  const scalarPaths = new Map<string, string>();
+
+  for (const [schemaName, adapterPath] of Object.entries(options.runtimeAdapters)) {
+    const resolvedPath = resolve(adapterPath);
+    if (!existsSync(resolvedPath)) {
+      return err({
+        code: "INJECT_MODULE_NOT_FOUND",
+        message: `Runtime adapter module not found for schema '${schemaName}': ${resolvedPath}`,
+        injectPath: resolvedPath,
+      });
+    }
+    adapterPaths.set(schemaName, resolvedPath);
   }
 
-  const outPath = resolve(options.outPath);
-  const injectPath = resolve(options.injectFromPath);
-  const importPath = toImportSpecifier(outPath, injectPath);
+  for (const [schemaName, scalarPath] of Object.entries(options.scalars)) {
+    const resolvedPath = resolve(scalarPath);
+    if (!existsSync(resolvedPath)) {
+      return err({
+        code: "INJECT_MODULE_NOT_FOUND",
+        message: `Scalar module not found for schema '${schemaName}': ${resolvedPath}`,
+        injectPath: resolvedPath,
+      });
+    }
+    scalarPaths.set(schemaName, resolvedPath);
+  }
 
   // Load all schemas
   const schemas = new Map<string, import("graphql").DocumentNode>();
@@ -51,11 +68,29 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas.set(name, result.value);
   }
 
+  // Build injection config for each schema
+  const injectionConfig = new Map<string, { adapterImportPath: string; scalarImportPath: string }>();
+
+  for (const schemaName of schemas.keys()) {
+    const adapterPath = adapterPaths.get(schemaName);
+    const scalarPath = scalarPaths.get(schemaName);
+
+    if (!adapterPath || !scalarPath) {
+      return err({
+        code: "INJECT_MODULE_REQUIRED",
+        message: `Missing adapter or scalar configuration for schema '${schemaName}'`,
+      });
+    }
+
+    injectionConfig.set(schemaName, {
+      adapterImportPath: toImportSpecifier(outPath, adapterPath),
+      scalarImportPath: toImportSpecifier(outPath, scalarPath),
+    });
+  }
+
   // Generate multi-schema module
   const { code } = generateMultiSchemaModule(schemas, {
-    injection: {
-      importPath,
-    },
+    injection: injectionConfig,
   });
 
   // Calculate individual schema stats and hashes

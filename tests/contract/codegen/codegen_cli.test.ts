@@ -101,7 +101,8 @@ describe("soda-gql codegen CLI", () => {
     expect(generatedExists).toBe(true);
     const moduleContents = await Bun.file(outFile).text();
     expect(moduleContents).toContain("export const gql");
-    expect(moduleContents).toContain("import { adapter, scalar } from");
+    expect(moduleContents).toContain("import { adapter as adapter_default }");
+    expect(moduleContents).toContain("import { scalar as scalar_default }");
     // Multi-schema format has nested structure
     const jsonOutput = JSON.parse(result.stdout);
     expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
