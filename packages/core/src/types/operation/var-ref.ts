@@ -1,9 +1,8 @@
 import type { ApplyTypeModifier } from "../schema/type-modifier";
 import type { AnyDefaultValue, InputTypeRef } from "../schema/type-ref";
-import type { Prettify, PseudoTypeAnnotation } from "../utility";
+import type { Prettify, PseudoTypeAnnotation } from "../shared/utility";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
-// biome-ignore lint/suspicious/noExplicitAny: abstract types
 export type AnyVarRef = VarRef<any>;
 
 type AnyVarRefMeta = {

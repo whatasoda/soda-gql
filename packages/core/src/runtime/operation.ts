@@ -17,7 +17,7 @@ export type RuntimeOperationInput = {
 export const castDocumentNode = (document: DocumentNode): AnyOperation<OperationType>["document"] =>
   document as AnyOperation<OperationType>["document"];
 
-export const runtimeOperation = (input: RuntimeOperationInput): AnyOperation<OperationType> => {
+export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperation<OperationType> => {
   const operation = {
     operationType: input.prebuild.operationType,
     operationName: input.prebuild.operationName,

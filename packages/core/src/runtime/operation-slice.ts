@@ -17,7 +17,7 @@ export const handleProjectionBuilder = <TBuilder extends AnyExecutionResultProje
     select: (path, projector) => new ExecutionResultProjection(path, projector),
   });
 
-export const runtimeOperationSlice = (input: RuntimeOperationSliceInput) => {
+export const createRuntimeOperationSlice = (input: RuntimeOperationSliceInput) => {
   const projection = handleProjectionBuilder(input.runtime.buildProjection);
   return {
     operationType: input.prebuild.operationType,

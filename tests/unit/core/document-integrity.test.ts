@@ -5,8 +5,8 @@ import {
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
-} from "../../../packages/core/src/builder/build-document";
-import type { TypeModifier } from "../../../packages/core/src/types/type-modifier";
+} from "../../../packages/core/src/operation/build-document";
+import type { TypeModifier } from "../../../packages/core/src/types/schema/type-modifier";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -80,8 +80,7 @@ describe("Document Integrity Tests", () => {
         name: { kind: Kind.NAME as Kind.NAME, value: "String" },
       });
 
-      // "![]" is actually a valid modifier (list of non-null), not invalid
-      // So let's test actual invalid modifiers
+      // "!?[]"? test actual invalid modifiers
       expect(() => {
         buildWithTypeModifier("???" as TypeModifier, buildType);
       }).toThrow("Unknown modifier");
@@ -152,39 +151,59 @@ describe("Document Integrity Tests", () => {
       const invalidOperation = "queryish" as any;
 
       expect(() => {
-        buildDocument(invalidOperation, "TestOperation", [], []);
+        buildDocument({
+          operationType: invalidOperation,
+          operationName: "TestOperation",
+          variables: [],
+          fields: [],
+        });
       }).toThrow();
     });
 
     it("should handle valid operation types", () => {
-      const queryDoc = buildDocument("query", "TestQuery", [], []);
+      const queryDoc = buildDocument({
+        operationType: "query",
+        operationName: "TestQuery",
+        variables: [],
+        fields: [],
+      });
       expect(queryDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((queryDoc.definitions[0] as any)?.operation).toBe("query");
 
-      const mutationDoc = buildDocument("mutation", "TestMutation", [], []);
+      const mutationDoc = buildDocument({
+        operationType: "mutation",
+        operationName: "TestMutation",
+        variables: [],
+        fields: [],
+      });
       expect(mutationDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((mutationDoc.definitions[0] as any)?.operation).toBe("mutation");
 
-      const subscriptionDoc = buildDocument("subscription", "TestSubscription", [], []);
+      const subscriptionDoc = buildDocument({
+        operationType: "subscription",
+        operationName: "TestSubscription",
+        variables: [],
+        fields: [],
+      });
       expect(subscriptionDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((subscriptionDoc.definitions[0] as any)?.operation).toBe("subscription");
     });
   });
 
-  describe("Variable default value validation", () => {
+  describe("buildConstValueNode with default values", () => {
     it("should handle various default value types", () => {
-      const variableWithDefault = {
-        kind: Kind.VARIABLE_DEFINITION as Kind.VARIABLE_DEFINITION,
-        variable: { kind: Kind.VARIABLE as Kind.VARIABLE, name: { kind: Kind.NAME as Kind.NAME, value: "testVar" } },
-        type: { kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE, name: { kind: Kind.NAME as Kind.NAME, value: "String" } },
-        defaultValue: buildConstValueNode("default") || undefined,
-        directives: [],
-      };
+      const stringValue = buildConstValueNode("default");
+      expect(stringValue).toBeDefined();
+      expect(stringValue?.kind).toBe(Kind.STRING);
+      expect((stringValue as any)?.value).toBe("default");
 
-      const doc = buildDocument("query", "TestQuery", [variableWithDefault], []);
-      const varDef = (doc.definitions[0] as any).variableDefinitions[0];
-      expect(varDef.defaultValue).toBeDefined();
-      expect(varDef.defaultValue.kind).toBe(Kind.STRING);
+      const numberValue = buildConstValueNode(42);
+      expect(numberValue).toBeDefined();
+      expect(numberValue?.kind).toBe(Kind.INT);
+
+      const booleanValue = buildConstValueNode(true);
+      expect(booleanValue).toBeDefined();
+      expect(booleanValue?.kind).toBe(Kind.BOOLEAN);
     });
 
     it("should handle complex default values", () => {
@@ -194,18 +213,10 @@ describe("Document Integrity Tests", () => {
         field3: [1, 2, 3],
       };
 
-      const variableWithComplexDefault = {
-        kind: Kind.VARIABLE_DEFINITION as Kind.VARIABLE_DEFINITION,
-        variable: { kind: Kind.VARIABLE as Kind.VARIABLE, name: { kind: Kind.NAME as Kind.NAME, value: "input" } },
-        type: { kind: Kind.NAMED_TYPE as Kind.NAMED_TYPE, name: { kind: Kind.NAME as Kind.NAME, value: "InputType" } },
-        defaultValue: buildConstValueNode(complexDefault) || undefined,
-        directives: [],
-      };
-
-      const doc = buildDocument("query", "TestQuery", [variableWithComplexDefault], []);
-      const varDef = (doc.definitions[0] as any).variableDefinitions[0];
-      expect(varDef.defaultValue).toBeDefined();
-      expect(varDef.defaultValue.kind).toBe(Kind.OBJECT);
+      const objectValue = buildConstValueNode(complexDefault);
+      expect(objectValue).toBeDefined();
+      expect(objectValue?.kind).toBe(Kind.OBJECT);
+      expect((objectValue as any)?.fields).toHaveLength(3);
     });
   });
 });

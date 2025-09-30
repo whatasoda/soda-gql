@@ -8,7 +8,7 @@ export type RuntimeModelInput = {
   };
 };
 
-export const runtimeModel = (input: RuntimeModelInput): AnyModel =>
+export const createRuntimeModel = (input: RuntimeModelInput): AnyModel =>
   ({
     typename: input.prebuild.typename,
     fragment: pseudoTypeAnnotation(),

@@ -4,7 +4,7 @@ import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import type { CodegenError, MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
+import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
 
 const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const fromDir = dirname(fromPath);

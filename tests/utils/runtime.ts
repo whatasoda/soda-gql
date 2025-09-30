@@ -1,35 +1,49 @@
-import type { GraphqlRuntimeAdapter } from "@soda-gql/core/types/adapter";
-import type { ExecutionResultProjection } from "@soda-gql/core/types/execution-result-projection";
-import type { AnyOperationSlice, AnyOperationSlices } from "@soda-gql/core/types/operation-slice";
-import type { AnyGraphqlSchema, OperationRoots } from "@soda-gql/core/types/schema";
+import type { AnyGraphqlRuntimeAdapter } from "../../packages/core/src/types/runtime/runtime-adapter";
+import type { ExecutionResultProjection } from "../../packages/core/src/types/runtime/execution-result-projection";
+import type {
+  AnyOperationSliceFragment,
+  AnyOperationSliceFragments,
+  OperationSliceFragment,
+} from "../../packages/core/src/types/operation/operation-slice";
+import type { AnyGraphqlSchema, OperationRoots } from "../../packages/core/src/types/schema";
 
-/**
- * Helper to create a minimal AnyOperationSlice for testing
- */
-export function createTestOperationSlice<TAdapter extends GraphqlRuntimeAdapter, TPath extends string, TResult>(
-  projection: ExecutionResultProjection<TAdapter, TPath, TResult>,
-): AnyOperationSlice<AnyGraphqlSchema, TAdapter, keyof OperationRoots> {
+type OperationKeys<TSchema extends AnyGraphqlSchema> = keyof TSchema["operations"] & string;
+type EmptyRecord<TKey extends string> = Partial<Record<TKey, never>>;
+type AdapterTag<TRuntime extends AnyGraphqlRuntimeAdapter> = {
+  readonly __adapterType?: ReturnType<TRuntime["nonGraphqlErrorType"]>;
+};
+
+export function createTestOperationSlice<
+  TSchema extends AnyGraphqlSchema = AnyGraphqlSchema,
+  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter = AnyGraphqlRuntimeAdapter,
+  TResult = unknown,
+>(
+  projection: ExecutionResultProjection<TResult>,
+): OperationSliceFragment<
+  EmptyRecord<OperationKeys<TSchema>>,
+  EmptyRecord<keyof OperationRoots & string> & AdapterTag<TRuntimeAdapter>,
+  ExecutionResultProjection<TResult>
+> {
   return {
     projection,
-    _metadata: {} as any,
-    _output: {} as any,
-    variables: {},
-    getFields: () => ({}) as any,
+    variables: {} as EmptyRecord<OperationKeys<TSchema>>,
+    getFields: () => ({} as EmptyRecord<keyof OperationRoots & string> & AdapterTag<TRuntimeAdapter>),
   };
 }
 
-/**
- * Helper to create AnyOperationSlices for testing
- */
 export function createTestOperationSlices<
-  TAdapter extends GraphqlRuntimeAdapter,
-  TSlices extends Record<string, ExecutionResultProjection<TAdapter, any, any>>,
->(projections: TSlices): AnyOperationSlices<AnyGraphqlSchema, TAdapter, keyof OperationRoots> {
-  const result: any = {};
+  TSchema extends AnyGraphqlSchema = AnyGraphqlSchema,
+  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter = AnyGraphqlRuntimeAdapter,
+  TSlices extends Record<string, ExecutionResultProjection<any>> = Record<
+    string,
+    ExecutionResultProjection<any>
+  >,
+>(projections: TSlices): AnyOperationSliceFragments {
+  const fragments: AnyOperationSliceFragments = {};
 
   for (const [key, projection] of Object.entries(projections)) {
-    result[key] = createTestOperationSlice(projection);
+    fragments[key] = createTestOperationSlice<TSchema, TRuntimeAdapter>(projection) as AnyOperationSliceFragment;
   }
 
-  return result;
+  return fragments;
 }

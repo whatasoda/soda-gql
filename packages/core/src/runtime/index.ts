@@ -1,20 +1,21 @@
-import { runtimeModel } from "./model";
-import { castDocumentNode, runtimeOperation } from "./operation";
-import { runtimeOperationSlice } from "./operation-slice";
+import { createRuntimeModel } from "./model";
+import { castDocumentNode, createRuntimeOperation } from "./operation";
+import { createRuntimeOperationSlice } from "./operation-slice";
 import { getOperation } from "./registry";
 
 export type { RuntimeModelInput } from "./model";
 export type { RuntimeOperationInput } from "./operation";
 export type { RuntimeOperationSliceInput } from "./operation-slice";
+export { createRuntimeAdapter } from "./runtime-adapter";
 
 export const gqlRuntime = {
-  model: runtimeModel,
-  query: runtimeOperation,
-  mutation: runtimeOperation,
-  subscription: runtimeOperation,
-  querySlice: runtimeOperationSlice,
-  mutationSlice: runtimeOperationSlice,
-  subscriptionSlice: runtimeOperationSlice,
+  model: createRuntimeModel,
+  query: createRuntimeOperation,
+  mutation: createRuntimeOperation,
+  subscription: createRuntimeOperation,
+  querySlice: createRuntimeOperationSlice,
+  mutationSlice: createRuntimeOperationSlice,
+  subscriptionSlice: createRuntimeOperationSlice,
   getOperation,
   castDocumentNode,
 };

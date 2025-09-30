@@ -1,1 +1,1 @@
-export { gqlRuntime } from "@soda-gql/core/runtime";
+export { createRuntimeAdapter, gqlRuntime } from "@soda-gql/core/runtime";

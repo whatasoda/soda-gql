@@ -5,7 +5,7 @@ import { err, ok } from "neverthrow";
 import type { CodegenError } from "./types";
 
 const templateContents = `\
-import { defineScalar, type GraphqlRuntimeAdapter, pseudoTypeAnnotation } from "@soda-gql/core";
+import { defineScalar, type AnyGraphqlRuntimeAdapter, pseudoTypeAnnotation } from "@soda-gql/core";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({
@@ -39,7 +39,7 @@ const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; ca
 
 export const adapter = {
   nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
+} satisfies AnyGraphqlRuntimeAdapter;
 `;
 
 export const writeInjectTemplate = (outPath: string) => {

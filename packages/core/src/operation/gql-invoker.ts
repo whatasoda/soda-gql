@@ -8,7 +8,7 @@ import { createVarBuilder } from "./var-builder";
 
 type AcceptableInvokerResult = OperationType extends infer TOperationType extends OperationType
   ? TOperationType extends OperationType
-    ? AnyModel | AnyOperation<TOperationType> | AnyOperationSlice<TOperationType>
+    ? AnyModel | AnyOperationSlice<TOperationType> | AnyOperation<TOperationType>
     : never
   : never;
 

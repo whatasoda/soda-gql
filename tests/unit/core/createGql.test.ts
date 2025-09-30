@@ -2,12 +2,12 @@ import { describe, expect, it } from "bun:test";
 
 import {
   type AnyGraphqlSchema,
-  createGqlSingle,
+  createGqlInvoker,
   define,
   defineOperationRoots,
   defineScalar,
   ExecutionResultProjection,
-  type GraphqlRuntimeAdapter,
+  type AnyGraphqlRuntimeAdapter,
   pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
@@ -36,13 +36,12 @@ const schema = {
   object: {
     ...define("Query").object(
       {
-        user: unsafeOutputRef.object(
-          ["User", "!"],
-          {
-            id: unsafeInputRef.scalar(["ID", "!"], null, {}),
+        user: unsafeOutputRef.object("User:!", {
+          arguments: {
+            id: unsafeInputRef.scalar("ID:!", {}, {}),
           },
-          {},
-        ),
+          directives: {},
+        }),
       },
       {},
     ),
@@ -50,8 +49,8 @@ const schema = {
     ...define("Subscription").object({}, {}),
     ...define("User").object(
       {
-        id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
-        name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+        id: unsafeOutputRef.scalar("ID:!", { directives: {} }),
+        name: unsafeOutputRef.scalar("String:!", { directives: {} }),
       },
       {},
     ),
@@ -65,89 +64,112 @@ const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; ca
 
 const adapter = {
   nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
+} satisfies AnyGraphqlRuntimeAdapter;
 
-describe("createGql", () => {
-  const gql = createGqlSingle<Schema, typeof adapter>({ schema, adapter });
+describe("createGqlInvoker", () => {
+  const gql = createGqlInvoker<Schema, typeof adapter>(schema);
 
-  it("exposes ref factories and schema helpers", () => {
-    expect(typeof gql.scalar).toBe("function");
-    expect(typeof gql.fieldArg).toBe("function");
+  it("provides variable builders sourced from schema metadata", () => {
+    let idVarRef: Record<string, any> | undefined;
+    let fieldArgRef: any;
 
-    const idRef = gql.scalar(["ID", "!"]);
-    expect(idRef.kind).toBe("scalar");
-    expect(idRef.name).toBe("ID");
-    expect(idRef.modifier).toBe("!");
+    const userModel = gql(({ model }, { $ }) => {
+      idVarRef = $("id").scalar("ID:!");
+      fieldArgRef = $("id").byField("Query", "user", "id");
 
-    const fieldArg = gql.fieldArg("Query", "user", "id");
-    expect(fieldArg.name).toBe("ID");
+      return model(
+        { typename: "User" },
+        ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
+        (selected) => ({
+          id: selected.id,
+          label: selected.name,
+        }),
+      );
+    });
+
+    expect(userModel.typename).toBe("User");
+    expect(idVarRef?.id.kind).toBe("scalar");
+    expect(idVarRef?.id.name).toBe("ID");
+    expect(idVarRef?.id.modifier).toBe("!");
+    expect(fieldArgRef?.kind).toBe("scalar");
+    expect(fieldArgRef?.name).toBe("ID");
+    expect(fieldArgRef?.modifier).toBe("!");
   });
 
-  it("creates model descriptors with fragment + transform wiring", () => {
-    const userModel = gql.model(
-      "User",
-      ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
-      (selected) => ({
-        id: selected.id,
-        label: selected.name,
-      }),
+  it("creates model descriptors with fragment + normalize wiring", () => {
+    const userModel = gql(({ model }) =>
+      model(
+        { typename: "User" },
+        ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
+        (selected) => ({
+          id: selected.id,
+          label: selected.name,
+        }),
+      ),
     );
 
     expect(userModel.typename).toBe("User");
     const fragment = userModel.fragment({} as never);
     expect(fragment).toHaveProperty("id");
     expect(fragment).toHaveProperty("name");
-    expect(userModel.transform({ id: "1", name: "Ada" })).toEqual({
+    expect(userModel.normalize({ id: "1", name: "Ada" })).toEqual({
       id: "1",
       label: "Ada",
     });
   });
 
   it("creates query slices and operations that reuse registered models", () => {
-    const userModel = gql.model(
-      "User",
-      ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
-      (selected) => ({
-        id: selected.id,
-        name: selected.name,
-      }),
+    const userModel = gql(({ model }) =>
+      model(
+        { typename: "User" },
+        ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
+        (selected) => ({
+          id: selected.id,
+          name: selected.name,
+        }),
+      ),
     );
 
-    const userSliceFactory = gql.querySlice(
-      [
+    const userSlice = gql(({ slice }, { $ }) =>
+      slice.query(
+        { variables: $("id").scalar("ID:!") },
+        ({ f, $: $$ }) => ({
+          user: f.user({ id: $$["id"] }, () => ({
+            ...userModel.fragment(),
+          })),
+        }),
+        ({ select }) =>
+          select(["$.user"], (result) =>
+            result.safeUnwrap(([data]) => userModel.normalize(data)),
+          ),
+      ),
+    );
+
+    const sliceFragment = userSlice.build({ id: "1" });
+    expect(sliceFragment.projection).toBeInstanceOf(ExecutionResultProjection);
+
+    const profileQuery = gql(({ operation }, { $ }) =>
+      operation.query(
         {
-          id: gql.scalar(["ID", "!"]),
+          operationName: "ProfilePageQuery",
+          variables: $("userId").scalar("ID:!"),
         },
-      ],
-      ({ f, $ }) => ({
-        ...f.user({ id: $.id }, () => ({
-          ...userModel.fragment(),
-        })),
-      }),
-      ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.transform(data))),
+        ({ $: $$ }) => ({
+          user: userSlice.build({ id: $$["userId"] }),
+        }),
+      ),
     );
 
-    const slice = userSliceFactory({ id: "1" });
-    // operationType is now in _metadata which is a type annotation, not runtime data
-    expect(slice.projection).toBeInstanceOf(ExecutionResultProjection);
-
-    const profileQuery = gql.query(
-      "ProfilePageQuery",
-      {
-        userId: gql.scalar(["ID", "!"]),
-      },
-      ({ $ }) => ({
-        user: userSliceFactory({ id: $.userId }),
-      }),
-    );
-
-    expect(profileQuery.name).toBe("ProfilePageQuery");
+    expect(profileQuery.operationName).toBe("ProfilePageQuery");
     expect(typeof profileQuery.parse).toBe("function");
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactories } from "../../../packages/core/src/builder/fields-builder";
-import { createGqlHelpers } from "../../../packages/core/src/builder/schema";
+import { createFieldFactories } from "../../../packages/core/src/operation/fields-builder";
+import { createVarBuilder } from "../../../packages/core/src/operation/var-builder";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
 describe("Schema Edge Cases", () => {
@@ -25,7 +25,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              user: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+              user: unsafeOutputRef.scalar("String:!", {}, {}),
             },
             {},
           ),
@@ -33,13 +33,13 @@ describe("Schema Edge Cases", () => {
         union: {},
       } satisfies AnyGraphqlSchema;
 
-      const helpers = createGqlHelpers(schema);
+      const helpers = createVarBuilder(schema);
 
       // Trying to get an argument that doesn't exist
       expect(() => {
         // @ts-expect-error - Testing runtime error handling for non-existent argument
-        helpers.fieldArg("Query", "user", "nonExistentArg");
-      }).toThrow("Argument nonExistentArg not found");
+        helpers.$("userVar").byField("Query", "user", "nonExistentArg");
+      }).toThrow("Argument nonExistentArg not found in field user of type Query");
     });
   });
 
@@ -115,7 +115,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              result: unsafeOutputRef.union(["SearchResult", "!"], {}, {}),
+              result: unsafeOutputRef.union("SearchResult:!", {}, {}),
             },
             {},
           ),
@@ -158,15 +158,15 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              node: unsafeOutputRef.object(["Node", ""], {}, {}),
+              node: unsafeOutputRef.object("Node:?", {}, {}),
             },
             {},
           ),
           ...define("Node").object(
             {
-              id: unsafeOutputRef.scalar(["String", "!"], {}, {}),
-              parent: unsafeOutputRef.object(["Node", ""], {}, {}), // Circular reference
-              children: unsafeOutputRef.object(["Node", "![]!"], {}, {}), // Another circular reference
+              id: unsafeOutputRef.scalar("String:!", {}, {}),
+              parent: unsafeOutputRef.object("Node:?", {}, {}), // Circular reference
+              children: unsafeOutputRef.object("Node:![]!", {}, {}), // Another circular reference
             },
             {},
           ),
