@@ -243,6 +243,13 @@ User (receives result)
 3. **Claude → Codex (follow-up)**: Include execution results, errors encountered
 4. **Codex → Claude (refinement)**: Adjusted strategy based on feedback
 
+### 🌐 Communication Language Requirements:
+
+**ALL communication with Codex MUST be in English**:
+- Always write prompts to Codex in English, regardless of user's language
+- Translate user requests to English before sending to Codex
+- All context, file paths, and error messages must be in English
+
 ### Shared Context Requirements:
 
 Both agents MUST maintain awareness of:
