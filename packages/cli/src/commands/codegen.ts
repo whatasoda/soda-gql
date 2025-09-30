@@ -76,29 +76,60 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
   for (const [key, value] of Object.entries(args)) {
     if (key.startsWith("schema:") && typeof value === "string") {
       const name = key.slice(7);
+      if (!name) {
+        return err<ParsedCommand, CodegenError>({
+          code: "EMIT_FAILED",
+          message: "Schema name is required: use --schema:<name> <path>",
+          outPath: "",
+        });
+      }
       schemas[name] = value;
     } else if (key.startsWith("runtime-adapter:") && typeof value === "string") {
       const name = key.slice(16);
+      if (!name) {
+        return err<ParsedCommand, CodegenError>({
+          code: "EMIT_FAILED",
+          message: "Schema name is required: use --runtime-adapter:<name> <path>",
+          outPath: "",
+        });
+      }
       runtimeAdapters[name] = value;
     } else if (key.startsWith("scalar:") && typeof value === "string") {
       const name = key.slice(7);
+      if (!name) {
+        return err<ParsedCommand, CodegenError>({
+          code: "EMIT_FAILED",
+          message: "Schema name is required: use --scalar:<name> <path>",
+          outPath: "",
+        });
+      }
       scalars[name] = value;
     }
   }
 
-  // Handle single schema flag
+  // Reject flags without schema names
   if (args.schema) {
-    schemas.default = args.schema;
+    return err<ParsedCommand, CodegenError>({
+      code: "EMIT_FAILED",
+      message: "Use --schema:<name> instead of --schema to specify schema name explicitly",
+      outPath: "",
+    });
   }
 
-  // Handle single runtime-adapter flag
   if (args["runtime-adapter"]) {
-    runtimeAdapters.default = args["runtime-adapter"];
+    return err<ParsedCommand, CodegenError>({
+      code: "EMIT_FAILED",
+      message: "Use --runtime-adapter:<name> instead of --runtime-adapter to specify schema name explicitly",
+      outPath: "",
+    });
   }
 
-  // Handle single scalar flag
   if (args.scalar) {
-    scalars.default = args.scalar;
+    return err<ParsedCommand, CodegenError>({
+      code: "EMIT_FAILED",
+      message: "Use --scalar:<name> instead of --scalar to specify schema name explicitly",
+      outPath: "",
+    });
   }
 
   if (Object.keys(schemas).length === 0) {
@@ -122,15 +153,45 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     if (!runtimeAdapters[schemaName]) {
       return err<ParsedCommand, CodegenError>({
         code: "INJECT_MODULE_REQUIRED",
-        message: `--runtime-adapter${schemaName !== "default" ? `:${schemaName}` : ""} is required`,
+        message: `--runtime-adapter:${schemaName} is required`,
       });
     }
     if (!scalars[schemaName]) {
       return err<ParsedCommand, CodegenError>({
         code: "INJECT_MODULE_REQUIRED",
-        message: `--scalar${schemaName !== "default" ? `:${schemaName}` : ""} is required`,
+        message: `--scalar:${schemaName} is required`,
       });
     }
+  }
+
+  // Validate that each schema uses different files for runtime-adapter and scalar
+  const adaptersBySchema = new Map<string, string>();
+  const scalarsBySchema = new Map<string, string>();
+
+  for (const [schemaName, adapterPath] of Object.entries(runtimeAdapters)) {
+    const normalized = resolve(adapterPath);
+    const existing = adaptersBySchema.get(normalized);
+    if (existing) {
+      return err<ParsedCommand, CodegenError>({
+        code: "EMIT_FAILED",
+        message: `Runtime adapter file '${adapterPath}' is used by multiple schemas ('${existing}' and '${schemaName}'). Each schema must have its own runtime adapter file.`,
+        outPath: "",
+      });
+    }
+    adaptersBySchema.set(normalized, schemaName);
+  }
+
+  for (const [schemaName, scalarPath] of Object.entries(scalars)) {
+    const normalized = resolve(scalarPath);
+    const existing = scalarsBySchema.get(normalized);
+    if (existing) {
+      return err<ParsedCommand, CodegenError>({
+        code: "EMIT_FAILED",
+        message: `Scalar file '${scalarPath}' is used by multiple schemas ('${existing}' and '${schemaName}'). Each schema must have its own scalar file.`,
+        outPath: "",
+      });
+    }
+    scalarsBySchema.set(normalized, schemaName);
   }
 
   return ok<ParsedCommand, CodegenError>({

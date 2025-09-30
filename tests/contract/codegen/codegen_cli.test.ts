@@ -39,15 +39,15 @@ describe("soda-gql codegen CLI", () => {
     copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       join(tmpRoot, "does-not-exist.graphql"),
       "--out",
       outFile,
       "--format",
       "json",
-      "--runtime-adapter",
+      "--runtime-adapter:default",
       injectFile,
-      "--scalar",
+      "--scalar:default",
       injectFile,
     ]);
 
@@ -64,15 +64,15 @@ describe("soda-gql codegen CLI", () => {
     copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       invalidSchemaPath,
       "--out",
       outFile,
       "--format",
       "json",
-      "--runtime-adapter",
+      "--runtime-adapter:default",
       injectFile,
-      "--scalar",
+      "--scalar:default",
       injectFile,
     ]);
 
@@ -90,15 +90,15 @@ describe("soda-gql codegen CLI", () => {
     copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       schemaPath,
       "--out",
       outFile,
       "--format",
       "json",
-      "--runtime-adapter",
+      "--runtime-adapter:default",
       injectFile,
-      "--scalar",
+      "--scalar:default",
       injectFile,
     ]);
 
