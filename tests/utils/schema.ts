@@ -4,10 +4,10 @@ import {
   defineOperationRoots,
   defineScalar,
   type GraphqlRuntimeAdapter,
-  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../packages/core/src/index.ts";
+import { createRuntimeAdapter } from "../../packages/runtime/src/index.ts";
 
 /**
  * Create standard GraphQL scalar definitions
@@ -85,14 +85,13 @@ export const createQueryOnlySchema = (overrides: Partial<AnyGraphqlSchema> = {})
 /**
  * Create standard runtime adapter
  */
-export const createStandardAdapter = (): GraphqlRuntimeAdapter => {
-  const nonGraphqlErrorType = pseudoTypeAnnotation<{
-    type: "non-graphql-error";
-    cause: unknown;
-  }>();
-
-  return { nonGraphqlErrorType };
-};
+export const createStandardAdapter = (): GraphqlRuntimeAdapter =>
+  createRuntimeAdapter(({ type }) => ({
+    nonGraphqlErrorType: type<{
+      type: "non-graphql-error";
+      cause: unknown;
+    }>(),
+  }));
 
 /**
  * Create a test schema with User type

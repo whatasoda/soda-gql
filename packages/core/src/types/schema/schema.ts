@@ -1,6 +1,6 @@
 /** Schema description DSL and type inference helpers. */
 
-import type { PseudoTypeAnnotation } from "../shared/utility";
+import type { Hidden } from "../shared/hidden";
 import type { AnyConstDirectiveAttachments } from "./const-directives";
 import type { ApplyTypeModifier } from "./type-modifier";
 import type {
@@ -48,7 +48,7 @@ export type OperationRoots = {
 
 /** Scalar definition carries a phantom type for inference. */
 export type ScalarDef<T extends { input: unknown; output: unknown }> = {
-  _type: PseudoTypeAnnotation<{ input: T["input"]; output: T["output"] }>;
+  _type: Hidden<{ input: T["input"]; output: T["output"] }>;
 
   name: string;
 
@@ -57,7 +57,7 @@ export type ScalarDef<T extends { input: unknown; output: unknown }> = {
 
 /** Enum definition capturing the literal union of values. */
 export type EnumDef<T extends string> = {
-  _type: PseudoTypeAnnotation<T>;
+  _type: Hidden<T>;
 
   name: string;
 

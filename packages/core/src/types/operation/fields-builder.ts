@@ -19,7 +19,7 @@ import type {
   OutputUnionRef,
   UnionMemberName,
 } from "../schema";
-import type { VoidIfEmptyObject } from "../shared/utility";
+import type { VoidIfEmptyObject } from "../shared/empty-object";
 
 /**
  * Builder signature exposed to userland `model` and `slice` helpers. The

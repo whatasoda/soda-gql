@@ -1,7 +1,7 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { type BuilderArtifact, type CanonicalId, createRuntimeBindingName } from "@soda-gql/builder";
+import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeOperationSliceInput } from "../../core/src/runtime/operation-slice";
@@ -160,13 +160,13 @@ const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
   declaration.replaceWith(t.importDeclaration(remainingSpecifiers, declaration.node.source));
 };
 
-const collectCalleeSegments = (callee: t.Expression): readonly string[] => {
+const _collectCalleeSegments = (callee: t.Expression): readonly string[] => {
   if (t.isIdentifier(callee)) {
     return [callee.name];
   }
 
   if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.property)) {
-    const objectSegments = collectCalleeSegments(callee.object as t.Expression);
+    const objectSegments = _collectCalleeSegments(callee.object as t.Expression);
     return [...objectSegments, callee.property.name];
   }
 
@@ -211,6 +211,7 @@ const supportedBuilderNames = [
   "query",
   "mutation",
   "subscription",
+  "build", // For slice.build() pattern
 ] as const;
 type GqlCall = {
   nodePath: NodePath<t.CallExpression>;
@@ -263,12 +264,17 @@ const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string):
     return null;
   }
 
-  if (!t.isIdentifier(builderCall.callee)) {
+  // Support both direct calls (query(...)) and member expressions (operation.query(...))
+  let builderName: string;
+  if (t.isIdentifier(builderCall.callee)) {
+    builderName = builderCall.callee.name;
+  } else if (t.isMemberExpression(builderCall.callee) && t.isIdentifier(builderCall.callee.property)) {
+    builderName = builderCall.callee.property.name;
+  } else {
     return null;
   }
 
-  const builderName = builderCall.callee.name as (typeof supportedBuilderNames)[number];
-  if (!builderName || !supportedBuilderNames.includes(builderName)) {
+  if (!supportedBuilderNames.includes(builderName as (typeof supportedBuilderNames)[number])) {
     return null;
   }
 
@@ -292,8 +298,8 @@ const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string):
 
 const buildModelRuntimeCall = (gqlCall: GqlCall, state: PluginState): t.Expression => {
   // Check if this is the new factory pattern
-  const [, , transform] = gqlCall.builderCall.arguments;
-  if (!transform || !t.isExpression(transform)) {
+  const [, , normalize] = gqlCall.builderCall.arguments;
+  if (!normalize || !t.isExpression(normalize)) {
     throw new Error("gql.model requires a transform");
   }
 
@@ -306,7 +312,7 @@ const buildModelRuntimeCall = (gqlCall: GqlCall, state: PluginState): t.Expressi
     typename: t.stringLiteral(model.prebuild.typename),
   });
   const runtime = buildObjectExpression<keyof RuntimeModelInput["runtime"]>({
-    transform: clone(transform),
+    normalize: clone(normalize),
   });
 
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
@@ -314,13 +320,15 @@ const buildModelRuntimeCall = (gqlCall: GqlCall, state: PluginState): t.Expressi
   ]);
 };
 
-const buildSliceRuntimeCall = (gqlCall: GqlCall, state: PluginState, filename: string): t.Expression => {
+const buildSliceRuntimeCall = (gqlCall: GqlCall, _state: PluginState, _filename: string): t.Expression => {
   const [, , projectionBuilder] = gqlCall.builderCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("gql.querySlice requires a projection builder");
   }
 
-  const prebuild = t.nullLiteral();
+  const prebuild = buildObjectExpression<keyof RuntimeOperationSliceInput["prebuild"]>({
+    operationType: t.stringLiteral(gqlCall.builderName),
+  });
   const runtime = buildObjectExpression<keyof RuntimeOperationSliceInput["runtime"]>({
     buildProjection: clone(projectionBuilder),
   });
@@ -345,11 +353,11 @@ const buildOperationRuntimeComponents = (gqlCall: GqlCall, state: PluginState) =
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier(operationType)), [
     buildObjectExpression({
       prebuild: buildObjectExpression<keyof RuntimeOperationInput["prebuild"]>({
-        name: clone(nameArg),
-        document: t.tsAsExpression(
+        operationType: t.stringLiteral(operation.prebuild.operationType),
+        operationName: t.stringLiteral(operation.prebuild.operationName),
+        document: t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("castDocumentNode")), [
           buildLiteralFromValue(operation.prebuild.document),
-          t.tsTypeReference(t.tsQualifiedName(t.identifier("graphql"), t.identifier("DocumentNode"))),
-        ),
+        ]),
         variableNames: t.arrayExpression(operation.prebuild.variableNames.map((variableName) => t.stringLiteral(variableName))),
         projectionPathGraph: projectionGraphToAst(operation.prebuild.projectionPathGraph),
       }),

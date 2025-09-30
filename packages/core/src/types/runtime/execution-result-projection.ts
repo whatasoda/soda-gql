@@ -1,4 +1,5 @@
-import type { PseudoTypeAnnotation, Tuple } from "../shared/utility";
+import type { Hidden } from "../shared/hidden";
+import type { Tuple } from "../shared/utility";
 import type { AnySlicedExecutionResult } from "./sliced-execution-result";
 
 /** Shape of a single selection slice projection. */
@@ -11,7 +12,7 @@ declare const __EXECUTION_RESULT_PROJECTION_BRAND__: unique symbol;
  * function. Multiple selections allow slices to expose several derived values.
  */
 export class ExecutionResultProjection<TProjected> {
-  declare readonly [__EXECUTION_RESULT_PROJECTION_BRAND__]: PseudoTypeAnnotation<never>;
+  declare readonly [__EXECUTION_RESULT_PROJECTION_BRAND__]: Hidden<never>;
   constructor(
     paths: Tuple<string>,
     public readonly projector: (result: AnySlicedExecutionResult) => TProjected,

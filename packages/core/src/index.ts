@@ -4,4 +4,7 @@ export * from "./types/operation";
 export * from "./types/runtime";
 export type * from "./types/schema";
 export type * from "./types/shared/const-value";
-export * from "./types/shared/utility";
+export type * from "./types/shared/empty-object";
+export type * from "./types/shared/hidden";
+export type * from "./types/shared/prettify";
+export type * from "./types/shared/utility";

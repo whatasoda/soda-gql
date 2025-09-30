@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
+import { transformSync } from "@swc/core";
 import type { AnyModel, AnyOperation, AnyOperationSlice, OperationType } from "@soda-gql/core";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { err, ok, type Result } from "neverthrow";
@@ -146,7 +147,7 @@ export type CreateIntermediateModuleInput = {
 export const createIntermediateModule = async ({
   graph,
   outDir,
-}: CreateIntermediateModuleInput): Promise<Result<string, BuilderError>> => {
+}: CreateIntermediateModuleInput): Promise<Result<{ transpiledPath: string; sourceCode: string }, BuilderError>> => {
   try {
     mkdirSync(outDir, { recursive: true });
   } catch (error) {
@@ -182,14 +183,33 @@ export const createIntermediateModule = async ({
     });
   }
 
-  const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.ts`;
-  const filePath = join(outDir, fileName);
+  const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const jsFilePath = join(outDir, `${fileName}.mjs`);
 
-  const graphqlSystemIndex = join(process.cwd(), "graphql-system", "index.ts");
+  // Infer workspace root from the first canonical ID in the graph
+  let workspaceRoot = process.cwd();
+  const firstNode = graph.values().next().value as DependencyGraphNode | undefined;
+  if (firstNode) {
+    const firstFilePath = firstNode.id.split("::")[0];
+    if (firstFilePath) {
+      let current = dirname(resolve(firstFilePath));
+      // Walk up until we find graphql-system directory
+      while (current !== dirname(current)) {
+        const graphqlSystemPath = join(current, "graphql-system", "index.ts");
+        if (existsSync(graphqlSystemPath)) {
+          workspaceRoot = current;
+          break;
+        }
+        current = dirname(current);
+      }
+    }
+  }
+
+  const graphqlSystemIndex = join(workspaceRoot, "graphql-system", "index.ts");
   let gqlImportPath = "@/graphql-system";
 
   if (existsSync(graphqlSystemIndex)) {
-    const relativePath = relative(dirname(filePath), graphqlSystemIndex).replace(/\\/g, "/");
+    const relativePath = relative(dirname(jsFilePath), graphqlSystemIndex).replace(/\\/g, "/");
     let sanitized = relativePath.length > 0 ? relativePath : "./index.ts";
     if (!sanitized.startsWith(".")) {
       sanitized = `./${sanitized}`;
@@ -216,17 +236,46 @@ export const operations = Object.fromEntries(
   Object.entries(all).filter(([, v]) => v instanceof Operation)
 );`;
 
-  const content = `${imports.join("\n")}\n\n${allSection}\n\n${classificationSection}\n`;
+  const sourceCode = `${imports.join("\n")}\n\n${allSection}\n\n${classificationSection}\n`;
+
+  // Transpile TypeScript to JavaScript using SWC
+  let transpiledCode: string;
+  try {
+    const result = transformSync(sourceCode, {
+      filename: `${fileName}.ts`,
+      jsc: {
+        parser: {
+          syntax: "typescript",
+          tsx: false,
+        },
+        target: "es2022",
+      },
+      module: {
+        type: "es6",
+      },
+      sourceMaps: false,
+      minify: false,
+    });
+    transpiledCode = result.code;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return err({
+      code: "MODULE_EVALUATION_FAILED",
+      filePath: jsFilePath,
+      exportName: "",
+      message: `SWC transpilation failed: ${message}`,
+    });
+  }
 
   try {
-    await Bun.write(filePath, content);
-    return ok(filePath);
+    await Bun.write(jsFilePath, transpiledCode);
+    return ok({ transpiledPath: jsFilePath, sourceCode });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return err({
       code: "WRITE_FAILED",
       message,
-      outPath: filePath,
+      outPath: jsFilePath,
     });
   }
 };

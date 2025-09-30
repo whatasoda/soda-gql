@@ -1,6 +1,6 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../types/schema";
-import type { VoidIfEmptyObject } from "../types/shared/utility";
+import type { VoidIfEmptyObject } from "../types/shared/empty-object";
 
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeRefs>(
   definitions: TVariableDefinitions,

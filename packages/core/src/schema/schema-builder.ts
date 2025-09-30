@@ -7,21 +7,22 @@ import type {
   ScalarDef,
   UnionDef,
 } from "../types/schema";
-import { type PseudoTypeAnnotation, pseudoTypeAnnotation, wrapValueByKey } from "../types/shared/utility";
+import { type Hidden, hidden } from "../types/shared/hidden";
+import { wrapValueByKey } from "../types/shared/utility";
 import { unsafeOutputRef } from "./type-ref-builder";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
   name: TName,
-  definition: (tool: { type: typeof pseudoTypeAnnotation }) => {
-    input: PseudoTypeAnnotation<TInput>;
-    output: PseudoTypeAnnotation<TOutput>;
+  definition: (tool: { type: typeof hidden }) => {
+    input: Hidden<TInput>;
+    output: Hidden<TOutput>;
     directives: TDirectives;
   },
 ) =>
   wrapValueByKey(name, {
-    _type: pseudoTypeAnnotation() as PseudoTypeAnnotation<{ input: TInput; output: TOutput }>,
+    _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
     name,
-    directives: definition({ type: pseudoTypeAnnotation }).directives,
+    directives: definition({ type: hidden }).directives,
   } satisfies ScalarDef<{ input: TInput; output: TOutput }>);
 
 export const define = <const TName extends string>(name: TName) => ({
@@ -30,7 +31,7 @@ export const define = <const TName extends string>(name: TName) => ({
     directives: TDirectives,
   ) =>
     wrapValueByKey(name, {
-      _type: pseudoTypeAnnotation(),
+      _type: hidden(),
       name,
       values,
       directives,

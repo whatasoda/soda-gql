@@ -584,7 +584,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     const adapterDefinition =
       $$.injection.mode === "inject"
         ? ""
-        : `const nonGraphqlErrorType_${name} = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst ${adapterVar} = {\n  nonGraphqlErrorType: nonGraphqlErrorType_${name},\n} satisfies AnyGraphqlRuntimeAdapter;\n`;
+        : `const ${adapterVar} = createRuntimeAdapter(({ type }) => ({\n  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),\n}));\n`;
 
     schemaBlocks.push(`${adapterDefinition}
 const ${schemaVar} = {
@@ -615,6 +615,7 @@ import {
   unsafeInputRef,
   unsafeOutputRef,
 } from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/runtime";
 ${extraImports}
 
 ${schemaBlocks.join("\n")}

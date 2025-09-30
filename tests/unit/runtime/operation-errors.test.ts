@@ -9,7 +9,7 @@ import {
   SlicedExecutionResultError,
   SlicedExecutionResultSuccess,
 } from "../../../packages/core/src/types/runtime/sliced-execution-result";
-import { pseudoTypeAnnotation } from "../../../packages/core/src/types/shared/utility";
+import { createRuntimeAdapter } from "../../../packages/runtime/src/index.ts";
 import { createTestOperationSlices } from "../../utils/runtime";
 
 /**
@@ -51,9 +51,9 @@ const buildProjectionGraph = (label: string, rawPath: string): ExecutionResultPr
 };
 
 describe("Runtime Operation Error Handling", () => {
-  const adapter = {
-    nonGraphqlErrorType: pseudoTypeAnnotation<{ type: "test-error"; message: string }>(),
-  } satisfies AnyGraphqlRuntimeAdapter;
+  const adapter = createRuntimeAdapter(({ type }) => ({
+    nonGraphqlErrorType: type<{ type: "test-error"; message: string }>(),
+  })) satisfies AnyGraphqlRuntimeAdapter;
 
   describe("GraphQL error handling", () => {
     it("should wrap GraphQL errors in SlicedExecutionResultError", () => {

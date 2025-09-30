@@ -1,6 +1,7 @@
 import type { ApplyTypeModifier } from "../schema/type-modifier";
 import type { AnyDefaultValue, InputTypeRef } from "../schema/type-ref";
-import type { Prettify, PseudoTypeAnnotation } from "../shared/utility";
+import type { Prettify } from "../shared/prettify";
+import type { Hidden } from "../shared/hidden";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 export type AnyVarRef = VarRef<any>;
@@ -21,7 +22,7 @@ type VarRefMetaBy<TRef extends InputTypeRef> = Prettify<{
 declare const __VAR_REF_BRAND__: unique symbol;
 /** Nominal reference used to defer variable binding while carrying type info. */
 export class VarRef<TMeta extends AnyVarRefMeta> {
-  declare readonly [__VAR_REF_BRAND__]: PseudoTypeAnnotation<TMeta>;
+  declare readonly [__VAR_REF_BRAND__]: Hidden<TMeta>;
 
   private constructor(public readonly name: string) {}
 

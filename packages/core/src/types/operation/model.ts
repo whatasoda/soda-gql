@@ -3,7 +3,8 @@
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
 import { DeferredInstance } from "../shared/deferred-instance";
-import type { PseudoTypeAnnotation, VoidIfEmptyObject } from "../shared/utility";
+import type { VoidIfEmptyObject } from "../shared/empty-object";
+import type { Hidden } from "../shared/hidden";
 
 export type AnyModel = Model<string, any, Partial<AnyFields>, any, any>;
 
@@ -30,7 +31,7 @@ export class Model<
   extends DeferredInstance<ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>>
   implements ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
-  declare readonly [__MODEL_BRAND__]: PseudoTypeAnnotation<{
+  declare readonly [__MODEL_BRAND__]: Hidden<{
     input: TVariables;
     output: TNormalized;
   }>;

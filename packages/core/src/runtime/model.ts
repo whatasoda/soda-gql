@@ -1,5 +1,6 @@
 import type { AnyModel } from "../types/operation";
-import { pseudoTypeAnnotation, type StripFunctions, type StripSymbols } from "../types/shared/utility";
+import { hidden } from "../types/shared/hidden";
+import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 
 export type RuntimeModelInput = {
   prebuild: StripFunctions<AnyModel>;
@@ -11,6 +12,6 @@ export type RuntimeModelInput = {
 export const createRuntimeModel = (input: RuntimeModelInput): AnyModel =>
   ({
     typename: input.prebuild.typename,
-    fragment: pseudoTypeAnnotation(),
+    fragment: hidden(),
     normalize: input.runtime.normalize,
   }) satisfies StripSymbols<AnyModel> as unknown as AnyModel;

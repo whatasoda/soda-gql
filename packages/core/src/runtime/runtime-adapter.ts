@@ -1,10 +1,10 @@
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import { pseudoTypeAnnotation } from "../types/shared/utility";
+import { hidden } from "../types/shared/hidden";
 
 type RuntimeAdapterFactory<TRuntimeAdapter extends AnyGraphqlRuntimeAdapter> = (tools: {
-  type: typeof pseudoTypeAnnotation;
+  type: typeof hidden;
 }) => TRuntimeAdapter;
 
 export const createRuntimeAdapter = <TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
   factory: RuntimeAdapterFactory<TRuntimeAdapter>,
-) => factory({ type: pseudoTypeAnnotation });
+) => factory({ type: hidden });

@@ -1,4 +1,4 @@
-import type { PseudoTypeAnnotation } from "../shared/utility";
+import type { Hidden } from "../shared/hidden";
 
 /**
  * Defines the runtime surface that the typed layer depends on. Implementations
@@ -6,5 +6,5 @@ import type { PseudoTypeAnnotation } from "../shared/utility";
  * generated code.
  */
 export type AnyGraphqlRuntimeAdapter = {
-  nonGraphqlErrorType: PseudoTypeAnnotation<any>;
+  nonGraphqlErrorType: Hidden<any>;
 };

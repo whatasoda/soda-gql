@@ -12,7 +12,7 @@ import type {
   OutputUnionRef,
   PickTypeRefByFieldName,
 } from "../schema";
-import type { Prettify } from "../shared/utility";
+import type { Prettify } from "../shared/prettify";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
 

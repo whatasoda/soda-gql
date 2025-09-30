@@ -3,7 +3,8 @@ import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment
 import type { AnyExecutionResultProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
 import { DeferredInstance } from "../shared/deferred-instance";
-import type { PseudoTypeAnnotation, VoidIfEmptyObject } from "../shared/utility";
+import type { VoidIfEmptyObject } from "../shared/empty-object";
+import type { Hidden } from "../shared/hidden";
 
 /** Nominal type representing any slice instance regardless of schema specifics. */
 export type AnyOperationSlice<TOperationType extends OperationType> = OperationSlice<
@@ -33,7 +34,7 @@ export class OperationSlice<
   extends DeferredInstance<OperationSliceInner<TOperationType, TVariables, TFields, TProjection>>
   implements OperationSliceInner<TOperationType, TVariables, TFields, TProjection>
 {
-  declare readonly [__OPERATION_SLICE_BRAND__]: PseudoTypeAnnotation<{
+  declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
     operationType: TOperationType;
     output: InferExecutionResultProjection<TProjection>;
   }>;

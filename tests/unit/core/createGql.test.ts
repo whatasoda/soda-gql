@@ -8,10 +8,10 @@ import {
   defineOperationRoots,
   defineScalar,
   ExecutionResultProjection,
-  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../../packages/core";
+import { createRuntimeAdapter } from "../../../packages/runtime";
 
 const schema = {
   operations: defineOperationRoots({
@@ -60,11 +60,9 @@ const schema = {
 
 type Schema = typeof schema;
 
-const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
-
-const adapter = {
-  nonGraphqlErrorType,
-} satisfies AnyGraphqlRuntimeAdapter;
+const adapter = createRuntimeAdapter(({ type }) => ({
+  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
+})) satisfies AnyGraphqlRuntimeAdapter;
 
 describe("createGqlInvoker", () => {
   const gql = createGqlInvoker<Schema, typeof adapter>(schema);

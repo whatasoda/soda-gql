@@ -4,7 +4,9 @@ import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType } from "../schema";
 import { DeferredInstance } from "../shared/deferred-instance";
-import type { Prettify, PseudoTypeAnnotation, UnionToIntersection } from "../shared/utility";
+import type { Hidden } from "../shared/hidden";
+import type { Prettify } from "../shared/prettify";
+import type { UnionToIntersection } from "../shared/utility";
 import type { AnyOperationSliceFragments } from "./operation-slice";
 
 export type AnyOperation<TOperationType extends OperationType> = Operation<
@@ -50,7 +52,7 @@ export class Operation<
   >
   implements OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
 {
-  declare readonly [__OPERATION_BRAND__]: PseudoTypeAnnotation<{
+  declare readonly [__OPERATION_BRAND__]: Hidden<{
     operationType: TOperationType;
   }>;
 

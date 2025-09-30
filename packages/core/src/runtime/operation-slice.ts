@@ -1,7 +1,8 @@
 import type { AnyExecutionResultProjectionsBuilder, AnyOperationSlice } from "../types/operation";
 import { ExecutionResultProjection } from "../types/runtime";
 import type { OperationType } from "../types/schema";
-import { pseudoTypeAnnotation, type StripFunctions, type StripSymbols } from "../types/shared/utility";
+import { hidden } from "../types/shared/hidden";
+import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 
 export type RuntimeOperationSliceInput = {
   prebuild: StripFunctions<AnyOperationSlice<OperationType>>;
@@ -23,7 +24,7 @@ export const createRuntimeOperationSlice = (input: RuntimeOperationSliceInput) =
     operationType: input.prebuild.operationType,
     build: (variables) => ({
       variables,
-      getFields: pseudoTypeAnnotation(),
+      getFields: hidden(),
       projection,
     }),
   } satisfies StripSymbols<AnyOperationSlice<OperationType>> as AnyOperationSlice<OperationType>;

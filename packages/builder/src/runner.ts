@@ -36,18 +36,21 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
     return err(intermediateModule.error);
   }
 
+  const { transpiledPath, sourceCode } = intermediateModule.value;
+
   if (options.debugDir) {
     const debugPath = resolve(options.debugDir);
     mkdirSync(debugPath, { recursive: true });
     await Bun.write(resolve(debugPath, "modules.json"), JSON.stringify(analyses, null, 2));
     await Bun.write(resolve(debugPath, "graph.json"), JSON.stringify(Array.from(dependencyGraph.value.entries()), null, 2));
-    await Bun.write(resolve(debugPath, "intermediate-module.ts"), await Bun.file(intermediateModule.value).text());
+    await Bun.write(resolve(debugPath, "intermediate-module.ts"), sourceCode);
+    await Bun.write(resolve(debugPath, "intermediate-module.mjs"), await Bun.file(transpiledPath).text());
   }
 
   const artifactResult = await buildArtifact({
     graph: dependencyGraph.value,
     cache: stats,
-    intermediateModulePath: intermediateModule.value,
+    intermediateModulePath: transpiledPath,
   });
 
   if (artifactResult.isErr()) {
