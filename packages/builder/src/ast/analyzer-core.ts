@@ -62,6 +62,7 @@ export interface AnalyzerAdapter<TFile, THandle> {
     context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly handledCalls: readonly THandle[];
+      readonly source: string;
     },
   ): readonly ModuleDiagnostic[];
 }
@@ -103,6 +104,7 @@ export const analyzeModuleCore = <TFile, THandle>(
   const diagnostics = adapter.collectDiagnostics(file, {
     gqlIdentifiers,
     handledCalls: handles,
+    source: input.source,
   });
 
   return {

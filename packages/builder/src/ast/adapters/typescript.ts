@@ -9,7 +9,6 @@ import ts from "typescript";
 
 import type { AnalyzerAdapter } from "../analyzer-core";
 import { analyzeModuleCore } from "../analyzer-core";
-import { gqlDefinitionKinds } from "../analyzer-types";
 import type {
   AnalyzeModuleInput,
   GqlDefinitionKind,
@@ -20,6 +19,7 @@ import type {
   ModuleImport,
   SourceLocation,
 } from "../analyzer-types";
+import { gqlDefinitionKinds } from "../analyzer-types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -505,7 +505,7 @@ const collectTopLevelDefinitions = (
   sourceFile: ts.SourceFile,
   identifiers: ReadonlySet<string>,
   imports: readonly ModuleImport[],
-  source: string,
+  _source: string,
 ): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly ts.CallExpression[];
@@ -698,6 +698,7 @@ export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly handledCalls: readonly ts.CallExpression[];
+      readonly source: string;
     },
   ): readonly ModuleDiagnostic[] {
     return collectDiagnostics(file, context.gqlIdentifiers, context.handledCalls);
