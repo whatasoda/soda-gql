@@ -10,12 +10,8 @@ export { createRuntimeAdapter } from "./runtime-adapter";
 
 export const gqlRuntime = {
   model: createRuntimeModel,
-  query: createRuntimeOperation,
-  mutation: createRuntimeOperation,
-  subscription: createRuntimeOperation,
-  querySlice: createRuntimeOperationSlice,
-  mutationSlice: createRuntimeOperationSlice,
-  subscriptionSlice: createRuntimeOperationSlice,
+  operation: createRuntimeOperation,
+  slice: createRuntimeOperationSlice,
   getOperation,
   castDocumentNode,
 };

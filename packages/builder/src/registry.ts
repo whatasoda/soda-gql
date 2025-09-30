@@ -10,7 +10,7 @@ const canonicalIdSeparator = "::" as const;
 
 const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
-export const createCanonicalId = (filePath: string, exportName: string, _schemaName?: string): CanonicalId => {
+export const createCanonicalId = (filePath: string, exportName: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
     throw new Error("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
   }

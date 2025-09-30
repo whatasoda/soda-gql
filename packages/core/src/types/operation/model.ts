@@ -6,7 +6,7 @@ import { DeferredInstance } from "../shared/deferred-instance";
 import type { VoidIfEmptyObject } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
 
-export type AnyModel = Model<string, any, Partial<AnyFields>, any, any>;
+export type AnyModel = Model<string, any, AnyFields, any, any>;
 
 type ModelInner<
   TTypeName extends string,

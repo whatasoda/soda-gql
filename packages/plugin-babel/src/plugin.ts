@@ -1,18 +1,20 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice, CanonicalId } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeOperationSliceInput } from "../../core/src/runtime/operation-slice";
-import { loadArtifact, lookupModelArtifact, lookupOperationArtifact, resolveCanonicalId } from "./artifact";
+import { loadArtifact, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import { buildLiteralFromValue, buildObjectExpression, clone } from "./transform/ast-builders";
 import type { SodaGqlBabelOptions } from "./types";
 
+type AllArtifacts = Record<CanonicalId, BuilderArtifactModel | BuilderArtifactOperation | BuilderArtifactSlice>;
+
 export type PluginState = {
   readonly options: SodaGqlBabelOptions;
-  readonly artifact: BuilderArtifact;
+  readonly allArtifacts: AllArtifacts;
 };
 
 type PluginPassState = PluginPass & { _state?: PluginState };
@@ -125,10 +127,7 @@ const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
 
   programPath.node.body.unshift(
     t.importDeclaration(
-      [
-        t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime")),
-        Object.assign(t.importSpecifier(t.identifier("graphql"), t.identifier("graphql")), { importKind: "type" }),
-      ],
+      [t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime"))],
       t.stringLiteral("@soda-gql/runtime"),
     ),
   );
@@ -202,29 +201,29 @@ const projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
     ),
   ]);
 
-type SupportedBuilderName = (typeof supportedBuilderNames)[number];
-const supportedBuilderNames = [
-  "model",
-  "querySlice",
-  "mutationSlice",
-  "subscriptionSlice",
-  "query",
-  "mutation",
-  "subscription",
-  "build", // For slice.build() pattern
-] as const;
-type GqlCall = {
+type GqlCallBase = {
   nodePath: NodePath<t.CallExpression>;
   canonicalId: CanonicalId;
-  schemaName: string;
-  builderName: SupportedBuilderName;
   builderCall: t.CallExpression;
 };
+
+type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation;
+type GqlCallModel = GqlCallBase & { type: "model"; artifact: BuilderArtifactModel };
+type GqlCallSlice = GqlCallBase & { type: "slice"; artifact: BuilderArtifactSlice };
+type GqlCallOperation = GqlCallBase & { type: "operation"; artifact: BuilderArtifactOperation };
 
 /**
  * Check if this is a call to gql.${schema}(({ ${method} }) => ${method}(...))
  */
-const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string): GqlCall | null => {
+const extractGqlCall = ({
+  nodePath,
+  filename,
+  artifacts,
+}: {
+  nodePath: NodePath<t.CallExpression>;
+  filename: string;
+  artifacts: AllArtifacts;
+}): GqlCall | null => {
   const node = nodePath.node;
   if (!t.isMemberExpression(node.callee)) {
     return null;
@@ -238,8 +237,6 @@ const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string):
   if (!t.isIdentifier(callee.property)) {
     return null;
   }
-
-  const schemaName = callee.property.name;
 
   // Get the factory function argument
   if (node.arguments.length !== 1) {
@@ -264,20 +261,6 @@ const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string):
     return null;
   }
 
-  // Support both direct calls (query(...)) and member expressions (operation.query(...))
-  let builderName: string;
-  if (t.isIdentifier(builderCall.callee)) {
-    builderName = builderCall.callee.name;
-  } else if (t.isMemberExpression(builderCall.callee) && t.isIdentifier(builderCall.callee.property)) {
-    builderName = builderCall.callee.property.name;
-  } else {
-    return null;
-  }
-
-  if (!supportedBuilderNames.includes(builderName as (typeof supportedBuilderNames)[number])) {
-    return null;
-  }
-
   const segments = collectExportSegments(nodePath);
   if (!segments) {
     throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
@@ -288,78 +271,86 @@ const extractGqlCall = (nodePath: NodePath<t.CallExpression>, filename: string):
     throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
   }
 
-  const canonicalId = resolveCanonicalId(filename, exportName, schemaName);
+  const canonicalId = resolveCanonicalId(filename, exportName);
   if (!canonicalId) {
     throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
   }
 
-  return { nodePath, canonicalId, schemaName, builderName, builderCall };
+  const artifact = artifacts[canonicalId];
+  if (!artifact) {
+    throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
+  }
+
+  const base: GqlCallBase = { nodePath, canonicalId, builderCall };
+
+  if (artifact.type === "model") {
+    return { ...base, type: "model", artifact } satisfies GqlCallModel;
+  }
+
+  if (artifact.type === "slice") {
+    return { ...base, type: "slice", artifact } satisfies GqlCallSlice;
+  }
+
+  if (artifact.type === "operation") {
+    return { ...base, type: "operation", artifact } satisfies GqlCallOperation;
+  }
+
+  void (artifact satisfies never);
+  throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
 };
 
-const buildModelRuntimeCall = (gqlCall: GqlCall, state: PluginState): t.Expression => {
-  // Check if this is the new factory pattern
-  const [, , normalize] = gqlCall.builderCall.arguments;
+const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): t.Expression => {
+  const [, , normalize] = builderCall.arguments;
   if (!normalize || !t.isExpression(normalize)) {
     throw new Error("gql.model requires a transform");
   }
 
-  const model = lookupModelArtifact(state.artifact, gqlCall.canonicalId);
-  if (!model) {
-    throw new Error("gql.model requires a model");
-  }
-
-  const prebuild = buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
-    typename: t.stringLiteral(model.prebuild.typename),
-  });
-  const runtime = buildObjectExpression<keyof RuntimeModelInput["runtime"]>({
-    normalize: clone(normalize),
-  });
-
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
-    buildObjectExpression({ prebuild, runtime }),
+    buildObjectExpression({
+      prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
+        typename: t.stringLiteral(artifact.prebuild.typename),
+      }),
+      runtime: buildObjectExpression<keyof RuntimeModelInput["runtime"]>({
+        normalize: clone(normalize),
+      }),
+    }),
   ]);
 };
 
-const buildSliceRuntimeCall = (gqlCall: GqlCall, _state: PluginState, _filename: string): t.Expression => {
-  const [, , projectionBuilder] = gqlCall.builderCall.arguments;
+const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): t.Expression => {
+  const [, , projectionBuilder] = builderCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("gql.querySlice requires a projection builder");
   }
 
-  const prebuild = buildObjectExpression<keyof RuntimeOperationSliceInput["prebuild"]>({
-    operationType: t.stringLiteral(gqlCall.builderName),
-  });
-  const runtime = buildObjectExpression<keyof RuntimeOperationSliceInput["runtime"]>({
-    buildProjection: clone(projectionBuilder),
-  });
-
-  return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier(gqlCall.builderName)), [
-    buildObjectExpression({ prebuild, runtime }),
+  return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("slice")), [
+    buildObjectExpression({
+      prebuild: buildObjectExpression<keyof RuntimeOperationSliceInput["prebuild"]>({
+        operationType: t.stringLiteral(artifact.prebuild.operationType),
+      }),
+      runtime: buildObjectExpression<keyof RuntimeOperationSliceInput["runtime"]>({
+        buildProjection: clone(projectionBuilder),
+      }),
+    }),
   ]);
 };
 
-const buildOperationRuntimeComponents = (gqlCall: GqlCall, state: PluginState) => {
-  const operationType = gqlCall.builderName;
-  const [nameArg, _variablesArg, slicesBuilder] = gqlCall.builderCall.arguments;
-  if (!nameArg || !t.isStringLiteral(nameArg) || !slicesBuilder || !t.isExpression(slicesBuilder)) {
+const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOperation) => {
+  const [, slicesBuilder] = builderCall.arguments;
+  if (!slicesBuilder || !t.isExpression(slicesBuilder)) {
     throw new Error("gql.query requires a name, variables, and slices builder");
   }
 
-  const operation = lookupOperationArtifact(state.artifact, gqlCall.canonicalId);
-  if (!operation) {
-    throw new Error("SODA_GQL_DOCUMENT_NOT_FOUND");
-  }
-
-  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier(operationType)), [
+  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("operation")), [
     buildObjectExpression({
       prebuild: buildObjectExpression<keyof RuntimeOperationInput["prebuild"]>({
-        operationType: t.stringLiteral(operation.prebuild.operationType),
-        operationName: t.stringLiteral(operation.prebuild.operationName),
+        operationType: t.stringLiteral(artifact.prebuild.operationType),
+        operationName: t.stringLiteral(artifact.prebuild.operationName),
         document: t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("castDocumentNode")), [
-          buildLiteralFromValue(operation.prebuild.document),
+          buildLiteralFromValue(artifact.prebuild.document),
         ]),
-        variableNames: t.arrayExpression(operation.prebuild.variableNames.map((variableName) => t.stringLiteral(variableName))),
-        projectionPathGraph: projectionGraphToAst(operation.prebuild.projectionPathGraph),
+        variableNames: t.arrayExpression(artifact.prebuild.variableNames.map((variableName) => t.stringLiteral(variableName))),
+        projectionPathGraph: projectionGraphToAst(artifact.prebuild.projectionPathGraph),
       }),
       runtime: buildObjectExpression<keyof RuntimeOperationInput["runtime"]>({
         getSlices: clone(slicesBuilder),
@@ -368,7 +359,7 @@ const buildOperationRuntimeComponents = (gqlCall: GqlCall, state: PluginState) =
   ]);
 
   const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getOperation")), [
-    t.stringLiteral(operation.prebuild.operationName),
+    t.stringLiteral(artifact.prebuild.operationName),
   ]);
 
   return {
@@ -399,7 +390,11 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
     this._state = {
       options,
-      artifact,
+      allArtifacts: {
+        ...artifact.operations,
+        ...artifact.slices,
+        ...artifact.models,
+      },
     } satisfies PluginState;
   },
   visitor: {
@@ -420,44 +415,29 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
       programPath.traverse({
         CallExpression(callPath) {
-          const gqlCall = extractGqlCall(callPath, filename);
+          const gqlCall = extractGqlCall({ nodePath: callPath, filename, artifacts: pluginState.allArtifacts });
           if (!gqlCall) {
             return;
           }
 
           ensureGqlRuntimeImport(programPath);
 
-          if (gqlCall.builderName === "model") {
-            const replacement = buildModelRuntimeCall(gqlCall, pluginState);
+          if (gqlCall.type === "model") {
+            const replacement = buildModelRuntimeCall(gqlCall);
             callPath.replaceWith(replacement);
             mutated = true;
             return;
           }
 
-          if (["querySlice", "mutationSlice", "subscriptionSlice"].includes(gqlCall.builderName)) {
-            const replacement = buildSliceRuntimeCall(gqlCall, pluginState, filename);
+          if (gqlCall.type === "slice") {
+            const replacement = buildSliceRuntimeCall(gqlCall);
             callPath.replaceWith(replacement);
             mutated = true;
             return;
           }
 
-          if (["query", "mutation", "subscription"].includes(gqlCall.builderName)) {
-            const declaratorPath = callPath.findParent((parent) => parent.isVariableDeclarator());
-            if (!declaratorPath || !declaratorPath.isVariableDeclarator()) {
-              throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
-            }
-
-            if (!t.isIdentifier(declaratorPath.node.id)) {
-              throw new Error("SODA_GQL_COMPLEX_EXPORT_UNSUPPORTED");
-            }
-
-            const exportDeclPath = declaratorPath.parentPath?.parentPath;
-            if (!exportDeclPath || !exportDeclPath.isExportNamedDeclaration()) {
-              throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
-            }
-
-            const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall, pluginState);
-
+          if (gqlCall.type === "operation") {
+            const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall);
             callPath.replaceWith(referenceCall);
             runtimeCalls.push(runtimeCall);
             mutated = true;

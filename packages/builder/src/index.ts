@@ -5,6 +5,9 @@ export { createRuntimeBindingName } from "./runtime-names";
 export type {
   BuilderAnalyzer,
   BuilderArtifact,
+  BuilderArtifactModel,
+  BuilderArtifactOperation,
+  BuilderArtifactSlice,
   BuilderError,
   BuilderFormat,
   BuilderMode,

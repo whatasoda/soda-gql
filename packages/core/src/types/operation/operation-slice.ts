@@ -10,7 +10,7 @@ import type { Hidden } from "../shared/hidden";
 export type AnyOperationSlice<TOperationType extends OperationType> = OperationSlice<
   TOperationType,
   any,
-  Partial<AnyFields>,
+  AnyFields,
   AnyExecutionResultProjection
 >;
 

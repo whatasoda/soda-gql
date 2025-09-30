@@ -86,10 +86,10 @@ describe("zero-runtime transform", () => {
         verify: (code: string) => {
           expect(code).not.toContain("gql.query(");
           expect(code).not.toContain("gql.default(");
-          expect(code).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
-          expect(code).toContain("gqlRuntime.query({");
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          expect(code).toContain("gqlRuntime.operation({");
           expect(code).toContain("prebuild:");
-          expect(code).toContain('name: "ProfilePageQuery"');
+          expect(code).toContain('operationName: "ProfilePageQuery"');
           expect(code).toContain("document:");
           expect(code).toContain("variableNames:");
           expect(code).toContain("projectionPathGraph:");
@@ -101,7 +101,7 @@ describe("zero-runtime transform", () => {
       {
         filePath: join(workspace, "src", "entities", "user.ts"),
         verify: (code: string) => {
-          expect(code).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
           expect(code).toContain("export const userModel = gqlRuntime.model({");
           expect(code).toContain("posts: selection.posts.map(post => ({");
           expect(code).not.toContain("/* runtime function */");
@@ -110,8 +110,8 @@ describe("zero-runtime transform", () => {
       {
         filePath: join(workspace, "src", "entities", "user.catalog.ts"),
         verify: (code: string) => {
-          expect(code).toContain('import { gqlRuntime, type graphql } from "@soda-gql/runtime"');
-          expect(code).toContain("byCategory: gqlRuntime.querySlice({");
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          expect(code).toContain("byCategory: gqlRuntime.slice({");
           expect(code).not.toContain("/* runtime function */");
         },
       },

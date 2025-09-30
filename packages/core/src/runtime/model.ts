@@ -5,7 +5,8 @@ import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 export type RuntimeModelInput = {
   prebuild: StripFunctions<AnyModel>;
   runtime: {
-    normalize: (raw: unknown) => object;
+    // biome-ignore lint/suspicious/noExplicitAny: any is ok here
+    normalize: (raw: any) => object;
   };
 };
 

@@ -86,6 +86,7 @@ export const buildArtifact = async ({
     }
 
     const result = registry.registerModel({
+      type: "model",
       id: model.id,
       prebuild: {
         typename: descriptor.typename,
@@ -116,6 +117,7 @@ export const buildArtifact = async ({
     }
 
     const result = registry.registerSlice({
+      type: "slice",
       id: slice.id,
       prebuild: {
         operationType: descriptor.operationType,
@@ -170,6 +172,7 @@ export const buildArtifact = async ({
     // }
 
     const result = registry.registerOperation({
+      type: "operation",
       id: operation.id,
       prebuild: {
         operationType: descriptor.operationType,

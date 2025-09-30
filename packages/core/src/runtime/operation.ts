@@ -1,4 +1,4 @@
-import type { DocumentNode } from "graphql";
+import type { Kind } from "graphql";
 import { createVarRefs } from "../operation/input";
 import type { AnyAssignableInput } from "../types/fragment";
 import type { AnyOperation, AnyOperationSliceFragment } from "../types/operation";
@@ -14,8 +14,14 @@ export type RuntimeOperationInput = {
   };
 };
 
-export const castDocumentNode = (document: DocumentNode): AnyOperation<OperationType>["document"] =>
-  document as AnyOperation<OperationType>["document"];
+type DocumentNodeLike = {
+  readonly kind: `${Kind.DOCUMENT}`;
+  readonly definitions: ReadonlyArray<{ readonly kind: `${Kind}` }>;
+};
+
+export const castDocumentNode = <TDocumentNode extends DocumentNodeLike>(
+  document: TDocumentNode,
+): AnyOperation<OperationType>["document"] => document as unknown as AnyOperation<OperationType>["document"];
 
 export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperation<OperationType> => {
   const operation = {
