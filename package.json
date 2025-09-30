@@ -14,6 +14,7 @@
     "quality": "bun run biome:check && bun run typecheck",
     "soda-gql": "bun run packages/cli/src/index.ts",
     "fixture:setup": "bun soda-gql codegen --schema tests/fixtures/runtime-app/schema.graphql --out tests/fixtures/runtime-app/graphql-system/index.ts --inject-from tests/fixtures/inject-module/default-inject.ts",
+    "fixture:setup2": "bun soda-gql codegen --out tests/fixtures/runtime-app/graphql-system/index.ts --schema:default tests/fixtures/runtime-app/schema.graphql --scalar:default tests/fixtures/inject-module/default-scalar.ts --runtime-adapter:default tests/fixtures/inject-module/default-runtime-adapter.ts",
     "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {

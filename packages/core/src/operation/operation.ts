@@ -26,32 +26,34 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
       },
       builder: OperationBuilder<TSchema, TVarDefinitions, TSliceFragments>,
     ) => {
-      const { operationName } = options;
-      const variables = (options.variables ?? {}) as TVarDefinitions;
-      const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
-      const fragments = builder({ $ });
+      return Operation.create<TSchema, TRuntimeAdapter, TOperationType, TOperationName, TVarDefinitions, TSliceFragments>(() => {
+        const { operationName } = options;
+        const variables = (options.variables ?? {}) as TVarDefinitions;
+        const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
+        const fragments = builder({ $ });
 
-      const fields = Object.fromEntries(
-        Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>
-          Object.entries(fields).map(([key, reference]) => [`${label}_${key}`, reference]),
-        ),
-      ) as ConcatSliceFragments<TSliceFragments>;
+        const fields = Object.fromEntries(
+          Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>
+            Object.entries(fields).map(([key, reference]) => [`${label}_${key}`, reference]),
+          ),
+        ) as ConcatSliceFragments<TSliceFragments>;
 
-      return Operation.create<TSchema, TRuntimeAdapter, TOperationType, TOperationName, TVarDefinitions, TSliceFragments>({
-        operationType,
-        operationName,
-        variableNames: Object.keys(variables),
-        projectionPathGraph: createPathGraphFromSliceEntries(fragments),
-        document: buildDocument({
-          operationName,
+        return {
           operationType,
-          variables,
-          fields,
-        }),
-        parse: createExecutionResultParser({
-          fragments,
+          operationName,
+          variableNames: Object.keys(variables),
           projectionPathGraph: createPathGraphFromSliceEntries(fragments),
-        }),
+          document: buildDocument({
+            operationName,
+            operationType,
+            variables,
+            fields,
+          }),
+          parse: createExecutionResultParser({
+            fragments,
+            projectionPathGraph: createPathGraphFromSliceEntries(fragments),
+          }),
+        };
       });
     };
   };

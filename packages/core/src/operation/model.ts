@@ -18,18 +18,20 @@ export const createModelFactory = <TSchema extends AnyGraphqlSchema>(schema: NoI
     builder: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>,
     normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized,
   ) => {
-    const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
-    const fieldFactories = createFieldFactories(schema, options.typename);
+    return Model.create<TSchema, TTypeName, TVarDefinitions, TFields, TNormalized>(() => {
+      const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
+      const fieldFactories = createFieldFactories(schema, options.typename);
 
-    return Model.create<TSchema, TTypeName, TVarDefinitions, TFields, TNormalized>({
-      typename: options.typename,
-      fragment: (variables) =>
-        builder({
-          _: fieldFactories,
-          f: fieldFactories,
-          $: createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables),
-        }),
-      normalize,
+      return {
+        typename: options.typename,
+        fragment: (variables) =>
+          builder({
+            _: fieldFactories,
+            f: fieldFactories,
+            $: createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables),
+          }),
+        normalize,
+      };
     });
   };
 };

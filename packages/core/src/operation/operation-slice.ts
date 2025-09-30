@@ -42,21 +42,23 @@ export const createOperationSliceFactory = <TSchema extends AnyGraphqlSchema, TR
       builder: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>,
       projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
-      const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
-      const projection = handleProjectionBuilder(projectionBuilder);
+      return OperationSlice.create<TSchema, TOperationType, TVarDefinitions, TFields, TProjection>(() => {
+        const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
+        const projection = handleProjectionBuilder(projectionBuilder);
 
-      return OperationSlice.create<TSchema, TOperationType, TVarDefinitions, TFields, TProjection>({
-        operationType,
-        build: (variables) => {
-          const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);
-          const fieldFactories = getFieldFactories();
-          const fields = builder({
-            _: fieldFactories,
-            f: fieldFactories,
-            $,
-          });
-          return { variables, getFields: () => fields, projection };
-        },
+        return {
+          operationType,
+          build: (variables) => {
+            const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);
+            const fieldFactories = getFieldFactories();
+            const fields = builder({
+              _: fieldFactories,
+              f: fieldFactories,
+              $,
+            });
+            return { variables, getFields: () => fields, projection };
+          },
+        };
       });
     };
   };

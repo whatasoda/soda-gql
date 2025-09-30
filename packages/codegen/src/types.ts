@@ -13,8 +13,9 @@ export type MultiSchemaCodegenOptions = {
   readonly schemas: Record<string, string>; // name -> path
   readonly outPath: string;
   readonly format: CodegenFormat;
-  readonly runtimeAdapters: Record<string, string>; // schema name -> adapter module path
-  readonly scalars: Record<string, string>; // schema name -> scalar module path
+  readonly runtimeAdapters?: Record<string, string>; // schema name -> adapter module path
+  readonly scalars?: Record<string, string>; // schema name -> scalar module path
+  readonly injectFromPath?: string; // Legacy: single inject module for default schema
 };
 
 export type CodegenCliCommand =

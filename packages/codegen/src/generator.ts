@@ -612,8 +612,6 @@ import {
   createGqlInvoker,
   define,
   defineOperationRoots,
-  type AnyGraphqlRuntimeAdapter,
-  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "@soda-gql/core";

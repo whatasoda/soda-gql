@@ -43,7 +43,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
     });
 
     if (result.isErr()) {
-      throw new Error(`builder failed: ${result.error.code}`);
+      throw new Error(`builder failed: ${result.error.code} - ${result.error.message}`);
     }
 
     return result.value;
@@ -67,7 +67,8 @@ describe("builder cache flow integration", () => {
 
   it("emits documents with field selections and records cache hits on successive runs", async () => {
     const schemaPath = join(workspaceRoot, "schema.graphql");
-    await generateGraphqlSystem(workspaceRoot, schemaPath);
+    const outPath = await generateGraphqlSystem(workspaceRoot, schemaPath);
+    console.log("Generated file at:", outPath);
 
     const entryPath = join(workspaceRoot, "src", "pages", "profile.page.ts");
     const artifactFile = join(workspaceRoot, ".cache", "builder", "artifact.json");
@@ -90,6 +91,6 @@ describe("builder cache flow integration", () => {
   });
 
   afterAll(() => {
-    rmSync(tmpRoot, { recursive: true, force: true });
+    // rmSync(tmpRoot, { recursive: true, force: true });
   });
 });

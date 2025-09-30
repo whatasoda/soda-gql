@@ -2,28 +2,52 @@
 
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
+import { DeferredInstance } from "../shared/deferred-instance";
 import type { PseudoTypeAnnotation, VoidIfEmptyObject } from "../shared/utility";
 
 export type AnyModel = Model<string, any, Partial<AnyFields>, any, any>;
 
-declare const __MODEL_BRAND__: unique symbol;
-export class Model<
+type ModelInner<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
   TRaw extends object,
   TNormalized extends object,
-> {
+> = {
+  readonly typename: TTypeName;
+  readonly fragment: (variables: TVariables) => TFields;
+  readonly normalize: (raw: TRaw) => TNormalized;
+};
+
+declare const __MODEL_BRAND__: unique symbol;
+export class Model<
+    TTypeName extends string,
+    TVariables extends Partial<AnyAssignableInput> | void,
+    TFields extends Partial<AnyFields>,
+    TRaw extends object,
+    TNormalized extends object,
+  >
+  extends DeferredInstance<ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  implements ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>
+{
   declare readonly [__MODEL_BRAND__]: PseudoTypeAnnotation<{
     input: TVariables;
     output: TNormalized;
   }>;
 
-  private constructor(
-    public readonly typename: TTypeName,
-    public readonly fragment: (variables: TVariables) => TFields,
-    public readonly normalize: (raw: TRaw) => TNormalized,
-  ) {}
+  private constructor(factory: () => ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>) {
+    super(factory);
+  }
+
+  public get typename() {
+    return DeferredInstance.get(this).typename;
+  }
+  public get fragment() {
+    return DeferredInstance.get(this).fragment;
+  }
+  public get normalize() {
+    return DeferredInstance.get(this).normalize;
+  }
 
   static create<
     TSchema extends AnyGraphqlSchema,
@@ -31,15 +55,13 @@ export class Model<
     TVariableDefinitions extends InputTypeRefs,
     TFields extends AnyFields,
     TNormalized extends object,
-  >({
-    typename,
-    fragment,
-    normalize,
-  }: {
-    typename: TTypeName;
-    fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
-    normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized;
-  }) {
-    return new Model(typename, fragment, normalize);
+  >(
+    factory: () => {
+      typename: TTypeName;
+      fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
+      normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized;
+    },
+  ) {
+    return new Model(factory);
   }
 }

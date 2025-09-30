@@ -3,6 +3,7 @@ import type { TypedQueryDocumentNode } from "graphql";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType } from "../schema";
+import { DeferredInstance } from "../shared/deferred-instance";
 import type { Prettify, PseudoTypeAnnotation, UnionToIntersection } from "../shared/utility";
 import type { AnyOperationSliceFragments } from "./operation-slice";
 
@@ -18,7 +19,7 @@ export type AnyOperation<TOperationType extends OperationType> = Operation<
 
 declare const __OPERATION_BRAND__: unique symbol;
 
-export class Operation<
+type OperationInner<
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TOperationType extends OperationType,
   TOperationName extends string,
@@ -26,19 +27,65 @@ export class Operation<
   TVariables extends AnyConstAssignableInput,
   TRawData extends object,
   TProjectedData extends object,
-> {
+> = {
+  readonly operationType: TOperationType;
+  readonly operationName: TOperationName;
+  readonly variableNames: TVariableNames;
+  readonly projectionPathGraph: ExecutionResultProjectionPathGraphNode;
+  readonly document: TypedQueryDocumentNode<TRawData, TVariables>;
+  readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData;
+};
+
+export class Operation<
+    TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
+    TOperationType extends OperationType,
+    TOperationName extends string,
+    TVariableNames extends string[],
+    TVariables extends AnyConstAssignableInput,
+    TRawData extends object,
+    TProjectedData extends object,
+  >
+  extends DeferredInstance<
+    OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+  >
+  implements OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+{
   declare readonly [__OPERATION_BRAND__]: PseudoTypeAnnotation<{
     operationType: TOperationType;
   }>;
 
   private constructor(
-    public readonly operationType: TOperationType,
-    public readonly operationName: TOperationName,
-    public readonly variableNames: TVariableNames,
-    public readonly projectionPathGraph: ExecutionResultProjectionPathGraphNode,
-    public readonly document: TypedQueryDocumentNode<TRawData, TVariables>,
-    public readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData,
-  ) {}
+    factory: () => OperationInner<
+      TRuntimeAdapter,
+      TOperationType,
+      TOperationName,
+      TVariableNames,
+      TVariables,
+      TRawData,
+      TProjectedData
+    >,
+  ) {
+    super(factory);
+  }
+
+  public get operationType() {
+    return DeferredInstance.get(this).operationType;
+  }
+  public get operationName() {
+    return DeferredInstance.get(this).operationName;
+  }
+  public get variableNames() {
+    return DeferredInstance.get(this).variableNames;
+  }
+  public get projectionPathGraph() {
+    return DeferredInstance.get(this).projectionPathGraph;
+  }
+  public get document() {
+    return DeferredInstance.get(this).document;
+  }
+  public get parse() {
+    return DeferredInstance.get(this).parse;
+  }
 
   static create<
     TSchema extends AnyGraphqlSchema,
@@ -47,27 +94,22 @@ export class Operation<
     TOperationName extends string,
     TVariableDefinitions extends InputTypeRefs,
     TSliceFragments extends AnyOperationSliceFragments,
-  >({
-    operationType,
-    operationName,
-    variableNames,
-    projectionPathGraph,
-    document,
-    parse,
-  }: {
-    operationType: TOperationType;
-    operationName: TOperationName;
-    variableNames: (keyof TVariableDefinitions & string)[];
-    projectionPathGraph: ExecutionResultProjectionPathGraphNode;
-    document: TypedQueryDocumentNode<
-      InferOperationRawData<TSchema, TSliceFragments>,
-      ConstAssignableInput<TSchema, TVariableDefinitions>
-    >;
-    parse: (result: NormalizedExecutionResult<TRuntimeAdapter, InferOperationRawData<TSchema, TSliceFragments>, any>) => {
-      [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
-    };
-  }) {
-    return new Operation(operationType, operationName, variableNames, projectionPathGraph, document, parse);
+  >(
+    factory: () => {
+      operationType: TOperationType;
+      operationName: TOperationName;
+      variableNames: (keyof TVariableDefinitions & string)[];
+      projectionPathGraph: ExecutionResultProjectionPathGraphNode;
+      document: TypedQueryDocumentNode<
+        InferOperationRawData<TSchema, TSliceFragments>,
+        ConstAssignableInput<TSchema, TVariableDefinitions>
+      >;
+      parse: (result: NormalizedExecutionResult<TRuntimeAdapter, InferOperationRawData<TSchema, TSliceFragments>, any>) => {
+        [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
+      };
+    },
+  ) {
+    return new Operation(factory);
   }
 }
 

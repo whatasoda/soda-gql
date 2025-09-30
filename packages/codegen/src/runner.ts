@@ -23,11 +23,15 @@ const toImportSpecifier = (fromPath: string, targetPath: string): string => {
 export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
   const outPath = resolve(options.outPath);
 
+  // Handle legacy injectFromPath for backward compatibility
+  const runtimeAdapters = options.runtimeAdapters ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
+  const scalars = options.scalars ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
+
   // Validate that all adapter and scalar files exist
   const adapterPaths = new Map<string, string>();
   const scalarPaths = new Map<string, string>();
 
-  for (const [schemaName, adapterPath] of Object.entries(options.runtimeAdapters)) {
+  for (const [schemaName, adapterPath] of Object.entries(runtimeAdapters)) {
     const resolvedPath = resolve(adapterPath);
     if (!existsSync(resolvedPath)) {
       return err({
@@ -39,7 +43,7 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     adapterPaths.set(schemaName, resolvedPath);
   }
 
-  for (const [schemaName, scalarPath] of Object.entries(options.scalars)) {
+  for (const [schemaName, scalarPath] of Object.entries(scalars)) {
     const resolvedPath = resolve(scalarPath);
     if (!existsSync(resolvedPath)) {
       return err({
