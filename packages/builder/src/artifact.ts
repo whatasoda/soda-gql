@@ -106,7 +106,7 @@ export const buildArtifact = async ({
   for (const slice of sliceNodes) {
     const descriptor = slices[slice.id];
 
-    if (!descriptor || typeof descriptor !== "function") {
+    if (!descriptor || typeof descriptor !== "object") {
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(slice.id),
@@ -117,7 +117,9 @@ export const buildArtifact = async ({
 
     const result = registry.registerSlice({
       id: slice.id,
-      prebuild: null,
+      prebuild: {
+        operationType: descriptor.operationType,
+      },
       dependencies: slice.dependencies,
     });
 
@@ -145,7 +147,7 @@ export const buildArtifact = async ({
       });
     }
 
-    const documentName = descriptor.name;
+    const documentName = descriptor.operationName;
     const duplicate = documentNameToCanonical.get(documentName);
     if (duplicate && duplicate !== operation.id) {
       return err({
@@ -170,7 +172,8 @@ export const buildArtifact = async ({
     const result = registry.registerOperation({
       id: operation.id,
       prebuild: {
-        name: documentName,
+        operationType: descriptor.operationType,
+        operationName: documentName,
         document: descriptor.document,
         variableNames: descriptor.variableNames,
         projectionPathGraph: descriptor.projectionPathGraph,

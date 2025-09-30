@@ -1,15 +1,14 @@
-// @ts-nocheck
 import { gql } from "@/graphql-system";
 import { userRemote } from "./user";
 
 export const collections = {
-  byCategory: gql.default(({ querySlice, scalar }) =>
-    querySlice(
-      [
-        {
-          categoryId: scalar(["ID", ""]),
-        },
-      ],
+  byCategory: gql.default(({ slice }, { $ }) =>
+    slice.query(
+      {
+        variables: {
+          ...$("categoryId").scalar(["ID", ""]),
+        }
+      },
       ({ f, $ }) => ({
         ...f.users({ categoryId: $.categoryId }, ({ f }) => ({
           ...f.id(),

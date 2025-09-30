@@ -4,8 +4,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 
-import { createCanonicalId, createRuntimeBindingName } from "../../../packages/builder/src/index.ts";
-
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
   readonly artifactsPath: string;
@@ -71,7 +69,6 @@ describe("@soda-gql/plugin-babel", () => {
   it("throws when operation is not present in artifact", async () => {
     mkdirSync(tmpRoot, { recursive: true });
     const artifactPath = join(tmpRoot, `missing-doc-${Date.now()}.json`);
-    const canonicalId = createCanonicalId(profileQueryPath, "profileQuery", "default");
 
     await Bun.write(
       artifactPath,

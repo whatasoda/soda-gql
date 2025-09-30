@@ -1,52 +1,30 @@
-import {
-  type AnyAssignableInput,
-  type AnyExecutionResultProjection,
-  type AnyFields,
-  type AnyGraphqlSchema,
-  ExecutionResultProjection,
-  type GraphqlRuntimeAdapter,
-  type InputTypeRefs,
-  type OperationSlice,
-  type OperationType,
-  pseudoTypeAnnotation,
-  type SliceResultProjectionsBuilder,
-} from "../types";
+import type { AnyExecutionResultProjectionsBuilder, AnyOperationSlice } from "../types/operation";
+import { ExecutionResultProjection } from "../types/runtime";
+import type { OperationType } from "../types/schema";
+import { pseudoTypeAnnotation, type StripFunctions, type StripSymbols } from "../types/shared/utility";
 
 export type RuntimeOperationSliceInput = {
-  prebuild: null;
+  prebuild: StripFunctions<AnyOperationSlice<OperationType>>;
   runtime: {
-    buildProjection: AnySliceResultProjectionsBuilder;
+    buildProjection: AnyExecutionResultProjectionsBuilder;
   };
 };
 
-type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
-  AnyGraphqlSchema,
-  GraphqlRuntimeAdapter,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any
->;
-
-export const handleProjectionBuilder = <TBuilder extends AnySliceResultProjectionsBuilder>(
+export const handleProjectionBuilder = <TBuilder extends AnyExecutionResultProjectionsBuilder>(
   projectionBuilder: TBuilder,
 ): ReturnType<TBuilder> =>
   projectionBuilder({
     select: (path, projector) => new ExecutionResultProjection(path, projector),
   });
 
-export const runtimeOperationSlice = (input: RuntimeOperationSliceInput) => (variables?: AnyAssignableInput) =>
-  ({
-    _metadata: pseudoTypeAnnotation(),
-    _output: pseudoTypeAnnotation(),
-    variables: (variables ?? {}) as AnyAssignableInput,
-    getFields: pseudoTypeAnnotation<AnyFields>(),
-    projection: handleProjectionBuilder(input.runtime.buildProjection),
-  }) satisfies OperationSlice<
-    AnyGraphqlSchema,
-    GraphqlRuntimeAdapter,
-    OperationType,
-    AnyFields,
-    AnyExecutionResultProjection<GraphqlRuntimeAdapter>,
-    InputTypeRefs
-  >;
+export const runtimeOperationSlice = (input: RuntimeOperationSliceInput) => {
+  const projection = handleProjectionBuilder(input.runtime.buildProjection);
+  return {
+    operationType: input.prebuild.operationType,
+    build: (variables) => ({
+      variables,
+      getFields: pseudoTypeAnnotation(),
+      projection,
+    }),
+  } satisfies StripSymbols<AnyOperationSlice<OperationType>> as AnyOperationSlice<OperationType>;
+};

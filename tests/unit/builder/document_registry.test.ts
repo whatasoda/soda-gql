@@ -86,7 +86,7 @@ describe("operation registry", () => {
     const first = registry.registerOperation({
       id,
       prebuild: {
-        name: "ProfilePageQuery",
+        operationName: "ProfilePageQuery",
         document: parse("query ProfilePageQuery { users { id } }"),
         variableNames: [],
         projectionPathGraph: {
@@ -102,7 +102,7 @@ describe("operation registry", () => {
     const duplicate = registry.registerOperation({
       id,
       prebuild: {
-        name: "ProfilePageQuery",
+        operationName: "ProfilePageQuery",
         document: parse("query ProfilePageQuery { users { id name } }"),
         variableNames: [],
         projectionPathGraph: {
@@ -149,7 +149,7 @@ describe("operation registry", () => {
     registry.registerOperation({
       id: operationId,
       prebuild: {
-        name: "ProfilePageQuery",
+        operationName: "ProfilePageQuery",
         document: parse("query ProfilePageQuery($userId: ID!) { users { id } }"),
         variableNames: ["userId"],
         projectionPathGraph: {
@@ -169,7 +169,7 @@ describe("operation registry", () => {
     expect(snapshot.slices[sliceId]?.dependencies).toEqual([modelId]);
 
     expect(snapshot.operations[operationId]).toBeDefined();
-    expect(snapshot.operations[operationId]?.prebuild.name).toBe("ProfilePageQuery");
+    expect(snapshot.operations[operationId]?.prebuild.operationName).toBe("ProfilePageQuery");
     expect(snapshot.operations[operationId]?.prebuild.variableNames).toEqual(["userId"]);
     expect(snapshot.operations[operationId]?.dependencies).toEqual([sliceId]);
   });

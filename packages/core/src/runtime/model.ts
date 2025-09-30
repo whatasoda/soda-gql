@@ -1,23 +1,16 @@
-import {
-  type AnyFields,
-  type AnyGraphqlSchema,
-  type EmptyObject,
-  type Model,
-  pseudoTypeAnnotation,
-  type StripFunctions,
-} from "../types";
+import type { AnyModel } from "../types/operation";
+import { pseudoTypeAnnotation, type StripFunctions, type StripSymbols } from "../types/shared/utility";
 
 export type RuntimeModelInput = {
-  prebuild: StripFunctions<Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object>>;
+  prebuild: StripFunctions<AnyModel>;
   runtime: {
-    transform: (raw: any) => object;
+    normalize: (raw: unknown) => object;
   };
 };
 
-export const runtimeModel = (input: RuntimeModelInput): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
-  _input: pseudoTypeAnnotation(),
-  _output: pseudoTypeAnnotation(),
-  typename: input.prebuild.typename,
-  fragment: pseudoTypeAnnotation(),
-  transform: input.runtime.transform,
-});
+export const runtimeModel = (input: RuntimeModelInput): AnyModel =>
+  ({
+    typename: input.prebuild.typename,
+    fragment: pseudoTypeAnnotation(),
+    normalize: input.runtime.normalize,
+  }) satisfies StripSymbols<AnyModel> as unknown as AnyModel;

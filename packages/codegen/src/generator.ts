@@ -1,3 +1,4 @@
+import type { TypeModifier } from "@soda-gql/core";
 import {
   type ConstDirectiveNode,
   type ConstValueNode,
@@ -273,12 +274,8 @@ const collectTypeLevels = (
   return { name: type.name.value, levels };
 };
 
-const buildTypeModifier = (levels: TypeLevel[]): string => {
-  if (levels.length === 0) {
-    return "";
-  }
-
-  let modifier = "";
+const buildTypeModifier = (levels: TypeLevel[]): TypeModifier => {
+  let modifier: TypeModifier | "" = "";
 
   for (const level of levels.slice().reverse()) {
     if (level.kind === "named") {
@@ -286,12 +283,12 @@ const buildTypeModifier = (levels: TypeLevel[]): string => {
       continue;
     }
 
-    const rest = modifier;
-    const base = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
+    const rest: TypeModifier | "" = modifier;
+    const base: TypeModifier = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
     modifier = level.nonNull ? `${base}!` : base;
   }
 
-  return modifier;
+  return modifier || "?";
 };
 
 const parseTypeReference = (type: TypeNode): { readonly name: string; readonly modifier: string } => {
@@ -299,7 +296,7 @@ const parseTypeReference = (type: TypeNode): { readonly name: string; readonly m
   return { name, modifier: buildTypeModifier(levels) };
 };
 
-const renderTypeTuple = (name: string, modifier: string): string => `[${JSON.stringify(name)}, ${JSON.stringify(modifier)}]`;
+const renderType = (name: string, modifier: string): string => JSON.stringify(`${name}:${modifier}`);
 
 const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
@@ -346,23 +343,23 @@ const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined)
 };
 
 const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
-  value ? `{ default: ${renderConstValue(value)} }` : "null";
+  value ? `() => (${renderConstValue(value)})` : "null";
 
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);
-  const tuple = renderTypeTuple(name, modifier);
+  const tuple = renderType(name, modifier);
   const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
   const directives = renderDirectives(definition.directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeInputRef.scalar(${tuple}, ${defaultValue}, ${directives})`;
+    return `unsafeInputRef.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeInputRef.enum(${tuple}, ${defaultValue}, ${directives})`;
+    return `unsafeInputRef.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
-  return `unsafeInputRef.input(${tuple}, ${defaultValue}, ${directives})`;
+  return `unsafeInputRef.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -380,27 +377,27 @@ const renderOutputRef = (
   directives: readonly ConstDirectiveNode[] | undefined,
 ): string => {
   const { name, modifier } = parseTypeReference(type);
-  const tuple = renderTypeTuple(name, modifier);
+  const modifiedType = renderType(name, modifier);
   const argumentMap = renderArgumentMap(schema, args);
   const directiveMap = renderDirectives(directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeOutputRef.enum(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isUnionName(schema, name)) {
-    return `unsafeOutputRef.union(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isObjectName(schema, name)) {
-    return `unsafeOutputRef.object(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
-  return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+  return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -553,16 +550,14 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const adapterBlock =
     $$.injection.mode === "inject"
       ? ""
-      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
+      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies AnyGraphqlRuntimeAdapter;`;
 
   // Generate per-schema definitions
   const schemaBlocks: string[] = [];
-  const schemaTypes: string[] = [];
   const gqlEntries: string[] = [];
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const schemaVar = `${name}Schema`;
-    const instanceVar = `${name}Instance`;
     const scalarBlock = $$.injection.mode === "inject" ? "scalar" : config.scalarBlock;
 
     schemaBlocks.push(`
@@ -579,19 +574,19 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-const ${instanceVar} = createGqlSingle({ schema: ${schemaVar}, adapter });`);
+export type Schema_${name} = typeof ${schemaVar} & { _?: never };
+export type Adapter_${name} = typeof adapter & { _?: never };`);
 
-    schemaTypes.push(`export type ${name.charAt(0).toUpperCase() + name.slice(1)}Schema = typeof ${schemaVar} & { _?: never };`);
-    gqlEntries.push(`  ${name}: <T>(fn: (helpers: typeof ${instanceVar}) => T): T => fn(${instanceVar})`);
+    gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
   }
 
   return `\
 import {
   type AnyGraphqlSchema,
-  createGqlSingle,
+  createGqlInvoker,
   define,
   defineOperationRoots,
-  type GraphqlRuntimeAdapter,
+  type AnyGraphqlRuntimeAdapter,
   pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
@@ -601,9 +596,6 @@ ${extraImports}
 ${adapterBlock}
 
 ${schemaBlocks.join("\n")}
-
-${schemaTypes.join("\n")}
-export type Adapter = typeof adapter & { _?: never };
 
 export const gql = {
 ${gqlEntries.join(",\n")}

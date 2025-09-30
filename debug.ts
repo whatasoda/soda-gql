@@ -1,4 +1,5 @@
 import { createGql, define, defineScalar, pseudoTypeAnnotation, unsafeInputRef, unsafeOutputRef } from "./packages/core/src";
+import { createA } from "./packages/core/src/builder/type-ref";
 import type { GraphqlRuntimeAdapter } from "./packages/core/src/types/adapter";
 // import type { FieldPaths } from "./packages/core/src/types/field-path"; // unused type import
 import type { InferFields } from "./packages/core/src/types/fields";
@@ -189,6 +190,14 @@ const gql = createGql<Schema, Adapter>({
   schema,
   adapter,
 });
+
+const { _a } = createA<Schema>()
+const w = _a(["ID", "!"], {
+  default: () => "1",
+    directives: {
+  a: {a: {  }}
+} },)
+w.defaultValue
 
 // ここから上は生成されるべきコード
 

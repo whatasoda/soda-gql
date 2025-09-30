@@ -25,7 +25,8 @@
       },
       "suspicious": {
         "noExplicitAny": "error",
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "noConfusingVoidType": "off"
       }
     }
   },
@@ -54,7 +55,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts"],
+      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts", "packages/core/src/types/**/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {

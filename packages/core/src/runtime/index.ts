@@ -1,5 +1,5 @@
 import { runtimeModel } from "./model";
-import { runtimeOperation } from "./operation";
+import { castDocumentNode, runtimeOperation } from "./operation";
 import { runtimeOperationSlice } from "./operation-slice";
 import { getOperation } from "./registry";
 
@@ -16,4 +16,5 @@ export const gqlRuntime = {
   mutationSlice: runtimeOperationSlice,
   subscriptionSlice: runtimeOperationSlice,
   getOperation,
+  castDocumentNode,
 };

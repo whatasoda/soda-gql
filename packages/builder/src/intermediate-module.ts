@@ -1,17 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type {
-  AnyExecutionResultProjection,
-  AnyFields,
-  AnyGraphqlSchema,
-  AnyOperationSlices,
-  GraphqlRuntimeAdapter,
-  InputTypeRefs,
-  Model,
-  Operation,
-  OperationSliceFactory,
-  OperationType,
-} from "@soda-gql/core";
+import type { AnyModel, AnyOperation, AnyOperationSlice, OperationType } from "@soda-gql/core";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { err, ok, type Result } from "neverthrow";
 import ts from "typescript";
@@ -19,29 +8,9 @@ import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
 export type IntermediateModule = {
-  readonly models: Record<string, Model<AnyGraphqlSchema, string, InputTypeRefs, AnyFields, object>>;
-  readonly slices: Record<
-    string,
-    OperationSliceFactory<
-      AnyGraphqlSchema,
-      GraphqlRuntimeAdapter,
-      OperationType,
-      InputTypeRefs,
-      AnyFields,
-      AnyExecutionResultProjection<GraphqlRuntimeAdapter>
-    >
-  >;
-  readonly operations: Record<
-    string,
-    Operation<
-      AnyGraphqlSchema,
-      GraphqlRuntimeAdapter,
-      OperationType,
-      string,
-      InputTypeRefs,
-      AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
-    >
-  >;
+  readonly models: Record<string, AnyModel>;
+  readonly slices: Record<string, AnyOperationSlice<OperationType>>;
+  readonly operations: Record<string, AnyOperation<OperationType>>;
 };
 
 const formatFactory = (expression: string): string => {

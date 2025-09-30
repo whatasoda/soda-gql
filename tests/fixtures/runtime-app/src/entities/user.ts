@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { gql } from "@/graphql-system";
 
 type PostModel = {
@@ -12,9 +11,12 @@ type UserModel = {
   readonly posts: readonly PostModel[];
 };
 
-export const userModel = gql.default(({ model, scalar }) =>
+export const userModel = gql.default(({ model }, { $ }) =>
   model(
-    ["User", { categoryId: scalar(["ID", ""]) }],
+    {
+      typename: "User",
+      variables: { ...$("categoryId").scalar("ID:?") },
+    },
     ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
@@ -37,7 +39,9 @@ export const userModel = gql.default(({ model, scalar }) =>
 export const userRemote = {
   forIterate: gql.default(({ model }) =>
     model(
-      "User",
+      {
+        typename: "User",
+      },
       ({ f }) => ({
         ...f.id(),
         ...f.name(),
@@ -50,32 +54,32 @@ export const userRemote = {
   ),
 };
 
-export const userSlice = gql.default(({ querySlice, scalar }) =>
-  querySlice(
-    [
-      {
-        id: scalar(["ID", "!"]),
-        categoryId: scalar(["ID", ""]),
+export const userSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: {
+        ...$("id").scalar("ID:!"),
+        ...$("categoryId").scalar("ID:?"),
       },
-    ],
+    },
     ({ f, $ }) => ({
       ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
         ...userModel.fragment({ categoryId: $.categoryId }),
       })),
     }),
-    ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userModel.transform(user)))),
+    ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userModel.normalize(user)))),
   ),
 );
 
 export const userSliceCatalog = {
-  byId: gql.default(({ querySlice, scalar }) =>
-    querySlice(
-      [
-        {
-          id: scalar(["ID", "!"]),
-          categoryId: scalar(["ID", ""]),
+  byId: gql.default(({ slice }, { $ }) =>
+    slice.query(
+      {
+        variables: {
+          ...$("id").scalar("ID:!"),
+          ...$("categoryId").scalar("ID:?"),
         },
-      ],
+      },
       ({ f, $ }) => ({
         ...f.users({ id: [$.id], categoryId: $.categoryId }, ({ f }) => ({
           ...f.id(),
@@ -83,7 +87,7 @@ export const userSliceCatalog = {
         })),
       }),
       ({ select }) =>
-        select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.transform(user)))),
+        select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.normalize(user)))),
     ),
   ),
 };

@@ -1,38 +1,13 @@
-import type {
-  AnyGraphqlSchema,
-  AnyOperationSlices,
-  GraphqlRuntimeAdapter,
-  InputTypeRefs,
-  Operation,
-  OperationType,
-} from "../types";
+import type { AnyOperation } from "../types/operation";
+import type { OperationType } from "../types/schema";
 
-const registry = new Map<
-  string,
-  Operation<
-    AnyGraphqlSchema,
-    GraphqlRuntimeAdapter,
-    OperationType,
-    string,
-    InputTypeRefs,
-    AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
-  >
->();
+const registry = new Map<string, AnyOperation<OperationType>>();
 
-export const registerOperation = (
-  operation: Operation<
-    AnyGraphqlSchema,
-    GraphqlRuntimeAdapter,
-    OperationType,
-    string,
-    InputTypeRefs,
-    AnyOperationSlices<AnyGraphqlSchema, GraphqlRuntimeAdapter, OperationType>
-  >,
-) => {
-  if (registry.has(operation.name)) {
-    throw new Error(`Operation ${operation.name} already registered`);
+export const registerOperation = (operation: AnyOperation<OperationType>) => {
+  if (registry.has(operation.operationName)) {
+    throw new Error(`Operation ${operation.operationName} already registered`);
   }
-  registry.set(operation.name, operation);
+  registry.set(operation.operationName, operation);
 };
 
 export const getOperation = (name: string) => {

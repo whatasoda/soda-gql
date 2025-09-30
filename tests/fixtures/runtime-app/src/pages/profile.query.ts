@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { gql } from "@/graphql-system";
 import { userSlice, userSliceCatalog } from "../entities/user";
 import * as userCatalog from "../entities/user.catalog";
@@ -8,23 +7,25 @@ type ProfileQueryVariables = {
   readonly categoryId?: string;
 };
 
-export const profileQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
+export const profileQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
     {
-      userId: scalar(["ID", "!"]),
-      categoryId: scalar(["ID", ""]),
+      operationName: "ProfilePageQuery",
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("categoryId").scalar("ID:?"),
+      },
     },
     ({ $ }) => ({
-      users: userSlice({
+      users: userSlice.build({
         id: $.userId,
         categoryId: $.categoryId,
       }),
-      remoteUsers: userSliceCatalog.byId({
+      remoteUsers: userSliceCatalog.byId.build({
         id: $.userId,
         categoryId: $.categoryId,
       }),
-      catalogUsers: userCatalog.collections.byCategory({
+      catalogUsers: userCatalog.collections.byCategory.build({
         categoryId: $.categoryId,
       }),
     }),

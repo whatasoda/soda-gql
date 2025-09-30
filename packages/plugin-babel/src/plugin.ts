@@ -360,7 +360,7 @@ const buildOperationRuntimeComponents = (gqlCall: GqlCall, state: PluginState) =
   ]);
 
   const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getOperation")), [
-    t.stringLiteral(operation.prebuild.name),
+    t.stringLiteral(operation.prebuild.operationName),
   ]);
 
   return {

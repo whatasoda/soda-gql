@@ -24,7 +24,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
         [queryId]: {
           id: queryId,
           prebuild: {
-            name: "ProfilePageQuery",
+            operationName: "ProfilePageQuery",
             document: {
               kind: Kind.DOCUMENT,
               definitions: [],
