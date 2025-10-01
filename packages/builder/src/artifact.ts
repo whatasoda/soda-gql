@@ -208,10 +208,6 @@ export const buildArtifact = async ({
     }
   }
 
-  if (sliceNodes.length >= 16) {
-    warnings.push(`Warning: slice count ${sliceNodes.length}`);
-  }
-
   return ok({
     operations: snapshot.operations,
     slices: snapshot.slices,

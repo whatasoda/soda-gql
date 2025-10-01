@@ -175,27 +175,6 @@ export const extractProjectGraph = (sources: readonly SourceFile[]) => {
   return { queries, slices };
 };
 
-export const detectDuplicates = (queries: readonly ParsedQuery[]) => {
-  const byName = new Map<string, ParsedQuery[]>();
-  queries.forEach((query) => {
-    const existing = byName.get(query.name) ?? [];
-    existing.push(query);
-    byName.set(query.name, existing);
-  });
-
-  for (const [name, group] of byName.entries()) {
-    if (group.length > 1) {
-      return err<void, BuilderError>({
-        code: "DOC_DUPLICATE",
-        name,
-        sources: group.map((item) => item.filePath),
-      });
-    }
-  }
-
-  return ok<void, BuilderError>(undefined);
-};
-
 export const detectCycles = (slices: readonly ParsedSlice[]) => {
   const adjacency = new Map<string, readonly string[]>();
   slices.forEach((slice) => {
