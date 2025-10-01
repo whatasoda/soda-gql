@@ -17,7 +17,6 @@ import type {
   ModuleImport,
   SourceLocation,
 } from "../analyzer-types";
-import { gqlSchemaNames } from "../analyzer-types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -208,9 +207,6 @@ const isGqlDefinitionCall = (
   }
 
   const schemaName = expression.name.text;
-  if (!gqlSchemaNames.has(schemaName)) {
-    return null;
-  }
 
   const [factory] = callExpression.arguments;
   if (!factory || !ts.isArrowFunction(factory)) {

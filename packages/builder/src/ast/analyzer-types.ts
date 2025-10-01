@@ -63,9 +63,3 @@ export type AnalyzeModuleInput = {
   readonly filePath: string;
   readonly source: string;
 };
-
-/**
- * Set of valid schema names that can be used with gql.{schema}() pattern.
- * Used by both TypeScript and SWC analyzers to detect valid gql calls.
- */
-export const gqlSchemaNames = new Set(["default", "admin"]);

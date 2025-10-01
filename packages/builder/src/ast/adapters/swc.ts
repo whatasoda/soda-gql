@@ -26,7 +26,6 @@ import type {
   SourceLocation,
   SourcePosition,
 } from "../analyzer-types";
-import { gqlSchemaNames } from "../analyzer-types";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
@@ -272,9 +271,6 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): { re
   }
 
   const schemaName = callee.property.value;
-  if (!gqlSchemaNames.has(schemaName)) {
-    return null;
-  }
 
   const firstArg = call.arguments[0];
   if (!firstArg?.expression || firstArg.expression.type !== "ArrowFunctionExpression") {
