@@ -32,16 +32,17 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
           const { operationName } = options;
           const variables = (options.variables ?? {}) as TVarDefinitions;
 
-          // Report operation evaluation for duplicate detection
+          const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
+          const fragments = builder({ $ });
+
+          // Report operation evaluation for duplicate detection and slice count validation
           if (context) {
             onOperationEvaluated({
               canonicalId: context.canonicalId,
               operationName,
+              sliceCount: Object.keys(fragments).length,
             });
           }
-
-          const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
-          const fragments = builder({ $ });
 
           const fields = Object.fromEntries(
             Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>

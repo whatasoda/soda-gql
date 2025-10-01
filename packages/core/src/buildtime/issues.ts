@@ -5,7 +5,13 @@
 
 export type IssueSeverity = "warning" | "error";
 
-export type IssueCode = "DUPLICATE_OPERATION_NAME" | "INVALID_MODEL" | "INVALID_SLICE" | "INVALID_OPERATION";
+export type IssueCode =
+  | "DUPLICATE_OPERATION_NAME"
+  | "INVALID_MODEL"
+  | "INVALID_SLICE"
+  | "INVALID_OPERATION"
+  | "TOO_MANY_SLICES_WARNING"
+  | "TOO_MANY_SLICES_ERROR";
 
 export interface Issue {
   readonly severity: IssueSeverity;
@@ -94,13 +100,36 @@ export const getActiveRegistry = (): IssueRegistry | null => {
 };
 
 /**
+ * Thresholds for slice count validation
+ */
+const SLICE_COUNT_WARNING_THRESHOLD = 8;
+const SLICE_COUNT_ERROR_THRESHOLD = 16;
+
+/**
  * Callback when an operation is evaluated
  */
-export const onOperationEvaluated = (params: { canonicalId: string; operationName: string }): void => {
+export const onOperationEvaluated = (params: { canonicalId: string; operationName: string; sliceCount: number }): void => {
   const registry = getActiveRegistry();
   if (registry === null) {
     return;
   }
 
   registry.registerOperationName(params.operationName, params.canonicalId);
+
+  // Check slice count thresholds
+  if (params.sliceCount >= SLICE_COUNT_ERROR_THRESHOLD) {
+    registry.addIssue({
+      severity: "error",
+      code: "TOO_MANY_SLICES_ERROR",
+      message: `Operation has too many slices (${params.sliceCount}). Maximum allowed is ${SLICE_COUNT_ERROR_THRESHOLD - 1}.`,
+      canonicalId: params.canonicalId,
+    });
+  } else if (params.sliceCount >= SLICE_COUNT_WARNING_THRESHOLD) {
+    registry.addIssue({
+      severity: "warning",
+      code: "TOO_MANY_SLICES_WARNING",
+      message: `Operation has many slices (${params.sliceCount}). Consider reducing to below ${SLICE_COUNT_WARNING_THRESHOLD}.`,
+      canonicalId: params.canonicalId,
+    });
+  }
 };
