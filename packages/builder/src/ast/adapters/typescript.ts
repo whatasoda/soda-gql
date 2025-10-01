@@ -193,27 +193,22 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
   return exports;
 };
 
-const isGqlDefinitionCall = (
-  identifiers: ReadonlySet<string>,
-  callExpression: ts.CallExpression,
-): { readonly schemaName: string } | null => {
+const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: ts.CallExpression): boolean => {
   const expression = callExpression.expression;
   if (!ts.isPropertyAccessExpression(expression)) {
-    return null;
+    return false;
   }
 
   if (!ts.isIdentifier(expression.expression) || !identifiers.has(expression.expression.text)) {
-    return null;
+    return false;
   }
-
-  const schemaName = expression.name.text;
 
   const [factory] = callExpression.arguments;
   if (!factory || !ts.isArrowFunction(factory)) {
-    return null;
+    return false;
   }
 
-  return { schemaName };
+  return true;
 };
 
 const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
@@ -413,7 +408,6 @@ const collectTopLevelDefinitions = (
 
   type PendingDefinition = {
     readonly exportName: string;
-    readonly schemaName?: string;
     readonly loc: SourceLocation;
     readonly initializer: ts.CallExpression;
     readonly expression: string;
@@ -422,11 +416,10 @@ const collectTopLevelDefinitions = (
   const pending: PendingDefinition[] = [];
   const handledCalls: ts.CallExpression[] = [];
 
-  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node, schemaName?: string) => {
+  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node) => {
     handledCalls.push(initializer);
     pending.push({
       exportName,
-      schemaName,
       loc: toLocation(sourceFile, span),
       initializer,
       expression: initializer.getText(sourceFile),
@@ -451,11 +444,10 @@ const collectTopLevelDefinitions = (
       const initializer = declaration.initializer;
 
       if (ts.isCallExpression(initializer)) {
-        const gqlCall = isGqlDefinitionCall(identifiers, initializer);
-        if (!gqlCall) {
+        if (!isGqlDefinitionCall(identifiers, initializer)) {
           return;
         }
-        register(exportName, initializer, declaration, gqlCall.schemaName);
+        register(exportName, initializer, declaration);
         return;
       }
 
@@ -474,12 +466,11 @@ const collectTopLevelDefinitions = (
             return;
           }
 
-          const gqlCall = isGqlDefinitionCall(identifiers, property.initializer);
-          if (!gqlCall) {
+          if (!isGqlDefinitionCall(identifiers, property.initializer)) {
             return;
           }
 
-          register(`${exportName}.${name}`, property.initializer, property, gqlCall.schemaName);
+          register(`${exportName}.${name}`, property.initializer, property);
         });
       }
     });
@@ -491,7 +482,6 @@ const collectTopLevelDefinitions = (
     (item) =>
       ({
         exportName: item.exportName,
-        schemaName: item.schemaName,
         loc: item.loc,
         references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
         expression: item.expression,

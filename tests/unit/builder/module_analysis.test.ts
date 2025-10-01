@@ -41,14 +41,9 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     const summary = analysis.definitions.map((definition) => ({
       exportName: definition.exportName,
-      schemaName: definition.schemaName,
     }));
 
-    expect(summary).toEqual([
-      { exportName: "userModel", schemaName: "default" },
-      { exportName: "userSlice", schemaName: "default" },
-      { exportName: "pageQuery", schemaName: "default" },
-    ]);
+    expect(summary).toEqual([{ exportName: "userModel" }, { exportName: "userSlice" }, { exportName: "pageQuery" }]);
   });
 
   it("reports diagnostics when gql definitions are nested inside non-top-level scopes", () => {
@@ -188,7 +183,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     expect(pageQuery?.references).toEqual(["userSlice", "postSlice"]);
   });
 
-  it("detects multi-schema usage with named schemas", () => {
+  it("extracts definitions from multiple schemas", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
@@ -210,12 +205,8 @@ export const defaultQuery = gql.default(({ query }) =>
 
     const summary = analysis.definitions.map((definition) => ({
       exportName: definition.exportName,
-      schemaName: definition.schemaName,
     }));
 
-    expect(summary).toEqual([
-      { exportName: "adminModel", schemaName: "admin" },
-      { exportName: "defaultQuery", schemaName: "default" },
-    ]);
+    expect(summary).toEqual([{ exportName: "adminModel" }, { exportName: "defaultQuery" }]);
   });
 });

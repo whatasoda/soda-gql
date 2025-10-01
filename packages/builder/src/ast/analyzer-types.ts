@@ -14,7 +14,6 @@ export type SourceLocation = {
 
 export type ModuleDefinition = {
   readonly exportName: string;
-  readonly schemaName?: string;
   readonly loc: SourceLocation;
   readonly references: readonly string[];
   readonly expression: string;

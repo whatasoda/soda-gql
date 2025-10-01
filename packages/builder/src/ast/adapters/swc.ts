@@ -252,32 +252,30 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
   return identifiers;
 };
 
-const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): { readonly schemaName: string } | null => {
+const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): boolean => {
   const callee = call.callee;
   if (callee.type !== "MemberExpression") {
-    return null;
+    return false;
   }
 
   if (callee.object.type !== "Identifier") {
-    return null;
+    return false;
   }
 
   if (!identifiers.has(callee.object.value)) {
-    return null;
+    return false;
   }
 
   if (callee.property.type !== "Identifier") {
-    return null;
+    return false;
   }
-
-  const schemaName = callee.property.value;
 
   const firstArg = call.arguments[0];
   if (!firstArg?.expression || firstArg.expression.type !== "ArrowFunctionExpression") {
-    return null;
+    return false;
   }
 
-  return { schemaName };
+  return true;
 };
 
 const collectIdentifiersFromPattern = (pattern: Pattern | null | undefined, into: Set<string>) => {
@@ -571,7 +569,6 @@ const collectTopLevelDefinitions = (
 
   type Pending = {
     readonly exportName: string;
-    readonly schemaName?: string;
     readonly initializer: CallExpression;
     readonly span: Span;
     readonly expression: string;
@@ -595,14 +592,13 @@ const collectTopLevelDefinitions = (
     return raw;
   };
 
-  const register = (exportName: string, initializer: CallExpression, span: Span, schemaName?: string) => {
+  const register = (exportName: string, initializer: CallExpression, span: Span) => {
     handled.push(initializer);
     const expression = expressionFromCall(initializer);
     pending.push({
       exportName,
       initializer,
       span,
-      schemaName,
       expression,
     });
   };
@@ -618,11 +614,10 @@ const collectTopLevelDefinitions = (
       const baseName = decl.id.value;
 
       if (decl.init.type === "CallExpression") {
-        const gqlCall = isGqlCall(gqlIdentifiers, decl.init);
-        if (!gqlCall) {
+        if (!isGqlCall(gqlIdentifiers, decl.init)) {
           return;
         }
-        register(baseName, decl.init, decl.span ?? decl.init.span, gqlCall.schemaName);
+        register(baseName, decl.init, decl.span ?? decl.init.span);
         return;
       }
 
@@ -636,11 +631,10 @@ const collectTopLevelDefinitions = (
           if (!name || prop.value.type !== "CallExpression") {
             return;
           }
-          const gqlCall = isGqlCall(gqlIdentifiers, prop.value);
-          if (!gqlCall) {
+          if (!isGqlCall(gqlIdentifiers, prop.value)) {
             return;
           }
-          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, gqlCall.schemaName);
+          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span);
         });
       }
     });
@@ -688,7 +682,6 @@ const collectTopLevelDefinitions = (
     (item) =>
       ({
         exportName: item.exportName,
-        schemaName: item.schemaName,
         loc: toLocation(resolvePosition, item.span),
         references: Array.from(collectReferencesFromExpression(item.initializer, imports, definitionNames, gqlIdentifiers)),
         expression: item.expression,

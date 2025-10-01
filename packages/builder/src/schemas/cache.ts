@@ -12,7 +12,6 @@ const SourceLocationSchema = z.object({
 
 const ModuleDefinitionSchema = z.object({
   exportName: z.string(),
-  schemaName: z.string().optional(),
   loc: SourceLocationSchema,
   references: z.array(z.string()),
   expression: z.string(),
