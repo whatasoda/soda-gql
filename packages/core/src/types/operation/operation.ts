@@ -58,15 +58,9 @@ export class Operation<
   }>;
 
   private constructor(
-    factory: () => OperationInner<
-      TRuntimeAdapter,
-      TOperationType,
-      TOperationName,
-      TVariableNames,
-      TVariables,
-      TRawData,
-      TProjectedData
-    >,
+    factory: (
+      context: import("./builder").BuilderContext | null,
+    ) => OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>,
   ) {
     super(factory);
   }
@@ -98,7 +92,7 @@ export class Operation<
     TVariableDefinitions extends InputTypeRefs,
     TSliceFragments extends AnyOperationSliceFragments,
   >(
-    factory: () => {
+    factory: (context: import("./builder").BuilderContext | null) => {
       operationType: TOperationType;
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
