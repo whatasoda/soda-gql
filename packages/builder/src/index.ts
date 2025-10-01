@@ -1,5 +1,5 @@
 export type { CanonicalId } from "./registry";
-export { createCanonicalId, createOperationRegistry } from "./registry";
+export { createCanonicalId } from "./registry";
 export { runBuilder } from "./runner";
 export type {
   BuilderAnalyzer,
