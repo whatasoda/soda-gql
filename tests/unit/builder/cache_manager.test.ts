@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
-import { createModuleCache } from "../../../packages/builder/src/cache";
+import {
+	createJsonCache,
+	ModuleCacheManager,
+} from "../../../packages/builder/src/cache";
 import { createTestSuite, TestSuite } from "../../utils/base";
 
 class CacheManagerTestSuite extends TestSuite {
@@ -25,7 +28,16 @@ describe("module cache manager", () => {
   const suite = createTestSuite(CacheManagerTestSuite);
 
 	it("returns cached analysis when file hash matches", () => {
-		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
+
 		const analysis = suite.createAnalysis({
 			filePath: "/app/src/entities/user.ts",
 			signature: "hash-1",
@@ -46,7 +58,16 @@ describe("module cache manager", () => {
 	});
 
 	it("misses cache when hash differs", () => {
-		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
+
 		const analysis = suite.createAnalysis({
 			filePath: "/app/src/entities/user.ts",
 			signature: "hash-1",
@@ -59,7 +80,16 @@ describe("module cache manager", () => {
 	});
 
 	it("overwrites cache entries when storing newer analysis", () => {
-		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
+
 		const initial = suite.createAnalysis({
 			filePath: "/app/src/entities/user.ts",
 			signature: "hash-1",
