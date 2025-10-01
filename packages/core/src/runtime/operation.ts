@@ -1,5 +1,5 @@
 import type { Kind } from "graphql";
-import { createVarRefs } from "../operation/input";
+import { createVarRefs } from "../buildtime/input";
 import type { AnyAssignableInput } from "../types/fragment";
 import type { AnyOperation, AnyOperationSliceFragment } from "../types/operation";
 import type { AnyGraphqlSchema, InputTypeRef, InputTypeRefs, OperationType } from "../types/schema";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactories } from "../../../packages/core/src/operation/fields-builder";
-import { createVarBuilder } from "../../../packages/core/src/operation/var-builder";
+import { createFieldFactories } from "../../../packages/core/src/buildtime/fields-builder";
+import { createVarBuilder } from "../../../packages/core/src/buildtime/var-builder";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
 describe("Schema Edge Cases", () => {

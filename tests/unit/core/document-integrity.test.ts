@@ -5,7 +5,7 @@ import {
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
-} from "../../../packages/core/src/operation/build-document";
+} from "../../../packages/core/src/buildtime/build-document";
 import type { TypeModifier } from "../../../packages/core/src/types/schema/type-modifier";
 
 describe("Document Integrity Tests", () => {
