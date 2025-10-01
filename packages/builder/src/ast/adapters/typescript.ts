@@ -4,14 +4,12 @@
  */
 
 import { extname } from "node:path";
-import { unwrapNullish } from "@soda-gql/tool-utils";
 import ts from "typescript";
 
 import type { AnalyzerAdapter } from "../analyzer-core";
 import { analyzeModuleCore } from "../analyzer-core";
 import type {
   AnalyzeModuleInput,
-  GqlDefinitionKind,
   ModuleAnalysis,
   ModuleDefinition,
   ModuleDiagnostic,
@@ -19,7 +17,7 @@ import type {
   ModuleImport,
   SourceLocation,
 } from "../analyzer-types";
-import { gqlDefinitionKinds } from "../analyzer-types";
+import { gqlSchemaNames } from "../analyzer-types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -199,130 +197,27 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
 const isGqlDefinitionCall = (
   identifiers: ReadonlySet<string>,
   callExpression: ts.CallExpression,
-): { readonly method: string; readonly kind?: GqlDefinitionKind; readonly schemaName?: string } | null => {
+): { readonly schemaName: string } | null => {
   const expression = callExpression.expression;
   if (!ts.isPropertyAccessExpression(expression)) {
     return null;
   }
 
-  // Helper to check for helper.category.method (e.g., slice.query, operation.mutation)
-  const checkTwoLevelPropertyAccess = (callExpr: ts.CallExpression): GqlDefinitionKind | null => {
-    if (!ts.isPropertyAccessExpression(callExpr.expression)) {
-      return null;
-    }
-
-    const outerProp = callExpr.expression;
-    const method = outerProp.name.text; // e.g., "query"
-
-    // Check if expression is category.method (e.g., slice.query)
-    // where category is an Identifier (from destructured parameter)
-    if (ts.isIdentifier(outerProp.expression)) {
-      const category = outerProp.expression.text; // e.g., "slice"
-
-      // Map category.method to kind
-      if (category === "slice" && (method === "query" || method === "mutation" || method === "subscription")) {
-        return "slice";
-      }
-      if (category === "operation" && (method === "query" || method === "mutation" || method === "subscription")) {
-        return "operation";
-      }
-    }
-
-    return null;
-  };
-
-  // Check for gql.{schema}(({ helper }) => helper.method(...)) pattern
-  if (ts.isIdentifier(expression.expression) && identifiers.has(expression.expression.text)) {
-    const schemaName = expression.name.text;
-
-    // Check if this could be a schema name (not a method name)
-    if (!(schemaName in gqlDefinitionKinds)) {
-      // This is a schema invoker call, we need to look inside the factory function
-      if (callExpression.arguments.length > 0) {
-        const firstArg = callExpression.arguments[0];
-
-        // Check if it's an arrow function
-        if (firstArg && ts.isArrowFunction(firstArg) && firstArg.body) {
-          // If body is a call expression, check if it's calling a gql method
-          if (ts.isCallExpression(firstArg.body)) {
-            const innerCall = firstArg.body;
-
-            // Check for two-level property access (slice.query, operation.mutation)
-            const twoLevelKind = checkTwoLevelPropertyAccess(innerCall);
-            if (twoLevelKind) {
-              return { method: twoLevelKind, kind: twoLevelKind, schemaName };
-            }
-
-            // Check for one-level property access (legacy: helper.model)
-            if (ts.isPropertyAccessExpression(innerCall.expression)) {
-              const method = innerCall.expression.name.text;
-              if (method in gqlDefinitionKinds) {
-                return { method, schemaName };
-              }
-            } else if (ts.isIdentifier(innerCall.expression)) {
-              // The method is called directly (e.g., model(...) instead of helpers.model(...))
-              const method = innerCall.expression.text;
-              if (method in gqlDefinitionKinds) {
-                return { method, schemaName };
-              }
-            }
-          }
-          // If body is parenthesized, unwrap and check
-          else if (ts.isParenthesizedExpression(firstArg.body)) {
-            const innerExpr = firstArg.body.expression;
-            if (ts.isCallExpression(innerExpr)) {
-              // Check for two-level property access
-              const twoLevelKind = checkTwoLevelPropertyAccess(innerExpr);
-              if (twoLevelKind) {
-                return { method: twoLevelKind, kind: twoLevelKind, schemaName };
-              }
-
-              // Check for one-level property access
-              if (ts.isPropertyAccessExpression(innerExpr.expression)) {
-                const method = innerExpr.expression.name.text;
-                if (method in gqlDefinitionKinds) {
-                  return { method, schemaName };
-                }
-              } else if (ts.isIdentifier(innerExpr.expression)) {
-                const method = innerExpr.expression.text;
-                if (method in gqlDefinitionKinds) {
-                  return { method, schemaName };
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Check for gql.{schema}.{method} pattern (for direct multi-schema calls)
-  if (ts.isPropertyAccessExpression(expression.expression)) {
-    const innerExpression = expression.expression;
-    if (ts.isIdentifier(innerExpression.expression) && identifiers.has(innerExpression.expression.text)) {
-      const schemaName = innerExpression.name.text;
-      const method = expression.name.text;
-
-      if (!(method in gqlDefinitionKinds)) {
-        return null;
-      }
-
-      return { method, schemaName };
-    }
-    return null;
-  }
-
-  // Check for gql.{method} pattern (backward compatibility)
   if (!ts.isIdentifier(expression.expression) || !identifiers.has(expression.expression.text)) {
     return null;
   }
 
-  const method = expression.name.text;
-  if (!(method in gqlDefinitionKinds)) {
+  const schemaName = expression.name.text;
+  if (!gqlSchemaNames.has(schemaName)) {
     return null;
   }
 
-  return { method };
+  const [factory] = callExpression.arguments;
+  if (!factory || !ts.isArrowFunction(factory)) {
+    return null;
+  }
+
+  return { schemaName };
 };
 
 const collectParameterIdentifiers = (parameter: ts.BindingName, into: Set<string>): void => {
@@ -522,7 +417,6 @@ const collectTopLevelDefinitions = (
 
   type PendingDefinition = {
     readonly exportName: string;
-    readonly kind: GqlDefinitionKind;
     readonly schemaName?: string;
     readonly loc: SourceLocation;
     readonly initializer: ts.CallExpression;
@@ -532,17 +426,10 @@ const collectTopLevelDefinitions = (
   const pending: PendingDefinition[] = [];
   const handledCalls: ts.CallExpression[] = [];
 
-  const register = (
-    exportName: string,
-    initializer: ts.CallExpression,
-    span: ts.Node,
-    kind: GqlDefinitionKind,
-    schemaName?: string,
-  ) => {
+  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node, schemaName?: string) => {
     handledCalls.push(initializer);
     pending.push({
       exportName,
-      kind,
       schemaName,
       loc: toLocation(sourceFile, span),
       initializer,
@@ -572,8 +459,7 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-        register(exportName, initializer, declaration, kind, gqlCall.schemaName);
+        register(exportName, initializer, declaration, gqlCall.schemaName);
         return;
       }
 
@@ -597,8 +483,7 @@ const collectTopLevelDefinitions = (
             return;
           }
 
-          const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-          register(`${exportName}.${name}`, property.initializer, property, kind, gqlCall.schemaName);
+          register(`${exportName}.${name}`, property.initializer, property, gqlCall.schemaName);
         });
       }
     });
@@ -609,7 +494,6 @@ const collectTopLevelDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
-        kind: item.kind,
         exportName: item.exportName,
         schemaName: item.schemaName,
         loc: item.loc,

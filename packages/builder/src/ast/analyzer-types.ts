@@ -12,10 +12,7 @@ export type SourceLocation = {
   readonly end: SourcePosition;
 };
 
-export type GqlDefinitionKind = "model" | "slice" | "operation";
-
 export type ModuleDefinition = {
-  readonly kind: GqlDefinitionKind;
   readonly exportName: string;
   readonly schemaName?: string;
   readonly loc: SourceLocation;
@@ -68,14 +65,7 @@ export type AnalyzeModuleInput = {
 };
 
 /**
- * Maps GraphQL helper method names to their definition kinds.
- * Used by both TypeScript and SWC analyzers.
+ * Set of valid schema names that can be used with gql.{schema}() pattern.
+ * Used by both TypeScript and SWC analyzers to detect valid gql calls.
  */
-export const gqlDefinitionKinds: Record<string, GqlDefinitionKind> = {
-  model: "model",
-  // Legacy patterns
-  querySlice: "slice",
-  query: "operation",
-  mutation: "operation",
-  subscription: "operation",
-};
+export const gqlSchemaNames = new Set(["default", "admin"]);

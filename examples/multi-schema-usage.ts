@@ -7,7 +7,7 @@ import { gql } from "@/graphql-system";
 // ============================================
 
 // Define a model for User from the default schema
-export const UserModel = gql.default(({ model, scalar }) =>
+export const UserModel = gql.default(({ model, scalar: _scalar }) =>
   model("User", ({ f }) => ({
     id: f.id(),
     name: f.name(),
@@ -94,7 +94,7 @@ export const adminSlice = gql.admin(({ querySlice }) =>
 );
 
 // Admin mutations
-export const adminMutations = gql.admin(({ query, model }) => ({
+export const adminMutations = gql.admin(({ query, model: _model }) => ({
   createAdmin: (username: string, email: string, role: string) =>
     query({
       createAdminUser: {

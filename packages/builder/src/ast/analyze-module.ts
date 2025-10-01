@@ -7,7 +7,6 @@ export { analyzeModule } from "./adapters/typescript";
 
 export type {
   AnalyzeModuleInput,
-  GqlDefinitionKind,
   ModuleAnalysis,
   ModuleDefinition,
   ModuleDiagnostic,

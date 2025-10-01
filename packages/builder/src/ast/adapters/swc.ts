@@ -19,7 +19,6 @@ import type {
 import type { AnalyzerAdapter } from "../analyzer-core";
 import type {
   AnalyzeModuleInput,
-  GqlDefinitionKind,
   ModuleDefinition,
   ModuleDiagnostic,
   ModuleExport,
@@ -27,39 +26,7 @@ import type {
   SourceLocation,
   SourcePosition,
 } from "../analyzer-types";
-import { gqlDefinitionKinds } from "../analyzer-types";
-
-// Helper to check for two-level property access (e.g., slice.query, operation.mutation)
-const checkTwoLevelPropertyAccess = (call: CallExpression): GqlDefinitionKind | null => {
-  // Check if callee is a property access (e.g., slice.query)
-  if (call.callee.type !== "MemberExpression") {
-    return null;
-  }
-
-  const memberExpr = call.callee as MemberExpression;
-
-  // Get the method name (e.g., "query", "mutation", "subscription")
-  if (memberExpr.property.type !== "Identifier") {
-    return null;
-  }
-  const method = memberExpr.property.value;
-
-  // Get the category name (e.g., "slice", "operation")
-  if (memberExpr.object.type !== "Identifier") {
-    return null;
-  }
-  const category = memberExpr.object.value;
-
-  // Map category.method to kind
-  if (category === "slice" && (method === "query" || method === "mutation" || method === "subscription")) {
-    return "slice";
-  }
-  if (category === "operation" && (method === "query" || method === "mutation" || method === "subscription")) {
-    return "operation";
-  }
-
-  return null;
-};
+import { gqlSchemaNames } from "../analyzer-types";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
@@ -286,93 +253,35 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
   return identifiers;
 };
 
-const isGqlCall = (
-  identifiers: ReadonlySet<string>,
-  call: CallExpression,
-): {
-  readonly method: string;
-  readonly callee: MemberExpression;
-  readonly kind?: GqlDefinitionKind;
-  readonly schemaName?: string;
-} | null => {
+const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): { readonly schemaName: string } | null => {
   const callee = call.callee;
-  let expression: MemberExpression | null = null;
-
-  if (callee.type === "MemberExpression") {
-    expression = callee;
-  } else if (callee.type === "Super" || callee.type === "Import") {
-    return null;
-    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-  } else if ((callee as any).expression && (callee as any).expression.type === "MemberExpression") {
-    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-    expression = (callee as any).expression as MemberExpression;
-  } else {
+  if (callee.type !== "MemberExpression") {
     return null;
   }
 
-  if (expression.object.type !== "Identifier") {
+  if (callee.object.type !== "Identifier") {
     return null;
   }
 
-  if (!identifiers.has(expression.object.value)) {
+  if (!identifiers.has(callee.object.value)) {
     return null;
   }
 
-  if (expression.property.type !== "Identifier") {
+  if (callee.property.type !== "Identifier") {
     return null;
   }
 
-  const method = expression.property.value;
-
-  // Check if it's a direct method call (old pattern)
-  if (method in gqlDefinitionKinds) {
-    return { method, callee: expression };
+  const schemaName = callee.property.value;
+  if (!gqlSchemaNames.has(schemaName)) {
+    return null;
   }
 
-  // Check if it's a schema factory call (new pattern like gql.default or gql.admin)
-  if (method === "default" || method === "admin") {
-    // This is a factory call, we need to look inside for the actual method
-    if (call.arguments.length > 0) {
-      const firstArg = call.arguments[0];
-
-      // Check if it's an arrow function
-      if (firstArg?.expression && firstArg.expression.type === "ArrowFunctionExpression") {
-        // biome-ignore lint/suspicious/noExplicitAny: SWC AST types are complex
-        const arrowFunc = firstArg.expression as any;
-
-        // Check if the body is a call expression
-        if (arrowFunc.body && arrowFunc.body.type === "CallExpression") {
-          const innerCall = arrowFunc.body as CallExpression;
-
-          // Check for two-level property access (slice.query, operation.mutation)
-          const twoLevelKind = checkTwoLevelPropertyAccess(innerCall);
-          if (twoLevelKind) {
-            return { method: twoLevelKind, callee: expression, kind: twoLevelKind, schemaName: method };
-          }
-
-          // Check if it's calling a method directly
-          if (innerCall.callee.type === "Identifier") {
-            const innerMethod = innerCall.callee.value;
-            if (innerMethod in gqlDefinitionKinds) {
-              return { method: innerMethod, callee: expression, schemaName: method };
-            }
-          }
-          // Check if it's calling via property access (legacy: helper.model)
-          else if (innerCall.callee.type === "MemberExpression") {
-            const innerExpr = innerCall.callee as MemberExpression;
-            if (innerExpr.property.type === "Identifier") {
-              const innerMethod = innerExpr.property.value;
-              if (innerMethod in gqlDefinitionKinds) {
-                return { method: innerMethod, callee: expression, schemaName: method };
-              }
-            }
-          }
-        }
-      }
-    }
+  const firstArg = call.arguments[0];
+  if (!firstArg?.expression || firstArg.expression.type !== "ArrowFunctionExpression") {
+    return null;
   }
 
-  return null;
+  return { schemaName };
 };
 
 const collectIdentifiersFromPattern = (pattern: Pattern | null | undefined, into: Set<string>) => {
@@ -666,7 +575,6 @@ const collectTopLevelDefinitions = (
 
   type Pending = {
     readonly exportName: string;
-    readonly kind: GqlDefinitionKind;
     readonly schemaName?: string;
     readonly initializer: CallExpression;
     readonly span: Span;
@@ -691,20 +599,13 @@ const collectTopLevelDefinitions = (
     return raw;
   };
 
-  const register = (
-    exportName: string,
-    initializer: CallExpression,
-    span: Span,
-    kind: GqlDefinitionKind,
-    schemaName?: string,
-  ) => {
+  const register = (exportName: string, initializer: CallExpression, span: Span, schemaName?: string) => {
     handled.push(initializer);
     const expression = expressionFromCall(initializer);
     pending.push({
       exportName,
       initializer,
       span,
-      kind,
       schemaName,
       expression,
     });
@@ -725,8 +626,7 @@ const collectTopLevelDefinitions = (
         if (!gqlCall) {
           return;
         }
-        const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-        register(baseName, decl.init, decl.span ?? decl.init.span, kind, gqlCall.schemaName);
+        register(baseName, decl.init, decl.span ?? decl.init.span, gqlCall.schemaName);
         return;
       }
 
@@ -744,8 +644,7 @@ const collectTopLevelDefinitions = (
           if (!gqlCall) {
             return;
           }
-          const kind = gqlCall.kind ?? unwrapNullish(gqlDefinitionKinds[gqlCall.method], "validated-map-lookup");
-          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, kind, gqlCall.schemaName);
+          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span, gqlCall.schemaName);
         });
       }
     });
@@ -792,7 +691,6 @@ const collectTopLevelDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
-        kind: item.kind,
         exportName: item.exportName,
         schemaName: item.schemaName,
         loc: toLocation(resolvePosition, item.span),

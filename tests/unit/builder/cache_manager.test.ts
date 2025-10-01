@@ -31,8 +31,8 @@ describe("module cache manager", () => {
       sourceHash: "hash-1",
       definitions: [
         {
-          kind: "model",
           exportName: "userModel",
+          schemaName: "default",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           references: [],
           expression: "gql.model('User', () => ({}), (value) => value)",
@@ -71,8 +71,8 @@ describe("module cache manager", () => {
       sourceHash: "hash-2",
       definitions: [
         {
-          kind: "operation",
           exportName: "profileQuery",
+          schemaName: "default",
           loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
           references: [],
           expression: "gql.query('ProfilePageQuery', {}, () => ({}))",

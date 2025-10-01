@@ -36,30 +36,7 @@ export const buildArtifact = async ({
 }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
   const registry = createOperationRegistry();
 
-  const modelNodes: DependencyGraphNode[] = [];
-  const sliceNodes: DependencyGraphNode[] = [];
-  const operationNodes: DependencyGraphNode[] = [];
-
-  graph.forEach((node) => {
-    if (!node || typeof node !== "object") {
-      return;
-    }
-
-    if (node.definition.kind === "model") {
-      modelNodes.push(node);
-      return;
-    }
-
-    if (node.definition.kind === "slice") {
-      sliceNodes.push(node);
-      return;
-    }
-
-    if (node.definition.kind === "operation") {
-      operationNodes.push(node);
-    }
-  });
-
+  // Load intermediate module first to classify definitions at runtime
   let intermediateModule: IntermediateModule;
   try {
     intermediateModule = (await import(pathToFileURL(intermediateModulePath).href)) as IntermediateModule;
@@ -73,6 +50,31 @@ export const buildArtifact = async ({
   }
 
   const { models, slices, operations } = intermediateModule;
+
+  // Classify nodes based on intermediate module evaluation
+  const modelNodes: DependencyGraphNode[] = [];
+  const sliceNodes: DependencyGraphNode[] = [];
+  const operationNodes: DependencyGraphNode[] = [];
+
+  graph.forEach((node) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (node.id in models) {
+      modelNodes.push(node);
+      return;
+    }
+
+    if (node.id in slices) {
+      sliceNodes.push(node);
+      return;
+    }
+
+    if (node.id in operations) {
+      operationNodes.push(node);
+    }
+  });
 
   for (const model of modelNodes) {
     const descriptor = models[model.id];
@@ -156,18 +158,6 @@ export const buildArtifact = async ({
         sources: [canonicalToFilePath(duplicate), canonicalToFilePath(operation.id)],
       });
     }
-
-    // let text: string;
-    // try {
-    //   text = print(descriptor.document);
-    // } catch (error) {
-    //   return err({
-    //     code: "MODULE_EVALUATION_FAILED",
-    //     filePath,
-    //     exportName: operation.definition.exportName,
-    //     message: error instanceof Error ? error.message : String(error),
-    //   });
-    // }
 
     const result = registry.registerOperation({
       type: "operation",

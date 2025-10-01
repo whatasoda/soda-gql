@@ -4,7 +4,7 @@ import { analyzeModule } from "../../../packages/builder/src/ast/analyze-module"
 describe("Module analyzer - TypeScript", () => {
   const filePath = "/test/src/test.ts";
 
-  it("extracts top-level gql definitions with kind metadata", () => {
+  it("extracts top-level gql definitions with schema metadata", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
@@ -41,14 +41,13 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     const summary = analysis.definitions.map((definition) => ({
       exportName: definition.exportName,
-      kind: definition.kind,
       schemaName: definition.schemaName,
     }));
 
     expect(summary).toEqual([
-      { exportName: "userModel", kind: "model", schemaName: "default" },
-      { exportName: "userSlice", kind: "slice", schemaName: "default" },
-      { exportName: "pageQuery", kind: "operation", schemaName: "default" },
+      { exportName: "userModel", schemaName: "default" },
+      { exportName: "userSlice", schemaName: "default" },
+      { exportName: "pageQuery", schemaName: "default" },
     ]);
   });
 
@@ -200,8 +199,8 @@ export const adminModel = gql.admin(({ model }) =>
   }), (value) => value)
 );
 
-export const publicQuery = gql.public(({ query }) =>
-  query("PublicData", {}, () => ({
+export const defaultQuery = gql.default(({ query }) =>
+  query("DefaultData", {}, () => ({
     status: "ok",
   }))
 );
@@ -211,13 +210,12 @@ export const publicQuery = gql.public(({ query }) =>
 
     const summary = analysis.definitions.map((definition) => ({
       exportName: definition.exportName,
-      kind: definition.kind,
       schemaName: definition.schemaName,
     }));
 
     expect(summary).toEqual([
-      { exportName: "adminModel", kind: "model", schemaName: "admin" },
-      { exportName: "publicQuery", kind: "operation", schemaName: "public" },
+      { exportName: "adminModel", schemaName: "admin" },
+      { exportName: "defaultQuery", schemaName: "default" },
     ]);
   });
 });
