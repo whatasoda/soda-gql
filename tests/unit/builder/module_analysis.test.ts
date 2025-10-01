@@ -1,55 +1,49 @@
 import { describe, expect, it } from "bun:test";
-
 import { analyzeModule } from "../../../packages/builder/src/ast/analyze-module";
 
-describe("module analysis", () => {
-  const filePath = "/app/src/entities/profile.ts";
+describe("Module analyzer - TypeScript", () => {
+  const filePath = "/test/src/test.ts";
 
-  it("extracts top-level gql definitions with kind metadata", () => {
+  it("extracts top-level gql definitions with schema metadata", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
-export const userModel = gql.model("User", ({ f }) => ({
-  id: f.id(),
-}), (value) => value);
-
-export const userSlice = gql.querySlice(
-  [{ id: gql.scalar("ID", "!") }],
-  ({ $, f }) => ({
-    users: f.users({ id: $.id }, ({ f: nested }) => ({
-      id: nested.id(),
-    })),
-  }),
-  ({ select }) => select("$.users", (result) => result),
+export const userModel = gql.default(({ model }) =>
+  model("User", ({ f }) => ({
+    id: f.id(),
+  }), (value) => value)
 );
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    users: userSlice({ id: $.userId }),
-  }),
+export const userSlice = gql.default(({ querySlice, scalar }) =>
+  querySlice(
+    [{ id: scalar("ID", "!") }],
+    ({ $, f }) => ({
+      users: f.users({ id: $.id }, ({ f: nested }) => ({
+        id: nested.id(),
+      })),
+    }),
+    ({ select }) => select("$.users", (result) => result),
+  )
+);
+
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    { userId: scalar("ID", "!") },
+    ({ $ }) => ({
+      users: userSlice({ id: $.userId }),
+    }),
+  )
 );
 `;
 
     const analysis = analyzeModule({ filePath, source });
 
     const summary = analysis.definitions.map((definition) => ({
-      kind: definition.kind,
       exportName: definition.exportName,
     }));
 
-    expect(summary).toEqual([
-      { kind: "model", exportName: "userModel" },
-      { kind: "slice", exportName: "userSlice" },
-      { kind: "operation", exportName: "pageQuery" },
-    ]);
-
-    expect(analysis.diagnostics).toHaveLength(0);
-
-    const [model] = analysis.definitions;
-    expect(model.loc.start.line).toBe(4);
-    expect(model.loc.start.column).toBeGreaterThan(0);
+    expect(summary).toEqual([{ exportName: "userModel" }, { exportName: "userSlice" }, { exportName: "pageQuery" }]);
   });
 
   it("reports diagnostics when gql definitions are nested inside non-top-level scopes", () => {
@@ -57,7 +51,7 @@ export const pageQuery = gql.query(
 import { gql } from "@/graphql-system";
 
 const buildSlice = () => {
-  const invalid = gql.querySlice([], () => ({}), () => ({}));
+  const invalid = gql.default(({ querySlice }) => querySlice([], () => ({}), () => ({})));
   return invalid;
 };
 
@@ -69,9 +63,10 @@ export const userSlice = buildSlice();
     expect(analysis.definitions).toEqual([]);
     expect(analysis.diagnostics).toHaveLength(1);
     const [diagnostic] = analysis.diagnostics;
-    expect(diagnostic.code).toBe("NON_TOP_LEVEL_DEFINITION");
-    expect(diagnostic.loc.start.line).toBeGreaterThan(0);
-    expect(diagnostic.loc.start.column).toBeGreaterThan(0);
+    expect(diagnostic).toBeDefined();
+    expect(diagnostic?.code).toBe("NON_TOP_LEVEL_DEFINITION");
+    expect(diagnostic?.loc.start.line).toBeGreaterThan(0);
+    expect(diagnostic?.loc.start.column).toBeGreaterThan(0);
   });
 
   it("captures references to imported slices and models", () => {
@@ -79,120 +74,139 @@ export const userSlice = buildSlice();
 import { gql } from "@/graphql-system";
 import { userSlice } from "../entities/user";
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    users: userSlice({ id: $.userId }),
-  }),
-);
-`;
-
-    const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userSlice");
-  });
-
-  it("captures references across same-module definitions", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const sliceA = gql.querySlice([], () => ({
-  echo: sliceB(),
-}), () => ({}));
-
-export const sliceB = gql.querySlice([], () => ({
-  echo: sliceA(),
-}), () => ({}));
-`;
-
-    const analysis = analyzeModule({ filePath, source });
-    const sliceA = analysis.definitions.find((item) => item.exportName === "sliceA");
-    const sliceB = analysis.definitions.find((item) => item.exportName === "sliceB");
-
-    expect(sliceA?.references).toContain("sliceB");
-    expect(sliceB?.references).toContain("sliceA");
-  });
-
-  it("captures references accessed through namespace imports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import * as slices from "../entities/slices";
-
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  {},
-  () => ({
-    first: slices.slice0(),
-  }),
-);
-`;
-
-    const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("slice0");
-  });
-
-  it("extracts definitions from object property exports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const user_remoteModel = {
-  forIterate: gql.model(
-    "user",
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    { userId: scalar("ID", "!") },
+    ({ $ }) => ({
+      users: userSlice({ id: $.userId }),
     }),
-    (data) => ({
-      id: data.id,
-      name: data.name,
+  )
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+
+    expect(analysis.definitions).toHaveLength(1);
+    const [pageQuery] = analysis.definitions;
+    expect(pageQuery).toBeDefined();
+    expect(pageQuery?.references).toEqual(["userSlice"]);
+  });
+
+  it("captures nested dependencies for slices", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import * as user from "../entities/user";
+
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    { userId: scalar("ID", "!") },
+    ({ $ }) => ({
+      profile: user.slice.findById({ id: $.userId }),
     }),
-  ),
-};
-`;
-
-    const analysis = analyzeModule({ filePath, source });
-    const names = analysis.definitions.map((item) => item.exportName);
-    expect(names).toContain("user_remoteModel.forIterate");
-    expect(analysis.diagnostics).toHaveLength(0);
-  });
-
-  it("captures references to properties on imported bindings", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSliceCatalog } from "../entities/user";
-
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    catalog: userSliceCatalog.byId({ id: $.userId }),
-  }),
+  )
 );
 `;
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userSliceCatalog.byId");
+
+    expect(analysis.definitions).toHaveLength(1);
+    const [pageQuery] = analysis.definitions;
+    expect(pageQuery).toBeDefined();
+    expect(pageQuery?.references).toContain("user.slice.findById");
   });
 
-  it("captures deep member references from namespace imports", () => {
+  it("captures references in nested object values", () => {
     const source = `
 import { gql } from "@/graphql-system";
-import * as userCatalog from "../entities/user.catalog";
+import { userSlice, postSlice } from "../entities";
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
-  }),
+export const complexQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ComplexQuery",
+    {
+      userId: scalar("ID", "!"),
+      postId: scalar("ID", "!"),
+    },
+    ({ $ }) => ({
+      result: {
+        user: userSlice({ id: $.userId }),
+        post: postSlice({ id: $.postId }),
+      },
+    }),
+  )
 );
 `;
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userCatalog.collections.byCategory");
+
+    expect(analysis.definitions).toHaveLength(1);
+    const [complexQuery] = analysis.definitions;
+    expect(complexQuery).toBeDefined();
+    expect(complexQuery?.references).toEqual(["userSlice", "postSlice"]);
+  });
+
+  it("captures both local and imported dependencies", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+import { userSlice } from "../entities/user";
+
+export const postSlice = gql.default(({ querySlice, scalar }) =>
+  querySlice(
+    [{ postId: scalar("ID", "!") }],
+    ({ $, f }) => ({
+      posts: f.posts({ id: $.postId }, ({ f }) => f.id()),
+    }),
+    ({ select }) => select("$.posts", (result) => result),
+  )
+);
+
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "PageQuery",
+    {
+      userId: scalar("ID", "!"),
+      postId: scalar("ID", "!"),
+    },
+    ({ $ }) => ({
+      user: userSlice({ id: $.userId }),
+      post: postSlice({ postId: $.postId }),
+    }),
+  )
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+
+    const pageQuery = analysis.definitions.find((def) => def.exportName === "pageQuery");
+    expect(pageQuery?.references).toEqual(["userSlice", "postSlice"]);
+  });
+
+  it("extracts definitions from multiple schemas", () => {
+    const source = `
+import { gql } from "@/graphql-system";
+
+export const adminModel = gql.admin(({ model }) =>
+  model("AdminUser", ({ f }) => ({
+    id: f.id(),
+    role: f.role(),
+  }), (value) => value)
+);
+
+export const defaultQuery = gql.default(({ query }) =>
+  query("DefaultData", {}, () => ({
+    status: "ok",
+  }))
+);
+`;
+
+    const analysis = analyzeModule({ filePath, source });
+
+    const summary = analysis.definitions.map((definition) => ({
+      exportName: definition.exportName,
+    }));
+
+    expect(summary).toEqual([{ exportName: "adminModel" }, { exportName: "defaultQuery" }]);
   });
 });

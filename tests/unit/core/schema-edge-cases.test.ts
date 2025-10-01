@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactories } from "../../../packages/core/src/builder/fields-builder";
-import { createGqlHelpers } from "../../../packages/core/src/builder/schema";
+import { createFieldFactories } from "../../../packages/core/src/buildtime/fields-builder";
+import { createVarBuilder } from "../../../packages/core/src/buildtime/var-builder";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
 describe("Schema Edge Cases", () => {
@@ -25,7 +25,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              user: unsafeOutputRef.scalar(["String", "!"], {}, {}),
+              user: unsafeOutputRef.scalar("String:!", {}, {}),
             },
             {},
           ),
@@ -33,12 +33,13 @@ describe("Schema Edge Cases", () => {
         union: {},
       } satisfies AnyGraphqlSchema;
 
-      const helpers = createGqlHelpers(schema);
+      const helpers = createVarBuilder(schema);
 
       // Trying to get an argument that doesn't exist
       expect(() => {
-        helpers.fieldArg("Query", "user", "nonExistentArg");
-      }).toThrow("Argument nonExistentArg not found");
+        // @ts-expect-error - Testing runtime error handling for non-existent argument
+        helpers.$("userVar").byField("Query", "user", "nonExistentArg");
+      }).toThrow("Argument nonExistentArg not found in field user of type Query");
     });
   });
 
@@ -59,7 +60,8 @@ describe("Schema Edge Cases", () => {
 
       // Attempting to create field factories for non-existent object
       expect(() => {
-        createFieldFactories(schema, "NonExistentObject", {});
+        // @ts-expect-error - Testing runtime error handling for non-existent type
+        createFieldFactories(schema, "NonExistentObject");
       }).toThrow();
     });
   });
@@ -81,10 +83,11 @@ describe("Schema Edge Cases", () => {
               // Create a field with an invalid kind by casting
               weirdField: {
                 kind: "invalid" as any,
-                type: ["String", "!"],
-                args: {},
+                name: "String",
+                modifier: "!",
                 directives: {},
-              },
+                arguments: {},
+              } as any,
             },
             {},
           ),
@@ -93,7 +96,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactories(schema, "Query", {});
+        createFieldFactories(schema, "Query");
       }).toThrow("Unsupported field type");
     });
   });
@@ -112,7 +115,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              result: unsafeOutputRef.union(["SearchResult", "!"], {}, {}),
+              result: unsafeOutputRef.union("SearchResult:!", {}, {}),
             },
             {},
           ),
@@ -129,7 +132,7 @@ describe("Schema Edge Cases", () => {
 
       // The current implementation doesn't throw, it handles it gracefully
       // We should test that it doesn't crash instead
-      const factories = createFieldFactories(schema, "Query", {});
+      const factories = createFieldFactories(schema, "Query");
       expect(factories).toBeDefined();
       expect(factories.result).toBeDefined();
     });
@@ -155,15 +158,15 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              node: unsafeOutputRef.object(["Node", ""], {}, {}),
+              node: unsafeOutputRef.object("Node:?", {}, {}),
             },
             {},
           ),
           ...define("Node").object(
             {
-              id: unsafeOutputRef.scalar(["String", "!"], {}, {}),
-              parent: unsafeOutputRef.object(["Node", ""], {}, {}), // Circular reference
-              children: unsafeOutputRef.object(["Node", "![]!"], {}, {}), // Another circular reference
+              id: unsafeOutputRef.scalar("String:!", {}, {}),
+              parent: unsafeOutputRef.object("Node:?", {}, {}), // Circular reference
+              children: unsafeOutputRef.object("Node:![]!", {}, {}), // Another circular reference
             },
             {},
           ),
@@ -172,7 +175,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       // Should handle circular references without infinite loop
-      const factories = createFieldFactories(schema, "Node", {});
+      const factories = createFieldFactories(schema, "Node");
       expect(factories).toBeDefined();
       expect(factories.parent).toBeDefined();
       expect(factories.children).toBeDefined();

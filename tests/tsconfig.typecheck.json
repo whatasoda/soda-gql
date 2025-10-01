@@ -1,0 +1,28 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "baseUrl": "..",
+    "paths": {
+      "@soda-gql/core": ["packages/core/src/index.ts"],
+      "@soda-gql/core/*": ["packages/core/src/*"],
+      "@soda-gql/runtime": ["packages/runtime/src/index.ts"],
+      "@soda-gql/builder": ["packages/builder/src/index.ts"],
+      "@soda-gql/codegen": ["packages/codegen/src/index.ts"],
+      "@soda-gql/plugin-babel": ["packages/plugin-babel/src/index.ts"],
+      "@soda-gql/tool-utils": ["packages/tool-utils/src/index.ts"],
+      "@/graphql-runtime": ["packages/runtime/src/index.ts"],
+      "@/graphql-runtime/*": ["packages/runtime/src/*"],
+      "@/graphql-system": ["tests/fixtures/runtime-app/graphql-system/index.ts"],
+      "@/graphql-system/*": ["tests/fixtures/runtime-app/graphql-system/*"]
+    }
+  },
+  "include": ["fixtures/**/*.ts", "fixtures/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "build", "../packages/**/*"]
+}

@@ -1,52 +1,31 @@
-import {
-  type AnyAssignableInput,
-  type AnyExecutionResultProjections,
-  type AnyFields,
-  type AnyGraphqlSchema,
-  ExecutionResultProjection,
-  type GraphqlRuntimeAdapter,
-  type InputTypeRefs,
-  type OperationSlice,
-  type OperationType,
-  pseudoTypeAnnotation,
-  type SliceResultProjectionsBuilder,
-} from "../types";
+import type { AnyExecutionResultProjectionsBuilder, AnyOperationSliceOf } from "../types/operation";
+import { ExecutionResultProjection } from "../types/runtime";
+import type { OperationType } from "../types/schema";
+import { hidden } from "../types/shared/hidden";
+import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 
-type GeneratedOperationSlice = {
-  rootFieldKeys: string[];
-  projections: AnyExecutionResultProjections<GraphqlRuntimeAdapter>;
+export type RuntimeOperationSliceInput = {
+  prebuild: StripFunctions<AnyOperationSliceOf<OperationType>>;
+  runtime: {
+    buildProjection: AnyExecutionResultProjectionsBuilder;
+  };
 };
 
-type AnySliceResultProjectionsBuilder = SliceResultProjectionsBuilder<
-  AnyGraphqlSchema,
-  GraphqlRuntimeAdapter,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any,
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  any
->;
-
-export const handleProjectionBuilder = <TBuilder extends AnySliceResultProjectionsBuilder>(
+export const handleProjectionBuilder = <TBuilder extends AnyExecutionResultProjectionsBuilder>(
   projectionBuilder: TBuilder,
 ): ReturnType<TBuilder> =>
   projectionBuilder({
     select: (path, projector) => new ExecutionResultProjection(path, projector),
   });
 
-export const runtimeOperationSlice =
-  (operationType: OperationType) => (generated: GeneratedOperationSlice) => (variables?: AnyAssignableInput) =>
-    ({
-      _output: pseudoTypeAnnotation(),
-      operationType,
-      variables: (variables ?? {}) as AnyAssignableInput,
-      getFields: pseudoTypeAnnotation<AnyFields>(),
-      rootFieldKeys: generated.rootFieldKeys,
-      projections: generated.projections,
-    }) satisfies OperationSlice<
-      AnyGraphqlSchema,
-      GraphqlRuntimeAdapter,
-      OperationType,
-      AnyFields,
-      AnyExecutionResultProjections<GraphqlRuntimeAdapter>,
-      InputTypeRefs
-    >;
+export const createRuntimeOperationSlice = (input: RuntimeOperationSliceInput) => {
+  const projection = handleProjectionBuilder(input.runtime.buildProjection);
+  return {
+    operationType: input.prebuild.operationType,
+    build: (variables) => ({
+      variables,
+      getFields: hidden(),
+      projection,
+    }),
+  } satisfies StripSymbols<AnyOperationSliceOf<OperationType>> as AnyOperationSliceOf<OperationType>;
+};

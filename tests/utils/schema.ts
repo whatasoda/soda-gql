@@ -4,10 +4,10 @@ import {
   defineOperationRoots,
   defineScalar,
   type GraphqlRuntimeAdapter,
-  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../packages/core/src/index.ts";
+import { createRuntimeAdapter } from "../../packages/runtime/src/index.ts";
 
 /**
  * Create standard GraphQL scalar definitions
@@ -85,14 +85,13 @@ export const createQueryOnlySchema = (overrides: Partial<AnyGraphqlSchema> = {})
 /**
  * Create standard runtime adapter
  */
-export const createStandardAdapter = (): GraphqlRuntimeAdapter => {
-  const nonGraphqlErrorType = pseudoTypeAnnotation<{
-    type: "non-graphql-error";
-    cause: unknown;
-  }>();
-
-  return { nonGraphqlErrorType };
-};
+export const createStandardAdapter = (): GraphqlRuntimeAdapter =>
+  createRuntimeAdapter(({ type }) => ({
+    nonGraphqlErrorType: type<{
+      type: "non-graphql-error";
+      cause: unknown;
+    }>(),
+  }));
 
 /**
  * Create a test schema with User type
@@ -119,7 +118,7 @@ export const createUserSchema = (): AnyGraphqlSchema => {
             },
             {},
           ),
-          users: unsafeOutputRef.object(["User", "!", "[]", "!"], {}, {}),
+          users: unsafeOutputRef.object(["User", "[]!"], {}, {}),
         },
         {},
       ),
@@ -127,7 +126,7 @@ export const createUserSchema = (): AnyGraphqlSchema => {
         {
           id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
           name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
-          email: unsafeOutputRef.scalar(["String"], {}, {}),
+          email: unsafeOutputRef.scalar(["String", ""], {}, {}),
         },
         {},
       ),
@@ -151,23 +150,26 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
     scalar,
     enum: {},
     input: {
-      ...define("CreatePostInput").input({
-        title: unsafeInputRef.scalar(["String", "!"], null, {}),
-        content: unsafeInputRef.scalar(["String", "!"], null, {}),
-        authorId: unsafeInputRef.scalar(["ID", "!"], null, {}),
-      }),
+      ...define("CreatePostInput").input(
+        {
+          title: unsafeInputRef.scalar(["String", "!"], null, {}),
+          content: unsafeInputRef.scalar(["String", "!"], null, {}),
+          authorId: unsafeInputRef.scalar(["ID", "!"], null, {}),
+        },
+        {}, // directives
+      ),
     },
     object: {
       ...define("Query").object(
         {
           post: unsafeOutputRef.object(
-            ["Post"],
+            ["Post", ""],
             {
               id: unsafeInputRef.scalar(["ID", "!"], null, {}),
             },
             {},
           ),
-          posts: unsafeOutputRef.object(["Post", "!", "[]", "!"], {}, {}),
+          posts: unsafeOutputRef.object(["Post", "[]!"], {}, {}),
         },
         {},
       ),
@@ -176,7 +178,7 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
           createPost: unsafeOutputRef.object(
             ["Post", "!"],
             {
-              input: unsafeInputRef.object(["CreatePostInput", "!"], null, {}),
+              input: unsafeInputRef.input(["CreatePostInput", "!"], null, {}),
             },
             {},
           ),
@@ -197,7 +199,7 @@ export const createBlogSchema = (): AnyGraphqlSchema => {
         {
           id: unsafeOutputRef.scalar(["ID", "!"], {}, {}),
           name: unsafeOutputRef.scalar(["String", "!"], {}, {}),
-          posts: unsafeOutputRef.object(["Post", "!", "[]", "!"], {}, {}),
+          posts: unsafeOutputRef.object(["Post", "[]!"], {}, {}),
         },
         {},
       ),

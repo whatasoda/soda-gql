@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
+import type { BuilderArtifactModel } from "../../builder/src/types";
 import { BuilderArtifactSchema } from "./schemas/artifact";
 
 export type ArtifactError = {
@@ -42,36 +43,14 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
 export const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =>
   createCanonicalId(resolve(filename), exportName);
 
-export const lookupRef = (
-  artifact: BuilderArtifact,
-  canonicalId: string,
-):
-  | { readonly kind: "query" | "slice" | "model"; readonly document?: string; readonly dependencies?: readonly string[] }
-  | undefined => {
-  const entry = artifact.refs[canonicalId as CanonicalId];
-  if (!entry) {
-    return undefined;
-  }
+export const lookupOperationArtifact = (artifact: BuilderArtifact, canonicalId: string) => {
+  return artifact.operations[canonicalId as CanonicalId];
+};
 
-  if (entry.kind === "operation") {
-    const metadata = entry.metadata as { readonly canonicalDocument: string; readonly dependencies: readonly string[] };
-    return {
-      kind: "query",
-      document: metadata.canonicalDocument,
-      dependencies: metadata.dependencies,
-    };
-  }
+export const lookupSliceArtifact = (artifact: BuilderArtifact, canonicalId: string) => {
+  return artifact.slices[canonicalId as CanonicalId];
+};
 
-  if (entry.kind === "slice") {
-    const metadata = entry.metadata as { readonly dependencies: readonly string[]; readonly canonicalDocuments: readonly string[] };
-    return {
-      kind: "slice",
-      document: metadata.canonicalDocuments[0],
-      dependencies: metadata.dependencies,
-    };
-  }
-
-  return {
-    kind: "model",
-  };
+export const lookupModelArtifact = (artifact: BuilderArtifact, canonicalId: string): BuilderArtifactModel | undefined => {
+  return artifact.models[canonicalId as CanonicalId];
 };

@@ -144,7 +144,7 @@ const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mod
 
   const { report } = success.artifact;
   const lines = [
-    `Documents: ${report.documents}`,
+    `Documents: ${report.operations}`,
     `Slices: ${report.slices}`,
     `Cache: hits ${report.cache.hits}, misses ${report.cache.misses}`,
     ...report.warnings,

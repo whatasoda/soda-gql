@@ -9,6 +9,15 @@ export type CodegenOptions = {
   readonly injectFromPath: string;
 };
 
+export type MultiSchemaCodegenOptions = {
+  readonly schemas: Record<string, string>; // name -> path
+  readonly outPath: string;
+  readonly format: CodegenFormat;
+  readonly runtimeAdapters?: Record<string, string>; // schema name -> adapter module path
+  readonly scalars?: Record<string, string>; // schema name -> scalar module path
+  readonly injectFromPath?: string; // Legacy: single inject module for default schema
+};
+
 export type CodegenCliCommand =
   | {
       readonly kind: "generate";
@@ -65,4 +74,19 @@ export type CodegenSuccess = {
   readonly unions: number;
 };
 
+export type MultiSchemaCodegenSuccess = {
+  readonly schemas: Record<
+    string,
+    {
+      readonly schemaHash: string;
+      readonly objects: number;
+      readonly enums: number;
+      readonly inputs: number;
+      readonly unions: number;
+    }
+  >;
+  readonly outPath: string;
+};
+
 export type CodegenResult = Result<CodegenSuccess, CodegenError>;
+export type MultiSchemaCodegenResult = Result<MultiSchemaCodegenSuccess, CodegenError>;

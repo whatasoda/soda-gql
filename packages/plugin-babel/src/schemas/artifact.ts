@@ -6,14 +6,11 @@ const _DocumentNodeSchema = z.object({
 });
 
 const SliceRefMetadataSchema = z.object({
-  type: z.literal("slice"),
-  name: z.string(),
   canonicalDocuments: z.array(z.string()),
   dependencies: z.array(z.string()),
 });
 
 const ModelRefMetadataSchema = z.object({
-  type: z.literal("model"),
   hash: z.string(),
   dependencies: z.array(z.string()),
 });
@@ -23,7 +20,7 @@ const OperationRefMetadataSchema = z.object({
   dependencies: z.array(z.string()),
 });
 
-const RefEntrySchema = z.discriminatedUnion("kind", [
+const _RefEntrySchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("model"),
     metadata: ModelRefMetadataSchema,
@@ -39,10 +36,11 @@ const RefEntrySchema = z.discriminatedUnion("kind", [
 ]);
 
 export const BuilderArtifactSchema = z.object({
-  documents: z.record(z.string(), z.unknown()),
-  refs: z.record(z.string(), RefEntrySchema),
+  operations: z.record(z.string(), z.unknown()),
+  slices: z.record(z.string(), z.unknown()),
+  models: z.record(z.string(), z.unknown()),
   report: z.object({
-    documents: z.number(),
+    operations: z.number(),
     models: z.number(),
     slices: z.number(),
     durationMs: z.number(),

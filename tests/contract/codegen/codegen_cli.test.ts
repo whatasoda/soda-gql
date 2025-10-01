@@ -1,51 +1,10 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { assertCliError, getProjectRoot, runCodegenCli } from "../../utils/cli";
+import { copyDefaultInjectModule } from "../../fixtures/inject-module/index.ts";
+import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../utils/cli";
 
 const projectRoot = getProjectRoot();
-
-const createInjectModule = async (outFile: string) => {
-  const contents = `\
-import { defineScalar, pseudoTypeAnnotation, type GraphqlRuntimeAdapter } from "@soda-gql/core";
-
-export const scalar = {
-  ...defineScalar("ID", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("String", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("Int", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Float", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Boolean", ({ type }) => ({
-    input: type<boolean>(),
-    output: type<boolean>(),
-    directives: {},
-  })),
-} as const;
-
-const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
-
-export const adapter = {
-  nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
-`;
-
-  await Bun.write(outFile, contents);
-};
 
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
   const subprocess = Bun.spawn({
@@ -77,16 +36,18 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `missing-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    await createInjectModule(injectFile);
+    copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       join(tmpRoot, "does-not-exist.graphql"),
       "--out",
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter:default",
+      injectFile,
+      "--scalar:default",
       injectFile,
     ]);
 
@@ -100,16 +61,18 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `invalid-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    await createInjectModule(injectFile);
+    copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       invalidSchemaPath,
       "--out",
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter:default",
+      injectFile,
+      "--scalar:default",
       injectFile,
     ]);
 
@@ -124,16 +87,18 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `runtime-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    await createInjectModule(injectFile);
+    copyDefaultInjectModule(injectFile);
 
     const result = await runCodegenCli([
-      "--schema",
+      "--schema:default",
       schemaPath,
       "--out",
       outFile,
       "--format",
       "json",
-      "--inject-from",
+      "--runtime-adapter:default",
+      injectFile,
+      "--scalar:default",
       injectFile,
     ]);
 
@@ -142,8 +107,11 @@ describe("soda-gql codegen CLI", () => {
     expect(generatedExists).toBe(true);
     const moduleContents = await Bun.file(outFile).text();
     expect(moduleContents).toContain("export const gql");
-    expect(moduleContents).toContain("import { adapter, scalar } from");
-    expect(result.stdout).toContain("schemaHash");
+    expect(moduleContents).toContain("import { adapter as adapter_default }");
+    expect(moduleContents).toContain("import { scalar as scalar_default }");
+    // Multi-schema format has nested structure
+    const jsonOutput = JSON.parse(result.stdout);
+    expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
 
     const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");

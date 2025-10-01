@@ -83,7 +83,8 @@ bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
 Edit `./src/graphql-system/inject.ts` to describe each custom scalar and to implement the `GraphqlRuntimeAdapter`. The template uses the new `defineScalar()` helper so each scalar stays strongly typed.
 
 ```ts
-import { defineScalar, type GraphqlRuntimeAdapter, pseudoTypeAnnotation } from "@soda-gql/core";
+import { defineScalar } from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/runtime";
 
 export const scalar = {
   ...defineScalar("DateTime", ({ type }) => ({
@@ -98,11 +99,9 @@ export const scalar = {
   })),
 } as const;
 
-const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();
-
-export const adapter = {
-  nonGraphqlErrorType,
-} satisfies GraphqlRuntimeAdapter;
+export const adapter = createRuntimeAdapter(({ type }) => ({
+  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
+}));
 ```
 
 Replace or extend the examples to match the scalars and runtime behaviour in your own schema.

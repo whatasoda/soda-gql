@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, relative, resolve } from "node:path";
-import { err } from "neverthrow";
+import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
-import { generateRuntimeModule } from "./generator";
+import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import type { CodegenError, CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
+import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
 
 const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const fromDir = dirname(fromPath);
@@ -20,34 +20,112 @@ const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   return sanitized.startsWith(".") ? sanitized : `./${sanitized}`;
 };
 
-export const runCodegen = (options: CodegenOptions): CodegenResult =>
-  loadSchema(options.schemaPath).andThen((document) => {
-    if (!existsSync(options.injectFromPath)) {
-      return err<CodegenSuccess, CodegenError>({
+export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
+  const outPath = resolve(options.outPath);
+
+  // Handle legacy injectFromPath for backward compatibility
+  const runtimeAdapters = options.runtimeAdapters ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
+  const scalars = options.scalars ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
+
+  // Validate that all adapter and scalar files exist
+  const adapterPaths = new Map<string, string>();
+  const scalarPaths = new Map<string, string>();
+
+  for (const [schemaName, adapterPath] of Object.entries(runtimeAdapters)) {
+    const resolvedPath = resolve(adapterPath);
+    if (!existsSync(resolvedPath)) {
+      return err({
         code: "INJECT_MODULE_NOT_FOUND",
-        message: `Inject module not found: ${options.injectFromPath}`,
-        injectPath: options.injectFromPath,
+        message: `Runtime adapter module not found for schema '${schemaName}': ${resolvedPath}`,
+        injectPath: resolvedPath,
+      });
+    }
+    adapterPaths.set(schemaName, resolvedPath);
+  }
+
+  for (const [schemaName, scalarPath] of Object.entries(scalars)) {
+    const resolvedPath = resolve(scalarPath);
+    if (!existsSync(resolvedPath)) {
+      return err({
+        code: "INJECT_MODULE_NOT_FOUND",
+        message: `Scalar module not found for schema '${schemaName}': ${resolvedPath}`,
+        injectPath: resolvedPath,
+      });
+    }
+    scalarPaths.set(schemaName, resolvedPath);
+  }
+
+  // Load all schemas
+  const schemas = new Map<string, import("graphql").DocumentNode>();
+  const schemaHashes: Record<string, { schemaHash: string; objects: number; enums: number; inputs: number; unions: number }> = {};
+
+  for (const [name, schemaPath] of Object.entries(options.schemas)) {
+    const result = await loadSchema(schemaPath).match(
+      (doc) => Promise.resolve(ok(doc)),
+      (error) => Promise.resolve(err(error)),
+    );
+
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    schemas.set(name, result.value);
+  }
+
+  // Build injection config for each schema
+  const injectionConfig = new Map<string, { adapterImportPath: string; scalarImportPath: string }>();
+
+  for (const schemaName of schemas.keys()) {
+    const adapterPath = adapterPaths.get(schemaName);
+    const scalarPath = scalarPaths.get(schemaName);
+
+    if (!adapterPath || !scalarPath) {
+      return err({
+        code: "INJECT_MODULE_REQUIRED",
+        message: `Missing adapter or scalar configuration for schema '${schemaName}'`,
       });
     }
 
-    const outPath = resolve(options.outPath);
-    const injectPath = resolve(options.injectFromPath);
-    const importPath = toImportSpecifier(outPath, injectPath);
-
-    const { code, stats } = generateRuntimeModule(document, {
-      injection: {
-        importPath,
-      },
+    injectionConfig.set(schemaName, {
+      adapterImportPath: toImportSpecifier(outPath, adapterPath),
+      scalarImportPath: toImportSpecifier(outPath, scalarPath),
     });
+  }
 
-    const schemaHash = hashSchema(document);
-
-    return writeModule(outPath, code).map(
-      () =>
-        ({
-          schemaHash,
-          outPath,
-          ...stats,
-        }) satisfies CodegenSuccess,
-    );
+  // Generate multi-schema module
+  const { code } = generateMultiSchemaModule(schemas, {
+    injection: injectionConfig,
   });
+
+  // Calculate individual schema stats and hashes
+  for (const [name, document] of schemas.entries()) {
+    const schemaIndex = (await import("./generator")).createSchemaIndex(document);
+    const objects = Array.from(schemaIndex.objects.keys()).filter((n) => !n.startsWith("__")).length;
+    const enums = Array.from(schemaIndex.enums.keys()).filter((n) => !n.startsWith("__")).length;
+    const inputs = Array.from(schemaIndex.inputs.keys()).filter((n) => !n.startsWith("__")).length;
+    const unions = Array.from(schemaIndex.unions.keys()).filter((n) => !n.startsWith("__")).length;
+
+    schemaHashes[name] = {
+      schemaHash: hashSchema(document),
+      objects,
+      enums,
+      inputs,
+      unions,
+    };
+  }
+
+  // Write the module
+  const writeResult = await writeModule(outPath, code).match(
+    () => Promise.resolve(ok(undefined)),
+    (error) => Promise.resolve(err(error)),
+  );
+
+  if (writeResult.isErr()) {
+    return err(writeResult.error);
+  }
+
+  return ok({
+    schemas: schemaHashes,
+    outPath,
+  } satisfies MultiSchemaCodegenSuccess);
+};

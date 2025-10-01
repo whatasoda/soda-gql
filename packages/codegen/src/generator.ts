@@ -1,3 +1,4 @@
+import type { TypeModifier } from "@soda-gql/core";
 import {
   type ConstDirectiveNode,
   type ConstValueNode,
@@ -153,7 +154,7 @@ const updateOperationTypes = (
   }
 };
 
-const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
+export const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
   const objects = new Map<string, ObjectRecord>();
   const inputs = new Map<string, InputRecord>();
   const enums = new Map<string, EnumRecord>();
@@ -273,12 +274,8 @@ const collectTypeLevels = (
   return { name: type.name.value, levels };
 };
 
-const buildTypeModifier = (levels: TypeLevel[]): string => {
-  if (levels.length === 0) {
-    return "";
-  }
-
-  let modifier = "";
+const buildTypeModifier = (levels: TypeLevel[]): TypeModifier => {
+  let modifier: TypeModifier | "" = "";
 
   for (const level of levels.slice().reverse()) {
     if (level.kind === "named") {
@@ -286,12 +283,12 @@ const buildTypeModifier = (levels: TypeLevel[]): string => {
       continue;
     }
 
-    const rest = modifier;
-    const base = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
+    const rest: TypeModifier | "" = modifier;
+    const base: TypeModifier = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
     modifier = level.nonNull ? `${base}!` : base;
   }
 
-  return modifier;
+  return modifier || "?";
 };
 
 const parseTypeReference = (type: TypeNode): { readonly name: string; readonly modifier: string } => {
@@ -299,7 +296,7 @@ const parseTypeReference = (type: TypeNode): { readonly name: string; readonly m
   return { name, modifier: buildTypeModifier(levels) };
 };
 
-const renderTypeTuple = (name: string, modifier: string): string => `[${JSON.stringify(name)}, ${JSON.stringify(modifier)}]`;
+const renderType = (name: string, modifier: string): string => JSON.stringify(`${name}:${modifier}`);
 
 const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
@@ -346,23 +343,23 @@ const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined)
 };
 
 const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
-  value ? `{ default: ${renderConstValue(value)} }` : "null";
+  value ? `() => (${renderConstValue(value)})` : "null";
 
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);
-  const tuple = renderTypeTuple(name, modifier);
+  const tuple = renderType(name, modifier);
   const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
   const directives = renderDirectives(definition.directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeInputRef.scalar(${tuple}, ${defaultValue}, ${directives})`;
+    return `unsafeInputRef.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeInputRef.enum(${tuple}, ${defaultValue}, ${directives})`;
+    return `unsafeInputRef.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
-  return `unsafeInputRef.input(${tuple}, ${defaultValue}, ${directives})`;
+  return `unsafeInputRef.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -380,27 +377,27 @@ const renderOutputRef = (
   directives: readonly ConstDirectiveNode[] | undefined,
 ): string => {
   const { name, modifier } = parseTypeReference(type);
-  const tuple = renderTypeTuple(name, modifier);
+  const modifiedType = renderType(name, modifier);
   const argumentMap = renderArgumentMap(schema, args);
   const directiveMap = renderDirectives(directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeOutputRef.enum(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isUnionName(schema, name)) {
-    return `unsafeOutputRef.union(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isObjectName(schema, name)) {
-    return `unsafeOutputRef.object(${tuple}, ${argumentMap}, ${directiveMap})`;
+    return `unsafeOutputRef.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
-  return `unsafeOutputRef.scalar(${tuple}, ${argumentMap}, ${directiveMap})`;
+  return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -520,143 +517,201 @@ export type GeneratedModule = {
   };
 };
 
-type RuntimeTemplateInjection = { readonly mode: "inline" } | { readonly mode: "inject"; readonly importPath: string };
+type PerSchemaInjection = {
+  readonly adapterImportPath: string;
+  readonly scalarImportPath: string;
+};
 
-type RuntimeTemplateOptions = {
-  readonly queryType: string;
-  readonly mutationType: string;
-  readonly subscriptionType: string;
-  readonly scalarBlock: string;
-  readonly enumBlock: string;
-  readonly inputBlock: string;
-  readonly objectBlock: string;
-  readonly unionBlock: string;
+type RuntimeTemplateInjection =
+  | { readonly mode: "inline" }
+  | {
+      readonly mode: "inject";
+      readonly perSchema: Map<string, PerSchemaInjection>;
+    };
+
+export type RuntimeGenerationOptions = {
+  readonly injection?: Map<string, PerSchemaInjection>;
+};
+
+type MultiRuntimeTemplateOptions = {
+  readonly schemas: Record<
+    string,
+    {
+      readonly queryType: string;
+      readonly mutationType: string;
+      readonly subscriptionType: string;
+      readonly scalarBlock: string;
+      readonly enumBlock: string;
+      readonly inputBlock: string;
+      readonly objectBlock: string;
+      readonly unionBlock: string;
+    }
+  >;
   readonly injection: RuntimeTemplateInjection;
 };
 
-const runtimeTemplate = ($$: RuntimeTemplateOptions) => {
-  const extraImports = [$$.injection.mode === "inject" ? `import { adapter, scalar } from "${$$.injection.importPath}";` : ""]
-    .filter((line) => line.length > 0)
-    .join("\n");
+const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
+  // Build imports based on injection mode
+  const imports: string[] = [];
+  const adapterAliases = new Map<string, string>();
+  const scalarAliases = new Map<string, string>();
 
-  const adapterBlock =
-    $$.injection.mode === "inject"
-      ? ""
-      : `const nonGraphqlErrorType = pseudoTypeAnnotation<{ type: "non-graphql-error"; cause: unknown }>();\nconst adapter = {\n  nonGraphqlErrorType,\n} satisfies GraphqlRuntimeAdapter;`;
+  if ($$.injection.mode === "inject") {
+    // Generate per-schema imports
+    for (const [schemaName, injection] of $$.injection.perSchema) {
+      const adapterAlias = `adapter_${schemaName}`;
+      const scalarAlias = `scalar_${schemaName}`;
+      adapterAliases.set(schemaName, adapterAlias);
+      scalarAliases.set(schemaName, scalarAlias);
 
-  const scalarEntry = $$.injection.mode === "inject" ? "scalar" : $$.scalarBlock;
+      imports.push(`import { adapter as ${adapterAlias} } from "${injection.adapterImportPath}";`);
+      imports.push(`import { scalar as ${scalarAlias} } from "${injection.scalarImportPath}";`);
+    }
+  }
+
+  const extraImports = imports.join("\n");
+
+  // Generate per-schema definitions
+  const schemaBlocks: string[] = [];
+  const gqlEntries: string[] = [];
+
+  for (const [name, config] of Object.entries($$.schemas)) {
+    const schemaVar = `${name}Schema`;
+    const adapterVar = $$.injection.mode === "inject" ? adapterAliases.get(name) : `adapter_${name}`;
+    const scalarBlock = $$.injection.mode === "inject" ? scalarAliases.get(name) : config.scalarBlock;
+
+    // Generate adapter if inline mode
+    const adapterDefinition =
+      $$.injection.mode === "inject"
+        ? ""
+        : `const ${adapterVar} = createRuntimeAdapter(({ type }) => ({\n  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),\n}));\n`;
+
+    schemaBlocks.push(`${adapterDefinition}
+const ${schemaVar} = {
+  operations: defineOperationRoots({
+    query: "${config.queryType}",
+    mutation: "${config.mutationType}",
+    subscription: "${config.subscriptionType}",
+  }),
+  scalar: ${scalarBlock},
+  enum: ${config.enumBlock},
+  input: ${config.inputBlock},
+  object: ${config.objectBlock},
+  union: ${config.unionBlock},
+} satisfies AnyGraphqlSchema;
+
+export type Schema_${name} = typeof ${schemaVar} & { _?: never };
+export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
+
+    gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+  }
 
   return `\
 import {
   type AnyGraphqlSchema,
-  createGql,
+  createGqlInvoker,
   define,
   defineOperationRoots,
-  type GraphqlRuntimeAdapter,\n  pseudoTypeAnnotation,
   unsafeInputRef,
   unsafeOutputRef,
 } from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/runtime";
 ${extraImports}
 
-export const schema = {
-  operations: defineOperationRoots({
-    query: "${$$.queryType}",
-    mutation: "${$$.mutationType}",
-    subscription: "${$$.subscriptionType}",
-  }),
-  scalar: ${scalarEntry},
-  enum: ${$$.enumBlock},
-  input: ${$$.inputBlock},
-  object: ${$$.objectBlock},
-  union: ${$$.unionBlock},
-} satisfies AnyGraphqlSchema;
+${schemaBlocks.join("\n")}
 
-${adapterBlock}
-
-export type Schema = typeof schema & { _?: never };
-export type Adapter = typeof adapter & { _?: never };
-
-export const gql = createGql<Schema, Adapter>({ schema, adapter });
+export const gql = {
+${gqlEntries.join(",\n")}
+};
 `;
 };
 
-export type RuntimeGenerationOptions = {
-  readonly injection?: {
-    readonly importPath: string;
+export const generateMultiSchemaModule = (
+  schemas: Map<string, DocumentNode>,
+  options?: RuntimeGenerationOptions,
+): GeneratedModule => {
+  // biome-ignore lint/suspicious/noExplicitAny: complex schema config type
+  const schemaConfigs: Record<string, any> = {};
+  const allStats = {
+    objects: 0,
+    enums: 0,
+    inputs: 0,
+    unions: 0,
   };
-};
 
-export const generateRuntimeModule = (document: DocumentNode, options?: RuntimeGenerationOptions): GeneratedModule => {
-  const schema = createSchemaIndex(document);
+  for (const [name, document] of schemas.entries()) {
+    const schema = createSchemaIndex(document);
 
-  const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
-    renderScalarDefinition(schema.scalars.get(name) ?? { name, directives: [] }),
-  );
+    const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
+      renderScalarDefinition(schema.scalars.get(name) ?? { name, directives: [] }),
+    );
 
-  const customScalarDefinitions = collectScalarNames(schema)
-    .filter((name) => !builtinScalarTypes.has(name))
-    .map((name) => {
-      const record = schema.scalars.get(name);
-      return record ? renderScalarDefinition(record) : "";
-    })
-    .filter((definition) => definition.length > 0);
+    const customScalarDefinitions = collectScalarNames(schema)
+      .filter((name) => !builtinScalarTypes.has(name))
+      .map((name) => {
+        const record = schema.scalars.get(name);
+        return record ? renderScalarDefinition(record) : "";
+      })
+      .filter((definition) => definition.length > 0);
 
-  const allScalarDefinitions = builtinScalarDefinitions.concat(customScalarDefinitions);
+    const allScalarDefinitions = builtinScalarDefinitions.concat(customScalarDefinitions);
 
-  const objectTypeNames = collectObjectTypeNames(schema);
-  const enumTypeNames = collectEnumTypeNames(schema);
-  const inputTypeNames = collectInputTypeNames(schema);
-  const unionTypeNames = collectUnionTypeNames(schema);
+    const objectTypeNames = collectObjectTypeNames(schema);
+    const enumTypeNames = collectEnumTypeNames(schema);
+    const inputTypeNames = collectInputTypeNames(schema);
+    const unionTypeNames = collectUnionTypeNames(schema);
 
-  const scalarBlock = renderPropertyLines({ entries: allScalarDefinitions, indentSize: 4 });
+    const scalarBlock = renderPropertyLines({ entries: allScalarDefinitions, indentSize: 4 });
+    const enumDefinitions = enumTypeNames
+      .map((name) => renderEnumDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const enumBlock = renderPropertyLines({ entries: enumDefinitions, indentSize: 4 });
+    const inputDefinitions = inputTypeNames
+      .map((name) => renderInputDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const inputBlock = renderPropertyLines({ entries: inputDefinitions, indentSize: 4 });
+    const objectDefinitions = objectTypeNames
+      .map((name) => renderObjectDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const objectBlock = renderPropertyLines({ entries: objectDefinitions, indentSize: 4 });
+    const unionDefinitions = unionTypeNames
+      .map((name) => renderUnionDefinition(schema, name))
+      .filter((definition) => definition.length > 0);
+    const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
 
-  const enumDefinitions = enumTypeNames
-    .map((name) => renderEnumDefinition(schema, name))
-    .filter((definition) => definition.length > 0);
-  const enumBlock = renderPropertyLines({ entries: enumDefinitions, indentSize: 4 });
+    const queryType = schema.operationTypes.query ?? "Query";
+    const mutationType = schema.operationTypes.mutation ?? "Mutation";
+    const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
 
-  const inputDefinitions = inputTypeNames
-    .map((name) => renderInputDefinition(schema, name))
-    .filter((definition) => definition.length > 0);
-  const inputBlock = renderPropertyLines({ entries: inputDefinitions, indentSize: 4 });
+    schemaConfigs[name] = {
+      queryType,
+      mutationType,
+      subscriptionType,
+      scalarBlock,
+      enumBlock,
+      inputBlock,
+      objectBlock,
+      unionBlock,
+    };
 
-  const objectDefinitions = objectTypeNames
-    .map((name) => renderObjectDefinition(schema, name))
-    .filter((definition) => definition.length > 0);
-  const objectBlock = renderPropertyLines({ entries: objectDefinitions, indentSize: 4 });
-
-  const unionDefinitions = unionTypeNames
-    .map((name) => renderUnionDefinition(schema, name))
-    .filter((definition) => definition.length > 0);
-  const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
-
-  const queryType = schema.operationTypes.query ?? "Query";
-  const mutationType = schema.operationTypes.mutation ?? "Mutation";
-  const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
+    // Accumulate stats
+    allStats.objects += objectDefinitions.length;
+    allStats.enums += enumDefinitions.length;
+    allStats.inputs += inputDefinitions.length;
+    allStats.unions += unionDefinitions.length;
+  }
 
   const injection: RuntimeTemplateInjection = options?.injection
-    ? { mode: "inject", importPath: options.injection.importPath }
+    ? { mode: "inject", perSchema: options.injection }
     : { mode: "inline" };
 
-  const code = runtimeTemplate({
-    queryType,
-    mutationType,
-    subscriptionType,
-    scalarBlock,
-    enumBlock,
-    inputBlock,
-    objectBlock,
-    unionBlock,
+  const code = multiRuntimeTemplate({
+    schemas: schemaConfigs,
     injection,
   });
 
   return {
     code,
-    stats: {
-      objects: objectDefinitions.length,
-      enums: enumDefinitions.length,
-      inputs: inputDefinitions.length,
-      unions: unionDefinitions.length,
-    },
+    stats: allStats,
   };
 };

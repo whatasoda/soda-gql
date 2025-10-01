@@ -9,12 +9,14 @@ describe("module analysis (swc)", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  {},
-  () => ({
-    hello: gql.model("user", () => ({}), (value) => value)(),
-  }),
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    {},
+    () => ({
+      hello: "world",
+    }),
+  )
 );
 `;
 
@@ -28,12 +30,14 @@ export const pageQuery = gql.query(
 import { gql } from "@/graphql-system";
 
 export const user_remoteModel = {
-  forIterate: gql.model(
-    "user",
-    ({ f }) => ({
-      ...f.id(),
-    }),
-    (data) => data,
+  forIterate: gql.default(({ model }) =>
+    model(
+      "user",
+      ({ f }) => ({
+        ...f.id(),
+      }),
+      (data) => data,
+    )
   ),
 };
 `;
@@ -49,7 +53,9 @@ export const user_remoteModel = {
 import { gql } from "@/graphql-system";
 
 export const factory = () => {
-  return gql.model("user", () => ({}), (value) => value);
+  return gql.default(({ model }) =>
+    model("user", () => ({}), (value) => value)
+  );
 };
 `;
 
@@ -63,12 +69,14 @@ export const factory = () => {
 import { gql } from "@/graphql-system";
 import { userSliceCatalog } from "../entities/user";
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    catalog: userSliceCatalog.byId({ id: $.userId }),
-  }),
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    { userId: scalar("ID", "!") },
+    ({ $ }) => ({
+      catalog: userSliceCatalog.byId({ id: $.userId }),
+    }),
+  )
 );
 `;
 
@@ -82,12 +90,14 @@ export const pageQuery = gql.query(
 import { gql } from "@/graphql-system";
 import * as userCatalog from "../entities/user.catalog";
 
-export const pageQuery = gql.query(
-  "ProfilePageQuery",
-  { userId: gql.scalar("ID", "!") },
-  ({ $ }) => ({
-    catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
-  }),
+export const pageQuery = gql.default(({ query, scalar }) =>
+  query(
+    "ProfilePageQuery",
+    { userId: scalar("ID", "!") },
+    ({ $ }) => ({
+      catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
+    }),
+  )
 );
 `;
 

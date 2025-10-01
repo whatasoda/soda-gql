@@ -14,7 +14,8 @@
       "recommended": true,
       "correctness": {
         "noUnusedVariables": "warn",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUnusedPrivateClassMembers": "off"
       },
       "style": {
         "useConst": "error",
@@ -25,7 +26,8 @@
       },
       "suspicious": {
         "noExplicitAny": "error",
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "noConfusingVoidType": "off"
       }
     }
   },
@@ -54,7 +56,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts"],
+      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts", "packages/core/src/types/**/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {

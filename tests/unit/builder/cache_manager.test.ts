@@ -1,85 +1,117 @@
 import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
-import { createModuleCache } from "../../../packages/builder/src/cache";
+import {
+	createJsonCache,
+	ModuleCacheManager,
+} from "../../../packages/builder/src/cache";
 import { createTestSuite, TestSuite } from "../../utils/base";
 
 class CacheManagerTestSuite extends TestSuite {
-  createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
-    return {
-      filePath: "/dev/null",
-      sourceHash: "",
-      definitions: [],
-      diagnostics: [],
-      imports: [],
-      exports: [],
-      ...overrides,
-    };
+	createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
+		return {
+			filePath: "/dev/null",
+			signature: "",
+			definitions: [],
+			diagnostics: [],
+			imports: [],
+			exports: [],
+			...overrides,
+		};
+	}
+
+  getTempPath(): string {
+    return this.tempDir.path;
   }
 }
 
 describe("module cache manager", () => {
   const suite = createTestSuite(CacheManagerTestSuite);
 
-  it("returns cached analysis when file hash matches", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const analysis = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-      definitions: [
-        {
-          kind: "model",
-          exportName: "userModel",
-          loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
-          references: [],
-          expression: "gql.model('User', () => ({}), (value) => value)",
-        },
-      ],
-    });
+	it("returns cached analysis when file hash matches", () => {
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
 
-    cache.store(analysis);
+		const analysis = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+			definitions: [
+				{
+					exportName: "userModel",
+					loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
+					references: [],
+					expression: "gql.model('User', () => ({}), (value) => value)",
+				},
+			],
+		});
 
-    const hit = cache.load("/app/src/entities/user.ts", "hash-1");
-    expect(hit).toEqual(analysis);
-  });
+		cache.store(analysis);
 
-  it("misses cache when hash differs", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const analysis = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-    });
+		const hit = cache.load("/app/src/entities/user.ts", "hash-1");
+		expect(hit).toEqual(analysis);
+	});
 
-    cache.store(analysis);
+	it("misses cache when hash differs", () => {
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
 
-    const miss = cache.load("/app/src/entities/user.ts", "hash-2");
-    expect(miss).toBeNull();
-  });
+		const analysis = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+		});
 
-  it("overwrites cache entries when storing newer analysis", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const initial = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-    });
+		cache.store(analysis);
 
-    const updated = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-2",
-      definitions: [
-        {
-          kind: "operation",
-          exportName: "profileQuery",
-          loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
-          references: [],
-          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
-        },
-      ],
-    });
+		const miss = cache.load("/app/src/entities/user.ts", "hash-2");
+		expect(miss).toBeNull();
+	});
 
-    cache.store(initial);
-    cache.store(updated);
+	it("overwrites cache entries when storing newer analysis", () => {
+		const factory = createJsonCache({
+			rootDir: suite.getTempPath(),
+			prefix: ["test"],
+		});
+		const cache = new ModuleCacheManager({
+			factory,
+			analyzer: "ts",
+			evaluatorId: "test",
+		});
 
-    const hit = cache.load("/app/src/entities/user.ts", "hash-2");
-    expect(hit).toEqual(updated);
-  });
+		const initial = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+		});
+
+		const updated = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-2",
+			definitions: [
+				{
+					exportName: "profileQuery",
+					loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
+					references: [],
+					expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+				},
+			],
+		});
+
+		cache.store(initial);
+		cache.store(updated);
+
+		const hit = cache.load("/app/src/entities/user.ts", "hash-2");
+		expect(hit).toEqual(updated);
+	});
 });

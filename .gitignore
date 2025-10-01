@@ -161,3 +161,6 @@ bun.lockb
 .tmp
 
 .prompts
+
+# Test fixture stubs
+tests/fixtures/runtime-app/graphql-system/

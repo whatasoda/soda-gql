@@ -1,0 +1,28 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "baseUrl": ".",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@soda-gql/core": ["../packages/core/src/index.ts"],
+      "@soda-gql/core/*": ["../packages/core/src/*"],
+      "@soda-gql/codegen": ["../packages/codegen/src/index.ts"],
+      "@soda-gql/codegen/*": ["../packages/codegen/src/*"],
+      "@soda-gql/builder": ["../packages/builder/src/index.ts"],
+      "@soda-gql/builder/*": ["../packages/builder/src/*"],
+      "@soda-gql/plugin-babel": ["../packages/plugin-babel/src/index.ts"],
+      "@soda-gql/plugin-babel/*": ["../packages/plugin-babel/src/*"],
+      "@soda-gql/cli": ["../packages/cli/src/index.ts"],
+      "@soda-gql/cli/*": ["../packages/cli/src/*"],
+      "@soda-gql/runtime": ["../packages/runtime/src/index.ts"],
+      "@soda-gql/runtime/*": ["../packages/runtime/src/*"],
+      "@soda-gql/tool-utils": ["../packages/tool-utils/src/index.ts"],
+      "@soda-gql/tool-utils/*": ["../packages/tool-utils/src/*"],
+      "@/graphql-system": ["./fixtures/runtime-app/graphql-system/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.test.ts", "../packages/*/src/**/*.ts"],
+  "exclude": ["node_modules", ".tmp/**/*", "../packages/*/src/**/*.test.ts", "../packages/*/src/**/*.spec.ts"]
+}

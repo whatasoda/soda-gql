@@ -1,15 +1,18 @@
-import { type AnyFields, type AnyGraphqlSchema, type EmptyObject, type Model, pseudoTypeAnnotation } from "../types";
+import type { AnyModel } from "../types/operation";
+import { hidden } from "../types/shared/hidden";
+import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 
-type GeneratedModel = {
-  typename: string;
-  // biome-ignore lint/suspicious/noExplicitAny: abstract type
-  transform: (raw: any) => object;
+export type RuntimeModelInput = {
+  prebuild: StripFunctions<AnyModel>;
+  runtime: {
+    // biome-ignore lint/suspicious/noExplicitAny: any is ok here
+    normalize: (raw: any) => object;
+  };
 };
 
-export const runtimeModel = (generated: GeneratedModel): Model<AnyGraphqlSchema, string, EmptyObject, AnyFields, object> => ({
-  _input: pseudoTypeAnnotation(),
-  _output: pseudoTypeAnnotation(),
-  typename: generated.typename,
-  fragment: pseudoTypeAnnotation(),
-  transform: generated.transform,
-});
+export const createRuntimeModel = (input: RuntimeModelInput): AnyModel =>
+  ({
+    typename: input.prebuild.typename,
+    fragment: hidden(),
+    normalize: input.runtime.normalize,
+  }) satisfies StripSymbols<AnyModel> as unknown as AnyModel;
