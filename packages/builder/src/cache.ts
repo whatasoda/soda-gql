@@ -5,8 +5,11 @@ import type { ModuleAnalysis } from "./ast/analyze-module";
 import { ModuleAnalysisSchema } from "./schemas/cache";
 
 export type ModuleCache = {
-  readonly store: (analysis: ModuleAnalysis) => void;
-  readonly load: (filePath: string, sourceHash: string) => ModuleAnalysis | null;
+	readonly store: (analysis: ModuleAnalysis) => void;
+	readonly load: (
+		filePath: string,
+		signature: string,
+	) => ModuleAnalysis | null;
 };
 
 export type ModuleCacheOptions = {
@@ -29,22 +32,22 @@ export const createModuleCache = ({ rootDir }: ModuleCacheOptions): ModuleCache 
       writeFileSync(targetPath, JSON.stringify(analysis));
     },
 
-    load: (filePath, sourceHash) => {
-      const targetPath = resolveEntryPath(filePath);
-      if (!existsSync(targetPath)) {
-        return null;
-      }
+		load: (filePath, signature) => {
+			const targetPath = resolveEntryPath(filePath);
+			if (!existsSync(targetPath)) {
+				return null;
+			}
 
-      try {
-        const raw = readFileSync(targetPath, "utf8");
-        const parsed = ModuleAnalysisSchema.parse(JSON.parse(raw));
-        if (parsed.sourceHash !== sourceHash) {
-          return null;
-        }
-        return parsed as ModuleAnalysis;
-      } catch {
-        return null;
-      }
-    },
+			try {
+				const raw = readFileSync(targetPath, "utf8");
+				const parsed = ModuleAnalysisSchema.parse(JSON.parse(raw));
+				if (parsed.signature !== signature) {
+					return null;
+				}
+				return parsed as ModuleAnalysis;
+			} catch {
+				return null;
+			}
+		},
   } satisfies ModuleCache;
 };

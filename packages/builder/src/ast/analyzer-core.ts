@@ -75,18 +75,18 @@ export const analyzeModuleCore = <TFile, THandle>(
   input: AnalyzeModuleInput,
   adapter: AnalyzerAdapter<TFile, THandle>,
 ): ModuleAnalysis => {
-  // Parse source
-  const file = adapter.parse(input);
-  if (!file) {
-    return {
-      filePath: input.filePath,
-      sourceHash: Bun.hash(input.source).toString(16),
-      definitions: [],
-      diagnostics: [],
-      imports: [],
-      exports: [],
-    };
-  }
+	// Parse source
+	const file = adapter.parse(input);
+	if (!file) {
+		return {
+			filePath: input.filePath,
+			signature: Bun.hash(input.source).toString(16),
+			definitions: [],
+			diagnostics: [],
+			imports: [],
+			exports: [],
+		};
+	}
 
   // Collect identifiers, imports, and exports
   const gqlIdentifiers = adapter.collectGqlIdentifiers(file);
@@ -107,12 +107,12 @@ export const analyzeModuleCore = <TFile, THandle>(
     source: input.source,
   });
 
-  return {
-    filePath: input.filePath,
-    sourceHash: Bun.hash(input.source).toString(16),
-    definitions,
-    diagnostics,
-    imports,
-    exports,
-  };
+	return {
+		filePath: input.filePath,
+		signature: Bun.hash(input.source).toString(16),
+		definitions,
+		diagnostics,
+		imports,
+		exports,
+	};
 };

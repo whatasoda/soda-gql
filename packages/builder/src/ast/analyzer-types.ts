@@ -50,12 +50,12 @@ export type ModuleExport =
     };
 
 export type ModuleAnalysis = {
-  readonly filePath: string;
-  readonly sourceHash: string;
-  readonly definitions: readonly ModuleDefinition[];
-  readonly diagnostics: readonly ModuleDiagnostic[];
-  readonly imports: readonly ModuleImport[];
-  readonly exports: readonly ModuleExport[];
+	readonly filePath: string;
+	readonly signature: string;
+	readonly definitions: readonly ModuleDefinition[];
+	readonly diagnostics: readonly ModuleDiagnostic[];
+	readonly imports: readonly ModuleImport[];
+	readonly exports: readonly ModuleExport[];
 };
 
 export type AnalyzeModuleInput = {

@@ -4,17 +4,17 @@ import { createModuleCache } from "../../../packages/builder/src/cache";
 import { createTestSuite, TestSuite } from "../../utils/base";
 
 class CacheManagerTestSuite extends TestSuite {
-  createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
-    return {
-      filePath: "/dev/null",
-      sourceHash: "",
-      definitions: [],
-      diagnostics: [],
-      imports: [],
-      exports: [],
-      ...overrides,
-    };
-  }
+	createAnalysis(overrides: Partial<ModuleAnalysis>): ModuleAnalysis {
+		return {
+			filePath: "/dev/null",
+			signature: "",
+			definitions: [],
+			diagnostics: [],
+			imports: [],
+			exports: [],
+			...overrides,
+		};
+	}
 
   getTempPath(): string {
     return this.tempDir.path;
@@ -24,64 +24,64 @@ class CacheManagerTestSuite extends TestSuite {
 describe("module cache manager", () => {
   const suite = createTestSuite(CacheManagerTestSuite);
 
-  it("returns cached analysis when file hash matches", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const analysis = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-      definitions: [
-        {
-          exportName: "userModel",
-          loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
-          references: [],
-          expression: "gql.model('User', () => ({}), (value) => value)",
-        },
-      ],
-    });
+	it("returns cached analysis when file hash matches", () => {
+		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const analysis = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+			definitions: [
+				{
+					exportName: "userModel",
+					loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
+					references: [],
+					expression: "gql.model('User', () => ({}), (value) => value)",
+				},
+			],
+		});
 
-    cache.store(analysis);
+		cache.store(analysis);
 
-    const hit = cache.load("/app/src/entities/user.ts", "hash-1");
-    expect(hit).toEqual(analysis);
-  });
+		const hit = cache.load("/app/src/entities/user.ts", "hash-1");
+		expect(hit).toEqual(analysis);
+	});
 
-  it("misses cache when hash differs", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const analysis = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-    });
+	it("misses cache when hash differs", () => {
+		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const analysis = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+		});
 
-    cache.store(analysis);
+		cache.store(analysis);
 
-    const miss = cache.load("/app/src/entities/user.ts", "hash-2");
-    expect(miss).toBeNull();
-  });
+		const miss = cache.load("/app/src/entities/user.ts", "hash-2");
+		expect(miss).toBeNull();
+	});
 
-  it("overwrites cache entries when storing newer analysis", () => {
-    const cache = createModuleCache({ rootDir: suite.getTempPath() });
-    const initial = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-1",
-    });
+	it("overwrites cache entries when storing newer analysis", () => {
+		const cache = createModuleCache({ rootDir: suite.getTempPath() });
+		const initial = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-1",
+		});
 
-    const updated = suite.createAnalysis({
-      filePath: "/app/src/entities/user.ts",
-      sourceHash: "hash-2",
-      definitions: [
-        {
-          exportName: "profileQuery",
-          loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
-          references: [],
-          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
-        },
-      ],
-    });
+		const updated = suite.createAnalysis({
+			filePath: "/app/src/entities/user.ts",
+			signature: "hash-2",
+			definitions: [
+				{
+					exportName: "profileQuery",
+					loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
+					references: [],
+					expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+				},
+			],
+		});
 
-    cache.store(initial);
-    cache.store(updated);
+		cache.store(initial);
+		cache.store(updated);
 
-    const hit = cache.load("/app/src/entities/user.ts", "hash-2");
-    expect(hit).toEqual(updated);
-  });
+		const hit = cache.load("/app/src/entities/user.ts", "hash-2");
+		expect(hit).toEqual(updated);
+	});
 });
