@@ -1,49 +1,49 @@
 import { analyzeModule } from "../../ast/analyze-module";
 import type { ModuleAnalysis } from "../../ast/analyze-module";
-import type { AstParser, AstParserInput } from "../types";
-import {
-	isRelativeSpecifier,
-	resolveRelativeImport,
-} from "../fs-utils";
-
-export type ResolvedDependency = {
-	readonly specifier: string;
-	readonly resolvedPath: string;
-};
+import type {
+	AstParser,
+	AstParserInput,
+	DiscoveredDependency,
+} from "../types";
+import { isExternalSpecifier, resolveRelativeImport } from "../fs-utils";
 
 /**
- * Extract all unique relative dependencies from a ModuleAnalysis.
- * Returns both the specifier and its resolved absolute path.
+ * Extract all unique dependencies (relative + external) from the analysis.
+ * Resolves local specifiers immediately so discovery only traverses once.
  */
-const extractRelativeDependencies = (
+export const extractModuleDependencies = (
 	analysis: ModuleAnalysis,
-): readonly ResolvedDependency[] => {
-	const dependencies = new Map<string, string>();
+): readonly DiscoveredDependency[] => {
+	const dependencies = new Map<string, DiscoveredDependency>();
 
-	// Collect from imports
+	const addDependency = (specifier: string): void => {
+		if (dependencies.has(specifier)) {
+			return;
+		}
+
+		const isExternal = isExternalSpecifier(specifier);
+		const resolvedPath = isExternal
+			? null
+			: resolveRelativeImport(analysis.filePath, specifier);
+
+		dependencies.set(specifier, {
+			specifier,
+			resolvedPath,
+			isExternal,
+		});
+	};
+
 	for (const imp of analysis.imports) {
-		if (isRelativeSpecifier(imp.source)) {
-			const resolved = resolveRelativeImport(analysis.filePath, imp.source);
-			if (resolved) {
-				dependencies.set(imp.source, resolved);
-			}
-		}
+		addDependency(imp.source);
 	}
 
-	// Collect from reexports
 	for (const exp of analysis.exports) {
-		if (exp.kind === "reexport" && isRelativeSpecifier(exp.source)) {
-			const resolved = resolveRelativeImport(analysis.filePath, exp.source);
-			if (resolved) {
-				dependencies.set(exp.source, resolved);
-			}
+		if (exp.kind === "reexport") {
+			addDependency(exp.source);
 		}
 	}
 
-	return Array.from(dependencies.entries()).map(([specifier, resolvedPath]) => ({
-		specifier,
-		resolvedPath,
-	}));
+	return Array.from(dependencies.values());
 };
 
 /**
@@ -52,7 +52,15 @@ const extractRelativeDependencies = (
 const resolveRelativeDependencies = (
 	analysis: ModuleAnalysis,
 ): readonly string[] => {
-	return extractRelativeDependencies(analysis).map((dep) => dep.resolvedPath);
+	const resolved: string[] = [];
+
+	for (const dep of extractModuleDependencies(analysis)) {
+		if (!dep.isExternal && dep.resolvedPath) {
+			resolved.push(dep.resolvedPath);
+		}
+	}
+
+	return resolved;
 };
 
 /**
@@ -72,8 +80,3 @@ export const typeScriptAstParser: AstParser = {
 	resolveRelativeDependencies,
 };
 
-/**
- * Extract relative dependencies with both specifier and resolved path.
- * Useful for building dependency maps in the discoverer.
- */
-export { extractRelativeDependencies };

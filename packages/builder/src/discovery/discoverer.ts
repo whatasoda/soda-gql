@@ -2,13 +2,12 @@ import { readFileSync } from "node:fs";
 import { createCanonicalId } from "../registry";
 import type {
 	AstParser,
-	DiscoveredDependency,
 	DiscoveryCache,
 	DiscoverySnapshot,
 	DiscoverySnapshotDefinition,
 } from "./types";
-import { isExternalSpecifier, normalizeToPosix } from "./fs-utils";
-import { extractRelativeDependencies } from "./ast-parsers/typescript";
+import { normalizeToPosix } from "./fs-utils";
+import { extractModuleDependencies } from "./ast-parsers/typescript";
 
 export type DiscoverModulesOptions = {
 	readonly entryPaths: readonly string[];
@@ -67,40 +66,12 @@ export const discoverModules = ({
 		const analysis = parser.parseModule({ filePath, source });
 		cacheMisses++;
 
-		// Extract relative dependencies with exact specifier-to-path mapping
-		const relativeDeps = extractRelativeDependencies(analysis);
-		const specifierToPath = new Map(
-			relativeDeps.map((dep) => [dep.specifier, dep.resolvedPath]),
-		);
-
-		// Collect all unique specifiers and build dependency records
-		const allSpecifiers = new Set<string>();
-		for (const imp of analysis.imports) {
-			allSpecifiers.add(imp.source);
-		}
-		for (const exp of analysis.exports) {
-			if (exp.kind === "reexport") {
-				allSpecifiers.add(exp.source);
-			}
-		}
-
-		const dependencies: DiscoveredDependency[] = [];
-		for (const specifier of allSpecifiers) {
-			const isExternal = isExternalSpecifier(specifier);
-			const resolvedPath = isExternal
-				? null
-				: specifierToPath.get(specifier) ?? null;
-
-			dependencies.push({
-				specifier,
-				resolvedPath,
-				isExternal,
-			});
-		}
+		// Build dependency records (relative + external) in a single pass
+		const dependencies = extractModuleDependencies(analysis);
 
 		// Enqueue all resolved relative dependencies for traversal
-		for (const dep of relativeDeps) {
-			if (!snapshots.has(dep.resolvedPath)) {
+		for (const dep of dependencies) {
+			if (!dep.isExternal && dep.resolvedPath && !snapshots.has(dep.resolvedPath)) {
 				stack.push(dep.resolvedPath);
 			}
 		}
