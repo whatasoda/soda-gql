@@ -26,7 +26,7 @@ export type ModifiedTypeName<TNameCandidate extends string, TName extends TNameC
   | (`${TName}:${TModifier}` & NoInfer<TypeModifierValidation<TModifier>>)
   | NoInfer<`${TName}:${TypeModifierSuggestion<TModifier>}`>;
 
-type TypeModifierSuggestion<TModifier extends AnyTypeModifier> = TModifier extends ""
+type TypeModifierSuggestion<TModifier extends AnyTypeModifier> = [TModifier, TypeModifier] extends [TypeModifier, TModifier]
   ? "?" | "!" | "[]"
   : TModifier extends "?"
     ? "?"
