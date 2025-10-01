@@ -11,6 +11,5 @@ export type {
   BuilderFormat,
   BuilderMode,
   BuilderOptions,
-  BuilderResult,
   BuilderSuccess,
 } from "./types";
