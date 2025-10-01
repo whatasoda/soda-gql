@@ -3,13 +3,14 @@ import type { TypedQueryDocumentNode } from "graphql";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType } from "../schema";
-import { DeferredInstance } from "../shared/deferred-instance";
 import type { Hidden } from "../shared/hidden";
 import type { Prettify } from "../shared/prettify";
 import type { UnionToIntersection } from "../shared/utility";
+import { Builder } from "./builder";
 import type { AnyOperationSliceFragments } from "./operation-slice";
 
-export type AnyOperation<TOperationType extends OperationType> = Operation<
+export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
+export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   AnyGraphqlRuntimeAdapter,
   TOperationType,
   string,
@@ -47,7 +48,7 @@ export class Operation<
     TRawData extends object,
     TProjectedData extends object,
   >
-  extends DeferredInstance<
+  extends Builder<
     OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
   >
   implements OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
@@ -71,22 +72,22 @@ export class Operation<
   }
 
   public get operationType() {
-    return DeferredInstance.get(this).operationType;
+    return Builder.get(this).operationType;
   }
   public get operationName() {
-    return DeferredInstance.get(this).operationName;
+    return Builder.get(this).operationName;
   }
   public get variableNames() {
-    return DeferredInstance.get(this).variableNames;
+    return Builder.get(this).variableNames;
   }
   public get projectionPathGraph() {
-    return DeferredInstance.get(this).projectionPathGraph;
+    return Builder.get(this).projectionPathGraph;
   }
   public get document() {
-    return DeferredInstance.get(this).document;
+    return Builder.get(this).document;
   }
   public get parse() {
-    return DeferredInstance.get(this).parse;
+    return Builder.get(this).parse;
   }
 
   static create<

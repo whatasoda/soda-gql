@@ -2,9 +2,9 @@
 
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
-import { DeferredInstance } from "../shared/deferred-instance";
 import type { VoidIfEmptyObject } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
+import { Builder } from "./builder";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
@@ -28,7 +28,7 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends DeferredInstance<ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  extends Builder<ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>>
   implements ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
@@ -41,13 +41,13 @@ export class Model<
   }
 
   public get typename() {
-    return DeferredInstance.get(this).typename;
+    return Builder.get(this).typename;
   }
   public get fragment() {
-    return DeferredInstance.get(this).fragment;
+    return Builder.get(this).fragment;
   }
   public get normalize() {
-    return DeferredInstance.get(this).normalize;
+    return Builder.get(this).normalize;
   }
 
   static create<

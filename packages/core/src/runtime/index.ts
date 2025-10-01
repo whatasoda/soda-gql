@@ -1,7 +1,7 @@
 import { createRuntimeModel } from "./model";
 import { castDocumentNode, createRuntimeOperation } from "./operation";
 import { createRuntimeOperationSlice } from "./operation-slice";
-import { getOperation } from "./registry";
+import { getOperation } from "./runtime-registry";
 
 export type { RuntimeModelInput } from "./model";
 export type { RuntimeOperationInput } from "./operation";

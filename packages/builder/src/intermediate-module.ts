@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import type { AnyModel, AnyOperation, AnyOperationSlice, OperationType } from "@soda-gql/core";
+import type { AnyModel, AnyOperationOf, AnyOperationSliceOf, IssueRegistry, OperationType } from "@soda-gql/core";
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
@@ -10,8 +10,9 @@ import type { BuilderError } from "./types";
 
 export type IntermediateModule = {
   readonly models: Record<string, AnyModel>;
-  readonly slices: Record<string, AnyOperationSlice<OperationType>>;
-  readonly operations: Record<string, AnyOperation<OperationType>>;
+  readonly slices: Record<string, AnyOperationSliceOf<OperationType>>;
+  readonly operations: Record<string, AnyOperationOf<OperationType>>;
+  readonly issueRegistry: IssueRegistry;
 };
 
 const formatFactory = (expression: string): string => {
@@ -219,24 +220,21 @@ export const createIntermediateModule = async ({
 
   const imports = [
     `import { gql } from "${gqlImportPath}";`,
-    `import { Model, OperationSlice, Operation } from "@soda-gql/core";`,
+    `import { evaluateBuilders, createIssueRegistry, setActiveRegistry } from "@soda-gql/core";`,
   ];
+
+  const registrySection = `// Initialize issue registry for build-time validation
+const registry = createIssueRegistry();
+setActiveRegistry(registry);`;
 
   const allSection = `const all = {\n${entries.join("\n")}\n};`;
 
-  const classificationSection = `export const models = Object.fromEntries(
-  Object.entries(all).filter(([, v]) => v instanceof Model)
-);
+  const evaluationSection = `
+export const { models, slices, operations } = evaluateBuilders(all);`;
 
-export const slices = Object.fromEntries(
-  Object.entries(all).filter(([, v]) => v instanceof OperationSlice)
-);
+  const registryExportSection = `export const issueRegistry = registry;`;
 
-export const operations = Object.fromEntries(
-  Object.entries(all).filter(([, v]) => v instanceof Operation)
-);`;
-
-  const sourceCode = `${imports.join("\n")}\n\n${allSection}\n\n${classificationSection}\n`;
+  const sourceCode = `${imports.join("\n")}\n\n${registrySection}\n\n${allSection}\n\n${evaluationSection}\n\n${registryExportSection}\n`;
 
   // Transpile TypeScript to JavaScript using SWC
   let transpiledCode: string;

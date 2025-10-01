@@ -49,7 +49,33 @@ export const buildArtifact = async ({
     });
   }
 
-  const { models, slices, operations } = intermediateModule;
+  const { models, slices, operations, issueRegistry } = intermediateModule;
+
+  // Check for errors from issue registry
+  const issues = issueRegistry.getIssues();
+  for (const issue of issues) {
+    if (issue.severity === "error") {
+      // Convert issue to BuilderError
+      if (issue.code === "DUPLICATE_OPERATION_NAME") {
+        const sources = [canonicalToFilePath(issue.canonicalId)];
+        if (issue.related) {
+          sources.unshift(...issue.related.map(canonicalToFilePath));
+        }
+        return err({
+          code: "DOC_DUPLICATE",
+          name: issue.message.match(/"([^"]+)"/)?.[1] ?? "unknown",
+          sources,
+        });
+      }
+      // Handle other error codes if needed
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: canonicalToFilePath(issue.canonicalId),
+        exportName: "",
+        message: issue.message,
+      });
+    }
+  }
 
   // Classify nodes based on intermediate module evaluation
   const modelNodes: DependencyGraphNode[] = [];
@@ -135,8 +161,6 @@ export const buildArtifact = async ({
     }
   }
 
-  const documentNameToCanonical = new Map<string, string>();
-
   for (const operation of operationNodes) {
     const descriptor = operations[operation.id];
 
@@ -150,14 +174,6 @@ export const buildArtifact = async ({
     }
 
     const documentName = descriptor.operationName;
-    const duplicate = documentNameToCanonical.get(documentName);
-    if (duplicate && duplicate !== operation.id) {
-      return err({
-        code: "DOC_DUPLICATE",
-        name: documentName,
-        sources: [canonicalToFilePath(duplicate), canonicalToFilePath(operation.id)],
-      });
-    }
 
     const result = registry.registerOperation({
       type: "operation",
@@ -172,15 +188,6 @@ export const buildArtifact = async ({
     });
 
     if (result.isErr()) {
-      if (result.error.code === "OPERATION_ALREADY_REGISTERED") {
-        const prior = documentNameToCanonical.get(documentName) ?? operation.id;
-        return err({
-          code: "DOC_DUPLICATE",
-          name: documentName,
-          sources: [canonicalToFilePath(prior), canonicalToFilePath(operation.id)],
-        });
-      }
-
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(operation.id),
@@ -188,13 +195,19 @@ export const buildArtifact = async ({
         message: result.error.code,
       });
     }
-
-    documentNameToCanonical.set(documentName, operation.id);
   }
 
   const snapshot = registry.snapshot();
 
   const warnings: string[] = [];
+
+  // Add warnings from issue registry
+  for (const issue of issues) {
+    if (issue.severity === "warning") {
+      warnings.push(`${issue.code}: ${issue.message} (${issue.canonicalId})`);
+    }
+  }
+
   if (sliceNodes.length >= 16) {
     warnings.push(`Warning: slice count ${sliceNodes.length}`);
   }

@@ -1,14 +1,14 @@
 import type { Kind } from "graphql";
 import { createVarRefs } from "../buildtime/input";
 import type { AnyAssignableInput } from "../types/fragment";
-import type { AnyOperation, AnyOperationSliceFragment } from "../types/operation";
+import type { AnyOperationOf, AnyOperationSliceFragment } from "../types/operation";
 import type { AnyGraphqlSchema, InputTypeRef, InputTypeRefs, OperationType } from "../types/schema";
 import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 import { createExecutionResultParser } from "./parse-execution-result";
-import { registerOperation } from "./registry";
+import { registerOperation } from "./runtime-registry";
 
 export type RuntimeOperationInput = {
-  prebuild: StripFunctions<AnyOperation<OperationType>>;
+  prebuild: StripFunctions<AnyOperationOf<OperationType>>;
   runtime: {
     getSlices: (tools: { $: AnyAssignableInput }) => { [key: string]: AnyOperationSliceFragment };
   };
@@ -21,9 +21,9 @@ type DocumentNodeLike = {
 
 export const castDocumentNode = <TDocumentNode extends DocumentNodeLike>(
   document: TDocumentNode,
-): AnyOperation<OperationType>["document"] => document as unknown as AnyOperation<OperationType>["document"];
+): AnyOperationOf<OperationType>["document"] => document as unknown as AnyOperationOf<OperationType>["document"];
 
-export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperation<OperationType> => {
+export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperationOf<OperationType> => {
   const operation = {
     operationType: input.prebuild.operationType,
     operationName: input.prebuild.operationName,
@@ -38,7 +38,7 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
       }),
       projectionPathGraph: input.prebuild.projectionPathGraph,
     }),
-  } satisfies StripSymbols<AnyOperation<OperationType>> as AnyOperation<OperationType>;
+  } satisfies StripSymbols<AnyOperationOf<OperationType>> as AnyOperationOf<OperationType>;
 
   registerOperation(operation);
 

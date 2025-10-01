@@ -2,12 +2,15 @@
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyExecutionResultProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
-import { DeferredInstance } from "../shared/deferred-instance";
 import type { VoidIfEmptyObject } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
+import { Builder } from "./builder";
 
-/** Nominal type representing any slice instance regardless of schema specifics. */
-export type AnyOperationSlice<TOperationType extends OperationType> = OperationSlice<
+export type AnyOperationSlice =
+  | AnyOperationSliceOf<"query">
+  | AnyOperationSliceOf<"mutation">
+  | AnyOperationSliceOf<"subscription">;
+export type AnyOperationSliceOf<TOperationType extends OperationType> = OperationSlice<
   TOperationType,
   any,
   AnyFields,
@@ -31,7 +34,7 @@ export class OperationSlice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyExecutionResultProjection,
   >
-  extends DeferredInstance<OperationSliceInner<TOperationType, TVariables, TFields, TProjection>>
+  extends Builder<OperationSliceInner<TOperationType, TVariables, TFields, TProjection>>
   implements OperationSliceInner<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
@@ -44,10 +47,10 @@ export class OperationSlice<
   }
 
   public get operationType() {
-    return DeferredInstance.get(this).operationType;
+    return Builder.get(this).operationType;
   }
   public get build() {
-    return DeferredInstance.get(this).build;
+    return Builder.get(this).build;
   }
 
   static create<
@@ -89,6 +92,6 @@ export type OperationSliceFragment<
   projection: TProjection;
 };
 
-export type InferOutputOfOperationSlice<TSlice extends AnyOperationSlice<any>> = ReturnType<
+export type InferOutputOfOperationSlice<TSlice extends AnyOperationSliceOf<any>> = ReturnType<
   TSlice[typeof __OPERATION_SLICE_BRAND__]
 >["output"];

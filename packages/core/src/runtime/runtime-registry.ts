@@ -1,9 +1,9 @@
-import type { AnyOperation } from "../types/operation";
+import type { AnyOperationOf } from "../types/operation";
 import type { OperationType } from "../types/schema";
 
-const registry = new Map<string, AnyOperation<OperationType>>();
+const registry = new Map<string, AnyOperationOf<OperationType>>();
 
-export const registerOperation = (operation: AnyOperation<OperationType>) => {
+export const registerOperation = (operation: AnyOperationOf<OperationType>) => {
   if (registry.has(operation.operationName)) {
     throw new Error(`Operation ${operation.operationName} already registered`);
   }

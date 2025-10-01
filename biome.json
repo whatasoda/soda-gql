@@ -14,7 +14,8 @@
       "recommended": true,
       "correctness": {
         "noUnusedVariables": "warn",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUnusedPrivateClassMembers": "off"
       },
       "style": {
         "useConst": "error",

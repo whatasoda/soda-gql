@@ -1,18 +1,12 @@
 import type { AnyModel, AnyOperation, AnyOperationSlice } from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createModelFactory } from "./model";
 import { createOperationFactory } from "./operation";
 import { createOperationSliceFactory } from "./operation-slice";
 import { createVarBuilder } from "./var-builder";
 
-type AcceptableInvokerResult = OperationType extends infer TOperationType extends OperationType
-  ? TOperationType extends OperationType
-    ? AnyModel | AnyOperationSlice<TOperationType> | AnyOperation<TOperationType>
-    : never
-  : never;
-
-export type GqlInvoker<TBuilder, THelper> = <TResult extends AcceptableInvokerResult>(
+export type GqlInvoker<TBuilder, THelper> = <TResult extends AnyModel | AnyOperationSlice | AnyOperation>(
   factory: (builder: TBuilder, helper: THelper) => TResult,
 ) => TResult;
 
