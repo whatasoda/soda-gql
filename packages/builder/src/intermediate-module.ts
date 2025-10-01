@@ -52,11 +52,15 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
   const sourceText = `(${expression})`;
   const sourceFile = ts.createSourceFile("runtime-expression.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
 
-  const createAccessorExpression = (replacement: ReplacementEntry): ts.ElementAccessExpression =>
-    ts.factory.createElementAccessExpression(
-      ts.factory.createIdentifier(replacement.prefix),
-      ts.factory.createStringLiteral(replacement.canonicalId),
-    );
+  const createReplacementExpression = (replacement: ReplacementEntry): ts.Expression => {
+    const tempSource = ts.createSourceFile("temp.ts", replacement.expression, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
+    const statement = tempSource.statements[0];
+    if (statement && ts.isExpressionStatement(statement)) {
+      return statement.expression;
+    }
+    // Fallback to identifier if parsing fails
+    return ts.factory.createIdentifier(replacement.expression);
+  };
 
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const visit: ts.Visitor = (node) => {
@@ -65,7 +69,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
         if (path) {
           const replacement = replacements.get(path);
           if (replacement) {
-            return createAccessorExpression(replacement);
+            return createReplacementExpression(replacement);
           }
         }
       }
@@ -78,7 +82,7 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 
         const replacement = replacements.get(node.text);
         if (replacement) {
-          return createAccessorExpression(replacement);
+          return createReplacementExpression(replacement);
         }
       }
 
@@ -112,12 +116,53 @@ const rewriteExpression = (expression: string, replacements: Map<string, Replace
 };
 
 type ReplacementEntry = {
-  readonly prefix: "all";
-  readonly canonicalId: string;
+  readonly expression: string;
 };
 
-const createReplacementMap = (node: DependencyGraphNode, graph: DependencyGraph): Map<string, ReplacementEntry> => {
-  const map = new Map<string, ReplacementEntry>();
+type FileGroup = {
+  readonly filePath: string;
+  readonly nodes: DependencyGraphNode[];
+};
+
+type DependencyBinding = {
+  readonly symbol: string;
+  readonly localName: string;
+  readonly canonicalId: string;
+  readonly filePath: string;
+  readonly exportPath: string;
+};
+
+const splitCanonicalId = (canonicalId: string): { filePath: string; exportPath: string } => {
+  const [filePath, exportPath] = canonicalId.split("::");
+  return { filePath: filePath ?? "", exportPath: exportPath ?? "" };
+};
+
+const groupNodesByFile = (graph: DependencyGraph): FileGroup[] => {
+  const fileMap = new Map<string, DependencyGraphNode[]>();
+
+  graph.forEach((node) => {
+    const { filePath } = splitCanonicalId(node.id);
+    const nodes = fileMap.get(filePath) ?? [];
+    nodes.push(node);
+    fileMap.set(filePath, nodes);
+  });
+
+  return Array.from(fileMap.entries())
+    .map(([filePath, nodes]) => ({ filePath, nodes }))
+    .sort((a, b) => a.filePath.localeCompare(b.filePath));
+};
+
+const createLocalName = (exportPath: string): string => {
+  return exportPath.replace(/\./g, "_");
+};
+
+const analyzeDependencies = (
+  node: DependencyGraphNode,
+  currentFilePath: string,
+  graph: DependencyGraph,
+): { crossFile: Map<string, DependencyBinding[]>; sameFile: DependencyBinding[] } => {
+  const crossFileMap = new Map<string, DependencyBinding[]>();
+  const sameFile: DependencyBinding[] = [];
 
   Object.entries(node.references).forEach(([symbol, canonicalId]) => {
     const target = graph.get(canonicalId);
@@ -125,19 +170,163 @@ const createReplacementMap = (node: DependencyGraphNode, graph: DependencyGraph)
       return;
     }
 
-    map.set(symbol, { prefix: "all", canonicalId });
+    const { filePath, exportPath } = splitCanonicalId(canonicalId);
+    const localName = createLocalName(exportPath);
+    const binding: DependencyBinding = { symbol, localName, canonicalId, filePath, exportPath };
+
+    if (filePath === currentFilePath) {
+      sameFile.push(binding);
+    } else {
+      const bindings = crossFileMap.get(filePath) ?? [];
+      bindings.push(binding);
+      crossFileMap.set(filePath, bindings);
+    }
+  });
+
+  return { crossFile: crossFileMap, sameFile };
+};
+
+const createReplacementMap = (
+  node: DependencyGraphNode,
+  currentFilePath: string,
+  graph: DependencyGraph,
+): Map<string, ReplacementEntry> => {
+  const map = new Map<string, ReplacementEntry>();
+  const { crossFile, sameFile } = analyzeDependencies(node, currentFilePath, graph);
+
+  // Cross-file dependencies use the local binding name
+  crossFile.forEach((bindings) => {
+    bindings.forEach(({ symbol, localName }) => {
+      map.set(symbol, { expression: localName });
+    });
+  });
+
+  // Same-file dependencies reference the local const directly
+  sameFile.forEach(({ symbol, localName }) => {
+    map.set(symbol, { expression: localName });
   });
 
   return map;
 };
 
-const renderEntry = (node: DependencyGraphNode, graph: DependencyGraph): string => {
-  const expressionText = node.definition.expression.trim();
-  const replacements = createReplacementMap(node, graph);
-  const rewritten = rewriteExpression(expressionText, replacements);
-  const factory = formatFactory(rewritten);
+const buildNestedObject = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
+  // Create local const declarations for each export
+  const declarations: string[] = [];
+  const exportPaths: string[] = [];
 
-  return `  "${node.id}": ${factory},`;
+  nodes.forEach((node) => {
+    const { exportPath } = splitCanonicalId(node.id);
+    const localName = createLocalName(exportPath);
+    const expressionText = node.definition.expression.trim();
+    const replacements = createReplacementMap(node, currentFilePath, graph);
+    const rewritten = rewriteExpression(expressionText, replacements);
+    const factory = formatFactory(rewritten);
+
+    declarations.push(`    const ${localName} = ${factory};`);
+    exportPaths.push(exportPath);
+  });
+
+  // Build nested object structure
+  const selfObj: Record<string, unknown> = {};
+
+  nodes.forEach((node) => {
+    const { exportPath } = splitCanonicalId(node.id);
+    const localName = createLocalName(exportPath);
+    const parts = exportPath.split(".");
+
+    let current = selfObj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!part) {
+        continue;
+      }
+      if (!current[part]) {
+        current[part] = {};
+      }
+      current = current[part] as Record<string, unknown>;
+    }
+
+    const lastPart = parts[parts.length - 1];
+    if (lastPart) {
+      current[lastPart] = localName;
+    }
+  });
+
+  const renderObject = (obj: Record<string, unknown>, indent: number): string => {
+    const entries = Object.entries(obj);
+    if (entries.length === 0) {
+      return "{}";
+    }
+
+    const indentStr = "  ".repeat(indent);
+    const lines = entries.map(([key, value]) => {
+      if (typeof value === "string") {
+        return `${indentStr}  ${key}: ${value},`;
+      }
+      return `${indentStr}  ${key}: ${renderObject(value as Record<string, unknown>, indent + 1)},`;
+    });
+
+    return `{\n${lines.join("\n")}\n${indentStr}}`;
+  };
+
+  const selfDeclaration = `    const self = ${renderObject(selfObj, 2)};`;
+
+  return `${declarations.join("\n")}\n\n${selfDeclaration}\n    return self;`;
+};
+
+const renderImportStatements = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
+  const allCrossFileDeps = new Map<string, Set<DependencyBinding>>();
+
+  nodes.forEach((node) => {
+    const { crossFile } = analyzeDependencies(node, currentFilePath, graph);
+    crossFile.forEach((bindings, filePath) => {
+      const existing = allCrossFileDeps.get(filePath) ?? new Set();
+      bindings.forEach((binding) => {
+        existing.add(binding);
+      });
+      allCrossFileDeps.set(filePath, existing);
+    });
+  });
+
+  const importLines: string[] = [];
+
+  allCrossFileDeps.forEach((bindings, filePath) => {
+    const uniqueExports = new Map<string, string>();
+    bindings.forEach((binding) => {
+      uniqueExports.set(binding.exportPath, binding.localName);
+    });
+
+    const destructured = Array.from(uniqueExports.entries())
+      .map(([exportPath, localName]) => {
+        const parts = exportPath.split(".");
+        if (parts.length === 1) {
+          return exportPath === localName ? exportPath : `${exportPath}: ${localName}`;
+        }
+        // For nested paths, we need to access them from the imported module
+        return `${parts[0]}`;
+      })
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+
+    importLines.push(`    const { ${destructured.join(", ")} } = registry.import("${filePath}");`);
+
+    // Create additional bindings for nested exports
+    uniqueExports.forEach((localName, exportPath) => {
+      const parts = exportPath.split(".");
+      if (parts.length > 1 && parts[0]) {
+        importLines.push(`    const ${localName} = ${parts[0]}.${parts.slice(1).join(".")};`);
+      }
+    });
+  });
+
+  return importLines.length > 0 ? `\n${importLines.join("\n")}\n` : "";
+};
+
+const renderRegistryBlock = (fileGroup: FileGroup, graph: DependencyGraph): string => {
+  const { filePath, nodes } = fileGroup;
+  const imports = renderImportStatements(nodes, filePath, graph);
+  const body = buildNestedObject(nodes, filePath, graph);
+
+  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
 };
 
 export type CreateIntermediateModuleInput = {
@@ -160,16 +349,12 @@ export const createIntermediateModule = async ({
     });
   }
 
-  const entries: string[] = [];
   const missing: DependencyGraphNode[] = [];
 
   graph.forEach((node) => {
     if (!node.definition.expression || node.definition.expression.trim().length === 0) {
       missing.push(node);
-      return;
     }
-    const entry = renderEntry(node, graph);
-    entries.push(entry);
   });
 
   if (missing.length > 0) {
@@ -183,6 +368,9 @@ export const createIntermediateModule = async ({
       message: "MISSING_EXPRESSION",
     });
   }
+
+  const fileGroups = groupNodesByFile(graph);
+  const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, graph));
 
   const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const jsFilePath = join(outDir, `${fileName}.mjs`);
@@ -220,21 +408,20 @@ export const createIntermediateModule = async ({
 
   const imports = [
     `import { gql } from "${gqlImportPath}";`,
-    `import { evaluateBuilders, createIssueRegistry, setActiveRegistry } from "@soda-gql/core";`,
+    `import { createPseudoModuleRegistry, createIssueRegistry, setActiveRegistry } from "@soda-gql/core";`,
   ];
 
   const registrySection = `// Initialize issue registry for build-time validation
-const registry = createIssueRegistry();
-setActiveRegistry(registry);`;
+export const issueRegistry = createIssueRegistry();
+setActiveRegistry(issueRegistry);`;
 
-  const allSection = `const all = {\n${entries.join("\n")}\n};`;
+  const pseudoRegistrySection = `const registry = createPseudoModuleRegistry();`;
 
-  const evaluationSection = `
-export const { models, slices, operations } = evaluateBuilders(all);`;
+  const registryBlocksSection = registryBlocks.join("\n\n");
 
-  const registryExportSection = `export const issueRegistry = registry;`;
+  const evaluationSection = `export const { models, slices, operations } = registry.evaluate();`;
 
-  const sourceCode = `${imports.join("\n")}\n\n${registrySection}\n\n${allSection}\n\n${evaluationSection}\n\n${registryExportSection}\n`;
+  const sourceCode = `${imports.join("\n")}\n\n${registrySection}\n\n${pseudoRegistrySection}\n\n${registryBlocksSection}\n\n${evaluationSection}\n`;
 
   // Transpile TypeScript to JavaScript using SWC
   let transpiledCode: string;

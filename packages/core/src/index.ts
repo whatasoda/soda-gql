@@ -1,4 +1,5 @@
 export * from "./buildtime";
+export * from "./intermediate";
 export * from "./schema";
 export * from "./types/operation";
 export * from "./types/runtime";
