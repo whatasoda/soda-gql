@@ -2,124 +2,116 @@ import { normalize } from "node:path";
 import { z } from "zod";
 
 import type { ModuleAnalysis } from "../ast/analyze-module";
-import type { BuilderAnalyzer } from "../types";
 import { ModuleAnalysisSchema } from "../schemas/cache";
+import type { BuilderAnalyzer } from "../types";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 import { createJsonCache } from "./json-cache";
 
-const normalizeToPosix = (value: string): string =>
-	normalize(value).replace(/\\/g, "/");
+const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
 
 const MODULE_CACHE_VERSION = "module-cache/v2";
 
 const ModuleCacheRecordSchema = z.object({
-	filePath: z.string(),
-	normalizedFilePath: z.string(),
-	signature: z.string(),
-	storedAtMs: z.number(),
-	analysis: ModuleAnalysisSchema,
+  filePath: z.string(),
+  normalizedFilePath: z.string(),
+  signature: z.string(),
+  storedAtMs: z.number(),
+  analysis: ModuleAnalysisSchema,
 });
 
 export type ModuleCacheRecord = z.infer<typeof ModuleCacheRecordSchema>;
 
 export type ModuleCacheManagerOptions = {
-	readonly factory: JsonCacheFactory;
-	readonly analyzer: BuilderAnalyzer;
-	readonly evaluatorId: string;
-	readonly namespacePrefix?: readonly string[];
-	readonly version?: string;
+  readonly factory: JsonCacheFactory;
+  readonly analyzer: BuilderAnalyzer;
+  readonly evaluatorId: string;
+  readonly namespacePrefix?: readonly string[];
+  readonly version?: string;
 };
 
 export class ModuleCacheManager {
-	private readonly cacheStore: JsonCacheStore<string, ModuleCacheRecord>;
+  private readonly cacheStore: JsonCacheStore<string, ModuleCacheRecord>;
 
-	constructor(private readonly options: ModuleCacheManagerOptions) {
-		const namespace: string[] = [
-			...(options.namespacePrefix ?? ["modules"]),
-			options.analyzer,
-			options.evaluatorId,
-		];
+  constructor(private readonly options: ModuleCacheManagerOptions) {
+    const namespace: string[] = [...(options.namespacePrefix ?? ["modules"]), options.analyzer, options.evaluatorId];
 
-		this.cacheStore = options.factory.createStore({
-			namespace,
-			schema: ModuleCacheRecordSchema,
-			version: options.version ?? MODULE_CACHE_VERSION,
-		});
-	}
+    this.cacheStore = options.factory.createStore({
+      namespace,
+      schema: ModuleCacheRecordSchema,
+      version: options.version ?? MODULE_CACHE_VERSION,
+    });
+  }
 
-	static create(options: ModuleCacheManagerOptions): ModuleCacheManager {
-		return new ModuleCacheManager(options);
-	}
+  static create(options: ModuleCacheManagerOptions): ModuleCacheManager {
+    return new ModuleCacheManager(options);
+  }
 
-	load(filePath: string, expectedSignature: string): ModuleAnalysis | null {
-		const key = normalizeToPosix(filePath);
-		const record = this.cacheStore.load(key);
+  load(filePath: string, expectedSignature: string): ModuleAnalysis | null {
+    const key = normalizeToPosix(filePath);
+    const record = this.cacheStore.load(key);
 
-		if (!record) {
-			return null;
-		}
+    if (!record) {
+      return null;
+    }
 
-		if (record.signature !== expectedSignature) {
-			this.cacheStore.delete(key);
-			return null;
-		}
+    if (record.signature !== expectedSignature) {
+      this.cacheStore.delete(key);
+      return null;
+    }
 
-		return record.analysis;
-	}
+    return record.analysis;
+  }
 
-	store(analysis: ModuleAnalysis): void {
-		if (!analysis.signature) {
-			throw new Error(
-				`ModuleAnalysis for ${analysis.filePath} is missing a signature`,
-			);
-		}
+  store(analysis: ModuleAnalysis): void {
+    if (!analysis.signature) {
+      throw new Error(`ModuleAnalysis for ${analysis.filePath} is missing a signature`);
+    }
 
-		const key = normalizeToPosix(analysis.filePath);
-		const record: ModuleCacheRecord = {
-			filePath: analysis.filePath,
-			normalizedFilePath: key,
-			signature: analysis.signature,
-			storedAtMs: Date.now(),
-			analysis,
-		};
+    const key = normalizeToPosix(analysis.filePath);
+    const record: ModuleCacheRecord = {
+      filePath: analysis.filePath,
+      normalizedFilePath: key,
+      signature: analysis.signature,
+      storedAtMs: Date.now(),
+      analysis,
+    };
 
-		this.cacheStore.store(key, record);
-	}
+    this.cacheStore.store(key, record);
+  }
 
-	delete(filePath: string): void {
-		const key = normalizeToPosix(filePath);
-		this.cacheStore.delete(key);
-	}
+  delete(filePath: string): void {
+    const key = normalizeToPosix(filePath);
+    this.cacheStore.delete(key);
+  }
 
-	clear(): void {
-		this.cacheStore.clear();
-	}
+  clear(): void {
+    this.cacheStore.clear();
+  }
 
-	entries(): IterableIterator<ModuleAnalysis> {
-		function* iterator(store: JsonCacheStore<string, ModuleCacheRecord>) {
-			for (const [, record] of store.entries()) {
-				yield record.analysis;
-			}
-		}
-		return iterator(this.cacheStore);
-	}
+  entries(): IterableIterator<ModuleAnalysis> {
+    function* iterator(store: JsonCacheStore<string, ModuleCacheRecord>) {
+      for (const [, record] of store.entries()) {
+        yield record.analysis;
+      }
+    }
+    return iterator(this.cacheStore);
+  }
 
-	size(): number {
-		return this.cacheStore.size();
-	}
+  size(): number {
+    return this.cacheStore.size();
+  }
 }
 
-export const createModuleCacheManager = (
-	options: ModuleCacheManagerOptions,
-): ModuleCacheManager => ModuleCacheManager.create(options);
+export const createModuleCacheManager = (options: ModuleCacheManagerOptions): ModuleCacheManager =>
+  ModuleCacheManager.create(options);
 
 export const createDefaultModuleCacheManager = (
-	rootDir: string,
-	analyzer: BuilderAnalyzer,
-	evaluatorId: string,
+  rootDir: string,
+  analyzer: BuilderAnalyzer,
+  evaluatorId: string,
 ): ModuleCacheManager =>
-	createModuleCacheManager({
-		factory: createJsonCache({ rootDir, prefix: ["builder"] }),
-		analyzer,
-		evaluatorId,
-	});
+  createModuleCacheManager({
+    factory: createJsonCache({ rootDir, prefix: ["builder"] }),
+    analyzer,
+    evaluatorId,
+  });

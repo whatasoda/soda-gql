@@ -483,7 +483,6 @@ const collectTopLevelDefinitions = (
       ({
         exportName: item.exportName,
         loc: item.loc,
-        references: Array.from(collectReferencesFromCall(item.initializer, imports, definitionNames, identifiers)),
         expression: item.expression,
       }) satisfies ModuleDefinition,
   );

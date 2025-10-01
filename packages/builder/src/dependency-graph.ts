@@ -1,5 +1,6 @@
 import { dirname, join, normalize, resolve as resolvePath } from "node:path";
 import { err, ok, type Result } from "neverthrow";
+import ts from "typescript";
 
 import type { ModuleAnalysis, ModuleDefinition } from "./ast/analyze-module";
 import type { CanonicalId } from "./registry";
@@ -20,6 +21,113 @@ export type DependencyGraphError = {
 };
 
 const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
+
+/**
+ * Extract identifiers from an expression string using TypeScript AST.
+ * Returns a set of identifier names found in the expression, excluding:
+ * - Function/arrow function parameters
+ * - Property names in object literals
+ * - Property names in property access expressions (right side of dot)
+ * - Built-in identifiers like 'gql'
+ *
+ * For property access chains like `foo.bar.baz`, extracts:
+ * - "foo" (root identifier)
+ * - "foo.bar"
+ * - "foo.bar.baz"
+ */
+const extractIdentifiersFromExpression = (expression: string): Set<string> => {
+  const identifiers = new Set<string>();
+  const excluded = new Set<string>(["gql"]);
+  const sourceFile = ts.createSourceFile("temp.ts", expression, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
+
+  // Resolve property access chain to get root and segments
+  const resolvePropertyAccess = (
+    expr: ts.Expression,
+  ): { root: string; segments: string[] } | null => {
+    const segments: string[] = [];
+    let current: ts.Expression = expr;
+
+    while (ts.isPropertyAccessExpression(current)) {
+      segments.unshift(current.name.text);
+      current = current.expression;
+    }
+
+    if (ts.isIdentifier(current)) {
+      return { root: current.text, segments };
+    }
+
+    return null;
+  };
+
+  const visit = (node: ts.Node, localExclusions: Set<string>) => {
+    // Handle function-like nodes to track parameter names
+    if (ts.isFunctionLike(node) && node.parameters) {
+      const nextExclusions = new Set(localExclusions);
+      node.parameters.forEach((param) => {
+        if (ts.isIdentifier(param.name)) {
+          nextExclusions.add(param.name.text);
+        }
+      });
+      // Visit function body with updated exclusions
+      if (node.body) {
+        visit(node.body, nextExclusions);
+      }
+      return;
+    }
+
+    // Handle property access expressions
+    if (ts.isPropertyAccessExpression(node)) {
+      const resolved = resolvePropertyAccess(node);
+      if (resolved) {
+        const { root, segments } = resolved;
+        if (!excluded.has(root) && !localExclusions.has(root)) {
+          // Add root identifier
+          identifiers.add(root);
+          // Add each segment combination
+          for (let i = 0; i < segments.length; i++) {
+            const path = `${root}.${segments.slice(0, i + 1).join(".")}`;
+            identifiers.add(path);
+          }
+        }
+      }
+      // Don't visit children as we've already processed the entire chain
+      return;
+    }
+
+    // Handle standalone identifiers
+    if (ts.isIdentifier(node)) {
+      const parent = node.parent;
+      // Skip property names in various contexts
+      if (parent) {
+        if (ts.isPropertyAssignment(parent) && parent.name === node) {
+          return;
+        }
+        if (ts.isPropertyAccessExpression(parent)) {
+          // Already handled by property access logic above
+          return;
+        }
+        if (ts.isMethodDeclaration(parent) && parent.name === node) {
+          return;
+        }
+        if (ts.isParameter(parent) && parent.name === node) {
+          return;
+        }
+      }
+
+      const name = node.text;
+      if (!excluded.has(name) && !localExclusions.has(name)) {
+        identifiers.add(name);
+      }
+      return;
+    }
+
+    // Recursively visit children
+    ts.forEachChild(node, (child) => visit(child, localExclusions));
+  };
+
+  visit(sourceFile, new Set());
+  return identifiers;
+};
 
 const resolveModuleSpecifier = (
   currentFile: string,
@@ -240,11 +348,15 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
       const dependencySet = new Set<CanonicalId>();
       const resolvedReferences: Record<string, CanonicalId> = {};
 
-      definition.references.forEach((reference) => {
-        const canonical = referenceMap.get(reference);
+      // Extract identifiers from the expression
+      const identifiers = extractIdentifiersFromExpression(definition.expression);
+
+      // Resolve each identifier to a canonical ID using the reference map
+      identifiers.forEach((identifier) => {
+        const canonical = referenceMap.get(identifier);
         if (canonical && canonical !== id) {
           dependencySet.add(canonical);
-          resolvedReferences[reference] = canonical;
+          resolvedReferences[identifier] = canonical;
         }
       });
 

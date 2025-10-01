@@ -15,7 +15,6 @@ export type SourceLocation = {
 export type ModuleDefinition = {
   readonly exportName: string;
   readonly loc: SourceLocation;
-  readonly references: readonly string[];
   readonly expression: string;
 };
 
@@ -50,12 +49,12 @@ export type ModuleExport =
     };
 
 export type ModuleAnalysis = {
-	readonly filePath: string;
-	readonly signature: string;
-	readonly definitions: readonly ModuleDefinition[];
-	readonly diagnostics: readonly ModuleDiagnostic[];
-	readonly imports: readonly ModuleImport[];
-	readonly exports: readonly ModuleExport[];
+  readonly filePath: string;
+  readonly signature: string;
+  readonly definitions: readonly ModuleDefinition[];
+  readonly diagnostics: readonly ModuleDiagnostic[];
+  readonly imports: readonly ModuleImport[];
+  readonly exports: readonly ModuleExport[];
 };
 
 export type AnalyzeModuleInput = {

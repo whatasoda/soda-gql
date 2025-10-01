@@ -683,7 +683,6 @@ const collectTopLevelDefinitions = (
       ({
         exportName: item.exportName,
         loc: toLocation(resolvePosition, item.span),
-        references: Array.from(collectReferencesFromExpression(item.initializer, imports, definitionNames, gqlIdentifiers)),
         expression: item.expression,
       }) satisfies ModuleDefinition,
   );

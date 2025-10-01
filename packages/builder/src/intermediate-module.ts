@@ -194,84 +194,133 @@ const createReplacementMap = (
   const map = new Map<string, ReplacementEntry>();
   const { crossFile, sameFile } = analyzeDependencies(node, currentFilePath, graph);
 
-  // Cross-file dependencies use the local binding name
+  // Cross-file dependencies use property access from imported root
   crossFile.forEach((bindings) => {
-    bindings.forEach(({ symbol, localName }) => {
-      map.set(symbol, { expression: localName });
+    bindings.forEach(({ symbol, exportPath }) => {
+      // Use property access notation: rootName.nested.path
+      map.set(symbol, { expression: exportPath });
     });
   });
 
-  // Same-file dependencies reference the local const directly
-  sameFile.forEach(({ symbol, localName }) => {
-    map.set(symbol, { expression: localName });
+  // Same-file dependencies reference the root name with property access
+  sameFile.forEach(({ symbol, exportPath }) => {
+    // For same-file references, use the export path directly
+    map.set(symbol, { expression: exportPath });
   });
 
   return map;
 };
 
-const buildNestedObject = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
-  // Create local const declarations for each export
-  const declarations: string[] = [];
-  const exportPaths: string[] = [];
+type TreeNode = {
+  expression?: string; // Leaf node with actual expression
+  children: Map<string, TreeNode>; // Branch node with children
+};
+
+const buildTree = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): Map<string, TreeNode> => {
+  const roots = new Map<string, TreeNode>();
 
   nodes.forEach((node) => {
     const { exportPath } = splitCanonicalId(node.id);
-    const localName = createLocalName(exportPath);
+    const parts = exportPath.split(".");
     const expressionText = node.definition.expression.trim();
     const replacements = createReplacementMap(node, currentFilePath, graph);
     const rewritten = rewriteExpression(expressionText, replacements);
-    const factory = formatFactory(rewritten);
 
-    declarations.push(`    const ${localName} = ${factory};`);
-    exportPaths.push(exportPath);
+    if (parts.length === 1) {
+      // Top-level export
+      const rootName = parts[0];
+      if (rootName) {
+        roots.set(rootName, {
+          expression: rewritten,
+          children: new Map(),
+        });
+      }
+    } else {
+      // Nested export
+      const rootName = parts[0];
+      if (!rootName) return;
+
+      let root = roots.get(rootName);
+      if (!root) {
+        root = { children: new Map() };
+        roots.set(rootName, root);
+      }
+
+      let current = root;
+      for (let i = 1; i < parts.length - 1; i++) {
+        const part = parts[i];
+        if (!part) continue;
+
+        let child = current.children.get(part);
+        if (!child) {
+          child = { children: new Map() };
+          current.children.set(part, child);
+        }
+        current = child;
+      }
+
+      const leafName = parts[parts.length - 1];
+      if (leafName) {
+        current.children.set(leafName, {
+          expression: rewritten,
+          children: new Map(),
+        });
+      }
+    }
   });
 
-  // Build nested object structure
-  const selfObj: Record<string, unknown> = {};
+  return roots;
+};
 
-  nodes.forEach((node) => {
-    const { exportPath } = splitCanonicalId(node.id);
-    const localName = createLocalName(exportPath);
-    const parts = exportPath.split(".");
+const renderTreeNode = (node: TreeNode, indent: number): string => {
+  if (node.expression && node.children.size === 0) {
+    // Leaf node - render the expression directly
+    return formatFactory(node.expression);
+  }
 
-    let current = selfObj;
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i];
-      if (!part) {
-        continue;
-      }
-      if (!current[part]) {
-        current[part] = {};
-      }
-      current = current[part] as Record<string, unknown>;
-    }
+  // Branch node - render nested object
+  const indentStr = "  ".repeat(indent);
+  const entries = Array.from(node.children.entries()).map(([key, child]) => {
+    const value = renderTreeNode(child, indent + 1);
+    return `${indentStr}  ${key}: ${value},`;
+  });
 
-    const lastPart = parts[parts.length - 1];
-    if (lastPart) {
-      current[lastPart] = localName;
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  return `{\n${entries.join("\n")}\n${indentStr}}`;
+};
+
+const buildNestedObject = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
+  const tree = buildTree(nodes, currentFilePath, graph);
+  const declarations: string[] = [];
+  const returnEntries: string[] = [];
+
+  tree.forEach((node, rootName) => {
+    if (node.children.size > 0) {
+      // Has children - create a const declaration
+      const objectLiteral = renderTreeNode(node, 2);
+      declarations.push(`    const ${rootName} = ${objectLiteral};`);
+      returnEntries.push(rootName);
+    } else if (node.expression) {
+      // Single export - can be inlined or declared
+      const expr = formatFactory(node.expression);
+      declarations.push(`    const ${rootName} = ${expr};`);
+      returnEntries.push(rootName);
     }
   });
 
-  const renderObject = (obj: Record<string, unknown>, indent: number): string => {
-    const entries = Object.entries(obj);
-    if (entries.length === 0) {
-      return "{}";
-    }
+  const returnStatement =
+    returnEntries.length > 0
+      ? `    return {\n${returnEntries.map((name) => `        ${name},`).join("\n")}\n    };`
+      : "    return {};";
 
-    const indentStr = "  ".repeat(indent);
-    const lines = entries.map(([key, value]) => {
-      if (typeof value === "string") {
-        return `${indentStr}  ${key}: ${value},`;
-      }
-      return `${indentStr}  ${key}: ${renderObject(value as Record<string, unknown>, indent + 1)},`;
-    });
+  if (declarations.length === 0) {
+    return returnStatement;
+  }
 
-    return `{\n${lines.join("\n")}\n${indentStr}}`;
-  };
-
-  const selfDeclaration = `    const self = ${renderObject(selfObj, 2)};`;
-
-  return `${declarations.join("\n")}\n\n${selfDeclaration}\n    return self;`;
+  return `${declarations.join("\n")}\n${returnStatement}`;
 };
 
 const renderImportStatements = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
@@ -291,31 +340,18 @@ const renderImportStatements = (nodes: DependencyGraphNode[], currentFilePath: s
   const importLines: string[] = [];
 
   allCrossFileDeps.forEach((bindings, filePath) => {
-    const uniqueExports = new Map<string, string>();
+    // Extract only root names (first segment of export path)
+    const rootNames = new Set<string>();
     bindings.forEach((binding) => {
-      uniqueExports.set(binding.exportPath, binding.localName);
-    });
-
-    const destructured = Array.from(uniqueExports.entries())
-      .map(([exportPath, localName]) => {
-        const parts = exportPath.split(".");
-        if (parts.length === 1) {
-          return exportPath === localName ? exportPath : `${exportPath}: ${localName}`;
-        }
-        // For nested paths, we need to access them from the imported module
-        return `${parts[0]}`;
-      })
-      .filter((v, i, arr) => arr.indexOf(v) === i);
-
-    importLines.push(`    const { ${destructured.join(", ")} } = registry.import("${filePath}");`);
-
-    // Create additional bindings for nested exports
-    uniqueExports.forEach((localName, exportPath) => {
-      const parts = exportPath.split(".");
-      if (parts.length > 1 && parts[0]) {
-        importLines.push(`    const ${localName} = ${parts[0]}.${parts.slice(1).join(".")};`);
+      const parts = binding.exportPath.split(".");
+      const rootName = parts[0];
+      if (rootName) {
+        rootNames.add(rootName);
       }
     });
+
+    const destructured = Array.from(rootNames).sort().join(", ");
+    importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
   });
 
   return importLines.length > 0 ? `\n${importLines.join("\n")}\n` : "";

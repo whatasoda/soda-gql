@@ -22,15 +22,13 @@ describe("dependency graph resolver", () => {
           kind: "model",
           exportName: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
-          references: [],
           expression: "gql.model('User', () => ({}), (value) => value)",
         },
         {
           kind: "slice",
           exportName: "userSlice",
           loc: { start: { line: 10, column: 6 }, end: { line: 16, column: 1 } },
-          references: ["userModel"],
-          expression: "gql.querySlice([], () => ({}), () => ({}))",
+          expression: "gql.querySlice([], () => ({ ...userModel.fragment() }), () => ({}))",
         },
       ],
       imports: [

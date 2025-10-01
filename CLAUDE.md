@@ -108,14 +108,22 @@ Before ANY code-related action, you MUST:
    ↓
 2. IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
    ↓
-3. Codex Analyzes → Returns Strategy
+3. Codex Analyzes → Returns conversationId (UUID format)
    ↓
-4. Claude Implements EXACTLY as Specified
+4. SAVE conversationId for follow-ups
    ↓
-5. If Issues → Call mcp__codex__codex-reply for Guidance
+5. Claude Implements EXACTLY as Specified
    ↓
-6. Continue Until Complete
+6. If Issues → Call mcp__codex__codex-reply WITH conversationId
+   ↓
+7. Continue Until Complete
 ```
+
+**conversationId Format**:
+- conversationId is a **UUID string** (e.g., `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"`)
+- Extract from `mcp__codex__codex` response and use in `mcp__codex__codex-reply`
+- ❌ WRONG: `conversationId: undefined`, empty string, or non-UUID format
+- ✅ CORRECT: `conversationId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"`
 
 ### 🔁 MANDATORY RETRY POLICY FOR CODEX MCP FAILURES
 
