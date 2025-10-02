@@ -10,32 +10,29 @@ export type BuildArtifactInput = {
 };
 
 export type BuilderArtifactOperation = {
-  readonly type: "operation";
   readonly id: CanonicalId;
+  readonly type: "operation";
   readonly prebuild: RuntimeOperationInput["prebuild"];
 };
 
 export type BuilderArtifactSlice = {
-  readonly type: "slice";
   readonly id: CanonicalId;
+  readonly type: "slice";
   readonly prebuild: RuntimeSliceInput["prebuild"];
 };
 
 export type BuilderArtifactModel = {
-  readonly type: "model";
   readonly id: CanonicalId;
+  readonly type: "model";
   readonly prebuild: RuntimeModelInput["prebuild"];
 };
 
-export type BuilderArtifactEntry = BuilderArtifactOperation | BuilderArtifactSlice | BuilderArtifactModel;
+export type BuilderArtifactElement = BuilderArtifactOperation | BuilderArtifactSlice | BuilderArtifactModel;
 
 export type BuilderArtifact = {
-  readonly artifacts: Record<CanonicalId, BuilderArtifactEntry>;
+  readonly elements: Record<CanonicalId, BuilderArtifactElement>;
 
   readonly report: {
-    readonly operations: number;
-    readonly models: number;
-    readonly slices: number;
     readonly durationMs: number;
     readonly warnings: readonly string[];
     readonly cache: {

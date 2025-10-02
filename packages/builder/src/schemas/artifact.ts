@@ -1,8 +1,10 @@
 import { z } from "zod";
+import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "../artifact/types";
+import type { CanonicalId } from "../canonical-id";
 
 const BuilderArtifactOperationSchema = z.object({
+  id: z.string<CanonicalId>(),
   type: z.literal("operation"),
-  id: z.string(),
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
     operationName: z.string(),
@@ -12,21 +14,33 @@ const BuilderArtifactOperationSchema = z.object({
   }),
 });
 
+declare function __validate_BuilderArtifactOperationSchema<
+  _ extends z.infer<typeof BuilderArtifactOperationSchema> = BuilderArtifactOperation,
+>(): never;
+
 const BuilderArtifactSliceSchema = z.object({
+  id: z.string<CanonicalId>(),
   type: z.literal("slice"),
-  id: z.string(),
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
   }),
 });
 
+declare function __validate_BuilderArtifactSliceSchema<
+  _ extends z.infer<typeof BuilderArtifactSliceSchema> = BuilderArtifactSlice,
+>(): never;
+
 const BuilderArtifactModelSchema = z.object({
+  id: z.string<CanonicalId>(),
   type: z.literal("model"),
-  id: z.string(),
   prebuild: z.object({
     typename: z.string(),
   }),
 });
+
+declare function __validate_BuilderArtifactModelSchema<
+  _ extends z.infer<typeof BuilderArtifactModelSchema> = BuilderArtifactModel,
+>(): never;
 
 const BuilderArtifactEntrySchema = z.discriminatedUnion("type", [
   BuilderArtifactOperationSchema,
@@ -35,11 +49,8 @@ const BuilderArtifactEntrySchema = z.discriminatedUnion("type", [
 ]);
 
 export const BuilderArtifactSchema = z.object({
-  artifacts: z.record(z.string(), BuilderArtifactEntrySchema),
+  elements: z.record(z.string<CanonicalId>(), BuilderArtifactEntrySchema),
   report: z.object({
-    operations: z.number(),
-    models: z.number(),
-    slices: z.number(),
     durationMs: z.number(),
     warnings: z.array(z.string()),
     cache: z.object({

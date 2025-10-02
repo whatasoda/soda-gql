@@ -227,19 +227,17 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     expect(artifactExists).toBe(true);
     const artifactContents = await Bun.file(artifactPath).text();
     const parsed = JSON.parse(artifactContents) as {
-      artifacts: Record<
+      elements: Record<
         string,
         { type: string; prebuild?: { operationName?: string; document?: unknown; operationType?: string; typename?: string } }
       >;
-      report: { operations: number };
     };
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(parsed.artifacts).find(
+    const profileQueryOp = Object.values(parsed.elements).find(
       (entry) => entry.type === "operation" && entry.prebuild?.operationName === "ProfilePageQuery",
     );
     expect(profileQueryOp).toBeDefined();
     expect(profileQueryOp?.prebuild?.document).toBeDefined();
-    expect(parsed.report.operations).toBeGreaterThanOrEqual(1);
   });
 
   it.skip("supports --analyzer swc", async () => {
@@ -267,10 +265,10 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
 
     expect(result.exitCode).toBe(0);
     const artifact = JSON.parse(await Bun.file(artifactPath).text()) as {
-      artifacts: Record<string, { type: string; prebuild?: { operationName?: string } }>;
+      elements: Record<string, { type: string; prebuild?: { operationName?: string } }>;
     };
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(artifact.artifacts).find(
+    const profileQueryOp = Object.values(artifact.elements).find(
       (entry) => entry.type === "operation" && entry.prebuild?.operationName === "ProfilePageQuery",
     );
     expect(profileQueryOp).toBeDefined();

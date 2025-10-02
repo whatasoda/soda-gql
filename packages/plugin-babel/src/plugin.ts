@@ -475,7 +475,7 @@ const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOpera
 /**
  * Convert BuilderArtifact to AllArtifacts map for plugin state.
  */
-const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.artifacts;
+const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
 
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",

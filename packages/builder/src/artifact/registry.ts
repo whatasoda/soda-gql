@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import type { CanonicalId } from "../canonical-id/canonical-id";
-import type { BuilderArtifactEntry, BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "./types";
+import type { BuilderArtifactElement, BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "./types";
 
 export type RegistryRefError = {
   readonly code: "ARTIFACT_ALREADY_REGISTERED";
@@ -8,7 +8,7 @@ export type RegistryRefError = {
 };
 
 export type RegistrySnapshot = {
-  readonly artifacts: Readonly<Record<CanonicalId, BuilderArtifactEntry>>;
+  readonly artifacts: Readonly<Record<CanonicalId, BuilderArtifactElement>>;
   readonly counts: {
     readonly models: number;
     readonly slices: number;
@@ -24,7 +24,7 @@ export type OperationRegistry = {
 };
 
 export const createOperationRegistry = (): OperationRegistry => {
-  const artifacts = new Map<CanonicalId, BuilderArtifactEntry>();
+  const artifacts = new Map<CanonicalId, BuilderArtifactElement>();
   const counts = { models: 0, slices: 0, operations: 0 };
 
   return {
@@ -53,7 +53,7 @@ export const createOperationRegistry = (): OperationRegistry => {
       return ok(input);
     },
     snapshot: () => ({
-      artifacts: Object.fromEntries(artifacts.entries()) as Record<CanonicalId, BuilderArtifactEntry>,
+      artifacts: Object.fromEntries(artifacts.entries()) as Record<CanonicalId, BuilderArtifactElement>,
       counts: { ...counts },
     }),
   };

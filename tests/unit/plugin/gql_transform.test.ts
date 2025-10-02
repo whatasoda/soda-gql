@@ -20,7 +20,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     );
 
     const artifact: BuilderArtifact = {
-      artifacts: {
+      elements: {
         [queryId]: {
           type: "operation",
           id: queryId,

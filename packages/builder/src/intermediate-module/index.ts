@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { IssueRegistry, PseudoArtifact } from "@soda-gql/core";
+import type { IntermediateArtifactElement, IssueRegistry } from "@soda-gql/core";
 import { err, type Result } from "neverthrow";
 import type { DependencyGraph } from "../dependency-graph";
 import type { BuilderError } from "../types";
@@ -9,7 +9,7 @@ import { buildIntermediateModuleSource } from "./codegen";
 import { emitIntermediateModule } from "./emitter";
 
 export type IntermediateModule = {
-  readonly artifacts: Record<string, PseudoArtifact>;
+  readonly elements: Record<string, IntermediateArtifactElement>;
   readonly issueRegistry: IssueRegistry;
 };
 

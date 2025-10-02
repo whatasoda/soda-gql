@@ -5,10 +5,10 @@ type ArtifactRecord = {
   [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
-export type PseudoArtifact =
-  | { readonly kind: "model"; readonly builder: AnyModel }
-  | { readonly kind: "slice"; readonly builder: AnySlice }
-  | { readonly kind: "operation"; readonly builder: AnyOperation };
+export type IntermediateArtifactElement =
+  | { readonly type: "model"; readonly element: AnyModel }
+  | { readonly type: "slice"; readonly element: AnySlice }
+  | { readonly type: "operation"; readonly element: AnyOperation };
 
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => ArtifactRecord>();
@@ -45,7 +45,7 @@ export const createPseudoModuleRegistry = () => {
     return factory();
   };
 
-  const evaluate = (): Record<string, PseudoArtifact> => {
+  const evaluate = (): Record<string, IntermediateArtifactElement> => {
     // First, register all modules by calling their factories
     for (const mod of modules.values()) {
       mod();
@@ -57,14 +57,14 @@ export const createPseudoModuleRegistry = () => {
     }
 
     // Build a single record with discriminated union entries
-    const artifacts: Record<string, PseudoArtifact> = {};
-    for (const [canonicalId, builder] of entries) {
-      if (builder instanceof Model) {
-        artifacts[canonicalId] = { kind: "model", builder };
-      } else if (builder instanceof Slice) {
-        artifacts[canonicalId] = { kind: "slice", builder };
-      } else if (builder instanceof Operation) {
-        artifacts[canonicalId] = { kind: "operation", builder };
+    const artifacts: Record<string, IntermediateArtifactElement> = {};
+    for (const [canonicalId, element] of entries) {
+      if (element instanceof Model) {
+        artifacts[canonicalId] = { type: "model", element };
+      } else if (element instanceof Slice) {
+        artifacts[canonicalId] = { type: "slice", element };
+      } else if (element instanceof Operation) {
+        artifacts[canonicalId] = { type: "operation", element };
       }
     }
 

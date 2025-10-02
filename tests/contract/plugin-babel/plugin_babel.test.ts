@@ -3,7 +3,7 @@ import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
-import { createBuilderService } from "../../../packages/builder/src/index.ts";
+import { type CanonicalId, createBuilderService } from "../../../packages/builder/src/index.ts";
 import type { ArtifactSource } from "../../../packages/plugin-babel/src/types.ts";
 
 type PluginOptions = {
@@ -91,11 +91,8 @@ describe("@soda-gql/plugin-babel", () => {
       artifactPath,
       JSON.stringify(
         {
-          artifacts: {},
+          elements: {},
           report: {
-            operations: 0,
-            models: 0,
-            slices: 0,
             durationMs: 0,
             warnings: [],
             cache: {
@@ -128,7 +125,7 @@ describe("@soda-gql/plugin-babel", () => {
       artifactPath,
       JSON.stringify(
         {
-          artifacts: {
+          elements: {
             [canonicalId]: {
               type: "operation",
               id: canonicalId,
@@ -148,9 +145,6 @@ describe("@soda-gql/plugin-babel", () => {
             },
           },
           report: {
-            operations: 1,
-            models: 0,
-            slices: 0,
             durationMs: 1,
             warnings: [],
             cache: {
@@ -207,7 +201,7 @@ describe("@soda-gql/plugin-babel", () => {
       const expectedCanonicalId = `${profileQueryPath}::profileQuery`;
 
       // Verify builder artifact contains expected canonical ID
-      expect(artifact.artifacts[expectedCanonicalId]).toBeDefined();
+      expect(artifact.elements[expectedCanonicalId as CanonicalId]).toBeDefined();
 
       // Persist artifact for artifact-file mode test
       const artifactPath = join(builderArtifactsDir, `parity-${Date.now()}.json`);

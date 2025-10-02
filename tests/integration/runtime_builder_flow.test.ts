@@ -2,9 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runBuilder } from "../../packages/builder/src/index.ts";
-import type { CanonicalId } from "../../packages/builder/src/registry.ts";
-import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
+import { type CanonicalId, runBuilder } from "@soda-gql/builder";
+import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
 
 type CliResult = {
@@ -114,7 +113,7 @@ describe("runtime builder flow", () => {
     const artifact = builderSuccess.artifact;
 
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(artifact.artifacts).find(
+    const profileQueryOp = Object.values(artifact.elements).find(
       (entry) => entry.type === "operation" && entry.prebuild.operationName === "ProfilePageQuery",
     );
     expect(profileQueryOp).toBeDefined();
@@ -122,10 +121,8 @@ describe("runtime builder flow", () => {
 
     // Check that the operation exists in the artifact.artifacts using the canonical ID
     const canonicalId = `${join(workspace, "src", "pages", "profile.query.ts")}::profileQuery`;
-    expect(Object.hasOwn(artifact.artifacts, canonicalId)).toBe(true);
+    expect(Object.hasOwn(artifact.elements, canonicalId)).toBe(true);
     expect(Array.isArray(artifact.report.warnings)).toBe(true);
-    expect(artifact.report.models).toBe(2);
-    expect(artifact.report.slices).toBe(3);
 
     const userModelId = `${join(workspace, "src", "entities", "user.ts")}::userModel`;
     const catalogModelId = `${join(workspace, "src", "entities", "user.ts")}::userRemote.forIterate`;
@@ -134,16 +131,16 @@ describe("runtime builder flow", () => {
     const collectionsSliceId = `${join(workspace, "src", "entities", "user.catalog.ts")}::collections.byCategory`;
 
     // Check models exist
-    expect(artifact.artifacts[userModelId as CanonicalId]).toBeDefined();
-    expect(artifact.artifacts[catalogModelId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[userModelId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[catalogModelId as CanonicalId]).toBeDefined();
 
     // Check slices exist
-    expect(artifact.artifacts[userSliceId as CanonicalId]).toBeDefined();
-    expect(artifact.artifacts[catalogSliceId as CanonicalId]).toBeDefined();
-    expect(artifact.artifacts[collectionsSliceId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[userSliceId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[catalogSliceId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[collectionsSliceId as CanonicalId]).toBeDefined();
 
     // Check operation exists
-    expect(artifact.artifacts[canonicalId as CanonicalId]).toBeDefined();
+    expect(artifact.elements[canonicalId as CanonicalId]).toBeDefined();
 
     await Bun.write(join(debugDir, "artifact.json"), JSON.stringify(artifact, null, 2));
   });

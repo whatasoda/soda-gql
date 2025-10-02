@@ -79,7 +79,7 @@ describe("builder cache flow integration", () => {
     const firstArtifact = firstResult.artifact;
 
     // Find the ProfilePageQuery operation by searching through artifacts
-    const profileQueryOp = Object.values(firstArtifact.artifacts).find(
+    const profileQueryOp = Object.values(firstArtifact.elements).find(
       (entry) => entry.type === "operation" && entry.prebuild.operationName === "ProfilePageQuery",
     );
     expect(profileQueryOp).toBeDefined();

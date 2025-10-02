@@ -6,7 +6,7 @@ import type { NormalizedOptions } from "./options";
  * Similar to BuilderServiceConfig but mode is optional (defaults to plugin mode).
  */
 export type BuilderConfig = Omit<BuilderServiceConfig, "mode"> & {
-  readonly mode?: BuilderServiceConfig["mode"];
+  readonly mode: BuilderServiceConfig["mode"];
 };
 
 /**
@@ -19,7 +19,7 @@ export type ArtifactSource =
     }
   | {
       readonly source: "builder";
-      readonly config: Required<BuilderConfig>;
+      readonly config: BuilderConfig;
     };
 
 export type SodaGqlBabelOptions = {

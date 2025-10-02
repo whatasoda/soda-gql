@@ -1,9 +1,8 @@
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
-import { classifyAndRegister } from "./classifier";
+import { aggregate } from "./aggregate";
 import { checkIssues } from "./issue-handler";
 import { loadIntermediateModule } from "./loader";
-import { createOperationRegistry } from "./registry";
 import type { BuildArtifactInput, BuilderArtifact } from "./types";
 
 export const buildArtifact = async ({
@@ -11,8 +10,6 @@ export const buildArtifact = async ({
   cache,
   intermediateModulePath,
 }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
-  const registry = createOperationRegistry();
-
   // Load intermediate module first to classify definitions at runtime
   const moduleResult = await loadIntermediateModule(intermediateModulePath);
   if (moduleResult.isErr()) {
@@ -30,19 +27,16 @@ export const buildArtifact = async ({
   const warnings = issuesResult.value;
 
   // Classify and register nodes
-  const classifyResult = classifyAndRegister(graph, intermediateModule, registry);
-  if (classifyResult.isErr()) {
-    return err(classifyResult.error);
+  const aggregationResult = aggregate(graph, intermediateModule);
+  if (aggregationResult.isErr()) {
+    return err(aggregationResult.error);
   }
 
-  const snapshot = registry.snapshot();
+  const elementMap = aggregationResult.value;
 
   return ok({
-    artifacts: snapshot.artifacts,
+    elements: Object.fromEntries(elementMap.entries()),
     report: {
-      operations: snapshot.counts.operations,
-      models: snapshot.counts.models,
-      slices: snapshot.counts.slices,
       durationMs: 0,
       warnings,
       cache,
