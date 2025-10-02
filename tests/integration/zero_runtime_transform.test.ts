@@ -123,15 +123,26 @@ describe("zero-runtime transform", () => {
           expect(code).toContain("const internalPostModel = gqlRuntime.model({");
           // Exported model using internal model
           expect(code).toContain("export const userWithPostsModel = gqlRuntime.model({");
-          // Nested definitions in function scope
+          // Nested definitions in function scope (slices)
           expect(code).toContain("const userById = gqlRuntime.slice({");
           expect(code).toContain("const userList = gqlRuntime.slice({");
           // Arrow function with nested definition (stays as arrow function in transformed code)
           expect(code).toContain("export const queryFactory = () =>");
           expect(code).toContain("const baseQuery = gqlRuntime.slice({");
-          // Nested object structure
+          // Nested object structure (slices)
           expect(code).toContain("list: gqlRuntime.slice({");
           expect(code).toContain("byId: gqlRuntime.slice({");
+          // Operation in function scope
+          expect(code).toContain("const getUserOperation = gqlRuntime.getOperation(");
+          expect(code).toContain('"GetUserById"');
+          // Operation in arrow function
+          expect(code).toContain("const listUsersOperation = gqlRuntime.getOperation(");
+          expect(code).toContain('"ListUsers"');
+          // Nested object structure (operations)
+          expect(code).toContain("getUser: gqlRuntime.getOperation(");
+          expect(code).toContain('"NestedGetUser"');
+          expect(code).toContain("listUsers: gqlRuntime.getOperation(");
+          expect(code).toContain('"NestedListUsers"');
           expect(code).not.toContain("gql.default(");
         },
       },

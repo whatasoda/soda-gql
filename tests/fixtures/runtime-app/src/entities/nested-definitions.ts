@@ -136,3 +136,80 @@ export const nestedQueries = {
     ),
   },
 };
+
+// Case 6: Operation definition in function scope
+// Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
+// Uses the previously defined nestedQueries.users.byId slice
+export function createUserOperation() {
+  const getUserOperation = gql.default(({ operation }, { $ }) =>
+    operation.query(
+      {
+        operationName: "GetUserById",
+        variables: {
+          ...$("id").scalar("ID:!"),
+        },
+      },
+      ({ $ }) => ({
+        user: nestedQueries.users.byId.build({ id: $.id }),
+      }),
+    ),
+  );
+
+  return getUserOperation;
+}
+
+// Case 7: Operation definition in arrow function
+// Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
+// Uses the previously defined nestedQueries.users.list slice
+export const operationFactory = () => {
+  const listUsersOperation = gql.default(({ operation }, { $ }) =>
+    operation.query(
+      {
+        operationName: "ListUsers",
+        variables: {
+          ...$("limit").scalar("Int:?"),
+        },
+      },
+      ({ $ }) => ({
+        users: nestedQueries.users.list.build({ limit: $.limit }),
+      }),
+    ),
+  );
+
+  return listUsersOperation;
+};
+
+// Case 8: Nested object structure with operation definitions
+// Should be collected with canonical IDs like:
+// - filePath::nestedOperations.users.getUser
+// - filePath::nestedOperations.users.listUsers
+export const nestedOperations = {
+  users: {
+    getUser: gql.default(({ operation }, { $ }) =>
+      operation.query(
+        {
+          operationName: "NestedGetUser",
+          variables: {
+            ...$("id").scalar("ID:!"),
+          },
+        },
+        ({ $ }) => ({
+          user: nestedQueries.users.byId.build({ id: $.id }),
+        }),
+      ),
+    ),
+    listUsers: gql.default(({ operation }, { $ }) =>
+      operation.query(
+        {
+          operationName: "NestedListUsers",
+          variables: {
+            ...$("limit").scalar("Int:?"),
+          },
+        },
+        ({ $ }) => ({
+          users: nestedQueries.users.list.build({ limit: $.limit }),
+        }),
+      ),
+    ),
+  },
+};
