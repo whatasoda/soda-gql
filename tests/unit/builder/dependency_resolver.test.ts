@@ -19,14 +19,20 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          kind: "model",
           exportName: "userModel",
+          astPath: "userModel",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           expression: "gql.model('User', () => ({}), (value) => value)",
         },
         {
-          kind: "slice",
           exportName: "userSlice",
+          astPath: "userSlice",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "userSlice",
           loc: { start: { line: 10, column: 6 }, end: { line: 16, column: 1 } },
           expression: "gql.querySlice([], () => ({ ...userModel.fragment() }), () => ({}))",
         },
@@ -50,8 +56,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          kind: "operation",
           exportName: "profileQuery",
+          astPath: "profileQuery",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
           expression: "gql.query('ProfilePageQuery', {}, () => ({ users: userSlice.build() }))",
         },
@@ -98,8 +107,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          kind: "slice",
           exportName: "userSlice",
+          astPath: "userSlice",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "userSlice",
           loc: { start: { line: 4, column: 6 }, end: { line: 12, column: 1 } },
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
@@ -116,8 +128,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          kind: "operation",
           exportName: "profileQuery",
+          astPath: "profileQuery",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
           expression: "gql.query('ProfilePageQuery', {}, () => ({ users: userSlice.build() }))",
         },
@@ -157,8 +172,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/slice-a.ts",
       definitions: [
         {
-          kind: "slice",
           exportName: "sliceA",
+          astPath: "sliceA",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "sliceA",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
           expression: "gql.querySlice([], () => ({ ...sliceB.fragment() }), () => ({}))",
         },
@@ -179,8 +197,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/slice-b.ts",
       definitions: [
         {
-          kind: "slice",
           exportName: "sliceB",
+          astPath: "sliceB",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "sliceB",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
           expression: "gql.querySlice([], () => ({ ...sliceA.fragment() }), () => ({}))",
         },
@@ -221,8 +242,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          kind: "slice",
           exportName: "userSliceCatalog.byId",
+          astPath: "userSliceCatalog.byId",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "userSliceCatalog.byId",
           loc: { start: { line: 10, column: 6 }, end: { line: 18, column: 1 } },
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
@@ -234,8 +258,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.catalog.ts",
       definitions: [
         {
-          kind: "slice",
           exportName: "collections.byCategory",
+          astPath: "collections.byCategory",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "collections.byCategory",
           loc: { start: { line: 6, column: 6 }, end: { line: 16, column: 1 } },
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
@@ -247,8 +274,11 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          kind: "operation",
           exportName: "profileQuery",
+          astPath: "profileQuery",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "profileQuery",
           loc: { start: { line: 4, column: 6 }, end: { line: 20, column: 1 } },
           expression:
             "gql.query('ProfilePageQuery', {}, () => ({ catalog: userSliceCatalog.byId.build(), collections: userCatalog.collections.byCategory.build() }))",

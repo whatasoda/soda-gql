@@ -41,6 +41,10 @@ describe("module cache manager", () => {
       definitions: [
         {
           exportName: "userModel",
+          astPath: "userModel",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           expression: "gql.model('User', () => ({}), (value) => value)",
         },
@@ -97,6 +101,10 @@ describe("module cache manager", () => {
       definitions: [
         {
           exportName: "profileQuery",
+          astPath: "profileQuery",
+          isTopLevel: true,
+          isExported: true,
+          exportBinding: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
           expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
         },

@@ -13,33 +13,6 @@ type BuilderRecord = {
   [key: string]: AcceptableBuilder | BuilderRecord;
 };
 
-function* flattenExports({ filePath, exports }: { filePath: string; exports: BuilderRecord }) {
-  const stacks = Object.entries(exports);
-
-  while (stacks.length > 0) {
-    const entry = stacks.shift();
-    if (!entry) {
-      continue;
-    }
-
-    const [propertyPath, builderOrNested] = entry;
-
-    if (builderOrNested instanceof Builder) {
-      const builder = builderOrNested;
-      const canonicalId = `${filePath}::${propertyPath}`;
-      Builder.setContext(builder, { canonicalId });
-      Builder.evaluate(builder);
-      yield [canonicalId, builderOrNested] satisfies [unknown, unknown];
-    } else {
-      stacks.push(
-        ...Object.entries(builderOrNested).map(
-          ([subPath, value]) => [`${propertyPath}.${subPath}`, value] satisfies [unknown, unknown],
-        ),
-      );
-    }
-  }
-}
-
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => BuilderRecord>();
   const caches = new Map<string, BuilderRecord>();
@@ -53,13 +26,17 @@ export const createPseudoModuleRegistry = () => {
       }
 
       const exports = factory();
-      for (const entry of flattenExports({ filePath, exports })) {
-        entries.push(entry);
-      }
 
       caches.set(filePath, exports);
       return exports;
     });
+  };
+
+  const addBuilder = (canonicalId: string, builder: AcceptableBuilder) => {
+    Builder.setContext(builder, { canonicalId });
+    Builder.evaluate(builder);
+    entries.push([canonicalId, builder] satisfies [unknown, unknown]);
+    return builder;
   };
 
   const import_ = (filePath: string) => {
@@ -88,6 +65,7 @@ export const createPseudoModuleRegistry = () => {
 
   return {
     register,
+    addBuilder,
     import: import_,
     evaluate,
   };

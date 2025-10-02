@@ -48,7 +48,7 @@ export const user_remoteModel = {
     expect(analysis.diagnostics).toHaveLength(0);
   });
 
-  it("reports diagnostics for non-top-level definitions", () => {
+  it("collects nested definitions inside functions", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
@@ -60,8 +60,11 @@ export const factory = () => {
 `;
 
     const analysis = analyzeModule({ filePath, source });
-    expect(analysis.definitions).toHaveLength(0);
-    expect(analysis.diagnostics).toHaveLength(1);
+    expect(analysis.definitions).toHaveLength(1);
+    const [definition] = analysis.definitions;
+    expect(definition?.isTopLevel).toBe(false);
+    expect(definition?.isExported).toBe(false);
+    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("captures references to properties on imported bindings", () => {

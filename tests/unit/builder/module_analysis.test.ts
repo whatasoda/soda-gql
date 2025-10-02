@@ -46,7 +46,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     expect(summary).toEqual([{ exportName: "userModel" }, { exportName: "userSlice" }, { exportName: "pageQuery" }]);
   });
 
-  it("reports diagnostics when gql definitions are nested inside non-top-level scopes", () => {
+  it("collects gql definitions nested inside non-top-level scopes", () => {
     const source = `
 import { gql } from "@/graphql-system";
 
@@ -60,13 +60,17 @@ export const userSlice = buildSlice();
 
     const analysis = analyzeModule({ filePath, source });
 
-    expect(analysis.definitions).toEqual([]);
-    expect(analysis.diagnostics).toHaveLength(1);
-    const [diagnostic] = analysis.diagnostics;
-    expect(diagnostic).toBeDefined();
-    expect(diagnostic?.code).toBe("NON_TOP_LEVEL_DEFINITION");
-    expect(diagnostic?.loc.start.line).toBeGreaterThan(0);
-    expect(diagnostic?.loc.start.column).toBeGreaterThan(0);
+    // Now nested definitions are supported
+    expect(analysis.definitions).toHaveLength(1);
+    const [definition] = analysis.definitions;
+    expect(definition).toBeDefined();
+    expect(definition?.astPath).toBe("buildSlice.arrow#0.invalid");
+    expect(definition?.isTopLevel).toBe(false);
+    expect(definition?.isExported).toBe(false);
+    expect(definition?.exportBinding).toBeUndefined();
+
+    // No diagnostics emitted for nested definitions
+    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("captures references to imported slices and models", () => {
