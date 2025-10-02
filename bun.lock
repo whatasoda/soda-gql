@@ -42,6 +42,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
+        "@soda-gql/runtime": "workspace:*",
         "graphql": "^16.8.1",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.5",
