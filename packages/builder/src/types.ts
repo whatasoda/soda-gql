@@ -7,13 +7,16 @@ export type BuilderFormat = "json" | "human";
 
 export type BuilderAnalyzer = "ts" | "swc";
 
-export type BuilderOptions = {
+export type BuilderInput = {
   readonly mode: BuilderMode;
   readonly entry: readonly string[];
-  readonly outPath: string;
-  readonly format: BuilderFormat;
   readonly analyzer: BuilderAnalyzer;
   readonly debugDir?: string;
+};
+
+export type BuilderOptions = BuilderInput & {
+  readonly outPath: string;
+  readonly format: BuilderFormat;
 };
 
 export type BuilderError =

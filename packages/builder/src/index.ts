@@ -15,7 +15,7 @@ export type { CanonicalId } from "./utils/canonical-id";
 export { createCanonicalId } from "./utils/canonical-id";
 export type { CanonicalPathTracker, ScopeFrame, ScopeHandle } from "./canonical/path-tracker";
 export { buildAstPath, createCanonicalTracker, createOccurrenceTracker, createPathTracker } from "./canonical/path-tracker";
-export { runBuilder } from "./runner";
+export { generateArtifact, runBuilder } from "./runner";
 export type {
   BuilderAnalyzer,
   BuilderArtifact,
@@ -24,7 +24,9 @@ export type {
   BuilderArtifactSlice,
   BuilderError,
   BuilderFormat,
+  BuilderInput,
   BuilderMode,
   BuilderOptions,
+  BuilderResult,
   BuilderSuccess,
 } from "./types";
