@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "../../../packages/builder/src/ast";
 import { buildDependencyGraph } from "../../../packages/builder/src/dependency-graph";
-import { createCanonicalId } from "../../../packages/builder/src/utils/canonical-id";
+import { createCanonicalId } from "../../../packages/builder/src/index";
 
 describe("dependency graph resolver", () => {
   const baseAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({

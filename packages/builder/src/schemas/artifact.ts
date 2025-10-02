@@ -6,7 +6,7 @@ const BuilderArtifactOperationSchema = z.object({
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
     operationName: z.string(),
-    document: z.string(),
+    document: z.unknown(), // DocumentNode object
     variableNames: z.array(z.string()),
     projectionPathGraph: z.unknown(),
   }),

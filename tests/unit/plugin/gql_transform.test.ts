@@ -20,7 +20,7 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     );
 
     const artifact: BuilderArtifact = {
-      operations: {
+      artifacts: {
         [queryId]: {
           type: "operation",
           id: queryId,
@@ -38,8 +38,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
             },
           },
         },
-      },
-      slices: {
         [userSliceId]: {
           type: "slice",
           id: userSliceId,
@@ -62,7 +60,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
           },
         },
       },
-      models: {},
       report: {
         operations: 1,
         models: 0,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
 
 import { createOperationRegistry } from "../../../packages/builder/src/artifact/registry";
-import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/utils/canonical-id";
+import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/index";
 
 describe("canonical identifier helpers", () => {
   it("normalizes absolute file paths and export names", () => {
@@ -21,6 +21,7 @@ describe("operation registry", () => {
     const id = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
     const first = registry.registerModel({
+      type: "model",
       id,
       prebuild: {
         typename: "User",
@@ -30,6 +31,7 @@ describe("operation registry", () => {
     expect(first.isOk()).toBe(true);
 
     const duplicate = registry.registerModel({
+      type: "model",
       id,
       prebuild: {
         typename: "User",
@@ -42,7 +44,7 @@ describe("operation registry", () => {
         throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("MODEL_ALREADY_REGISTERED");
+        expect(error.code).toBe("ARTIFACT_ALREADY_REGISTERED");
         expect(error.id).toBe(id);
       },
     );
@@ -53,15 +55,21 @@ describe("operation registry", () => {
     const id = createCanonicalId("/app/src/entities/user.ts", "userSlice");
 
     const first = registry.registerSlice({
+      type: "slice",
       id,
-      prebuild: null,
+      prebuild: {
+        operationType: "query",
+      },
     });
 
     expect(first.isOk()).toBe(true);
 
     const duplicate = registry.registerSlice({
+      type: "slice",
       id,
-      prebuild: null,
+      prebuild: {
+        operationType: "query",
+      },
     });
 
     expect(duplicate.isErr()).toBe(true);
@@ -70,7 +78,7 @@ describe("operation registry", () => {
         throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("SLICE_ALREADY_REGISTERED");
+        expect(error.code).toBe("ARTIFACT_ALREADY_REGISTERED");
         expect(error.id).toBe(id);
       },
     );
@@ -81,8 +89,10 @@ describe("operation registry", () => {
     const id = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const first = registry.registerOperation({
+      type: "operation",
       id,
       prebuild: {
+        operationType: "query",
         operationName: "ProfilePageQuery",
         document: parse("query ProfilePageQuery { users { id } }"),
         variableNames: [],
@@ -96,8 +106,10 @@ describe("operation registry", () => {
     expect(first.isOk()).toBe(true);
 
     const duplicate = registry.registerOperation({
+      type: "operation",
       id,
       prebuild: {
+        operationType: "query",
         operationName: "ProfilePageQuery",
         document: parse("query ProfilePageQuery { users { id name } }"),
         variableNames: [],
@@ -114,7 +126,7 @@ describe("operation registry", () => {
         throw new Error("expected duplicate registration to err");
       },
       (error) => {
-        expect(error.code).toBe("OPERATION_ALREADY_REGISTERED");
+        expect(error.code).toBe("ARTIFACT_ALREADY_REGISTERED");
         expect(error.id).toBe(id);
       },
     );
@@ -128,6 +140,7 @@ describe("operation registry", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     registry.registerModel({
+      type: "model",
       id: modelId,
       prebuild: {
         typename: "User",
@@ -135,14 +148,19 @@ describe("operation registry", () => {
     });
 
     registry.registerSlice({
+      type: "slice",
       id: sliceId,
-      prebuild: null,
+      prebuild: {
+        operationType: "query",
+      },
     });
 
     registry.registerOperation({
+      type: "operation",
       id: operationId,
       prebuild: {
         operationName: "ProfilePageQuery",
+        operationType: "query",
         document: parse("query ProfilePageQuery($userId: ID!) { users { id } }"),
         variableNames: ["userId"],
         projectionPathGraph: {
@@ -154,13 +172,27 @@ describe("operation registry", () => {
 
     const snapshot = registry.snapshot();
 
-    expect(snapshot.models[modelId]).toBeDefined();
-    expect(snapshot.models[modelId]?.prebuild.typename).toBe("User");
+    const modelEntry = snapshot.artifacts[modelId];
+    expect(modelEntry).toBeDefined();
+    expect(modelEntry?.type).toBe("model");
+    if (modelEntry?.type === "model") {
+      expect(modelEntry.prebuild.typename).toBe("User");
+    }
 
-    expect(snapshot.slices[sliceId]).toBeDefined();
+    const sliceEntry = snapshot.artifacts[sliceId];
+    expect(sliceEntry).toBeDefined();
+    expect(sliceEntry?.type).toBe("slice");
 
-    expect(snapshot.operations[operationId]).toBeDefined();
-    expect(snapshot.operations[operationId]?.prebuild.operationName).toBe("ProfilePageQuery");
-    expect(snapshot.operations[operationId]?.prebuild.variableNames).toEqual(["userId"]);
+    const operationEntry = snapshot.artifacts[operationId];
+    expect(operationEntry).toBeDefined();
+    expect(operationEntry?.type).toBe("operation");
+    if (operationEntry?.type === "operation") {
+      expect(operationEntry.prebuild.operationName).toBe("ProfilePageQuery");
+      expect(operationEntry.prebuild.variableNames).toEqual(["userId"]);
+    }
+
+    expect(snapshot.counts.models).toBe(1);
+    expect(snapshot.counts.slices).toBe(1);
+    expect(snapshot.counts.operations).toBe(1);
   });
 });

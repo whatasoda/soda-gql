@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createCanonicalTracker } from "../../../packages/builder/src/canonical/path-tracker";
+import { createCanonicalTracker } from "../../../packages/builder/src/index";
 
 describe("CanonicalPathTracker", () => {
   const filePath = "/test/src/test.ts";

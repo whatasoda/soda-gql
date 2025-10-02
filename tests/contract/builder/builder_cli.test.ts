@@ -227,13 +227,18 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     expect(artifactExists).toBe(true);
     const artifactContents = await Bun.file(artifactPath).text();
     const parsed = JSON.parse(artifactContents) as {
-      operations: Record<string, { type: string; prebuild: { operationName: string; document: unknown } }>;
+      artifacts: Record<
+        string,
+        { type: string; prebuild?: { operationName?: string; document?: unknown; operationType?: string; typename?: string } }
+      >;
       report: { operations: number };
     };
     // Find the ProfilePageQuery operation
-    const profileQueryOp = Object.values(parsed.operations).find((op) => op.prebuild.operationName === "ProfilePageQuery");
+    const profileQueryOp = Object.values(parsed.artifacts).find(
+      (entry) => entry.type === "operation" && entry.prebuild?.operationName === "ProfilePageQuery",
+    );
     expect(profileQueryOp).toBeDefined();
-    expect(profileQueryOp?.prebuild.document).toBeDefined();
+    expect(profileQueryOp?.prebuild?.document).toBeDefined();
     expect(parsed.report.operations).toBeGreaterThanOrEqual(1);
   });
 

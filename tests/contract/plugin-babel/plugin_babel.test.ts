@@ -91,9 +91,7 @@ describe("@soda-gql/plugin-babel", () => {
       artifactPath,
       JSON.stringify(
         {
-          operations: {},
-          slices: {},
-          models: {},
+          artifacts: {},
           report: {
             operations: 0,
             models: 0,
@@ -130,7 +128,7 @@ describe("@soda-gql/plugin-babel", () => {
       artifactPath,
       JSON.stringify(
         {
-          operations: {
+          artifacts: {
             [canonicalId]: {
               type: "operation",
               id: canonicalId,
@@ -149,8 +147,6 @@ describe("@soda-gql/plugin-babel", () => {
               },
             },
           },
-          slices: {},
-          models: {},
           report: {
             operations: 1,
             models: 0,
