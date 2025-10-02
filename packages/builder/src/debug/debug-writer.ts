@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ModuleAnalysis } from "../ast/analyze-module";
+import type { ModuleAnalysis } from "../ast";
 import type { DependencyGraph } from "../dependency-graph";
 import type { BuilderArtifact } from "../types";
 
