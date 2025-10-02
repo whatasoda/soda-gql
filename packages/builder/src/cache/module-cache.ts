@@ -1,13 +1,11 @@
-import { normalize } from "node:path";
 import { z } from "zod";
 
 import type { ModuleAnalysis } from "../ast/analyze-module";
+import { normalizeToPosix } from "../path-utils";
 import { ModuleAnalysisSchema } from "../schemas/cache";
 import type { BuilderAnalyzer } from "../types";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 import { createJsonCache } from "./json-cache";
-
-const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
 
 // Bumped to v3 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const MODULE_CACHE_VERSION = "module-cache/v3";

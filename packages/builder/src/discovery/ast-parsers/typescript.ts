@@ -1,6 +1,6 @@
 import type { ModuleAnalysis } from "../../ast/analyze-module";
 import { analyzeModule } from "../../ast/analyze-module";
-import { isExternalSpecifier, resolveRelativeImport } from "../fs-utils";
+import { isExternalSpecifier, resolveRelativeImport, TYPESCRIPT_EXTENSIONS } from "../../path-utils";
 import type { AstParser, AstParserInput, DiscoveredDependency } from "../types";
 
 /**
@@ -59,7 +59,7 @@ const resolveRelativeDependencies = (analysis: ModuleAnalysis): readonly string[
  */
 export const typeScriptAstParser: AstParser = {
   analyzer: "ts",
-  supportedFileExtensions: [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx"],
+  supportedFileExtensions: TYPESCRIPT_EXTENSIONS,
 
   parseModule: (input: AstParserInput): ModuleAnalysis => analyzeModule({ filePath: input.filePath, source: input.source }),
 

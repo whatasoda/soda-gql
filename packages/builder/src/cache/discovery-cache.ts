@@ -1,10 +1,8 @@
-import { normalize } from "node:path";
-
 import type { DiscoveryCache, DiscoverySnapshot } from "../discovery/types";
+import { normalizeToPosix } from "../path-utils";
 import { DiscoverySnapshotSchema } from "../schemas/discovery";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 
-const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
 // Bumped to v2 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const DISCOVERY_CACHE_VERSION = "discovery-cache/v2";
 

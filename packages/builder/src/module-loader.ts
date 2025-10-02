@@ -14,15 +14,9 @@ export type ModuleLoadStats = {
   readonly misses: number;
 };
 
-export type SourceFile = {
-  readonly filePath: string;
-  readonly source: string;
-};
-
 export type LoadedModules = {
   readonly modules: readonly ModuleAnalysis[];
   readonly stats: ModuleLoadStats;
-  readonly sources: readonly SourceFile[];
 };
 
 const defaultCacheRoot = () => join(process.cwd(), ".cache", "soda-gql", "builder");
@@ -70,16 +64,10 @@ export const loadModules = ({ entry, cacheRoot, analyzer }: LoadModulesOptions):
       cache,
     });
 
-    // Extract modules and sources for backward compatibility
     const modules = snapshots.map((snapshot) => snapshot.analysis);
-    const sources = snapshots.map((snapshot) => ({
-      filePath: snapshot.filePath,
-      source: "", // Source is no longer stored in snapshots
-    }));
 
     return {
       modules,
       stats: { hits: cacheHits, misses: cacheMisses },
-      sources,
     } satisfies LoadedModules;
   });

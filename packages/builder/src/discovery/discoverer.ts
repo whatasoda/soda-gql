@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
+import { normalizeToPosix } from "../path-utils";
 import { createCanonicalId } from "../registry";
 import { extractModuleDependencies } from "./ast-parsers/typescript";
-import { normalizeToPosix } from "./fs-utils";
 import type { AstParser, DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
 
 export type DiscoverModulesOptions = {

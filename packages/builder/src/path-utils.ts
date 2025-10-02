@@ -11,7 +11,13 @@ export const normalizeToPosix = (value: string): string => normalize(value).repl
  * File extensions to try when resolving module specifiers.
  * Ordered by precedence: TypeScript, then JavaScript.
  */
-export const MODULE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"] as const;
+export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"] as const;
+
+/**
+ * TypeScript-compatible file extensions (excludes CommonJS modules).
+ * Used by the TypeScript parser.
+ */
+export const TYPESCRIPT_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx"] as const;
 
 /**
  * Resolve a relative import specifier to an absolute file path.
@@ -30,7 +36,7 @@ export const resolveRelativeImport = (from: string, specifier: string): string |
   }
 
   // Try with extensions
-  for (const ext of MODULE_EXTENSIONS) {
+  for (const ext of MODULE_EXTENSION_CANDIDATES) {
     const candidate = `${base}${ext}`;
     if (existsSync(candidate)) {
       return normalizeToPosix(candidate);
@@ -38,7 +44,7 @@ export const resolveRelativeImport = (from: string, specifier: string): string |
   }
 
   // Try as directory with index files
-  for (const ext of MODULE_EXTENSIONS) {
+  for (const ext of MODULE_EXTENSION_CANDIDATES) {
     const candidate = join(base, `index${ext}`);
     if (existsSync(candidate)) {
       return normalizeToPosix(candidate);

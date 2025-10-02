@@ -9,20 +9,6 @@ import type { BuilderArtifact, BuilderError } from "./types";
 
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 
-// const computeModelHash = (canonicalId: string, dependencies: readonly string[]): string =>
-//   Bun.hash(`${canonicalId}:${dependencies.join(",")}`).toString(16);
-
-// const stripDocument = (document: DocumentNode): DocumentNode =>
-//   JSON.parse(
-//     JSON.stringify(document, (key, value) => {
-//       if (key === "loc") {
-//         return undefined;
-//       }
-
-//       return value;
-//     }),
-//   ) as DocumentNode;
-
 export type BuildArtifactInput = {
   readonly graph: DependencyGraph;
   readonly cache: ModuleLoadStats;
