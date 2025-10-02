@@ -1,4 +1,4 @@
-import { types as t } from "@babel/core";
+import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { ArtifactLookup, GqlCall } from "../analysis/gql-call";
 import { extractGqlCall, findGqlBuilderCall } from "../analysis/gql-call";

@@ -158,7 +158,7 @@ describe("artifact aggregate", () => {
     const graph: DependencyGraph = new Map([[modelId, createTestGraphNode(modelId, "/app/src/entities/user.ts")]]);
 
     // Manually add duplicate to bypass Map's deduplication for testing
-    const duplicateNode = createTestGraphNode(modelId, "/app/src/entities/user.ts");
+    const _duplicateNode = createTestGraphNode(modelId, "/app/src/entities/user.ts");
 
     const intermediateModule = createTestIntermediateModule({
       [modelId]: {

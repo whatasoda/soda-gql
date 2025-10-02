@@ -1,6 +1,6 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { createCanonicalTracker, type CanonicalPathTracker } from "@soda-gql/builder";
+import { type CanonicalPathTracker, createCanonicalTracker } from "@soda-gql/builder";
 
 export type GqlDefinitionMetadata = {
   readonly astPath: string;

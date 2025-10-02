@@ -94,10 +94,10 @@ export type PluginBuilderUnexpectedError = PluginErrorBase<"SODA_GQL_BUILDER_UNE
   readonly stage: "builder";
 };
 
-export type PluginAnalysisMetadataMissingError = PluginErrorBase<
-  "SODA_GQL_METADATA_NOT_FOUND",
-  AnalysisMetadataMissingCause
-> & { readonly stage: "analysis"; readonly filename: string };
+export type PluginAnalysisMetadataMissingError = PluginErrorBase<"SODA_GQL_METADATA_NOT_FOUND", AnalysisMetadataMissingCause> & {
+  readonly stage: "analysis";
+  readonly filename: string;
+};
 
 export type PluginAnalysisArtifactMissingError = PluginErrorBase<
   "SODA_GQL_ANALYSIS_ARTIFACT_NOT_FOUND",

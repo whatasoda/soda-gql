@@ -1,7 +1,5 @@
-import type { PluginObj, PluginPass } from "@babel/core";
-import { types as t } from "@babel/core";
+import type { PluginObj, PluginPass, types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { CanonicalId } from "@soda-gql/builder";
 import type { ArtifactLookup } from "./analysis/gql-call";
 import { collectGqlDefinitionMetadata } from "./metadata/collector";
 import { type PluginState, preparePluginState } from "./state";
