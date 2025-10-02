@@ -115,6 +115,10 @@ describe("zero-runtime transform", () => {
           expect(code).not.toContain("/* runtime function */");
         },
       },
+      // NOTE: nested-definitions.ts is excluded because the Babel plugin
+      // does not yet support non-exported and nested definitions.
+      // This is a known limitation that will be addressed when updating
+      // the plugin to work with the new builder that supports these cases.
     ];
 
     // Transform all files and write to disk
