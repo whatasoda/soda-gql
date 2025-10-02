@@ -1,9 +1,4 @@
 export {
-  createDiscoveryCache,
-  type DiscoveryCacheOptions,
-  JsonDiscoveryCache,
-} from "./discovery-cache";
-export {
   createJsonCache,
   type JsonCacheFactory,
   type JsonCacheFactoryOptions,

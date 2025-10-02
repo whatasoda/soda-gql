@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { getAstAnalyzer } from "../ast";
-import { normalizeToPosix } from "../path-utils";
 import { createCanonicalId } from "../registry";
+import { normalizeToPosix } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
 

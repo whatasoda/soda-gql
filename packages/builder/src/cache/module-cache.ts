@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ModuleAnalysis } from "../ast/analyze-module";
+import type { ModuleAnalysis } from "../ast";
 import { ModuleAnalysisSchema } from "../schemas/cache";
 import type { BuilderAnalyzer } from "../types";
 import type { JsonCacheFactory } from "./json-cache";

@@ -3,12 +3,11 @@ import { join, resolve } from "node:path";
 import { err } from "neverthrow";
 
 import { buildArtifact } from "./artifact";
-import { createDiscoveryCache } from "./cache/discovery-cache";
 import { createJsonCache } from "./cache/json-cache";
 import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";
+import { createDiscoveryCache, createDiscoveryPipeline } from "./discovery";
 import { createIntermediateModule } from "./intermediate-module";
-import { createDiscoveryPipeline } from "./module-loader";
 import type { BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 

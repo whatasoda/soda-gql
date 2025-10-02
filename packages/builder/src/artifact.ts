@@ -2,8 +2,8 @@ import { pathToFileURL } from "node:url";
 import { err, ok, type Result } from "neverthrow";
 
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
+import type { ModuleLoadStats } from "./discovery/discovery-pipeline";
 import type { IntermediateModule } from "./intermediate-module";
-import type { ModuleLoadStats } from "./module-loader";
 import { createOperationRegistry } from "./registry";
 import type { BuilderArtifact, BuilderError } from "./types";
 

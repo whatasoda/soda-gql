@@ -1,9 +1,9 @@
 import type { Result } from "neverthrow";
-import { getAstAnalyzer, type ModuleAnalysis } from "./ast";
-import { resolveEntryPaths } from "./discover";
-import { discoverModules } from "./discovery/discoverer";
-import type { DiscoveryCache } from "./discovery/types";
-import type { BuilderAnalyzer, BuilderError } from "./types";
+import { getAstAnalyzer, type ModuleAnalysis } from "../ast";
+import type { BuilderAnalyzer, BuilderError } from "../types";
+import { discoverModules } from "./discoverer";
+import { resolveEntryPaths } from "./entry-paths";
+import type { DiscoveryCache } from "./types";
 
 export type ModuleLoadStats = {
   readonly hits: number;

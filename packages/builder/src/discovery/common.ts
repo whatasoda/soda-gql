@@ -1,5 +1,5 @@
 import type { ModuleAnalysis } from "@builder/ast/types";
-import { isExternalSpecifier, resolveRelativeImport } from "@builder/internal/path-utils";
+import { isExternalSpecifier, resolveRelativeImport } from "@builder/internal/utils/path-utils";
 import * as Bun from "bun";
 import type { DiscoveredDependency } from "./types";
 
@@ -7,7 +7,6 @@ import type { DiscoveredDependency } from "./types";
  * Extract all unique dependencies (relative + external) from the analysis.
  * Resolves local specifiers immediately so discovery only traverses once.
  */
-
 export const extractModuleDependencies = (analysis: ModuleAnalysis): readonly DiscoveredDependency[] => {
   const dependencies = new Map<string, DiscoveredDependency>();
 

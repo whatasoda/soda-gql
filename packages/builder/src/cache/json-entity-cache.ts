@@ -1,5 +1,5 @@
 import type { ZodSchema } from "zod";
-import { normalizeToPosix } from "../path-utils";
+import { normalizeToPosix } from "../utils/path-utils";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 
 export type JsonEntityCacheOptions<V> = {

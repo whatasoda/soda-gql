@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { Glob } from "bun";
 import { err, ok } from "neverthrow";
 
-import type { BuilderError } from "./types";
+import type { BuilderError } from "../types";
 
 const scanEntries = (pattern: string): readonly string[] => {
   const glob = new Glob(pattern);

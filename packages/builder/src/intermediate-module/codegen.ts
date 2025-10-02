@@ -277,18 +277,7 @@ const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, Module
   const { filePath, nodes } = fileGroup;
 
   // Get the module summary for this file
-  const summary = summaries.get(filePath);
-  if (!summary) {
-    // Fallback: create empty summary
-    const emptySummary: ModuleSummary = {
-      filePath,
-      runtimeImports: [],
-      gqlExports: [],
-    };
-    const { imports } = renderImportStatements(emptySummary, summaries);
-    const body = buildNestedObject(nodes);
-    return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
-  }
+  const summary = summaries.get(filePath) ?? ({ filePath, runtimeImports: [], gqlExports: [] } satisfies ModuleSummary);
 
   const { imports } = renderImportStatements(summary, summaries);
   const body = buildNestedObject(nodes);

@@ -1,7 +1,7 @@
-import type { DiscoveryCache, DiscoverySnapshot } from "../discovery/types";
+import type { JsonCacheFactory } from "../cache/json-cache";
+import { JsonEntityCache } from "../cache/json-entity-cache";
 import { DiscoverySnapshotSchema } from "../schemas/discovery";
-import type { JsonCacheFactory } from "./json-cache";
-import { JsonEntityCache } from "./json-entity-cache";
+import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
 // Bumped to v2 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const DISCOVERY_CACHE_VERSION = "discovery-cache/v2";
