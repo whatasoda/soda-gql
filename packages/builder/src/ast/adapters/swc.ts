@@ -320,7 +320,6 @@ const collectAllDefinitions = (
     readonly isExported: boolean;
     readonly exportBinding?: string;
     readonly loc: SourceLocation;
-    readonly call: CallExpression;
     readonly expression: string;
   };
 
@@ -402,7 +401,6 @@ const collectAllDefinitions = (
         isExported,
         exportBinding,
         loc: toLocation(resolvePosition, node.span),
-        call: node,
         expression: expressionFromCall(node),
       });
 

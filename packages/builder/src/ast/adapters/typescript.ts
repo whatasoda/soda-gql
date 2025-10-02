@@ -261,7 +261,6 @@ const collectAllDefinitions = (
     readonly isExported: boolean;
     readonly exportBinding?: string;
     readonly loc: SourceLocation;
-    readonly call: ts.CallExpression;
     readonly expression: string;
   };
 
@@ -323,7 +322,6 @@ const collectAllDefinitions = (
         isExported,
         exportBinding,
         loc: toLocation(sourceFile, node),
-        call: node,
         expression: node.getText(sourceFile),
       });
 
