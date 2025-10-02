@@ -6,14 +6,14 @@
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
-import {
-  buildAstPath,
-  createExportBindingsMap,
-  createOccurrenceTracker,
-  createPathTracker,
-  type ScopeFrame,
-} from "../common/scope";
+import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
+import { createCanonicalTracker, type ScopeHandle } from "../../canonical/path-tracker";
 import type { AnalyzerAdapter } from "../core";
+
+/**
+ * Extended SWC Module with filePath attached (similar to ts.SourceFile.fileName)
+ */
+type SwcModule = Module & { __filePath: string };
 import type {
   AnalyzeModuleInput,
   ModuleDefinition,
@@ -294,7 +294,7 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
 };
 
 const collectAllDefinitions = (
-  module: Module,
+  module: SwcModule,
   gqlIdentifiers: ReadonlySet<string>,
   _imports: readonly ModuleImport[],
   exports: readonly ModuleExport[],
@@ -334,9 +334,36 @@ const collectAllDefinitions = (
   // Build export bindings map (which variables are exported and with what name)
   const exportBindings = createExportBindingsMap(exports);
 
-  // Create occurrence and path trackers
-  const { getNextOccurrence } = createOccurrenceTracker();
-  const { ensureUniquePath } = createPathTracker();
+  // Create canonical tracker
+  const tracker = createCanonicalTracker({
+    filePath: module.__filePath,
+    getExportName: (localName) => exportBindings.get(localName),
+  });
+
+  // Anonymous scope counters (for naming only, not occurrence tracking)
+  const anonymousCounters = new Map<string, number>();
+  const getAnonymousName = (kind: string): string => {
+    const count = anonymousCounters.get(kind) ?? 0;
+    anonymousCounters.set(kind, count + 1);
+    return `${kind}#${count}`;
+  };
+
+  // Helper to synchronize tracker with immutable stack pattern
+  const withScope = <T>(
+    stack: ScopeFrame[],
+    segment: string,
+    kind: ScopeFrame["kind"],
+    stableKey: string,
+    callback: (newStack: ScopeFrame[]) => T,
+  ): T => {
+    const handle = tracker.enterScope({ segment, kind, stableKey });
+    try {
+      const frame: ScopeFrame = { nameSegment: segment, kind, occurrence: 0 };
+      return callback([...stack, frame]);
+    } finally {
+      tracker.exitScope(handle);
+    }
+  };
 
   const expressionFromCall = (call: CallExpression): string => {
     let start = call.span.start;
@@ -361,7 +388,8 @@ const collectAllDefinitions = (
 
     // Check if this is a gql definition call
     if (node.type === "CallExpression" && isGqlCall(gqlIdentifiers, node)) {
-      const astPath = ensureUniquePath(buildAstPath(stack));
+      // Use tracker to get astPath
+      const { astPath } = tracker.registerDefinition();
       const isTopLevel = stack.length === 1;
 
       // Determine if exported
@@ -397,14 +425,11 @@ const collectAllDefinitions = (
       node.declarations?.forEach((decl: any) => {
         if (decl.id?.type === "Identifier") {
           const varName = decl.id.value;
-          const newFrame: ScopeFrame = {
-            nameSegment: varName,
-            kind: "variable",
-            occurrence: getNextOccurrence(`var:${varName}`),
-          };
 
           if (decl.init) {
-            visit(decl.init, [...stack, newFrame]);
+            withScope(stack, varName, "variable", `var:${varName}`, (newStack) => {
+              visit(decl.init, newStack);
+            });
           }
         }
       });
@@ -413,76 +438,61 @@ const collectAllDefinitions = (
 
     // Function declaration
     if (node.type === "FunctionDeclaration") {
-      const funcName = node.identifier?.value ?? `function#${getNextOccurrence("function")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: funcName,
-        kind: "function",
-        occurrence: getNextOccurrence(`func:${funcName}`),
-      };
+      const funcName = node.identifier?.value ?? getAnonymousName("function");
 
       if (node.body) {
-        visit(node.body, [...stack, newFrame]);
+        withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
+          visit(node.body, newStack);
+        });
       }
       return;
     }
 
     // Arrow function
     if (node.type === "ArrowFunctionExpression") {
-      const arrowName = `arrow#${getNextOccurrence("arrow")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: arrowName,
-        kind: "function",
-        occurrence: 0,
-      };
+      const arrowName = getAnonymousName("arrow");
 
       if (node.body) {
-        visit(node.body, [...stack, newFrame]);
+        withScope(stack, arrowName, "function", "arrow", (newStack) => {
+          visit(node.body, newStack);
+        });
       }
       return;
     }
 
     // Function expression
     if (node.type === "FunctionExpression") {
-      const funcName = node.identifier?.value ?? `function#${getNextOccurrence("function")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: funcName,
-        kind: "function",
-        occurrence: getNextOccurrence(`func:${funcName}`),
-      };
+      const funcName = node.identifier?.value ?? getAnonymousName("function");
 
       if (node.body) {
-        visit(node.body, [...stack, newFrame]);
+        withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
+          visit(node.body, newStack);
+        });
       }
       return;
     }
 
     // Class declaration
     if (node.type === "ClassDeclaration") {
-      const className = node.identifier?.value ?? `class#${getNextOccurrence("class")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: className,
-        kind: "class",
-        occurrence: getNextOccurrence(`class:${className}`),
-      };
+      const className = node.identifier?.value ?? getAnonymousName("class");
 
-      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-      node.body?.forEach((member: any) => {
-        if (member.type === "MethodProperty" || member.type === "ClassProperty") {
-          const memberName = member.key?.value ?? null;
-          if (memberName) {
-            const memberFrame: ScopeFrame = {
-              nameSegment: memberName,
-              kind: member.type === "MethodProperty" ? "method" : "property",
-              occurrence: getNextOccurrence(`member:${className}.${memberName}`),
-            };
-
-            if (member.type === "MethodProperty" && member.body) {
-              visit(member.body, [...stack, newFrame, memberFrame]);
-            } else if (member.type === "ClassProperty" && member.value) {
-              visit(member.value, [...stack, newFrame, memberFrame]);
+      withScope(stack, className, "class", `class:${className}`, (classStack) => {
+        // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+        node.body?.forEach((member: any) => {
+          if (member.type === "MethodProperty" || member.type === "ClassProperty") {
+            const memberName = member.key?.value ?? null;
+            if (memberName) {
+              const memberKind = member.type === "MethodProperty" ? "method" : "property";
+              withScope(classStack, memberName, memberKind, `member:${className}.${memberName}`, (memberStack) => {
+                if (member.type === "MethodProperty" && member.body) {
+                  visit(member.body, memberStack);
+                } else if (member.type === "ClassProperty" && member.value) {
+                  visit(member.value, memberStack);
+                }
+              });
             }
           }
-        }
+        });
       });
       return;
     }
@@ -491,13 +501,9 @@ const collectAllDefinitions = (
     if (node.type === "KeyValueProperty") {
       const propName = getPropertyName(node.key);
       if (propName) {
-        const newFrame: ScopeFrame = {
-          nameSegment: propName,
-          kind: "property",
-          occurrence: getNextOccurrence(`prop:${propName}`),
-        };
-
-        visit(node.value, [...stack, newFrame]);
+        withScope(stack, propName, "property", `prop:${propName}`, (newStack) => {
+          visit(node.value, newStack);
+        });
       }
       return;
     }
@@ -567,7 +573,10 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
       return null;
     }
 
-    return program as Module;
+    // Attach filePath to module (similar to ts.SourceFile.fileName)
+    const swcModule = program as SwcModule;
+    swcModule.__filePath = input.filePath;
+    return swcModule;
   },
 
   collectGqlIdentifiers(file: Module): ReadonlySet<string> {
@@ -596,7 +605,7 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
   } {
     const resolvePosition = toPositionResolver(context.source);
     const { definitions, handledCalls } = collectAllDefinitions(
-      file,
+      file as SwcModule,
       context.gqlIdentifiers,
       context.imports,
       context.exports,
