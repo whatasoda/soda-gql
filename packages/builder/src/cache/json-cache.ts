@@ -9,7 +9,7 @@ export type JsonCacheFactoryOptions = {
   readonly prefix?: CacheNamespace;
 };
 
-export type JsonCacheStoreOptions<K extends string, V> = {
+export type JsonCacheStoreOptions<_K extends string, V> = {
   readonly namespace: CacheNamespace;
   readonly schema: z.ZodType<V>;
   readonly version?: string;

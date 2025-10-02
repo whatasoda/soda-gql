@@ -41,9 +41,7 @@ const extractIdentifiersFromExpression = (expression: string): Set<string> => {
   const sourceFile = ts.createSourceFile("temp.ts", expression, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
 
   // Resolve property access chain to get root and segments
-  const resolvePropertyAccess = (
-    expr: ts.Expression,
-  ): { root: string; segments: string[] } | null => {
+  const resolvePropertyAccess = (expr: ts.Expression): { root: string; segments: string[] } | null => {
     const segments: string[] = [];
     let current: ts.Expression = expr;
 
@@ -69,7 +67,7 @@ const extractIdentifiersFromExpression = (expression: string): Set<string> => {
         }
       });
       // Visit function body with updated exclusions
-      if (node.body) {
+      if ("body" in node && node.body) {
         visit(node.body, nextExclusions);
       }
       return;

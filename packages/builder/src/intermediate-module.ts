@@ -1,10 +1,8 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import type { AnyModel, AnyOperationOf, AnyOperationSliceOf, IssueRegistry, OperationType } from "@soda-gql/core";
-import { unwrapNullish } from "@soda-gql/tool-utils";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
-import ts from "typescript";
 import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
@@ -25,98 +23,6 @@ const formatFactory = (expression: string): string => {
   const indented = lines.map((line, index) => (index === 0 ? line : `    ${line}`)).join("\n");
 
   return `(\n    ${indented}\n  )`;
-};
-
-const getPropertyAccessPath = (node: ts.PropertyAccessExpression): string | null => {
-  const segments: string[] = [];
-  let current: ts.Expression = node;
-
-  while (ts.isPropertyAccessExpression(current)) {
-    segments.unshift(current.name.text);
-    current = current.expression;
-  }
-
-  if (ts.isIdentifier(current)) {
-    segments.unshift(current.text);
-    return segments.join(".");
-  }
-
-  return null;
-};
-
-const rewriteExpression = (expression: string, replacements: Map<string, ReplacementEntry>): string => {
-  if (replacements.size === 0) {
-    return expression.trim();
-  }
-
-  const sourceText = `(${expression})`;
-  const sourceFile = ts.createSourceFile("runtime-expression.ts", sourceText, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
-
-  const createReplacementExpression = (replacement: ReplacementEntry): ts.Expression => {
-    const tempSource = ts.createSourceFile("temp.ts", replacement.expression, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
-    const statement = tempSource.statements[0];
-    if (statement && ts.isExpressionStatement(statement)) {
-      return statement.expression;
-    }
-    // Fallback to identifier if parsing fails
-    return ts.factory.createIdentifier(replacement.expression);
-  };
-
-  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    const visit: ts.Visitor = (node) => {
-      if (ts.isPropertyAccessExpression(node)) {
-        const path = getPropertyAccessPath(node);
-        if (path) {
-          const replacement = replacements.get(path);
-          if (replacement) {
-            return createReplacementExpression(replacement);
-          }
-        }
-      }
-
-      if (ts.isIdentifier(node)) {
-        const parent = node.parent;
-        if (parent && ts.isPropertyAssignment(parent) && parent.name === node) {
-          return node;
-        }
-
-        const replacement = replacements.get(node.text);
-        if (replacement) {
-          return createReplacementExpression(replacement);
-        }
-      }
-
-      return ts.visitEachChild(node, visit, context);
-    };
-
-    return (node) => ts.visitEachChild(node, visit, context);
-  };
-
-  const transformed = ts.transform(sourceFile, [transformer]);
-  const [transformedFile] = transformed.transformed;
-  const expressionStatement = unwrapNullish(transformedFile, "safe-array-item-access").statements[0];
-
-  if (!expressionStatement || !ts.isExpressionStatement(expressionStatement)) {
-    transformed.dispose();
-    throw new Error("RUNTIME_MODULE_TRANSFORM_FAILURE");
-  }
-
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  let printed = printer
-    .printNode(ts.EmitHint.Expression, expressionStatement.expression, unwrapNullish(transformedFile, "safe-array-item-access"))
-    .trim();
-
-  if (printed.startsWith("(") && printed.endsWith(")")) {
-    printed = printed.slice(1, -1).trim();
-  }
-
-  transformed.dispose();
-
-  return printed;
-};
-
-type ReplacementEntry = {
-  readonly expression: string;
 };
 
 type FileGroup = {
@@ -186,52 +92,25 @@ const analyzeDependencies = (
   return { crossFile: crossFileMap, sameFile };
 };
 
-const createReplacementMap = (
-  node: DependencyGraphNode,
-  currentFilePath: string,
-  graph: DependencyGraph,
-): Map<string, ReplacementEntry> => {
-  const map = new Map<string, ReplacementEntry>();
-  const { crossFile, sameFile } = analyzeDependencies(node, currentFilePath, graph);
-
-  // Cross-file dependencies use property access from imported root
-  crossFile.forEach((bindings) => {
-    bindings.forEach(({ symbol, exportPath }) => {
-      // Use property access notation: rootName.nested.path
-      map.set(symbol, { expression: exportPath });
-    });
-  });
-
-  // Same-file dependencies reference the root name with property access
-  sameFile.forEach(({ symbol, exportPath }) => {
-    // For same-file references, use the export path directly
-    map.set(symbol, { expression: exportPath });
-  });
-
-  return map;
-};
-
 type TreeNode = {
   expression?: string; // Leaf node with actual expression
   children: Map<string, TreeNode>; // Branch node with children
 };
 
-const buildTree = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): Map<string, TreeNode> => {
+const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
   const roots = new Map<string, TreeNode>();
 
   nodes.forEach((node) => {
     const { exportPath } = splitCanonicalId(node.id);
     const parts = exportPath.split(".");
     const expressionText = node.definition.expression.trim();
-    const replacements = createReplacementMap(node, currentFilePath, graph);
-    const rewritten = rewriteExpression(expressionText, replacements);
 
     if (parts.length === 1) {
       // Top-level export
       const rootName = parts[0];
       if (rootName) {
         roots.set(rootName, {
-          expression: rewritten,
+          expression: expressionText,
           children: new Map(),
         });
       }
@@ -262,7 +141,7 @@ const buildTree = (nodes: DependencyGraphNode[], currentFilePath: string, graph:
       const leafName = parts[parts.length - 1];
       if (leafName) {
         current.children.set(leafName, {
-          expression: rewritten,
+          expression: expressionText,
           children: new Map(),
         });
       }
@@ -292,8 +171,8 @@ const renderTreeNode = (node: TreeNode, indent: number): string => {
   return `{\n${entries.join("\n")}\n${indentStr}}`;
 };
 
-const buildNestedObject = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
-  const tree = buildTree(nodes, currentFilePath, graph);
+const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
+  const tree = buildTree(nodes);
   const declarations: string[] = [];
   const returnEntries: string[] = [];
 
@@ -323,7 +202,11 @@ const buildNestedObject = (nodes: DependencyGraphNode[], currentFilePath: string
   return `${declarations.join("\n")}\n${returnStatement}`;
 };
 
-const renderImportStatements = (nodes: DependencyGraphNode[], currentFilePath: string, graph: DependencyGraph): string => {
+const renderImportStatements = (
+  nodes: DependencyGraphNode[],
+  currentFilePath: string,
+  graph: DependencyGraph,
+): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
   const allCrossFileDeps = new Map<string, Set<DependencyBinding>>();
 
   nodes.forEach((node) => {
@@ -338,31 +221,166 @@ const renderImportStatements = (nodes: DependencyGraphNode[], currentFilePath: s
   });
 
   const importLines: string[] = [];
+  const importedRootNames = new Set<string>();
+  const namespaceImports = new Set<string>();
 
   allCrossFileDeps.forEach((bindings, filePath) => {
-    // Extract only root names (first segment of export path)
-    const rootNames = new Set<string>();
-    bindings.forEach((binding) => {
-      const parts = binding.exportPath.split(".");
-      const rootName = parts[0];
-      if (rootName) {
-        rootNames.add(rootName);
-      }
-    });
+    // Detect if this is a namespace import
+    // A namespace import is when all symbols share the same root prefix that's not in exportPath
+    const bindingsArray = Array.from(bindings);
 
-    const destructured = Array.from(rootNames).sort().join(", ");
-    importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+    // Check if all bindings share a common namespace prefix
+    let commonNamespace: string | null = null;
+    let isNamespaceImport = false;
+
+    if (bindingsArray.length > 0) {
+      // Get the first symbol's potential namespace (first segment before first dot)
+      const firstSymbol = bindingsArray[0]?.symbol;
+      if (firstSymbol?.includes(".")) {
+        const potentialNamespace = firstSymbol.split(".")[0];
+
+        // Check if all symbols start with this namespace
+        const allShareNamespace = bindingsArray.every((binding) => {
+          return binding.symbol.startsWith(`${potentialNamespace}.`);
+        });
+
+        // Check if the namespace doesn't match any exportPath root
+        const namespaceNotInExports = bindingsArray.every((binding) => {
+          const exportRoot = binding.exportPath.split(".")[0];
+          return exportRoot !== potentialNamespace;
+        });
+
+        if (allShareNamespace && namespaceNotInExports && potentialNamespace) {
+          commonNamespace = potentialNamespace;
+          isNamespaceImport = true;
+        }
+      }
+    }
+
+    if (isNamespaceImport && commonNamespace) {
+      // Namespace import: const foo = registry.import("path");
+      importLines.push(`    const ${commonNamespace} = registry.import("${filePath}");`);
+      namespaceImports.add(commonNamespace);
+      importedRootNames.add(commonNamespace);
+    } else {
+      // Named import: const { a, b } = registry.import("path");
+      const rootNames = new Set<string>();
+      bindings.forEach((binding) => {
+        const parts = binding.exportPath.split(".");
+        const rootName = parts[0];
+        if (rootName) {
+          rootNames.add(rootName);
+          importedRootNames.add(rootName);
+        }
+      });
+
+      const destructured = Array.from(rootNames).sort().join(", ");
+      importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+    }
   });
 
-  return importLines.length > 0 ? `\n${importLines.join("\n")}\n` : "";
+  return {
+    imports: importLines.length > 0 ? `\n${importLines.join("\n")}\n` : "",
+    importedRootNames,
+    namespaceImports,
+  };
+};
+
+const renderAliasBindings = (
+  nodes: DependencyGraphNode[],
+  currentFilePath: string,
+  graph: DependencyGraph,
+  importedRootNames: Set<string>,
+  namespaceImports: Set<string>,
+): string => {
+  // Collect simple aliases and namespace aliases separately
+  const simpleAliases = new Map<string, string>();
+  const namespaceAliases = new Map<string, Map<string, string>>();
+
+  nodes.forEach((node) => {
+    const { crossFile } = analyzeDependencies(node, currentFilePath, graph);
+
+    const processBinding = (binding: DependencyBinding) => {
+      const parts = binding.symbol.split(".");
+
+      if (parts.length === 1) {
+        // Simple identifier - direct alias
+        if (binding.symbol !== binding.exportPath) {
+          simpleAliases.set(binding.symbol, binding.exportPath);
+        }
+      } else if (parts.length > 1) {
+        // Namespace import like userCatalog.collections.byCategory
+        const namespace = parts[0];
+        const property = parts[1];
+        if (!namespace || !property) return;
+
+        // Skip if namespace was imported as a whole (star import)
+        if (namespaceImports.has(namespace)) {
+          return;
+        }
+
+        // Skip if namespace is already imported as a root name
+        // (the imported object already has the correct structure)
+        if (importedRootNames.has(namespace)) {
+          return;
+        }
+
+        // Get or create namespace map
+        let nsMap = namespaceAliases.get(namespace);
+        if (!nsMap) {
+          nsMap = new Map();
+          namespaceAliases.set(namespace, nsMap);
+        }
+
+        // Map property to the root of the export path
+        const exportRoot = binding.exportPath.split(".")[0];
+        if (exportRoot) {
+          nsMap.set(property, exportRoot);
+        }
+      }
+    };
+
+    // Only process cross-file dependencies for aliases
+    // Same-file dependencies don't need aliases because we recreate the original export structure
+    crossFile.forEach((bindings) => {
+      bindings.forEach(processBinding);
+    });
+  });
+
+  const lines: string[] = [];
+
+  // Emit simple aliases first
+  if (simpleAliases.size > 0) {
+    const sorted = Array.from(simpleAliases.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    sorted.forEach(([symbol, exportPath]) => {
+      lines.push(`    const ${symbol} = ${exportPath};`);
+    });
+  }
+
+  // Emit namespace aliases as object literals
+  if (namespaceAliases.size > 0) {
+    const sortedNamespaces = Array.from(namespaceAliases.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    sortedNamespaces.forEach(([namespace, properties]) => {
+      const sortedProps = Array.from(properties.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+      const propsStr = sortedProps
+        .map(([prop, target]) => {
+          return prop === target ? prop : `${prop}: ${target}`;
+        })
+        .join(", ");
+      lines.push(`    const ${namespace} = { ${propsStr} };`);
+    });
+  }
+
+  return lines.length > 0 ? `\n${lines.join("\n")}\n` : "";
 };
 
 const renderRegistryBlock = (fileGroup: FileGroup, graph: DependencyGraph): string => {
   const { filePath, nodes } = fileGroup;
-  const imports = renderImportStatements(nodes, filePath, graph);
-  const body = buildNestedObject(nodes, filePath, graph);
+  const { imports, importedRootNames, namespaceImports } = renderImportStatements(nodes, filePath, graph);
+  const aliases = renderAliasBindings(nodes, filePath, graph, importedRootNames, namespaceImports);
+  const body = buildNestedObject(nodes);
 
-  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
+  return `registry.register("${filePath}", () => {${imports}${aliases}\n${body}\n});`;
 };
 
 export type CreateIntermediateModuleInput = {

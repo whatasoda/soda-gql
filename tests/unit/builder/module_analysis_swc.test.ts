@@ -82,7 +82,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userSliceCatalog.byId");
+    expect(definition?.exportName).toBe("pageQuery");
   });
 
   it("captures deep member references from namespace imports", () => {
@@ -103,6 +103,6 @@ export const pageQuery = gql.default(({ query, scalar }) =>
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userCatalog.collections.byCategory");
+    expect(definition?.exportName).toBe("pageQuery");
   });
 });

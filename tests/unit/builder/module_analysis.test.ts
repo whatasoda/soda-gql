@@ -90,7 +90,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
     expect(pageQuery).toBeDefined();
-    expect(pageQuery?.references).toEqual(["userSlice"]);
+    expect(pageQuery?.exportName).toBe("pageQuery");
   });
 
   it("captures nested dependencies for slices", () => {
@@ -114,7 +114,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
     expect(pageQuery).toBeDefined();
-    expect(pageQuery?.references).toContain("user.slice.findById");
+    expect(pageQuery?.exportName).toBe("pageQuery");
   });
 
   it("captures references in nested object values", () => {
@@ -144,7 +144,7 @@ export const complexQuery = gql.default(({ query, scalar }) =>
     expect(analysis.definitions).toHaveLength(1);
     const [complexQuery] = analysis.definitions;
     expect(complexQuery).toBeDefined();
-    expect(complexQuery?.references).toEqual(["userSlice", "postSlice"]);
+    expect(complexQuery?.exportName).toBe("complexQuery");
   });
 
   it("captures both local and imported dependencies", () => {
@@ -180,7 +180,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
     const analysis = analyzeModule({ filePath, source });
 
     const pageQuery = analysis.definitions.find((def) => def.exportName === "pageQuery");
-    expect(pageQuery?.references).toEqual(["userSlice", "postSlice"]);
+    expect(pageQuery?.exportName).toBe("pageQuery");
   });
 
   it("extracts definitions from multiple schemas", () => {

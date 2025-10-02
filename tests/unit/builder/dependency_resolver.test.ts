@@ -6,7 +6,7 @@ import { createCanonicalId } from "../../../packages/builder/src/registry";
 describe("dependency graph resolver", () => {
   const baseAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({
     filePath: "/dev/null",
-    sourceHash: "",
+    signature: "",
     definitions: [],
     diagnostics: [],
     imports: [],
@@ -53,8 +53,7 @@ describe("dependency graph resolver", () => {
           kind: "operation",
           exportName: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
-          references: ["userSlice"],
-          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+          expression: "gql.query('ProfilePageQuery', {}, () => ({ users: userSlice.build() }))",
         },
       ],
       imports: [
@@ -98,7 +97,6 @@ describe("dependency graph resolver", () => {
           kind: "slice",
           exportName: "userSlice",
           loc: { start: { line: 4, column: 6 }, end: { line: 12, column: 1 } },
-          references: [],
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
@@ -117,8 +115,7 @@ describe("dependency graph resolver", () => {
           kind: "operation",
           exportName: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 13, column: 1 } },
-          references: ["userSlice"],
-          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+          expression: "gql.query('ProfilePageQuery', {}, () => ({ users: userSlice.build() }))",
         },
       ],
       imports: [
@@ -159,8 +156,7 @@ describe("dependency graph resolver", () => {
           kind: "slice",
           exportName: "sliceA",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
-          references: ["sliceB"],
-          expression: "gql.querySlice([], () => ({}), () => ({}))",
+          expression: "gql.querySlice([], () => ({ ...sliceB.fragment() }), () => ({}))",
         },
       ],
       imports: [
@@ -182,8 +178,7 @@ describe("dependency graph resolver", () => {
           kind: "slice",
           exportName: "sliceB",
           loc: { start: { line: 4, column: 6 }, end: { line: 9, column: 1 } },
-          references: ["sliceA"],
-          expression: "gql.querySlice([], () => ({}), () => ({}))",
+          expression: "gql.querySlice([], () => ({ ...sliceA.fragment() }), () => ({}))",
         },
       ],
       imports: [
@@ -225,7 +220,6 @@ describe("dependency graph resolver", () => {
           kind: "slice",
           exportName: "userSliceCatalog.byId",
           loc: { start: { line: 10, column: 6 }, end: { line: 18, column: 1 } },
-          references: [],
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
@@ -239,7 +233,6 @@ describe("dependency graph resolver", () => {
           kind: "slice",
           exportName: "collections.byCategory",
           loc: { start: { line: 6, column: 6 }, end: { line: 16, column: 1 } },
-          references: [],
           expression: "gql.querySlice([], () => ({}), () => ({}))",
         },
       ],
@@ -253,8 +246,8 @@ describe("dependency graph resolver", () => {
           kind: "operation",
           exportName: "profileQuery",
           loc: { start: { line: 4, column: 6 }, end: { line: 20, column: 1 } },
-          references: ["userSliceCatalog.byId", "userCatalog.collections.byCategory"],
-          expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
+          expression:
+            "gql.query('ProfilePageQuery', {}, () => ({ catalog: userSliceCatalog.byId.build(), collections: userCatalog.collections.byCategory.build() }))",
         },
       ],
       imports: [
