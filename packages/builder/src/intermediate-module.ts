@@ -45,6 +45,119 @@ const groupNodesByFile = (graph: DependencyGraph): FileGroup[] => {
     .sort((a, b) => a.filePath.localeCompare(b.filePath));
 };
 
+type TreeNode = {
+  expression?: string; // Leaf node with actual expression
+  canonicalId?: string; // Canonical ID for this node
+  children: Map<string, TreeNode>; // Branch node with children
+};
+
+const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
+  const roots = new Map<string, TreeNode>();
+
+  nodes.forEach((node) => {
+    const parts = node.localPath.split(".");
+    const expressionText = node.definition.expression.trim();
+
+    if (parts.length === 1) {
+      // Top-level export
+      const rootName = parts[0];
+      if (rootName) {
+        roots.set(rootName, {
+          expression: expressionText,
+          canonicalId: node.id,
+          children: new Map(),
+        });
+      }
+    } else {
+      // Nested export
+      const rootName = parts[0];
+      if (!rootName) return;
+
+      let root = roots.get(rootName);
+      if (!root) {
+        root = { children: new Map() };
+        roots.set(rootName, root);
+      }
+
+      let current = root;
+      for (let i = 1; i < parts.length - 1; i++) {
+        const part = parts[i];
+        if (!part) continue;
+
+        let child = current.children.get(part);
+        if (!child) {
+          child = { children: new Map() };
+          current.children.set(part, child);
+        }
+        current = child;
+      }
+
+      const leafName = parts[parts.length - 1];
+      if (leafName) {
+        current.children.set(leafName, {
+          expression: expressionText,
+          canonicalId: node.id,
+          children: new Map(),
+        });
+      }
+    }
+  });
+
+  return roots;
+};
+
+const renderTreeNode = (node: TreeNode, indent: number): string => {
+  if (node.expression && node.children.size === 0 && node.canonicalId) {
+    // Leaf node - use addBuilder
+    const expr = formatFactory(node.expression);
+    return `registry.addBuilder("${node.canonicalId}", () => ${expr})`;
+  }
+
+  // Branch node - render nested object
+  const indentStr = "  ".repeat(indent);
+  const entries = Array.from(node.children.entries()).map(([key, child]) => {
+    const value = renderTreeNode(child, indent + 1);
+    return `${indentStr}  ${key}: ${value},`;
+  });
+
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  return `{\n${entries.join("\n")}\n${indentStr}}`;
+};
+
+const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
+  const tree = buildTree(nodes);
+  const declarations: string[] = [];
+  const returnEntries: string[] = [];
+
+  tree.forEach((node, rootName) => {
+    if (node.children.size > 0) {
+      // Has children - create a const declaration
+      const objectLiteral = renderTreeNode(node, 2);
+      declarations.push(`    const ${rootName} = ${objectLiteral};`);
+      returnEntries.push(rootName);
+    } else if (node.expression && node.canonicalId) {
+      // Single export - use addBuilder
+      const expr = formatFactory(node.expression);
+      declarations.push(`    const ${rootName} = registry.addBuilder("${node.canonicalId}", () => ${expr});`);
+      returnEntries.push(rootName);
+    }
+  });
+
+  const returnStatement =
+    returnEntries.length > 0
+      ? `    return {\n${returnEntries.map((name) => `        ${name},`).join("\n")}\n    };`
+      : "    return {};";
+
+  if (declarations.length === 0) {
+    return returnStatement;
+  }
+
+  return `${declarations.join("\n")}\n${returnStatement}`;
+};
+
 /**
  * Get map of file paths to their module summaries from the graph.
  */
@@ -178,24 +291,22 @@ const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, Module
 
   // Get the module summary for this file
   const summary = summaries.get(filePath);
-  const effectiveSummary = summary ?? {
-    filePath,
-    runtimeImports: [],
-    gqlExports: [],
-  };
+  if (!summary) {
+    // Fallback: create empty summary
+    const emptySummary: ModuleSummary = {
+      filePath,
+      runtimeImports: [],
+      gqlExports: [],
+    };
+    const { imports } = renderImportStatements(emptySummary, summaries);
+    const body = buildNestedObject(nodes);
+    return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
+  }
 
-  const { imports } = renderImportStatements(effectiveSummary, summaries);
+  const { imports } = renderImportStatements(summary, summaries);
+  const body = buildNestedObject(nodes);
 
-  // Generate individual addBuilder calls for each definition
-  const builderCalls = nodes.map((node) => {
-    const expression = formatFactory(node.definition.expression);
-    return `registry.addBuilder("${node.id}", () => ${expression});`;
-  });
-
-  const importSection = imports ? `${imports}` : "";
-  const buildersSection = builderCalls.join("\n");
-
-  return `${importSection}${buildersSection}`;
+  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
 };
 
 export type CreateIntermediateModuleInput = {
