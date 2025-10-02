@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
 
-import { type CanonicalId, createCanonicalId, createOperationRegistry } from "../../../packages/builder/src/registry";
+import { createOperationRegistry } from "../../../packages/builder/src/artifact/registry";
+import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/utils/canonical-id";
 
 describe("canonical identifier helpers", () => {
   it("normalizes absolute file paths and export names", () => {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { CanonicalId } from "../registry";
+import type { CanonicalId } from "../utils/canonical-id";
 import {
   ModuleAnalysisSchema,
   ModuleDefinitionSchema,

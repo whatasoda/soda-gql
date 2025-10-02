@@ -11,8 +11,8 @@ export type {
   ModuleEvaluatorContext,
   ModuleEvaluatorInput,
 } from "./discovery/types";
-export type { CanonicalId } from "./registry";
-export { createCanonicalId } from "./registry";
+export type { CanonicalId } from "./utils/canonical-id";
+export { createCanonicalId } from "./utils/canonical-id";
 export { runBuilder } from "./runner";
 export type {
   BuilderAnalyzer,

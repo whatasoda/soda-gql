@@ -1,6 +1,5 @@
 import type { ModuleAnalysis } from "../ast";
-import type { CanonicalId } from "../registry";
-import { createCanonicalId } from "../registry";
+import { type CanonicalId, createCanonicalId } from "../utils/canonical-id";
 import { normalizePath, resolveModuleSpecifier } from "./paths";
 
 export const buildExportTable = (

@@ -1,8 +1,8 @@
 import { err, ok, type Result } from "neverthrow";
 import type { DependencyGraph, DependencyGraphNode } from "../dependency-graph/types";
 import type { IntermediateModule } from "../intermediate-module";
-import type { OperationRegistry } from "../registry";
 import type { BuilderError } from "../types";
+import type { OperationRegistry } from "./registry";
 
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 

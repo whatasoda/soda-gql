@@ -1,5 +1,5 @@
 import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
-import type { CanonicalId } from "../registry";
+import type { CanonicalId } from "../utils/canonical-id";
 import type { BuilderAnalyzer } from "../types";
 
 /**

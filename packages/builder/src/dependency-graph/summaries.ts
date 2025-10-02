@@ -1,5 +1,5 @@
 import type { ModuleAnalysis } from "../ast";
-import type { CanonicalId } from "../registry";
+import type { CanonicalId } from "../utils/canonical-id";
 import { normalizePath, resolveModuleSpecifier } from "./paths";
 import type { ModuleSummary } from "./types";
 
