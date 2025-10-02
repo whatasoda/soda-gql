@@ -7,13 +7,12 @@ import type {
   BuilderArtifactOperation,
   BuilderArtifactSlice,
   CanonicalId,
-  CanonicalPathTracker,
 } from "@soda-gql/builder";
-import { createCanonicalTracker } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeSliceInput } from "../../core/src/runtime/slice";
 import { resolveCanonicalId } from "./artifact";
+import { collectGqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata/collector";
 import { type PluginState, preparePluginState } from "./state";
 import { buildObjectExpression, clone } from "./transform/ast-builders";
 import type { SodaGqlBabelOptions } from "./types";
@@ -21,190 +20,6 @@ import type { SodaGqlBabelOptions } from "./types";
 type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
 
 type PluginPassState = PluginPass & { _state?: PluginState };
-
-/**
- * Metadata collected for each gql definition
- */
-type GqlDefinitionMetadata = {
-  readonly astPath: string;
-  readonly isTopLevel: boolean;
-  readonly isExported: boolean;
-  readonly exportBinding?: string;
-};
-
-/**
- * Collect metadata for all gql definitions in the program
- * Returns a WeakMap from CallExpression nodes to their metadata
- */
-const collectGqlDefinitionMetadata = (
-  programPath: NodePath<t.Program>,
-  filename: string,
-): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
-  const metadata = new WeakMap<t.CallExpression, GqlDefinitionMetadata>();
-
-  // Build export bindings map
-  const exportBindings = new Map<string, string>();
-  programPath.node.body.forEach((statement) => {
-    if (t.isExportNamedDeclaration(statement) && statement.declaration) {
-      if (t.isVariableDeclaration(statement.declaration)) {
-        statement.declaration.declarations.forEach((declarator) => {
-          if (t.isIdentifier(declarator.id)) {
-            exportBindings.set(declarator.id.name, declarator.id.name);
-          }
-        });
-      } else if (
-        (t.isFunctionDeclaration(statement.declaration) || t.isClassDeclaration(statement.declaration)) &&
-        statement.declaration.id
-      ) {
-        exportBindings.set(statement.declaration.id.name, statement.declaration.id.name);
-      }
-    }
-  });
-
-  // Create canonical tracker
-  const tracker = createCanonicalTracker({
-    filePath: filename,
-    getExportName: (localName) => exportBindings.get(localName),
-  });
-
-  // Anonymous scope counters
-  const anonymousCounters = new Map<string, number>();
-  const getAnonymousName = (kind: string): string => {
-    const count = anonymousCounters.get(kind) ?? 0;
-    anonymousCounters.set(kind, count + 1);
-    return `${kind}#${count}`;
-  };
-
-  // Track scope handles for proper enter/exit pairing
-  const scopeHandles = new WeakMap<NodePath, ReturnType<CanonicalPathTracker["enterScope"]>>();
-
-  const isGqlCall = (node: t.Node): node is t.CallExpression => {
-    return (
-      t.isCallExpression(node) &&
-      t.isMemberExpression(node.callee) &&
-      t.isIdentifier(node.callee.object, { name: "gql" }) &&
-      node.arguments.length > 0 &&
-      t.isArrowFunctionExpression(node.arguments[0])
-    );
-  };
-
-  programPath.traverse({
-    enter(path) {
-      // Check if this is a gql definition call
-      if (path.isCallExpression() && isGqlCall(path.node)) {
-        const { astPath } = tracker.registerDefinition();
-        const isTopLevel = tracker.currentDepth() === 0;
-
-        let isExported = false;
-        let exportBinding: string | undefined;
-
-        if (isTopLevel && path.parentPath?.isVariableDeclarator()) {
-          const declarator = path.parentPath;
-          if (t.isIdentifier(declarator.node.id)) {
-            const topLevelName = declarator.node.id.name;
-            if (exportBindings.has(topLevelName)) {
-              isExported = true;
-              exportBinding = exportBindings.get(topLevelName);
-            }
-          }
-        }
-
-        metadata.set(path.node, {
-          astPath,
-          isTopLevel,
-          isExported,
-          exportBinding,
-        });
-        // Skip traversing children of gql calls (like the builder does)
-        path.skip();
-        return;
-      }
-
-      // Variable declarator
-      if (path.isVariableDeclarator() && path.node.id && t.isIdentifier(path.node.id)) {
-        const varName = path.node.id.name;
-        const handle = tracker.enterScope({ segment: varName, kind: "variable", stableKey: `var:${varName}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Arrow function
-      if (path.isArrowFunctionExpression()) {
-        const arrowName = getAnonymousName("arrow");
-        const handle = tracker.enterScope({ segment: arrowName, kind: "function", stableKey: "arrow" });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Function declaration
-      if (path.isFunctionDeclaration()) {
-        const funcName = path.node.id?.name ?? getAnonymousName("function");
-        const handle = tracker.enterScope({ segment: funcName, kind: "function", stableKey: `func:${funcName}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Function expression
-      if (path.isFunctionExpression()) {
-        const funcName = path.node.id?.name ?? getAnonymousName("function");
-        const handle = tracker.enterScope({ segment: funcName, kind: "function", stableKey: `func:${funcName}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Class declaration
-      if (path.isClassDeclaration()) {
-        const className = path.node.id?.name ?? getAnonymousName("class");
-        const handle = tracker.enterScope({ segment: className, kind: "class", stableKey: `class:${className}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Class method
-      if (path.isClassMethod() && t.isIdentifier(path.node.key)) {
-        const memberName = path.node.key.name;
-        const handle = tracker.enterScope({ segment: memberName, kind: "method", stableKey: `member:${memberName}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Class property
-      if (path.isClassProperty() && t.isIdentifier(path.node.key)) {
-        const memberName = path.node.key.name;
-        const handle = tracker.enterScope({ segment: memberName, kind: "property", stableKey: `member:${memberName}` });
-        scopeHandles.set(path, handle);
-        return;
-      }
-
-      // Object property
-      if (path.isObjectProperty()) {
-        let propName: string | null = null;
-        if (t.isIdentifier(path.node.key)) {
-          propName = path.node.key.name;
-        } else if (t.isStringLiteral(path.node.key)) {
-          propName = path.node.key.value;
-        }
-
-        if (propName) {
-          const handle = tracker.enterScope({ segment: propName, kind: "property", stableKey: `prop:${propName}` });
-          scopeHandles.set(path, handle);
-        }
-        return;
-      }
-    },
-
-    exit(path) {
-      // Exit scope when exiting nodes that have handles
-      const handle = scopeHandles.get(path);
-      if (handle) {
-        tracker.exitScope(handle);
-        scopeHandles.delete(path);
-      }
-    },
-  });
-
-  return metadata;
-};
 
 const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   const existing = programPath.node.body.find(
@@ -326,7 +141,7 @@ const extractGqlCall = ({
   nodePath: NodePath<t.CallExpression>;
   filename: string;
   artifacts: AllArtifacts;
-  metadata: WeakMap<t.CallExpression, GqlDefinitionMetadata>;
+  metadata: GqlDefinitionMetadataMap;
 }): GqlCall | null => {
   const node = nodePath.node;
   if (!t.isMemberExpression(node.callee)) {
@@ -488,7 +303,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
       }
 
       // Collect metadata for all gql definitions upfront
-      const metadata = collectGqlDefinitionMetadata(programPath, filename);
+      const metadata = collectGqlDefinitionMetadata({ programPath, filename });
 
       const runtimeCalls: t.Expression[] = [];
       let mutated = false;
