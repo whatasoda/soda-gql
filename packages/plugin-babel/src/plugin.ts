@@ -2,19 +2,11 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
-import {
-  extractGqlCall,
-  findGqlBuilderCall,
-  type ArtifactLookup,
-} from "./analysis/gql-call";
+import type { ArtifactLookup } from "./analysis/gql-call";
 import { collectGqlDefinitionMetadata } from "./metadata/collector";
 import { type PluginState, preparePluginState } from "./state";
 import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./transform/import-utils";
-import {
-  buildModelRuntimeCall,
-  buildOperationRuntimeComponents,
-  buildSliceRuntimeCall,
-} from "./transform/runtime-builders";
+import { insertRuntimeCalls, transformCallExpression } from "./transform/transformer";
 import type { SodaGqlBabelOptions } from "./types";
 
 type PluginPassState = PluginPass & { _state?: PluginState };
@@ -46,69 +38,33 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
         return;
       }
 
-      // Collect metadata for all gql definitions upfront
       const metadata = collectGqlDefinitionMetadata({ programPath, filename });
+      const getArtifact: ArtifactLookup = (canonicalId) => pluginState.allArtifacts[canonicalId];
 
       const runtimeCalls: t.Expression[] = [];
       let mutated = false;
-      const getArtifact: ArtifactLookup = (canonicalId) => pluginState.allArtifacts[canonicalId];
 
       programPath.traverse({
         CallExpression(callPath) {
-          const builderCall = findGqlBuilderCall(callPath);
-          if (!builderCall) {
-            return;
-          }
-
-          const gqlCallResult = extractGqlCall({
-            nodePath: callPath,
+          const result = transformCallExpression({
+            callPath,
             filename,
             metadata,
-            builderCall,
             getArtifact,
           });
 
-          if (gqlCallResult.isErr()) {
-            throw new Error(gqlCallResult.error.message);
-          }
-
-          const gqlCall = gqlCallResult.value;
-
-          ensureGqlRuntimeImport(programPath);
-
-          if (gqlCall.type === "model") {
-            const replacement = buildModelRuntimeCall(gqlCall);
-            callPath.replaceWith(replacement);
+          if (result.transformed) {
+            ensureGqlRuntimeImport(programPath);
             mutated = true;
-            return;
-          }
 
-          if (gqlCall.type === "slice") {
-            const replacement = buildSliceRuntimeCall(gqlCall);
-            callPath.replaceWith(replacement);
-            mutated = true;
-            return;
-          }
-
-          if (gqlCall.type === "operation") {
-            const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall);
-            callPath.replaceWith(referenceCall);
-            runtimeCalls.push(runtimeCall);
-            mutated = true;
-            return;
+            if (result.runtimeCall) {
+              runtimeCalls.push(result.runtimeCall);
+            }
           }
         },
       });
 
-      if (runtimeCalls.length > 0) {
-        programPath.traverse({
-          ImportDeclaration(importDeclPath) {
-            if (importDeclPath.node.source.value === "@soda-gql/runtime") {
-              importDeclPath.insertAfter(runtimeCalls);
-            }
-          },
-        });
-      }
+      insertRuntimeCalls(programPath, runtimeCalls);
 
       if (mutated) {
         programPath.scope.crawl();
