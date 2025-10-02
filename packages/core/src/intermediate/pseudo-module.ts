@@ -32,7 +32,7 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addBuilder = (canonicalId: string, factory: () => AcceptableBuilder) => {
+  const addBuilder = <TBuilder extends AcceptableBuilder>(canonicalId: string, factory: () => TBuilder) => {
     const builder = factory();
     Builder.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered

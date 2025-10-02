@@ -106,6 +106,74 @@ const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
   return roots;
 };
 
+/**
+ * Check if a string is a valid JavaScript identifier
+ */
+const isValidIdentifier = (name: string): boolean => {
+  // JavaScript identifier regex: starts with letter, _, or $, followed by letters, digits, _, or $
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name) && !isReservedWord(name);
+};
+
+/**
+ * Check if a string is a JavaScript reserved word
+ */
+const isReservedWord = (name: string): boolean => {
+  const reserved = new Set([
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "new",
+    "return",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "let",
+    "static",
+    "enum",
+    "await",
+    "implements",
+    "interface",
+    "package",
+    "private",
+    "protected",
+    "public",
+  ]);
+  return reserved.has(name);
+};
+
+/**
+ * Format a key for use in an object literal
+ * Invalid identifiers are quoted, valid ones are not
+ */
+const formatObjectKey = (key: string): string => {
+  return isValidIdentifier(key) ? key : `"${key}"`;
+};
+
 const renderTreeNode = (node: TreeNode, indent: number): string => {
   if (node.expression && node.children.size === 0 && node.canonicalId) {
     // Leaf node - use addBuilder
@@ -117,7 +185,8 @@ const renderTreeNode = (node: TreeNode, indent: number): string => {
   const indentStr = "  ".repeat(indent);
   const entries = Array.from(node.children.entries()).map(([key, child]) => {
     const value = renderTreeNode(child, indent + 1);
-    return `${indentStr}  ${key}: ${value},`;
+    const formattedKey = formatObjectKey(key);
+    return `${indentStr}  ${formattedKey}: ${value},`;
   });
 
   if (entries.length === 0) {

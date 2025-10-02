@@ -39,41 +39,42 @@ type GqlDefinitionMetadata = {
 };
 
 /**
- * Build AST path from scope stack (mirrors builder logic)
- */
-const buildAstPath = (stack: readonly ScopeFrame[]): string => {
-  return stack.map((frame) => frame.nameSegment).join(".");
-};
-
-/**
  * Collect metadata for all gql definitions in the program
  * Returns a WeakMap from CallExpression nodes to their metadata
  */
-const collectGqlDefinitionMetadata = (
-  programPath: NodePath<t.Program>,
-): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
+const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
   const metadata = new WeakMap<t.CallExpression, GqlDefinitionMetadata>();
-  const usedPaths = new Set<string>();
-  const occurrenceCounters = new Map<string, number>();
 
-  // Collect export bindings upfront
+  // Build export bindings map
   const exportBindings = new Map<string, string>();
   programPath.node.body.forEach((statement) => {
     if (t.isExportNamedDeclaration(statement) && statement.declaration) {
       if (t.isVariableDeclaration(statement.declaration)) {
-        statement.declaration.declarations.forEach((decl) => {
-          if (t.isIdentifier(decl.id)) {
-            exportBindings.set(decl.id.name, decl.id.name);
+        statement.declaration.declarations.forEach((declarator) => {
+          if (t.isIdentifier(declarator.id)) {
+            exportBindings.set(declarator.id.name, declarator.id.name);
           }
         });
+      } else if (
+        (t.isFunctionDeclaration(statement.declaration) || t.isClassDeclaration(statement.declaration)) &&
+        statement.declaration.id
+      ) {
+        exportBindings.set(statement.declaration.id.name, statement.declaration.id.name);
       }
     }
   });
+
+  const occurrenceCounters = new Map<string, number>();
+  const usedPaths = new Set<string>();
 
   const getNextOccurrence = (key: string): number => {
     const current = occurrenceCounters.get(key) ?? 0;
     occurrenceCounters.set(key, current + 1);
     return current;
+  };
+
+  const buildAstPath = (stack: readonly ScopeFrame[]): string => {
+    return stack.map((frame) => frame.nameSegment).join(".");
   };
 
   const ensureUniquePath = (basePath: string): string => {
@@ -87,13 +88,12 @@ const collectGqlDefinitionMetadata = (
     return path;
   };
 
-  const isGqlCall = (node: t.CallExpression): boolean => {
+  const isGqlCall = (node: t.Node): node is t.CallExpression => {
     return (
+      t.isCallExpression(node) &&
       t.isMemberExpression(node.callee) &&
-      t.isIdentifier(node.callee.object) &&
-      node.callee.object.name === "gql" &&
-      t.isIdentifier(node.callee.property) &&
-      node.arguments.length === 1 &&
+      t.isIdentifier(node.callee.object, { name: "gql" }) &&
+      node.arguments.length > 0 &&
       t.isArrowFunctionExpression(node.arguments[0])
     );
   };
@@ -127,6 +127,8 @@ const collectGqlDefinitionMetadata = (
           isExported,
           exportBinding,
         });
+        // Skip traversing children of gql calls (like the builder does)
+        path.skip();
         return;
       }
 
@@ -202,15 +204,25 @@ const collectGqlDefinitionMetadata = (
         return;
       }
 
+      // Class property
+      if (path.isClassProperty() && t.isIdentifier(path.node.key)) {
+        const memberName = path.node.key.name;
+        const memberFrame: ScopeFrame = {
+          nameSegment: memberName,
+          kind: "property",
+          occurrence: getNextOccurrence(`member:${memberName}`),
+        };
+        scopeStack.push(memberFrame);
+        return;
+      }
+
       // Object property
       if (path.isObjectProperty()) {
-        const key = path.node.key;
         let propName: string | null = null;
-
-        if (t.isIdentifier(key)) {
-          propName = key.name;
-        } else if (t.isStringLiteral(key)) {
-          propName = key.value;
+        if (t.isIdentifier(path.node.key)) {
+          propName = path.node.key.name;
+        } else if (t.isStringLiteral(path.node.key)) {
+          propName = path.node.key.value;
         }
 
         if (propName) {
@@ -224,8 +236,9 @@ const collectGqlDefinitionMetadata = (
         return;
       }
     },
+
     exit(path) {
-      // Pop scope frame when exiting nodes that created one
+      // Pop scope when exiting nodes that pushed frames
       if (
         path.isVariableDeclarator() ||
         path.isArrowFunctionExpression() ||
@@ -233,6 +246,7 @@ const collectGqlDefinitionMetadata = (
         path.isFunctionExpression() ||
         path.isClassDeclaration() ||
         path.isClassMethod() ||
+        path.isClassProperty() ||
         path.isObjectProperty()
       ) {
         scopeStack.pop();

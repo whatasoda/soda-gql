@@ -58,7 +58,7 @@ describe("zero-runtime transform", () => {
     try {
       const builderResult = await runBuilder({
         mode: "runtime",
-        entry: [join(workspace, "src", "pages", "profile.page.ts")],
+        entry: [join(workspace, "src", "pages", "profile.page.ts"), join(workspace, "src", "entities", "nested-definitions.ts")],
         outPath: artifactPath,
         format: "json",
         analyzer: "ts",
@@ -115,12 +115,26 @@ describe("zero-runtime transform", () => {
           expect(code).not.toContain("/* runtime function */");
         },
       },
-      // NOTE: The Babel plugin now supports AST-path based matching and can handle
-      // non-exported and nested definitions. However, nested-definitions.ts cannot
-      // be used as a direct entry point because it contains function exports that
-      // return builders, which the module evaluator doesn't handle.
-      // TODO: Create a dedicated test fixture for zero-runtime transform of nested
-      // definitions that can be properly evaluated as an entry point.
+      {
+        filePath: join(workspace, "src", "entities", "nested-definitions.ts"),
+        verify: (code: string) => {
+          expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
+          // Non-exported top-level definition
+          expect(code).toContain("const internalPostModel = gqlRuntime.model({");
+          // Exported model using internal model
+          expect(code).toContain("export const userWithPostsModel = gqlRuntime.model({");
+          // Nested definitions in function scope
+          expect(code).toContain("const userById = gqlRuntime.slice({");
+          expect(code).toContain("const userList = gqlRuntime.slice({");
+          // Arrow function with nested definition (stays as arrow function in transformed code)
+          expect(code).toContain("export const queryFactory = () =>");
+          expect(code).toContain("const baseQuery = gqlRuntime.slice({");
+          // Nested object structure
+          expect(code).toContain("list: gqlRuntime.slice({");
+          expect(code).toContain("byId: gqlRuntime.slice({");
+          expect(code).not.toContain("gql.default(");
+        },
+      },
     ];
 
     // Transform all files and write to disk
