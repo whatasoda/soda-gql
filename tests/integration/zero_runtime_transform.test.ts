@@ -115,8 +115,9 @@ describe("zero-runtime transform", () => {
           expect(code).not.toContain("/* runtime function */");
         },
       },
-      // NOTE: nested-definitions.ts is excluded because the Babel plugin
-      // does not yet support non-exported and nested definitions.
+      // NOTE: nested-definitions.ts and nested-test.page.ts are excluded because
+      // the Babel plugin does not yet support non-exported and nested definitions.
+      // nested-test.page.ts depends on nested-definitions.ts, so both must be excluded.
       // This is a known limitation that will be addressed when updating
       // the plugin to work with the new builder that supports these cases.
     ];
