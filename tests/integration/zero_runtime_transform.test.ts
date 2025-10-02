@@ -115,11 +115,12 @@ describe("zero-runtime transform", () => {
           expect(code).not.toContain("/* runtime function */");
         },
       },
-      // NOTE: nested-definitions.ts and nested-test.page.ts are excluded because
-      // the Babel plugin does not yet support non-exported and nested definitions.
-      // nested-test.page.ts depends on nested-definitions.ts, so both must be excluded.
-      // This is a known limitation that will be addressed when updating
-      // the plugin to work with the new builder that supports these cases.
+      // NOTE: The Babel plugin now supports AST-path based matching and can handle
+      // non-exported and nested definitions. However, nested-definitions.ts cannot
+      // be used as a direct entry point because it contains function exports that
+      // return builders, which the module evaluator doesn't handle.
+      // TODO: Create a dedicated test fixture for zero-runtime transform of nested
+      // definitions that can be properly evaluated as an entry point.
     ];
 
     // Transform all files and write to disk

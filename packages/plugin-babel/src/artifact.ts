@@ -40,8 +40,8 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
   }
 };
 
-export const resolveCanonicalId = (filename: string, exportName: string): CanonicalId =>
-  createCanonicalId(resolve(filename), exportName);
+export const resolveCanonicalId = (filename: string, astPath: string): CanonicalId =>
+  createCanonicalId(resolve(filename), astPath);
 
 export const lookupOperationArtifact = (artifact: BuilderArtifact, canonicalId: string) => {
   return artifact.operations[canonicalId as CanonicalId];

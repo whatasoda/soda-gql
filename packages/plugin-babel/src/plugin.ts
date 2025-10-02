@@ -19,90 +19,228 @@ export type PluginState = {
 
 type PluginPassState = PluginPass & { _state?: PluginState };
 
-const collectExportSegments = (callPath: NodePath<t.CallExpression>): readonly string[] | null => {
-  let current: NodePath<t.Node> | null = callPath;
-  const segments: string[] = [];
-
-  while (current) {
-    const parent: NodePath<t.Node> | null = current.parentPath;
-    if (!parent) {
-      return null;
-    }
-
-    if (parent.isObjectProperty()) {
-      const key = parent.node.key;
-      if (t.isIdentifier(key)) {
-        segments.unshift(key.name);
-      } else if (t.isStringLiteral(key)) {
-        segments.unshift(key.value);
-      } else {
-        return null;
-      }
-      current = parent;
-      continue;
-    }
-
-    if (parent.isObjectExpression()) {
-      current = parent;
-      continue;
-    }
-
-    // Handle arrow function (from factory pattern)
-    if (parent.isArrowFunctionExpression()) {
-      current = parent;
-      continue;
-    }
-
-    // Handle return statement (inside arrow function body)
-    if (parent.isReturnStatement()) {
-      current = parent;
-      continue;
-    }
-
-    // Handle block statement (arrow function body)
-    if (parent.isBlockStatement()) {
-      current = parent;
-      continue;
-    }
-
-    // Handle call expression (the factory call)
-    if (parent.isCallExpression()) {
-      current = parent;
-      continue;
-    }
-
-    if (parent.isVariableDeclarator()) {
-      const id = parent.node.id;
-      if (!t.isIdentifier(id)) {
-        return null;
-      }
-
-      const declaration = parent.parentPath;
-      if (!declaration || !declaration.isVariableDeclaration()) {
-        return null;
-      }
-
-      const exportDecl = declaration.parentPath;
-      if (!exportDecl || !exportDecl.isExportNamedDeclaration()) {
-        return null;
-      }
-
-      segments.unshift(id.name);
-      return segments;
-    }
-
-    return null;
-  }
-
-  return null;
+/**
+ * Scope frame for tracking AST path segments (mirrors builder logic)
+ */
+type ScopeFrame = {
+  readonly nameSegment: string;
+  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
+  readonly occurrence: number;
 };
 
-const makeExportName = (segments: readonly string[]): string | null => {
-  if (segments.length === 0) {
-    return null;
-  }
+/**
+ * Metadata collected for each gql definition
+ */
+type GqlDefinitionMetadata = {
+  readonly astPath: string;
+  readonly isTopLevel: boolean;
+  readonly isExported: boolean;
+  readonly exportBinding?: string;
+};
 
-  return segments.join(".");
+/**
+ * Build AST path from scope stack (mirrors builder logic)
+ */
+const buildAstPath = (stack: readonly ScopeFrame[]): string => {
+  return stack.map((frame) => frame.nameSegment).join(".");
+};
+
+/**
+ * Collect metadata for all gql definitions in the program
+ * Returns a WeakMap from CallExpression nodes to their metadata
+ */
+const collectGqlDefinitionMetadata = (
+  programPath: NodePath<t.Program>,
+): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
+  const metadata = new WeakMap<t.CallExpression, GqlDefinitionMetadata>();
+  const usedPaths = new Set<string>();
+  const occurrenceCounters = new Map<string, number>();
+
+  // Collect export bindings upfront
+  const exportBindings = new Map<string, string>();
+  programPath.node.body.forEach((statement) => {
+    if (t.isExportNamedDeclaration(statement) && statement.declaration) {
+      if (t.isVariableDeclaration(statement.declaration)) {
+        statement.declaration.declarations.forEach((decl) => {
+          if (t.isIdentifier(decl.id)) {
+            exportBindings.set(decl.id.name, decl.id.name);
+          }
+        });
+      }
+    }
+  });
+
+  const getNextOccurrence = (key: string): number => {
+    const current = occurrenceCounters.get(key) ?? 0;
+    occurrenceCounters.set(key, current + 1);
+    return current;
+  };
+
+  const ensureUniquePath = (basePath: string): string => {
+    let path = basePath;
+    let suffix = 0;
+    while (usedPaths.has(path)) {
+      suffix++;
+      path = `${basePath}$${suffix}`;
+    }
+    usedPaths.add(path);
+    return path;
+  };
+
+  const isGqlCall = (node: t.CallExpression): boolean => {
+    return (
+      t.isMemberExpression(node.callee) &&
+      t.isIdentifier(node.callee.object) &&
+      node.callee.object.name === "gql" &&
+      t.isIdentifier(node.callee.property) &&
+      node.arguments.length === 1 &&
+      t.isArrowFunctionExpression(node.arguments[0])
+    );
+  };
+
+  const scopeStack: ScopeFrame[] = [];
+
+  programPath.traverse({
+    enter(path) {
+      // Check if this is a gql definition call
+      if (path.isCallExpression() && isGqlCall(path.node)) {
+        const astPath = ensureUniquePath(buildAstPath(scopeStack));
+        const isTopLevel = scopeStack.length === 0;
+
+        let isExported = false;
+        let exportBinding: string | undefined;
+
+        if (isTopLevel && path.parentPath?.isVariableDeclarator()) {
+          const declarator = path.parentPath;
+          if (t.isIdentifier(declarator.node.id)) {
+            const topLevelName = declarator.node.id.name;
+            if (exportBindings.has(topLevelName)) {
+              isExported = true;
+              exportBinding = exportBindings.get(topLevelName);
+            }
+          }
+        }
+
+        metadata.set(path.node, {
+          astPath,
+          isTopLevel,
+          isExported,
+          exportBinding,
+        });
+        return;
+      }
+
+      // Variable declaration
+      if (path.isVariableDeclarator() && path.node.id && t.isIdentifier(path.node.id)) {
+        const varName = path.node.id.name;
+        const newFrame: ScopeFrame = {
+          nameSegment: varName,
+          kind: "variable",
+          occurrence: getNextOccurrence(`var:${varName}`),
+        };
+        scopeStack.push(newFrame);
+        return;
+      }
+
+      // Arrow function
+      if (path.isArrowFunctionExpression()) {
+        const arrowName = `arrow#${getNextOccurrence("arrow")}`;
+        const newFrame: ScopeFrame = {
+          nameSegment: arrowName,
+          kind: "function",
+          occurrence: 0,
+        };
+        scopeStack.push(newFrame);
+        return;
+      }
+
+      // Function declaration
+      if (path.isFunctionDeclaration()) {
+        const funcName = path.node.id?.name ?? `function#${getNextOccurrence("function")}`;
+        const newFrame: ScopeFrame = {
+          nameSegment: funcName,
+          kind: "function",
+          occurrence: getNextOccurrence(`func:${funcName}`),
+        };
+        scopeStack.push(newFrame);
+        return;
+      }
+
+      // Function expression
+      if (path.isFunctionExpression()) {
+        const funcName = path.node.id?.name ?? `function#${getNextOccurrence("function")}`;
+        const newFrame: ScopeFrame = {
+          nameSegment: funcName,
+          kind: "function",
+          occurrence: getNextOccurrence(`func:${funcName}`),
+        };
+        scopeStack.push(newFrame);
+        return;
+      }
+
+      // Class declaration
+      if (path.isClassDeclaration()) {
+        const className = path.node.id?.name ?? `class#${getNextOccurrence("class")}`;
+        const newFrame: ScopeFrame = {
+          nameSegment: className,
+          kind: "class",
+          occurrence: getNextOccurrence(`class:${className}`),
+        };
+        scopeStack.push(newFrame);
+        return;
+      }
+
+      // Class method
+      if (path.isClassMethod() && t.isIdentifier(path.node.key)) {
+        const memberName = path.node.key.name;
+        const memberFrame: ScopeFrame = {
+          nameSegment: memberName,
+          kind: "method",
+          occurrence: getNextOccurrence(`member:${memberName}`),
+        };
+        scopeStack.push(memberFrame);
+        return;
+      }
+
+      // Object property
+      if (path.isObjectProperty()) {
+        const key = path.node.key;
+        let propName: string | null = null;
+
+        if (t.isIdentifier(key)) {
+          propName = key.name;
+        } else if (t.isStringLiteral(key)) {
+          propName = key.value;
+        }
+
+        if (propName) {
+          const newFrame: ScopeFrame = {
+            nameSegment: propName,
+            kind: "property",
+            occurrence: getNextOccurrence(`prop:${propName}`),
+          };
+          scopeStack.push(newFrame);
+        }
+        return;
+      }
+    },
+    exit(path) {
+      // Pop scope frame when exiting nodes that created one
+      if (
+        path.isVariableDeclarator() ||
+        path.isArrowFunctionExpression() ||
+        path.isFunctionDeclaration() ||
+        path.isFunctionExpression() ||
+        path.isClassDeclaration() ||
+        path.isClassMethod() ||
+        path.isObjectProperty()
+      ) {
+        scopeStack.pop();
+      }
+    },
+  });
+
+  return metadata;
 };
 
 const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
@@ -214,15 +352,18 @@ type GqlCallOperation = GqlCallBase & { type: "operation"; artifact: BuilderArti
 
 /**
  * Check if this is a call to gql.${schema}(({ ${method} }) => ${method}(...))
+ * Uses metadata collected upfront instead of deriving export names
  */
 const extractGqlCall = ({
   nodePath,
   filename,
   artifacts,
+  metadata,
 }: {
   nodePath: NodePath<t.CallExpression>;
   filename: string;
   artifacts: AllArtifacts;
+  metadata: WeakMap<t.CallExpression, GqlDefinitionMetadata>;
 }): GqlCall | null => {
   const node = nodePath.node;
   if (!t.isMemberExpression(node.callee)) {
@@ -261,20 +402,14 @@ const extractGqlCall = ({
     return null;
   }
 
-  const segments = collectExportSegments(nodePath);
-  if (!segments) {
-    throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
+  // Get metadata collected upfront
+  const meta = metadata.get(node);
+  if (!meta) {
+    throw new Error("SODA_GQL_METADATA_NOT_FOUND");
   }
 
-  const exportName = makeExportName(segments);
-  if (!exportName) {
-    throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
-  }
-
-  const canonicalId = resolveCanonicalId(filename, exportName);
-  if (!canonicalId) {
-    throw new Error("SODA_GQL_EXPORT_NOT_FOUND");
-  }
+  // Use astPath to build canonical ID
+  const canonicalId = resolveCanonicalId(filename, meta.astPath);
 
   const artifact = artifacts[canonicalId];
   if (!artifact) {
@@ -410,12 +545,15 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
         return;
       }
 
+      // Collect metadata for all gql definitions upfront
+      const metadata = collectGqlDefinitionMetadata(programPath);
+
       const runtimeCalls: t.Expression[] = [];
       let mutated = false;
 
       programPath.traverse({
         CallExpression(callPath) {
-          const gqlCall = extractGqlCall({ nodePath: callPath, filename, artifacts: pluginState.allArtifacts });
+          const gqlCall = extractGqlCall({ nodePath: callPath, filename, artifacts: pluginState.allArtifacts, metadata });
           if (!gqlCall) {
             return;
           }

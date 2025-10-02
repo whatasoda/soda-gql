@@ -35,7 +35,7 @@ export const createPseudoModuleRegistry = () => {
   const addBuilder = (canonicalId: string, factory: () => AcceptableBuilder) => {
     const builder = factory();
     Builder.setContext(builder, { canonicalId });
-    Builder.evaluate(builder);
+    // Don't evaluate yet - defer until all builders are registered
     entries.push([canonicalId, builder] satisfies [unknown, unknown]);
     return builder;
   };
@@ -49,8 +49,14 @@ export const createPseudoModuleRegistry = () => {
   };
 
   const evaluate = () => {
+    // First, register all modules by calling their factories
     for (const mod of modules.values()) {
       mod();
+    }
+
+    // Then, evaluate all builders after registration
+    for (const [, builder] of entries) {
+      Builder.evaluate(builder);
     }
 
     const modelEntries = entries.filter(([, builder]) => builder instanceof Model);
