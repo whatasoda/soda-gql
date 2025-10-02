@@ -19,8 +19,7 @@ export type {
   CreateDiscoveryPipelineOptions,
   DiscoveryPipeline,
   LoadedModules,
-  LoadModulesOptions,
   ModuleLoadStats,
 } from "../module-loader";
 // Re-export module loader types and factory
-export { createDiscoveryPipeline, loadModules } from "../module-loader";
+export { createDiscoveryPipeline } from "../module-loader";

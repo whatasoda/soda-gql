@@ -3,17 +3,32 @@ import { join, resolve } from "node:path";
 import { err } from "neverthrow";
 
 import { buildArtifact } from "./artifact";
+import { createDiscoveryCache } from "./cache/discovery-cache";
+import { createJsonCache } from "./cache/json-cache";
 import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";
 import { createIntermediateModule } from "./intermediate-module";
-import { loadModules } from "./module-loader";
+import { createDiscoveryPipeline } from "./module-loader";
 import type { BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
 export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult> => {
   const debugWriter = createDebugWriter(options.debugDir);
 
-  const modules = loadModules({ entry: options.entry, analyzer: options.analyzer });
+  const cacheFactory = createJsonCache({
+    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+    prefix: ["builder"],
+  });
+
+  const cache = createDiscoveryCache({
+    factory: cacheFactory,
+    analyzer: options.analyzer,
+    evaluatorId: "default",
+  });
+
+  const pipeline = createDiscoveryPipeline({ analyzer: options.analyzer, cache });
+  const modules = pipeline.load(options.entry);
+
   if (modules.isErr()) {
     return err(modules.error);
   }

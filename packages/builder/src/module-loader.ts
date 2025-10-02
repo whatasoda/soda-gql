@@ -1,8 +1,5 @@
-import { join } from "node:path";
 import type { Result } from "neverthrow";
 import type { ModuleAnalysis } from "./ast/analyze-module";
-import { createDiscoveryCache } from "./cache/discovery-cache";
-import { createJsonCache } from "./cache/json-cache";
 import { resolveEntryPaths } from "./discover";
 import { typeScriptAstParser } from "./discovery/ast-parsers";
 import { discoverModules } from "./discovery/discoverer";
@@ -18,8 +15,6 @@ export type LoadedModules = {
   readonly modules: readonly ModuleAnalysis[];
   readonly stats: ModuleLoadStats;
 };
-
-const defaultCacheRoot = () => join(process.cwd(), ".cache", "soda-gql", "builder");
 
 /**
  * Get the appropriate AST parser for the given analyzer type.
@@ -73,32 +68,4 @@ export const createDiscoveryPipeline = ({ analyzer, parser, cache }: CreateDisco
       });
     },
   };
-};
-
-export type LoadModulesOptions = {
-  readonly entry: readonly string[];
-  readonly cacheRoot?: string;
-  readonly analyzer: BuilderAnalyzer;
-};
-
-/**
- * Load modules from entry paths using the default discovery pipeline.
- *
- * @deprecated Consider using createDiscoveryPipeline for more control over caching and parsing.
- */
-export const loadModules = ({ entry, cacheRoot, analyzer }: LoadModulesOptions): Result<LoadedModules, BuilderError> => {
-  const parser = getParser(analyzer);
-  const cacheFactory = createJsonCache({
-    rootDir: cacheRoot ?? defaultCacheRoot(),
-    prefix: ["builder"],
-  });
-
-  const cache = createDiscoveryCache({
-    factory: cacheFactory,
-    analyzer,
-    evaluatorId: "default",
-  });
-
-  const pipeline = createDiscoveryPipeline({ analyzer, parser, cache });
-  return pipeline.load(entry);
 };

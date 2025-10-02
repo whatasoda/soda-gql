@@ -2,11 +2,11 @@ import { existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import type { AnyModel, AnyOperationOf, AnyOperationSliceOf, IssueRegistry, OperationType } from "@soda-gql/core";
 import { err, type Result } from "neverthrow";
-import type { DependencyGraph } from "./dependency-graph";
-import { analyzeGraph } from "./intermediate-module/analysis";
-import { buildIntermediateModuleSource, buildRegistryBlocks } from "./intermediate-module/codegen";
-import { emitIntermediateModule } from "./intermediate-module/emitter";
-import type { BuilderError } from "./types";
+import type { DependencyGraph } from "../dependency-graph";
+import type { BuilderError } from "../types";
+import { analyzeGraph } from "./analysis";
+import { buildIntermediateModuleSource } from "./codegen";
+import { emitIntermediateModule } from "./emitter";
 
 export type IntermediateModule = {
   readonly models: Record<string, AnyModel>;
@@ -55,8 +55,7 @@ export const createIntermediateModule = async ({
   }
 
   // Generate code
-  const registryBlocks = buildRegistryBlocks(fileGroups, summaries);
-  const sourceCode = buildIntermediateModuleSource({ registryBlocks, gqlImportPath });
+  const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath });
 
   // Emit the module
   const emitResult = await emitIntermediateModule({ outDir, sourceCode });

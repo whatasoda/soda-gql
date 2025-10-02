@@ -296,22 +296,22 @@ const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, Module
   return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
 };
 
-/**
- * Build registry blocks for all file groups.
- */
-export const buildRegistryBlocks = (fileGroups: FileGroup[], summaries: Map<string, ModuleSummary>): string[] => {
-  return fileGroups.map((group) => renderRegistryBlock(group, summaries));
-};
-
 export type IntermediateModuleSourceInput = {
-  readonly registryBlocks: string[];
+  readonly fileGroups: FileGroup[];
+  readonly summaries: Map<string, ModuleSummary>;
   readonly gqlImportPath: string;
 };
 
 /**
  * Build the complete intermediate module source code.
  */
-export const buildIntermediateModuleSource = ({ registryBlocks, gqlImportPath }: IntermediateModuleSourceInput): string => {
+export const buildIntermediateModuleSource = ({
+  fileGroups,
+  summaries,
+  gqlImportPath,
+}: IntermediateModuleSourceInput): string => {
+  const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, summaries));
+
   const imports = [
     `import { gql } from "${gqlImportPath}";`,
     `import { createPseudoModuleRegistry, createIssueRegistry, setActiveRegistry } from "@soda-gql/core";`,
