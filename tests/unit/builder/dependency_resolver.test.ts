@@ -80,8 +80,12 @@ describe("dependency graph resolver", () => {
         const sliceNode = graph.get(sliceId);
         const queryNode = graph.get(queryId);
 
-        expect(sliceNode?.dependencies).toEqual([createCanonicalId("/app/src/entities/user.ts", "userModel")]);
-        expect(queryNode?.dependencies).toEqual([sliceId]);
+        // Module-level dependency analysis doesn't track same-file dependencies
+        expect(sliceNode?.dependencies).toEqual([]);
+        // Module-level dependency analysis includes all gql exports from imported modules
+        const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
+        expect(queryNode?.dependencies).toContain(sliceId);
+        expect(queryNode?.dependencies).toContain(modelId);
       },
       () => {
         throw new Error("expected dependency graph resolution to succeed");

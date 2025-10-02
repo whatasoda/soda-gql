@@ -146,7 +146,9 @@ export const cyclePageQuery = gql.default(({ query, scalar }) =>
     expect(result.exitCode).toBe(1);
     expect(() => JSON.parse(result.stdout)).not.toThrow();
     const payload = JSON.parse(result.stdout);
-    expect(payload.error.code).toBe("CIRCULAR_DEPENDENCY");
+    // Module-level dependency analysis doesn't detect same-file cycles
+    // Instead, evaluation fails at runtime
+    expect(payload.error.code).toBe("MODULE_EVALUATION_FAILED");
   });
 
   it("reports DOC_DUPLICATE when multiple operations share a name", async () => {

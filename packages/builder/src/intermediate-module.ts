@@ -3,7 +3,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import type { AnyModel, AnyOperationOf, AnyOperationSliceOf, IssueRegistry, OperationType } from "@soda-gql/core";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
-import type { DependencyGraph, DependencyGraphNode } from "./dependency-graph";
+import type { ModuleImport } from "./ast/analyze-module";
+import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "./dependency-graph";
 import type { BuilderError } from "./types";
 
 export type IntermediateModule = {
@@ -30,14 +31,6 @@ type FileGroup = {
   readonly nodes: DependencyGraphNode[];
 };
 
-type DependencyBinding = {
-  readonly symbol: string;
-  readonly localName: string;
-  readonly canonicalId: string;
-  readonly filePath: string;
-  readonly exportPath: string;
-};
-
 const splitCanonicalId = (canonicalId: string): { filePath: string; exportPath: string } => {
   const [filePath, exportPath] = canonicalId.split("::");
   return { filePath: filePath ?? "", exportPath: exportPath ?? "" };
@@ -56,40 +49,6 @@ const groupNodesByFile = (graph: DependencyGraph): FileGroup[] => {
   return Array.from(fileMap.entries())
     .map(([filePath, nodes]) => ({ filePath, nodes }))
     .sort((a, b) => a.filePath.localeCompare(b.filePath));
-};
-
-const createLocalName = (exportPath: string): string => {
-  return exportPath.replace(/\./g, "_");
-};
-
-const analyzeDependencies = (
-  node: DependencyGraphNode,
-  currentFilePath: string,
-  graph: DependencyGraph,
-): { crossFile: Map<string, DependencyBinding[]>; sameFile: DependencyBinding[] } => {
-  const crossFileMap = new Map<string, DependencyBinding[]>();
-  const sameFile: DependencyBinding[] = [];
-
-  Object.entries(node.references).forEach(([symbol, canonicalId]) => {
-    const target = graph.get(canonicalId);
-    if (!target) {
-      return;
-    }
-
-    const { filePath, exportPath } = splitCanonicalId(canonicalId);
-    const localName = createLocalName(exportPath);
-    const binding: DependencyBinding = { symbol, localName, canonicalId, filePath, exportPath };
-
-    if (filePath === currentFilePath) {
-      sameFile.push(binding);
-    } else {
-      const bindings = crossFileMap.get(filePath) ?? [];
-      bindings.push(binding);
-      crossFileMap.set(filePath, bindings);
-    }
-  });
-
-  return { crossFile: crossFileMap, sameFile };
 };
 
 type TreeNode = {
@@ -202,80 +161,124 @@ const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
   return `${declarations.join("\n")}\n${returnStatement}`;
 };
 
-const renderImportStatements = (
-  nodes: DependencyGraphNode[],
-  currentFilePath: string,
-  graph: DependencyGraph,
-): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
-  const allCrossFileDeps = new Map<string, Set<DependencyBinding>>();
+/**
+ * Get map of file paths to their module summaries from the graph.
+ */
+const getModuleSummaries = (graph: DependencyGraph): Map<string, ModuleSummary> => {
+  const summaries = new Map<string, ModuleSummary>();
 
-  nodes.forEach((node) => {
-    const { crossFile } = analyzeDependencies(node, currentFilePath, graph);
-    crossFile.forEach((bindings, filePath) => {
-      const existing = allCrossFileDeps.get(filePath) ?? new Set();
-      bindings.forEach((binding) => {
-        existing.add(binding);
-      });
-      allCrossFileDeps.set(filePath, existing);
-    });
+  graph.forEach((node) => {
+    const { filePath } = node.moduleSummary;
+    if (!summaries.has(filePath)) {
+      summaries.set(filePath, node.moduleSummary);
+    }
   });
 
+  return summaries;
+};
+
+/**
+ * Normalize path for consistent comparison.
+ */
+const normalizePath = (value: string): string => {
+  return value.replace(/\\/g, "/");
+};
+
+/**
+ * Resolve a module specifier to an absolute file path.
+ */
+const resolveImportPath = (currentFilePath: string, specifier: string, summaries: Map<string, ModuleSummary>): string | null => {
+  if (!specifier.startsWith(".")) {
+    return null;
+  }
+
+  const base = normalizePath(resolve(dirname(currentFilePath), specifier));
+  const possible = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.jsx`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ];
+
+  for (const candidate of possible) {
+    const normalized = normalizePath(candidate);
+    if (summaries.has(normalized)) {
+      return normalized;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Render import statements for the intermediate module using ModuleSummary.
+ * Only includes imports from modules that have gql exports.
+ */
+const renderImportStatements = (
+  summary: ModuleSummary,
+  summaries: Map<string, ModuleSummary>,
+): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
   const importLines: string[] = [];
   const importedRootNames = new Set<string>();
   const namespaceImports = new Set<string>();
 
-  allCrossFileDeps.forEach((bindings, filePath) => {
-    // Detect if this is a namespace import
-    // A namespace import is when all symbols share the same root prefix that's not in exportPath
-    const bindingsArray = Array.from(bindings);
+  // Group imports by resolved file path
+  const importsByFile = new Map<string, ModuleImport[]>();
 
-    // Check if all bindings share a common namespace prefix
-    let commonNamespace: string | null = null;
-    let isNamespaceImport = false;
-
-    if (bindingsArray.length > 0) {
-      // Get the first symbol's potential namespace (first segment before first dot)
-      const firstSymbol = bindingsArray[0]?.symbol;
-      if (firstSymbol?.includes(".")) {
-        const potentialNamespace = firstSymbol.split(".")[0];
-
-        // Check if all symbols start with this namespace
-        const allShareNamespace = bindingsArray.every((binding) => {
-          return binding.symbol.startsWith(`${potentialNamespace}.`);
-        });
-
-        // Check if the namespace doesn't match any exportPath root
-        const namespaceNotInExports = bindingsArray.every((binding) => {
-          const exportRoot = binding.exportPath.split(".")[0];
-          return exportRoot !== potentialNamespace;
-        });
-
-        if (allShareNamespace && namespaceNotInExports && potentialNamespace) {
-          commonNamespace = potentialNamespace;
-          isNamespaceImport = true;
-        }
-      }
+  summary.runtimeImports.forEach((imp) => {
+    // Skip non-relative imports (external packages)
+    if (!imp.source.startsWith(".")) {
+      return;
     }
 
-    if (isNamespaceImport && commonNamespace) {
+    const resolvedPath = resolveImportPath(summary.filePath, imp.source, summaries);
+    if (!resolvedPath) {
+      return;
+    }
+
+    const targetSummary = summaries.get(resolvedPath);
+    if (!targetSummary) {
+      return;
+    }
+
+    // Only include imports from modules with gql exports
+    if (targetSummary.gqlExports.length === 0) {
+      return;
+    }
+
+    const imports = importsByFile.get(resolvedPath) ?? [];
+    imports.push(imp);
+    importsByFile.set(resolvedPath, imports);
+  });
+
+  // Render registry.import() for each file
+  importsByFile.forEach((imports, filePath) => {
+    // Check if this is a namespace import
+    const namespaceImport = imports.find((imp) => imp.kind === "namespace");
+
+    if (namespaceImport) {
       // Namespace import: const foo = registry.import("path");
-      importLines.push(`    const ${commonNamespace} = registry.import("${filePath}");`);
-      namespaceImports.add(commonNamespace);
-      importedRootNames.add(commonNamespace);
+      importLines.push(`    const ${namespaceImport.local} = registry.import("${filePath}");`);
+      namespaceImports.add(namespaceImport.local);
+      importedRootNames.add(namespaceImport.local);
     } else {
-      // Named import: const { a, b } = registry.import("path");
+      // Named imports: const { a, b } = registry.import("path");
       const rootNames = new Set<string>();
-      bindings.forEach((binding) => {
-        const parts = binding.exportPath.split(".");
-        const rootName = parts[0];
-        if (rootName) {
-          rootNames.add(rootName);
-          importedRootNames.add(rootName);
+
+      imports.forEach((imp) => {
+        if (imp.kind === "named" || imp.kind === "default") {
+          rootNames.add(imp.local);
+          importedRootNames.add(imp.local);
         }
       });
 
-      const destructured = Array.from(rootNames).sort().join(", ");
-      importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+      if (rootNames.size > 0) {
+        const destructured = Array.from(rootNames).sort().join(", ");
+        importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+      }
     }
   });
 
@@ -286,101 +289,27 @@ const renderImportStatements = (
   };
 };
 
-const renderAliasBindings = (
-  nodes: DependencyGraphNode[],
-  currentFilePath: string,
-  graph: DependencyGraph,
-  importedRootNames: Set<string>,
-  namespaceImports: Set<string>,
-): string => {
-  // Collect simple aliases and namespace aliases separately
-  const simpleAliases = new Map<string, string>();
-  const namespaceAliases = new Map<string, Map<string, string>>();
-
-  nodes.forEach((node) => {
-    const { crossFile } = analyzeDependencies(node, currentFilePath, graph);
-
-    const processBinding = (binding: DependencyBinding) => {
-      const parts = binding.symbol.split(".");
-
-      if (parts.length === 1) {
-        // Simple identifier - direct alias
-        if (binding.symbol !== binding.exportPath) {
-          simpleAliases.set(binding.symbol, binding.exportPath);
-        }
-      } else if (parts.length > 1) {
-        // Namespace import like userCatalog.collections.byCategory
-        const namespace = parts[0];
-        const property = parts[1];
-        if (!namespace || !property) return;
-
-        // Skip if namespace was imported as a whole (star import)
-        if (namespaceImports.has(namespace)) {
-          return;
-        }
-
-        // Skip if namespace is already imported as a root name
-        // (the imported object already has the correct structure)
-        if (importedRootNames.has(namespace)) {
-          return;
-        }
-
-        // Get or create namespace map
-        let nsMap = namespaceAliases.get(namespace);
-        if (!nsMap) {
-          nsMap = new Map();
-          namespaceAliases.set(namespace, nsMap);
-        }
-
-        // Map property to the root of the export path
-        const exportRoot = binding.exportPath.split(".")[0];
-        if (exportRoot) {
-          nsMap.set(property, exportRoot);
-        }
-      }
-    };
-
-    // Only process cross-file dependencies for aliases
-    // Same-file dependencies don't need aliases because we recreate the original export structure
-    crossFile.forEach((bindings) => {
-      bindings.forEach(processBinding);
-    });
-  });
-
-  const lines: string[] = [];
-
-  // Emit simple aliases first
-  if (simpleAliases.size > 0) {
-    const sorted = Array.from(simpleAliases.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    sorted.forEach(([symbol, exportPath]) => {
-      lines.push(`    const ${symbol} = ${exportPath};`);
-    });
-  }
-
-  // Emit namespace aliases as object literals
-  if (namespaceAliases.size > 0) {
-    const sortedNamespaces = Array.from(namespaceAliases.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    sortedNamespaces.forEach(([namespace, properties]) => {
-      const sortedProps = Array.from(properties.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-      const propsStr = sortedProps
-        .map(([prop, target]) => {
-          return prop === target ? prop : `${prop}: ${target}`;
-        })
-        .join(", ");
-      lines.push(`    const ${namespace} = { ${propsStr} };`);
-    });
-  }
-
-  return lines.length > 0 ? `\n${lines.join("\n")}\n` : "";
-};
-
-const renderRegistryBlock = (fileGroup: FileGroup, graph: DependencyGraph): string => {
+const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, ModuleSummary>): string => {
   const { filePath, nodes } = fileGroup;
-  const { imports, importedRootNames, namespaceImports } = renderImportStatements(nodes, filePath, graph);
-  const aliases = renderAliasBindings(nodes, filePath, graph, importedRootNames, namespaceImports);
+
+  // Get the module summary for this file
+  const summary = summaries.get(filePath);
+  if (!summary) {
+    // Fallback: create empty summary
+    const emptySummary: ModuleSummary = {
+      filePath,
+      runtimeImports: [],
+      gqlExports: [],
+    };
+    const { imports } = renderImportStatements(emptySummary, summaries);
+    const body = buildNestedObject(nodes);
+    return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
+  }
+
+  const { imports } = renderImportStatements(summary, summaries);
   const body = buildNestedObject(nodes);
 
-  return `registry.register("${filePath}", () => {${imports}${aliases}\n${body}\n});`;
+  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
 };
 
 export type CreateIntermediateModuleInput = {
@@ -423,8 +352,9 @@ export const createIntermediateModule = async ({
     });
   }
 
+  const summaries = getModuleSummaries(graph);
   const fileGroups = groupNodesByFile(graph);
-  const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, graph));
+  const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, summaries));
 
   const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const jsFilePath = join(outDir, `${fileName}.mjs`);
