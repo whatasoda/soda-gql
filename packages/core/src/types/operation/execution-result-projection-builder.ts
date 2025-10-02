@@ -1,10 +1,5 @@
 import type { AnyFields, AvailableFieldPathOf, InferByFieldPath } from "../fragment";
-import type {
-  AnyExecutionResultProjection,
-  AnyGraphqlRuntimeAdapter,
-  ExecutionResultProjection,
-  SlicedExecutionResult,
-} from "../runtime";
+import type { AnyGraphqlRuntimeAdapter, AnyProjection, Projection, SlicedExecutionResult } from "../runtime";
 import type { AnyGraphqlSchema } from "../schema";
 import type { Tuple } from "../shared/utility";
 
@@ -20,7 +15,7 @@ export type ExecutionResultProjectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TFields extends AnyFields,
-  TProjection extends AnyExecutionResultProjection,
+  TProjection extends AnyProjection,
 > = (tools: { select: ResultSelector<TSchema, TRuntimeAdapter, TFields> }) => TProjection;
 
 /** Helper passed to selection builders for choosing a field path and projector. */
@@ -31,7 +26,7 @@ type ResultSelector<
 > = <TPaths extends Tuple<AvailableFieldPathOf<TSchema, TFields>>, TProjected>(
   paths: TPaths,
   projector: (result: SlicedExecutionResult<InferByResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>) => TProjected,
-) => ExecutionResultProjection<TProjected>;
+) => Projection<TProjected>;
 
 type InferByResultSelectorPaths<
   TSchema extends AnyGraphqlSchema,

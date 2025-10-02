@@ -1,56 +1,48 @@
 /** Operation slice builders (`gql.querySlice`, etc.). */
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
-import type { AnyExecutionResultProjection, InferExecutionResultProjection } from "../runtime";
+import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
 import type { VoidIfEmptyObject } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
-import { Builder } from "./builder";
+import { ArtifactElement } from "./artifact-element";
 
-export type AnyOperationSlice =
-  | AnyOperationSliceOf<"query">
-  | AnyOperationSliceOf<"mutation">
-  | AnyOperationSliceOf<"subscription">;
-export type AnyOperationSliceOf<TOperationType extends OperationType> = OperationSlice<
-  TOperationType,
-  any,
-  AnyFields,
-  AnyExecutionResultProjection
->;
+export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
+export type AnySliceOf<TOperationType extends OperationType> = Slice<TOperationType, any, AnyFields, AnyProjection>;
 
-type OperationSliceInner<
+type SliceArtifact<
   TOperationType extends OperationType,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
-  TProjection extends AnyExecutionResultProjection,
+  TProjection extends AnyProjection,
 > = {
   readonly operationType: TOperationType;
-  readonly build: (variables: TVariables) => OperationSliceFragment<TVariables, TFields, TProjection>;
+  readonly build: (variables: TVariables) => SliceContent<TVariables, TFields, TProjection>;
 };
 
 declare const __OPERATION_SLICE_BRAND__: unique symbol;
-export class OperationSlice<
+export class Slice<
     TOperationType extends OperationType,
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
-    TProjection extends AnyExecutionResultProjection,
+    TProjection extends AnyProjection,
   >
-  extends Builder<OperationSliceInner<TOperationType, TVariables, TFields, TProjection>>
-  implements OperationSliceInner<TOperationType, TVariables, TFields, TProjection>
+  extends ArtifactElement<SliceArtifact<TOperationType, TVariables, TFields, TProjection>>
+  implements SliceArtifact<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
     operationType: TOperationType;
     output: InferExecutionResultProjection<TProjection>;
   }>;
 
-  private constructor(factory: () => OperationSliceInner<TOperationType, TVariables, TFields, TProjection>) {
+  private constructor(factory: () => SliceArtifact<TOperationType, TVariables, TFields, TProjection>) {
     super(factory);
   }
 
   public get operationType() {
-    return Builder.get(this).operationType;
+    return ArtifactElement.get(this).operationType;
   }
   public get build() {
-    return Builder.get(this).build;
+    return ArtifactElement.get(this).build;
   }
 
   static create<
@@ -58,40 +50,34 @@ export class OperationSlice<
     TOperationType extends OperationType,
     TVariableDefinitions extends InputTypeRefs,
     TFields extends AnyFields,
-    TProjection extends AnyExecutionResultProjection,
+    TProjection extends AnyProjection,
   >(
     factory: () => {
       operationType: TOperationType;
       build: (
         variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>,
-      ) => OperationSliceFragment<
+      ) => SliceContent<
         VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>,
         TFields,
         TProjection
       >;
     },
   ) {
-    return new OperationSlice(factory);
+    return new Slice(factory);
   }
 }
 
-export type AnyOperationSliceFragments = { [key: string]: AnyOperationSliceFragment };
+export type AnySliceContents = { [key: string]: AnySliceContent };
 
-export type AnyOperationSliceFragment = OperationSliceFragment<
-  AnyAssignableInput | void,
-  AnyFields,
-  AnyExecutionResultProjection
->;
-export type OperationSliceFragment<
+export type AnySliceContent = SliceContent<AnyAssignableInput | void, AnyFields, AnyProjection>;
+export type SliceContent<
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
-  TProjection extends AnyExecutionResultProjection,
+  TProjection extends AnyProjection,
 > = {
   variables: TVariables;
   getFields: () => TFields;
   projection: TProjection;
 };
 
-export type InferOutputOfOperationSlice<TSlice extends AnyOperationSliceOf<any>> = ReturnType<
-  TSlice[typeof __OPERATION_SLICE_BRAND__]
->["output"];
+export type InferOutputOfSlice<TSlice extends AnySliceOf<any>> = ReturnType<TSlice[typeof __OPERATION_SLICE_BRAND__]>["output"];

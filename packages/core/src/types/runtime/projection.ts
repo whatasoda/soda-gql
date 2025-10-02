@@ -3,16 +3,16 @@ import type { Tuple } from "../shared/utility";
 import type { AnySlicedExecutionResult } from "./sliced-execution-result";
 
 /** Shape of a single selection slice projection. */
-export type AnyExecutionResultProjection = ExecutionResultProjection<any>;
+export type AnyProjection = Projection<any>;
 
-declare const __EXECUTION_RESULT_PROJECTION_BRAND__: unique symbol;
+declare const __PROJECTION_BRAND__: unique symbol;
 /**
  * Nominal type representing any slice selection regardless of schema specifics.
  * Encodes how individual slices map a concrete field path to a projection
  * function. Multiple selections allow slices to expose several derived values.
  */
-export class ExecutionResultProjection<TProjected> {
-  declare readonly [__EXECUTION_RESULT_PROJECTION_BRAND__]: Hidden<never>;
+export class Projection<TProjected> {
+  declare readonly [__PROJECTION_BRAND__]: Hidden<never>;
   constructor(
     paths: Tuple<string>,
     public readonly projector: (result: AnySlicedExecutionResult) => TProjected,
@@ -41,6 +41,4 @@ function createProjectionPath(path: string): ProjectionPath {
 }
 
 /** Infer the output type produced by a selection or multi-selection. */
-export type InferExecutionResultProjection<TProjection extends AnyExecutionResultProjection> = ReturnType<
-  TProjection["projector"]
->;
+export type InferExecutionResultProjection<TProjection extends AnyProjection> = ReturnType<TProjection["projector"]>;

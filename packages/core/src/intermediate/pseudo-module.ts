@@ -1,29 +1,21 @@
-import {
-  type AnyModel,
-  type AnyOperation,
-  type AnyOperationSlice,
-  Builder,
-  Model,
-  Operation,
-  OperationSlice,
-} from "../types/operation";
+import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model, Operation, Slice } from "../types/operation";
 
-type AcceptableBuilder = AnyModel | AnyOperationSlice | AnyOperation;
-type BuilderRecord = {
-  [key: string]: AcceptableBuilder | BuilderRecord;
+type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
+type ArtifactRecord = {
+  [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
 export type PseudoArtifact =
   | { readonly kind: "model"; readonly builder: AnyModel }
-  | { readonly kind: "slice"; readonly builder: AnyOperationSlice }
+  | { readonly kind: "slice"; readonly builder: AnySlice }
   | { readonly kind: "operation"; readonly builder: AnyOperation };
 
 export const createPseudoModuleRegistry = () => {
-  const modules = new Map<string, () => BuilderRecord>();
-  const caches = new Map<string, BuilderRecord>();
-  const entries: [string, AcceptableBuilder][] = [];
+  const modules = new Map<string, () => ArtifactRecord>();
+  const caches = new Map<string, ArtifactRecord>();
+  const entries: [string, AcceptableArtifact][] = [];
 
-  const register = (filePath: string, factory: () => BuilderRecord) => {
+  const register = (filePath: string, factory: () => ArtifactRecord) => {
     modules.set(filePath, () => {
       const cached = caches.get(filePath);
       if (cached) {
@@ -37,9 +29,9 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addBuilder = <TBuilder extends AcceptableBuilder>(canonicalId: string, factory: () => TBuilder) => {
+  const addBuilder = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
     const builder = factory();
-    Builder.setContext(builder, { canonicalId });
+    ArtifactElement.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered
     entries.push([canonicalId, builder] satisfies [unknown, unknown]);
     return builder;
@@ -60,8 +52,8 @@ export const createPseudoModuleRegistry = () => {
     }
 
     // Then, evaluate all builders after registration
-    for (const [, builder] of entries) {
-      Builder.evaluate(builder);
+    for (const [, artifact] of entries) {
+      ArtifactElement.evaluate(artifact);
     }
 
     // Build a single record with discriminated union entries
@@ -69,7 +61,7 @@ export const createPseudoModuleRegistry = () => {
     for (const [canonicalId, builder] of entries) {
       if (builder instanceof Model) {
         artifacts[canonicalId] = { kind: "model", builder };
-      } else if (builder instanceof OperationSlice) {
+      } else if (builder instanceof Slice) {
         artifacts[canonicalId] = { kind: "slice", builder };
       } else if (builder instanceof Operation) {
         artifacts[canonicalId] = { kind: "operation", builder };

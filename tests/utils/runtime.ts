@@ -1,9 +1,5 @@
-import type {
-  AnyOperationSliceFragment,
-  AnyOperationSliceFragments,
-  OperationSliceFragment,
-} from "../../packages/core/src/types/operation/operation-slice";
-import type { ExecutionResultProjection } from "../../packages/core/src/types/runtime/execution-result-projection";
+import type { AnySliceContent, AnySliceContents, SliceContent } from "../../packages/core/src/types/operation/slice";
+import type { Projection } from "../../packages/core/src/types/runtime/projection";
 import type { AnyGraphqlRuntimeAdapter } from "../../packages/core/src/types/runtime/runtime-adapter";
 import type { AnyGraphqlSchema, OperationRoots } from "../../packages/core/src/types/schema";
 
@@ -13,16 +9,16 @@ type AdapterTag<TRuntime extends AnyGraphqlRuntimeAdapter> = {
   readonly __adapterType?: ReturnType<TRuntime["nonGraphqlErrorType"]>;
 };
 
-export function createTestOperationSlice<
+export function createTestSlice<
   TSchema extends AnyGraphqlSchema = AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter = AnyGraphqlRuntimeAdapter,
   TResult = unknown,
 >(
-  projection: ExecutionResultProjection<TResult>,
-): OperationSliceFragment<
+  projection: Projection<TResult>,
+): SliceContent<
   EmptyRecord<OperationKeys<TSchema>>,
   EmptyRecord<keyof OperationRoots & string> & AdapterTag<TRuntimeAdapter>,
-  ExecutionResultProjection<TResult>
+  Projection<TResult>
 > {
   return {
     projection,
@@ -31,15 +27,15 @@ export function createTestOperationSlice<
   };
 }
 
-export function createTestOperationSlices<
+export function createTestSlices<
   TSchema extends AnyGraphqlSchema = AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter = AnyGraphqlRuntimeAdapter,
-  TSlices extends Record<string, ExecutionResultProjection<any>> = Record<string, ExecutionResultProjection<any>>,
->(projections: TSlices): AnyOperationSliceFragments {
-  const fragments: AnyOperationSliceFragments = {};
+  TSlices extends Record<string, Projection<any>> = Record<string, Projection<any>>,
+>(projections: TSlices): AnySliceContents {
+  const fragments: AnySliceContents = {};
 
   for (const [key, projection] of Object.entries(projections)) {
-    fragments[key] = createTestOperationSlice<TSchema, TRuntimeAdapter>(projection) as AnyOperationSliceFragment;
+    fragments[key] = createTestSlice<TSchema, TRuntimeAdapter>(projection) as AnySliceContent;
   }
 
   return fragments;

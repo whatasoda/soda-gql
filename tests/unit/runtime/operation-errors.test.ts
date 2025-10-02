@@ -1,25 +1,25 @@
 import { describe, expect, it } from "bun:test";
 import { createExecutionResultParser } from "../../../packages/core/src/runtime/parse-execution-result";
-import type { ExecutionResultProjectionPathGraphNode } from "../../../packages/core/src/types/operation/operation";
+import type { ProjectionPathGraphNode } from "../../../packages/core/src/types/operation/operation";
 import type { NormalizedExecutionResult } from "../../../packages/core/src/types/runtime/execution-result";
-import { ExecutionResultProjection } from "../../../packages/core/src/types/runtime/execution-result-projection";
+import { Projection } from "../../../packages/core/src/types/runtime/projection";
 import type { AnyGraphqlRuntimeAdapter } from "../../../packages/core/src/types/runtime/runtime-adapter";
 import {
   SlicedExecutionResultEmpty,
   SlicedExecutionResultError,
   SlicedExecutionResultSuccess,
 } from "../../../packages/core/src/types/runtime/sliced-execution-result";
-import { createRuntimeAdapter } from "../../../packages/runtime/src/index.ts";
-import { createTestOperationSlices } from "../../utils/runtime";
+import { createRuntimeAdapter } from "../../../packages/runtime/src/index";
+import { createTestSlices } from "../../utils/runtime";
 
 /**
  * Helper to build a compliant projection path graph
  */
-const buildProjectionGraph = (label: string, rawPath: string): ExecutionResultProjectionPathGraphNode => {
+const buildProjectionGraph = (label: string, rawPath: string): ProjectionPathGraphNode => {
   const segments = rawPath.split(".").slice(1); // Remove leading $
 
   // Root node
-  const root: ExecutionResultProjectionPathGraphNode = {
+  const root: ProjectionPathGraphNode = {
     matches: segments.length === 0 ? [{ label, path: rawPath, exact: true }] : [],
     children: {},
   };
@@ -58,8 +58,8 @@ describe("Runtime Operation Error Handling", () => {
   describe("GraphQL error handling", () => {
     it("should wrap GraphQL errors in SlicedExecutionResultError", () => {
       const PATH = "$.user" as const;
-      const slices = createTestOperationSlices({
-        userSlice: new ExecutionResultProjection([PATH], (result) => result),
+      const slices = createTestSlices({
+        userSlice: new Projection([PATH], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("userSlice", PATH);
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });
@@ -90,8 +90,8 @@ describe("Runtime Operation Error Handling", () => {
 
     it("should handle successful GraphQL responses", () => {
       const PATH = "$.user.profile" as const;
-      const slices = createTestOperationSlices({
-        profile: new ExecutionResultProjection([PATH], (result) => result),
+      const slices = createTestSlices({
+        profile: new Projection([PATH], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("profile", PATH);
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });
@@ -127,8 +127,8 @@ describe("Runtime Operation Error Handling", () => {
 
     it("should handle missing data with parse error", () => {
       const PATH = "$.user.profile.settings" as const;
-      const slices = createTestOperationSlices({
-        settings: new ExecutionResultProjection([PATH], (result) => result),
+      const slices = createTestSlices({
+        settings: new Projection([PATH], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("settings", PATH);
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });
@@ -156,8 +156,8 @@ describe("Runtime Operation Error Handling", () => {
   describe("Non-GraphQL error handling", () => {
     it("should handle non-graphql-error results", () => {
       const PATH = "$.data" as const;
-      const slices = createTestOperationSlices({
-        data: new ExecutionResultProjection([PATH], (result) => result),
+      const slices = createTestSlices({
+        data: new Projection([PATH], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("data", PATH);
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });
@@ -184,8 +184,8 @@ describe("Runtime Operation Error Handling", () => {
   describe("Empty result handling", () => {
     it("should handle empty results", () => {
       const PATH = "$.data" as const;
-      const slices = createTestOperationSlices({
-        data: new ExecutionResultProjection([PATH], (result) => result),
+      const slices = createTestSlices({
+        data: new Projection([PATH], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("data", PATH);
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });
@@ -205,9 +205,9 @@ describe("Runtime Operation Error Handling", () => {
 
   describe("Multiple slices", () => {
     it("should handle multiple slices with mixed results", () => {
-      const slices = createTestOperationSlices({
-        user: new ExecutionResultProjection(["$.user"], (result) => result),
-        posts: new ExecutionResultProjection(["$.posts"], (result) => result),
+      const slices = createTestSlices({
+        user: new Projection(["$.user"], (result) => result),
+        posts: new Projection(["$.posts"], (result) => result),
       });
 
       // Build projection graph for multiple slices
@@ -215,7 +215,7 @@ describe("Runtime Operation Error Handling", () => {
       const postsGraph = buildProjectionGraph("posts", "$.posts");
 
       // Merge the graphs
-      const projectionPathGraph: ExecutionResultProjectionPathGraphNode = {
+      const projectionPathGraph: ProjectionPathGraphNode = {
         matches: [],
         children: {
           user: userGraph.children.user || { matches: [{ label: "user", path: "$.user", exact: true }], children: {} },
@@ -260,8 +260,8 @@ describe("Runtime Operation Error Handling", () => {
 
   describe("Invalid result type", () => {
     it("should throw on invalid result type", () => {
-      const slices = createTestOperationSlices({
-        test: new ExecutionResultProjection(["$.test"], (result) => result),
+      const slices = createTestSlices({
+        test: new Projection(["$.test"], (result) => result),
       });
       const projectionPathGraph = buildProjectionGraph("test", "$.test");
       const parse = createExecutionResultParser<typeof adapter>({ fragments: slices, projectionPathGraph });

@@ -7,7 +7,7 @@ import {
   define,
   defineOperationRoots,
   defineScalar,
-  ExecutionResultProjection,
+  Projection,
   unsafeInputRef,
   unsafeOutputRef,
 } from "../../../packages/core";
@@ -150,7 +150,7 @@ describe("createGqlInvoker", () => {
     );
 
     const sliceFragment = userSlice.build({ id: "1" });
-    expect(sliceFragment.projection).toBeInstanceOf(ExecutionResultProjection);
+    expect(sliceFragment.projection).toBeInstanceOf(Projection);
 
     const profileQuery = gql(({ operation }, { $ }) =>
       operation.query(

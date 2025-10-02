@@ -13,7 +13,7 @@ import type {
 import { createBuilderService, createCanonicalTracker } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
-import type { RuntimeOperationSliceInput } from "../../core/src/runtime/operation-slice";
+import type { RuntimeSliceInput } from "../../core/src/runtime/slice";
 import { loadArtifact, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
 import { buildLiteralFromValue, buildObjectExpression, clone } from "./transform/ast-builders";
@@ -429,10 +429,10 @@ const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): t.Expre
 
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("slice")), [
     buildObjectExpression({
-      prebuild: buildObjectExpression<keyof RuntimeOperationSliceInput["prebuild"]>({
+      prebuild: buildObjectExpression<keyof RuntimeSliceInput["prebuild"]>({
         operationType: t.stringLiteral(artifact.prebuild.operationType),
       }),
-      runtime: buildObjectExpression<keyof RuntimeOperationSliceInput["runtime"]>({
+      runtime: buildObjectExpression<keyof RuntimeSliceInput["runtime"]>({
         buildProjection: clone(projectionBuilder),
       }),
     }),

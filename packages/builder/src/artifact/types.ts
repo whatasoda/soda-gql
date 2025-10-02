@@ -1,4 +1,4 @@
-import type { RuntimeModelInput, RuntimeOperationInput, RuntimeOperationSliceInput } from "@soda-gql/core/runtime";
+import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
 import type { CanonicalId } from "../canonical-id";
 import type { DependencyGraph } from "../dependency-graph";
 import type { ModuleLoadStats } from "../discovery/discovery-pipeline";
@@ -18,7 +18,7 @@ export type BuilderArtifactOperation = {
 export type BuilderArtifactSlice = {
   readonly type: "slice";
   readonly id: CanonicalId;
-  readonly prebuild: RuntimeOperationSliceInput["prebuild"];
+  readonly prebuild: RuntimeSliceInput["prebuild"];
 };
 
 export type BuilderArtifactModel = {

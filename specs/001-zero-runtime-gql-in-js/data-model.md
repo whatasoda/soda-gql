@@ -18,7 +18,7 @@ The ecosystem revolves around a generated `gql` helper bundle (from `codegen`), 
 - **Usage**: Codegen imports SDL/JSON, emits a literal object satisfying `AnyGraphqlSchema`, and passes it to `createHelpers<Schema>(schema)` and `createRefFactories<Schema>()`.
 
 ### `gql` Helper Bundle
-- **Shape**: `{ ...createHelpers<Schema>, ...createRefFactories<Schema>(), model: ModelFn<Schema>, querySlice: OperationSliceFn<Schema, Adapter, "query">, query: OperationFn<Schema, Adapter, "query">, ... }`.
+- **Shape**: `{ ...createHelpers<Schema>, ...createRefFactories<Schema>(), model: ModelFn<Schema>, querySlice: SliceFn<Schema, Adapter, "query">, query: OperationFn<Schema, Adapter, "query">, ... }`.
 - **Dependencies**: Requires an adapter implementing `GraphqlRuntimeAdapter` with `nonGraphqlErrorType`. Adapter is generated per project so transformations can surface framework-specific errors.
 - **Guarantees**: Each factory is already generic over the loaded schema; no additional type parameters needed in user modules.
 
@@ -33,7 +33,7 @@ The ecosystem revolves around a generated `gql` helper bundle (from `codegen`), 
   - Transform must be referentially transparent (no side effects) and return plain objects or `neverthrow` results, depending on design (we expect plain objects now, zero-runtime will wrap later).
   - `fragment` accepts either variable references from `$` tools or literal values when invoked inside builder-generated script.
 
-### OperationSliceDefinition (`OperationSliceFn` result)
+### SliceDefinition (`SliceFn` result)
 - **Fields**:
   - `operation: "query" | "mutation" | "subscription"`
   - `object: AnyFields` representing the selection on the operation root object.
@@ -59,7 +59,7 @@ The ecosystem revolves around a generated `gql` helper bundle (from `codegen`), 
 ### Builder Pipeline
 - **Stages**:
   1. **Discover**: Static analysis enumerates modules importing `@/graphql-system`, extracts exported models/slices/operations.
-  2. **Load**: Executes a generated script that imports the user modules and registers entries into a `refs` registry shaped as `{ [id]: () => OperationSlice | ModelDefinition | OperationDefinition }`.
+  2. **Load**: Executes a generated script that imports the user modules and registers entries into a `refs` registry shaped as `{ [id]: () => Slice | ModelDefinition | OperationDefinition }`.
   3. **Evaluate**: Lazily invokes refs in dependency order, building `documents` and structured transform metadata.
   4. **Emit**: Writes JSON artifact with diagnostics (counts, duration, warnings for ≥16 slices, errors for >32).
 - **Error Surfaces**: Cycle detection, duplicate document names, missing variables, runtime throws with error types defined by `GraphqlRuntimeAdapter.nonGraphqlErrorType`.
@@ -113,7 +113,7 @@ digraph {
 | Component | Owns | Reads | Notes |
 |-----------|------|-------|-------|
 | `packages/codegen` | Schema ingestion, gql bundle emission | SDL/JSON schema, project config | Must remain side-effect free aside from FS writes |
-| `packages/core` | Typed DSL (`ModelFn`, `OperationSliceFn`, etc.) | Generated schema module | No runtime IO; serves as compile-time contract |
+| `packages/core` | Typed DSL (`ModelFn`, `SliceFn`, etc.) | Generated schema module | No runtime IO; serves as compile-time contract |
 | `packages/builder` | Dependency resolution, document generation | User code, generated gql bundle | Produces artifacts for runtime + zero-runtime |
 | `packages/plugin-babel` | Source rewriting | Builder artifact | Delegates to builder for document creation |
 | `packages/graphql-system` | Generated helper bundle | - | Output of codegen, committed or built on install |

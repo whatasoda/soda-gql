@@ -1,13 +1,13 @@
-import { handleProjectionBuilder } from "../runtime/operation-slice";
+import { handleProjectionBuilder } from "../runtime/slice";
 import type { AnyFields } from "../types/fragment";
-import { type ExecutionResultProjectionsBuilder, type FieldsBuilder, OperationSlice } from "../types/operation";
-import type { AnyExecutionResultProjection, AnyGraphqlRuntimeAdapter } from "../types/runtime";
+import { type ExecutionResultProjectionsBuilder, type FieldsBuilder, Slice } from "../types/operation";
+import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
 
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments } from "./input";
 
-export const createOperationSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
+export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
   schema: NoInfer<TSchema>,
 ) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
@@ -31,18 +31,14 @@ export const createOperationSliceFactory = <TSchema extends AnyGraphqlSchema, TR
       };
     })();
 
-    return <
-      TFields extends AnyFields,
-      TProjection extends AnyExecutionResultProjection,
-      TVarDefinitions extends InputTypeRefs = {},
-    >(
+    return <TFields extends AnyFields, TProjection extends AnyProjection, TVarDefinitions extends InputTypeRefs = {}>(
       options: {
         variables?: TVarDefinitions;
       },
       builder: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>,
       projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
     ) => {
-      return OperationSlice.create<TSchema, TOperationType, TVarDefinitions, TFields, TProjection>(() => {
+      return Slice.create<TSchema, TOperationType, TVarDefinitions, TFields, TProjection>(() => {
         const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
         const projection = handleProjectionBuilder(projectionBuilder);
 

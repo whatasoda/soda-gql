@@ -1,11 +1,11 @@
-import type { AnyExecutionResultProjectionsBuilder, AnyOperationSliceOf } from "../types/operation";
-import { ExecutionResultProjection } from "../types/runtime";
+import type { AnyExecutionResultProjectionsBuilder, AnySliceOf } from "../types/operation";
+import { Projection } from "../types/runtime";
 import type { OperationType } from "../types/schema";
 import { hidden } from "../types/shared/hidden";
 import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 
-export type RuntimeOperationSliceInput = {
-  prebuild: StripFunctions<AnyOperationSliceOf<OperationType>>;
+export type RuntimeSliceInput = {
+  prebuild: StripFunctions<AnySliceOf<OperationType>>;
   runtime: {
     buildProjection: AnyExecutionResultProjectionsBuilder;
   };
@@ -15,10 +15,10 @@ export const handleProjectionBuilder = <TBuilder extends AnyExecutionResultProje
   projectionBuilder: TBuilder,
 ): ReturnType<TBuilder> =>
   projectionBuilder({
-    select: (path, projector) => new ExecutionResultProjection(path, projector),
+    select: (path, projector) => new Projection(path, projector),
   });
 
-export const createRuntimeOperationSlice = (input: RuntimeOperationSliceInput) => {
+export const createRuntimeSlice = (input: RuntimeSliceInput) => {
   const projection = handleProjectionBuilder(input.runtime.buildProjection);
   return {
     operationType: input.prebuild.operationType,
@@ -27,5 +27,5 @@ export const createRuntimeOperationSlice = (input: RuntimeOperationSliceInput) =
       getFields: hidden(),
       projection,
     }),
-  } satisfies StripSymbols<AnyOperationSliceOf<OperationType>> as AnyOperationSliceOf<OperationType>;
+  } satisfies StripSymbols<AnySliceOf<OperationType>> as AnySliceOf<OperationType>;
 };
