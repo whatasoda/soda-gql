@@ -1,41 +1,56 @@
-import type { types as BabelTypes, NodePath } from "@babel/core";
-import * as t from "@babel/types";
-import type { PluginPassState } from "../types";
+import { types as t } from "@babel/core";
+import type { NodePath } from "@babel/traverse";
 
-export const ensureGqlRuntimeImport = (
-  path: NodePath<BabelTypes.Program>,
-  state: PluginPassState,
-  runtimeImportPath: string,
-): BabelTypes.Identifier => {
-  const programPath = path.scope.getProgramParent().path as NodePath<BabelTypes.Program>;
-  const existingImport = programPath.node.body.find(
-    (stmt): stmt is BabelTypes.ImportDeclaration => t.isImportDeclaration(stmt) && stmt.source.value === runtimeImportPath,
+export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
+  const existing = programPath.node.body.find(
+    (statement) => statement.type === "ImportDeclaration" && statement.source.value === "@soda-gql/runtime",
   );
 
-  if (existingImport) {
-    const defaultSpecifier = existingImport.specifiers.find((spec): spec is BabelTypes.ImportDefaultSpecifier =>
-      t.isImportDefaultSpecifier(spec),
+  if (existing && t.isImportDeclaration(existing)) {
+    const hasSpecifier = existing.specifiers.some(
+      (specifier) =>
+        specifier.type === "ImportSpecifier" &&
+        specifier.imported.type === "Identifier" &&
+        specifier.imported.name === "gqlRuntime",
     );
-    if (defaultSpecifier) {
-      return defaultSpecifier.local;
+
+    if (!hasSpecifier) {
+      existing.specifiers = [...existing.specifiers, t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime"))];
     }
+
+    return;
   }
 
-  const runtimeId = path.scope.generateUidIdentifier("gql");
-  const importDeclaration = t.importDeclaration([t.importDefaultSpecifier(runtimeId)], t.stringLiteral(runtimeImportPath));
-  programPath.unshiftContainer("body", importDeclaration);
-  state.runtimeImportAdded = true;
-  return runtimeId;
+  programPath.node.body.unshift(
+    t.importDeclaration(
+      [t.importSpecifier(t.identifier("gqlRuntime"), t.identifier("gqlRuntime"))],
+      t.stringLiteral("@soda-gql/runtime"),
+    ),
+  );
 };
 
-export const maybeRemoveUnusedGqlImport = (path: NodePath<BabelTypes.Program>, state: PluginPassState): void => {
-  if (!state.runtimeImportAdded || state.replacements > 0) return;
-
-  const importIndex = path.node.body.findIndex(
-    (stmt) => t.isImportDeclaration(stmt) && stmt.source.value === state.options.importIdentifier,
-  );
-
-  if (importIndex !== -1) {
-    path.node.body.splice(importIndex, 1);
+export const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
+  const binding = programPath.scope.getBinding("gql");
+  if (!binding || binding.referencePaths.length > 0) {
+    return;
   }
+
+  const importSpecifierPath = binding.path;
+  if (!importSpecifierPath.isImportSpecifier()) {
+    return;
+  }
+
+  const declaration = importSpecifierPath.parentPath;
+  if (!declaration?.isImportDeclaration()) {
+    return;
+  }
+
+  const remainingSpecifiers = declaration.node.specifiers.filter((specifier) => specifier !== importSpecifierPath.node);
+
+  if (remainingSpecifiers.length === 0) {
+    declaration.remove();
+    return;
+  }
+
+  declaration.replaceWith(t.importDeclaration(remainingSpecifiers, declaration.node.source));
 };
