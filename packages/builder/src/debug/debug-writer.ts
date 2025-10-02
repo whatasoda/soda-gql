@@ -1,8 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import type { BuilderArtifact } from "../artifact/types";
 import type { ModuleAnalysis } from "../ast";
 import type { DependencyGraph } from "../dependency-graph";
-import type { BuilderArtifact } from "../types";
 
 export type DebugWriter = {
   writeDiscoverySnapshot(modules: readonly ModuleAnalysis[], graph: DependencyGraph): Promise<void>;

@@ -1,7 +1,7 @@
 import type { Result } from "neverthrow";
-
+import type { BuilderArtifact } from "./artifact/types";
 import { generateArtifact } from "./runner";
-import type { BuilderArtifact, BuilderError, BuilderInput } from "./types";
+import type { BuilderError, BuilderInput } from "./types";
 
 /**
  * Configuration for BuilderService.

@@ -314,7 +314,7 @@ setActiveRegistry(issueRegistry);`;
 
   const registryBlocksSection = registryBlocks.join("\n\n");
 
-  const evaluationSection = `export const { models, slices, operations } = registry.evaluate();`;
+  const evaluationSection = `export const artifacts = registry.evaluate();`;
 
   return `${imports.join("\n")}\n\n${registrySection}\n\n${pseudoRegistrySection}\n\n${registryBlocksSection}\n\n${evaluationSection}\n`;
 };

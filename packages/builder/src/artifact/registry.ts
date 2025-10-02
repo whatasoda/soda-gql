@@ -1,16 +1,19 @@
 import { err, ok, type Result } from "neverthrow";
 import type { CanonicalId } from "../canonical-id/canonical-id";
-import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "../types";
+import type { BuilderArtifactEntry, BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "./types";
 
 export type RegistryRefError = {
-  readonly code: "MODEL_ALREADY_REGISTERED" | "SLICE_ALREADY_REGISTERED" | "OPERATION_ALREADY_REGISTERED";
+  readonly code: "ARTIFACT_ALREADY_REGISTERED";
   readonly id: CanonicalId;
 };
 
 export type RegistrySnapshot = {
-  readonly operations: Readonly<Record<CanonicalId, BuilderArtifactOperation>>;
-  readonly slices: Readonly<Record<CanonicalId, BuilderArtifactSlice>>;
-  readonly models: Readonly<Record<CanonicalId, BuilderArtifactModel>>;
+  readonly artifacts: Readonly<Record<CanonicalId, BuilderArtifactEntry>>;
+  readonly counts: {
+    readonly models: number;
+    readonly slices: number;
+    readonly operations: number;
+  };
 };
 
 export type OperationRegistry = {
@@ -21,36 +24,37 @@ export type OperationRegistry = {
 };
 
 export const createOperationRegistry = (): OperationRegistry => {
-  const models = new Map<CanonicalId, BuilderArtifactModel>();
-  const slices = new Map<CanonicalId, BuilderArtifactSlice>();
-  const operations = new Map<CanonicalId, BuilderArtifactOperation>();
+  const artifacts = new Map<CanonicalId, BuilderArtifactEntry>();
+  const counts = { models: 0, slices: 0, operations: 0 };
 
   return {
     registerModel: (input) => {
-      if (models.has(input.id)) {
-        return err({ code: "MODEL_ALREADY_REGISTERED", id: input.id });
+      if (artifacts.has(input.id)) {
+        return err({ code: "ARTIFACT_ALREADY_REGISTERED", id: input.id });
       }
-      models.set(input.id, input);
+      artifacts.set(input.id, input);
+      counts.models++;
       return ok(input);
     },
     registerSlice: (input) => {
-      if (slices.has(input.id)) {
-        return err({ code: "SLICE_ALREADY_REGISTERED", id: input.id });
+      if (artifacts.has(input.id)) {
+        return err({ code: "ARTIFACT_ALREADY_REGISTERED", id: input.id });
       }
-      slices.set(input.id, input);
+      artifacts.set(input.id, input);
+      counts.slices++;
       return ok(input);
     },
     registerOperation: (input) => {
-      if (operations.has(input.id)) {
-        return err({ code: "OPERATION_ALREADY_REGISTERED", id: input.id });
+      if (artifacts.has(input.id)) {
+        return err({ code: "ARTIFACT_ALREADY_REGISTERED", id: input.id });
       }
-      operations.set(input.id, input);
+      artifacts.set(input.id, input);
+      counts.operations++;
       return ok(input);
     },
     snapshot: () => ({
-      operations: Object.fromEntries(operations.entries()) as Record<CanonicalId, BuilderArtifactOperation>,
-      slices: Object.fromEntries(slices.entries()) as Record<CanonicalId, BuilderArtifactSlice>,
-      models: Object.fromEntries(models.entries()) as Record<CanonicalId, BuilderArtifactModel>,
+      artifacts: Object.fromEntries(artifacts.entries()) as Record<CanonicalId, BuilderArtifactEntry>,
+      counts: { ...counts },
     }),
   };
 };

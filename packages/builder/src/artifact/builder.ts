@@ -1,10 +1,10 @@
 import { err, ok, type Result } from "neverthrow";
-import type { BuilderArtifact, BuilderError } from "../types";
+import type { BuilderError } from "../types";
 import { classifyAndRegister } from "./classifier";
 import { checkIssues } from "./issue-handler";
 import { loadIntermediateModule } from "./loader";
 import { createOperationRegistry } from "./registry";
-import type { BuildArtifactInput } from "./types";
+import type { BuildArtifactInput, BuilderArtifact } from "./types";
 
 export const buildArtifact = async ({
   graph,
@@ -35,17 +35,14 @@ export const buildArtifact = async ({
     return err(classifyResult.error);
   }
 
-  const nodesByType = classifyResult.value;
   const snapshot = registry.snapshot();
 
   return ok({
-    operations: snapshot.operations,
-    slices: snapshot.slices,
-    models: snapshot.models,
+    artifacts: snapshot.artifacts,
     report: {
-      operations: nodesByType.get("operation")?.length ?? 0,
-      models: nodesByType.get("model")?.length ?? 0,
-      slices: nodesByType.get("slice")?.length ?? 0,
+      operations: snapshot.counts.operations,
+      models: snapshot.counts.models,
+      slices: snapshot.counts.slices,
       durationMs: 0,
       warnings,
       cache,

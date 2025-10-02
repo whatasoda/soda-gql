@@ -78,10 +78,12 @@ describe("builder cache flow integration", () => {
     const firstResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
     const firstArtifact = firstResult.artifact;
 
-    // Find the ProfilePageQuery operation by searching through operations
-    const profileQueryOp = Object.values(firstArtifact.operations).find((op) => op.prebuild.operationName === "ProfilePageQuery");
+    // Find the ProfilePageQuery operation by searching through artifacts
+    const profileQueryOp = Object.values(firstArtifact.artifacts).find(
+      (entry) => entry.type === "operation" && entry.prebuild.operationName === "ProfilePageQuery",
+    );
     expect(profileQueryOp).toBeDefined();
-    expect(profileQueryOp?.prebuild.document).toBeDefined();
+    expect(profileQueryOp?.type === "operation" && profileQueryOp.prebuild.document).toBeDefined();
 
     expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
 

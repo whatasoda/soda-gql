@@ -1,10 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { type BuilderArtifact, type CanonicalId, createCanonicalId } from "@soda-gql/builder";
+import {
+  BuilderArtifactSchema,
+  type BuilderArtifact,
+  type BuilderArtifactEntry,
+  type CanonicalId,
+  createCanonicalId,
+} from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
-import type { BuilderArtifactModel } from "../../builder/src/types";
-import { BuilderArtifactSchema } from "./schemas/artifact";
 
 export type ArtifactError = {
   type: "ArtifactError";
@@ -43,14 +47,6 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
 export const resolveCanonicalId = (filename: string, astPath: string): CanonicalId =>
   createCanonicalId(resolve(filename), astPath);
 
-export const lookupOperationArtifact = (artifact: BuilderArtifact, canonicalId: string) => {
-  return artifact.operations[canonicalId as CanonicalId];
-};
-
-export const lookupSliceArtifact = (artifact: BuilderArtifact, canonicalId: string) => {
-  return artifact.slices[canonicalId as CanonicalId];
-};
-
-export const lookupModelArtifact = (artifact: BuilderArtifact, canonicalId: string): BuilderArtifactModel | undefined => {
-  return artifact.models[canonicalId as CanonicalId];
+export const lookupArtifact = (artifact: BuilderArtifact, canonicalId: string): BuilderArtifactEntry | undefined => {
+  return artifact.artifacts[canonicalId as CanonicalId];
 };

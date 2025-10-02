@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { err, ok } from "neverthrow";
-
-import type { BuilderArtifact, BuilderError, BuilderResult, BuilderSuccess } from "./types";
+import type { BuilderArtifact } from "./artifact/types";
+import type { BuilderError, BuilderResult, BuilderSuccess } from "./types";
 
 export const writeArtifact = (outPath: string, artifact: BuilderArtifact): BuilderResult => {
   const targetPath = resolve(outPath);

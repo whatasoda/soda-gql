@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "./artifact";
+import type { BuilderArtifact } from "./artifact/types";
 import type { ModuleAnalysis } from "./ast";
 import { createJsonCache } from "./cache/json-cache";
 import { createDebugWriter } from "./debug/debug-writer";
@@ -9,7 +10,7 @@ import { buildDependencyGraph } from "./dependency-graph";
 import type { DependencyGraph } from "./dependency-graph/types";
 import { createDiscoveryCache, createDiscoveryPipeline } from "./discovery";
 import { createIntermediateModule } from "./intermediate-module";
-import type { BuilderArtifact, BuilderError, BuilderInput, BuilderOptions, BuilderResult } from "./types";
+import type { BuilderError, BuilderInput, BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
 type PipelineData = {

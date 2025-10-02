@@ -3,6 +3,7 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type {
   BuilderArtifact,
+  BuilderArtifactEntry,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,
@@ -18,7 +19,7 @@ import { normalizeOptions } from "./options";
 import { buildLiteralFromValue, buildObjectExpression, clone } from "./transform/ast-builders";
 import type { SodaGqlBabelOptions } from "./types";
 
-type AllArtifacts = Record<CanonicalId, BuilderArtifactModel | BuilderArtifactOperation | BuilderArtifactSlice>;
+type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
 
 export type PluginState = {
   readonly options: SodaGqlBabelOptions;
@@ -474,11 +475,7 @@ const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOpera
 /**
  * Convert BuilderArtifact to AllArtifacts map for plugin state.
  */
-const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => ({
-  ...artifact.operations,
-  ...artifact.slices,
-  ...artifact.models,
-});
+const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.artifacts;
 
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",

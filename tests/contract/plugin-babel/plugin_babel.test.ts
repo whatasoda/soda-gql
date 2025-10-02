@@ -211,7 +211,7 @@ describe("@soda-gql/plugin-babel", () => {
       const expectedCanonicalId = `${profileQueryPath}::profileQuery`;
 
       // Verify builder artifact contains expected canonical ID
-      expect(artifact.operations[expectedCanonicalId]).toBeDefined();
+      expect(artifact.artifacts[expectedCanonicalId]).toBeDefined();
 
       // Persist artifact for artifact-file mode test
       const artifactPath = join(builderArtifactsDir, `parity-${Date.now()}.json`);

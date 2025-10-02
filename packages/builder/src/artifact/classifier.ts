@@ -13,67 +13,75 @@ const emitRegistrationError = (node: DependencyGraphNode, message: string): Buil
   message,
 });
 
-type ClassificationRule = {
-  readonly type: "model" | "slice" | "operation";
-  readonly bucket: Record<string, unknown>;
-  readonly register: (node: DependencyGraphNode) => Result<unknown, BuilderError>;
-  readonly notFoundMessage: string;
-};
-
 export const classifyAndRegister = (
   graph: DependencyGraph,
   intermediateModule: IntermediateModule,
   registry: OperationRegistry,
 ): Result<Map<string, DependencyGraphNode[]>, BuilderError> => {
-  const { models, slices, operations } = intermediateModule;
+  const { artifacts } = intermediateModule;
 
-  // Classification rules for each node type
-  const classificationRules: ClassificationRule[] = [
-    {
-      type: "model" as const,
-      bucket: models,
-      register: (node: DependencyGraphNode) => {
-        const descriptor = models[node.id];
+  // Classify and register nodes by looking up in the unified artifacts record
+  const nodesByType = new Map<string, DependencyGraphNode[]>();
+
+  // First pass: classify all nodes
+  graph.forEach((node) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    const artifact = artifacts[node.id];
+    if (!artifact) {
+      return;
+    }
+
+    const nodes = nodesByType.get(artifact.kind) ?? [];
+    nodes.push(node);
+    nodesByType.set(artifact.kind, nodes);
+  });
+
+  // Second pass: register in order (models → slices → operations)
+  const registrationOrder = ["model", "slice", "operation"] as const;
+
+  for (const kind of registrationOrder) {
+    const nodes = nodesByType.get(kind) ?? [];
+    for (const node of nodes) {
+      const artifact = artifacts[node.id];
+      if (!artifact) {
+        return err(emitRegistrationError(node, `${kind.toUpperCase()}_NOT_FOUND_IN_RUNTIME_MODULE`));
+      }
+
+      let result: Result<unknown, BuilderError>;
+
+      if (artifact.kind === "model") {
+        const descriptor = artifact.builder;
         if (!descriptor || typeof descriptor !== "object") {
           return err(emitRegistrationError(node, "MODEL_NOT_FOUND_IN_RUNTIME_MODULE"));
         }
-        return registry
+        result = registry
           .registerModel({
             type: "model",
             id: node.id,
             prebuild: { typename: descriptor.typename },
           })
           .mapErr((e) => emitRegistrationError(node, e.code));
-      },
-      notFoundMessage: "MODEL_NOT_FOUND_IN_RUNTIME_MODULE",
-    },
-    {
-      type: "slice" as const,
-      bucket: slices,
-      register: (node: DependencyGraphNode) => {
-        const descriptor = slices[node.id];
+      } else if (artifact.kind === "slice") {
+        const descriptor = artifact.builder;
         if (!descriptor || typeof descriptor !== "object") {
           return err(emitRegistrationError(node, "SLICE_NOT_FOUND_IN_RUNTIME_MODULE"));
         }
-        return registry
+        result = registry
           .registerSlice({
             type: "slice",
             id: node.id,
             prebuild: { operationType: descriptor.operationType },
           })
           .mapErr((e) => emitRegistrationError(node, e.code));
-      },
-      notFoundMessage: "SLICE_NOT_FOUND_IN_RUNTIME_MODULE",
-    },
-    {
-      type: "operation" as const,
-      bucket: operations,
-      register: (node: DependencyGraphNode) => {
-        const descriptor = operations[node.id];
+      } else if (artifact.kind === "operation") {
+        const descriptor = artifact.builder;
         if (!descriptor || typeof descriptor !== "object") {
           return err(emitRegistrationError(node, "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE"));
         }
-        return registry
+        result = registry
           .registerOperation({
             type: "operation",
             id: node.id,
@@ -86,36 +94,12 @@ export const classifyAndRegister = (
             },
           })
           .mapErr((e) => emitRegistrationError(node, e.code));
-      },
-      notFoundMessage: "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE",
-    },
-  ];
-
-  // Classify and register nodes using the rule table
-  const nodesByType = new Map<string, DependencyGraphNode[]>();
-
-  graph.forEach((node) => {
-    if (!node || typeof node !== "object") {
-      return;
-    }
-
-    for (const rule of classificationRules) {
-      if (node.id in rule.bucket) {
-        const nodes = nodesByType.get(rule.type) ?? [];
-        nodes.push(node);
-        nodesByType.set(rule.type, nodes);
-        return;
+      } else {
+        return err(emitRegistrationError(node, "UNKNOWN_ARTIFACT_KIND"));
       }
-    }
-  });
 
-  // Process nodes in order: models → slices → operations
-  for (const rule of classificationRules) {
-    const nodes = nodesByType.get(rule.type) ?? [];
-    for (const node of nodes) {
-      const result = rule.register(node);
       if (result.isErr()) {
-        return err(emitRegistrationError(node, result.error.code));
+        return err(result.error);
       }
     }
   }

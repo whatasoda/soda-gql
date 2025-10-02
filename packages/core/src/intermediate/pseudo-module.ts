@@ -13,6 +13,11 @@ type BuilderRecord = {
   [key: string]: AcceptableBuilder | BuilderRecord;
 };
 
+export type PseudoArtifact =
+  | { readonly kind: "model"; readonly builder: AnyModel }
+  | { readonly kind: "slice"; readonly builder: AnyOperationSlice }
+  | { readonly kind: "operation"; readonly builder: AnyOperation };
+
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => BuilderRecord>();
   const caches = new Map<string, BuilderRecord>();
@@ -48,7 +53,7 @@ export const createPseudoModuleRegistry = () => {
     return factory();
   };
 
-  const evaluate = () => {
+  const evaluate = (): Record<string, PseudoArtifact> => {
     // First, register all modules by calling their factories
     for (const mod of modules.values()) {
       mod();
@@ -59,15 +64,19 @@ export const createPseudoModuleRegistry = () => {
       Builder.evaluate(builder);
     }
 
-    const modelEntries = entries.filter(([, builder]) => builder instanceof Model);
-    const sliceEntries = entries.filter(([, builder]) => builder instanceof OperationSlice);
-    const operationEntries = entries.filter(([, builder]) => builder instanceof Operation);
+    // Build a single record with discriminated union entries
+    const artifacts: Record<string, PseudoArtifact> = {};
+    for (const [canonicalId, builder] of entries) {
+      if (builder instanceof Model) {
+        artifacts[canonicalId] = { kind: "model", builder };
+      } else if (builder instanceof OperationSlice) {
+        artifacts[canonicalId] = { kind: "slice", builder };
+      } else if (builder instanceof Operation) {
+        artifacts[canonicalId] = { kind: "operation", builder };
+      }
+    }
 
-    return {
-      models: Object.fromEntries(modelEntries),
-      slices: Object.fromEntries(sliceEntries),
-      operations: Object.fromEntries(operationEntries),
-    };
+    return artifacts;
   };
 
   return {
