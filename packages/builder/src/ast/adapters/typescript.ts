@@ -218,7 +218,7 @@ type ScopeFrame = {
   /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
   readonly nameSegment: string;
   /** Kind of scope */
-  readonly kind: 'function' | 'class' | 'variable' | 'property' | 'method' | 'expression';
+  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
   /** Occurrence index for disambiguation */
   readonly occurrence: number;
 };
@@ -227,7 +227,7 @@ type ScopeFrame = {
  * Build AST path from scope stack
  */
 const buildAstPath = (stack: readonly ScopeFrame[]): string => {
-  return stack.map((frame) => frame.nameSegment).join('.');
+  return stack.map((frame) => frame.nameSegment).join(".");
 };
 
 /**
@@ -272,7 +272,7 @@ const collectAllDefinitions = (
   // Build export bindings map (which variables are exported and with what name)
   const exportBindings = new Map<string, string>(); // local -> exported
   exports.forEach((exp) => {
-    if (exp.kind === 'named' && !exp.isTypeOnly) {
+    if (exp.kind === "named" && !exp.isTypeOnly) {
       exportBindings.set(exp.local, exp.exported);
     }
   });
@@ -336,7 +336,7 @@ const collectAllDefinitions = (
       const varName = node.name.text;
       const newFrame: ScopeFrame = {
         nameSegment: varName,
-        kind: 'variable',
+        kind: "variable",
         occurrence: getNextOccurrence(`var:${varName}`),
       };
 
@@ -348,10 +348,10 @@ const collectAllDefinitions = (
 
     // Function declaration
     if (ts.isFunctionDeclaration(node)) {
-      const funcName = node.name?.text ?? `function#${getNextOccurrence('function')}`;
+      const funcName = node.name?.text ?? `function#${getNextOccurrence("function")}`;
       const newFrame: ScopeFrame = {
         nameSegment: funcName,
-        kind: 'function',
+        kind: "function",
         occurrence: getNextOccurrence(`func:${funcName}`),
       };
 
@@ -363,10 +363,10 @@ const collectAllDefinitions = (
 
     // Arrow function
     if (ts.isArrowFunction(node)) {
-      const arrowName = `arrow#${getNextOccurrence('arrow')}`;
+      const arrowName = `arrow#${getNextOccurrence("arrow")}`;
       const newFrame: ScopeFrame = {
         nameSegment: arrowName,
-        kind: 'function',
+        kind: "function",
         occurrence: 0,
       };
 
@@ -380,10 +380,10 @@ const collectAllDefinitions = (
 
     // Function expression
     if (ts.isFunctionExpression(node)) {
-      const funcName = node.name?.text ?? `function#${getNextOccurrence('function')}`;
+      const funcName = node.name?.text ?? `function#${getNextOccurrence("function")}`;
       const newFrame: ScopeFrame = {
         nameSegment: funcName,
-        kind: 'function',
+        kind: "function",
         occurrence: getNextOccurrence(`func:${funcName}`),
       };
 
@@ -395,10 +395,10 @@ const collectAllDefinitions = (
 
     // Class declaration
     if (ts.isClassDeclaration(node)) {
-      const className = node.name?.text ?? `class#${getNextOccurrence('class')}`;
+      const className = node.name?.text ?? `class#${getNextOccurrence("class")}`;
       const newFrame: ScopeFrame = {
         nameSegment: className,
-        kind: 'class',
+        kind: "class",
         occurrence: getNextOccurrence(`class:${className}`),
       };
 
@@ -408,7 +408,7 @@ const collectAllDefinitions = (
           if (memberName) {
             const memberFrame: ScopeFrame = {
               nameSegment: memberName,
-              kind: ts.isMethodDeclaration(member) ? 'method' : 'property',
+              kind: ts.isMethodDeclaration(member) ? "method" : "property",
               occurrence: getNextOccurrence(`member:${className}.${memberName}`),
             };
 
@@ -429,7 +429,7 @@ const collectAllDefinitions = (
       if (propName) {
         const newFrame: ScopeFrame = {
           nameSegment: propName,
-          kind: 'property',
+          kind: "property",
           occurrence: getNextOccurrence(`prop:${propName}`),
         };
 
@@ -508,11 +508,7 @@ export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     readonly definitions: readonly ModuleDefinition[];
     readonly handles: readonly ts.CallExpression[];
   } {
-    const { definitions, handledCalls } = collectAllDefinitions(
-      file,
-      context.gqlIdentifiers,
-      context.exports,
-    );
+    const { definitions, handledCalls } = collectAllDefinitions(file, context.gqlIdentifiers, context.exports);
     return { definitions, handles: handledCalls };
   },
 
