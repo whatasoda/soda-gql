@@ -36,9 +36,9 @@ export const userModel = gql.default(({ model }) =>
       },
     };
 
-    // Lock error code and message
+    // Lock error: new error message includes canonical ID details
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
-      "SODA_GQL_ARTIFACT_NOT_FOUND",
+      "No builder artifact found for canonical ID",
     );
   });
 

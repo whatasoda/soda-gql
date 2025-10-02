@@ -113,7 +113,7 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         artifactsPath: artifactPath,
       }),
-    ).rejects.toThrow("SODA_GQL_ARTIFACT_NOT_FOUND");
+    ).rejects.toThrow("No builder artifact found for canonical ID");
   });
 
   it("replaces gql.query definitions with zero-runtime import", async () => {

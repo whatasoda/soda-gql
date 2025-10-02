@@ -1,23 +1,22 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type {
-  BuilderArtifactEntry,
-  BuilderArtifactModel,
-  BuilderArtifactOperation,
-  BuilderArtifactSlice,
-  CanonicalId,
-} from "@soda-gql/builder";
+import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice, CanonicalId } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeSliceInput } from "../../core/src/runtime/slice";
-import { resolveCanonicalId } from "./artifact";
+import {
+  extractGqlCall,
+  findGqlBuilderCall,
+  type ArtifactLookup,
+  type GqlCallModel,
+  type GqlCallOperation,
+  type GqlCallSlice,
+} from "./analysis/gql-call";
 import { collectGqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata/collector";
 import { type PluginState, preparePluginState } from "./state";
 import { buildObjectExpression, clone } from "./transform/ast-builders";
 import type { SodaGqlBabelOptions } from "./types";
-
-type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
 
 type PluginPassState = PluginPass & { _state?: PluginState };
 
@@ -117,101 +116,6 @@ const projectionGraphToAst = (graph: ProjectionPathGraphNode): t.Expression =>
     ),
   ]);
 
-type GqlCallBase = {
-  nodePath: NodePath<t.CallExpression>;
-  canonicalId: CanonicalId;
-  builderCall: t.CallExpression;
-};
-
-type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation;
-type GqlCallModel = GqlCallBase & { type: "model"; artifact: BuilderArtifactModel };
-type GqlCallSlice = GqlCallBase & { type: "slice"; artifact: BuilderArtifactSlice };
-type GqlCallOperation = GqlCallBase & { type: "operation"; artifact: BuilderArtifactOperation };
-
-/**
- * Check if this is a call to gql.${schema}(({ ${method} }) => ${method}(...))
- * Uses metadata collected upfront instead of deriving export names
- */
-const extractGqlCall = ({
-  nodePath,
-  filename,
-  artifacts,
-  metadata,
-}: {
-  nodePath: NodePath<t.CallExpression>;
-  filename: string;
-  artifacts: AllArtifacts;
-  metadata: GqlDefinitionMetadataMap;
-}): GqlCall | null => {
-  const node = nodePath.node;
-  if (!t.isMemberExpression(node.callee)) {
-    return null;
-  }
-
-  const callee = node.callee;
-  if (!t.isIdentifier(callee.object) || callee.object.name !== "gql") {
-    return null;
-  }
-
-  if (!t.isIdentifier(callee.property)) {
-    return null;
-  }
-
-  // Get the factory function argument
-  if (node.arguments.length !== 1) {
-    return null;
-  }
-
-  const factoryArg = node.arguments[0];
-  if (!t.isArrowFunctionExpression(factoryArg)) {
-    return null;
-  }
-
-  // Check if the body is a direct call expression or has a return statement
-  const builderCall = t.isCallExpression(factoryArg.body)
-    ? factoryArg.body
-    : t.isBlockStatement(factoryArg.body)
-      ? factoryArg.body.body.flatMap((stmt) =>
-          t.isReturnStatement(stmt) && t.isCallExpression(stmt.argument) ? stmt.argument : [],
-        )[0]
-      : null;
-
-  if (!builderCall) {
-    return null;
-  }
-
-  // Get metadata collected upfront
-  const meta = metadata.get(node);
-  if (!meta) {
-    throw new Error("SODA_GQL_METADATA_NOT_FOUND");
-  }
-
-  // Use astPath to build canonical ID
-  const canonicalId = resolveCanonicalId(filename, meta.astPath);
-
-  const artifact = artifacts[canonicalId];
-  if (!artifact) {
-    throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
-  }
-
-  const base: GqlCallBase = { nodePath, canonicalId, builderCall };
-
-  if (artifact.type === "model") {
-    return { ...base, type: "model", artifact } satisfies GqlCallModel;
-  }
-
-  if (artifact.type === "slice") {
-    return { ...base, type: "slice", artifact } satisfies GqlCallSlice;
-  }
-
-  if (artifact.type === "operation") {
-    return { ...base, type: "operation", artifact } satisfies GqlCallOperation;
-  }
-
-  void (artifact satisfies never);
-  throw new Error("SODA_GQL_ARTIFACT_NOT_FOUND");
-};
-
 const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): t.Expression => {
   const [, , normalize] = builderCall.arguments;
   if (!normalize || !t.isExpression(normalize)) {
@@ -307,13 +211,28 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
 
       const runtimeCalls: t.Expression[] = [];
       let mutated = false;
+      const getArtifact: ArtifactLookup = (canonicalId) => pluginState.allArtifacts[canonicalId];
 
       programPath.traverse({
         CallExpression(callPath) {
-          const gqlCall = extractGqlCall({ nodePath: callPath, filename, artifacts: pluginState.allArtifacts, metadata });
-          if (!gqlCall) {
+          const builderCall = findGqlBuilderCall(callPath);
+          if (!builderCall) {
             return;
           }
+
+          const gqlCallResult = extractGqlCall({
+            nodePath: callPath,
+            filename,
+            metadata,
+            builderCall,
+            getArtifact,
+          });
+
+          if (gqlCallResult.isErr()) {
+            throw new Error(gqlCallResult.error.message);
+          }
+
+          const gqlCall = gqlCallResult.value;
 
           ensureGqlRuntimeImport(programPath);
 

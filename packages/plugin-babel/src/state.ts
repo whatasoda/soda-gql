@@ -24,6 +24,14 @@ type BuilderCircularDependency = Extract<BuilderError, { code: "CIRCULAR_DEPENDE
 type BuilderModuleEvaluationFailed = Extract<BuilderError, { code: "MODULE_EVALUATION_FAILED" }>;
 type BuilderWriteFailed = Extract<BuilderError, { code: "WRITE_FAILED" }>;
 
+type AnalysisMetadataMissingCause = { readonly filename: string };
+type AnalysisArtifactMissingCause = { readonly filename: string; readonly canonicalId: CanonicalId };
+type AnalysisUnsupportedArtifactTypeCause = {
+  readonly filename: string;
+  readonly canonicalId: CanonicalId;
+  readonly artifactType: string;
+};
+
 type PluginErrorBase<Code extends string, Cause> = {
   readonly type: "PluginError";
   readonly code: Code;
@@ -86,6 +94,26 @@ export type PluginBuilderUnexpectedError = PluginErrorBase<"SODA_GQL_BUILDER_UNE
   readonly stage: "builder";
 };
 
+export type PluginAnalysisMetadataMissingError = PluginErrorBase<
+  "SODA_GQL_METADATA_NOT_FOUND",
+  AnalysisMetadataMissingCause
+> & { readonly stage: "analysis"; readonly filename: string };
+
+export type PluginAnalysisArtifactMissingError = PluginErrorBase<
+  "SODA_GQL_ANALYSIS_ARTIFACT_NOT_FOUND",
+  AnalysisArtifactMissingCause
+> & { readonly stage: "analysis"; readonly filename: string; readonly canonicalId: CanonicalId };
+
+export type PluginAnalysisUnsupportedArtifactTypeError = PluginErrorBase<
+  "SODA_GQL_UNSUPPORTED_ARTIFACT_TYPE",
+  AnalysisUnsupportedArtifactTypeCause
+> & {
+  readonly stage: "analysis";
+  readonly filename: string;
+  readonly canonicalId: CanonicalId;
+  readonly artifactType: string;
+};
+
 export type PluginError =
   | PluginOptionsMissingArtifactPathError
   | PluginOptionsInvalidBuilderConfigError
@@ -97,7 +125,10 @@ export type PluginError =
   | PluginBuilderCircularDependencyError
   | PluginBuilderModuleEvaluationFailedError
   | PluginBuilderWriteFailedError
-  | PluginBuilderUnexpectedError;
+  | PluginBuilderUnexpectedError
+  | PluginAnalysisMetadataMissingError
+  | PluginAnalysisArtifactMissingError
+  | PluginAnalysisUnsupportedArtifactTypeError;
 
 type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
 
