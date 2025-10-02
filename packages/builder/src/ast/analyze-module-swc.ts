@@ -46,7 +46,7 @@ export const analyzeModule = (input: AnalyzeModuleInput): ModuleAnalysis => {
     const fallback = analyzeModuleTs(input);
     const fallbackExpressions = new Map<string, string>();
     fallback.definitions.forEach((definition) => {
-      fallbackExpressions.set(definition.exportName, definition.expression);
+      fallbackExpressions.set(definition.astPath, definition.expression);
     });
 
     const definitions = analysis.definitions.map((definition) => {
@@ -54,7 +54,7 @@ export const analyzeModule = (input: AnalyzeModuleInput): ModuleAnalysis => {
         return definition;
       }
 
-      const replacement = fallbackExpressions.get(definition.exportName) ?? "";
+      const replacement = fallbackExpressions.get(definition.astPath) ?? "";
       return {
         ...definition,
         expression: replacement,

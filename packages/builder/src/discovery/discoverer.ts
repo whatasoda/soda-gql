@@ -70,7 +70,7 @@ export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOp
     // Create definitions with canonical IDs
     const definitions: DiscoverySnapshotDefinition[] = analysis.definitions.map((def) => ({
       ...def,
-      canonicalId: createCanonicalId(filePath, def.exportName),
+      canonicalId: createCanonicalId(filePath, def.astPath),
     }));
 
     // Create snapshot
