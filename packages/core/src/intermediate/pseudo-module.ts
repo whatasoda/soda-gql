@@ -32,7 +32,8 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addBuilder = (canonicalId: string, builder: AcceptableBuilder) => {
+  const addBuilder = (canonicalId: string, factory: () => AcceptableBuilder) => {
+    const builder = factory();
     Builder.setContext(builder, { canonicalId });
     Builder.evaluate(builder);
     entries.push([canonicalId, builder] satisfies [unknown, unknown]);
