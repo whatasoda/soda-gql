@@ -1,7 +1,14 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice, CanonicalId } from "@soda-gql/builder";
+import type {
+  BuilderArtifactModel,
+  BuilderArtifactOperation,
+  BuilderArtifactSlice,
+  CanonicalId,
+  CanonicalPathTracker,
+} from "@soda-gql/builder";
+import { createCanonicalTracker } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeOperationSliceInput } from "../../core/src/runtime/operation-slice";
@@ -20,15 +27,6 @@ export type PluginState = {
 type PluginPassState = PluginPass & { _state?: PluginState };
 
 /**
- * Scope frame for tracking AST path segments (mirrors builder logic)
- */
-type ScopeFrame = {
-  readonly nameSegment: string;
-  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
-  readonly occurrence: number;
-};
-
-/**
  * Metadata collected for each gql definition
  */
 type GqlDefinitionMetadata = {
@@ -42,7 +40,10 @@ type GqlDefinitionMetadata = {
  * Collect metadata for all gql definitions in the program
  * Returns a WeakMap from CallExpression nodes to their metadata
  */
-const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
+const collectGqlDefinitionMetadata = (
+  programPath: NodePath<t.Program>,
+  filename: string,
+): WeakMap<t.CallExpression, GqlDefinitionMetadata> => {
   const metadata = new WeakMap<t.CallExpression, GqlDefinitionMetadata>();
 
   // Build export bindings map
@@ -64,29 +65,22 @@ const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap
     }
   });
 
-  const occurrenceCounters = new Map<string, number>();
-  const usedPaths = new Set<string>();
+  // Create canonical tracker
+  const tracker = createCanonicalTracker({
+    filePath: filename,
+    getExportName: (localName) => exportBindings.get(localName),
+  });
 
-  const getNextOccurrence = (key: string): number => {
-    const current = occurrenceCounters.get(key) ?? 0;
-    occurrenceCounters.set(key, current + 1);
-    return current;
+  // Anonymous scope counters
+  const anonymousCounters = new Map<string, number>();
+  const getAnonymousName = (kind: string): string => {
+    const count = anonymousCounters.get(kind) ?? 0;
+    anonymousCounters.set(kind, count + 1);
+    return `${kind}#${count}`;
   };
 
-  const buildAstPath = (stack: readonly ScopeFrame[]): string => {
-    return stack.map((frame) => frame.nameSegment).join(".");
-  };
-
-  const ensureUniquePath = (basePath: string): string => {
-    let path = basePath;
-    let suffix = 0;
-    while (usedPaths.has(path)) {
-      suffix++;
-      path = `${basePath}$${suffix}`;
-    }
-    usedPaths.add(path);
-    return path;
-  };
+  // Track scope handles for proper enter/exit pairing
+  const scopeHandles = new WeakMap<NodePath, ReturnType<CanonicalPathTracker["enterScope"]>>();
 
   const isGqlCall = (node: t.Node): node is t.CallExpression => {
     return (
@@ -98,14 +92,12 @@ const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap
     );
   };
 
-  const scopeStack: ScopeFrame[] = [];
-
   programPath.traverse({
     enter(path) {
       // Check if this is a gql definition call
       if (path.isCallExpression() && isGqlCall(path.node)) {
-        const astPath = ensureUniquePath(buildAstPath(scopeStack));
-        const isTopLevel = scopeStack.length === 0;
+        const { astPath } = tracker.registerDefinition();
+        const isTopLevel = tracker.currentDepth() === 0;
 
         let isExported = false;
         let exportBinding: string | undefined;
@@ -132,87 +124,59 @@ const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap
         return;
       }
 
-      // Variable declaration
+      // Variable declarator
       if (path.isVariableDeclarator() && path.node.id && t.isIdentifier(path.node.id)) {
         const varName = path.node.id.name;
-        const newFrame: ScopeFrame = {
-          nameSegment: varName,
-          kind: "variable",
-          occurrence: getNextOccurrence(`var:${varName}`),
-        };
-        scopeStack.push(newFrame);
+        const handle = tracker.enterScope({ segment: varName, kind: "variable", stableKey: `var:${varName}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Arrow function
       if (path.isArrowFunctionExpression()) {
-        const arrowName = `arrow#${getNextOccurrence("arrow")}`;
-        const newFrame: ScopeFrame = {
-          nameSegment: arrowName,
-          kind: "function",
-          occurrence: 0,
-        };
-        scopeStack.push(newFrame);
+        const arrowName = getAnonymousName("arrow");
+        const handle = tracker.enterScope({ segment: arrowName, kind: "function", stableKey: "arrow" });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Function declaration
       if (path.isFunctionDeclaration()) {
-        const funcName = path.node.id?.name ?? `function#${getNextOccurrence("function")}`;
-        const newFrame: ScopeFrame = {
-          nameSegment: funcName,
-          kind: "function",
-          occurrence: getNextOccurrence(`func:${funcName}`),
-        };
-        scopeStack.push(newFrame);
+        const funcName = path.node.id?.name ?? getAnonymousName("function");
+        const handle = tracker.enterScope({ segment: funcName, kind: "function", stableKey: `func:${funcName}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Function expression
       if (path.isFunctionExpression()) {
-        const funcName = path.node.id?.name ?? `function#${getNextOccurrence("function")}`;
-        const newFrame: ScopeFrame = {
-          nameSegment: funcName,
-          kind: "function",
-          occurrence: getNextOccurrence(`func:${funcName}`),
-        };
-        scopeStack.push(newFrame);
+        const funcName = path.node.id?.name ?? getAnonymousName("function");
+        const handle = tracker.enterScope({ segment: funcName, kind: "function", stableKey: `func:${funcName}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Class declaration
       if (path.isClassDeclaration()) {
-        const className = path.node.id?.name ?? `class#${getNextOccurrence("class")}`;
-        const newFrame: ScopeFrame = {
-          nameSegment: className,
-          kind: "class",
-          occurrence: getNextOccurrence(`class:${className}`),
-        };
-        scopeStack.push(newFrame);
+        const className = path.node.id?.name ?? getAnonymousName("class");
+        const handle = tracker.enterScope({ segment: className, kind: "class", stableKey: `class:${className}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Class method
       if (path.isClassMethod() && t.isIdentifier(path.node.key)) {
         const memberName = path.node.key.name;
-        const memberFrame: ScopeFrame = {
-          nameSegment: memberName,
-          kind: "method",
-          occurrence: getNextOccurrence(`member:${memberName}`),
-        };
-        scopeStack.push(memberFrame);
+        const handle = tracker.enterScope({ segment: memberName, kind: "method", stableKey: `member:${memberName}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
       // Class property
       if (path.isClassProperty() && t.isIdentifier(path.node.key)) {
         const memberName = path.node.key.name;
-        const memberFrame: ScopeFrame = {
-          nameSegment: memberName,
-          kind: "property",
-          occurrence: getNextOccurrence(`member:${memberName}`),
-        };
-        scopeStack.push(memberFrame);
+        const handle = tracker.enterScope({ segment: memberName, kind: "property", stableKey: `member:${memberName}` });
+        scopeHandles.set(path, handle);
         return;
       }
 
@@ -226,30 +190,19 @@ const collectGqlDefinitionMetadata = (programPath: NodePath<t.Program>): WeakMap
         }
 
         if (propName) {
-          const newFrame: ScopeFrame = {
-            nameSegment: propName,
-            kind: "property",
-            occurrence: getNextOccurrence(`prop:${propName}`),
-          };
-          scopeStack.push(newFrame);
+          const handle = tracker.enterScope({ segment: propName, kind: "property", stableKey: `prop:${propName}` });
+          scopeHandles.set(path, handle);
         }
         return;
       }
     },
 
     exit(path) {
-      // Pop scope when exiting nodes that pushed frames
-      if (
-        path.isVariableDeclarator() ||
-        path.isArrowFunctionExpression() ||
-        path.isFunctionDeclaration() ||
-        path.isFunctionExpression() ||
-        path.isClassDeclaration() ||
-        path.isClassMethod() ||
-        path.isClassProperty() ||
-        path.isObjectProperty()
-      ) {
-        scopeStack.pop();
+      // Exit scope when exiting nodes that have handles
+      const handle = scopeHandles.get(path);
+      if (handle) {
+        tracker.exitScope(handle);
+        scopeHandles.delete(path);
       }
     },
   });
@@ -560,7 +513,7 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
       }
 
       // Collect metadata for all gql definitions upfront
-      const metadata = collectGqlDefinitionMetadata(programPath);
+      const metadata = collectGqlDefinitionMetadata(programPath, filename);
 
       const runtimeCalls: t.Expression[] = [];
       let mutated = false;
