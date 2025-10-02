@@ -5,13 +5,8 @@
 
 import { extname } from "node:path";
 import ts from "typescript";
-import {
-  buildAstPath,
-  createExportBindingsMap,
-  createOccurrenceTracker,
-  createPathTracker,
-  type ScopeFrame,
-} from "../common/scope";
+import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
+import { createCanonicalTracker, type ScopeHandle } from "../../canonical/path-tracker";
 import type { AnalyzerAdapter } from "../core";
 import type {
   AnalyzeModuleInput,
@@ -255,14 +250,44 @@ const collectAllDefinitions = (
   // Build export bindings map (which variables are exported and with what name)
   const exportBindings = createExportBindingsMap(exports);
 
-  // Create occurrence and path trackers
-  const { getNextOccurrence } = createOccurrenceTracker();
-  const { ensureUniquePath } = createPathTracker();
+  // Create canonical tracker
+  const tracker = createCanonicalTracker({
+    filePath: sourceFile.fileName,
+    getExportName: (localName) => exportBindings.get(localName),
+  });
+
+  // Anonymous scope counters (for naming only, not occurrence tracking)
+  const anonymousCounters = new Map<string, number>();
+  const getAnonymousName = (kind: string): string => {
+    const count = anonymousCounters.get(kind) ?? 0;
+    anonymousCounters.set(kind, count + 1);
+    return `${kind}#${count}`;
+  };
+
+  // Helper to synchronize tracker with immutable stack pattern
+  const withScope = <T>(
+    stack: ScopeFrame[],
+    segment: string,
+    kind: ScopeFrame["kind"],
+    stableKey: string,
+    callback: (newStack: ScopeFrame[]) => T,
+  ): T => {
+    const handle = tracker.enterScope({ segment, kind, stableKey });
+    try {
+      // Get occurrence from tracker state
+      const occurrence = handle.depth; // Simplified - tracker manages occurrences internally
+      const frame: ScopeFrame = { nameSegment: segment, kind, occurrence: 0 };
+      return callback([...stack, frame]);
+    } finally {
+      tracker.exitScope(handle);
+    }
+  };
 
   const visit = (node: ts.Node, stack: ScopeFrame[]) => {
     // Check if this is a gql definition call
     if (ts.isCallExpression(node) && isGqlDefinitionCall(identifiers, node)) {
-      const astPath = ensureUniquePath(buildAstPath(stack));
+      // Use tracker to get astPath
+      const { astPath } = tracker.registerDefinition();
       const isTopLevel = stack.length === 1;
 
       // Determine if exported
@@ -295,91 +320,73 @@ const collectAllDefinitions = (
     // Variable declaration
     if (ts.isVariableDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
       const varName = node.name.text;
-      const newFrame: ScopeFrame = {
-        nameSegment: varName,
-        kind: "variable",
-        occurrence: getNextOccurrence(`var:${varName}`),
-      };
 
       if (node.initializer) {
-        visit(node.initializer, [...stack, newFrame]);
+        withScope(stack, varName, "variable", `var:${varName}`, (newStack) => {
+          visit(node.initializer!, newStack);
+        });
       }
       return;
     }
 
     // Function declaration
     if (ts.isFunctionDeclaration(node)) {
-      const funcName = node.name?.text ?? `function#${getNextOccurrence("function")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: funcName,
-        kind: "function",
-        occurrence: getNextOccurrence(`func:${funcName}`),
-      };
+      const funcName = node.name?.text ?? getAnonymousName("function");
 
       if (node.body) {
-        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
+        withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
+          ts.forEachChild(node.body!, (child) => visit(child, newStack));
+        });
       }
       return;
     }
 
     // Arrow function
     if (ts.isArrowFunction(node)) {
-      const arrowName = `arrow#${getNextOccurrence("arrow")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: arrowName,
-        kind: "function",
-        occurrence: 0,
-      };
+      const arrowName = getAnonymousName("arrow");
 
-      if (ts.isBlock(node.body)) {
-        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
-      } else {
-        visit(node.body, [...stack, newFrame]);
-      }
+      withScope(stack, arrowName, "function", "arrow", (newStack) => {
+        if (ts.isBlock(node.body)) {
+          ts.forEachChild(node.body, (child) => visit(child, newStack));
+        } else {
+          visit(node.body, newStack);
+        }
+      });
       return;
     }
 
     // Function expression
     if (ts.isFunctionExpression(node)) {
-      const funcName = node.name?.text ?? `function#${getNextOccurrence("function")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: funcName,
-        kind: "function",
-        occurrence: getNextOccurrence(`func:${funcName}`),
-      };
+      const funcName = node.name?.text ?? getAnonymousName("function");
 
       if (node.body) {
-        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
+        withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
+          ts.forEachChild(node.body!, (child) => visit(child, newStack));
+        });
       }
       return;
     }
 
     // Class declaration
     if (ts.isClassDeclaration(node)) {
-      const className = node.name?.text ?? `class#${getNextOccurrence("class")}`;
-      const newFrame: ScopeFrame = {
-        nameSegment: className,
-        kind: "class",
-        occurrence: getNextOccurrence(`class:${className}`),
-      };
+      const className = node.name?.text ?? getAnonymousName("class");
 
-      node.members.forEach((member) => {
-        if (ts.isMethodDeclaration(member) || ts.isPropertyDeclaration(member)) {
-          const memberName = member.name && ts.isIdentifier(member.name) ? member.name.text : null;
-          if (memberName) {
-            const memberFrame: ScopeFrame = {
-              nameSegment: memberName,
-              kind: ts.isMethodDeclaration(member) ? "method" : "property",
-              occurrence: getNextOccurrence(`member:${className}.${memberName}`),
-            };
-
-            if (ts.isMethodDeclaration(member) && member.body) {
-              ts.forEachChild(member.body, (child) => visit(child, [...stack, newFrame, memberFrame]));
-            } else if (ts.isPropertyDeclaration(member) && member.initializer) {
-              visit(member.initializer, [...stack, newFrame, memberFrame]);
+      withScope(stack, className, "class", `class:${className}`, (classStack) => {
+        node.members.forEach((member) => {
+          if (ts.isMethodDeclaration(member) || ts.isPropertyDeclaration(member)) {
+            const memberName = member.name && ts.isIdentifier(member.name) ? member.name.text : null;
+            if (memberName) {
+              const memberKind = ts.isMethodDeclaration(member) ? "method" : "property";
+              withScope(classStack, memberName, memberKind, `member:${className}.${memberName}`, (memberStack) => {
+                if (ts.isMethodDeclaration(member) && member.body) {
+                  ts.forEachChild(member.body, (child) => visit(child, memberStack));
+                } else if (ts.isPropertyDeclaration(member) && member.initializer) {
+                  visit(member.initializer, memberStack);
+                }
+              });
             }
           }
-        }
+        });
       });
       return;
     }
@@ -388,13 +395,9 @@ const collectAllDefinitions = (
     if (ts.isPropertyAssignment(node)) {
       const propName = getPropertyName(node.name);
       if (propName) {
-        const newFrame: ScopeFrame = {
-          nameSegment: propName,
-          kind: "property",
-          occurrence: getNextOccurrence(`prop:${propName}`),
-        };
-
-        visit(node.initializer, [...stack, newFrame]);
+        withScope(stack, propName, "property", `prop:${propName}`, (newStack) => {
+          visit(node.initializer, newStack);
+        });
       }
       return;
     }
