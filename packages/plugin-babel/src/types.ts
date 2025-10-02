@@ -1,5 +1,4 @@
-import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
-import type { NormalizedOptions } from "./options";
+import type { BuilderServiceConfig } from "@soda-gql/builder";
 
 /**
  * Builder configuration for artifact generation.
@@ -30,32 +29,3 @@ export type SodaGqlBabelOptions = {
   readonly importIdentifier?: string;
   readonly diagnostics?: "json" | "console";
 };
-
-export type PlainObject = Record<string, unknown>;
-
-export type PluginState = {
-  readonly options: NormalizedOptions;
-  readonly artifact: BuilderArtifact;
-  readonly sourceCache: Map<string, SourceCacheEntry>;
-};
-
-export type PluginPassState = {
-  readonly options: NormalizedOptions;
-  replacements: number;
-  runtimeImportAdded: boolean;
-};
-
-export type SourceCacheEntry = {
-  readonly source: string;
-  readonly hash: string;
-};
-
-export type ProjectionEntry = {
-  readonly path: string;
-};
-
-export type ProjectionPathGraphNode = {
-  [key: string]: ProjectionPathGraphNode | boolean;
-};
-
-export type SupportedMethod = "model" | "slice" | "operation";
