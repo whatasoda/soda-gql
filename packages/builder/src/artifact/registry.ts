@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
+import type { CanonicalId } from "../canonical-id/canonical-id";
 import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "../types";
-import type { CanonicalId } from "../utils/canonical-id";
 
 export type RegistryRefError = {
   readonly code: "MODEL_ALREADY_REGISTERED" | "SLICE_ALREADY_REGISTERED" | "OPERATION_ALREADY_REGISTERED";

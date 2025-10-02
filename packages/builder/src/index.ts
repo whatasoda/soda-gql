@@ -1,3 +1,11 @@
+export type { CanonicalId, CanonicalPathTracker, ScopeFrame, ScopeHandle } from "./canonical-id";
+export {
+  buildAstPath,
+  createCanonicalId,
+  createCanonicalTracker,
+  createOccurrenceTracker,
+  createPathTracker,
+} from "./canonical-id";
 export type {
   DiscoveredDependency,
   DiscoveryCache,
@@ -11,11 +19,9 @@ export type {
   ModuleEvaluatorContext,
   ModuleEvaluatorInput,
 } from "./discovery/types";
-export type { CanonicalId } from "./utils/canonical-id";
-export { createCanonicalId } from "./utils/canonical-id";
-export type { CanonicalPathTracker, ScopeFrame, ScopeHandle } from "./canonical/path-tracker";
-export { buildAstPath, createCanonicalTracker, createOccurrenceTracker, createPathTracker } from "./canonical/path-tracker";
 export { generateArtifact, runBuilder } from "./runner";
+export type { BuilderService, BuilderServiceConfig } from "./service";
+export { createBuilderService } from "./service";
 export type {
   BuilderAnalyzer,
   BuilderArtifact,

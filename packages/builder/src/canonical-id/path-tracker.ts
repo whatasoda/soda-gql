@@ -13,8 +13,8 @@
  * 4. Tracker provides canonical ID information
  */
 
-import type { CanonicalId } from "../utils/canonical-id";
-import { createCanonicalId } from "../utils/canonical-id";
+import type { CanonicalId } from "./canonical-id";
+import { createCanonicalId } from "./canonical-id";
 
 /**
  * Scope frame for tracking AST path segments
@@ -45,11 +45,7 @@ export interface CanonicalPathTracker {
    * @param options Scope information
    * @returns Handle to use when exiting the scope
    */
-  enterScope(options: {
-    segment: string;
-    kind: ScopeFrame["kind"];
-    stableKey?: string;
-  }): ScopeHandle;
+  enterScope(options: { segment: string; kind: ScopeFrame["kind"]; stableKey?: string }): ScopeHandle;
 
   /**
    * Exit a scope during traversal
@@ -178,9 +174,7 @@ export const createCanonicalTracker = (options: {
     exitScope(handle: ScopeHandle): void {
       // Validate handle depth matches current stack
       if (handle.depth !== scopeStack.length - 1) {
-        throw new Error(
-          `Invalid scope exit: expected depth ${scopeStack.length - 1}, got ${handle.depth}`,
-        );
+        throw new Error(`Invalid scope exit: expected depth ${scopeStack.length - 1}, got ${handle.depth}`);
       }
       scopeStack.pop();
     },

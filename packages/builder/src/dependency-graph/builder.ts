@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
-import { type CanonicalId, createCanonicalId } from "../utils/canonical-id";
+import { type CanonicalId, createCanonicalId } from "../canonical-id/canonical-id";
 import { detectCycles } from "./cycles";
 import { buildExportTable } from "./export-table";
 import { normalizePath } from "./paths";

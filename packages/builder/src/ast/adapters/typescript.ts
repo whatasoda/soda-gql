@@ -5,8 +5,8 @@
 
 import { extname } from "node:path";
 import ts from "typescript";
+import { createCanonicalTracker } from "../../canonical-id/path-tracker";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
-import { createCanonicalTracker, type ScopeHandle } from "../../canonical/path-tracker";
 import type { AnalyzerAdapter } from "../core";
 import type {
   AnalyzeModuleInput,
@@ -274,9 +274,7 @@ const collectAllDefinitions = (
   ): T => {
     const handle = tracker.enterScope({ segment, kind, stableKey });
     try {
-      // Get occurrence from tracker state
-      const occurrence = handle.depth; // Simplified - tracker manages occurrences internally
-      const frame: ScopeFrame = { nameSegment: segment, kind, occurrence: 0 };
+      const frame: ScopeFrame = { nameSegment: segment, kind };
       return callback([...stack, frame]);
     } finally {
       tracker.exitScope(handle);
@@ -322,8 +320,9 @@ const collectAllDefinitions = (
       const varName = node.name.text;
 
       if (node.initializer) {
+        const next = node.initializer;
         withScope(stack, varName, "variable", `var:${varName}`, (newStack) => {
-          visit(node.initializer!, newStack);
+          visit(next, newStack);
         });
       }
       return;
@@ -334,8 +333,9 @@ const collectAllDefinitions = (
       const funcName = node.name?.text ?? getAnonymousName("function");
 
       if (node.body) {
+        const next = node.body;
         withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
-          ts.forEachChild(node.body!, (child) => visit(child, newStack));
+          ts.forEachChild(next, (child) => visit(child, newStack));
         });
       }
       return;
@@ -361,7 +361,7 @@ const collectAllDefinitions = (
 
       if (node.body) {
         withScope(stack, funcName, "function", `func:${funcName}`, (newStack) => {
-          ts.forEachChild(node.body!, (child) => visit(child, newStack));
+          ts.forEachChild(node.body, (child) => visit(child, newStack));
         });
       }
       return;

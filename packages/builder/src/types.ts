@@ -1,6 +1,6 @@
 import type { RuntimeModelInput, RuntimeOperationInput, RuntimeOperationSliceInput } from "@soda-gql/core/runtime";
 import type { Result } from "neverthrow";
-import type { CanonicalId } from "./utils/canonical-id";
+import type { CanonicalId } from "./canonical-id/canonical-id";
 
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";

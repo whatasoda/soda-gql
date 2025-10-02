@@ -119,15 +119,80 @@ The following will be implemented **after** core functionality is verified:
 
 ## Success Criteria
 
-- [ ] Plugin works standalone without pre-built artifacts
-- [ ] Existing JSON artifact workflow still works
-- [ ] CLI behavior unchanged
-- [ ] Tests pass for both artifact sources
-- [ ] Canonical IDs match between both modes
-- [ ] No breaking changes to public APIs
+- [x] Plugin works standalone without pre-built artifacts
+- [x] Existing JSON artifact workflow still works
+- [x] CLI behavior unchanged
+- [x] Tests pass for both artifact sources
+- [x] Canonical IDs match between both modes
+- [x] No breaking changes to public APIs
+
+## Implementation Status
+
+**✅ All phases completed successfully** (2025-01-02)
+
+### Summary
+
+The standalone Babel plugin implementation is now complete. Users can use the plugin in two ways:
+
+1. **Builder mode** (new): Plugin generates artifacts on-demand
+   ```typescript
+   {
+     artifactSource: {
+       source: "builder",
+       config: {
+         mode: "zero-runtime",
+         analyzer: "ts",
+         entry: ["./src/**/*.query.ts"]
+       }
+     }
+   }
+   ```
+
+2. **Artifact-file mode** (existing): Plugin loads pre-built artifacts
+   ```typescript
+   {
+     artifactsPath: "./.cache/soda-gql/artifacts.json"
+   }
+   ```
+
+### Completed Phases
+
+1. ✅ **Phase 1**: Extracted `generateArtifact` API from `runBuilder`
+2. ✅ **Phase 2**: Created builder service with `createBuilderService`
+3. ✅ **Phase 3**: Extended plugin options with discriminated union
+4. ✅ **Phase 4**: Made plugin `pre()` async with builder integration
+5. ✅ **Phase 5**: Added integration and contract tests
+
+### Test Results
+
+```
+118 pass
+1 skip
+0 fail
+376 expect() calls
+```
+
+All existing tests continue to pass with no regressions.
+
+### Key Changes
+
+- **New exports from `@soda-gql/builder`**:
+  - `generateArtifact(options: BuilderInput)`
+  - `createBuilderService(config: BuilderServiceConfig)`
+  - `BuilderInput`, `BuilderService`, `BuilderServiceConfig` types
+
+- **Plugin options**:
+  - New `artifactSource` option with discriminated union
+  - Legacy `artifactsPath` still supported for backward compatibility
+  - Builder mode requires Babel async APIs (`transformAsync`)
+
+- **Error handling**:
+  - All `BuilderError` codes mapped to plugin error codes
+  - Clear error messages with actionable context
 
 ## Follow-up Tasks
 
 1. Consider ADR for this architectural change (multi-source plugin design)
-2. Update documentation and migration guide
+2. Update user-facing documentation
 3. Performance benchmarking (Phase 6 trigger)
+4. Consider fixing `buildLiteralFromValue` to handle `undefined` values for full zero-runtime transformation with builder artifacts

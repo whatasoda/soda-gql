@@ -1,9 +1,8 @@
 import { join, resolve } from "node:path";
 
-import { type Result, err, ok } from "neverthrow";
-
-import type { ModuleAnalysis } from "./ast";
+import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "./artifact";
+import type { ModuleAnalysis } from "./ast";
 import { createJsonCache } from "./cache/json-cache";
 import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";

@@ -1,5 +1,5 @@
 import { err, ok, type Result } from "neverthrow";
-import type { CanonicalId } from "../utils/canonical-id";
+import type { CanonicalId } from "../canonical-id/canonical-id";
 import type { DependencyGraph, DependencyGraphError } from "./types";
 
 export const detectCycles = (graph: DependencyGraph): Result<void, DependencyGraphError> => {

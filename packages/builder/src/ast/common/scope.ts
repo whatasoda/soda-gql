@@ -11,8 +11,6 @@ export type ScopeFrame = {
   readonly nameSegment: string;
   /** Kind of scope */
   readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
-  /** Occurrence index for disambiguation */
-  readonly occurrence: number;
 };
 
 /**
@@ -65,9 +63,7 @@ export const createPathTracker = (): {
  * Create an export bindings map from module exports.
  * Maps local variable names to their exported names.
  */
-export const createExportBindingsMap = <
-  T extends { kind: string; local?: string; exported: string; isTypeOnly?: boolean },
->(
+export const createExportBindingsMap = <T extends { kind: string; local?: string; exported: string; isTypeOnly?: boolean }>(
   exports: readonly T[],
 ): Map<string, string> => {
   const exportBindings = new Map<string, string>();

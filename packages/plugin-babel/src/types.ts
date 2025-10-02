@@ -1,9 +1,32 @@
-import type { BuilderArtifact } from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
 import type { NormalizedOptions } from "./options";
+
+/**
+ * Builder configuration for artifact generation.
+ * Similar to BuilderServiceConfig but mode is optional (defaults to plugin mode).
+ */
+export type BuilderConfig = Omit<BuilderServiceConfig, "mode"> & {
+  readonly mode?: BuilderServiceConfig["mode"];
+};
+
+/**
+ * Discriminated union for artifact sources.
+ */
+export type ArtifactSource =
+  | {
+      readonly source: "artifact-file";
+      readonly path: string;
+    }
+  | {
+      readonly source: "builder";
+      readonly config: Required<BuilderConfig>;
+    };
 
 export type SodaGqlBabelOptions = {
   readonly mode: "runtime" | "zero-runtime";
-  readonly artifactsPath: string;
+  /** @deprecated Use artifactSource instead. Kept for backward compatibility. */
+  readonly artifactsPath?: string;
+  readonly artifactSource?: ArtifactSource;
   readonly importIdentifier?: string;
   readonly diagnostics?: "json" | "console";
 };

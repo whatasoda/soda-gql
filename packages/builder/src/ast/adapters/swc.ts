@@ -6,14 +6,15 @@
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
+import { createCanonicalTracker } from "../../canonical-id/path-tracker";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
-import { createCanonicalTracker, type ScopeHandle } from "../../canonical/path-tracker";
 import type { AnalyzerAdapter } from "../core";
 
 /**
  * Extended SWC Module with filePath attached (similar to ts.SourceFile.fileName)
  */
 type SwcModule = Module & { __filePath: string };
+
 import type {
   AnalyzeModuleInput,
   ModuleDefinition,
@@ -358,7 +359,7 @@ const collectAllDefinitions = (
   ): T => {
     const handle = tracker.enterScope({ segment, kind, stableKey });
     try {
-      const frame: ScopeFrame = { nameSegment: segment, kind, occurrence: 0 };
+      const frame: ScopeFrame = { nameSegment: segment, kind };
       return callback([...stack, frame]);
     } finally {
       tracker.exitScope(handle);

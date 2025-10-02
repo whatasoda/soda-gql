@@ -25,7 +25,7 @@ describe("CanonicalPathTracker", () => {
       const tracker = createCanonicalTracker({ filePath });
 
       const handle1 = tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
-      const handle2 = tracker.enterScope({ segment: "bar", kind: "variable", stableKey: "var:bar" });
+      const _handle2 = tracker.enterScope({ segment: "bar", kind: "variable", stableKey: "var:bar" });
 
       // Try to exit handle1 before handle2 (invalid order)
       expect(() => tracker.exitScope(handle1)).toThrow("Invalid scope exit");

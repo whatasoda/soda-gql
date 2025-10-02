@@ -2,13 +2,14 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type {
+  BuilderArtifact,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,
   CanonicalId,
   CanonicalPathTracker,
 } from "@soda-gql/builder";
-import { createCanonicalTracker } from "@soda-gql/builder";
+import { createBuilderService, createCanonicalTracker } from "@soda-gql/builder";
 import type { RuntimeModelInput } from "../../core/src/runtime/model";
 import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeOperationSliceInput } from "../../core/src/runtime/operation-slice";
@@ -470,9 +471,20 @@ const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOpera
   };
 };
 
+/**
+ * Convert BuilderArtifact to AllArtifacts map for plugin state.
+ */
+const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => ({
+  ...artifact.operations,
+  ...artifact.slices,
+  ...artifact.models,
+});
+
 export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
-  pre() {
+  // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
+  // Sync transforms are unsupported for builder artifact source mode
+  async pre() {
     const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
     const optionsResult = normalizeOptions(rawOptions);
     if (!optionsResult.isOk()) {
@@ -480,23 +492,59 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
     }
     const options = optionsResult.value;
 
-    const artifactResult = loadArtifact(options.artifactsPath);
-    if (!artifactResult.isOk()) {
-      const errorCode =
-        artifactResult.error.code === "NOT_FOUND"
-          ? "SODA_GQL_ARTIFACT_NOT_FOUND"
-          : `SODA_GQL_ARTIFACT_${artifactResult.error.code}`;
-      throw new Error(errorCode);
+    let artifact: BuilderArtifact;
+
+    if (options.artifactSource.source === "artifact-file") {
+      // Legacy artifact-file path - unchanged
+      const artifactResult = loadArtifact(options.artifactSource.path);
+      if (!artifactResult.isOk()) {
+        const errorCode =
+          artifactResult.error.code === "NOT_FOUND"
+            ? "SODA_GQL_ARTIFACT_NOT_FOUND"
+            : `SODA_GQL_ARTIFACT_${artifactResult.error.code}`;
+        throw new Error(errorCode);
+      }
+      artifact = artifactResult.value;
+    } else {
+      // Builder mode - generate artifacts on-demand
+      try {
+        const service = createBuilderService(options.artifactSource.config);
+        const buildResult = await service.build();
+
+        if (buildResult.isErr()) {
+          const error = buildResult.error;
+          // Map BuilderError codes to plugin error codes
+          switch (error.code) {
+            case "ENTRY_NOT_FOUND":
+              throw new Error(`SODA_GQL_BUILDER_ENTRY_NOT_FOUND: ${error.message} (entry: ${error.entry})`);
+            case "DOC_DUPLICATE":
+              throw new Error(
+                `SODA_GQL_BUILDER_DOC_DUPLICATE: ${error.name} found in multiple sources: ${error.sources.join(", ")}`,
+              );
+            case "CIRCULAR_DEPENDENCY":
+              throw new Error(`SODA_GQL_BUILDER_CIRCULAR_DEPENDENCY: ${error.chain.join(" → ")}`);
+            case "MODULE_EVALUATION_FAILED":
+              throw new Error(
+                `SODA_GQL_BUILDER_MODULE_EVALUATION_FAILED: ${error.message} at ${error.filePath}:${error.astPath}`,
+              );
+            case "WRITE_FAILED":
+              throw new Error(`SODA_GQL_BUILDER_WRITE_FAILED: ${error.message} (path: ${error.outPath})`);
+          }
+        }
+
+        artifact = buildResult.value;
+      } catch (error) {
+        // Re-throw known error codes, wrap unknown errors
+        if (error instanceof Error && error.message.startsWith("SODA_GQL_BUILDER_")) {
+          throw error;
+        }
+        throw new Error(`SODA_GQL_BUILDER_UNEXPECTED: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
-    const artifact = artifactResult.value;
 
     this._state = {
       options,
-      allArtifacts: {
-        ...artifact.operations,
-        ...artifact.slices,
-        ...artifact.models,
-      },
+      allArtifacts: createAllArtifacts(artifact),
     } satisfies PluginState;
   },
   visitor: {

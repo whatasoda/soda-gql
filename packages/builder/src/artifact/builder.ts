@@ -1,9 +1,9 @@
 import { err, ok, type Result } from "neverthrow";
-import { createOperationRegistry } from "./registry";
 import type { BuilderArtifact, BuilderError } from "../types";
 import { classifyAndRegister } from "./classifier";
 import { checkIssues } from "./issue-handler";
 import { loadIntermediateModule } from "./loader";
+import { createOperationRegistry } from "./registry";
 import type { BuildArtifactInput } from "./types";
 
 export const buildArtifact = async ({
