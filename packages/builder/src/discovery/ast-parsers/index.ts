@@ -1,1 +1,0 @@
-export { typeScriptAstParser } from "./typescript";

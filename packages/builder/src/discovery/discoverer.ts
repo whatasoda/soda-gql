@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
+import type { getAstAnalyzer } from "../ast";
 import { normalizeToPosix } from "../path-utils";
 import { createCanonicalId } from "../registry";
-import { extractModuleDependencies } from "./ast-parsers/typescript";
-import type { AstParser, DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
+import { createSourceHash, extractModuleDependencies } from "./common";
+import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
-  readonly parser: AstParser;
+  readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   readonly cache?: DiscoveryCache;
 };
 
@@ -21,7 +22,7 @@ export type DiscoverModulesResult = {
  * Uses AST parsing instead of RegExp for reliable dependency extraction.
  * Supports caching to skip re-parsing unchanged files.
  */
-export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOptions): DiscoverModulesResult => {
+export const discoverModules = ({ entryPaths, astAnalyzer, cache }: DiscoverModulesOptions): DiscoverModulesResult => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   let cacheHits = 0;
@@ -35,7 +36,7 @@ export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOp
 
     // Read source and compute signature
     const source = readFileSync(filePath, "utf8");
-    const signature = parser.createSourceHash(source);
+    const signature = createSourceHash(source);
 
     // Check cache first
     if (cache) {
@@ -54,7 +55,7 @@ export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOp
     }
 
     // Parse module
-    const analysis = parser.parseModule({ filePath, source });
+    const analysis = astAnalyzer.analyze({ filePath, source });
     cacheMisses++;
 
     // Build dependency records (relative + external) in a single pass
@@ -77,7 +78,7 @@ export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOp
     const snapshot: DiscoverySnapshot = {
       filePath,
       normalizedFilePath: normalizeToPosix(filePath),
-      analyzer: parser.analyzer,
+      analyzer: astAnalyzer.type,
       signature,
       createdAtMs: Date.now(),
       analysis,
@@ -94,9 +95,6 @@ export const discoverModules = ({ entryPaths, parser, cache }: DiscoverModulesOp
     if (cache) {
       cache.store(snapshot);
     }
-
-    // Call optional hook
-    parser.onSnapshotCreated?.(snapshot);
   }
 
   return {

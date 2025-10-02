@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { analyzeModule } from "../../../packages/builder/src/ast/analyze-module";
+import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+
+const analyzeModule = getAstAnalyzer("ts").analyze;
 
 describe("Module analyzer - TypeScript", () => {
   const filePath = "/test/src/test.ts";

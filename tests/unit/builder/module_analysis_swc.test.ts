@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
-import { analyzeModule } from "../../../packages/builder/src/ast/analyze-module-swc";
+import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+
+const analyzeModule = getAstAnalyzer("swc").analyze;
 
 describe("module analysis (swc)", () => {
   const filePath = "/app/src/entities/profile.ts";

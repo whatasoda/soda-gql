@@ -3,14 +3,7 @@
  * Adapters (TypeScript, SWC, etc.) implement the adapter interface to plug into this pipeline.
  */
 
-import type {
-  AnalyzeModuleInput,
-  ModuleAnalysis,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-} from "./analyzer-types";
+import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 
 /**
  * Adapter interface that each parser implementation (TS, SWC) must provide.

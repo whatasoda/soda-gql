@@ -1,6 +1,4 @@
 export type {
-  AstParser,
-  AstParserInput,
   DiscoveredDependency,
   DiscoveryCache,
   DiscoverySnapshot,

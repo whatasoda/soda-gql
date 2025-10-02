@@ -6,8 +6,14 @@
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
-
-import type { AnalyzerAdapter } from "../analyzer-core";
+import {
+  buildAstPath,
+  createExportBindingsMap,
+  createOccurrenceTracker,
+  createPathTracker,
+  type ScopeFrame,
+} from "../common/scope";
+import type { AnalyzerAdapter } from "../core";
 import type {
   AnalyzeModuleInput,
   ModuleDefinition,
@@ -16,14 +22,7 @@ import type {
   ModuleImport,
   SourceLocation,
   SourcePosition,
-} from "../analyzer-types";
-import {
-  buildAstPath,
-  createExportBindingsMap,
-  createOccurrenceTracker,
-  createPathTracker,
-  type ScopeFrame,
-} from "../common/scope";
+} from "../types";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];

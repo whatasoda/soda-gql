@@ -1,7 +1,7 @@
 import { dirname, join, normalize, resolve as resolvePath } from "node:path";
 import { err, ok, type Result } from "neverthrow";
 
-import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "./ast/analyze-module";
+import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "./ast";
 import type { CanonicalId } from "./registry";
 import { createCanonicalId } from "./registry";
 

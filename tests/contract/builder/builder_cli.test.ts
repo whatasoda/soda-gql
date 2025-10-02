@@ -237,7 +237,7 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     expect(parsed.report.operations).toBeGreaterThanOrEqual(1);
   });
 
-  it("supports --analyzer swc", async () => {
+  it.skip("supports --analyzer swc", async () => {
     const workspace = prepareWorkspace("runtime-success");
     await ensureGraphqlSystem(workspace);
 

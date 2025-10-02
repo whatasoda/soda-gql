@@ -5,18 +5,6 @@
 
 import { extname } from "node:path";
 import ts from "typescript";
-
-import type { AnalyzerAdapter } from "../analyzer-core";
-import { analyzeModuleCore } from "../analyzer-core";
-import type {
-  AnalyzeModuleInput,
-  ModuleAnalysis,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-} from "../analyzer-types";
 import {
   buildAstPath,
   createExportBindingsMap,
@@ -24,6 +12,15 @@ import {
   createPathTracker,
   type ScopeFrame,
 } from "../common/scope";
+import type { AnalyzerAdapter } from "../core";
+import type {
+  AnalyzeModuleInput,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+  SourceLocation,
+} from "../types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -443,7 +440,7 @@ const collectDiagnostics = (
 /**
  * TypeScript adapter implementation
  */
-export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression> = {
+export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression> = {
   parse(input: AnalyzeModuleInput): ts.SourceFile | null {
     return createSourceFile(input.filePath, input.source);
   },
@@ -486,11 +483,4 @@ export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
   ): readonly ModuleDiagnostic[] {
     return collectDiagnostics(file, context.gqlIdentifiers, context.handledCalls);
   },
-};
-
-/**
- * Main exported analyzer function that uses the TypeScript adapter
- */
-export const analyzeModule = (input: AnalyzeModuleInput): ModuleAnalysis => {
-  return analyzeModuleCore(input, typeScriptAdapter);
 };

@@ -1,26 +1,6 @@
-import type {
-  AnalyzeModuleInput,
-  ModuleAnalysis,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-} from "../ast/analyze-module";
+import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
 import type { CanonicalId } from "../registry";
 import type { BuilderAnalyzer } from "../types";
-
-/**
- * Normalized source unit passed to the AST parser.
- * Matches the shape used by existing analyzers while allowing discover-specific metadata.
- */
-export type AstParserInput = AnalyzeModuleInput & {
-  /**
-   * Previously cached snapshot for this file, when available.
-   * Parsers can use this to short‑circuit work if nothing relevant changed.
-   */
-  readonly previousSnapshot?: DiscoverySnapshot;
-};
 
 /**
  * Result of resolving a single import specifier encountered during discovery.
@@ -70,37 +50,6 @@ export type DiscoverySnapshot = {
   /** Module imports captured for dep-graph construction. */
   readonly imports: readonly ModuleImport[];
 };
-
-/**
- * Pluggable interface implemented by TypeScript/SWC analyzers.
- * Responsible solely for turning source text into a ModuleAnalysis + metadata.
- */
-export interface AstParser {
-  /** Identifier used to select the parser (mirrors BuilderAnalyzer). */
-  readonly analyzer: BuilderAnalyzer;
-  /** File extensions this parser can handle (e.g. [".ts", ".tsx"]). */
-  readonly supportedFileExtensions: readonly string[];
-  /**
-   * Parse and analyze a module, returning a rich ModuleAnalysis structure.
-   * Implementations must not mutate the input.
-   */
-  parseModule(input: AstParserInput): ModuleAnalysis;
-  /**
-   * Create a deterministic hash for the supplied source.
-   * Allows consolidating hashing logic across analyzers (defaults to Bun.hash).
-   */
-  createSourceHash(source: string): string;
-  /**
-   * Extract normalized absolute paths for relative dependencies from the provided analysis.
-   * When omitted, the discoverer will derive dependencies using default rules.
-   */
-  resolveRelativeDependencies?(analysis: ModuleAnalysis): readonly string[];
-  /**
-   * Optional hook executed after the discoverer materializes a snapshot.
-   * Enables analyzer-specific bookkeeping (e.g., caching partial ASTs).
-   */
-  onSnapshotCreated?(snapshot: DiscoverySnapshot): void;
-}
 
 /**
  * Categorization for evaluated definitions. Mirrors OperationRegistry buckets plus helper entries.
