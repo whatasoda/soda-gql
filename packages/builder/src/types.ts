@@ -39,7 +39,7 @@ export type BuilderError =
   | {
       readonly code: "MODULE_EVALUATION_FAILED";
       readonly filePath: string;
-      readonly exportName: string;
+      readonly astPath: string;
       readonly message: string;
     };
 

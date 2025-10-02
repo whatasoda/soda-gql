@@ -44,7 +44,7 @@ export const buildArtifact = async ({
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath: intermediateModulePath,
-      exportName: "runtime",
+      astPath: "runtime",
       message: error instanceof Error ? error.message : String(error),
     });
   }
@@ -71,7 +71,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(issue.canonicalId),
-        exportName: "",
+        astPath: "",
         message: issue.message,
       });
     }
@@ -108,7 +108,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(model.id),
-        exportName: model.definition.exportName,
+        astPath: model.definition.astPath,
         message: "MODEL_NOT_FOUND_IN_RUNTIME_MODULE",
       });
     }
@@ -125,7 +125,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(model.id),
-        exportName: model.definition.exportName,
+        astPath: model.definition.astPath,
         message: result.error.code,
       });
     }
@@ -138,7 +138,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(slice.id),
-        exportName: slice.definition.exportName,
+        astPath: slice.definition.astPath,
         message: "SLICE_NOT_FOUND_IN_RUNTIME_MODULE",
       });
     }
@@ -155,7 +155,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(slice.id),
-        exportName: slice.definition.exportName,
+        astPath: slice.definition.astPath,
         message: result.error.code,
       });
     }
@@ -168,7 +168,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(operation.id),
-        exportName: operation.definition.exportName,
+        astPath: operation.definition.astPath,
         message: "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE",
       });
     }
@@ -191,7 +191,7 @@ export const buildArtifact = async ({
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: canonicalToFilePath(operation.id),
-        exportName: operation.definition.exportName,
+        astPath: operation.definition.astPath,
         message: result.error.code,
       });
     }

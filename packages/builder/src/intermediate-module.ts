@@ -336,11 +336,11 @@ export const createIntermediateModule = async ({
   if (missing.length > 0) {
     const [first] = missing;
     const filePath = first?.filePath ?? outDir;
-    const exportName = first?.definition.exportName ?? "";
+    const astPath = first?.definition.astPath ?? "";
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath,
-      exportName,
+      astPath,
       message: "MISSING_EXPRESSION",
     });
   }
@@ -421,7 +421,7 @@ setActiveRegistry(issueRegistry);`;
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath: jsFilePath,
-      exportName: "",
+      astPath: "",
       message: `SWC transpilation failed: ${message}`,
     });
   }

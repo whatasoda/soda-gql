@@ -113,8 +113,12 @@ const buildExportTable = (
     const exports = table.get(modulePath) ?? new Map<string, CanonicalId>();
 
     mod.definitions.forEach((definition) => {
-      const id = createCanonicalId(mod.filePath, definition.exportName);
-      exports.set(definition.exportName, id);
+      const id = createCanonicalId(mod.filePath, definition.astPath);
+      // Map both astPath and deprecated exportName for backward compatibility during migration
+      exports.set(definition.astPath, id);
+      if (definition.exportName !== definition.astPath) {
+        exports.set(definition.exportName, id);
+      }
     });
 
     mod.exports.forEach((entry) => {
@@ -272,7 +276,7 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
     const moduleDependencies = buildModuleDependencies(modulePath, summary, summaries, moduleLookup);
 
     module.definitions.forEach((definition) => {
-      const id = createCanonicalId(module.filePath, definition.exportName);
+      const id = createCanonicalId(module.filePath, definition.astPath);
       const dependencySet = new Set<CanonicalId>();
 
       // Use module-level dependencies instead of expression analysis
@@ -285,8 +289,8 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
       graph.set(id, {
         id,
         filePath: modulePath,
-        localPath: definition.exportName,
-        isExported: true, // All definitions tracked by analyzer are currently exported
+        localPath: definition.astPath,
+        isExported: definition.isExported,
         definition,
         dependencies: Array.from(dependencySet),
         moduleSummary: summary,

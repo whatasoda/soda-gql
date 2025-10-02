@@ -10,7 +10,7 @@ const canonicalIdSeparator = "::" as const;
 
 const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
-export const createCanonicalId = (filePath: string, exportName: string): CanonicalId => {
+export const createCanonicalId = (filePath: string, astPath: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
     throw new Error("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
   }
@@ -18,9 +18,9 @@ export const createCanonicalId = (filePath: string, exportName: string): Canonic
   const resolved = resolve(filePath);
   const normalized = normalizePath(resolved);
 
-  // Schema name is now ignored in canonical ID - only used for type generation
-  // Always create a 2-part ID: {absPath}::{exportName}
-  const idParts = [normalized, exportName];
+  // Create a 2-part ID: {absPath}::{astPath}
+  // astPath uniquely identifies the definition's location in the AST (e.g., "MyComponent.useQuery.def")
+  const idParts = [normalized, astPath];
 
   return idParts.join(canonicalIdSeparator) as CanonicalId;
 };
