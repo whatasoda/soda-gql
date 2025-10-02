@@ -5,7 +5,7 @@
 
 import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
-import type { CallExpression, ImportDeclaration, Module, Span, VariableDeclaration } from "@swc/types";
+import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
 
 import type { AnalyzerAdapter } from "../analyzer-core";
 import type {
@@ -269,10 +269,30 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
   return true;
 };
 
-const collectTopLevelDefinitions = (
+/**
+ * Scope frame for tracking AST path segments
+ */
+type ScopeFrame = {
+  /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
+  readonly nameSegment: string;
+  /** Kind of scope */
+  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
+  /** Occurrence index for disambiguation */
+  readonly occurrence: number;
+};
+
+/**
+ * Build AST path from scope stack
+ */
+const buildAstPath = (stack: readonly ScopeFrame[]): string => {
+  return stack.map((frame) => frame.nameSegment).join(".");
+};
+
+const collectAllDefinitions = (
   module: Module,
   gqlIdentifiers: ReadonlySet<string>,
   _imports: readonly ModuleImport[],
+  exports: readonly ModuleExport[],
   resolvePosition: (offset: number) => SourcePosition,
   source: string,
 ): {
@@ -293,15 +313,48 @@ const collectTopLevelDefinitions = (
     return null;
   };
 
-  type Pending = {
-    readonly exportName: string;
-    readonly initializer: CallExpression;
-    readonly span: Span;
+  type PendingDefinition = {
+    readonly astPath: string;
+    readonly exportName: string; // For backward compat
+    readonly isTopLevel: boolean;
+    readonly isExported: boolean;
+    readonly exportBinding?: string;
+    readonly loc: SourceLocation;
+    readonly call: CallExpression;
     readonly expression: string;
   };
 
-  const pending: Pending[] = [];
-  const handled: CallExpression[] = [];
+  const pending: PendingDefinition[] = [];
+  const handledCalls: CallExpression[] = [];
+  const usedPaths = new Set<string>();
+
+  // Build export bindings map (which variables are exported and with what name)
+  const exportBindings = new Map<string, string>(); // local -> exported
+  exports.forEach((exp) => {
+    if (exp.kind === "named" && !exp.isTypeOnly) {
+      exportBindings.set(exp.local, exp.exported);
+    }
+  });
+
+  // Counter for anonymous scopes
+  const occurrenceCounters = new Map<string, number>();
+
+  const getNextOccurrence = (key: string): number => {
+    const current = occurrenceCounters.get(key) ?? 0;
+    occurrenceCounters.set(key, current + 1);
+    return current;
+  };
+
+  const ensureUniquePath = (basePath: string): string => {
+    let path = basePath;
+    let suffix = 0;
+    while (usedPaths.has(path)) {
+      suffix++;
+      path = `${basePath}$${suffix}`;
+    }
+    usedPaths.add(path);
+    return path;
+  };
 
   const expressionFromCall = (call: CallExpression): string => {
     let start = call.span.start;
@@ -318,148 +371,207 @@ const collectTopLevelDefinitions = (
     return raw;
   };
 
-  const register = (exportName: string, initializer: CallExpression, span: Span) => {
-    handled.push(initializer);
-    const expression = expressionFromCall(initializer);
-    pending.push({
-      exportName,
-      initializer,
-      span,
-      expression,
-    });
-  };
-
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-  const handleVariableDeclaration = (declaration: any) => {
-    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-    declaration.declarations?.forEach((decl: any) => {
-      if (decl.id.type !== "Identifier" || !decl.init) {
-        return;
-      }
+  const visit = (node: any, stack: ScopeFrame[]) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
 
-      const baseName = decl.id.value;
+    // Check if this is a gql definition call
+    if (node.type === "CallExpression" && isGqlCall(gqlIdentifiers, node)) {
+      const astPath = ensureUniquePath(buildAstPath(stack));
+      const isTopLevel = stack.length === 1;
 
-      if (decl.init.type === "CallExpression") {
-        if (!isGqlCall(gqlIdentifiers, decl.init)) {
-          return;
+      // Determine if exported
+      let isExported = false;
+      let exportBinding: string | undefined;
+
+      if (isTopLevel && stack[0]) {
+        const topLevelName = stack[0].nameSegment;
+        if (exportBindings.has(topLevelName)) {
+          isExported = true;
+          exportBinding = exportBindings.get(topLevelName);
         }
-        register(baseName, decl.init, decl.span ?? decl.init.span);
-        return;
       }
 
-      if (decl.init.type === "ObjectExpression") {
-        // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-        decl.init.properties?.forEach((prop: any) => {
-          if (prop.type !== "KeyValueProperty") {
-            return;
+      handledCalls.push(node);
+      pending.push({
+        astPath,
+        exportName: astPath, // For backward compat
+        isTopLevel,
+        isExported,
+        exportBinding,
+        loc: toLocation(resolvePosition, node.span),
+        call: node,
+        expression: expressionFromCall(node),
+      });
+
+      // Don't visit children of gql calls
+      return;
+    }
+
+    // Variable declaration
+    if (node.type === "VariableDeclaration") {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.declarations?.forEach((decl: any) => {
+        if (decl.id?.type === "Identifier") {
+          const varName = decl.id.value;
+          const newFrame: ScopeFrame = {
+            nameSegment: varName,
+            kind: "variable",
+            occurrence: getNextOccurrence(`var:${varName}`),
+          };
+
+          if (decl.init) {
+            visit(decl.init, [...stack, newFrame]);
           }
-          const name = getPropertyName(prop.key);
-          if (!name || prop.value.type !== "CallExpression") {
-            return;
-          }
-          if (!isGqlCall(gqlIdentifiers, prop.value)) {
-            return;
-          }
-          register(`${baseName}.${name}`, prop.value, prop.value.span ?? prop.span ?? decl.span);
-        });
+        }
+      });
+      return;
+    }
+
+    // Function declaration
+    if (node.type === "FunctionDeclaration") {
+      const funcName = node.identifier?.value ?? `function#${getNextOccurrence("function")}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: funcName,
+        kind: "function",
+        occurrence: getNextOccurrence(`func:${funcName}`),
+      };
+
+      if (node.body) {
+        visit(node.body, [...stack, newFrame]);
       }
-    });
+      return;
+    }
+
+    // Arrow function
+    if (node.type === "ArrowFunctionExpression") {
+      const arrowName = `arrow#${getNextOccurrence("arrow")}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: arrowName,
+        kind: "function",
+        occurrence: 0,
+      };
+
+      if (node.body) {
+        visit(node.body, [...stack, newFrame]);
+      }
+      return;
+    }
+
+    // Function expression
+    if (node.type === "FunctionExpression") {
+      const funcName = node.identifier?.value ?? `function#${getNextOccurrence("function")}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: funcName,
+        kind: "function",
+        occurrence: getNextOccurrence(`func:${funcName}`),
+      };
+
+      if (node.body) {
+        visit(node.body, [...stack, newFrame]);
+      }
+      return;
+    }
+
+    // Class declaration
+    if (node.type === "ClassDeclaration") {
+      const className = node.identifier?.value ?? `class#${getNextOccurrence("class")}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: className,
+        kind: "class",
+        occurrence: getNextOccurrence(`class:${className}`),
+      };
+
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.body?.forEach((member: any) => {
+        if (member.type === "MethodProperty" || member.type === "ClassProperty") {
+          const memberName = member.key?.value ?? null;
+          if (memberName) {
+            const memberFrame: ScopeFrame = {
+              nameSegment: memberName,
+              kind: member.type === "MethodProperty" ? "method" : "property",
+              occurrence: getNextOccurrence(`member:${className}.${memberName}`),
+            };
+
+            if (member.type === "MethodProperty" && member.body) {
+              visit(member.body, [...stack, newFrame, memberFrame]);
+            } else if (member.type === "ClassProperty" && member.value) {
+              visit(member.value, [...stack, newFrame, memberFrame]);
+            }
+          }
+        }
+      });
+      return;
+    }
+
+    // Object literal property
+    if (node.type === "KeyValueProperty") {
+      const propName = getPropertyName(node.key);
+      if (propName) {
+        const newFrame: ScopeFrame = {
+          nameSegment: propName,
+          kind: "property",
+          occurrence: getNextOccurrence(`prop:${propName}`),
+        };
+
+        visit(node.value, [...stack, newFrame]);
+      }
+      return;
+    }
+
+    // Recursively visit children
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        visit(child, stack);
+      }
+    } else {
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) {
+          for (const child of value) {
+            visit(child, stack);
+          }
+        } else if (value && typeof value === "object") {
+          visit(value, stack);
+        }
+      }
+    }
   };
 
-  module.body.forEach((item) => {
-    if (item.type === "ExportDeclaration" && item.declaration.type === "VariableDeclaration") {
-      handleVariableDeclaration(item.declaration);
-      return;
-    }
-
-    if (
-      item.type === "ExportNamedDeclaration" &&
-      "declaration" in item &&
-      item.declaration &&
-      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
-      (item.declaration as any).type === "VariableDeclaration"
-    ) {
-      handleVariableDeclaration(item.declaration as VariableDeclaration);
-      return;
-    }
-
-    if ("declaration" in item && item.declaration) {
-      // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
-      const declaration = item.declaration as any;
-      if (
-        declaration.type === "ExportDeclaration" &&
-        declaration.declaration &&
-        declaration.declaration.type === "VariableDeclaration"
-      ) {
-        handleVariableDeclaration(declaration.declaration as VariableDeclaration);
-      }
-      if (
-        declaration.type === "ExportNamedDeclaration" &&
-        declaration.declaration &&
-        declaration.declaration.type === "VariableDeclaration"
-      ) {
-        handleVariableDeclaration(declaration.declaration);
-      }
-    }
+  // Start traversal from top-level statements
+  module.body.forEach((statement) => {
+    visit(statement, []);
   });
 
   const definitions = pending.map(
     (item) =>
       ({
         exportName: item.exportName,
-        // TODO: Implement full AST path generation like TypeScript adapter
-        astPath: item.exportName,
-        // TODO: Currently only collecting top-level exported definitions
-        isTopLevel: true,
-        isExported: true,
-        exportBinding: item.exportName,
-        loc: toLocation(resolvePosition, item.span),
+        astPath: item.astPath,
+        isTopLevel: item.isTopLevel,
+        isExported: item.isExported,
+        exportBinding: item.exportBinding,
+        loc: item.loc,
         expression: item.expression,
       }) satisfies ModuleDefinition,
   );
 
-  return { definitions, handledCalls: handled };
+  return { definitions, handledCalls };
 };
 
+/**
+ * Collect diagnostics (now empty since we support all definition types)
+ */
 const collectDiagnostics = (
-  module: Module,
-  gqlIdentifiers: ReadonlySet<string>,
-  handled: readonly CallExpression[],
-  resolvePosition: (offset: number) => SourcePosition,
+  _module: Module,
+  _gqlIdentifiers: ReadonlySet<string>,
+  _handledCalls: readonly CallExpression[],
+  _resolvePosition: (offset: number) => SourcePosition,
 ): ModuleDiagnostic[] => {
-  const diagnostics: ModuleDiagnostic[] = [];
-  const handledSet = new Set(handled);
-
-  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-  const visit = (node: any) => {
-    if (!node || typeof node !== "object") {
-      return;
-    }
-    if (node.type === "CallExpression") {
-      if (!handledSet.has(node)) {
-        const gqlCall = isGqlCall(gqlIdentifiers, node);
-        if (gqlCall) {
-          diagnostics.push({
-            code: "NON_TOP_LEVEL_DEFINITION",
-            message: "gql.* definitions must be declared at module top-level",
-            loc: toLocation(resolvePosition, node.span),
-          });
-        }
-      }
-    }
-    Object.values(node).forEach((value) => {
-      if (Array.isArray(value)) {
-        value.forEach(visit);
-      } else {
-        visit(value);
-      }
-    });
-  };
-
-  module.body.forEach((item) => {
-    visit(item);
-  });
-  return diagnostics;
+  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
+  // All gql definitions are now supported
+  return [];
 };
 
 /**
@@ -507,11 +619,11 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     readonly handles: readonly CallExpression[];
   } {
     const resolvePosition = toPositionResolver(context.source);
-    // TODO: Use exports to determine isExported like TypeScript adapter
-    const { definitions, handledCalls } = collectTopLevelDefinitions(
+    const { definitions, handledCalls } = collectAllDefinitions(
       file,
       context.gqlIdentifiers,
       context.imports,
+      context.exports,
       resolvePosition,
       context.source,
     );
