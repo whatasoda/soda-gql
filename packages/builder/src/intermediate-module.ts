@@ -45,115 +45,6 @@ const groupNodesByFile = (graph: DependencyGraph): FileGroup[] => {
     .sort((a, b) => a.filePath.localeCompare(b.filePath));
 };
 
-type TreeNode = {
-  expression?: string; // Leaf node with actual expression
-  children: Map<string, TreeNode>; // Branch node with children
-};
-
-const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
-  const roots = new Map<string, TreeNode>();
-
-  nodes.forEach((node) => {
-    const parts = node.localPath.split(".");
-    const expressionText = node.definition.expression.trim();
-
-    if (parts.length === 1) {
-      // Top-level export
-      const rootName = parts[0];
-      if (rootName) {
-        roots.set(rootName, {
-          expression: expressionText,
-          children: new Map(),
-        });
-      }
-    } else {
-      // Nested export
-      const rootName = parts[0];
-      if (!rootName) return;
-
-      let root = roots.get(rootName);
-      if (!root) {
-        root = { children: new Map() };
-        roots.set(rootName, root);
-      }
-
-      let current = root;
-      for (let i = 1; i < parts.length - 1; i++) {
-        const part = parts[i];
-        if (!part) continue;
-
-        let child = current.children.get(part);
-        if (!child) {
-          child = { children: new Map() };
-          current.children.set(part, child);
-        }
-        current = child;
-      }
-
-      const leafName = parts[parts.length - 1];
-      if (leafName) {
-        current.children.set(leafName, {
-          expression: expressionText,
-          children: new Map(),
-        });
-      }
-    }
-  });
-
-  return roots;
-};
-
-const renderTreeNode = (node: TreeNode, indent: number): string => {
-  if (node.expression && node.children.size === 0) {
-    // Leaf node - render the expression directly
-    return formatFactory(node.expression);
-  }
-
-  // Branch node - render nested object
-  const indentStr = "  ".repeat(indent);
-  const entries = Array.from(node.children.entries()).map(([key, child]) => {
-    const value = renderTreeNode(child, indent + 1);
-    return `${indentStr}  ${key}: ${value},`;
-  });
-
-  if (entries.length === 0) {
-    return "{}";
-  }
-
-  return `{\n${entries.join("\n")}\n${indentStr}}`;
-};
-
-const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
-  const tree = buildTree(nodes);
-  const declarations: string[] = [];
-  const returnEntries: string[] = [];
-
-  tree.forEach((node, rootName) => {
-    if (node.children.size > 0) {
-      // Has children - create a const declaration
-      const objectLiteral = renderTreeNode(node, 2);
-      declarations.push(`    const ${rootName} = ${objectLiteral};`);
-      returnEntries.push(rootName);
-    } else if (node.expression) {
-      // Single export - can be inlined or declared
-      const expr = formatFactory(node.expression);
-      declarations.push(`    const ${rootName} = ${expr};`);
-      returnEntries.push(rootName);
-    }
-  });
-
-  const returnStatement =
-    returnEntries.length > 0
-      ? `    return {\n${returnEntries.map((name) => `        ${name},`).join("\n")}\n    };`
-      : "    return {};";
-
-  if (declarations.length === 0) {
-    return returnStatement;
-  }
-
-  return `${declarations.join("\n")}\n${returnStatement}`;
-};
-
 /**
  * Get map of file paths to their module summaries from the graph.
  */
@@ -287,22 +178,24 @@ const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, Module
 
   // Get the module summary for this file
   const summary = summaries.get(filePath);
-  if (!summary) {
-    // Fallback: create empty summary
-    const emptySummary: ModuleSummary = {
-      filePath,
-      runtimeImports: [],
-      gqlExports: [],
-    };
-    const { imports } = renderImportStatements(emptySummary, summaries);
-    const body = buildNestedObject(nodes);
-    return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
-  }
+  const effectiveSummary = summary ?? {
+    filePath,
+    runtimeImports: [],
+    gqlExports: [],
+  };
 
-  const { imports } = renderImportStatements(summary, summaries);
-  const body = buildNestedObject(nodes);
+  const { imports } = renderImportStatements(effectiveSummary, summaries);
 
-  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
+  // Generate individual addBuilder calls for each definition
+  const builderCalls = nodes.map((node) => {
+    const expression = formatFactory(node.definition.expression);
+    return `registry.addBuilder("${node.id}", () => ${expression});`;
+  });
+
+  const importSection = imports ? `${imports}` : "";
+  const buildersSection = builderCalls.join("\n");
+
+  return `${importSection}${buildersSection}`;
 };
 
 export type CreateIntermediateModuleInput = {
