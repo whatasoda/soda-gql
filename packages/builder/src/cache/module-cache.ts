@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import type { ModuleAnalysis } from "../ast/analyze-module";
-import { normalizeToPosix } from "../path-utils";
 import { ModuleAnalysisSchema } from "../schemas/cache";
 import type { BuilderAnalyzer } from "../types";
-import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
+import type { JsonCacheFactory } from "./json-cache";
 import { createJsonCache } from "./json-cache";
+import { JsonEntityCache } from "./json-entity-cache";
 
 // Bumped to v3 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const MODULE_CACHE_VERSION = "module-cache/v3";
@@ -28,13 +28,12 @@ export type ModuleCacheManagerOptions = {
   readonly version?: string;
 };
 
-export class ModuleCacheManager {
-  private readonly cacheStore: JsonCacheStore<string, ModuleCacheRecord>;
-
+export class ModuleCacheManager extends JsonEntityCache<string, ModuleCacheRecord> {
   constructor(private readonly options: ModuleCacheManagerOptions) {
     const namespace: string[] = [...(options.namespacePrefix ?? ["modules"]), options.analyzer, options.evaluatorId];
 
-    this.cacheStore = options.factory.createStore({
+    super({
+      factory: options.factory,
       namespace,
       schema: ModuleCacheRecordSchema,
       version: options.version ?? MODULE_CACHE_VERSION,
@@ -46,15 +45,15 @@ export class ModuleCacheManager {
   }
 
   load(filePath: string, expectedSignature: string): ModuleAnalysis | null {
-    const key = normalizeToPosix(filePath);
-    const record = this.cacheStore.load(key);
+    const key = this.normalizeKey(filePath);
+    const record = this.loadRaw(key);
 
     if (!record) {
       return null;
     }
 
     if (record.signature !== expectedSignature) {
-      this.cacheStore.delete(key);
+      this.delete(filePath);
       return null;
     }
 
@@ -66,7 +65,7 @@ export class ModuleCacheManager {
       throw new Error(`ModuleAnalysis for ${analysis.filePath} is missing a signature`);
     }
 
-    const key = normalizeToPosix(analysis.filePath);
+    const key = this.normalizeKey(analysis.filePath);
     const record: ModuleCacheRecord = {
       filePath: analysis.filePath,
       normalizedFilePath: key,
@@ -75,29 +74,17 @@ export class ModuleCacheManager {
       analysis,
     };
 
-    this.cacheStore.store(key, record);
+    this.storeRaw(key, record);
   }
 
-  delete(filePath: string): void {
-    const key = normalizeToPosix(filePath);
-    this.cacheStore.delete(key);
-  }
-
-  clear(): void {
-    this.cacheStore.clear();
-  }
-
+  // Return ModuleAnalysis instead of ModuleCacheRecord
   entries(): IterableIterator<ModuleAnalysis> {
-    function* iterator(store: JsonCacheStore<string, ModuleCacheRecord>) {
-      for (const [, record] of store.entries()) {
+    const self = this;
+    return (function* () {
+      for (const record of self.baseEntries()) {
         yield record.analysis;
       }
-    }
-    return iterator(this.cacheStore);
-  }
-
-  size(): number {
-    return this.cacheStore.size();
+    })();
   }
 }
 

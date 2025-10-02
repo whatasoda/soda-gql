@@ -63,123 +63,98 @@ export const buildArtifact = async ({
     }
   }
 
-  // Classify nodes based on intermediate module evaluation
-  const modelNodes: DependencyGraphNode[] = [];
-  const sliceNodes: DependencyGraphNode[] = [];
-  const operationNodes: DependencyGraphNode[] = [];
+  // Helper to emit registration errors
+  const emitRegistrationError = (node: DependencyGraphNode, message: string): BuilderError => ({
+    code: "MODULE_EVALUATION_FAILED",
+    filePath: canonicalToFilePath(node.id),
+    astPath: node.definition.astPath,
+    message,
+  });
+
+  // Classification rules for each node type
+  const classificationRules = [
+    {
+      type: "model" as const,
+      bucket: models,
+      register: (node: DependencyGraphNode) => {
+        const descriptor = models[node.id];
+        if (!descriptor || typeof descriptor !== "object") {
+          return err(emitRegistrationError(node, "MODEL_NOT_FOUND_IN_RUNTIME_MODULE"));
+        }
+        return registry.registerModel({
+          type: "model",
+          id: node.id,
+          prebuild: { typename: descriptor.typename },
+        });
+      },
+      notFoundMessage: "MODEL_NOT_FOUND_IN_RUNTIME_MODULE",
+    },
+    {
+      type: "slice" as const,
+      bucket: slices,
+      register: (node: DependencyGraphNode) => {
+        const descriptor = slices[node.id];
+        if (!descriptor || typeof descriptor !== "object") {
+          return err(emitRegistrationError(node, "SLICE_NOT_FOUND_IN_RUNTIME_MODULE"));
+        }
+        return registry.registerSlice({
+          type: "slice",
+          id: node.id,
+          prebuild: { operationType: descriptor.operationType },
+        });
+      },
+      notFoundMessage: "SLICE_NOT_FOUND_IN_RUNTIME_MODULE",
+    },
+    {
+      type: "operation" as const,
+      bucket: operations,
+      register: (node: DependencyGraphNode) => {
+        const descriptor = operations[node.id];
+        if (!descriptor || typeof descriptor !== "object") {
+          return err(emitRegistrationError(node, "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE"));
+        }
+        return registry.registerOperation({
+          type: "operation",
+          id: node.id,
+          prebuild: {
+            operationType: descriptor.operationType,
+            operationName: descriptor.operationName,
+            document: descriptor.document,
+            variableNames: descriptor.variableNames,
+            projectionPathGraph: descriptor.projectionPathGraph,
+          },
+        });
+      },
+      notFoundMessage: "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE",
+    },
+  ];
+
+  // Classify and register nodes using the rule table
+  const nodesByType = new Map<string, DependencyGraphNode[]>();
 
   graph.forEach((node) => {
     if (!node || typeof node !== "object") {
       return;
     }
 
-    if (node.id in models) {
-      modelNodes.push(node);
-      return;
-    }
-
-    if (node.id in slices) {
-      sliceNodes.push(node);
-      return;
-    }
-
-    if (node.id in operations) {
-      operationNodes.push(node);
+    for (const rule of classificationRules) {
+      if (node.id in rule.bucket) {
+        const nodes = nodesByType.get(rule.type) ?? [];
+        nodes.push(node);
+        nodesByType.set(rule.type, nodes);
+        return;
+      }
     }
   });
 
-  for (const model of modelNodes) {
-    const descriptor = models[model.id];
-    if (!descriptor || typeof descriptor !== "object") {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(model.id),
-        astPath: model.definition.astPath,
-        message: "MODEL_NOT_FOUND_IN_RUNTIME_MODULE",
-      });
-    }
-
-    const result = registry.registerModel({
-      type: "model",
-      id: model.id,
-      prebuild: {
-        typename: descriptor.typename,
-      },
-    });
-
-    if (result.isErr()) {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(model.id),
-        astPath: model.definition.astPath,
-        message: result.error.code,
-      });
-    }
-  }
-
-  for (const slice of sliceNodes) {
-    const descriptor = slices[slice.id];
-
-    if (!descriptor || typeof descriptor !== "object") {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(slice.id),
-        astPath: slice.definition.astPath,
-        message: "SLICE_NOT_FOUND_IN_RUNTIME_MODULE",
-      });
-    }
-
-    const result = registry.registerSlice({
-      type: "slice",
-      id: slice.id,
-      prebuild: {
-        operationType: descriptor.operationType,
-      },
-    });
-
-    if (result.isErr()) {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(slice.id),
-        astPath: slice.definition.astPath,
-        message: result.error.code,
-      });
-    }
-  }
-
-  for (const operation of operationNodes) {
-    const descriptor = operations[operation.id];
-
-    if (!descriptor || typeof descriptor !== "object") {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(operation.id),
-        astPath: operation.definition.astPath,
-        message: "OPERATION_NOT_FOUND_IN_RUNTIME_MODULE",
-      });
-    }
-
-    const documentName = descriptor.operationName;
-
-    const result = registry.registerOperation({
-      type: "operation",
-      id: operation.id,
-      prebuild: {
-        operationType: descriptor.operationType,
-        operationName: documentName,
-        document: descriptor.document,
-        variableNames: descriptor.variableNames,
-        projectionPathGraph: descriptor.projectionPathGraph,
-      },
-    });
-
-    if (result.isErr()) {
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: canonicalToFilePath(operation.id),
-        astPath: operation.definition.astPath,
-        message: result.error.code,
-      });
+  // Process nodes in order: models → slices → operations
+  for (const rule of classificationRules) {
+    const nodes = nodesByType.get(rule.type) ?? [];
+    for (const node of nodes) {
+      const result = rule.register(node);
+      if (result.isErr()) {
+        return err(emitRegistrationError(node, result.error.code));
+      }
     }
   }
 
@@ -199,9 +174,9 @@ export const buildArtifact = async ({
     slices: snapshot.slices,
     models: snapshot.models,
     report: {
-      operations: operationNodes.length,
-      models: modelNodes.length,
-      slices: sliceNodes.length,
+      operations: nodesByType.get("operation")?.length ?? 0,
+      models: nodesByType.get("model")?.length ?? 0,
+      slices: nodesByType.get("slice")?.length ?? 0,
       durationMs: 0,
       warnings,
       cache,

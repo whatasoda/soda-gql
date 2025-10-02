@@ -6,7 +6,7 @@ import { createJsonCache } from "./cache/json-cache";
 import { resolveEntryPaths } from "./discover";
 import { typeScriptAstParser } from "./discovery/ast-parsers";
 import { discoverModules } from "./discovery/discoverer";
-import type { AstParser } from "./discovery/types";
+import type { AstParser, DiscoveryCache } from "./discovery/types";
 import type { BuilderAnalyzer, BuilderError } from "./types";
 
 export type ModuleLoadStats = {
@@ -20,12 +20,6 @@ export type LoadedModules = {
 };
 
 const defaultCacheRoot = () => join(process.cwd(), ".cache", "soda-gql", "builder");
-
-export type LoadModulesOptions = {
-  readonly entry: readonly string[];
-  readonly cacheRoot?: string;
-  readonly analyzer: BuilderAnalyzer;
-};
 
 /**
  * Get the appropriate AST parser for the given analyzer type.
@@ -44,30 +38,67 @@ const getParser = (analyzer: BuilderAnalyzer): AstParser => {
   }
 };
 
-export const loadModules = ({ entry, cacheRoot, analyzer }: LoadModulesOptions): Result<LoadedModules, BuilderError> =>
-  resolveEntryPaths(entry).map((paths) => {
-    const parser = getParser(analyzer);
-    const cacheFactory = createJsonCache({
-      rootDir: cacheRoot ?? defaultCacheRoot(),
-      prefix: ["builder"],
-    });
+export type DiscoveryPipeline = {
+  load(entry: readonly string[]): Result<LoadedModules, BuilderError>;
+};
 
-    const cache = createDiscoveryCache({
-      factory: cacheFactory,
-      analyzer,
-      evaluatorId: "default",
-    });
+export type CreateDiscoveryPipelineOptions = {
+  readonly analyzer: BuilderAnalyzer;
+  readonly parser?: AstParser;
+  readonly cache?: DiscoveryCache;
+};
 
-    const { snapshots, cacheHits, cacheMisses } = discoverModules({
-      entryPaths: paths,
-      parser,
-      cache,
-    });
+/**
+ * Create a discovery pipeline that can load modules with the given configuration.
+ * The pipeline encapsulates entry path resolution and module discovery logic.
+ */
+export const createDiscoveryPipeline = ({ analyzer, parser, cache }: CreateDiscoveryPipelineOptions): DiscoveryPipeline => {
+  const astParser = parser ?? getParser(analyzer);
 
-    const modules = snapshots.map((snapshot) => snapshot.analysis);
+  return {
+    load(entry: readonly string[]): Result<LoadedModules, BuilderError> {
+      return resolveEntryPaths(entry).map((paths) => {
+        const { snapshots, cacheHits, cacheMisses } = discoverModules({
+          entryPaths: paths,
+          parser: astParser,
+          cache,
+        });
 
-    return {
-      modules,
-      stats: { hits: cacheHits, misses: cacheMisses },
-    } satisfies LoadedModules;
+        const modules = snapshots.map((snapshot) => snapshot.analysis);
+
+        return {
+          modules,
+          stats: { hits: cacheHits, misses: cacheMisses },
+        } satisfies LoadedModules;
+      });
+    },
+  };
+};
+
+export type LoadModulesOptions = {
+  readonly entry: readonly string[];
+  readonly cacheRoot?: string;
+  readonly analyzer: BuilderAnalyzer;
+};
+
+/**
+ * Load modules from entry paths using the default discovery pipeline.
+ *
+ * @deprecated Consider using createDiscoveryPipeline for more control over caching and parsing.
+ */
+export const loadModules = ({ entry, cacheRoot, analyzer }: LoadModulesOptions): Result<LoadedModules, BuilderError> => {
+  const parser = getParser(analyzer);
+  const cacheFactory = createJsonCache({
+    rootDir: cacheRoot ?? defaultCacheRoot(),
+    prefix: ["builder"],
   });
+
+  const cache = createDiscoveryCache({
+    factory: cacheFactory,
+    analyzer,
+    evaluatorId: "default",
+  });
+
+  const pipeline = createDiscoveryPipeline({ analyzer, parser, cache });
+  return pipeline.load(entry);
+};

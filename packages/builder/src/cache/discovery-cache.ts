@@ -1,7 +1,7 @@
 import type { DiscoveryCache, DiscoverySnapshot } from "../discovery/types";
-import { normalizeToPosix } from "../path-utils";
 import { DiscoverySnapshotSchema } from "../schemas/discovery";
-import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
+import type { JsonCacheFactory } from "./json-cache";
+import { JsonEntityCache } from "./json-entity-cache";
 
 // Bumped to v2 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const DISCOVERY_CACHE_VERSION = "discovery-cache/v2";
@@ -14,13 +14,12 @@ export type DiscoveryCacheOptions = {
   readonly version?: string;
 };
 
-export class JsonDiscoveryCache implements DiscoveryCache {
-  private readonly cacheStore: JsonCacheStore<string, DiscoverySnapshot>;
-
+export class JsonDiscoveryCache extends JsonEntityCache<string, DiscoverySnapshot> implements DiscoveryCache {
   constructor(private readonly options: DiscoveryCacheOptions) {
     const namespace = [...(options.namespacePrefix ?? ["discovery"]), options.analyzer, options.evaluatorId];
 
-    this.cacheStore = options.factory.createStore({
+    super({
+      factory: options.factory,
       namespace,
       schema: DiscoverySnapshotSchema,
       version: options.version ?? DISCOVERY_CACHE_VERSION,
@@ -28,14 +27,14 @@ export class JsonDiscoveryCache implements DiscoveryCache {
   }
 
   load(filePath: string, expectedSignature: string): DiscoverySnapshot | null {
-    const key = normalizeToPosix(filePath);
-    const snapshot = this.cacheStore.load(key);
+    const key = this.normalizeKey(filePath);
+    const snapshot = this.loadRaw(key);
     if (!snapshot) {
       return null;
     }
 
     if (snapshot.signature !== expectedSignature) {
-      this.cacheStore.delete(key);
+      this.delete(filePath);
       return null;
     }
 
@@ -43,31 +42,12 @@ export class JsonDiscoveryCache implements DiscoveryCache {
   }
 
   store(snapshot: DiscoverySnapshot): void {
-    const key = normalizeToPosix(snapshot.filePath);
-    this.cacheStore.store(key, snapshot);
-  }
-
-  delete(filePath: string): void {
-    const key = normalizeToPosix(filePath);
-    this.cacheStore.delete(key);
+    const key = this.normalizeKey(snapshot.filePath);
+    this.storeRaw(key, snapshot);
   }
 
   entries(): IterableIterator<DiscoverySnapshot> {
-    function* iterator(store: JsonCacheStore<string, DiscoverySnapshot>) {
-      for (const [, snapshot] of store.entries()) {
-        yield snapshot;
-      }
-    }
-
-    return iterator(this.cacheStore);
-  }
-
-  clear(): void {
-    this.cacheStore.clear();
-  }
-
-  size(): number {
-    return this.cacheStore.size();
+    return this.baseEntries();
   }
 }
 
