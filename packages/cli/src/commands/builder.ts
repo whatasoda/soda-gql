@@ -142,10 +142,9 @@ const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mod
     return formatOutput(success.artifact, "json");
   }
 
-  const { report } = success.artifact;
+  const { report, elements } = success.artifact;
   const lines = [
-    `Documents: ${report.operations}`,
-    `Slices: ${report.slices}`,
+    `Elements: ${Object.keys(elements).length}`,
     `Cache: hits ${report.cache.hits}, misses ${report.cache.misses}`,
     ...report.warnings,
     `Artifact: ${success.outPath}`,

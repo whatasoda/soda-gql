@@ -296,7 +296,7 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     ]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("Documents:");
+    expect(result.stdout).toContain("Elements:");
     expect(result.stdout).toMatch(/Cache: hits 0, misses \d+/);
     await Bun.write(join(debugDir, "stdout.txt"), result.stdout || "");
     const debugExists = await Bun.file(join(debugDir, "modules.json")).exists();
