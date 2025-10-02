@@ -3,8 +3,8 @@ import { parse } from "graphql";
 
 import { aggregate } from "../../../packages/builder/src/artifact/aggregate";
 import type { DependencyGraph, DependencyGraphNode } from "../../../packages/builder/src/dependency-graph/types";
-import type { IntermediateModule } from "../../../packages/builder/src/intermediate-module";
 import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/index";
+import type { IntermediateModule } from "../../../packages/builder/src/intermediate-module";
 import type { IntermediateArtifactElement } from "../../../packages/core/src/intermediate/pseudo-module";
 import { Model, Operation, Slice } from "../../../packages/core/src/types/operation";
 
@@ -87,7 +87,7 @@ describe("artifact aggregate", () => {
           document: parse("query ProfilePageQuery { users { id } }"),
           variableNames: [],
           projectionPathGraph: { matches: [], children: {} },
-          parse: () => ({} as any),
+          parse: () => ({}) as any,
         })),
       },
     });
@@ -231,7 +231,7 @@ describe("artifact aggregate", () => {
           document,
           variableNames: ["userId"],
           projectionPathGraph,
-          parse: () => ({} as any),
+          parse: () => ({}) as any,
         })),
       },
     });

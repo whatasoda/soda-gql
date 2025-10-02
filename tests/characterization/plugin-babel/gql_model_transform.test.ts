@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { Kind } from "graphql";
 import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
