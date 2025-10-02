@@ -31,19 +31,13 @@ type FileGroup = {
   readonly nodes: DependencyGraphNode[];
 };
 
-const splitCanonicalId = (canonicalId: string): { filePath: string; exportPath: string } => {
-  const [filePath, exportPath] = canonicalId.split("::");
-  return { filePath: filePath ?? "", exportPath: exportPath ?? "" };
-};
-
 const groupNodesByFile = (graph: DependencyGraph): FileGroup[] => {
   const fileMap = new Map<string, DependencyGraphNode[]>();
 
   graph.forEach((node) => {
-    const { filePath } = splitCanonicalId(node.id);
-    const nodes = fileMap.get(filePath) ?? [];
+    const nodes = fileMap.get(node.filePath) ?? [];
     nodes.push(node);
-    fileMap.set(filePath, nodes);
+    fileMap.set(node.filePath, nodes);
   });
 
   return Array.from(fileMap.entries())
@@ -60,8 +54,7 @@ const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
   const roots = new Map<string, TreeNode>();
 
   nodes.forEach((node) => {
-    const { exportPath } = splitCanonicalId(node.id);
-    const parts = exportPath.split(".");
+    const parts = node.localPath.split(".");
     const expressionText = node.definition.expression.trim();
 
     if (parts.length === 1) {
@@ -342,7 +335,7 @@ export const createIntermediateModule = async ({
 
   if (missing.length > 0) {
     const [first] = missing;
-    const filePath = first ? (first.id.split("::")[0] ?? first.id) : outDir;
+    const filePath = first?.filePath ?? outDir;
     const exportName = first?.definition.exportName ?? "";
     return err({
       code: "MODULE_EVALUATION_FAILED",
@@ -359,22 +352,19 @@ export const createIntermediateModule = async ({
   const fileName = `intermediate-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const jsFilePath = join(outDir, `${fileName}.mjs`);
 
-  // Infer workspace root from the first canonical ID in the graph
+  // Infer workspace root from the first node's file path in the graph
   let workspaceRoot = process.cwd();
   const firstNode = graph.values().next().value as DependencyGraphNode | undefined;
   if (firstNode) {
-    const firstFilePath = firstNode.id.split("::")[0];
-    if (firstFilePath) {
-      let current = dirname(resolve(firstFilePath));
-      // Walk up until we find graphql-system directory
-      while (current !== dirname(current)) {
-        const graphqlSystemPath = join(current, "graphql-system", "index.ts");
-        if (existsSync(graphqlSystemPath)) {
-          workspaceRoot = current;
-          break;
-        }
-        current = dirname(current);
+    let current = dirname(resolve(firstNode.filePath));
+    // Walk up until we find graphql-system directory
+    while (current !== dirname(current)) {
+      const graphqlSystemPath = join(current, "graphql-system", "index.ts");
+      if (existsSync(graphqlSystemPath)) {
+        workspaceRoot = current;
+        break;
       }
+      current = dirname(current);
     }
   }
 

@@ -9,7 +9,8 @@ import { createJsonCache } from "./json-cache";
 
 const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
 
-const MODULE_CACHE_VERSION = "module-cache/v2";
+// Bumped to v3 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
+const MODULE_CACHE_VERSION = "module-cache/v3";
 
 const ModuleCacheRecordSchema = z.object({
   filePath: z.string(),

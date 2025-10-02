@@ -407,6 +407,12 @@ const collectTopLevelDefinitions = (
     (item) =>
       ({
         exportName: item.exportName,
+        // TODO: Implement full AST path generation like TypeScript adapter
+        astPath: item.exportName,
+        // TODO: Currently only collecting top-level exported definitions
+        isTopLevel: true,
+        isExported: true,
+        exportBinding: item.exportName,
         loc: toLocation(resolvePosition, item.span),
         expression: item.expression,
       }) satisfies ModuleDefinition,
@@ -493,6 +499,7 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly imports: readonly ModuleImport[];
+      readonly exports: readonly ModuleExport[];
       readonly source: string;
     },
   ): {
@@ -500,6 +507,7 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     readonly handles: readonly CallExpression[];
   } {
     const resolvePosition = toPositionResolver(context.source);
+    // TODO: Use exports to determine isExported like TypeScript adapter
     const { definitions, handledCalls } = collectTopLevelDefinitions(
       file,
       context.gqlIdentifiers,

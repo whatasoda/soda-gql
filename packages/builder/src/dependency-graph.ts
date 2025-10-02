@@ -19,6 +19,12 @@ export type ModuleSummary = {
 
 export type DependencyGraphNode = {
   readonly id: CanonicalId;
+  /** Absolute file path of the module containing this definition */
+  readonly filePath: string;
+  /** Local path within the module (e.g., "userModel" or "foo.bar" for nested exports) */
+  readonly localPath: string;
+  /** Whether this definition is exported from its module */
+  readonly isExported: boolean;
   readonly definition: ModuleDefinition;
   readonly dependencies: readonly CanonicalId[];
   /** Module summary for the file containing this node */
@@ -278,6 +284,9 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
 
       graph.set(id, {
         id,
+        filePath: modulePath,
+        localPath: definition.exportName,
+        isExported: true, // All definitions tracked by analyzer are currently exported
         definition,
         dependencies: Array.from(dependencySet),
         moduleSummary: summary,

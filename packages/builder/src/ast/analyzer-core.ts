@@ -39,7 +39,7 @@ export interface AnalyzerAdapter<TFile, THandle> {
   collectExports(file: TFile): readonly ModuleExport[];
 
   /**
-   * Collect top-level GraphQL definitions (models, slices, operations).
+   * Collect all GraphQL definitions (exported, non-exported, top-level, nested).
    * Returns both the definitions and handles for tracking which calls were processed.
    */
   collectDefinitions(
@@ -47,6 +47,7 @@ export interface AnalyzerAdapter<TFile, THandle> {
     context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly imports: readonly ModuleImport[];
+      readonly exports: readonly ModuleExport[];
       readonly source: string;
     },
   ): {
@@ -97,6 +98,7 @@ export const analyzeModuleCore = <TFile, THandle>(
   const { definitions, handles } = adapter.collectDefinitions(file, {
     gqlIdentifiers,
     imports,
+    exports,
     source: input.source,
   });
 

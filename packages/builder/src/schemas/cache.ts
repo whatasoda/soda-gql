@@ -12,6 +12,10 @@ export const SourceLocationSchema = z.object({
 
 export const ModuleDefinitionSchema = z.object({
   exportName: z.string(),
+  astPath: z.string(),
+  isTopLevel: z.boolean(),
+  isExported: z.boolean(),
+  exportBinding: z.string().optional(),
   loc: SourceLocationSchema,
   expression: z.string(),
 });

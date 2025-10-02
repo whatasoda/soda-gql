@@ -211,99 +211,250 @@ const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: t
   return true;
 };
 
-const collectTopLevelDefinitions = (
+/**
+ * Scope frame for tracking AST path segments
+ */
+type ScopeFrame = {
+  /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
+  readonly nameSegment: string;
+  /** Kind of scope */
+  readonly kind: 'function' | 'class' | 'variable' | 'property' | 'method' | 'expression';
+  /** Occurrence index for disambiguation */
+  readonly occurrence: number;
+};
+
+/**
+ * Build AST path from scope stack
+ */
+const buildAstPath = (stack: readonly ScopeFrame[]): string => {
+  return stack.map((frame) => frame.nameSegment).join('.');
+};
+
+/**
+ * Get property name from AST node
+ */
+const getPropertyName = (name: ts.PropertyName): string | null => {
+  if (ts.isIdentifier(name)) {
+    return name.text;
+  }
+  if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+  return null;
+};
+
+/**
+ * Collect all gql definitions (exported, non-exported, top-level, nested)
+ */
+const collectAllDefinitions = (
   sourceFile: ts.SourceFile,
   identifiers: ReadonlySet<string>,
-  _imports: readonly ModuleImport[],
-  _source: string,
+  exports: readonly ModuleExport[],
 ): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly ts.CallExpression[];
 } => {
-  const getPropertyName = (name: ts.PropertyName): string | null => {
-    if (ts.isIdentifier(name)) {
-      return name.text;
-    }
-    if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
-      return name.text;
-    }
-    return null;
-  };
-
   type PendingDefinition = {
-    readonly exportName: string;
+    readonly astPath: string;
+    readonly exportName: string; // For backward compat
+    readonly isTopLevel: boolean;
+    readonly isExported: boolean;
+    readonly exportBinding?: string;
     readonly loc: SourceLocation;
-    readonly initializer: ts.CallExpression;
+    readonly call: ts.CallExpression;
     readonly expression: string;
   };
 
   const pending: PendingDefinition[] = [];
   const handledCalls: ts.CallExpression[] = [];
+  const usedPaths = new Set<string>();
 
-  const register = (exportName: string, initializer: ts.CallExpression, span: ts.Node) => {
-    handledCalls.push(initializer);
-    pending.push({
-      exportName,
-      loc: toLocation(sourceFile, span),
-      initializer,
-      expression: initializer.getText(sourceFile),
-    });
+  // Build export bindings map (which variables are exported and with what name)
+  const exportBindings = new Map<string, string>(); // local -> exported
+  exports.forEach((exp) => {
+    if (exp.kind === 'named' && !exp.isTypeOnly) {
+      exportBindings.set(exp.local, exp.exported);
+    }
+  });
+
+  // Counter for anonymous scopes
+  const occurrenceCounters = new Map<string, number>();
+
+  const getNextOccurrence = (key: string): number => {
+    const current = occurrenceCounters.get(key) ?? 0;
+    occurrenceCounters.set(key, current + 1);
+    return current;
   };
 
-  sourceFile.statements.forEach((statement) => {
-    if (!ts.isVariableStatement(statement)) {
-      return;
+  const ensureUniquePath = (basePath: string): string => {
+    let path = basePath;
+    let suffix = 0;
+    while (usedPaths.has(path)) {
+      suffix++;
+      path = `${basePath}$${suffix}`;
     }
+    usedPaths.add(path);
+    return path;
+  };
 
-    if (!statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
-      return;
-    }
+  const visit = (node: ts.Node, stack: ScopeFrame[]) => {
+    // Check if this is a gql definition call
+    if (ts.isCallExpression(node) && isGqlDefinitionCall(identifiers, node)) {
+      const astPath = ensureUniquePath(buildAstPath(stack));
+      const isTopLevel = stack.length === 1;
 
-    statement.declarationList.declarations.forEach((declaration) => {
-      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
-        return;
-      }
+      // Determine if exported
+      let isExported = false;
+      let exportBinding: string | undefined;
 
-      const exportName = declaration.name.text;
-      const initializer = declaration.initializer;
-
-      if (ts.isCallExpression(initializer)) {
-        if (!isGqlDefinitionCall(identifiers, initializer)) {
-          return;
+      if (isTopLevel && stack[0]) {
+        const topLevelName = stack[0].nameSegment;
+        if (exportBindings.has(topLevelName)) {
+          isExported = true;
+          exportBinding = exportBindings.get(topLevelName);
         }
-        register(exportName, initializer, declaration);
-        return;
       }
 
-      if (ts.isObjectLiteralExpression(initializer)) {
-        initializer.properties.forEach((property) => {
-          if (!ts.isPropertyAssignment(property)) {
-            return;
-          }
+      handledCalls.push(node);
+      pending.push({
+        astPath,
+        exportName: astPath, // For backward compat
+        isTopLevel,
+        isExported,
+        exportBinding,
+        loc: toLocation(sourceFile, node),
+        call: node,
+        expression: node.getText(sourceFile),
+      });
 
-          const name = getPropertyName(property.name);
-          if (!name) {
-            return;
-          }
+      // Don't visit children of gql calls
+      return;
+    }
 
-          if (!ts.isCallExpression(property.initializer)) {
-            return;
-          }
+    // Variable declaration
+    if (ts.isVariableDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
+      const varName = node.name.text;
+      const newFrame: ScopeFrame = {
+        nameSegment: varName,
+        kind: 'variable',
+        occurrence: getNextOccurrence(`var:${varName}`),
+      };
 
-          if (!isGqlDefinitionCall(identifiers, property.initializer)) {
-            return;
-          }
-
-          register(`${exportName}.${name}`, property.initializer, property);
-        });
+      if (node.initializer) {
+        visit(node.initializer, [...stack, newFrame]);
       }
-    });
+      return;
+    }
+
+    // Function declaration
+    if (ts.isFunctionDeclaration(node)) {
+      const funcName = node.name?.text ?? `function#${getNextOccurrence('function')}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: funcName,
+        kind: 'function',
+        occurrence: getNextOccurrence(`func:${funcName}`),
+      };
+
+      if (node.body) {
+        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
+      }
+      return;
+    }
+
+    // Arrow function
+    if (ts.isArrowFunction(node)) {
+      const arrowName = `arrow#${getNextOccurrence('arrow')}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: arrowName,
+        kind: 'function',
+        occurrence: 0,
+      };
+
+      if (ts.isBlock(node.body)) {
+        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
+      } else {
+        visit(node.body, [...stack, newFrame]);
+      }
+      return;
+    }
+
+    // Function expression
+    if (ts.isFunctionExpression(node)) {
+      const funcName = node.name?.text ?? `function#${getNextOccurrence('function')}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: funcName,
+        kind: 'function',
+        occurrence: getNextOccurrence(`func:${funcName}`),
+      };
+
+      if (node.body) {
+        ts.forEachChild(node.body, (child) => visit(child, [...stack, newFrame]));
+      }
+      return;
+    }
+
+    // Class declaration
+    if (ts.isClassDeclaration(node)) {
+      const className = node.name?.text ?? `class#${getNextOccurrence('class')}`;
+      const newFrame: ScopeFrame = {
+        nameSegment: className,
+        kind: 'class',
+        occurrence: getNextOccurrence(`class:${className}`),
+      };
+
+      node.members.forEach((member) => {
+        if (ts.isMethodDeclaration(member) || ts.isPropertyDeclaration(member)) {
+          const memberName = member.name && ts.isIdentifier(member.name) ? member.name.text : null;
+          if (memberName) {
+            const memberFrame: ScopeFrame = {
+              nameSegment: memberName,
+              kind: ts.isMethodDeclaration(member) ? 'method' : 'property',
+              occurrence: getNextOccurrence(`member:${className}.${memberName}`),
+            };
+
+            if (ts.isMethodDeclaration(member) && member.body) {
+              ts.forEachChild(member.body, (child) => visit(child, [...stack, newFrame, memberFrame]));
+            } else if (ts.isPropertyDeclaration(member) && member.initializer) {
+              visit(member.initializer, [...stack, newFrame, memberFrame]);
+            }
+          }
+        }
+      });
+      return;
+    }
+
+    // Object literal property
+    if (ts.isPropertyAssignment(node)) {
+      const propName = getPropertyName(node.name);
+      if (propName) {
+        const newFrame: ScopeFrame = {
+          nameSegment: propName,
+          kind: 'property',
+          occurrence: getNextOccurrence(`prop:${propName}`),
+        };
+
+        visit(node.initializer, [...stack, newFrame]);
+      }
+      return;
+    }
+
+    // Recursively visit children
+    ts.forEachChild(node, (child) => visit(child, stack));
+  };
+
+  // Start traversal from top-level statements
+  sourceFile.statements.forEach((statement) => {
+    visit(statement, []);
   });
 
   const definitions = pending.map(
     (item) =>
       ({
         exportName: item.exportName,
+        astPath: item.astPath,
+        isTopLevel: item.isTopLevel,
+        isExported: item.isExported,
+        exportBinding: item.exportBinding,
         loc: item.loc,
         expression: item.expression,
       }) satisfies ModuleDefinition,
@@ -312,36 +463,17 @@ const collectTopLevelDefinitions = (
   return { definitions, handledCalls };
 };
 
+/**
+ * Collect diagnostics (now empty since we support all definition types)
+ */
 const collectDiagnostics = (
-  sourceFile: ts.SourceFile,
-  identifiers: ReadonlySet<string>,
-  handledCalls: readonly ts.CallExpression[],
+  _sourceFile: ts.SourceFile,
+  _identifiers: ReadonlySet<string>,
+  _handledCalls: readonly ts.CallExpression[],
 ): ModuleDiagnostic[] => {
-  const diagnostics: ModuleDiagnostic[] = [];
-  const handledSet = new Set(handledCalls);
-
-  const visit = (node: ts.Node) => {
-    if (ts.isCallExpression(node)) {
-      if (!handledSet.has(node)) {
-        const gqlCall = isGqlDefinitionCall(identifiers, node);
-        if (gqlCall) {
-          diagnostics.push({
-            code: "NON_TOP_LEVEL_DEFINITION",
-            message: "gql.* definitions must be declared at module top-level",
-            loc: toLocation(sourceFile, node),
-          });
-        }
-      }
-    }
-
-    ts.forEachChild(node, visit);
-  };
-
-  sourceFile.statements.forEach((statement) => {
-    ts.forEachChild(statement, visit);
-  });
-
-  return diagnostics;
+  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
+  // All gql definitions are now supported
+  return [];
 };
 
 /**
@@ -369,17 +501,17 @@ export const typeScriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly imports: readonly ModuleImport[];
+      readonly exports: readonly ModuleExport[];
       readonly source: string;
     },
   ): {
     readonly definitions: readonly ModuleDefinition[];
     readonly handles: readonly ts.CallExpression[];
   } {
-    const { definitions, handledCalls } = collectTopLevelDefinitions(
+    const { definitions, handledCalls } = collectAllDefinitions(
       file,
       context.gqlIdentifiers,
-      context.imports,
-      context.source,
+      context.exports,
     );
     return { definitions, handles: handledCalls };
   },

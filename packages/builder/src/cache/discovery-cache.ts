@@ -5,7 +5,8 @@ import { DiscoverySnapshotSchema } from "../schemas/discovery";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 
 const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
-const DISCOVERY_CACHE_VERSION = "discovery-cache/v1";
+// Bumped to v2 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
+const DISCOVERY_CACHE_VERSION = "discovery-cache/v2";
 
 export type DiscoveryCacheOptions = {
   readonly factory: JsonCacheFactory;
