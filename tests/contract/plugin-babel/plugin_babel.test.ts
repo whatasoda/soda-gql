@@ -171,7 +171,9 @@ describe("@soda-gql/plugin-babel", () => {
     expect(transformed).not.toContain("gql.query(");
     expect(transformed).not.toContain("gql.default(");
     expect(transformed).toContain("gqlRuntime.operation({");
-    expect(transformed).toContain('operationType: "query"');
+    expect(transformed).toContain('prebuild: JSON.parse(');
+    expect(transformed).toContain("operationType");
+    expect(transformed).toContain("query");
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });

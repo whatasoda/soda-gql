@@ -83,9 +83,10 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     // Verify gqlRuntime API usage
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain("gqlRuntime.operation({");
-    expect(transformed).toContain('operationType: "query"');
-    expect(transformed).toContain('operationName: "ProfilePageQuery"');
-    expect(transformed).toContain("gqlRuntime.castDocumentNode(");
+    expect(transformed).toContain('prebuild: JSON.parse(');
+    expect(transformed).toContain("operationType");
+    expect(transformed).toContain("query");
+    expect(transformed).toContain("ProfilePageQuery");
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
   });
 });

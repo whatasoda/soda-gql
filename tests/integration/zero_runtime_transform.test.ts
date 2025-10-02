@@ -87,11 +87,12 @@ describe("zero-runtime transform", () => {
           expect(code).not.toContain("gql.default(");
           expect(code).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
           expect(code).toContain("gqlRuntime.operation({");
-          expect(code).toContain("prebuild:");
-          expect(code).toContain('operationName: "ProfilePageQuery"');
-          expect(code).toContain("document:");
-          expect(code).toContain("variableNames:");
-          expect(code).toContain("projectionPathGraph:");
+          expect(code).toContain("prebuild: JSON.parse(");
+          expect(code).toContain("operationName");
+          expect(code).toContain("ProfilePageQuery");
+          expect(code).toContain("document");
+          expect(code).toContain("variableNames");
+          expect(code).toContain("projectionPathGraph");
           expect(code).toContain("runtime:");
           expect(code).toContain("getSlices:");
           expect(code).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');

@@ -16,7 +16,7 @@ import type { RuntimeOperationInput } from "../../core/src/runtime/operation";
 import type { RuntimeSliceInput } from "../../core/src/runtime/slice";
 import { loadArtifact, resolveCanonicalId } from "./artifact";
 import { normalizeOptions } from "./options";
-import { buildLiteralFromValue, buildObjectExpression, clone } from "./transform/ast-builders";
+import { buildObjectExpression, clone } from "./transform/ast-builders";
 import type { SodaGqlBabelOptions } from "./types";
 
 type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
@@ -447,15 +447,9 @@ const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOpera
 
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("operation")), [
     buildObjectExpression({
-      prebuild: buildObjectExpression<keyof RuntimeOperationInput["prebuild"]>({
-        operationType: t.stringLiteral(artifact.prebuild.operationType),
-        operationName: t.stringLiteral(artifact.prebuild.operationName),
-        document: t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("castDocumentNode")), [
-          buildLiteralFromValue(artifact.prebuild.document),
-        ]),
-        variableNames: t.arrayExpression(artifact.prebuild.variableNames.map((variableName) => t.stringLiteral(variableName))),
-        projectionPathGraph: projectionGraphToAst(artifact.prebuild.projectionPathGraph),
-      }),
+      prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
+        t.stringLiteral(JSON.stringify(artifact.prebuild)),
+      ]),
       runtime: buildObjectExpression<keyof RuntimeOperationInput["runtime"]>({
         getSlices: clone(slicesBuilder),
       }),
