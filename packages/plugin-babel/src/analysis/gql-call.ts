@@ -90,7 +90,7 @@ export const extractGqlCall = ({
     createUnsupportedArtifactTypeError({
       filename,
       canonicalId,
-      artifactType: artifact.type,
+      artifactType: (artifact as { type: string }).type,
     }),
   );
 };
@@ -160,7 +160,7 @@ const resolveBuilderCall = (call: t.CallExpression): t.CallExpression | null => 
   return extractBuilderCall(factoryArg);
 };
 
-const isGqlMemberExpression = (callee: t.Expression): callee is t.MemberExpression =>
+const isGqlMemberExpression = (callee: t.Expression | t.V8IntrinsicIdentifier): callee is t.MemberExpression =>
   t.isMemberExpression(callee) &&
   t.isIdentifier(callee.object, { name: "gql" }) &&
   t.isIdentifier(callee.property) &&
