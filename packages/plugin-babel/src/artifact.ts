@@ -35,8 +35,6 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
     const validated = BuilderArtifactSchema.parse(parsed);
     return ok(validated as unknown as BuilderArtifact);
   } catch (error) {
-    console.log(error);
-
     return err({
       type: "ArtifactError",
       code: error instanceof SyntaxError ? "PARSE_FAILED" : "VALIDATION_FAILED",

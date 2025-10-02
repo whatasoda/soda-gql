@@ -106,9 +106,9 @@ export const brokenModel = gql.default(({ model }) =>
       },
     };
 
-    // Lock exact error message (plugin.ts:409)
+    // Lock exact error message
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
-      "gql.model requires a transform",
+      "model requires a normalize function",
     );
   });
 
@@ -144,9 +144,9 @@ export const brokenSlice = gql.default(({ slice }, { $ }) =>
       },
     };
 
-    // Lock exact error message (plugin.ts:427)
+    // Lock exact error message
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
-      "gql.querySlice requires a projection builder",
+      "slice requires a projection builder",
     );
   });
 

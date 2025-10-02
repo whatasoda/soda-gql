@@ -166,7 +166,7 @@ export const brokenSlice = gql.default(({ slice }, { $ }) =>
 
     // Lock error message format
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
-      "gql.querySlice requires a projection builder",
+      "slice requires a projection builder",
     );
   });
 

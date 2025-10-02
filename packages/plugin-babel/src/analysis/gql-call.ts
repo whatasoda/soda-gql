@@ -9,7 +9,7 @@ import type {
 } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
 
-import { resolveCanonicalId as defaultResolveCanonicalId } from "../artifact";
+import { resolveCanonicalId } from "../artifact";
 import type { GqlDefinitionMetadataMap } from "../metadata/collector";
 import type {
   PluginAnalysisArtifactMissingError,
@@ -19,14 +19,6 @@ import type {
 } from "../state";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactEntry | undefined;
-
-type ExtractGqlCallDeps = {
-  readonly resolveCanonicalId: typeof defaultResolveCanonicalId;
-};
-
-const defaultDeps: ExtractGqlCallDeps = {
-  resolveCanonicalId: defaultResolveCanonicalId,
-};
 
 export type GqlCallBase = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -46,7 +38,6 @@ export type ExtractGqlCallArgs = {
   readonly metadata: GqlDefinitionMetadataMap;
   readonly builderCall: t.CallExpression;
   readonly getArtifact: ArtifactLookup;
-  readonly deps?: Partial<ExtractGqlCallDeps>;
 };
 
 export const extractGqlCall = ({
@@ -55,9 +46,7 @@ export const extractGqlCall = ({
   metadata,
   builderCall,
   getArtifact,
-  deps,
 }: ExtractGqlCallArgs): Result<GqlCall, PluginError> => {
-  const extractDeps = { ...defaultDeps, ...deps };
   const callExpression = nodePath.node;
 
   const meta = metadata.get(callExpression);
@@ -65,7 +54,7 @@ export const extractGqlCall = ({
     return err(createMetadataMissingError({ filename }));
   }
 
-  const canonicalId = extractDeps.resolveCanonicalId(filename, meta.astPath);
+  const canonicalId = resolveCanonicalId(filename, meta.astPath);
   const artifact = getArtifact(canonicalId);
 
   if (!artifact) {

@@ -182,7 +182,7 @@ export const brokenModel = gql.default(({ model }) =>
 
     // Lock error message format
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
-      "gql.model requires a transform",
+      "model requires a normalize function",
     );
   });
 
