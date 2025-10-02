@@ -17,6 +17,13 @@ import type {
   SourceLocation,
   SourcePosition,
 } from "../analyzer-types";
+import {
+  buildAstPath,
+  createExportBindingsMap,
+  createOccurrenceTracker,
+  createPathTracker,
+  type ScopeFrame,
+} from "../common/scope";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
@@ -187,11 +194,27 @@ const collectExports = (module: Module): ModuleExport[] => {
         source: declaration.source.value,
         isTypeOnly: false,
       });
+      return;
+    }
+
+    if (declaration.type === "ExportDefaultDeclaration" || declaration.type === "ExportDefaultExpression") {
+      exports.push({
+        kind: "named",
+        exported: "default",
+        local: "default",
+        isTypeOnly: false,
+      });
     }
   };
 
   module.body.forEach((item) => {
-    if (item.type === "ExportDeclaration" || item.type === "ExportNamedDeclaration" || item.type === "ExportAllDeclaration") {
+    if (
+      item.type === "ExportDeclaration" ||
+      item.type === "ExportNamedDeclaration" ||
+      item.type === "ExportAllDeclaration" ||
+      item.type === "ExportDefaultDeclaration" ||
+      item.type === "ExportDefaultExpression"
+    ) {
       handle(item);
       return;
     }
@@ -202,7 +225,9 @@ const collectExports = (module: Module): ModuleExport[] => {
       if (
         declaration.type === "ExportDeclaration" ||
         declaration.type === "ExportNamedDeclaration" ||
-        declaration.type === "ExportAllDeclaration"
+        declaration.type === "ExportAllDeclaration" ||
+        declaration.type === "ExportDefaultDeclaration" ||
+        declaration.type === "ExportDefaultExpression"
       ) {
         // biome-ignore lint/suspicious/noExplicitAny: Complex SWC AST type
         handle(declaration as any);
@@ -269,25 +294,6 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
   return true;
 };
 
-/**
- * Scope frame for tracking AST path segments
- */
-type ScopeFrame = {
-  /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
-  readonly nameSegment: string;
-  /** Kind of scope */
-  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
-  /** Occurrence index for disambiguation */
-  readonly occurrence: number;
-};
-
-/**
- * Build AST path from scope stack
- */
-const buildAstPath = (stack: readonly ScopeFrame[]): string => {
-  return stack.map((frame) => frame.nameSegment).join(".");
-};
-
 const collectAllDefinitions = (
   module: Module,
   gqlIdentifiers: ReadonlySet<string>,
@@ -325,35 +331,13 @@ const collectAllDefinitions = (
 
   const pending: PendingDefinition[] = [];
   const handledCalls: CallExpression[] = [];
-  const usedPaths = new Set<string>();
 
   // Build export bindings map (which variables are exported and with what name)
-  const exportBindings = new Map<string, string>(); // local -> exported
-  exports.forEach((exp) => {
-    if (exp.kind === "named" && !exp.isTypeOnly) {
-      exportBindings.set(exp.local, exp.exported);
-    }
-  });
+  const exportBindings = createExportBindingsMap(exports);
 
-  // Counter for anonymous scopes
-  const occurrenceCounters = new Map<string, number>();
-
-  const getNextOccurrence = (key: string): number => {
-    const current = occurrenceCounters.get(key) ?? 0;
-    occurrenceCounters.set(key, current + 1);
-    return current;
-  };
-
-  const ensureUniquePath = (basePath: string): string => {
-    let path = basePath;
-    let suffix = 0;
-    while (usedPaths.has(path)) {
-      suffix++;
-      path = `${basePath}$${suffix}`;
-    }
-    usedPaths.add(path);
-    return path;
-  };
+  // Create occurrence and path trackers
+  const { getNextOccurrence } = createOccurrenceTracker();
+  const { ensureUniquePath } = createPathTracker();
 
   const expressionFromCall = (call: CallExpression): string => {
     let start = call.span.start;
@@ -561,12 +545,7 @@ const collectAllDefinitions = (
 /**
  * Collect diagnostics (now empty since we support all definition types)
  */
-const collectDiagnostics = (
-  _module: Module,
-  _gqlIdentifiers: ReadonlySet<string>,
-  _handledCalls: readonly CallExpression[],
-  _resolvePosition: (offset: number) => SourcePosition,
-): ModuleDiagnostic[] => {
+const collectDiagnostics = (): ModuleDiagnostic[] => {
   // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
   // All gql definitions are now supported
   return [];
@@ -629,14 +608,13 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
   },
 
   collectDiagnostics(
-    file: Module,
-    context: {
+    _file: Module,
+    _context: {
       readonly gqlIdentifiers: ReadonlySet<string>;
       readonly handledCalls: readonly CallExpression[];
       readonly source: string;
     },
   ): readonly ModuleDiagnostic[] {
-    const resolvePosition = toPositionResolver(context.source);
-    return collectDiagnostics(file, context.gqlIdentifiers, context.handledCalls, resolvePosition);
+    return collectDiagnostics();
   },
 };

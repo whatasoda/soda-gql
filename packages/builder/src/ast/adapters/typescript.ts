@@ -17,6 +17,13 @@ import type {
   ModuleImport,
   SourceLocation,
 } from "../analyzer-types";
+import {
+  buildAstPath,
+  createExportBindingsMap,
+  createOccurrenceTracker,
+  createPathTracker,
+  type ScopeFrame,
+} from "../common/scope";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -212,25 +219,6 @@ const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: t
 };
 
 /**
- * Scope frame for tracking AST path segments
- */
-type ScopeFrame = {
-  /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
-  readonly nameSegment: string;
-  /** Kind of scope */
-  readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";
-  /** Occurrence index for disambiguation */
-  readonly occurrence: number;
-};
-
-/**
- * Build AST path from scope stack
- */
-const buildAstPath = (stack: readonly ScopeFrame[]): string => {
-  return stack.map((frame) => frame.nameSegment).join(".");
-};
-
-/**
  * Get property name from AST node
  */
 const getPropertyName = (name: ts.PropertyName): string | null => {
@@ -266,35 +254,13 @@ const collectAllDefinitions = (
 
   const pending: PendingDefinition[] = [];
   const handledCalls: ts.CallExpression[] = [];
-  const usedPaths = new Set<string>();
 
   // Build export bindings map (which variables are exported and with what name)
-  const exportBindings = new Map<string, string>(); // local -> exported
-  exports.forEach((exp) => {
-    if (exp.kind === "named" && !exp.isTypeOnly) {
-      exportBindings.set(exp.local, exp.exported);
-    }
-  });
+  const exportBindings = createExportBindingsMap(exports);
 
-  // Counter for anonymous scopes
-  const occurrenceCounters = new Map<string, number>();
-
-  const getNextOccurrence = (key: string): number => {
-    const current = occurrenceCounters.get(key) ?? 0;
-    occurrenceCounters.set(key, current + 1);
-    return current;
-  };
-
-  const ensureUniquePath = (basePath: string): string => {
-    let path = basePath;
-    let suffix = 0;
-    while (usedPaths.has(path)) {
-      suffix++;
-      path = `${basePath}$${suffix}`;
-    }
-    usedPaths.add(path);
-    return path;
-  };
+  // Create occurrence and path trackers
+  const { getNextOccurrence } = createOccurrenceTracker();
+  const { ensureUniquePath } = createPathTracker();
 
   const visit = (node: ts.Node, stack: ScopeFrame[]) => {
     // Check if this is a gql definition call
