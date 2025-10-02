@@ -1,40 +1,55 @@
 import { gql } from "@/graphql-system";
 
 // Case 1: Non-exported top-level definition (used internally only)
-const internalModel = gql.default(({ model }) =>
+// Should be collected with canonical ID: filePath::internalPostModel
+const internalPostModel = gql.default(({ model }) =>
   model(
-    { typename: "Internal" },
+    { typename: "Post" },
     ({ f }) => ({
       ...f.id(),
+      ...f.title(),
     }),
-    (selection) => ({ id: selection.id }),
+    (selection) => ({
+      id: selection.id,
+      title: selection.title,
+    }),
   ),
 );
 
-// Case 2: Exported definition using internal model
-export const publicModel = gql.default(({ model }) =>
+// Case 2: Exported model using the internal model
+// Should be collected with canonical ID: filePath::userWithPostsModel
+export const userWithPostsModel = gql.default(({ model }) =>
   model(
-    { typename: "Public" },
+    { typename: "User" },
     ({ f }) => ({
       ...f.id(),
-      ...f.internal(() => ({
-        ...internalModel.fragment(),
+      ...f.name(),
+      ...f.posts({}, () => ({
+        ...internalPostModel.fragment(),
       })),
     }),
     (selection) => ({
       id: selection.id,
-      internal: internalModel.normalize(selection.internal),
+      name: selection.name,
+      posts: selection.posts.map((post) => internalPostModel.normalize(post)),
     }),
   ),
 );
 
 // Case 3: Nested definitions in function scope
+// Inner definitions should be collected with canonical IDs like:
+// - filePath::createUserQueries.userById
+// - filePath::createUserQueries.userList
 export function createUserQueries() {
-  const userById = gql.default(({ slice }) =>
+  const userById = gql.default(({ slice }, { $ }) =>
     slice.query(
-      { variables: {} },
-      ({ f }) => ({
-        ...f.user({ id: "1" }, ({ f }) => ({
+      {
+        variables: {
+          ...$("id").scalar("ID:!"),
+        },
+      },
+      ({ f, $ }) => ({
+        ...f.user({ id: $.id }, ({ f }) => ({
           ...f.id(),
           ...f.name(),
         })),
@@ -43,11 +58,15 @@ export function createUserQueries() {
     ),
   );
 
-  const userList = gql.default(({ slice }) =>
+  const userList = gql.default(({ slice }, { $ }) =>
     slice.query(
-      { variables: {} },
-      ({ f }) => ({
-        ...f.users({ limit: 10 }, ({ f }) => ({
+      {
+        variables: {
+          ...$("limit").scalar("Int:?"),
+        },
+      },
+      ({ f, $ }) => ({
+        ...f.users({ limit: $.limit }, ({ f }) => ({
           ...f.id(),
           ...f.name(),
         })),
@@ -60,101 +79,59 @@ export function createUserQueries() {
 }
 
 // Case 4: Arrow function with nested definitions
+// Should be collected with canonical ID: filePath::queryFactory.arrow#0.baseQuery
 export const queryFactory = () => {
   const baseQuery = gql.default(({ slice }) =>
     slice.query(
       { variables: {} },
       ({ f }) => ({
-        ...f.id(),
+        ...f.users({ limit: 5 }, ({ f }) => ({
+          ...f.id(),
+        })),
       }),
-      ({ select }) => select(["$.id"], (result) => result),
+      ({ select }) => select(["$.users"], (result) => result),
     ),
   );
 
-  return {
-    base: baseQuery,
-    extended: gql.default(({ slice }) =>
-      slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        }),
-        ({ select }) => select(["$.id", "$.name"], (result) => result),
-      ),
-    ),
-  };
+  return baseQuery;
 };
 
-// Case 5: Class with method containing definitions
-export class QueryBuilder {
-  buildUserQuery() {
-    const userQuery = gql.default(({ slice }) =>
-      slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.user({ id: "1" }, ({ f }) => ({
-            ...f.id(),
-          })),
-        }),
-        ({ select }) => select(["$.user"], (result) => result),
-      ),
-    );
-
-    return userQuery;
-  }
-
-  static buildStaticQuery() {
-    return gql.default(({ slice }) =>
-      slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.users({ limit: 5 }, ({ f }) => ({
-            ...f.id(),
-          })),
-        }),
-        ({ select }) => select(["$.users"], (result) => result),
-      ),
-    );
-  }
-}
-
-// Case 6: Deeply nested object structure
-export const queries = {
+// Case 5: Nested object structure with gql definitions
+// Should be collected with canonical IDs like:
+// - filePath::nestedQueries.users.list
+// - filePath::nestedQueries.users.byId
+export const nestedQueries = {
   users: {
-    list: gql.default(({ slice }) =>
+    list: gql.default(({ slice }, { $ }) =>
       slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.users({ limit: 10 }, ({ f }) => ({
+        {
+          variables: {
+            ...$("limit").scalar("Int:?"),
+          },
+        },
+        ({ f, $ }) => ({
+          ...f.users({ limit: $.limit }, ({ f }) => ({
             ...f.id(),
+            ...f.name(),
           })),
         }),
         ({ select }) => select(["$.users"], (result) => result),
       ),
     ),
-    byId: gql.default(({ slice }) =>
+    byId: gql.default(({ slice }, { $ }) =>
       slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.user({ id: "1" }, ({ f }) => ({
+        {
+          variables: {
+            ...$("id").scalar("ID:!"),
+          },
+        },
+        ({ f, $ }) => ({
+          ...f.user({ id: $.id }, ({ f }) => ({
             ...f.id(),
+            ...f.name(),
           })),
         }),
         ({ select }) => select(["$.user"], (result) => result),
-      ),
-    ),
-  },
-  posts: {
-    list: gql.default(({ slice }) =>
-      slice.query(
-        { variables: {} },
-        ({ f }) => ({
-          ...f.posts({ limit: 10 }, ({ f }) => ({
-            ...f.id(),
-          })),
-        }),
-        ({ select }) => select(["$.posts"], (result) => result),
       ),
     ),
   },
