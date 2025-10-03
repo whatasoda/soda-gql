@@ -6,6 +6,7 @@ import {
   buildDocument,
   buildWithTypeModifier,
 } from "../../../packages/core/src/buildtime/build-document";
+import type { InputTypeRefs } from "../../../packages/core/src/types/schema/type-ref";
 import type { TypeModifier } from "../../../packages/core/src/types/schema/type-modifier";
 
 describe("Document Integrity Tests", () => {

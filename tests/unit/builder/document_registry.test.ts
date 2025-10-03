@@ -45,9 +45,10 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
 const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>): IntermediateModule => ({
   elements,
   issueRegistry: {
-    issues: [],
-    register: () => {},
-    hasIssues: () => false,
+    addIssue: () => {},
+    registerOperationName: () => true,
+    getIssues: () => [],
+    hasErrors: () => false,
   },
 });
 
@@ -76,7 +77,7 @@ describe("artifact aggregate", () => {
         type: "slice",
         element: Slice.create(() => ({
           operationType: "query",
-          build: () => ({ fields: {}, projection: {} as any }),
+          build: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
         })),
       },
       [operationId]: {
@@ -84,7 +85,7 @@ describe("artifact aggregate", () => {
         element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
-          document: parse("query ProfilePageQuery { users { id } }"),
+          document: parse("query ProfilePageQuery { users { id } }") as any,
           variableNames: [],
           projectionPathGraph: { matches: [], children: {} },
           parse: () => ({}) as any,
@@ -145,8 +146,10 @@ describe("artifact aggregate", () => {
       },
       (error) => {
         expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-        expect(error.message).toBe("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
-        expect(error.filePath).toBe("/app/src/entities/user.ts");
+        if (error.code === "MODULE_EVALUATION_FAILED") {
+          expect(error.message).toBe("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
+          expect(error.filePath).toBe("/app/src/entities/user.ts");
+        }
       },
     );
   });
@@ -205,8 +208,10 @@ describe("artifact aggregate", () => {
       },
       (error) => {
         expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-        expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
-        expect(error.filePath).toBe("/app/src/entities/unknown.ts");
+        if (error.code === "MODULE_EVALUATION_FAILED") {
+          expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
+          expect(error.filePath).toBe("/app/src/entities/unknown.ts");
+        }
       },
     );
   });
@@ -228,7 +233,7 @@ describe("artifact aggregate", () => {
         element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
-          document,
+          document: document as any,
           variableNames: ["userId"],
           projectionPathGraph,
           parse: () => ({}) as any,
@@ -246,7 +251,7 @@ describe("artifact aggregate", () => {
         if (operation?.type === "operation") {
           expect(operation.prebuild.operationType).toBe("query");
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
-          expect(operation.prebuild.document).toBe(document);
+          expect(operation.prebuild.document).toBe(document as any);
           expect(operation.prebuild.variableNames).toEqual(["userId"]);
           expect(operation.prebuild.projectionPathGraph).toEqual(projectionPathGraph);
         }

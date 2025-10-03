@@ -43,7 +43,8 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
     });
 
     if (result.isErr()) {
-      throw new Error(`builder failed: ${result.error.code} - ${result.error.message}`);
+      const errorMsg = "message" in result.error ? ` - ${result.error.message}` : "";
+      throw new Error(`builder failed: ${result.error.code}${errorMsg}`);
     }
 
     return result.value;

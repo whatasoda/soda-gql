@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ModuleAnalysis } from "../../../packages/builder/src/ast/analyze-module";
+import type { ModuleAnalysis } from "../../../packages/builder/src/ast/types";
 import { createJsonCache, ModuleCacheManager } from "../../../packages/builder/src/cache";
 import { createTestSuite, TestSuite } from "../../utils/base";
 

@@ -25,8 +25,8 @@ export const userModel = gql.default(({ model }) =>
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]?.astPath).toBe(swcAnalysis.definitions[0]?.astPath);
-      expect(tsAnalysis.definitions[0]?.astPath).toBe("userModel");
+      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
+      expect(tsAnalysis.definitions[0]!.astPath).toBe("userModel");
     });
 
     it("generates same astPath for nested definitions in functions", () => {
@@ -47,8 +47,8 @@ function createModels() {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]?.astPath).toBe(swcAnalysis.definitions[0]?.astPath);
-      expect(tsAnalysis.definitions[0]?.astPath).toBe("createModels.nested");
+      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
+      expect(tsAnalysis.definitions[0]!.astPath).toBe("createModels.nested");
     });
 
     it("generates same astPath for definitions in arrow functions", () => {
@@ -69,9 +69,9 @@ const factory = () => {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]?.astPath).toBe(swcAnalysis.definitions[0]?.astPath);
+      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
       // Arrow functions get auto-numbered names
-      expect(tsAnalysis.definitions[0]?.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
+      expect(tsAnalysis.definitions[0]!.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
     });
 
     it("generates same astPath for class method definitions (TypeScript only)", () => {
@@ -115,8 +115,8 @@ const config = {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]?.astPath).toBe(swcAnalysis.definitions[0]?.astPath);
-      expect(tsAnalysis.definitions[0]?.astPath).toBe("config.models.user");
+      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
+      expect(tsAnalysis.definitions[0]!.astPath).toBe("config.models.user");
     });
 
     it("handles duplicate names with unique suffixes", () => {
@@ -139,7 +139,7 @@ function factory() {
       expect(swcAnalysis.definitions).toHaveLength(4);
 
       for (let i = 0; i < 4; i++) {
-        expect(tsAnalysis.definitions[i]?.astPath).toBe(swcAnalysis.definitions[i]?.astPath);
+        expect(tsAnalysis.definitions[i]!.astPath).toBe(swcAnalysis.definitions[i]!.astPath);
       }
 
       // Top-level model1 and model2
