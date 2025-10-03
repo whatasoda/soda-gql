@@ -4,8 +4,7 @@
   "type": "module",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "examples/*"
+    "packages/*"
   ],
   "scripts": {
     "typecheck": "tsc -b",
