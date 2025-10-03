@@ -301,9 +301,11 @@ export const createBuilderSession = (): BuilderSession => {
     state.moduleAdjacency = extractModuleAdjacency(graph);
     state.definitionAdjacency = extractDefinitionAdjacency(graph);
 
-    // Store metadata (use placeholder for now, will be enhanced)
+    // Store metadata
+    // For V1: Use analyzer as schema hash (simple but functional)
+    // Future: Hash actual GraphQL schema file content
     state.metadata = {
-      schemaHash: "", // TODO: Compute from schema file
+      schemaHash: input.analyzer, // Using analyzer as proxy for schema version in V1
       analyzerVersion: input.analyzer,
     };
 

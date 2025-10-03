@@ -1,3 +1,6 @@
+import { watch } from "node:fs";
+import { resolve } from "node:path";
+
 import type {
   BuilderAnalyzer,
   BuilderError,
@@ -6,7 +9,8 @@ import type {
   BuilderOptions,
   BuilderSuccess,
 } from "@soda-gql/builder";
-import { runBuilder } from "@soda-gql/builder";
+import { createBuilderService, runBuilder } from "@soda-gql/builder";
+import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
@@ -181,28 +185,126 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   const options = parsed.value;
 
   if (options.watch) {
-    // Watch mode: Run initial build, then watch for changes
+    // Watch mode: Use BuilderService with session
     process.stdout.write("Watch mode enabled - building and watching for changes...\n");
 
-    const initialResult = await runBuilder(options);
+    // Create service with session
+    const service = createBuilderService({
+      mode: options.mode,
+      entry: options.entry,
+      analyzer: options.analyzer,
+      debugDir: options.debugDir,
+    });
+
+    // Initial build
+    const initialResult = await service.build();
 
     if (initialResult.isErr()) {
       process.stdout.write(`${formatBuilderError(options.format, initialResult.error)}\n`);
       // Don't exit in watch mode - continue watching
     } else {
-      const output = formatBuilderSuccess(options.format, initialResult.value, options.mode);
+      const output = formatBuilderSuccess(
+        options.format,
+        { artifact: initialResult.value, outPath: options.outPath },
+        options.mode,
+      );
       if (output) {
         process.stdout.write(`${output}\n`);
       }
     }
 
-    // TODO: Implement file watching with BuilderSession.update()
-    // For now, just keep the process alive
     process.stdout.write("Watching for changes... (Press Ctrl+C to exit)\n");
 
-    // Keep process alive
-    await new Promise(() => {
-      // Never resolves - process stays alive until Ctrl+C
+    // Watch directories containing entry files
+    const watchedDirs = new Set<string>();
+    for (const entry of options.entry) {
+      const dir = resolve(entry).split("/").slice(0, -1).join("/");
+      watchedDirs.add(dir);
+    }
+
+    // Set up file watchers
+    const watchers: ReturnType<typeof watch>[] = [];
+    const changedFiles = new Set<string>();
+    let rebuildTimeout: NodeJS.Timeout | null = null;
+
+    const triggerRebuild = async () => {
+      if (changedFiles.size === 0) return;
+
+      const files = [...changedFiles];
+      changedFiles.clear();
+
+      process.stdout.write(`\nRebuilding (${files.length} files changed)...\n`);
+
+      // Create change set
+      const changeSet: BuilderChangeSet = {
+        added: [],
+        updated: files.map((filePath) => ({
+          filePath,
+          fingerprint: `${Date.now()}`, // Simple timestamp-based fingerprint
+          mtimeMs: Date.now(),
+        })),
+        removed: [],
+        metadata: {
+          schemaHash: options.analyzer, // Match buildInitial logic
+          analyzerVersion: options.analyzer,
+        },
+      };
+
+      // Use service.update() if available, otherwise rebuild
+      const result = service.update
+        ? await service.update(changeSet)
+        : await service.build();
+
+      if (result.isErr()) {
+        process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
+      } else {
+        const output = formatBuilderSuccess(
+          options.format,
+          { artifact: result.value, outPath: options.outPath },
+          options.mode,
+        );
+        if (output) {
+          process.stdout.write(`${output}\n`);
+        }
+      }
+
+      process.stdout.write("Watching for changes...\n");
+    };
+
+    for (const dir of watchedDirs) {
+      const watcher = watch(dir, { recursive: true }, (eventType, filename) => {
+        if (!filename) return;
+
+        const fullPath = resolve(dir, filename);
+
+        // Filter for TypeScript files
+        if (!fullPath.endsWith(".ts") && !fullPath.endsWith(".tsx")) {
+          return;
+        }
+
+        changedFiles.add(fullPath);
+
+        // Debounce rebuilds (300ms)
+        if (rebuildTimeout) {
+          clearTimeout(rebuildTimeout);
+        }
+        rebuildTimeout = setTimeout(() => {
+          triggerRebuild();
+        }, 300);
+      });
+
+      watchers.push(watcher);
+    }
+
+    // Keep process alive and handle cleanup
+    await new Promise<void>((resolve) => {
+      process.on("SIGINT", () => {
+        process.stdout.write("\nStopping watch mode...\n");
+        for (const watcher of watchers) {
+          watcher.close();
+        }
+        resolve();
+      });
     });
 
     return 0;
