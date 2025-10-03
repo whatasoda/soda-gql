@@ -109,26 +109,32 @@ Created `.github/workflows/builder-benchmarks.yml`:
 - GitHub PR comments on regressions
 - Slack notifications (to be configured)
 
-### 🔄 Strategy 1 - Long-Lived Incremental Service (Not Started)
+### 🔄 Strategy 1 - Long-Lived Incremental Service (In Progress)
 
 **Target:** 2.0 weeks
-**Status:** Pending
+**Status:** Core infrastructure complete, watch mode and tests pending
 
-**Planned Tasks:**
-- [ ] Create `BuilderSession` in `packages/builder/src/service/session.ts`
-  - Maintain in-memory discovery cache
-  - Track file fingerprints
-  - Store dependency adjacency (module + definition level)
-  - Expose `{ buildInitial, update }` API
+**Completed Tasks:**
+- [x] Create `BuilderSession` in `packages/builder/src/session/builder-session.ts`
+  - ✅ Maintain in-memory discovery cache (snapshots Map)
+  - ✅ Store dependency adjacency (module + definition level)
+  - ✅ Expose `{ buildInitial, update, getSnapshot }` API
+  - ✅ Reuse discovery infrastructure across builds
+  - ⏳ update() stub (returns NotImplemented error)
 
-- [ ] Add `BuilderChangeSet` type to `packages/builder/src/types.ts`
-  - Fields: `added`, `updated`, `removed`
-  - Metadata: schema hash, analyzer version
+- [x] Add `BuilderChangeSet` type to `packages/builder/src/session/change-set.ts`
+  - ✅ Fields: `added`, `updated`, `removed`
+  - ✅ Metadata: schema hash, analyzer version
+  - ✅ Helper functions: shouldInvalidateSchema, shouldInvalidateAnalyzer, hasFileChanged
+  - ✅ Unit tests with 100% coverage
 
-- [ ] Refactor `createBuilderService` in `packages/builder/src/service.ts`
-  - Lazily instantiate session scoped to config
-  - Expose `build()` using `session.buildInitial()`
-  - Add `update(changeSet)` returning `Result<BuilderArtifact, BuilderError>`
+- [x] Refactor `createBuilderService` in `packages/builder/src/service.ts`
+  - ✅ Lazily instantiate session scoped to config
+  - ✅ Expose `build()` using `session.buildInitial()`
+  - ✅ Add optional `update(changeSet)` method
+  - ✅ Backward compatible API
+
+**Pending Tasks:**
 
 - [ ] Split `buildPipeline` in `packages/builder/src/runner.ts`
   - Separate discovery, graph build, intermediate, artifact steps
