@@ -91,3 +91,19 @@ export const addToCartSlice = gql.default(({ slice }, { $ }) =>
     ({ select }) => select(["$.addToCart"], (result) => result.map((data) => cartModel.normalize(data))),
   ),
 );
+
+export const cartUpdatedSlice = gql.default(({ slice }, { $ }) =>
+  slice.subscription(
+    {
+      variables: {
+        ...$("userId").scalar("ID:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.cartUpdated({ userId: $.userId }, () => ({
+        ...cartModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.cartUpdated"], (result) => result.map((data) => cartModel.normalize(data))),
+  ),
+);

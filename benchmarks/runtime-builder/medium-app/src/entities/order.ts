@@ -28,7 +28,7 @@ export const orderModel = gql.default(({ model }) =>
       ...f.userId(),
       ...f.items(({ f }) => ({
         ...f.id(),
-        ...f.product(() => ({
+        ...f.product(({ f }) => ({
           ...f.id(),
           ...f.name(),
         })),
