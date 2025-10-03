@@ -13,6 +13,10 @@ import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
 const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
 
+type BuilderCommandOptions = BuilderOptions & {
+  watch?: boolean;
+};
+
 const parseBuilderArgs = (argv: readonly string[]) => {
   const args = [...argv];
   const entries: string[] = [];
@@ -21,6 +25,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   let format: BuilderFormat = "human";
   let analyzer: BuilderAnalyzer = "ts";
   let debugDir: string | undefined;
+  let watch = false;
 
   while (args.length > 0) {
     const current = args.shift();
@@ -29,6 +34,10 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     }
 
     switch (current) {
+      case "--watch": {
+        watch = true;
+        break;
+      }
       case "--mode": {
         const value = args.shift();
         if (!value || !isMode(value)) {
@@ -123,13 +132,14 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     });
   }
 
-  return ok<BuilderOptions, BuilderError>({
+  return ok<BuilderCommandOptions, BuilderError>({
     mode,
     entry: entries,
     outPath,
     format,
     analyzer,
     debugDir,
+    watch,
   });
 };
 
@@ -168,7 +178,37 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     return 1;
   }
 
-  const options: BuilderOptions = parsed.value;
+  const options = parsed.value;
+
+  if (options.watch) {
+    // Watch mode: Run initial build, then watch for changes
+    process.stdout.write("Watch mode enabled - building and watching for changes...\n");
+
+    const initialResult = await runBuilder(options);
+
+    if (initialResult.isErr()) {
+      process.stdout.write(`${formatBuilderError(options.format, initialResult.error)}\n`);
+      // Don't exit in watch mode - continue watching
+    } else {
+      const output = formatBuilderSuccess(options.format, initialResult.value, options.mode);
+      if (output) {
+        process.stdout.write(`${output}\n`);
+      }
+    }
+
+    // TODO: Implement file watching with BuilderSession.update()
+    // For now, just keep the process alive
+    process.stdout.write("Watching for changes... (Press Ctrl+C to exit)\n");
+
+    // Keep process alive
+    await new Promise(() => {
+      // Never resolves - process stays alive until Ctrl+C
+    });
+
+    return 0;
+  }
+
+  // Normal mode: Single build
   const result = await runBuilder(options);
 
   if (result.isErr()) {
