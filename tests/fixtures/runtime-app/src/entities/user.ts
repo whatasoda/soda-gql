@@ -1,4 +1,8 @@
 import { gql } from "@/graphql-system";
+import type { AnyModel, AnySlice } from "@soda-gql/core";
+
+type GqlModel = Extract<ReturnType<typeof gql.default>, AnyModel>;
+type GqlSlice = Extract<ReturnType<typeof gql.default>, AnySlice>;
 
 type PostModel = {
   readonly id: string;
@@ -11,7 +15,7 @@ type UserModel = {
   readonly posts: readonly PostModel[];
 };
 
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel: GqlModel = gql.default(({ model }, { $ }) =>
   model(
     {
       typename: "User",
@@ -36,25 +40,27 @@ export const userModel = gql.default(({ model }, { $ }) =>
   ),
 );
 
-export const userRemote = {
-  forIterate: gql.default(({ model }) =>
-    model(
-      {
-        typename: "User",
-      },
-      ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
-      (selection) => ({
-        id: selection.id,
-        name: selection.name,
-      }),
-    ),
+const userRemoteForIterate: GqlModel = gql.default(({ model }) =>
+  model(
+    {
+      typename: "User",
+    },
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+    (selection) => ({
+      id: selection.id,
+      name: selection.name,
+    }),
   ),
+);
+
+export const userRemote = {
+  forIterate: userRemoteForIterate,
 };
 
-export const userSlice = gql.default(({ slice }, { $ }) =>
+export const userSlice: GqlSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
       variables: {
@@ -71,23 +77,25 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
   ),
 );
 
-export const userSliceCatalog = {
-  byId: gql.default(({ slice }, { $ }) =>
-    slice.query(
-      {
-        variables: {
-          ...$("id").scalar("ID:!"),
-          ...$("categoryId").scalar("ID:?"),
-        },
+const userSliceCatalogById: GqlSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: {
+        ...$("id").scalar("ID:!"),
+        ...$("categoryId").scalar("ID:?"),
       },
-      ({ f, $ }) => ({
-        ...f.users({ id: [$.id], categoryId: $.categoryId }, ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-      }),
-      ({ select }) =>
-        select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.normalize(user)))),
-    ),
+    },
+    ({ f, $ }) => ({
+      ...f.users({ id: [$.id], categoryId: $.categoryId }, ({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
+    ({ select }) =>
+      select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.normalize(user)))),
   ),
+);
+
+export const userSliceCatalog = {
+  byId: userSliceCatalogById,
 };
