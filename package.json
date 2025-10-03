@@ -9,7 +9,6 @@
   ],
   "scripts": {
     "typecheck": "tsc -b",
-    "typecheck:tests": "tsc --project tests/tsconfig.json",
     "biome:check": "biome check --write .",
     "quality": "bun run biome:check && bun run typecheck",
     "soda-gql": "bun run packages/cli/src/index.ts",
