@@ -1,9 +1,10 @@
 import { gql } from "@/graphql-system";
-import { reviewModel } from "../../entities/review";
+import { addReviewSlice } from "../../entities/review";
 
 export const addReviewMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
+      operationName: "AddReview",
       variables: {
         ...$("productId").scalar("ID:!"),
         ...$("userId").scalar("ID:!"),
@@ -12,10 +13,8 @@ export const addReviewMutation = gql.default(({ operation }, { $ }) =>
         ...$("comment").scalar("String:?"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.addReview({ input: { productId: $.productId, userId: $.userId, rating: $.rating, title: $.title, comment: $.comment } }, () => ({
-        ...reviewModel.fragment(),
-      })),
+    ({ $ }) => ({
+      review: addReviewSlice.build({ productId: $.productId, userId: $.userId, rating: $.rating, title: $.title, comment: $.comment }),
     }),
   ),
 );

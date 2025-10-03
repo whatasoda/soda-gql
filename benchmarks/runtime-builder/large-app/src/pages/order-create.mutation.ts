@@ -1,9 +1,10 @@
 import { gql } from "@/graphql-system";
-import { orderModel } from "../entities/order";
+import { createOrderSlice } from "../entities/order";
 
 export const createOrderMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
+      operationName: "CreateOrder",
       variables: {
         ...$("userId").scalar("ID:!"),
         ...$("items").scalar("[OrderItemInput!]:!"),
@@ -12,18 +13,14 @@ export const createOrderMutation = gql.default(({ operation }, { $ }) =>
         ...$("notes").scalar("String:?"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.createOrder({
-        input: {
-          userId: $.userId,
-          items: $.items,
-          shippingAddressId: $.shippingAddressId,
-          billingAddressId: $.billingAddressId,
-          notes: $.notes,
-        },
-      }, () => ({
-        ...orderModel.fragment(),
-      })),
+    ({ $ }) => ({
+      order: createOrderSlice.build({
+        userId: $.userId,
+        items: $.items,
+        shippingAddressId: $.shippingAddressId,
+        billingAddressId: $.billingAddressId,
+        notes: $.notes,
+      }),
     }),
   ),
 );
