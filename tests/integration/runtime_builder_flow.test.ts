@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type CanonicalId, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
+import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
 
 type CliResult = {
   readonly stdout: string;

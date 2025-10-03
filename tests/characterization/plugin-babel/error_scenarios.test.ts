@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { Kind } from "graphql";
+import { createCanonicalId } from "@soda-gql/builder";
+import { createBuilderArtifact, createInvalidArtifactElement } from "../../utils/artifact-fixtures";
 import { createTestSource, runBabelTransform } from "../../utils/transform";
 
 describe("Error scenario characterization tests", () => {
@@ -24,17 +26,7 @@ export const userModel = gql.default(({ model }) =>
 `);
 
     // Artifact without the expected canonical ID
-    const artifact: BuilderArtifact = {
-      elements: {},
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 0 },
-      },
-    };
+    const artifact = createBuilderArtifact([]);
 
     // Lock error: new error message includes canonical ID details
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -48,24 +40,19 @@ export const something = gql.default(({ unknown }) => unknown());
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "something");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
-          // @ts-expect-error - testing invalid type
-          type: "unknown",
-          id: canonicalId,
-          prebuild: {},
-        },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+    const artifact = createBuilderArtifact(
+      [
+        [
+          canonicalId,
+          createInvalidArtifactElement({
+            type: "unknown",
+            id: canonicalId,
+            prebuild: {},
+          }),
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     // Lock: artifact validation happens before type checking
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -85,26 +72,21 @@ export const brokenModel = gql.default(({ model }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "brokenModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
-          type: "model",
-          id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
+    const artifact = createBuilderArtifact(
+      [
+        [
+          canonicalId,
+          {
+            type: "model",
+            id: canonicalId,
+            prebuild: {
+              typename: "User",
+            },
           },
-        },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     // Lock exact error message
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -124,25 +106,21 @@ export const brokenSlice = gql.default(({ slice }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "brokenSlice");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
-          type: "slice",
-          id: canonicalId,
-          prebuild: {
-            operationType: "query",
+    const artifact = createBuilderArtifact(
+      [
+        [
+          canonicalId,
+          {
+            type: "slice",
+            id: canonicalId,
+            prebuild: {
+              operationType: "query",
+            },
           },
-        },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     // Lock exact error message
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -159,32 +137,28 @@ export const brokenQuery = gql.default(({ query }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "brokenQuery");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
-          type: "operation",
-          id: canonicalId,
-          prebuild: {
-            operationType: "query",
-            operationName: "BrokenQuery",
-            document: {
-              kind: "Document" as const,
-              definitions: [],
+    const artifact = createBuilderArtifact(
+      [
+        [
+          canonicalId,
+          {
+            type: "operation",
+            id: canonicalId,
+            prebuild: {
+              operationType: "query",
+              operationName: "BrokenQuery",
+              document: {
+                kind: Kind.DOCUMENT,
+                definitions: [],
+              },
+              variableNames: [],
+              projectionPathGraph: { matches: [], children: {} },
             },
-            variableNames: [],
-            projectionPathGraph: { matches: [], children: {} },
           },
-        },
-      },
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     // Lock current behavior: query() with 2 args still gets transformed
     // The second argument is treated as slicesBuilder
@@ -207,26 +181,21 @@ export const userModel = gql.default(factory);
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
-          type: "model",
-          id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
+    const artifact = createBuilderArtifact(
+      [
+        [
+          canonicalId,
+          {
+            type: "model",
+            id: canonicalId,
+            prebuild: {
+              typename: "User",
+            },
           },
-        },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     // Lock: plugin should reject non-arrow factory functions
     // extractGqlCall returns null when arg is not arrow function (plugin.ts:357-359)
@@ -243,17 +212,7 @@ export const userModel = gql.default(factory);
 export const x = 1;
 `);
 
-    const artifact: BuilderArtifact = {
-      elements: {},
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 0 },
-      },
-    };
+    const artifact = createBuilderArtifact([]);
 
     // Should transform successfully with no gql calls
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });

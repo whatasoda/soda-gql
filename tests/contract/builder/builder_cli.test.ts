@@ -1,9 +1,9 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index.ts";
-import type { CliResult } from "../../utils/cli.ts";
-import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as runCodegenCliUtil } from "../../utils/cli.ts";
+import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index";
+import type { CliResult } from "../../utils/cli";
+import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as runCodegenCliUtil } from "../../utils/cli";
 
 const projectRoot = getProjectRoot();
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");

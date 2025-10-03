@@ -1,5 +1,5 @@
 import { afterEach, beforeEach } from "bun:test";
-import { TestTempDir } from "./index.ts";
+import { TestTempDir } from ".";
 
 /**
  * Base class for test suites with common setup/teardown

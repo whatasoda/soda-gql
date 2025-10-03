@@ -2,10 +2,10 @@ import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
-import type { BuilderArtifact } from "../../packages/builder/src/index.ts";
-import createPlugin from "../../packages/plugin-babel/src/index.ts";
-import { getProjectRoot, TestTempDir } from "./index.ts";
-import { typeCheckFiles } from "./type-check.ts";
+import type { BuilderArtifact } from "@soda-gql/builder";
+import createPlugin from "@soda-gql/plugin-babel";
+import { getProjectRoot, TestTempDir } from ".";
+import { typeCheckFiles } from "./type-check";
 
 const resolveBiomeBinary = (): string => {
   const projectRoot = getProjectRoot();

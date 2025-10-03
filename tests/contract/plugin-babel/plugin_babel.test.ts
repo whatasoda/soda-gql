@@ -3,8 +3,8 @@ import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
-import { type CanonicalId, createBuilderService } from "../../../packages/builder/src/index.ts";
-import type { ArtifactSource } from "../../../packages/plugin-babel/src/types.ts";
+import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
+import type { ArtifactSource } from "../../../packages/plugin-babel/src/types";
 
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
@@ -37,7 +37,7 @@ const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOpti
 });
 
 const loadPlugin = async (): Promise<babel.PluginItem> => {
-  const module = await import("../../../packages/plugin-babel/src/index.ts");
+  const module = await import("../../../packages/plugin-babel/src/index");
   const candidate = (module as { default?: babel.PluginItem }).default;
 
   if (typeof candidate === "function") {

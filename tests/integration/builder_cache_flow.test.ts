@@ -2,9 +2,9 @@ import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runBuilder } from "../../packages/builder/src/index.ts";
-import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
+import { runBuilder } from "../../packages/builder/src/index";
+import { runMultiSchemaCodegen } from "../../packages/codegen/src/index";
+import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");

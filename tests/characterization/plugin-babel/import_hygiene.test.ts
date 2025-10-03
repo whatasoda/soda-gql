@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createCanonicalId } from "@soda-gql/builder";
 import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { createTestSource, runBabelTransform } from "../../utils/transform";
 

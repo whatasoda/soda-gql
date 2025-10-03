@@ -1,6 +1,6 @@
 import { dirname, isAbsolute, join } from "node:path";
 import ts from "typescript";
-import { getProjectRoot } from "./index.ts";
+import { getProjectRoot } from ".";
 
 export type TypeCheckInput = {
   path: string;

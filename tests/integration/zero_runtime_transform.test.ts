@@ -4,9 +4,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
-import { runBabelTransform } from "../utils/transform.ts";
-import { typeCheckFiles } from "../utils/type-check.ts";
+import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
+import { runBabelTransform } from "../utils/transform";
+import { typeCheckFiles } from "../utils/type-check";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
