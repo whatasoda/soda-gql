@@ -28,8 +28,8 @@ const copyFixtureWorkspace = (name: string) => {
 
 // Global cleanup to ensure test isolation
 afterEach(() => {
-	__resetRuntimeRegistry();
-	clearTransformCache();
+  __resetRuntimeRegistry();
+  clearTransformCache();
 });
 
 describe("zero-runtime transform", () => {

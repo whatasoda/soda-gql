@@ -83,7 +83,7 @@ export const writeTestFile = async (path: string, content: string): Promise<void
   await Bun.write(path, content);
 };
 
+export * from "./fixtureHelpers";
+export * from "./moduleLoader";
 // Re-export utilities
 export * from "./operationSpy";
-export * from "./moduleLoader";
-export * from "./fixtureHelpers";

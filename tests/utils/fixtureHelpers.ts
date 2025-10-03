@@ -11,7 +11,7 @@ const FIXTURES_ROOT = fileURLToPath(new URL("../fixtures", import.meta.url));
  * @returns Absolute path to the fixture file
  */
 export const getFixturePath = (category: string, name: string): string => {
-	return join(FIXTURES_ROOT, category, `${name}.ts`);
+  return join(FIXTURES_ROOT, category, `${name}.ts`);
 };
 
 /**
@@ -20,15 +20,12 @@ export const getFixturePath = (category: string, name: string): string => {
  * @param name The fixture name without extension
  * @returns Object with filePath and source
  */
-export const loadFixture = (
-	category: string,
-	name: string,
-): { filePath: string; source: string } => {
-	const filePath = getFixturePath(category, name);
-	return {
-		filePath,
-		source: readFileSync(filePath, "utf-8"),
-	};
+export const loadFixture = (category: string, name: string): { filePath: string; source: string } => {
+  const filePath = getFixturePath(category, name);
+  return {
+    filePath,
+    source: readFileSync(filePath, "utf-8"),
+  };
 };
 
 /**
@@ -37,11 +34,8 @@ export const loadFixture = (
  * @param name The fixture name without extension
  * @returns Absolute path to the fixture file
  */
-export const getModuleAnalysisFixturePath = (
-	analyzer: "ts" | "swc" | "shared",
-	name: string,
-): string => {
-	return getFixturePath(`module-analysis/${analyzer}`, name);
+export const getModuleAnalysisFixturePath = (analyzer: "ts" | "swc" | "shared", name: string): string => {
+  return getFixturePath(`module-analysis/${analyzer}`, name);
 };
 
 /**
@@ -51,8 +45,8 @@ export const getModuleAnalysisFixturePath = (
  * @returns Object with filePath and source
  */
 export const loadModuleAnalysisFixture = (
-	analyzer: "ts" | "swc" | "shared",
-	name: string,
+  analyzer: "ts" | "swc" | "shared",
+  name: string,
 ): { filePath: string; source: string } => {
-	return loadFixture(`module-analysis/${analyzer}`, name);
+  return loadFixture(`module-analysis/${analyzer}`, name);
 };

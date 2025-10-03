@@ -2,8 +2,8 @@ import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { gqlRuntime } from "@soda-gql/core/runtime";
 
 export interface OperationSpy {
-	recordedOperations: Array<AnyOperationOf<OperationType>>;
-	restore: () => void;
+  recordedOperations: Array<AnyOperationOf<OperationType>>;
+  restore: () => void;
 }
 
 /**
@@ -11,21 +11,21 @@ export interface OperationSpy {
  * @returns An object with recorded operations and a restore function
  */
 export const createOperationSpy = (): OperationSpy => {
-	const recordedOperations: Array<AnyOperationOf<OperationType>> = [];
-	const originalOperation = gqlRuntime.operation;
+  const recordedOperations: Array<AnyOperationOf<OperationType>> = [];
+  const originalOperation = gqlRuntime.operation;
 
-	gqlRuntime.operation = (input: any) => {
-		const operation = originalOperation(input);
-		recordedOperations.push(operation);
-		return operation;
-	};
+  gqlRuntime.operation = (input: any) => {
+    const operation = originalOperation(input);
+    recordedOperations.push(operation);
+    return operation;
+  };
 
-	return {
-		recordedOperations,
-		restore: () => {
-			gqlRuntime.operation = originalOperation;
-		},
-	};
+  return {
+    recordedOperations,
+    restore: () => {
+      gqlRuntime.operation = originalOperation;
+    },
+  };
 };
 
 /**
@@ -33,12 +33,12 @@ export const createOperationSpy = (): OperationSpy => {
  * Automatically restores the original operation function after the test
  */
 export const withOperationSpy = async <R>(
-	fn: (recordedOperations: Array<AnyOperationOf<OperationType>>) => Promise<R>,
+  fn: (recordedOperations: Array<AnyOperationOf<OperationType>>) => Promise<R>,
 ): Promise<R> => {
-	const spy = createOperationSpy();
-	try {
-		return await fn(spy.recordedOperations);
-	} finally {
-		spy.restore();
-	}
+  const spy = createOperationSpy();
+  try {
+    return await fn(spy.recordedOperations);
+  } finally {
+    spy.restore();
+  }
 };
