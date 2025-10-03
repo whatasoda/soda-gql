@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+  type BuilderChangeSet,
+  type BuilderFileChange,
   hasFileChanged,
   shouldInvalidateAnalyzer,
   shouldInvalidateSchema,
-  type BuilderChangeSet,
-  type BuilderFileChange,
 } from "@soda-gql/builder/session/change-set";
 
 describe("BuilderChangeSet helpers", () => {

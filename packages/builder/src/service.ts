@@ -1,8 +1,7 @@
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import { generateArtifact } from "./runner";
-import type { BuilderChangeSet } from "./session/change-set";
 import { createBuilderSession } from "./session/builder-session";
+import type { BuilderChangeSet } from "./session/change-set";
 import type { BuilderError, BuilderInput } from "./types";
 
 /**

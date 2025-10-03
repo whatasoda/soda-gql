@@ -73,10 +73,7 @@ export interface BuilderSession {
 /**
  * Validate if metadata matches between change set and session.
  */
-const metadataMatches = (
-  changeSetMeta: BuilderChangeSet["metadata"],
-  sessionMeta: SessionState["metadata"],
-): boolean => {
+const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMeta: SessionState["metadata"]): boolean => {
   return changeSetMeta.schemaHash === sessionMeta.schemaHash && changeSetMeta.analyzerVersion === sessionMeta.analyzerVersion;
 };
 
@@ -91,7 +88,7 @@ const extractModuleAdjacency = (graph: DependencyGraph): Map<string, Set<string>
     const { filePath, moduleSummary } = node;
 
     // For each import in this module, record that filePath imports the target
-    for (const runtimeImport of moduleSummary.runtimeImports) {
+    for (const _runtimeImport of moduleSummary.runtimeImports) {
       // Note: runtimeImport.source is the imported module path
       // We need to resolve it to absolute path, but for now we'll skip external imports
       // and only track internal module relationships through the graph
@@ -136,16 +133,15 @@ const extractDefinitionAdjacency = (graph: DependencyGraph): Map<CanonicalId, Se
  * Collect all modules affected by changes, including transitive dependents.
  * Uses BFS to traverse module adjacency graph.
  */
-const collectAffectedModules = (
-  changedFiles: Set<string>,
-  moduleAdjacency: Map<string, Set<string>>,
-): Set<string> => {
+const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<string, Set<string>>): Set<string> => {
   const affected = new Set<string>(changedFiles);
   const queue = [...changedFiles];
   const visited = new Set<string>(changedFiles);
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift();
+    if (!current) break;
+
     const dependents = moduleAdjacency.get(current);
 
     if (dependents) {
@@ -165,10 +161,7 @@ const collectAffectedModules = (
 /**
  * Collect all definitions affected by removed files.
  */
-const collectAffectedDefinitions = (
-  removedFiles: Set<string>,
-  snapshots: Map<string, DiscoverySnapshot>,
-): Set<CanonicalId> => {
+const collectAffectedDefinitions = (removedFiles: Set<string>, snapshots: Map<string, DiscoverySnapshot>): Set<CanonicalId> => {
   const affectedDefinitions = new Set<CanonicalId>();
 
   for (const filePath of removedFiles) {
@@ -186,10 +179,7 @@ const collectAffectedDefinitions = (
 /**
  * Remove files from session state and return affected modules.
  */
-const dropRemovedFiles = (
-  removedFiles: Set<string>,
-  state: SessionState,
-): Set<string> => {
+const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<string> => {
   const affectedModules = new Set<string>();
 
   // Collect affected definitions before removing snapshots
@@ -402,7 +392,7 @@ export const createBuilderSession = (): BuilderSession => {
 
     // 2. Collect all affected modules (changed + dependents from removed + transitive)
     const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
-    const affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
+    const _affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
 
     // For simplicity in v1: Just do a full rebuild when there are changes
     // This maintains correctness while we build out incremental logic

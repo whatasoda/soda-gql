@@ -28,29 +28,20 @@ export type BuilderChangeSet = {
 /**
  * Check if schema hash has changed, requiring full rebuild.
  */
-export const shouldInvalidateSchema = (
-  current: string,
-  incoming: string,
-): boolean => {
+export const shouldInvalidateSchema = (current: string, incoming: string): boolean => {
   return current !== incoming;
 };
 
 /**
  * Check if analyzer version has changed, requiring full rebuild.
  */
-export const shouldInvalidateAnalyzer = (
-  current: string,
-  incoming: string,
-): boolean => {
+export const shouldInvalidateAnalyzer = (current: string, incoming: string): boolean => {
   return current !== incoming;
 };
 
 /**
  * Check if fingerprint has changed, indicating file modification.
  */
-export const hasFileChanged = (
-  currentFingerprint: string | undefined,
-  incomingFingerprint: string,
-): boolean => {
+export const hasFileChanged = (currentFingerprint: string | undefined, incomingFingerprint: string): boolean => {
   return currentFingerprint !== incomingFingerprint;
 };
