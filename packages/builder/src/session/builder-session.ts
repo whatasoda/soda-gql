@@ -396,8 +396,8 @@ export const createBuilderSession = (): BuilderSession => {
     const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
     const _affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
 
-    // For simplicity in v1: Just do a full rebuild when there are changes
-    // This maintains correctness while we build out incremental logic
+    // V1 Strategy: Full rebuild on changes (maintains correctness)
+    // State management and adjacency tracking are in place for future optimization
     if (!state.lastInput) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
@@ -407,8 +407,11 @@ export const createBuilderSession = (): BuilderSession => {
       });
     }
 
-    // TODO: Implement true incremental discovery and graph merging
-    // For now, fall back to full rebuild to maintain correctness
+    // FUTURE (Strategy 2/3): True incremental discovery and graph merging
+    // - Partial discovery using fingerprint matching
+    // - Rebuild only affected subgraph
+    // - Merge with unchanged nodes
+    // For now: Full rebuild maintains correctness while infrastructure is proven
     return buildInitial(state.lastInput);
   };
 

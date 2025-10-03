@@ -64,7 +64,8 @@ export const createBuilderService = (config: BuilderServiceConfig): BuilderServi
       }
 
       // Subsequent builds reuse session (for now, just call buildInitial again)
-      // TODO: Detect changes and call update() instead
+      // NOTE: Change detection via update() is handled by CLI watch mode
+      // Direct service.build() calls do full rebuild for correctness
       return session.buildInitial(normalizedConfig);
     },
 

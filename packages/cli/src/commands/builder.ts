@@ -251,18 +251,12 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
       };
 
       // Use service.update() if available, otherwise rebuild
-      const result = service.update
-        ? await service.update(changeSet)
-        : await service.build();
+      const result = service.update ? await service.update(changeSet) : await service.build();
 
       if (result.isErr()) {
         process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
       } else {
-        const output = formatBuilderSuccess(
-          options.format,
-          { artifact: result.value, outPath: options.outPath },
-          options.mode,
-        );
+        const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath }, options.mode);
         if (output) {
           process.stdout.write(`${output}\n`);
         }
@@ -272,7 +266,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     };
 
     for (const dir of watchedDirs) {
-      const watcher = watch(dir, { recursive: true }, (eventType, filename) => {
+      const watcher = watch(dir, { recursive: true }, (_eventType, filename) => {
         if (!filename) return;
 
         const fullPath = resolve(dir, filename);
