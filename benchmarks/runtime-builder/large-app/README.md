@@ -75,8 +75,14 @@ large-app/
 ## Usage
 
 ### Generate TypeScript runtime
+The runtime is automatically generated when running performance tests. To manually generate:
 ```bash
-bun run soda-gql codegen --schema ./benchmarks/runtime-builder/large-app/schema.graphql --out ./benchmarks/runtime-builder/large-app/graphql-system/index.ts
+bun run soda-gql codegen \
+  --schema:default ./benchmarks/runtime-builder/large-app/schema.graphql \
+  --out ./benchmarks/runtime-builder/large-app/graphql-system/index.ts \
+  --runtime-adapter:default ./benchmarks/runtime-builder/large-app/runtime-adapter.ts \
+  --scalar:default ./benchmarks/runtime-builder/large-app/runtime-adapter.ts \
+  --format typescript
 ```
 
 ### Run builder (runtime mode)

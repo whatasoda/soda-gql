@@ -39,3 +39,20 @@ export const productSlice = gql.default(({ slice }, { $ }) =>
     ({ select }) => select(["$.products"], (result) => result.map((data) => data.map((product) => productModel.normalize(product)))),
   ),
 );
+
+export const createProductSlice = gql.default(({ slice }, { $ }) =>
+  slice.mutation(
+    {
+      variables: {
+        ...$("name").scalar("String:!"),
+        ...$("price").scalar("Float:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.createProduct({ name: $.name, price: $.price }, () => ({
+        ...productModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.createProduct"], (result) => result.map((data) => productModel.normalize(data))),
+  ),
+);

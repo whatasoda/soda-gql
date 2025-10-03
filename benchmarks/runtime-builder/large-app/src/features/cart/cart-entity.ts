@@ -73,3 +73,21 @@ export const cartSlice = gql.default(({ slice }, { $ }) =>
     ({ select }) => select(["$.cart"], (result) => result.map((data) => (data ? cartModel.normalize(data) : null))),
   ),
 );
+
+export const addToCartSlice = gql.default(({ slice }, { $ }) =>
+  slice.mutation(
+    {
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("productId").scalar("ID:!"),
+        ...$("quantity").scalar("Int:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.addToCart({ input: { userId: $.userId, productId: $.productId, quantity: $.quantity } }, () => ({
+        ...cartModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.addToCart"], (result) => result.map((data) => cartModel.normalize(data))),
+  ),
+);

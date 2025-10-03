@@ -165,3 +165,6 @@ bun.lockb
 
 # Test fixture stubs
 tests/fixtures/runtime-app/graphql-system/
+
+# Benchmark fixture generated files
+benchmarks/runtime-builder/*/graphql-system/

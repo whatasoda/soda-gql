@@ -72,3 +72,36 @@ export const orderSlice = gql.default(({ slice }, { $ }) =>
     ({ select }) => select(["$.orders"], (result) => result.map((data) => data.map((order) => orderModel.normalize(order)))),
   ),
 );
+
+export const createOrderSlice = gql.default(({ slice }, { $ }) =>
+  slice.mutation(
+    {
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("items").scalar("[OrderItemInput!]:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.createOrder({ userId: $.userId, items: $.items }, () => ({
+        ...orderModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.createOrder"], (result) => result.map((data) => orderModel.normalize(data))),
+  ),
+);
+
+export const orderStatusSlice = gql.default(({ slice }, { $ }) =>
+  slice.subscription(
+    {
+      variables: {
+        ...$("userId").scalar("ID:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.orderStatusChanged({ userId: $.userId }, () => ({
+        ...orderModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.orderStatusChanged"], (result) => result.map((data) => orderModel.normalize(data))),
+  ),
+);

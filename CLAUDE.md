@@ -158,6 +158,18 @@ Repeat until complete → User receives result
 - Operations: Composed GraphQL operations from multiple slices
 - Zero Runtime: All transformations at build time
 
+**Architecture: Operation vs Slice Separation**:
+- **Slices** (`slice.query`/`slice.mutation`/`slice.subscription`): Build GraphQL field selections using `f` helpers
+  - Define variables, field selections, and data normalization
+  - Have access to field factories (`f`, `_`)
+  - Reusable across multiple operations
+- **Operations** (`operation.query`/`operation.mutation`/`operation.subscription`): Compose slices only
+  - DO NOT build fields directly (no `f` access)
+  - Use `slice.build()` to compose multiple slices
+  - Act as integration layer for slices
+- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ ...f.createProduct(...) }))`
+- **Correct pattern**: Create slice with field selection, then compose in operation with `slice.build()`
+
 ### Commands
 
 ```bash

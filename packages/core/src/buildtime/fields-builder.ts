@@ -34,18 +34,36 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
       type TReference = AnyFieldSelection & { type: OutputObjectRef };
       const factory: FieldSelectionFactoryObject<TSchema, TReference> = <TNested extends AnyNestedObject>(
         argsAndDirectives: FieldSelectionFactoryFieldArguments<TReference>,
-        objectBuilder: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>,
+        objectBuilder?: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>,
       ) => {
-        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+        // Handle builder-only invocation: f.field(builder) instead of f.field(args, builder)
+        let actualBuilder: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>;
+        let actualArgs: any;
+        let actualDirectives: any = {};
+
+        if (typeof argsAndDirectives === "function" && objectBuilder === undefined) {
+          // Builder-only call: f.field(() => {...})
+          actualBuilder = argsAndDirectives as NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>;
+          actualArgs = {};
+        } else if (objectBuilder !== undefined) {
+          // Full call: f.field(args, builder)
+          const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+          actualBuilder = objectBuilder;
+          actualArgs = args ?? {};
+          actualDirectives = directives;
+        } else {
+          throw new Error(`Field ${String(fieldName)} requires a builder function`);
+        }
+
         const nestedFactories = createFieldFactories(schema, type.name);
 
         return wrapValueByKey(fieldName, {
           parent: typeName,
           field: fieldName,
           type: type,
-          args: args ?? {},
-          directives,
-          object: objectBuilder({
+          args: actualArgs,
+          directives: actualDirectives,
+          object: actualBuilder({
             _: nestedFactories,
             f: nestedFactories,
             fields: nestedFactories,
@@ -61,19 +79,36 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
       type TReference = AnyFieldSelection & { type: OutputUnionRef };
       const factory: FieldSelectionFactoryUnion<TSchema, TReference> = <TNested extends AnyNestedUnion>(
         argsAndDirectives: FieldSelectionFactoryFieldArguments<TReference>,
-        unionBuilder: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>,
+        unionBuilder?: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>,
       ) => {
-        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+        // Handle builder-only invocation: f.field(builder) instead of f.field(args, builder)
+        let actualBuilder: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>;
+        let actualArgs: any;
+        let actualDirectives: any = {};
+
+        if (typeof argsAndDirectives === "object" && !Array.isArray(argsAndDirectives) && unionBuilder === undefined) {
+          // Builder-only call: f.field({ TypeA: ..., TypeB: ... })
+          actualBuilder = argsAndDirectives as NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>;
+          actualArgs = {};
+        } else if (unionBuilder !== undefined) {
+          // Full call: f.field(args, builder)
+          const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
+          actualBuilder = unionBuilder;
+          actualArgs = args ?? {};
+          actualDirectives = directives;
+        } else {
+          throw new Error(`Field ${String(fieldName)} requires a union builder object`);
+        }
 
         return wrapValueByKey(fieldName, {
           parent: typeName,
           field: fieldName,
           type: type,
-          args: args ?? {},
-          directives,
+          args: actualArgs,
+          directives: actualDirectives,
           object: null,
           union: Object.fromEntries(
-            (Object.entries(unionBuilder) as [string, NestedObjectFieldsBuilder<TSchema, string, AnyFields>][]).map(
+            (Object.entries(actualBuilder) as [string, NestedObjectFieldsBuilder<TSchema, string, AnyFields>][]).map(
               ([memberName, builder]) => {
                 const nestedFactories = createFieldFactories(schema, memberName);
                 return [memberName, builder({ _: nestedFactories, f: nestedFactories, fields: nestedFactories })];

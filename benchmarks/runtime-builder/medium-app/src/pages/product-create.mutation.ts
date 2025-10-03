@@ -1,9 +1,10 @@
 import { gql } from "@/graphql-system";
-import { productModel } from "../entities/product";
+import { createProductSlice } from "../entities/product";
 
 export const createProductMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
+      operationName: "CreateProduct",
       variables: {
         ...$("name").scalar("String:!"),
         ...$("description").scalar("String:?"),
@@ -11,10 +12,8 @@ export const createProductMutation = gql.default(({ operation }, { $ }) =>
         ...$("categoryId").scalar("ID:!"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.createProduct({ input: { name: $.name, description: $.description, price: $.price, categoryId: $.categoryId } }, () => ({
-        ...productModel.fragment(),
-      })),
+    ({ $ }) => ({
+      product: createProductSlice.build({ name: $.name, description: $.description, price: $.price, categoryId: $.categoryId }),
     }),
   ),
 );

@@ -1,17 +1,16 @@
 import { gql } from "@/graphql-system";
-import { orderModel } from "../entities/order";
+import { orderStatusSlice } from "../entities/order";
 
 export const orderStatusSubscription = gql.default(({ operation }, { $ }) =>
   operation.subscription(
     {
+      operationName: "OrderStatus",
       variables: {
         ...$("userId").scalar("ID:!"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.orderStatusChanged({ userId: $.userId }, () => ({
-        ...orderModel.fragment(),
-      })),
+    ({ $ }) => ({
+      order: orderStatusSlice.build({ userId: $.userId }),
     }),
   ),
 );

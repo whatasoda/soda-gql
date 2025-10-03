@@ -5,6 +5,7 @@ import { PerformanceObserver, performance } from "node:perf_hooks";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { builderCommand } from "../../packages/cli/src/commands/builder";
+import { codegenCommand } from "../../packages/cli/src/commands/codegen";
 
 type FixtureType = "small-app" | "medium-app" | "large-app";
 
@@ -20,21 +21,30 @@ interface MetricsResult {
   averageWallTime?: number;
 }
 
-const FIXTURES: Record<FixtureType, { schema: string; entry: string; out: string }> = {
+const FIXTURES: Record<
+  FixtureType,
+  { schema: string; entry: string; out: string; runtimeAdapter: string; codegenOut: string }
+> = {
   "small-app": {
     schema: "./benchmarks/runtime-builder/small-app/schema.graphql",
     entry: "./benchmarks/runtime-builder/small-app/src/**/*.ts",
     out: "./.cache/soda-gql/benchmarks/small-app-runtime.json",
+    runtimeAdapter: "./benchmarks/runtime-builder/small-app/runtime-adapter.ts",
+    codegenOut: "./benchmarks/runtime-builder/small-app/graphql-system/index.ts",
   },
   "medium-app": {
     schema: "./benchmarks/runtime-builder/medium-app/schema.graphql",
     entry: "./benchmarks/runtime-builder/medium-app/src/**/*.ts",
     out: "./.cache/soda-gql/benchmarks/medium-app-runtime.json",
+    runtimeAdapter: "./benchmarks/runtime-builder/medium-app/runtime-adapter.ts",
+    codegenOut: "./benchmarks/runtime-builder/medium-app/graphql-system/index.ts",
   },
   "large-app": {
     schema: "./benchmarks/runtime-builder/large-app/schema.graphql",
     entry: "./benchmarks/runtime-builder/large-app/src/**/*.ts",
     out: "./.cache/soda-gql/benchmarks/large-app-runtime.json",
+    runtimeAdapter: "./benchmarks/runtime-builder/large-app/runtime-adapter.ts",
+    codegenOut: "./benchmarks/runtime-builder/large-app/graphql-system/index.ts",
   },
 };
 
@@ -120,8 +130,31 @@ const collectMetrics = async (fixture: FixtureType): Promise<Omit<MetricsResult,
   };
 };
 
+const ensureCodegenOutput = async (fixture: FixtureType): Promise<void> => {
+  const fixtureConfig = FIXTURES[fixture];
+
+  console.log(`Generating GraphQL runtime for ${fixture}...`);
+  const exitCode = await codegenCommand([
+    "--schema:default",
+    fixtureConfig.schema,
+    "--out",
+    fixtureConfig.codegenOut,
+    "--runtime-adapter:default",
+    fixtureConfig.runtimeAdapter,
+    "--scalar:default",
+    fixtureConfig.runtimeAdapter,
+  ]);
+
+  if (exitCode !== 0) {
+    throw new Error(`Codegen failed for ${fixture} with exit code ${exitCode}`);
+  }
+};
+
 const runBenchmark = async (fixture: FixtureType, iterations: number): Promise<MetricsResult> => {
   const results: Array<Omit<MetricsResult, "iterations" | "averageWallTime">> = [];
+
+  // Ensure codegen output exists before running benchmark (outside timing)
+  await ensureCodegenOutput(fixture);
 
   console.log(`Running ${iterations} iteration(s) for fixture: ${fixture}...`);
 
