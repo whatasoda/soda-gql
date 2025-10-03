@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { createTestSource, runBabelTransform } from "../../utils/transform";
 
 describe("Import hygiene characterization tests", () => {
@@ -18,26 +19,16 @@ export const userModel = gql.default(({ model }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -60,26 +51,16 @@ export const userModel = gql.default(({ model }) =>
 `;
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -106,26 +87,16 @@ export const schema: GraphQLSchema = gql.schema;
 `;
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -151,26 +122,16 @@ export type QueryResult = graphql.ExecutionResult;
 `;
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -197,34 +158,24 @@ export const model2 = gql.default(({ model }) =>
 
     const model1Id = createCanonicalId(testFilePath, "model1");
     const model2Id = createCanonicalId(testFilePath, "model2");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [model1Id]: {
+    const artifact = createBuilderArtifact([
+      [
+        model1Id,
+        {
           type: "model",
           id: model1Id,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-        [model2Id]: {
+      ],
+      [
+        model2Id,
+        {
           type: "model",
           id: model2Id,
-          prebuild: {
-            typename: "Post",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "Post" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 2,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 2 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -250,26 +201,16 @@ export const userModel = gql.default(({ model }) =>
 `;
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: { matches: [], children: {} },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 

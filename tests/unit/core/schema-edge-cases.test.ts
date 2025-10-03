@@ -25,7 +25,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              user: unsafeOutputRef.scalar("String:!", {}, {}),
+              user: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
             },
             {},
           ),
@@ -115,7 +115,7 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              result: unsafeOutputRef.union("SearchResult:!", {}, {}),
+              result: unsafeOutputRef.union("SearchResult:!", { arguments: {}, directives: {} }),
             },
             {},
           ),
@@ -158,15 +158,15 @@ describe("Schema Edge Cases", () => {
         object: {
           ...define("Query").object(
             {
-              node: unsafeOutputRef.object("Node:?", {}, {}),
+              node: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }),
             },
             {},
           ),
           ...define("Node").object(
             {
-              id: unsafeOutputRef.scalar("String:!", {}, {}),
-              parent: unsafeOutputRef.object("Node:?", {}, {}), // Circular reference
-              children: unsafeOutputRef.object("Node:![]!", {}, {}), // Another circular reference
+              id: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
+              parent: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }), // Circular reference
+              children: unsafeOutputRef.object("Node:![]!", { arguments: {}, directives: {} }), // Another circular reference
             },
             {},
           ),

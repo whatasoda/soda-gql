@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
 describe("gql.querySlice characterization tests", () => {
@@ -18,25 +19,16 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "userSlice");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "slice",
           id: canonicalId,
-          prebuild: {
-            operationType: "query",
-          },
+          prebuild: { operationType: "query" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -62,25 +54,16 @@ export const updateUserSlice = gql.default(({ slice }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "updateUserSlice");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "slice",
           id: canonicalId,
-          prebuild: {
-            operationType: "mutation",
-          },
+          prebuild: { operationType: "mutation" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -104,25 +87,16 @@ export const slices = {
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "slices.byId");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "slice",
           id: canonicalId,
-          prebuild: {
-            operationType: "query",
-          },
+          prebuild: { operationType: "query" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -144,25 +118,16 @@ export const brokenSlice = gql.default(({ slice }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "brokenSlice");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "slice",
           id: canonicalId,
-          prebuild: {
-            operationType: "query",
-          },
+          prebuild: { operationType: "query" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     // Lock error message format
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -186,25 +151,16 @@ export default sliceCollection;
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "sliceCollection.userSlice");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "slice",
           id: canonicalId,
-          prebuild: {
-            operationType: "query",
-          },
+          prebuild: { operationType: "query" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 0,
-        slices: 1,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 

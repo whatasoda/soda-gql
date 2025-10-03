@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
 describe("gql.model characterization tests", () => {
@@ -18,29 +19,16 @@ export const userModel = gql.default(({ model }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "userModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -66,29 +54,16 @@ export const productModel = gql.default(({ model }) => {
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "productModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "Product",
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
-          },
+          prebuild: { typename: "Product" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -112,29 +87,16 @@ export const models = {
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "models.user");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -156,29 +118,16 @@ export const brokenModel = gql.default(({ model }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "brokenModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "User",
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
-          },
+          prebuild: { typename: "User" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     // Lock error message format
     await expect(runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true })).rejects.toThrow(
@@ -198,38 +147,20 @@ export const complexModel = gql.default(({ model }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "complexModel");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "model",
           id: canonicalId,
-          prebuild: {
-            typename: "Complex",
-            projectionPathGraph: {
-              matches: ["nested"],
-              children: {
-                nested: {
-                  matches: ["field"],
-                  children: {},
-                },
-              },
-            },
-          },
+          prebuild: { typename: "Complex" },
         },
-      },
-      report: {
-        operations: 0,
-        models: 1,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
-    // Verify projection graph is included (even though not used in model transform)
+    // Sanity check: nested selections still transform correctly
     assertTransformRemovesGql(transformed);
     expect(transformed).toContain("gqlRuntime.model(");
   });

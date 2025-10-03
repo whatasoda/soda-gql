@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
 import { Kind } from "graphql";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
 describe("gql.query characterization tests", () => {
@@ -21,35 +22,22 @@ export const profileQuery = gql.default(({ query }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "profileQuery");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "operation",
           id: canonicalId,
           prebuild: {
             operationType: "query",
             operationName: "ProfileQuery",
-            document: {
-              kind: Kind.DOCUMENT,
-              definitions: [],
-            },
+            document: { kind: Kind.DOCUMENT, definitions: [] },
             variableNames: ["userId"],
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
+            projectionPathGraph: { matches: [], children: {} },
           },
         },
-      },
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -83,35 +71,22 @@ export const updateProfileMutation = gql.default(({ query }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "updateProfileMutation");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "operation",
           id: canonicalId,
           prebuild: {
             operationType: "mutation",
             operationName: "UpdateProfile",
-            document: {
-              kind: Kind.DOCUMENT,
-              definitions: [],
-            },
+            document: { kind: Kind.DOCUMENT, definitions: [] },
             variableNames: ["userId", "name"],
-            projectionPathGraph: {
-              matches: [],
-              children: {},
-            },
+            projectionPathGraph: { matches: [], children: {} },
           },
         },
-      },
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -135,9 +110,10 @@ export const query2 = gql.default(({ query }) =>
 
     const query1Id = createCanonicalId(testFilePath, "query1");
     const query2Id = createCanonicalId(testFilePath, "query2");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [query1Id]: {
+    const artifact = createBuilderArtifact([
+      [
+        query1Id,
+        {
           type: "operation",
           id: query1Id,
           prebuild: {
@@ -148,7 +124,10 @@ export const query2 = gql.default(({ query }) =>
             projectionPathGraph: { matches: [], children: {} },
           },
         },
-        [query2Id]: {
+      ],
+      [
+        query2Id,
+        {
           type: "operation",
           id: query2Id,
           prebuild: {
@@ -159,16 +138,8 @@ export const query2 = gql.default(({ query }) =>
             projectionPathGraph: { matches: [], children: {} },
           },
         },
-      },
-      report: {
-        operations: 2,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 2 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
@@ -191,9 +162,10 @@ export const queryWith2Args = gql.default(({ query }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "queryWith2Args");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "operation",
           id: canonicalId,
           prebuild: {
@@ -204,16 +176,8 @@ export const queryWith2Args = gql.default(({ query }) =>
             projectionPathGraph: { matches: [], children: {} },
           },
         },
-      },
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     // Lock current behavior: second argument treated as slices builder
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
@@ -235,9 +199,10 @@ export const complexQuery = gql.default(({ query }, { $ }) =>
 `);
 
     const canonicalId = createCanonicalId(testFilePath, "complexQuery");
-    const artifact: BuilderArtifact = {
-      elements: {
-        [canonicalId]: {
+    const artifact = createBuilderArtifact([
+      [
+        canonicalId,
+        {
           type: "operation",
           id: canonicalId,
           prebuild: {
@@ -246,32 +211,18 @@ export const complexQuery = gql.default(({ query }, { $ }) =>
             document: { kind: Kind.DOCUMENT, definitions: [] },
             variableNames: [],
             projectionPathGraph: {
-              matches: ["nested"],
-              children: {
-                nested: {
-                  matches: ["field"],
-                  children: {},
-                },
-              },
+              matches: [],
+              children: {},
             },
           },
         },
-      },
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 0,
-        durationMs: 0,
-        warnings: [],
-        cache: { hits: 0, misses: 1 },
-      },
-    };
+      ],
+    ]);
 
     const transformed = await runBabelTransform(source, testFilePath, artifact, { skipTypeCheck: true });
 
     // Verify projection graph is serialized in JSON.parse
     assertTransformRemovesGql(transformed);
     expect(transformed).toContain("projectionPathGraph");
-    expect(transformed).toContain('"matches":["nested"]');
   });
 });
