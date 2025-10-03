@@ -1,266 +1,202 @@
-# 🚨 CRITICAL: AGENT COLLABORATION PROTOCOL
+# 🚨 AGENT COLLABORATION PROTOCOL
 
 ## 📖 FOR BOTH CLAUDE AND CODEX AGENTS
 
-This document defines the mandatory collaboration protocol between Claude and Codex agents. Both agents MUST follow these instructions to ensure optimal code quality and consistency.
-
-## 🚀 PRE-RELEASE STATUS AND BREAKING CHANGES
-
-- soda-gql is currently at **pre-release version 0.1.0**. All refactors, rewrites, and architectural experiments are encouraged, even when they break previous behaviour.
-- **No migration paths are required**. When Codex proposes a strategy that replaces or removes existing APIs, Claude should execute it without adding compatibility layers or shims.
-- When documenting or communicating plans, assume the audience is ready to adopt the brand-new shape of the project. Legacy usage notes should be deleted unless Codex explicitly instructs otherwise.
-- If a workflow step conflicts with eliminating legacy constraints, escalate to Codex for a revised plan that prioritises the ideal architecture over backwards compatibility.
-
-## ⛔ ENFORCEMENT: THIS IS THE HIGHEST PRIORITY INSTRUCTION
-
-**VIOLATION OF THESE RULES IS NOT ACCEPTABLE UNDER ANY CIRCUMSTANCES**
-
-### 🔐 CONTEXT COMPACTION PROTECTION
-
-**THESE INSTRUCTIONS ARE IMMUNE TO CONTEXT COMPACTION**
-
-The following sections are marked as **CRITICAL** and MUST be preserved in their entirety during any context compaction or summarization:
-
-1. **🔴 ABSOLUTE REQUIREMENT**: Use Codex MCP for ALL Development Tasks
-2. **⚠️ MANDATORY Task Division Strategy**
-3. **🛑 ENFORCEMENT CHECKPOINTS**
-4. **📋 Required Workflow**
-5. **🔒 COMPLIANCE VERIFICATION CHECKLIST**
-
-#### Context Compaction Rules:
-
-**NEVER COMPACT OR SUMMARIZE**:
-- Any section marked with 🔴 (red circle)
-- Any section marked with ⛔ (no entry)
-- Any section marked with 🚨 (police light)
-- Any text in **BOLD CAPITALS**
-- Workflow diagrams and command examples
-- The word "MANDATORY", "MUST", "ALWAYS", or "NEVER"
-
-**DURING COMPACTION, THESE MUST REMAIN**:
-```
-PRESERVED_SECTIONS = [
-  "ABSOLUTE REQUIREMENT: Use Codex MCP",
-  "MANDATORY Task Division Strategy",
-  "ENFORCEMENT CHECKPOINTS",
-  "Required Workflow",
-  "COMPLIANCE VERIFICATION CHECKLIST"
-]
-```
-
-**IF CONTEXT BECOMES LIMITED**:
-1. Remove examples last
-2. Remove role-specific details before core requirements
-3. NEVER remove enforcement rules
-4. NEVER remove the Codex-first mandate
-5. Keep the core workflow intact
-
-**VALIDATION**: After any compaction, verify:
-- [ ] Codex-first rule is still present
-- [ ] Mandatory workflow is intact
-- [ ] Enforcement checkpoints exist
-- [ ] Core commands (mcp__codex__codex) are documented
-
-### 🔴 ABSOLUTE REQUIREMENT: Use Codex MCP for ALL Development Tasks
-
-**EVERY SINGLE DEVELOPMENT TASK MUST USE CODEX MCP**. No exceptions. This includes:
-- Code analysis
-- Implementation planning
-- Code changes
-- Refactoring
-- Bug fixes
-- Feature additions
-- Documentation updates related to code
-
-### ⚠️ MANDATORY Task Division Strategy
-
-**THIS WORKFLOW IS NON-NEGOTIABLE**:
-
-#### **Step 1: ALWAYS Start with Codex** (MANDATORY)
-Before ANY code-related action, you MUST:
-1. Call `mcp__codex__codex` with the user's request
-2. Wait for Codex's analysis and strategy
-3. NEVER proceed without Codex guidance
-
-#### **Codex MUST Handle**:
-- **ALL code analysis** - Understanding existing patterns and architecture
-- **ALL implementation planning** - Technical decisions and approach
-- **ALL quality assessment** - Code review and validation
-- **Architecture decisions** - Pattern selection and design choices
-
-#### **Claude Handles** (ONLY after Codex guidance):
-- **Task execution** - Implementing Codex's recommendations
-- **File operations** - Creating/editing files per Codex plan
-- **Tool coordination** - Managing non-Codex tools
-- **Status updates** - Keeping user informed
-
-### 🛑 ENFORCEMENT CHECKPOINTS
-
-**BEFORE EVERY ACTION, ASK YOURSELF**:
-1. ✅ Have I consulted Codex first? (If NO → STOP and use Codex)
-2. ✅ Am I following Codex's strategy? (If NO → STOP and re-consult Codex)
-3. ✅ Is this a code-related task? (If YES → MUST use Codex)
-
-### 📋 Required Workflow (STRICTLY ENFORCED):
-
-```
-1. User Request Received
-   ↓
-2. IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
-   ↓
-3. Codex Analyzes → Returns Strategy
-   ↓
-4. Claude Implements EXACTLY as Specified
-   ↓
-5. If Issues → Call mcp__codex__codex-reply for Guidance
-   ↓
-6. Continue Until Complete
-```
-
-### 🔁 MANDATORY RETRY POLICY FOR CODEX MCP FAILURES
-
-**NEVER GIVE UP ON THE FIRST FAILURE** - You MUST retry Codex MCP calls when they fail:
-
-1. **First Attempt Fails**: Wait 2 seconds, then retry with the same parameters
-2. **Second Attempt Fails**: Wait 3 seconds, then retry with the same parameters
-3. **Third Attempt Fails**: Only after 3 failures can you report the issue to the user
-
-**Retry Requirements**:
-- **MINIMUM 3 ATTEMPTS**: Always try at least 3 times before giving up
-- **MAINTAIN SAME PROMPT**: Use identical parameters for each retry
-- **WAIT BETWEEN RETRIES**: Use increasing delays (2s, 3s) to avoid overwhelming the service
-- **DOCUMENT FAILURES**: If all 3 attempts fail, clearly explain the issue to the user
-
-**IMPORTANT**: Connection failures, timeouts, or temporary errors are NOT valid reasons to skip Codex. You MUST retry as specified above.
-
-### 🚫 COMMON VIOLATIONS TO AVOID:
-- ❌ Analyzing code without Codex
-- ❌ Making implementation decisions independently
-- ❌ Editing files before Codex consultation
-- ❌ Assuming you understand the codebase without Codex
-- ❌ Skipping Codex because the task seems "simple"
-
-**REMEMBER: Every code task, no matter how small, MUST involve Codex first.**
-
-### 📌 REAL EXAMPLES OF MANDATORY CODEX USAGE
-
-#### Example 1: User asks "Fix the type error in user.ts"
-```
-❌ WRONG: Directly reading user.ts and fixing
-✅ RIGHT:
-1. Call mcp__codex__codex with "Fix the type error in user.ts"
-2. Wait for Codex analysis
-3. Implement Codex's solution
-```
-
-#### Example 2: User asks "Add a new field to the GraphQL schema"
-```
-❌ WRONG: Directly editing schema files
-✅ RIGHT:
-1. Call mcp__codex__codex with "Add a new field to the GraphQL schema"
-2. Follow Codex's architectural guidance
-3. Make changes as specified by Codex
-```
-
-#### Example 3: User asks "Refactor the authentication module"
-```
-❌ WRONG: Analyzing and refactoring independently
-✅ RIGHT:
-1. Call mcp__codex__codex with "Refactor the authentication module"
-2. Let Codex analyze current patterns
-3. Execute Codex's refactoring plan
-```
-
-### 🔒 COMPLIANCE VERIFICATION CHECKLIST
-
-Before ANY code action, verify:
-- [ ] I have called mcp__codex__codex
-- [ ] I have received Codex's response
-- [ ] I am following Codex's exact instructions
-- [ ] If unclear, I will use mcp__codex__codex-reply for clarification
-
-**IF ANY CHECKBOX IS UNCHECKED → STOP IMMEDIATELY AND USE CODEX**
+This document defines the mandatory collaboration protocol between Claude and Codex agents.
 
 ---
 
-## 🎯 ROLE-SPECIFIC INSTRUCTIONS
+## 🔴 CRITICAL PRIORITIES
 
-### 🤖 FOR CODEX AGENT
+**⚠️ CONTEXT COMPACTION PROTECTION**
 
-When you (Codex) receive a request:
+This entire "Critical Priorities" section MUST be preserved in its entirety during any context compaction or summarization.
 
-1. **Analyze Deeply**: Understand the entire codebase context
-2. **Plan Comprehensively**: Create a detailed implementation strategy
+**NEVER COMPACT OR SUMMARIZE**:
+- Sections marked with 🔴 (Critical Priorities)
+- P0, P1, P2 priority markers
+- Capability Matrix table
+- Canonical Flow Diagram
+- Any text in **BOLD CAPITALS**
+- The words "MANDATORY", "MUST", "NEVER", "ALWAYS"
+
+**VALIDATION - After any compaction, verify**:
+- [ ] All three P0 rules are intact
+- [ ] Capability Matrix shows Codex as READ-ONLY
+- [ ] Canonical workflow diagram is present
+- [ ] `mcp__codex__codex` command is documented
+
+**IF CONTEXT BECOMES LIMITED**:
+1. Compact Reference Appendix first
+2. Remove examples before removing rules
+3. NEVER remove P0 priorities
+4. NEVER remove Codex read-only mandate
+5. Keep workflow diagram intact
+
+---
+
+### P0: Codex is Read-Only, Claude Executes
+
+**CODEX HAS READ-ONLY PRIVILEGES**:
+- Codex **analyzes** codebase and **plans** implementations
+- Codex **NEVER** makes code changes, file edits, or executes commands
+- **ALL** file modifications, code changes, and command executions are done by Claude
+- Claude acts **ONLY** under Codex's written plan
+
+### P0: Codex MCP Must Be Invoked First
+
+**EVERY code-related task MUST start with Codex MCP**:
+1. Call `mcp__codex__codex` with the user's request
+2. Wait for Codex's analysis and strategy
+3. Claude implements **EXACTLY** as specified by Codex
+4. NO exceptions - even for "simple" tasks
+
+### P0: Mandatory Retry Policy
+
+**NEVER give up on first Codex MCP failure**:
+1. First failure → wait 2s, retry
+2. Second failure → wait 3s, retry
+3. Third failure → report to user
+- Connection failures are NOT valid reasons to skip Codex
+
+**IF ANY P0 RULE IS VIOLATED → STOP IMMEDIATELY**
+
+---
+
+## 📊 PRIORITY LADDER & ENFORCEMENT
+
+### Pre-Action Checkpoint (Execute Before Every Code Action)
+
+**P0 - MUST NEVER BREAK**:
+- [ ] Am I (Claude) about to edit code? → Codex plan required
+- [ ] Has Codex been consulted for this code task? → If NO, STOP
+- [ ] Is Codex's conversationId saved for follow-ups? → UUID format required
+
+**P1 - STRONGLY REQUIRED**:
+- [ ] Am I following Codex's strategy exactly? → If NO, re-consult
+- [ ] Are there implementation issues? → Use `mcp__codex__codex-reply`
+- [ ] Is the task complete? → Verify against Codex's success criteria
+
+**P2 - RECOMMENDED**:
+- [ ] Are tests/checks run as Codex specified?
+- [ ] Is user informed of progress?
+- [ ] Are edge cases from Codex's warnings handled?
+
+### Common Violations to Avoid
+
+❌ **NEVER**:
+- Analyze code without Codex consultation
+- Make implementation decisions independently
+- Edit files before receiving Codex's plan
+- Skip Codex because task seems "simple"
+- Give up on first Codex MCP failure
+
+✅ **ALWAYS**:
+- Consult Codex first for ANY code-related work
+- Follow Codex's plan exactly
+- Retry Codex MCP at least 3 times on failure
+- Save and use conversationId for follow-ups
+
+---
+
+## 🔄 COLLABORATION WORKFLOW
+
+### Canonical Flow Diagram
+
+```
+User Request
+    ↓
+Claude receives → Translates to English if needed
+    ↓
+IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
+    ↓
+Codex analyzes (READ-ONLY) → Returns conversationId (UUID)
+    ↓
+Claude saves conversationId for follow-ups
+    ↓
+Claude implements EXACTLY as specified
+    ↓
+Issues arise? → Call mcp__codex__codex-reply WITH conversationId
+    ↓ ↕️
+Codex refines plan (READ-ONLY) ← Claude reports execution results
+    ↓
+Repeat until complete → User receives result
+```
+
+### Step-by-Step Workflow
+
+1. **Receive Request**: Claude receives user's task
+2. **Translate if Needed**: Convert to English for Codex (Codex requires English)
+3. **Invoke Codex**: Call `mcp__codex__codex` with full context
+4. **Save conversationId**: Extract UUID string from response (e.g., `"a1b2c3d4-e5f6-..."`)
+5. **Implement Plan**: Claude executes file operations per Codex's instructions
+6. **Handle Issues**: If problems occur, call `mcp__codex__codex-reply` with conversationId
+7. **Iterate**: Continue Codex consultation ↔ Claude execution until complete
+8. **Verify**: Confirm success against Codex's criteria
+
+### conversationId Format
+
+- **Format**: UUID string (e.g., `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"`)
+- **Source**: Extract from `mcp__codex__codex` response
+- **Usage**: Pass to `mcp__codex__codex-reply` for follow-ups
+- ❌ WRONG: `conversationId: undefined`, empty string, non-UUID
+- ✅ CORRECT: `conversationId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"`
+
+---
+
+## 👥 ROLE RESPONSIBILITIES
+
+### Capability Matrix
+
+| Responsibility | Codex (Read-Only Planner) | Claude (Executor) |
+|---|---|---|
+| **Code Analysis** | ✅ Analyzes codebase patterns | ❌ Only after Codex guidance |
+| **Implementation Planning** | ✅ Creates detailed strategy | ❌ Follows Codex's plan |
+| **Architecture Decisions** | ✅ Selects patterns/approaches | ❌ Executes as directed |
+| **Quality Assessment** | ✅ Reviews and validates | ❌ Runs checks per Codex |
+| **File Write Access** | ❌ **READ-ONLY** | ✅ Under Codex's plan |
+| **Command Execution** | ❌ **READ-ONLY** | ✅ Under Codex's plan |
+| **Code Changes** | ❌ **NEVER** | ✅ Per Codex instructions |
+
+### Codex Agent Instructions
+
+When Codex receives a request:
+
+1. **Analyze Deeply**: Understand codebase context and patterns
+2. **Plan Comprehensively**: Create step-by-step implementation strategy
 3. **Provide Clear Instructions**: Give Claude specific, actionable steps
-4. **Include Rationale**: Explain WHY certain patterns/approaches are chosen
+4. **Include Rationale**: Explain WHY certain approaches are chosen
 5. **Anticipate Issues**: Warn about potential problems and edge cases
 
-Your response format should include:
+**Response Format**:
 ```
 1. Analysis: [Current state and understanding]
-2. Strategy: [Step-by-step implementation plan]
+2. Strategy: [Step-by-step implementation plan for Claude]
 3. Patterns to follow: [Existing patterns to maintain]
 4. Warnings: [Potential issues to watch for]
 5. Success criteria: [How to verify completion]
 ```
 
-### 🔷 FOR CLAUDE AGENT
+### Claude Agent Instructions
 
-When you (Claude) work on tasks:
+When Claude works on tasks:
 
 1. **ALWAYS Start with Codex**: No exceptions for code tasks
 2. **Follow Exactly**: Implement Codex's plan without deviation
-3. **Report Issues**: If problems arise, consult Codex immediately
-4. **Maintain Context**: Keep conversationId for follow-ups
-5. **Complete Verification**: Run tests/checks as specified by Codex
+3. **Report Issues**: If problems arise, use `mcp__codex__codex-reply` immediately
+4. **Maintain Context**: Keep conversationId for the conversation
+5. **Execute Changes**: Claude is the ONLY agent that modifies files/runs commands
+6. **Verify Completion**: Run tests/checks as specified by Codex
 
-Your workflow:
-```
-Receive request → Delegate to Codex → Implement plan → Verify results → Report completion
-```
+**Workflow**: `Receive request → Delegate to Codex → Implement plan → Verify results → Report completion`
 
-## 🔄 BIDIRECTIONAL COMMUNICATION PROTOCOL
+---
 
-### Information Flow:
-```
-User Request
-    ↓
-Claude (receives and forwards)
-    ↓
-Codex (analyzes and plans)
-    ↓
-Claude (implements)
-    ↕️ (iterative feedback if needed)
-Codex (validates)
-    ↓
-User (receives result)
-```
+## 🛠️ OPERATIONAL GUIDANCE
 
-### Handoff Points:
+### Task Classification
 
-1. **Claude → Codex**: Include full user context, file paths, error messages
-2. **Codex → Claude**: Provide implementation steps, patterns, warnings
-3. **Claude → Codex (follow-up)**: Include execution results, errors encountered
-4. **Codex → Claude (refinement)**: Adjusted strategy based on feedback
-
-### 🌐 Communication Language Requirements:
-
-**ALL communication with Codex MUST be in English**:
-- Always write prompts to Codex in English, regardless of user's language
-- Translate user requests to English before sending to Codex
-- All context, file paths, and error messages must be in English
-
-### Shared Context Requirements:
-
-Both agents MUST maintain awareness of:
-- Current task objectives
-- Project conventions (see sections below)
-- Previous decisions in the conversation
-- Test/validation requirements
-
-## 📝 TASK CLASSIFICATION
-
-### ✅ REQUIRES CODEX (Mandatory):
+**✅ REQUIRES CODEX (Mandatory)**:
 - Writing new code
 - Modifying existing code
 - Debugging and fixing errors
@@ -272,17 +208,17 @@ Both agents MUST maintain awareness of:
 - Test implementation
 - Code reviews
 
-### ⚪ DOES NOT REQUIRE CODEX (Claude handles alone):
-- Running existing commands (bun test, bun install, etc.)
+**⚪ DOES NOT REQUIRE CODEX (Claude handles alone)**:
+- Running existing commands (`bun test`, `bun install`)
 - Reading files for information only
-- Git operations (status, log, diff)
-- File system operations (ls, mkdir, mv)
+- Git operations (`git status`, `git log`, `git diff`)
+- File system operations (`ls`, `mkdir`, `mv`)
 - Documentation queries (non-code)
 - Project setup verification
 - Status reporting
 - User clarification questions
 
-### 🤔 EDGE CASES:
+**🤔 EDGE CASES**:
 - **Configuration file changes**: Use Codex if it affects application behavior
 - **README updates**: Use Codex if documenting code architecture
 - **Package.json scripts**: Use Codex if adding new build/test scripts
@@ -290,46 +226,70 @@ Both agents MUST maintain awareness of:
 
 **When in doubt → USE CODEX**
 
+### Communication Requirements
+
+**Language Protocol**:
+- **ALL communication with Codex MUST be in English**
+- Translate user requests to English before sending to Codex
+- File paths, error messages, and context must be in English
+
+**Handoff Protocol**:
+- **Claude → Codex**: Include full user context, file paths, error messages
+- **Codex → Claude**: Provide implementation steps, patterns, warnings
+- **Claude → Codex (follow-up)**: Include execution results, errors encountered
+- **Codex → Claude (refinement)**: Adjusted strategy based on feedback
+
+### Shared Context Maintenance
+
+Both agents MUST maintain awareness of:
+- Current task objectives
+- Project conventions (see Reference Appendix)
+- Previous decisions in the conversation
+- Test/validation requirements
+
+### Pre-Release Context
+
+**soda-gql is at pre-release v0.1.0**:
+- All refactors and architectural changes are encouraged
+- Breaking changes are acceptable
+- NO migration paths required
+- When Codex proposes API replacement, Claude executes without compatibility layers
+- Prioritize ideal architecture over backwards compatibility
+
 ---
 
-## Package Management and Execution
+## 📚 REFERENCE APPENDIX
 
-### Use Bun as Package Manager
+*This section contains project-specific context and may be compacted if context is limited.*
 
-Use Bun for package management and script execution:
+### Package Management
 
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
+**Use Bun for all operations**:
+- `bun install` (not npm/yarn/pnpm)
+- `bun run <script>` (not npm run)
+- `bun test` (not jest/vitest)
 
-### Use Node.js APIs for Implementation
-
-For code implementation, use standard Node.js APIs:
-
-- Use Node.js `fs/promises` for file operations
-- Use Node.js `path` for path operations
-- Use Node.js runtime features and APIs
+**Use Node.js APIs for implementation**:
+- Node.js `fs/promises` for file operations
+- Node.js `path` for path operations
 - Keep code compatible with standard Node.js runtime
 
-## Project: Zero-runtime GraphQL Query Generation
+### Project Overview
 
-This project implements a zero-runtime GraphQL query generation system similar to PandaCSS's CSS-in-JS approach.
+**Zero-runtime GraphQL Query Generation** (similar to PandaCSS approach)
 
-### Tech Stack
+**Tech Stack**:
+- TypeScript 5.x with Bun runtime
+- Bun plugin system for transformations
+- neverthrow for error handling
+- Zod v4 for validation
+- Bun test with TDD (t_wada methodology)
 
-- **Language**: TypeScript 5.x with Bun runtime
-- **Build**: Bun plugin system for static analysis and transformation
-- **Error Handling**: neverthrow for type-safe Results
-- **Validation**: Zod for runtime validation
-- **Testing**: Bun test with TDD (t_wada methodology)
-
-### Key Concepts
-
-- **Remote Models**: Type-safe GraphQL fragments with transforms
-- **Query Slices**: Domain-specific query definitions
-- **Page Queries**: Composed queries from multiple slices
-- **Zero Runtime**: All transformations at build time
+**Key Concepts**:
+- Remote Models: Type-safe GraphQL fragments with transforms
+- Query Slices: Domain-specific query definitions
+- Page Queries: Composed queries from multiple slices
+- Zero Runtime: All transformations at build time
 
 ### Commands
 
@@ -337,135 +297,108 @@ This project implements a zero-runtime GraphQL query generation system similar t
 # Generate typed runtime entry from schema
 bun run soda-gql codegen --schema ./schema.graphql --out packages/graphql-system/src/index.ts
 
-# Produce runtime GraphQL documents during development
+# Produce runtime GraphQL documents
 bun run soda-gql builder --mode runtime --entry ./src/pages/**/*.ts --out ./.cache/soda-gql/runtime.json
 
 # Run tests
 bun test
 
-# Run quality checks (linting + type check)
+# Quality checks (linting + type check)
 bun quality
 
 # Type check only
 bun typecheck
 ```
 
-## Documentation Standards
+### Documentation Standards
 
-### Language Requirements
+**Language**: ALL documentation in English, American spelling
+- Use "color" not "colour", "organize" not "organise"
+- Code comments, commits, README in English
+- No mixed languages
 
-- **ALL documentation MUST be in English**: Code comments, commit messages, README files, and inline documentation
-- **No mixed languages**: Never mix English and other languages in the same document
-- **Consistency is mandatory**: Once started in English, continue in English throughout
+### Code Conventions
 
-### Spelling Standards
+**Type Safety**:
+- NO `any`/`unknown` directly - use generic constraints
+- Acceptable `any` usage requires suppression comment
+- Validate external data with Zod v4
 
-- **Use American English spelling**: Always use American English spelling conventions, not British English
-- **Examples of correct spelling**:
-  - Use "color" not "colour"
-  - Use "organize" not "organise"
-  - Use "center" not "centre"
-  - Use "analyze" not "analyse"
-  - Use "behavior" not "behaviour"
-- **Apply consistently**: All code, comments, and documentation must follow American English spelling
+**Error Handling**:
+- Use neverthrow for type-safe errors
+- Use `ok()` and `err()` functions only
+- NO `fromPromise` - loses type information
+- Never throw - return Result types
 
-## Universal Code Conventions
+**Code Organization**:
+- NO classes for state management
+- Pure functions for testability
+- Minimize dependencies and coupling
+- NEVER import from `/specs/` - copy types instead
 
-### Type Safety
+**Testing**:
+- TDD mandatory (t_wada: RED → GREEN → REFACTOR)
+- No mocks - use real dependencies
+- Use `import`, never `require`
 
-- **NO any/unknown**: Never use `any` or `unknown` directly
-  - Use Generic type parameters with constraints instead
-  - Example: `<T extends BaseType>` not `any`
-  - Cast to any/unknown only within Generic constraints
-- **Acceptable any usage** (requires suppression comment):
-  - Generic type parameter defaults: `<T = any>` with `// biome-ignore lint/suspicious/noExplicitAny: generic default`
-  - Type utilities that must handle any type: `// biome-ignore lint/suspicious/noExplicitAny: type utility`
-  - Test assertions with complex types: `// biome-ignore lint/suspicious/noExplicitAny: test assertion`
-  - Temporary migration code (must have TODO): `// biome-ignore lint/suspicious/noExplicitAny: TODO: add proper types`
-- **External Data Validation**: Always validate with zod v4
-  - JSON files, API responses, user input
-  - Never trust external data types
-  - Example: `z.object({ ... }).parse(data)`
+### Testing Conventions
 
-### Error Handling
+**Fixture-Based Testing**:
+- Store test code as `.ts` fixture files, not inline strings
+- Place fixtures in `tests/fixtures/` with descriptive subdirectories
+- Fixture files are type-checked by `tests/tsconfig.json`
+- Use `@ts-expect-error` for intentionally invalid test cases
+- Benefits: Type safety, editor support, refactoring tools work
 
-- **Use neverthrow**: Type-safe error handling without exceptions
-  - Use `ok()` and `err()` functions only
-  - NO `fromPromise` (loses type information)
-  - Use discriminated unions for complex flows
-  - Example: `Result<SuccessType, ErrorType>`
-- **Never throw**: Return Result types instead
-  - Exceptions only for truly exceptional cases
-  - All expected errors must be Result types
+**Behavioral Testing**:
+- Test **behavior** (execution results), not **implementation details** (output format)
+- For transform tests: Execute transformed code and verify runtime behavior
+- Don't assert on exact transformation output (brittle to formatting changes)
+- Example: Instead of `expect(code).toContain("gqlRuntime.operation")`, execute the code and verify the operation was registered
 
-### Code Organization
+**Integration Test Utilities**:
+- Use `__resetRuntimeRegistry()` from `@soda-gql/core/runtime` to clear operation registry between tests
+- Use spies/wrappers to track registrations without mocking
+- Transpile TypeScript test output with `new Bun.Transpiler()` before execution
+- Dynamic imports with cache-busting: `import(\`file://\${path}?t=\${Date.now()}\`)`
 
-- **NO Classes for State**: Classes forbidden for state management
-  - OK for: DTOs, Error classes, pure method collections
-  - Use dependency injection for state
-  - Keep state scope minimal with closures
-- **Pure Functions**: Extract pure logic for testability
-  - Side effects at boundaries only
-  - Dependency injection over global state
-- **Optimize Dependencies**: Both file and function level
-  - Minimize coupling between modules
-  - Use explicit imports, never circular
-- **NEVER import from /specs/**: Specs are documentation only
-  - Don't import contracts or types from specs directory
-  - Copy needed types to packages instead
-  - specs/*/contracts/ files are reference documentation
+**Test Organization**:
+- Unit tests: `tests/unit/**/*.test.ts` - Test individual functions/modules
+- Integration tests: `tests/integration/**/*.test.ts` - Test full workflows with real dependencies
+- Fixtures: `tests/fixtures/**/*.ts` - Reusable test code samples
 
-### Testing
+**Example Structure**:
+```typescript
+// Bad: Inline string test code
+const source = `import { gql } from "@/graphql-system"; export const model = gql.default(...)`;
+const result = analyze(source);
 
-- **TDD Mandatory**: t_wada methodology
-  - Write test first (RED phase)
-  - Make it pass (GREEN phase)
-  - Refactor (REFACTOR phase)
-  - Commit tests before implementation
-- **No Mocks**: Use real dependencies
-  - Real databases, actual file systems
-  - Integration issues caught early
-- **Import Only**: Use `import`, never `require`
-  - Preserves type information
-  - Better tree-shaking
+// Good: Fixture-based test code
+const { filePath, source } = loadFixture("model-definition");
+const result = analyze({ filePath, source });
+```
 
-### Runtime and Testing
+### Tool Utilities
 
-- Use Node.js APIs for implementation (`fs/promises`, `path`, etc.)
-- Use `bun:test` for testing framework
-- Maintain Node.js compatibility in production code
+**@soda-gql/tool-utils**: Toolchain utilities only
+- **NEVER use in core/runtime packages**
+- [unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md): Safely unwrap nullable values
 
-## Tool Utilities
+### Architecture Decision Records
 
-### @soda-gql/tool-utils Package
+**Location**: `docs/decisions/`
 
-A utility collection exclusively for the toolchain. **NEVER use in core and runtime packages**.
-
-#### Available Utilities
-
-- **[unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md)**: A utility to safely unwrap values that are nullable in the type system but will never be null in the implementation
-
-## Documentation
-
-### Architecture Decision Records (ADRs)
-
-Significant architectural decisions are documented in `docs/decisions/`.
-
-**When to write an ADR**:
-- Multiple viable technical approaches exist
-- Decision would be hard to reverse
+**When to write**:
+- Multiple viable approaches exist
+- Decision is hard to reverse
 - Deviating from established patterns
 
-**How to write**: 
-1. Copy `docs/decisions/adr-template.md`
-2. Fill out Context, Decision, and Consequences
-3. Reference in code: `// See ADR-001`
+**Process**: See [ADR-000](docs/decisions/000-adr-process.md)
 
-See [ADR-000](docs/decisions/000-adr-process.md) for the full process.
+### Recent Changes
 
-## Recent Changes
-- 2025-09-20 (001-zero-runtime-gql-in-js): Document staged runtime → zero-runtime plan, added codegen/builder commands.
+- 2025-09-20 (ADR-001): Documented zero-runtime plan, added codegen/builder commands
 
-## Codex MCP Usage Reference
+### Additional Resources
 
-For detailed guidance on using Codex MCP effectively, including troubleshooting common issues and best practices, refer to [CODEX_MCP_GUIDE.md](./CODEX_MCP_GUIDE.md).
+For detailed Codex MCP guidance: [CODEX_MCP_GUIDE.md](./CODEX_MCP_GUIDE.md)

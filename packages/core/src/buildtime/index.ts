@@ -1,4 +1,3 @@
-export { evaluateBuilders } from "./buildtime-registry";
 export { createGqlInvoker, type GqlInvoker } from "./gql-invoker";
 export {
   createIssueRegistry,

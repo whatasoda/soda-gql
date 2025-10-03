@@ -1,13 +1,12 @@
 import { z } from "zod";
-
+import type { CanonicalId } from "../canonical-id/canonical-id";
 import {
-	ModuleAnalysisSchema,
-	ModuleDefinitionSchema,
-	ModuleDiagnosticSchema,
-	ModuleExportSchema,
-	ModuleImportSchema,
+  ModuleAnalysisSchema,
+  ModuleDefinitionSchema,
+  ModuleDiagnosticSchema,
+  ModuleExportSchema,
+  ModuleImportSchema,
 } from "./cache";
-import type { CanonicalId } from "../registry";
 
 const BuilderAnalyzerSchema = z.enum(["ts", "swc"]);
 
@@ -15,27 +14,25 @@ const BuilderAnalyzerSchema = z.enum(["ts", "swc"]);
 const CanonicalIdSchema: z.ZodType<CanonicalId> = z.string() as unknown as z.ZodType<CanonicalId>;
 
 export const DiscoveredDependencySchema = z.object({
-	specifier: z.string(),
-	resolvedPath: z.string().nullable(),
-	isExternal: z.boolean(),
+  specifier: z.string(),
+  resolvedPath: z.string().nullable(),
+  isExternal: z.boolean(),
 });
 
-export const DiscoverySnapshotDefinitionSchema = ModuleDefinitionSchema.extend(
-	{
-		canonicalId: CanonicalIdSchema,
-	},
-);
+export const DiscoverySnapshotDefinitionSchema = ModuleDefinitionSchema.extend({
+  canonicalId: CanonicalIdSchema,
+});
 
 export const DiscoverySnapshotSchema = z.object({
-	filePath: z.string(),
-	normalizedFilePath: z.string(),
-	analyzer: BuilderAnalyzerSchema,
-	signature: z.string(),
-	createdAtMs: z.number(),
-	analysis: ModuleAnalysisSchema,
-	definitions: z.array(DiscoverySnapshotDefinitionSchema).readonly(),
-	dependencies: z.array(DiscoveredDependencySchema).readonly(),
-	diagnostics: z.array(ModuleDiagnosticSchema).readonly(),
-	exports: z.array(ModuleExportSchema).readonly(),
-	imports: z.array(ModuleImportSchema).readonly(),
+  filePath: z.string(),
+  normalizedFilePath: z.string(),
+  analyzer: BuilderAnalyzerSchema,
+  signature: z.string(),
+  createdAtMs: z.number(),
+  analysis: ModuleAnalysisSchema,
+  definitions: z.array(DiscoverySnapshotDefinitionSchema).readonly(),
+  dependencies: z.array(DiscoveredDependencySchema).readonly(),
+  diagnostics: z.array(ModuleDiagnosticSchema).readonly(),
+  exports: z.array(ModuleExportSchema).readonly(),
+  imports: z.array(ModuleImportSchema).readonly(),
 });

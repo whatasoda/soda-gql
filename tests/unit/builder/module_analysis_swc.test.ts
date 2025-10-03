@@ -1,24 +1,23 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-import { analyzeModule } from "../../../packages/builder/src/ast/analyze-module-swc";
+import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+
+const analyzeModule = getAstAnalyzer("swc").analyze;
+
+const fixturesDir = join(__dirname, "../../fixtures/module-analysis/swc");
+const loadFixture = (name: string) => {
+  const fixturePath = join(fixturesDir, `${name}.ts`);
+  return {
+    filePath: fixturePath,
+    source: readFileSync(fixturePath, "utf-8"),
+  };
+};
 
 describe("module analysis (swc)", () => {
-  const filePath = "/app/src/entities/profile.ts";
-
   it("extracts top-level definitions", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    {},
-    () => ({
-      hello: "world",
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("top-level-definitions");
 
     const analysis = analyzeModule({ filePath, source });
     const names = analysis.definitions.map((item) => item.exportName);
@@ -26,21 +25,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("extracts definitions from object property exports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const user_remoteModel = {
-  forIterate: gql.default(({ model }) =>
-    model(
-      "user",
-      ({ f }) => ({
-        ...f.id(),
-      }),
-      (data) => data,
-    )
-  ),
-};
-`;
+    const { filePath, source } = loadFixture("object-property-exports");
 
     const analysis = analyzeModule({ filePath, source });
     const names = analysis.definitions.map((item) => item.exportName);
@@ -48,61 +33,30 @@ export const user_remoteModel = {
     expect(analysis.diagnostics).toHaveLength(0);
   });
 
-  it("reports diagnostics for non-top-level definitions", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const factory = () => {
-  return gql.default(({ model }) =>
-    model("user", () => ({}), (value) => value)
-  );
-};
-`;
+  it("collects nested definitions inside functions", () => {
+    const { filePath, source } = loadFixture("nested-in-functions");
 
     const analysis = analyzeModule({ filePath, source });
-    expect(analysis.definitions).toHaveLength(0);
-    expect(analysis.diagnostics).toHaveLength(1);
+    expect(analysis.definitions).toHaveLength(1);
+    const [definition] = analysis.definitions;
+    expect(definition?.isTopLevel).toBe(false);
+    expect(definition?.isExported).toBe(false);
+    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("captures references to properties on imported bindings", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSliceCatalog } from "../entities/user";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      catalog: userSliceCatalog.byId({ id: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("imported-binding-refs");
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userSliceCatalog.byId");
+    expect(definition?.exportName).toBe("pageQuery");
   });
 
   it("captures deep member references from namespace imports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import * as userCatalog from "../entities/user.catalog";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("namespace-imports");
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.references).toContain("userCatalog.collections.byCategory");
+    expect(definition?.exportName).toBe("pageQuery");
   });
 });

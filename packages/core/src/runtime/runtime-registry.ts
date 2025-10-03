@@ -17,3 +17,11 @@ export const getOperation = (name: string) => {
   }
   return operation;
 };
+
+/**
+ * Test-only function to reset the operation registry
+ * @internal
+ */
+export const __resetRuntimeRegistry = () => {
+  registry.clear();
+};

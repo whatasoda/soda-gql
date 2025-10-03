@@ -4,11 +4,11 @@ import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
 import type { VoidIfEmptyObject } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
-import { Builder } from "./builder";
+import { ArtifactElement } from "./artifact-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
-type ModelInner<
+type ModelArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
@@ -28,26 +28,26 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends Builder<ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>>
-  implements ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>
+  extends ArtifactElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
     input: TVariables;
     output: TNormalized;
   }>;
 
-  private constructor(factory: () => ModelInner<TTypeName, TVariables, TFields, TRaw, TNormalized>) {
+  private constructor(factory: () => ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>) {
     super(factory);
   }
 
   public get typename() {
-    return Builder.get(this).typename;
+    return ArtifactElement.get(this).typename;
   }
   public get fragment() {
-    return Builder.get(this).fragment;
+    return ArtifactElement.get(this).fragment;
   }
   public get normalize() {
-    return Builder.get(this).normalize;
+    return ArtifactElement.get(this).normalize;
   }
 
   static create<

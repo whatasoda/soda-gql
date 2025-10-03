@@ -7,6 +7,7 @@ import {
   buildWithTypeModifier,
 } from "../../../packages/core/src/buildtime/build-document";
 import type { TypeModifier } from "../../../packages/core/src/types/schema/type-modifier";
+import type { InputTypeRefs } from "../../../packages/core/src/types/schema/type-ref";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -154,8 +155,8 @@ describe("Document Integrity Tests", () => {
         buildDocument({
           operationType: invalidOperation,
           operationName: "TestOperation",
-          variables: [],
-          fields: [],
+          variables: {} as InputTypeRefs,
+          fields: {},
         });
       }).toThrow();
     });
@@ -164,8 +165,8 @@ describe("Document Integrity Tests", () => {
       const queryDoc = buildDocument({
         operationType: "query",
         operationName: "TestQuery",
-        variables: [],
-        fields: [],
+        variables: {},
+        fields: {},
       });
       expect(queryDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((queryDoc.definitions[0] as any)?.operation).toBe("query");
@@ -173,8 +174,8 @@ describe("Document Integrity Tests", () => {
       const mutationDoc = buildDocument({
         operationType: "mutation",
         operationName: "TestMutation",
-        variables: [],
-        fields: [],
+        variables: {},
+        fields: {},
       });
       expect(mutationDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((mutationDoc.definitions[0] as any)?.operation).toBe("mutation");
@@ -182,8 +183,8 @@ describe("Document Integrity Tests", () => {
       const subscriptionDoc = buildDocument({
         operationType: "subscription",
         operationName: "TestSubscription",
-        variables: [],
-        fields: [],
+        variables: {},
+        fields: {},
       });
       expect(subscriptionDoc.definitions[0]?.kind).toBe(Kind.OPERATION_DEFINITION);
       expect((subscriptionDoc.definitions[0] as any)?.operation).toBe("subscription");

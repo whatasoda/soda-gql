@@ -1,5 +1,5 @@
 import type { GraphQLFormattedError } from "graphql";
-import type { AnyOperationSliceFragments, ExecutionResultProjectionPathGraphNode } from "../types/operation";
+import type { AnySliceContents, ProjectionPathGraphNode } from "../types/operation";
 import {
   type AnyGraphqlRuntimeAdapter,
   SlicedExecutionResultEmpty,
@@ -8,10 +8,7 @@ import {
 } from "../types/runtime";
 import type { NormalizedExecutionResult } from "../types/runtime/execution-result";
 
-function* generateErrorMapEntries(
-  errors: readonly GraphQLFormattedError[],
-  projectionPathGraph: ExecutionResultProjectionPathGraphNode,
-) {
+function* generateErrorMapEntries(errors: readonly GraphQLFormattedError[], projectionPathGraph: ProjectionPathGraphNode) {
   for (const error of errors) {
     const errorPath = error.path ?? [];
     let stack = projectionPathGraph;
@@ -46,10 +43,7 @@ function* generateErrorMapEntries(
   }
 }
 
-const createErrorMaps = (
-  errors: readonly GraphQLFormattedError[] | undefined,
-  projectionPathGraph: ExecutionResultProjectionPathGraphNode,
-) => {
+const createErrorMaps = (errors: readonly GraphQLFormattedError[] | undefined, projectionPathGraph: ProjectionPathGraphNode) => {
   const errorMaps: { [label: string]: { [path: string]: { error: GraphQLFormattedError }[] } } = {};
   for (const { label, path, error } of generateErrorMapEntries(errors ?? [], projectionPathGraph)) {
     const mapPerLabel = errorMaps[label] || (errorMaps[label] = {});
@@ -85,8 +79,8 @@ export const createExecutionResultParser = <TRuntimeAdapter extends AnyGraphqlRu
   fragments,
   projectionPathGraph,
 }: {
-  fragments: AnyOperationSliceFragments;
-  projectionPathGraph: ExecutionResultProjectionPathGraphNode;
+  fragments: AnySliceContents;
+  projectionPathGraph: ProjectionPathGraphNode;
 }) => {
   const prepare = (result: NormalizedExecutionResult<TRuntimeAdapter, object, object>) => {
     if (result.type === "graphql") {

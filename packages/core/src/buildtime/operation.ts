@@ -1,10 +1,10 @@
 import { createExecutionResultParser } from "../runtime/parse-execution-result";
 import {
-  type AnyOperationSliceFragments,
+  type AnySliceContents,
   type BuilderContext,
-  type ConcatSliceFragments,
+  type ConcatSliceContents,
   Operation,
-  type OperationBuilder,
+  type OperationDefinitionBuilder,
 } from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
@@ -16,16 +16,12 @@ import { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
 export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>() => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
-    return <
-      TOperationName extends string,
-      TSliceFragments extends AnyOperationSliceFragments,
-      TVarDefinitions extends InputTypeRefs = {},
-    >(
+    return <TOperationName extends string, TSliceFragments extends AnySliceContents, TVarDefinitions extends InputTypeRefs = {}>(
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
       },
-      builder: OperationBuilder<TSchema, TVarDefinitions, TSliceFragments>,
+      builder: OperationDefinitionBuilder<TSchema, TVarDefinitions, TSliceFragments>,
     ) => {
       return Operation.create<TSchema, TRuntimeAdapter, TOperationType, TOperationName, TVarDefinitions, TSliceFragments>(
         (context: BuilderContext | null) => {
@@ -48,7 +44,7 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
             Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>
               Object.entries(fields).map(([key, reference]) => [`${label}_${key}`, reference]),
             ),
-          ) as ConcatSliceFragments<TSliceFragments>;
+          ) as ConcatSliceContents<TSliceFragments>;
           const projectionPathGraph = createPathGraphFromSliceEntries(fragments);
 
           return {

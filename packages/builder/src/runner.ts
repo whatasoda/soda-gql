@@ -1,17 +1,43 @@
-import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { err } from "neverthrow";
-
+import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "./artifact";
+import type { BuilderArtifact } from "./artifact/types";
+import type { ModuleAnalysis } from "./ast";
+import { createJsonCache } from "./cache/json-cache";
+import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";
+import type { DependencyGraph } from "./dependency-graph/types";
+import { createDiscoveryCache, createDiscoveryPipeline } from "./discovery";
 import { createIntermediateModule } from "./intermediate-module";
-import { loadModules } from "./module-loader";
-import type { BuilderOptions, BuilderResult } from "./types";
+import type { BuilderError, BuilderInput, BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
-export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult> => {
-  const modules = loadModules({ entry: options.entry, analyzer: options.analyzer });
+type PipelineData = {
+  readonly analyses: readonly ModuleAnalysis[];
+  readonly graph: DependencyGraph;
+  readonly intermediateModule: {
+    readonly transpiledPath: string;
+    readonly sourceCode: string;
+  };
+  readonly artifact: BuilderArtifact;
+};
+
+const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData, BuilderError>> => {
+  const cacheFactory = createJsonCache({
+    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+    prefix: ["builder"],
+  });
+
+  const cache = createDiscoveryCache({
+    factory: cacheFactory,
+    analyzer: options.analyzer,
+    evaluatorId: "default",
+  });
+
+  const pipeline = createDiscoveryPipeline({ analyzer: options.analyzer, cache });
+  const modules = pipeline.load(options.entry);
+
   if (modules.isErr()) {
     return err(modules.error);
   }
@@ -38,15 +64,6 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
 
   const { transpiledPath, sourceCode } = intermediateModule.value;
 
-  if (options.debugDir) {
-    const debugPath = resolve(options.debugDir);
-    mkdirSync(debugPath, { recursive: true });
-    await Bun.write(resolve(debugPath, "modules.json"), JSON.stringify(analyses, null, 2));
-    await Bun.write(resolve(debugPath, "graph.json"), JSON.stringify(Array.from(dependencyGraph.value.entries()), null, 2));
-    await Bun.write(resolve(debugPath, "intermediate-module.ts"), sourceCode);
-    await Bun.write(resolve(debugPath, "intermediate-module.mjs"), await Bun.file(transpiledPath).text());
-  }
-
   const artifactResult = await buildArtifact({
     graph: dependencyGraph.value,
     cache: stats,
@@ -57,10 +74,36 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
     return err(artifactResult.error);
   }
 
-  if (options.debugDir) {
-    const debugPath = resolve(options.debugDir);
-    await Bun.write(resolve(debugPath, "artifact.json"), JSON.stringify(artifactResult.value, null, 2));
+  return ok({
+    analyses,
+    graph: dependencyGraph.value,
+    intermediateModule: { transpiledPath, sourceCode },
+    artifact: artifactResult.value,
+  });
+};
+
+export const generateArtifact = async (options: BuilderInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+  const result = await buildPipeline(options);
+  if (result.isErr()) {
+    return err(result.error);
+  }
+  return ok(result.value.artifact);
+};
+
+export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult> => {
+  const debugWriter = createDebugWriter(options.debugDir);
+
+  const pipelineResult = await buildPipeline(options);
+
+  if (pipelineResult.isErr()) {
+    return err(pipelineResult.error);
   }
 
-  return writeArtifact(resolve(options.outPath), artifactResult.value);
+  const { analyses, graph, intermediateModule, artifact } = pipelineResult.value;
+
+  await debugWriter.writeDiscoverySnapshot(analyses, graph);
+  await debugWriter.writeIntermediateModule(intermediateModule);
+  await debugWriter.writeArtifact(artifact);
+
+  return writeArtifact(resolve(options.outPath), artifact);
 };

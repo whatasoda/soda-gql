@@ -75,13 +75,13 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
       arguments?: TArguments;
       directives?: TDirectives;
     },
-  ): UnsafeOutputRef<TName, TModifier, TArguments, TDirectives> =>
+  ): UnsafeOutputRef<TName, TModifier, InputTypeRefs extends TArguments ? {} : TArguments, TDirectives> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       arguments: extras.arguments ?? ({} as TArguments),
       directives: extras.directives ?? ({} as TDirectives),
-    }) satisfies AnyTypeRef as UnsafeOutputRef<TName, TModifier, TArguments, TDirectives>;
+    }) satisfies AnyTypeRef as UnsafeOutputRef<TName, TModifier, InputTypeRefs extends TArguments ? {} : TArguments, TDirectives>;
 };
 
 export const unsafeOutputRef = {

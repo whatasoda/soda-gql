@@ -2,9 +2,9 @@ import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runBuilder } from "../../packages/builder/src/index.ts";
-import { runMultiSchemaCodegen } from "../../packages/codegen/src/index.ts";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index.ts";
+import { runBuilder } from "../../packages/builder/src/index";
+import { runMultiSchemaCodegen } from "../../packages/codegen/src/index";
+import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -43,7 +43,8 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
     });
 
     if (result.isErr()) {
-      throw new Error(`builder failed: ${result.error.code} - ${result.error.message}`);
+      const errorMsg = "message" in result.error ? ` - ${result.error.message}` : "";
+      throw new Error(`builder failed: ${result.error.code}${errorMsg}`);
     }
 
     return result.value;
@@ -78,10 +79,12 @@ describe("builder cache flow integration", () => {
     const firstResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
     const firstArtifact = firstResult.artifact;
 
-    // Find the ProfilePageQuery operation by searching through operations
-    const profileQueryOp = Object.values(firstArtifact.operations).find((op) => op.prebuild.operationName === "ProfilePageQuery");
+    // Find the ProfilePageQuery operation by searching through artifacts
+    const profileQueryOp = Object.values(firstArtifact.elements).find(
+      (entry) => entry.type === "operation" && entry.prebuild.operationName === "ProfilePageQuery",
+    );
     expect(profileQueryOp).toBeDefined();
-    expect(profileQueryOp?.prebuild.document).toBeDefined();
+    expect(profileQueryOp?.type === "operation" && profileQueryOp.prebuild.document).toBeDefined();
 
     expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
 

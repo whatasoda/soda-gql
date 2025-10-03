@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
+import { createCanonicalId } from "@soda-gql/builder";
 import { Kind } from "graphql";
-import { type BuilderArtifact, createCanonicalId } from "../../../packages/builder/src/index.ts";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, runBabelTransform } from "../../utils/transform";
 
 describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
@@ -19,62 +20,61 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
       "collections.byCategory",
     );
 
-    const artifact: BuilderArtifact = {
-      operations: {
-        [queryId]: {
-          type: "operation",
-          id: queryId,
-          prebuild: {
-            operationType: "query",
-            operationName: "ProfilePageQuery",
-            document: {
-              kind: Kind.DOCUMENT,
-              definitions: [],
+    const artifact = createBuilderArtifact(
+      [
+        [
+          queryId,
+          {
+            type: "operation",
+            id: queryId,
+            prebuild: {
+              operationType: "query",
+              operationName: "ProfilePageQuery",
+              document: {
+                kind: Kind.DOCUMENT,
+                definitions: [],
+              },
+              variableNames: [],
+              projectionPathGraph: {
+                matches: [],
+                children: {},
+              },
             },
-            variableNames: [],
-            projectionPathGraph: {
-              matches: [],
-              children: {},
+          },
+        ],
+        [
+          userSliceId,
+          {
+            type: "slice",
+            id: userSliceId,
+            prebuild: {
+              operationType: "query",
             },
           },
-        },
-      },
-      slices: {
-        [userSliceId]: {
-          type: "slice",
-          id: userSliceId,
-          prebuild: {
-            operationType: "query",
+        ],
+        [
+          userSliceCatalogId,
+          {
+            type: "slice",
+            id: userSliceCatalogId,
+            prebuild: {
+              operationType: "query",
+            },
           },
-        },
-        [userSliceCatalogId]: {
-          type: "slice",
-          id: userSliceCatalogId,
-          prebuild: {
-            operationType: "query",
+        ],
+        [
+          userCatalogCollectionId,
+          {
+            type: "slice",
+            id: userCatalogCollectionId,
+            prebuild: {
+              operationType: "query",
+            },
           },
-        },
-        [userCatalogCollectionId]: {
-          type: "slice",
-          id: userCatalogCollectionId,
-          prebuild: {
-            operationType: "query",
-          },
-        },
-      },
-      models: {},
-      report: {
-        operations: 1,
-        models: 0,
-        slices: 3,
-        durationMs: 0,
-        warnings: [],
-        cache: {
-          hits: 0,
-          misses: 1,
-        },
-      },
-    };
+        ],
+      ],
+      { cache: { misses: 1 } },
+    );
 
     const source = await Bun.file(sourcePath).text();
 
@@ -86,9 +86,10 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     // Verify gqlRuntime API usage
     expect(transformed).toContain('import { gqlRuntime } from "@soda-gql/runtime"');
     expect(transformed).toContain("gqlRuntime.operation({");
-    expect(transformed).toContain('operationType: "query"');
-    expect(transformed).toContain('operationName: "ProfilePageQuery"');
-    expect(transformed).toContain("gqlRuntime.castDocumentNode(");
+    expect(transformed).toContain("prebuild: JSON.parse(");
+    expect(transformed).toContain("operationType");
+    expect(transformed).toContain("query");
+    expect(transformed).toContain("ProfilePageQuery");
     expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
   });
 });

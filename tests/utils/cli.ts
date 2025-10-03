@@ -1,5 +1,5 @@
 import { expect } from "bun:test";
-import { getProjectRoot } from "./index.ts";
+import { getProjectRoot } from ".";
 
 export type CliResult = {
   readonly stdout: string;
@@ -16,7 +16,7 @@ export type CliOptions = {
 /**
  * Get the project root directory
  */
-export { getProjectRoot } from "./index.ts";
+export { getProjectRoot } from ".";
 
 /**
  * Run the soda-gql CLI with timeout and proper cleanup

@@ -6,8 +6,8 @@ import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, I
 import type { Hidden } from "../shared/hidden";
 import type { Prettify } from "../shared/prettify";
 import type { UnionToIntersection } from "../shared/utility";
-import { Builder } from "./builder";
-import type { AnyOperationSliceFragments } from "./operation-slice";
+import { ArtifactElement } from "./artifact-element";
+import type { AnySliceContents } from "./slice";
 
 export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
 export type AnyOperationOf<TOperationType extends OperationType> = Operation<
@@ -22,7 +22,7 @@ export type AnyOperationOf<TOperationType extends OperationType> = Operation<
 
 declare const __OPERATION_BRAND__: unique symbol;
 
-type OperationInner<
+type OperationArtifact<
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TOperationType extends OperationType,
   TOperationName extends string,
@@ -34,7 +34,7 @@ type OperationInner<
   readonly operationType: TOperationType;
   readonly operationName: TOperationName;
   readonly variableNames: TVariableNames;
-  readonly projectionPathGraph: ExecutionResultProjectionPathGraphNode;
+  readonly projectionPathGraph: ProjectionPathGraphNode;
   readonly document: TypedQueryDocumentNode<TRawData, TVariables>;
   readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData;
 };
@@ -48,10 +48,11 @@ export class Operation<
     TRawData extends object,
     TProjectedData extends object,
   >
-  extends Builder<
-    OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+  extends ArtifactElement<
+    OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
   >
-  implements OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+  implements
+    OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
 {
   declare readonly [__OPERATION_BRAND__]: Hidden<{
     operationType: TOperationType;
@@ -59,29 +60,29 @@ export class Operation<
 
   private constructor(
     factory: (
-      context: import("./builder").BuilderContext | null,
-    ) => OperationInner<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>,
+      context: import("./artifact-element").BuilderContext | null,
+    ) => OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>,
   ) {
     super(factory);
   }
 
   public get operationType() {
-    return Builder.get(this).operationType;
+    return ArtifactElement.get(this).operationType;
   }
   public get operationName() {
-    return Builder.get(this).operationName;
+    return ArtifactElement.get(this).operationName;
   }
   public get variableNames() {
-    return Builder.get(this).variableNames;
+    return ArtifactElement.get(this).variableNames;
   }
   public get projectionPathGraph() {
-    return Builder.get(this).projectionPathGraph;
+    return ArtifactElement.get(this).projectionPathGraph;
   }
   public get document() {
-    return Builder.get(this).document;
+    return ArtifactElement.get(this).document;
   }
   public get parse() {
-    return Builder.get(this).parse;
+    return ArtifactElement.get(this).parse;
   }
 
   static create<
@@ -90,13 +91,13 @@ export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableDefinitions extends InputTypeRefs,
-    TSliceFragments extends AnyOperationSliceFragments,
+    TSliceFragments extends AnySliceContents,
   >(
-    factory: (context: import("./builder").BuilderContext | null) => {
+    factory: (context: import("./artifact-element").BuilderContext | null) => {
       operationType: TOperationType;
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
-      projectionPathGraph: ExecutionResultProjectionPathGraphNode;
+      projectionPathGraph: ProjectionPathGraphNode;
       document: TypedQueryDocumentNode<
         InferOperationRawData<TSchema, TSliceFragments>,
         ConstAssignableInput<TSchema, TVariableDefinitions>
@@ -110,30 +111,29 @@ export class Operation<
   }
 }
 
-export type ExecutionResultProjectionPathGraphNode = {
+export type ProjectionPathGraphNode = {
   readonly matches: { label: string; path: string; exact: boolean }[];
-  readonly children: { readonly [segment: string]: ExecutionResultProjectionPathGraphNode };
+  readonly children: { readonly [segment: string]: ProjectionPathGraphNode };
 };
 
-export type ConcatSliceFragments<TSliceFragments extends AnyOperationSliceFragments> = Prettify<
+export type ConcatSliceContents<TSliceContents extends AnySliceContents> = Prettify<
   UnionToIntersection<
     {
-      [TLabel in keyof TSliceFragments & string]: TSliceFragments[TLabel] extends { getFields: () => infer TFields }
+      [TLabel in keyof TSliceContents & string]: TSliceContents[TLabel] extends { getFields: () => infer TFields }
         ? { [K in keyof TFields & string as `${TLabel}_${K}`]: TFields[K] }
         : {};
-    }[keyof TSliceFragments & string]
+    }[keyof TSliceContents & string]
   >
 > &
   AnyFields;
 
-export type InferOperationRawData<
-  TSchema extends AnyGraphqlSchema,
-  TSliceFragments extends AnyOperationSliceFragments,
-> = Prettify<InferFields<TSchema, ConcatSliceFragments<TSliceFragments>>>;
+export type InferOperationRawData<TSchema extends AnyGraphqlSchema, TSliceContents extends AnySliceContents> = Prettify<
+  InferFields<TSchema, ConcatSliceContents<TSliceContents>>
+>;
 
 /** Builder invoked from userland to wire slices with operation-level variables. */
-export type OperationBuilder<
+export type OperationDefinitionBuilder<
   TSchema extends AnyGraphqlSchema,
   TVarDefinitions extends InputTypeRefs,
-  TSlices extends AnyOperationSliceFragments,
-> = (tools: { $: NoInfer<AssignableInput<TSchema, TVarDefinitions>> }) => TSlices;
+  TSliceContents extends AnySliceContents,
+> = (tools: { $: NoInfer<AssignableInput<TSchema, TVarDefinitions>> }) => TSliceContents;

@@ -64,6 +64,17 @@
           }
         }
       }
+    },
+    {
+      "includes": ["tests/fixtures/**/*"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
     }
   ]
 }

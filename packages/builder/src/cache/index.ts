@@ -1,21 +1,14 @@
 export {
-	createJsonCache,
-	type JsonCacheFactory,
-	type JsonCacheFactoryOptions,
-	type JsonCacheStore,
-	type JsonCacheStoreOptions,
+  createJsonCache,
+  type JsonCacheFactory,
+  type JsonCacheFactoryOptions,
+  type JsonCacheStore,
+  type JsonCacheStoreOptions,
 } from "./json-cache";
-
 export {
-	ModuleCacheManager,
-	createModuleCacheManager,
-	createDefaultModuleCacheManager,
-	type ModuleCacheManagerOptions,
-	type ModuleCacheRecord,
+  createDefaultModuleCacheManager,
+  createModuleCacheManager,
+  ModuleCacheManager,
+  type ModuleCacheManagerOptions,
+  type ModuleCacheRecord,
 } from "./module-cache";
-
-export {
-	JsonDiscoveryCache,
-	createDiscoveryCache,
-	type DiscoveryCacheOptions,
-} from "./discovery-cache";

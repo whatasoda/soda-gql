@@ -1,7 +1,7 @@
 import type { Kind } from "graphql";
 import { createVarRefs } from "../buildtime/input";
 import type { AnyAssignableInput } from "../types/fragment";
-import type { AnyOperationOf, AnyOperationSliceFragment } from "../types/operation";
+import type { AnyOperationOf, AnySliceContent } from "../types/operation";
 import type { AnyGraphqlSchema, InputTypeRef, InputTypeRefs, OperationType } from "../types/schema";
 import type { StripFunctions, StripSymbols } from "../types/shared/utility";
 import { createExecutionResultParser } from "./parse-execution-result";
@@ -10,7 +10,7 @@ import { registerOperation } from "./runtime-registry";
 export type RuntimeOperationInput = {
   prebuild: StripFunctions<AnyOperationOf<OperationType>>;
   runtime: {
-    getSlices: (tools: { $: AnyAssignableInput }) => { [key: string]: AnyOperationSliceFragment };
+    getSlices: (tools: { $: AnyAssignableInput }) => { [key: string]: AnySliceContent };
   };
 };
 
