@@ -4,7 +4,6 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ## Features
 
-- 🚀 **Zero Runtime Overhead**: All GraphQL queries are generated at build time
 - 🔍 **Full Type Safety**: Complete TypeScript inference from schema to query results
 - 🎯 **No Code Generation Loop**: Unlike traditional GraphQL codegen, no constant regeneration needed
 - 🔧 **Transform Functions**: Built-in data normalization at the model level
@@ -16,10 +15,11 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 ```
 packages/
 ├── core/           # Runtime GraphQL utilities
-├── codegen/        # Schema code generation  
+├── codegen/        # Schema code generation
 ├── builder/        # Static analysis & doc generation
 ├── plugin-babel/   # Babel transformation plugin
-├── plugin-bun/     # Bun plugin
+├── runtime/        # Runtime execution helpers
+├── tool-utils/     # Build-time utilities
 └── cli/            # Command-line interface
 ```
 
@@ -31,9 +31,6 @@ packages/
 # Install packages
 bun add @soda-gql/core
 bun add -D @soda-gql/cli @soda-gql/plugin-babel
-
-# Initialize project
-bunx soda-gql init
 
 # Scaffold scalar + adapter definitions for the runtime
 bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
