@@ -31,6 +31,10 @@ type SessionState = {
     schemaHash: string;
     analyzerVersion: string;
   };
+  /** Last build input for fallback rebuilds */
+  lastInput: BuilderInput | null;
+  /** Last successful artifact */
+  lastArtifact: BuilderArtifact | null;
 };
 
 /**
@@ -129,6 +133,103 @@ const extractDefinitionAdjacency = (graph: DependencyGraph): Map<CanonicalId, Se
 };
 
 /**
+ * Collect all modules affected by changes, including transitive dependents.
+ * Uses BFS to traverse module adjacency graph.
+ */
+const collectAffectedModules = (
+  changedFiles: Set<string>,
+  moduleAdjacency: Map<string, Set<string>>,
+): Set<string> => {
+  const affected = new Set<string>(changedFiles);
+  const queue = [...changedFiles];
+  const visited = new Set<string>(changedFiles);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const dependents = moduleAdjacency.get(current);
+
+    if (dependents) {
+      for (const dependent of dependents) {
+        if (!visited.has(dependent)) {
+          visited.add(dependent);
+          affected.add(dependent);
+          queue.push(dependent);
+        }
+      }
+    }
+  }
+
+  return affected;
+};
+
+/**
+ * Collect all definitions affected by removed files.
+ */
+const collectAffectedDefinitions = (
+  removedFiles: Set<string>,
+  snapshots: Map<string, DiscoverySnapshot>,
+): Set<CanonicalId> => {
+  const affectedDefinitions = new Set<CanonicalId>();
+
+  for (const filePath of removedFiles) {
+    const snapshot = snapshots.get(filePath);
+    if (snapshot) {
+      for (const def of snapshot.definitions) {
+        affectedDefinitions.add(def.canonicalId);
+      }
+    }
+  }
+
+  return affectedDefinitions;
+};
+
+/**
+ * Remove files from session state and return affected modules.
+ */
+const dropRemovedFiles = (
+  removedFiles: Set<string>,
+  state: SessionState,
+): Set<string> => {
+  const affectedModules = new Set<string>();
+
+  // Collect affected definitions before removing snapshots
+  const affectedDefinitions = collectAffectedDefinitions(removedFiles, state.snapshots);
+
+  // Remove from snapshots
+  for (const filePath of removedFiles) {
+    state.snapshots.delete(filePath);
+  }
+
+  // Find modules that depend on removed definitions
+  for (const defId of affectedDefinitions) {
+    const dependents = state.definitionAdjacency.get(defId);
+    if (dependents) {
+      for (const dependentId of dependents) {
+        // Extract file path from canonical ID (format: "file:path#exportName")
+        const filePath = dependentId.split("#")[0]?.replace("file:", "");
+        if (filePath) {
+          affectedModules.add(filePath);
+        }
+      }
+    }
+    // Remove from adjacency
+    state.definitionAdjacency.delete(defId);
+  }
+
+  // Remove from module adjacency
+  for (const filePath of removedFiles) {
+    state.moduleAdjacency.delete(filePath);
+
+    // Remove from other modules' dependent sets
+    for (const [, dependents] of state.moduleAdjacency) {
+      dependents.delete(filePath);
+    }
+  }
+
+  return affectedModules;
+};
+
+/**
  * Create a new builder session.
  *
  * The session maintains in-memory state across builds to enable incremental processing.
@@ -144,6 +245,8 @@ export const createBuilderSession = (): BuilderSession => {
       schemaHash: "",
       analyzerVersion: "",
     },
+    lastInput: null,
+    lastArtifact: null,
   };
 
   // Reusable discovery infrastructure
@@ -214,6 +317,9 @@ export const createBuilderSession = (): BuilderSession => {
       analyzerVersion: input.analyzer,
     };
 
+    // Store input for fallback rebuilds
+    state.lastInput = input;
+
     // Create intermediate module
     const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
     const intermediateModule = await createIntermediateModule({
@@ -238,6 +344,9 @@ export const createBuilderSession = (): BuilderSession => {
       return err(artifactResult.error);
     }
 
+    // Store artifact for no-change scenarios
+    state.lastArtifact = artifactResult.value;
+
     return ok(artifactResult.value);
   };
 
@@ -253,14 +362,17 @@ export const createBuilderSession = (): BuilderSession => {
         analyzerVersion: "",
       };
 
-      // Fall back to buildInitial - use the same input config from last build
-      // TODO: Need to preserve original BuilderInput for this
-      return err({
-        code: "MODULE_EVALUATION_FAILED",
-        filePath: "",
-        astPath: "",
-        message: "Metadata mismatch - need to preserve BuilderInput for fallback rebuild",
-      });
+      // Fall back to buildInitial
+      if (!state.lastInput) {
+        return err({
+          code: "MODULE_EVALUATION_FAILED",
+          filePath: "",
+          astPath: "",
+          message: "Metadata mismatch but no previous input available for rebuild",
+        });
+      }
+
+      return buildInitial(state.lastInput);
     }
 
     // Track changed and removed files
@@ -272,8 +384,11 @@ export const createBuilderSession = (): BuilderSession => {
 
     // Early return if no changes
     if (changedFiles.size === 0 && removedFiles.size === 0) {
-      // No changes - return last artifact
-      // TODO: Need to cache last artifact for this
+      // No changes - return last artifact if available
+      if (state.lastArtifact) {
+        return ok(state.lastArtifact);
+      }
+
       return err({
         code: "MODULE_EVALUATION_FAILED",
         filePath: "",
@@ -282,20 +397,27 @@ export const createBuilderSession = (): BuilderSession => {
       });
     }
 
-    // TODO: Implement incremental update logic
-    // 1. Drop removed files and collect affected modules
-    // 2. Collect affected modules (changed + dependents)
-    // 3. Run incremental discovery
-    // 4. Build partial dependency graph
-    // 5. Merge graphs
-    // 6. Build artifacts
+    // 1. Drop removed files and collect their dependents
+    const removedAffected = dropRemovedFiles(removedFiles, state);
 
-    return err({
-      code: "MODULE_EVALUATION_FAILED",
-      filePath: "",
-      astPath: "",
-      message: "Incremental update not fully implemented",
-    });
+    // 2. Collect all affected modules (changed + dependents from removed + transitive)
+    const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
+    const affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
+
+    // For simplicity in v1: Just do a full rebuild when there are changes
+    // This maintains correctness while we build out incremental logic
+    if (!state.lastInput) {
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: "",
+        astPath: "",
+        message: "Cannot perform incremental update without previous input",
+      });
+    }
+
+    // TODO: Implement true incremental discovery and graph merging
+    // For now, fall back to full rebuild to maintain correctness
+    return buildInitial(state.lastInput);
   };
 
   const getSnapshot = (): BuilderSessionSnapshot => {
