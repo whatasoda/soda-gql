@@ -82,3 +82,8 @@ export const readTestFile = async (path: string): Promise<string> => {
 export const writeTestFile = async (path: string, content: string): Promise<void> => {
   await Bun.write(path, content);
 };
+
+// Re-export utilities
+export * from "./operationSpy";
+export * from "./moduleLoader";
+export * from "./fixtureHelpers";

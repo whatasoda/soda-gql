@@ -1,18 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+import { loadModuleAnalysisFixture } from "../../utils";
 
 const analyzeModule = getAstAnalyzer("ts").analyze;
 
-const fixturesDir = join(__dirname, "../../fixtures/module-analysis/ts");
-const loadFixture = (name: string) => {
-  const fixturePath = join(fixturesDir, `${name}.ts`);
-  return {
-    filePath: fixturePath,
-    source: readFileSync(fixturePath, "utf-8"),
-  };
-};
+const loadFixture = (name: string) => loadModuleAnalysisFixture("ts", name);
 
 describe("Module analyzer - TypeScript", () => {
   it("extracts top-level gql definitions with schema metadata", () => {
