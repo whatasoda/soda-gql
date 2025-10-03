@@ -87,8 +87,8 @@ const copyFixtureWorkspace = (name: string) => {
   return workspaceRoot;
 };
 
-describe("runtime builder flow", () => {
-  it("runs codegen then builder runtime to produce artifact", async () => {
+describe("runBuilder runtime mode flow", () => {
+  it("runs codegen then runBuilder in runtime mode to produce the artifact manifest", async () => {
     const workspace = copyFixtureWorkspace("runtime-flow");
 
     await generateGraphqlSystem(workspace);

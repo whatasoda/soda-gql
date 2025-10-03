@@ -69,7 +69,7 @@ const loadTransformedModule = async (filePath: string, transformedCode: string, 
 };
 
 describe("zero-runtime transform", () => {
-  it("transforms and executes runtime code correctly", async () => {
+  it("transforms gql modules in zero-runtime mode and verifies runtime exports", async () => {
     const workspace = copyFixtureWorkspace("zero-runtime");
     const schemaPath = join(workspace, "schema.graphql");
     const graphqlSystemDir = join(workspace, "graphql-system");

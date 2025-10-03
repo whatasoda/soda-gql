@@ -67,7 +67,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
 };
 
 describe("soda-gql builder CLI", () => {
-  it("returns CIRCULAR_DEPENDENCY errors when refs form a cycle", async () => {
+  it("reports MODULE_EVALUATION_FAILED when same-file slices form a cycle", async () => {
     const workspace = prepareWorkspace("cycle");
     const entitiesDir = join(workspace, "src", "entities");
     const pagesDir = join(workspace, "src", "pages");

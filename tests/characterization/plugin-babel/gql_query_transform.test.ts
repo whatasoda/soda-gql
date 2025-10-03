@@ -5,10 +5,10 @@ import { Kind } from "graphql";
 import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
-describe("gql.query characterization tests", () => {
+describe("operation.query characterization tests", () => {
   const testFilePath = join(process.cwd(), "tests/characterization/plugin-babel/test-query.ts");
 
-  it("transforms query with getOperation reference and operation registration", async () => {
+  it("transforms operation.query definition into getOperation reference and runtime registration", async () => {
     const source = createTestSource(`
 export const profileQuery = gql.default(({ query }, { $ }) =>
   query(
@@ -57,7 +57,7 @@ export const profileQuery = gql.default(({ query }, { $ }) =>
     expect(transformed).toContain("getSlices:");
   });
 
-  it("transforms mutation operation", async () => {
+  it("transforms operation.mutation definition", async () => {
     const source = createTestSource(`
 export const updateProfileMutation = gql.default(({ query }, { $ }) =>
   query(
@@ -97,7 +97,7 @@ export const updateProfileMutation = gql.default(({ query }, { $ }) =>
     expect(transformed).toContain('"variableNames":["userId","name"]');
   });
 
-  it("transforms multiple queries in same file", async () => {
+  it("transforms multiple operation.query definitions in the same file", async () => {
     const source = createTestSource(`
 export const query1 = gql.default(({ query }) =>
   query("Query1", {}, ({ getSlice }) => ({}))
@@ -154,7 +154,7 @@ export const query2 = gql.default(({ query }) =>
     expect(operationCalls?.length).toBe(2);
   });
 
-  it("handles query with 2 args (second arg becomes slices builder)", async () => {
+  it("handles operation.query invoked with only two arguments (treats second argument as slices builder)", async () => {
     const source = createTestSource(`
 export const queryWith2Args = gql.default(({ query }) =>
   query("Query2Args", {})

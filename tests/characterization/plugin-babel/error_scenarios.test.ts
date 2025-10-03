@@ -14,7 +14,7 @@ describe("Error scenario characterization tests", () => {
     // The error is thrown at plugin.ts:377 when metadata.get(node) returns undefined
   });
 
-  it("throws SODA_GQL_ARTIFACT_NOT_FOUND when artifact entry is missing", async () => {
+  it("throws SODA_GQL_ANALYSIS_ARTIFACT_NOT_FOUND when builder entry is missing", async () => {
     const source = createTestSource(`
 export const userModel = gql.default(({ model }) =>
   model(
@@ -128,7 +128,7 @@ export const brokenSlice = gql.default(({ slice }, { $ }) =>
     );
   });
 
-  it("handles operation with missing slices builder", async () => {
+  it("handles operation.query call missing a slices builder", async () => {
     const source = createTestSource(`
 export const brokenQuery = gql.default(({ query }) =>
   query("BrokenQuery", {})

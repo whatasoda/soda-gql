@@ -3,7 +3,7 @@ import type { ModuleAnalysis } from "../../../packages/builder/src/ast";
 import { buildDependencyGraph } from "../../../packages/builder/src/dependency-graph";
 import { createCanonicalId } from "../../../packages/builder/src/index";
 
-describe("dependency graph resolver", () => {
+describe("dependency graph builder", () => {
   const baseAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({
     filePath: "/dev/null",
     signature: "",
