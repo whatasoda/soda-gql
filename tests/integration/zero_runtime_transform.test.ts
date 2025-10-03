@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import { copyDefaultInject } from "../fixtures/inject-module";
+import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoader";
 import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
@@ -28,30 +29,8 @@ const copyFixtureWorkspace = (name: string) => {
 // Global cleanup to ensure test isolation
 afterEach(() => {
 	__resetRuntimeRegistry();
+	clearTransformCache();
 });
-
-/**
- * Loads transformed TypeScript code as an ESM module
- */
-const loadTransformedModule = async (filePath: string, transformedCode: string, outputDir: string) => {
-  const relativePath = filePath.slice(filePath.lastIndexOf("/src/"));
-  const outputPath = join(outputDir, relativePath.replace(/\.ts$/, ".mjs"));
-
-  // Transpile TypeScript to JavaScript
-  const transpiler = new Bun.Transpiler({
-    loader: "ts",
-    target: "node",
-  });
-
-  const jsCode = transpiler.transformSync(transformedCode);
-
-  mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, jsCode);
-
-  // Dynamic import with cache busting
-  const moduleUrl = `file://${outputPath}?t=${Date.now()}`;
-  return await import(moduleUrl);
-};
 
 describe("zero-runtime transform", () => {
   it("transforms gql modules in zero-runtime mode and verifies runtime exports", async () => {
