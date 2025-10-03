@@ -1,6 +1,6 @@
-import type { ModuleAnalysis } from "@builder/ast/types";
-import { isExternalSpecifier, resolveRelativeImport } from "@builder/internal/utils/path-utils";
 import * as Bun from "bun";
+import type { ModuleAnalysis } from "../ast/types";
+import { isExternalSpecifier, resolveRelativeImport } from "../utils/path-utils";
 import type { DiscoveredDependency } from "./types";
 
 /**

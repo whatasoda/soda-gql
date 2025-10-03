@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-
 import {
   type AnyGraphqlRuntimeAdapter,
   type AnyGraphqlSchema,
@@ -38,7 +37,7 @@ const schema = {
       {
         user: unsafeOutputRef.object("User:!", {
           arguments: {
-            id: unsafeInputRef.scalar("ID:!", {}, {}),
+            id: unsafeInputRef.scalar("ID:!", {}),
           },
           directives: {},
         }),
@@ -58,7 +57,7 @@ const schema = {
   union: {},
 } satisfies AnyGraphqlSchema;
 
-type Schema = typeof schema;
+type Schema = typeof schema & { _?: never };
 
 const adapter = createRuntimeAdapter(({ type }) => ({
   nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
@@ -141,7 +140,7 @@ describe("createGqlInvoker", () => {
       slice.query(
         { variables: $("id").scalar("ID:!") },
         ({ f, $: $$ }) => ({
-          user: f.user({ id: $$.id }, () => ({
+          ...f.user({ id: $$.id }, () => ({
             ...userModel.fragment(),
           })),
         }),
