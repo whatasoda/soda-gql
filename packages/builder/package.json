@@ -11,10 +11,15 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./session/*": {
-      "types": "./src/session/*.ts",
-      "import": "./src/session/*.ts",
-      "default": "./src/session/*.ts"
+    "./session/change-set": {
+      "types": "./src/session/change-set.ts",
+      "import": "./src/session/change-set.ts",
+      "default": "./src/session/change-set.ts"
+    },
+    "./session/builder-session": {
+      "types": "./src/session/builder-session.ts",
+      "import": "./src/session/builder-session.ts",
+      "default": "./src/session/builder-session.ts"
     }
   },
   "dependencies": {
