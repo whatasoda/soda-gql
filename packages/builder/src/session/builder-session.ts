@@ -67,6 +67,16 @@ export interface BuilderSession {
 }
 
 /**
+ * Validate if metadata matches between change set and session.
+ */
+const metadataMatches = (
+  changeSetMeta: BuilderChangeSet["metadata"],
+  sessionMeta: SessionState["metadata"],
+): boolean => {
+  return changeSetMeta.schemaHash === sessionMeta.schemaHash && changeSetMeta.analyzerVersion === sessionMeta.analyzerVersion;
+};
+
+/**
  * Extract module-level adjacency from dependency graph.
  * Returns Map of file path -> set of files that import it.
  */
@@ -232,12 +242,59 @@ export const createBuilderSession = (): BuilderSession => {
   };
 
   const update = async (changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>> => {
-    // TODO: Implement incremental update
+    // Validate metadata - fall back to full rebuild if mismatch
+    if (!metadataMatches(changeSet.metadata, state.metadata)) {
+      // Clear state and rebuild
+      state.snapshots.clear();
+      state.moduleAdjacency.clear();
+      state.definitionAdjacency.clear();
+      state.metadata = {
+        schemaHash: "",
+        analyzerVersion: "",
+      };
+
+      // Fall back to buildInitial - use the same input config from last build
+      // TODO: Need to preserve original BuilderInput for this
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: "",
+        astPath: "",
+        message: "Metadata mismatch - need to preserve BuilderInput for fallback rebuild",
+      });
+    }
+
+    // Track changed and removed files
+    const changedFiles = new Set<string>([
+      ...changeSet.added.map((f) => f.filePath),
+      ...changeSet.updated.map((f) => f.filePath),
+    ]);
+    const removedFiles = new Set<string>(changeSet.removed);
+
+    // Early return if no changes
+    if (changedFiles.size === 0 && removedFiles.size === 0) {
+      // No changes - return last artifact
+      // TODO: Need to cache last artifact for this
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: "",
+        astPath: "",
+        message: "No changes detected but no cached artifact available",
+      });
+    }
+
+    // TODO: Implement incremental update logic
+    // 1. Drop removed files and collect affected modules
+    // 2. Collect affected modules (changed + dependents)
+    // 3. Run incremental discovery
+    // 4. Build partial dependency graph
+    // 5. Merge graphs
+    // 6. Build artifacts
+
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath: "",
       astPath: "",
-      message: "update not implemented",
+      message: "Incremental update not fully implemented",
     });
   };
 
