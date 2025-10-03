@@ -19,7 +19,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          exportName: "userModel",
           astPath: "userModel",
           isTopLevel: true,
           isExported: true,
@@ -28,7 +27,6 @@ describe("dependency graph resolver", () => {
           expression: "gql.model('User', () => ({}), (value) => value)",
         },
         {
-          exportName: "userSlice",
           astPath: "userSlice",
           isTopLevel: true,
           isExported: true,
@@ -56,7 +54,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          exportName: "profileQuery",
           astPath: "profileQuery",
           isTopLevel: true,
           isExported: true,
@@ -107,7 +104,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          exportName: "userSlice",
           astPath: "userSlice",
           isTopLevel: true,
           isExported: true,
@@ -128,7 +124,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          exportName: "profileQuery",
           astPath: "profileQuery",
           isTopLevel: true,
           isExported: true,
@@ -172,7 +167,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/slice-a.ts",
       definitions: [
         {
-          exportName: "sliceA",
           astPath: "sliceA",
           isTopLevel: true,
           isExported: true,
@@ -197,7 +191,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/slice-b.ts",
       definitions: [
         {
-          exportName: "sliceB",
           astPath: "sliceB",
           isTopLevel: true,
           isExported: true,
@@ -242,7 +235,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.ts",
       definitions: [
         {
-          exportName: "userSliceCatalog.byId",
           astPath: "userSliceCatalog.byId",
           isTopLevel: true,
           isExported: true,
@@ -258,7 +250,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/entities/user.catalog.ts",
       definitions: [
         {
-          exportName: "collections.byCategory",
           astPath: "collections.byCategory",
           isTopLevel: true,
           isExported: true,
@@ -274,7 +265,6 @@ describe("dependency graph resolver", () => {
       filePath: "/app/src/pages/profile.query.ts",
       definitions: [
         {
-          exportName: "profileQuery",
           astPath: "profileQuery",
           isTopLevel: true,
           isExported: true,

@@ -20,7 +20,7 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("top-level-definitions");
 
     const analysis = analyzeModule({ filePath, source });
-    const names = analysis.definitions.map((item) => item.exportName);
+    const names = analysis.definitions.map((item) => item.astPath);
     expect(names).toContain("pageQuery");
   });
 
@@ -28,7 +28,7 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("object-property-exports");
 
     const analysis = analyzeModule({ filePath, source });
-    const names = analysis.definitions.map((item) => item.exportName);
+    const names = analysis.definitions.map((item) => item.astPath);
     expect(names).toContain("user_remoteModel.forIterate");
     expect(analysis.diagnostics).toHaveLength(0);
   });
@@ -48,15 +48,15 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("imported-binding-refs");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.exportName).toBe("pageQuery");
+    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
+    expect(definition?.astPath).toBe("pageQuery");
   });
 
   it("captures deep member references from namespace imports", () => {
     const { filePath, source } = loadFixture("namespace-imports");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
-    expect(definition?.exportName).toBe("pageQuery");
+    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
+    expect(definition?.astPath).toBe("pageQuery");
   });
 });

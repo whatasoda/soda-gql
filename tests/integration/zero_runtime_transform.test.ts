@@ -6,7 +6,7 @@ import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
-import { copyDefaultInjectModule } from "../fixtures/inject-module";
+import { copyDefaultInject } from "../fixtures/inject-module";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
 
@@ -76,7 +76,7 @@ describe("zero-runtime transform", () => {
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
     const injectPath = join(workspace, "graphql-inject.ts");
 
-    copyDefaultInjectModule(injectPath);
+    copyDefaultInject(injectPath);
 
     // Use multi-schema codegen with a single "default" schema
     const codegenResult = await runMultiSchemaCodegen({
@@ -137,7 +137,6 @@ describe("zero-runtime transform", () => {
       const sourceCode = await Bun.file(filePath).text();
       const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
         mode: "zero-runtime",
-        artifactsPath: artifactPath,
         skipTypeCheck: true,
       });
 

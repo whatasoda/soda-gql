@@ -26,7 +26,6 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
   localPath: id.split("::")[1] ?? "",
   isExported: true,
   definition: {
-    exportName: id.split("::")[1] ?? "",
     astPath: id.split("::")[1] ?? "",
     isTopLevel: true,
     isExported: true,

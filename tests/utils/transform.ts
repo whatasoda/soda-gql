@@ -41,7 +41,6 @@ const formatWithBiome = (code: string, filePath: string): string => {
 export type TransformOptions = {
   mode?: "zero-runtime" | "runtime";
   importIdentifier?: string;
-  artifactsPath?: string;
   skipTypeCheck?: boolean;
   additionalFiles?: Array<{ path: string; content: string }>; // Additional files for type checking context
 };
@@ -61,16 +60,12 @@ export const runBabelTransform = async (
     const {
       mode = "zero-runtime",
       importIdentifier = "@soda-gql/runtime",
-      artifactsPath,
       skipTypeCheck = false,
       additionalFiles = [],
     } = options;
 
-    const actualArtifactsPath = artifactsPath ?? tempDir.join("artifact.json");
-
-    if (!artifactsPath) {
-      await Bun.write(actualArtifactsPath, JSON.stringify(artifact));
-    }
+    const artifactPath = tempDir.join("artifact.json");
+    await Bun.write(artifactPath, JSON.stringify(artifact));
 
     const result = await transformAsync(source, {
       filename,
@@ -85,7 +80,7 @@ export const runBabelTransform = async (
           createPlugin,
           {
             mode,
-            artifactsPath: actualArtifactsPath,
+            artifactSource: { source: "artifact-file", path: artifactPath },
             importIdentifier,
           },
         ],

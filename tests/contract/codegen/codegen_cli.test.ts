@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { copyDefaultInjectModule } from "../../fixtures/inject-module/index";
+import { copyDefaultInject } from "../../fixtures/inject-module/index";
 import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../utils/cli";
 
 const projectRoot = getProjectRoot();
@@ -36,7 +36,7 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `missing-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    copyDefaultInjectModule(injectFile);
+    copyDefaultInject(injectFile);
 
     const result = await runCodegenCli([
       "--schema:default",
@@ -61,7 +61,7 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `invalid-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    copyDefaultInjectModule(injectFile);
+    copyDefaultInject(injectFile);
 
     const result = await runCodegenCli([
       "--schema:default",
@@ -87,7 +87,7 @@ describe("soda-gql codegen CLI", () => {
     const outFile = join(tmpRoot, `runtime-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
-    copyDefaultInjectModule(injectFile);
+    copyDefaultInject(injectFile);
 
     const result = await runCodegenCli([
       "--schema:default",

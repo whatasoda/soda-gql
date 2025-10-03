@@ -14,11 +14,7 @@ export const buildExportTable = (
 
     mod.definitions.forEach((definition) => {
       const id = createCanonicalId(mod.filePath, definition.astPath);
-      // Map both astPath and deprecated exportName for backward compatibility during migration
       exports.set(definition.astPath, id);
-      if (definition.exportName !== definition.astPath) {
-        exports.set(definition.exportName, id);
-      }
     });
 
     mod.exports.forEach((entry) => {
