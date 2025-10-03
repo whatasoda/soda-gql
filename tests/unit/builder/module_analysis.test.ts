@@ -1,43 +1,22 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
 
 const analyzeModule = getAstAnalyzer("ts").analyze;
 
+const fixturesDir = join(__dirname, "../../fixtures/module-analysis/ts");
+const loadFixture = (name: string) => {
+  const fixturePath = join(fixturesDir, `${name}.ts`);
+  return {
+    filePath: fixturePath,
+    source: readFileSync(fixturePath, "utf-8"),
+  };
+};
+
 describe("Module analyzer - TypeScript", () => {
-  const filePath = "/test/src/test.ts";
-
   it("extracts top-level gql definitions with schema metadata", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const userModel = gql.default(({ model }) =>
-  model("User", ({ f }) => ({
-    id: f.id(),
-  }), (value) => value)
-);
-
-export const userSlice = gql.default(({ querySlice, scalar }) =>
-  querySlice(
-    [{ id: scalar("ID", "!") }],
-    ({ $, f }) => ({
-      users: f.users({ id: $.id }, ({ f: nested }) => ({
-        id: nested.id(),
-      })),
-    }),
-    ({ select }) => select("$.users", (result) => result),
-  )
-);
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      users: userSlice({ id: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("top-level-with-metadata");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -49,16 +28,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("collects gql definitions nested inside non-top-level scopes", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-const buildSlice = () => {
-  const invalid = gql.default(({ querySlice }) => querySlice([], () => ({}), () => ({})));
-  return invalid;
-};
-
-export const userSlice = buildSlice();
-`;
+    const { filePath, source } = loadFixture("nested-non-top-level");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -76,20 +46,7 @@ export const userSlice = buildSlice();
   });
 
   it("captures references to imported slices and models", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSlice } from "../entities/user";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      users: userSlice({ id: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("imported-slice-refs");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -100,20 +57,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("captures nested dependencies for slices", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import * as user from "../entities/user";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      profile: user.slice.findById({ id: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("nested-namespace-deps");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -124,26 +68,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("captures references in nested object values", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSlice, postSlice } from "../entities";
-
-export const complexQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ComplexQuery",
-    {
-      userId: scalar("ID", "!"),
-      postId: scalar("ID", "!"),
-    },
-    ({ $ }) => ({
-      result: {
-        user: userSlice({ id: $.userId }),
-        post: postSlice({ id: $.postId }),
-      },
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("nested-object-values");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -154,34 +79,7 @@ export const complexQuery = gql.default(({ query, scalar }) =>
   });
 
   it("captures both local and imported dependencies", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSlice } from "../entities/user";
-
-export const postSlice = gql.default(({ querySlice, scalar }) =>
-  querySlice(
-    [{ postId: scalar("ID", "!") }],
-    ({ $, f }) => ({
-      posts: f.posts({ id: $.postId }, ({ f }) => f.id()),
-    }),
-    ({ select }) => select("$.posts", (result) => result),
-  )
-);
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "PageQuery",
-    {
-      userId: scalar("ID", "!"),
-      postId: scalar("ID", "!"),
-    },
-    ({ $ }) => ({
-      user: userSlice({ id: $.userId }),
-      post: postSlice({ postId: $.postId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("local-and-imported-deps");
 
     const analysis = analyzeModule({ filePath, source });
 
@@ -190,22 +88,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("extracts definitions from multiple schemas", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const adminModel = gql.admin(({ model }) =>
-  model("AdminUser", ({ f }) => ({
-    id: f.id(),
-    role: f.role(),
-  }), (value) => value)
-);
-
-export const defaultQuery = gql.default(({ query }) =>
-  query("DefaultData", {}, () => ({
-    status: "ok",
-  }))
-);
-`;
+    const { filePath, source } = loadFixture("multiple-schemas");
 
     const analysis = analyzeModule({ filePath, source });
 

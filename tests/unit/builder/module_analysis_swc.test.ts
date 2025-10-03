@@ -1,26 +1,23 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
 
 const analyzeModule = getAstAnalyzer("swc").analyze;
 
+const fixturesDir = join(__dirname, "../../fixtures/module-analysis/swc");
+const loadFixture = (name: string) => {
+  const fixturePath = join(fixturesDir, `${name}.ts`);
+  return {
+    filePath: fixturePath,
+    source: readFileSync(fixturePath, "utf-8"),
+  };
+};
+
 describe("module analysis (swc)", () => {
-  const filePath = "/app/src/entities/profile.ts";
-
   it("extracts top-level definitions", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    {},
-    () => ({
-      hello: "world",
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("top-level-definitions");
 
     const analysis = analyzeModule({ filePath, source });
     const names = analysis.definitions.map((item) => item.exportName);
@@ -28,21 +25,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("extracts definitions from object property exports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const user_remoteModel = {
-  forIterate: gql.default(({ model }) =>
-    model(
-      "user",
-      ({ f }) => ({
-        ...f.id(),
-      }),
-      (data) => data,
-    )
-  ),
-};
-`;
+    const { filePath, source } = loadFixture("object-property-exports");
 
     const analysis = analyzeModule({ filePath, source });
     const names = analysis.definitions.map((item) => item.exportName);
@@ -51,15 +34,7 @@ export const user_remoteModel = {
   });
 
   it("collects nested definitions inside functions", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-
-export const factory = () => {
-  return gql.default(({ model }) =>
-    model("user", () => ({}), (value) => value)
-  );
-};
-`;
+    const { filePath, source } = loadFixture("nested-in-functions");
 
     const analysis = analyzeModule({ filePath, source });
     expect(analysis.definitions).toHaveLength(1);
@@ -70,20 +45,7 @@ export const factory = () => {
   });
 
   it("captures references to properties on imported bindings", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import { userSliceCatalog } from "../entities/user";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      catalog: userSliceCatalog.byId({ id: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("imported-binding-refs");
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");
@@ -91,20 +53,7 @@ export const pageQuery = gql.default(({ query, scalar }) =>
   });
 
   it("captures deep member references from namespace imports", () => {
-    const source = `
-import { gql } from "@/graphql-system";
-import * as userCatalog from "../entities/user.catalog";
-
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ProfilePageQuery",
-    { userId: scalar("ID", "!") },
-    ({ $ }) => ({
-      catalogUsers: userCatalog.collections.byCategory({ categoryId: $.userId }),
-    }),
-  )
-);
-`;
+    const { filePath, source } = loadFixture("namespace-imports");
 
     const analysis = analyzeModule({ filePath, source });
     const definition = analysis.definitions.find((item) => item.exportName === "pageQuery");

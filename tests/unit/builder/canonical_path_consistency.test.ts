@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
 
 describe("Canonical path consistency", () => {
-  const filePath = "/test/src/test.ts";
-
   // Helper to safely access array elements while satisfying linter
   function expectDefinition<T>(array: readonly T[], index: number): T {
     const value = array[index];
@@ -13,20 +13,21 @@ describe("Canonical path consistency", () => {
     return value;
   }
 
+  const fixturesDir = join(__dirname, "../../fixtures/module-analysis/shared");
+  const loadFixture = (name: string) => {
+    const fixturePath = join(fixturesDir, `${name}.ts`);
+    return {
+      filePath: fixturePath,
+      source: readFileSync(fixturePath, "utf-8"),
+    };
+  };
+
   describe("TypeScript and SWC adapters produce consistent astPath", () => {
     const analyzeWithTS = getAstAnalyzer("ts").analyze;
     const analyzeWithSWC = getAstAnalyzer("swc").analyze;
 
     it("generates same astPath for top-level definitions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-export const userModel = gql.default(({ model }) =>
-  model("User", ({ f }) => ({
-    id: f.id(),
-  }), (value) => value)
-);
-`;
+      const { filePath, source } = loadFixture("top-level-simple");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
       const swcAnalysis = analyzeWithSWC({ filePath, source });
@@ -41,16 +42,7 @@ export const userModel = gql.default(({ model }) =>
     });
 
     it("generates same astPath for nested definitions in functions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-function createModels() {
-  const nested = gql.default(({ model }) =>
-    model("Nested", ({ f }) => ({ id: f.id() }), (v) => v)
-  );
-  return nested;
-}
-`;
+      const { filePath, source } = loadFixture("nested-in-function");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
       const swcAnalysis = analyzeWithSWC({ filePath, source });
@@ -65,16 +57,7 @@ function createModels() {
     });
 
     it("generates same astPath for definitions in arrow functions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-const factory = () => {
-  const model = gql.default(({ model }) =>
-    model("User", ({ f }) => ({ id: f.id() }), (v) => v)
-  );
-  return model;
-};
-`;
+      const { filePath, source } = loadFixture("arrow-function");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
       const swcAnalysis = analyzeWithSWC({ filePath, source });
@@ -90,18 +73,7 @@ const factory = () => {
     });
 
     it("generates same astPath for class method definitions (TypeScript only)", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-class UserRepository {
-  getModels() {
-    const model = gql.default(({ model }) =>
-      model("User", ({ f }) => ({ id: f.id() }), (v) => v)
-    );
-    return model;
-  }
-}
-`;
+      const { filePath, source } = loadFixture("class-method");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
 
@@ -112,17 +84,7 @@ class UserRepository {
     });
 
     it("generates same astPath for object property definitions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-const config = {
-  models: {
-    user: gql.default(({ model }) =>
-      model("User", ({ f }) => ({ id: f.id() }), (v) => v)
-    ),
-  },
-};
-`;
+      const { filePath, source } = loadFixture("object-property");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
       const swcAnalysis = analyzeWithSWC({ filePath, source });
@@ -137,17 +99,7 @@ const config = {
     });
 
     it("handles duplicate names with unique suffixes", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-const model1 = gql.default(({ model }) => model("A", ({ f }) => ({ id: f.id() }), (v) => v));
-const model2 = gql.default(({ model }) => model("B", ({ f }) => ({ id: f.id() }), (v) => v));
-
-function factory() {
-  const model1 = gql.default(({ model }) => model("C", ({ f }) => ({ id: f.id() }), (v) => v));
-  const model2 = gql.default(({ model }) => model("D", ({ f }) => ({ id: f.id() }), (v) => v));
-}
-`;
+      const { filePath, source } = loadFixture("duplicate-names");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
       const swcAnalysis = analyzeWithSWC({ filePath, source });
@@ -175,17 +127,7 @@ function factory() {
     const analyzeWithTS = getAstAnalyzer("ts").analyze;
 
     it("detects exported definitions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-export const userModel = gql.default(({ model }) =>
-  model("User", ({ f }) => ({ id: f.id() }), (v) => v)
-);
-
-const privateModel = gql.default(({ model }) =>
-  model("Private", ({ f }) => ({ id: f.id() }), (v) => v)
-);
-`;
+      const { filePath, source } = loadFixture("exported-and-private");
 
       const analysis = analyzeWithTS({ filePath, source });
 
@@ -202,16 +144,7 @@ const privateModel = gql.default(({ model }) =>
     });
 
     it("detects exported function declarations", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-export function getModel() {
-  const model = gql.default(({ model }) =>
-    model("User", ({ f }) => ({ id: f.id() }), (v) => v)
-  );
-  return model;
-}
-`;
+      const { filePath, source } = loadFixture("exported-function");
 
       const analysis = analyzeWithTS({ filePath, source });
 
@@ -226,21 +159,7 @@ export function getModel() {
     const analyzeWithTS = getAstAnalyzer("ts").analyze;
 
     it("handles deeply nested definitions", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-class Outer {
-  method() {
-    const obj = {
-      nested: {
-        deep: gql.default(({ model }) =>
-          model("Deep", ({ f }) => ({ id: f.id() }), (v) => v)
-        ),
-      },
-    };
-  }
-}
-`;
+      const { filePath, source } = loadFixture("deeply-nested");
 
       const analysis = analyzeWithTS({ filePath, source });
 
@@ -249,15 +168,7 @@ class Outer {
     });
 
     it("handles multiple definitions in same scope", () => {
-      const source = `
-import { gql } from "@/graphql-system";
-
-const container = {
-  model1: gql.default(({ model }) => model("A", ({ f }) => ({ id: f.id() }), (v) => v)),
-  model2: gql.default(({ model }) => model("B", ({ f }) => ({ id: f.id() }), (v) => v)),
-  model3: gql.default(({ model }) => model("C", ({ f }) => ({ id: f.id() }), (v) => v)),
-};
-`;
+      const { filePath, source } = loadFixture("multiple-same-scope");
 
       const analysis = analyzeWithTS({ filePath, source });
 
