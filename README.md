@@ -50,57 +50,69 @@ The generated runtime module imports your scalar and adapter implementations fro
 import { gql } from "@/graphql-system";
 
 // Define a reusable model
-const userModel = gql.model(
-  ["User", { postCategoryId: gql.scalar("ID", "?") }],
-  ({ f, $ }) => ({
-    ...f.id(),
-    ...f.name(),
-    ...f.email(),
-    ...f.posts(
-      { postCategoryId: $.postCategoryId },
-      ({ f }) => ({
+export const userModel = gql.default(({ model }, { $ }) =>
+  model(
+    {
+      typename: "User",
+      variables: { ...$("categoryId").scalar("ID:?") },
+    },
+    ({ f, $ }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
         ...f.id(),
         ...f.title(),
-      }),
-    ),
-  }),
-  (data) => ({
-    id: data.id,
-    displayName: data.name,
-    email: data.email.toLowerCase(),
-    posts: data.posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-    })),
-  })
+      })),
+    }),
+    (selection) => ({
+      id: selection.id,
+      name: selection.name,
+      posts: selection.posts.map((post) => ({
+        id: post.id,
+        title: post.title,
+      })),
+    }),
+  ),
 );
 
 // Create a query slice
-const getUserQuery = gql.querySlice(
-  [
+export const userSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
     {
-      id: gql.scalar("ID", "!"),
-      postCategoryId: gql.scalar("ID", "?"),
+      variables: {
+        ...$("id").scalar("ID:!"),
+        ...$("categoryId").scalar("ID:?"),
+      },
     },
-  ],
-  ({ query, $ }) => ({
-    user: query.user({ id: $.id, postCategoryId: $.postCategoryId }, userModel),
-  }),
-  ({ select }) => select("$.user", (result) => result.safeUnwrap((data) => data.user))
+    ({ f, $ }) => ({
+      ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
+        ...userModel.fragment({ categoryId: $.categoryId }),
+      })),
+    }),
+    ({ select }) =>
+      select(["$.users"], (result) =>
+        result.safeUnwrap(([users]) => users.map((user) => userModel.normalize(user))),
+      ),
+  ),
 );
 
-const pageQuery = gql.query(
-  "PageQuery",
-  {
-    userId: gql.scalar("ID", "!"),
-    postCategoryId: gql.scalar("ID", "?"),
-  },
-  ({ $ }) => ({
-    user: getUserQuery({
-      id: $.userId,
-      postCategoryId: $.postCategoryId,
+// Build a complete operation
+export const profileQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "ProfileQuery",
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("categoryId").scalar("ID:?"),
+      },
+    },
+    ({ $ }) => ({
+      users: userSlice.build({
+        id: $.userId,
+        categoryId: $.categoryId,
+      }),
     }),
-  }),
+  ),
 );
 ```
 
