@@ -1,18 +1,21 @@
 import { gql } from "@/graphql-system";
-import { userSlice, postSlice } from "../entities";
+// @ts-expect-error - This is a test
+import { postSlice, userSlice } from "../entities";
 
-export const complexQuery = gql.default(({ query, scalar }) =>
-  query(
-    "ComplexQuery",
+export const complexQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
     {
-      userId: scalar("ID", "!"),
-      postId: scalar("ID", "!"),
+      operationName: "ComplexQuery",
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("postId").scalar("ID:!"),
+      },
     },
     ({ $ }) => ({
       result: {
-        user: userSlice({ id: $.userId }),
-        post: postSlice({ id: $.postId }),
+        user: userSlice.build({ id: $.userId }),
+        post: postSlice.build({ id: $.postId }),
       },
     }),
-  )
+  ),
 );

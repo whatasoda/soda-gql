@@ -3,11 +3,11 @@ import { gql } from "@/graphql-system";
 export const user_remoteModel = {
   forIterate: gql.default(({ model }) =>
     model(
-      "user",
+      { typename: "User" },
       ({ f }) => ({
         ...f.id(),
       }),
       (data) => data,
-    )
+    ),
   ),
 };

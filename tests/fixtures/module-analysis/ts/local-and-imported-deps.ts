@@ -1,26 +1,32 @@
 import { gql } from "@/graphql-system";
+// @ts-expect-error - This is a test
 import { userSlice } from "../entities/user";
 
-export const postSlice = gql.default(({ querySlice, scalar }) =>
-  querySlice(
-    [{ postId: scalar("ID", "!") }],
+// @ts-expect-error - Test fixture with posts field
+export const postSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: { ...$("postId").scalar("ID:!") },
+    },
     ({ $, f }) => ({
-      posts: f.posts({ id: $.postId }, ({ f }) => f.id()),
+      ...f.posts({ id: $.postId }, ({ f }) => f.id()),
     }),
-    ({ select }) => select("$.posts", (result) => result),
-  )
+    ({ select }) => select(["$.posts"], (result) => result),
+  ),
 );
 
-export const pageQuery = gql.default(({ query, scalar }) =>
-  query(
-    "PageQuery",
+export const pageQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
     {
-      userId: scalar("ID", "!"),
-      postId: scalar("ID", "!"),
+      operationName: "PageQuery",
+      variables: {
+        ...$("userId").scalar("ID:!"),
+        ...$("postId").scalar("ID:!"),
+      },
     },
     ({ $ }) => ({
-      user: userSlice({ id: $.userId }),
-      post: postSlice({ postId: $.postId }),
+      user: userSlice.build({ id: $.userId }),
+      post: postSlice.build({ postId: $.postId }),
     }),
-  )
+  ),
 );
