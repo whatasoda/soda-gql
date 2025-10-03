@@ -1,0 +1,114 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  products(categoryId: ID, limit: Int, offset: Int): ProductConnection!
+  product(id: ID!): Product
+  categories: [Category!]!
+  category(id: ID!): Category
+  orders(userId: ID!, status: OrderStatus): [Order!]!
+  order(id: ID!): Order
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  price: Float!
+  category: Category!
+  reviews(limit: Int): [Review!]!
+  averageRating: Float
+}
+
+type Category {
+  id: ID!
+  name: String!
+  products(limit: Int): [Product!]!
+}
+
+type Order {
+  id: ID!
+  userId: ID!
+  items: [OrderItem!]!
+  status: OrderStatus!
+  totalAmount: Float!
+  createdAt: String!
+}
+
+type OrderItem {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  price: Float!
+}
+
+type Review {
+  id: ID!
+  productId: ID!
+  userId: ID!
+  rating: Int!
+  comment: String
+}
+
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProductEdge {
+  node: Product!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+input CreateProductInput {
+  name: String!
+  description: String
+  price: Float!
+  categoryId: ID!
+}
+
+input UpdateProductInput {
+  id: ID!
+  name: String
+  description: String
+  price: Float
+  categoryId: ID
+}
+
+type Mutation {
+  createProduct(input: CreateProductInput!): Product!
+  updateProduct(input: UpdateProductInput!): Product!
+  deleteProduct(id: ID!): Boolean!
+  createOrder(userId: ID!, items: [OrderItemInput!]!): Order!
+  updateOrderStatus(id: ID!, status: OrderStatus!): Order!
+  addReview(productId: ID!, userId: ID!, rating: Int!, comment: String): Review!
+}
+
+input OrderItemInput {
+  productId: ID!
+  quantity: Int!
+}
+
+type Subscription {
+  orderStatusChanged(userId: ID!): Order!
+  productPriceChanged(productId: ID!): Product!
+}
