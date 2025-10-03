@@ -114,25 +114,35 @@ Created `.github/workflows/builder-benchmarks.yml`:
 **Target:** 2.0 weeks
 **Status:** Core infrastructure complete, watch mode and tests pending
 
-**Completed Tasks:**
+**Completed Tasks (Commits: f9c092b, 894648d, a35d059, 3d827c5, 0544aaf):**
 - [x] Create `BuilderSession` in `packages/builder/src/session/builder-session.ts`
   - ✅ Maintain in-memory discovery cache (snapshots Map)
   - ✅ Store dependency adjacency (module + definition level)
   - ✅ Expose `{ buildInitial, update, getSnapshot }` API
   - ✅ Reuse discovery infrastructure across builds
-  - ⏳ update() stub (returns NotImplemented error)
+  - ✅ Extract adjacency from dependency graph
+  - ⏳ update() metadata validation + scaffolding (full logic pending)
 
 - [x] Add `BuilderChangeSet` type to `packages/builder/src/session/change-set.ts`
-  - ✅ Fields: `added`, `updated`, `removed`
+  - ✅ Fields: `added`, `updated`, `removed`, `metadata`
   - ✅ Metadata: schema hash, analyzer version
   - ✅ Helper functions: shouldInvalidateSchema, shouldInvalidateAnalyzer, hasFileChanged
-  - ✅ Unit tests with 100% coverage
+  - ✅ Unit tests with 100% coverage (9 tests passing)
 
 - [x] Refactor `createBuilderService` in `packages/builder/src/service.ts`
   - ✅ Lazily instantiate session scoped to config
   - ✅ Expose `build()` using `session.buildInitial()`
   - ✅ Add optional `update(changeSet)` method
   - ✅ Backward compatible API
+  - ✅ Session state reused across builds
+
+**In Progress:**
+- [~] Implement full `update()` logic
+  - ✅ Metadata validation (falls back to buildInitial on mismatch)
+  - ⏳ Affected module collection (traversing adjacency)
+  - ⏳ Incremental discovery (reuse cached snapshots)
+  - ⏳ Partial graph rebuild and merging
+  - ⏳ Artifact generation from delta
 
 **Pending Tasks:**
 
