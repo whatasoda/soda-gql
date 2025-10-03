@@ -1,9 +1,4 @@
 import { gql } from "@/graphql-system";
-import type { AnyModel, AnyOperation, AnySlice } from "@soda-gql/core";
-
-type GqlModel = Extract<ReturnType<typeof gql.default>, AnyModel>;
-type GqlSlice = Extract<ReturnType<typeof gql.default>, AnySlice>;
-type GqlOperation = Extract<ReturnType<typeof gql.default>, AnyOperation>;
 
 // Case 1: Non-exported top-level definition (used internally only)
 // Should be collected with canonical ID: filePath::internalPostModel
@@ -23,7 +18,7 @@ const internalPostModel = gql.default(({ model }) =>
 
 // Case 2: Exported model using the internal model
 // Should be collected with canonical ID: filePath::userWithPostsModel
-export const userWithPostsModel: GqlModel = gql.default(({ model }) =>
+export const userWithPostsModel = gql.default(({ model }) =>
   model(
     { typename: "User" },
     ({ f }) => ({
@@ -45,8 +40,8 @@ export const userWithPostsModel: GqlModel = gql.default(({ model }) =>
 // Inner definitions should be collected with canonical IDs like:
 // - filePath::createUserQueries.userById
 // - filePath::createUserQueries.userList
-export function createUserQueries(): { userById: GqlSlice; userList: GqlSlice } {
-  const userById: GqlSlice = gql.default(({ slice }, { $ }) =>
+export function createUserQueries() {
+  const userById = gql.default(({ slice }, { $ }) =>
     slice.query(
       {
         variables: {
@@ -63,7 +58,7 @@ export function createUserQueries(): { userById: GqlSlice; userList: GqlSlice } 
     ),
   );
 
-  const userList: GqlSlice = gql.default(({ slice }, { $ }) =>
+  const userList = gql.default(({ slice }, { $ }) =>
     slice.query(
       {
         variables: {
@@ -85,8 +80,8 @@ export function createUserQueries(): { userById: GqlSlice; userList: GqlSlice } 
 
 // Case 4: Arrow function with nested definitions
 // Should be collected with canonical ID: filePath::queryFactory.arrow#0.baseQuery
-export const queryFactory = (): GqlSlice => {
-  const baseQuery: GqlSlice = gql.default(({ slice }) =>
+export const queryFactory = () => {
+  const baseQuery = gql.default(({ slice }) =>
     slice.query(
       { variables: {} },
       ({ f }) => ({
@@ -105,52 +100,48 @@ export const queryFactory = (): GqlSlice => {
 // Should be collected with canonical IDs like:
 // - filePath::nestedQueries.users.list
 // - filePath::nestedQueries.users.byId
-const nestedQueriesUsersList: GqlSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
-    {
-      variables: {
-        ...$("limit").scalar("Int:?"),
-      },
-    },
-    ({ f, $ }) => ({
-      ...f.users({ limit: $.limit }, ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-    ({ select }) => select(["$.users"], (result) => result),
-  ),
-);
-
-const nestedQueriesUsersById: GqlSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
-    {
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
-    },
-    ({ f, $ }) => ({
-      ...f.user({ id: $.id }, ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-    ({ select }) => select(["$.user"], (result) => result),
-  ),
-);
-
 export const nestedQueries = {
   users: {
-    list: nestedQueriesUsersList,
-    byId: nestedQueriesUsersById,
+    list: gql.default(({ slice }, { $ }) =>
+      slice.query(
+        {
+          variables: {
+            ...$("limit").scalar("Int:?"),
+          },
+        },
+        ({ f, $ }) => ({
+          ...f.users({ limit: $.limit }, ({ f }) => ({
+            ...f.id(),
+            ...f.name(),
+          })),
+        }),
+        ({ select }) => select(["$.users"], (result) => result),
+      ),
+    ),
+    byId: gql.default(({ slice }, { $ }) =>
+      slice.query(
+        {
+          variables: {
+            ...$("id").scalar("ID:!"),
+          },
+        },
+        ({ f, $ }) => ({
+          ...f.user({ id: $.id }, ({ f }) => ({
+            ...f.id(),
+            ...f.name(),
+          })),
+        }),
+        ({ select }) => select(["$.user"], (result) => result),
+      ),
+    ),
   },
 };
 
 // Case 6: Operation definition in function scope
 // Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
 // Uses the previously defined nestedQueries.users.byId slice
-export function createUserOperation(): GqlOperation {
-  const getUserOperation: GqlOperation = gql.default(({ operation }, { $ }) =>
+export function createUserOperation() {
+  const getUserOperation = gql.default(({ operation }, { $ }) =>
     operation.query(
       {
         operationName: "GetUserById",
@@ -170,8 +161,8 @@ export function createUserOperation(): GqlOperation {
 // Case 7: Operation definition in arrow function
 // Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
 // Uses the previously defined nestedQueries.users.list slice
-export const operationFactory = (): GqlOperation => {
-  const listUsersOperation: GqlOperation = gql.default(({ operation }, { $ }) =>
+export const operationFactory = () => {
+  const listUsersOperation = gql.default(({ operation }, { $ }) =>
     operation.query(
       {
         operationName: "ListUsers",
@@ -192,37 +183,33 @@ export const operationFactory = (): GqlOperation => {
 // Should be collected with canonical IDs like:
 // - filePath::nestedOperations.users.getUser
 // - filePath::nestedOperations.users.listUsers
-const nestedOperationsUsersGetUser: GqlOperation = gql.default(({ operation }, { $ }) =>
-  operation.query(
-    {
-      operationName: "NestedGetUser",
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
-    },
-    ({ $ }) => ({
-      user: nestedQueries.users.byId.build({ id: $.id }),
-    }),
-  ),
-);
-
-const nestedOperationsUsersListUsers: GqlOperation = gql.default(({ operation }, { $ }) =>
-  operation.query(
-    {
-      operationName: "NestedListUsers",
-      variables: {
-        ...$("limit").scalar("Int:?"),
-      },
-    },
-    ({ $ }) => ({
-      users: nestedQueries.users.list.build({ limit: $.limit }),
-    }),
-  ),
-);
-
 export const nestedOperations = {
   users: {
-    getUser: nestedOperationsUsersGetUser,
-    listUsers: nestedOperationsUsersListUsers,
+    getUser: gql.default(({ operation }, { $ }) =>
+      operation.query(
+        {
+          operationName: "NestedGetUser",
+          variables: {
+            ...$("id").scalar("ID:!"),
+          },
+        },
+        ({ $ }) => ({
+          user: nestedQueries.users.byId.build({ id: $.id }),
+        }),
+      ),
+    ),
+    listUsers: gql.default(({ operation }, { $ }) =>
+      operation.query(
+        {
+          operationName: "NestedListUsers",
+          variables: {
+            ...$("limit").scalar("Int:?"),
+          },
+        },
+        ({ $ }) => ({
+          users: nestedQueries.users.list.build({ limit: $.limit }),
+        }),
+      ),
+    ),
   },
 };

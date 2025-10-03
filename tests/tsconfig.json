@@ -14,8 +14,10 @@
   "references": [
     { "path": "../packages/core" },
     { "path": "../packages/codegen" },
+    { "path": "../packages/cli" },
     { "path": "../packages/builder" },
     { "path": "../packages/plugin-babel" },
-    { "path": "../packages/cli" }
+    { "path": "../packages/runtime" },
+    { "path": "../packages/tool-utils" }
   ]
 }
