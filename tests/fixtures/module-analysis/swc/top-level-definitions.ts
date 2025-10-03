@@ -1,14 +1,21 @@
 import { gql } from "@/graphql-system";
 
-export const pageQuery = gql.default(({ operation }, { $ }) =>
+export const pageQuery = gql.default(({ operation, slice }, { $ }) =>
   operation.query(
     {
       operationName: "ProfilePageQuery",
-      variables: {},
+      variables: {
+        ...$("userId").scalar("ID:!"),
+      },
     },
-    // @ts-expect-error - Test fixture with dummy field
-    ({ f }) => ({
-      hello: "world",
+    ({ $ }) => ({
+      user: slice
+        .query(
+          {},
+          ({ f }) => ({ ...f.user({ id: $.userId }, ({ f }) => ({ ...f.id() })) }),
+          ({ select }) => select(["$.user"], (result) => result),
+        )
+        .build(),
     }),
   ),
 );

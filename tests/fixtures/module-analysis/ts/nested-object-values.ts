@@ -12,10 +12,8 @@ export const complexQuery = gql.default(({ operation }, { $ }) =>
       },
     },
     ({ $ }) => ({
-      result: {
-        user: userSlice.build({ id: $.userId }),
-        post: postSlice.build({ id: $.postId }),
-      },
+      user: userSlice.build({ id: $.userId }),
+      post: postSlice.build({ id: $.postId }),
     }),
   ),
 );

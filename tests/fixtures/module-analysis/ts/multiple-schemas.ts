@@ -20,9 +20,10 @@ export const defaultQuery = gql.default(({ operation }) =>
       operationName: "DefaultData",
       variables: {},
     },
-    // @ts-expect-error - Test fixture with dummy field
+    // @ts-expect-error - Test fixture: f doesn't exist when no variables
     ({ f }) => ({
-      status: "ok",
+      // @ts-expect-error - Test fixture: nested f also doesn't exist
+      ...f.users({}, ({ f }) => ({ ...f.id() })),
     }),
   ),
 );

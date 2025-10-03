@@ -5,6 +5,7 @@ schema {
 type Query {
   users(id: [ID!], categoryId: ID, limit: Int): [User!]!
   user(id: ID!): User
+  posts(id: ID, categoryId: ID, limit: Int): [Post!]!
 }
 
 type User {

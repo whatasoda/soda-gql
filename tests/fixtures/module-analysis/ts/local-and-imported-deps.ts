@@ -2,14 +2,13 @@ import { gql } from "@/graphql-system";
 // @ts-expect-error - This is a test
 import { userSlice } from "../entities/user";
 
-// @ts-expect-error - Test fixture with posts field
 export const postSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
       variables: { ...$("postId").scalar("ID:!") },
     },
     ({ $, f }) => ({
-      ...f.posts({ id: $.postId }, ({ f }) => f.id()),
+      ...f.posts({ id: $.postId }, ({ f }) => ({ ...f.id() })),
     }),
     ({ select }) => select(["$.posts"], (result) => result),
   ),
