@@ -1,12 +1,12 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
-import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import { copyDefaultInject } from "../fixtures/inject-module";
+import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
 
@@ -25,25 +25,10 @@ const copyFixtureWorkspace = (name: string) => {
   return workspaceRoot;
 };
 
-/**
- * Helper to spy on runtime operation registrations
- */
-const withOperationSpy = async <T>(fn: (recordedOperations: Array<AnyOperationOf<OperationType>>) => Promise<T>): Promise<T> => {
-  const recordedOperations: Array<AnyOperationOf<OperationType>> = [];
-  const originalOperation = gqlRuntime.operation;
-
-  try {
-    gqlRuntime.operation = (input: any) => {
-      const operation = originalOperation(input);
-      recordedOperations.push(operation);
-      return operation;
-    };
-
-    return await fn(recordedOperations);
-  } finally {
-    gqlRuntime.operation = originalOperation;
-  }
-};
+// Global cleanup to ensure test isolation
+afterEach(() => {
+	__resetRuntimeRegistry();
+});
 
 /**
  * Loads transformed TypeScript code as an ESM module
