@@ -198,8 +198,8 @@ describe("CanonicalPathTracker", () => {
       expect(def.isTopLevel).toBe(false);
 
       // Clean up
-      for (let i = handles.length - 1; i >= 0; i--) {
-        tracker.exitScope(handles[i]!);
+      for (const handle of handles.slice().reverse()) {
+        tracker.exitScope(handle);
       }
     });
   });

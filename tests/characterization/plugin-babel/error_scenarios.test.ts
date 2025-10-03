@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { Kind } from "graphql";
 import { createCanonicalId } from "@soda-gql/builder";
+import { Kind } from "graphql";
 import { createBuilderArtifact, createInvalidArtifactElement } from "../../utils/artifact-fixtures";
 import { createTestSource, runBabelTransform } from "../../utils/transform";
 

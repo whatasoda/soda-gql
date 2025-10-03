@@ -4,6 +4,15 @@ import { getAstAnalyzer } from "../../../packages/builder/src/ast";
 describe("Canonical path consistency", () => {
   const filePath = "/test/src/test.ts";
 
+  // Helper to safely access array elements while satisfying linter
+  function expectDefinition<T>(array: readonly T[], index: number): T {
+    const value = array[index];
+    if (value === undefined) {
+      throw new Error(`Missing definition at index ${index}`);
+    }
+    return value;
+  }
+
   describe("TypeScript and SWC adapters produce consistent astPath", () => {
     const analyzeWithTS = getAstAnalyzer("ts").analyze;
     const analyzeWithSWC = getAstAnalyzer("swc").analyze;
@@ -25,8 +34,10 @@ export const userModel = gql.default(({ model }) =>
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
-      expect(tsAnalysis.definitions[0]!.astPath).toBe("userModel");
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toBe("userModel");
     });
 
     it("generates same astPath for nested definitions in functions", () => {
@@ -47,8 +58,10 @@ function createModels() {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
-      expect(tsAnalysis.definitions[0]!.astPath).toBe("createModels.nested");
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toBe("createModels.nested");
     });
 
     it("generates same astPath for definitions in arrow functions", () => {
@@ -69,9 +82,11 @@ const factory = () => {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
       // Arrow functions get auto-numbered names
-      expect(tsAnalysis.definitions[0]!.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
+      expect(tsDef.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
     });
 
     it("generates same astPath for class method definitions (TypeScript only)", () => {
@@ -115,8 +130,10 @@ const config = {
       expect(tsAnalysis.definitions).toHaveLength(1);
       expect(swcAnalysis.definitions).toHaveLength(1);
 
-      expect(tsAnalysis.definitions[0]!.astPath).toBe(swcAnalysis.definitions[0]!.astPath);
-      expect(tsAnalysis.definitions[0]!.astPath).toBe("config.models.user");
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toBe("config.models.user");
     });
 
     it("handles duplicate names with unique suffixes", () => {
@@ -139,7 +156,9 @@ function factory() {
       expect(swcAnalysis.definitions).toHaveLength(4);
 
       for (let i = 0; i < 4; i++) {
-        expect(tsAnalysis.definitions[i]!.astPath).toBe(swcAnalysis.definitions[i]!.astPath);
+        const tsDef = expectDefinition(tsAnalysis.definitions, i);
+        const swcDef = expectDefinition(swcAnalysis.definitions, i);
+        expect(tsDef.astPath).toBe(swcDef.astPath);
       }
 
       // Top-level model1 and model2
