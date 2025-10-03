@@ -5,7 +5,11 @@ class Outer {
     const obj = {
       nested: {
         deep: gql.default(({ model }) =>
-          model({ typename: "User" }, ({ f }) => ({ ...f.id() }), (v) => v),
+          model(
+            { typename: "User" },
+            ({ f }) => ({ ...f.id() }),
+            (v) => v,
+          ),
         ),
       },
     };
