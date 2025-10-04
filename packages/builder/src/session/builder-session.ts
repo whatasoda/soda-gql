@@ -13,7 +13,8 @@ import { createDiscoveryCache } from "../discovery";
 import { discoverModules } from "../discovery/discoverer";
 import { resolveEntryPaths } from "../discovery/entry-paths";
 import type { DiscoverySnapshot } from "../discovery/types";
-import { createIntermediateModule } from "../intermediate-module";
+import { createIntermediateModule, createIntermediateModuleChunks } from "../intermediate-module";
+import type { WrittenChunkModule } from "../intermediate-module/chunk-writer";
 import type { ChunkManifest } from "../intermediate-module/chunks";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
@@ -34,6 +35,8 @@ type SessionState = {
   definitionAdjacency: Map<CanonicalId, Set<CanonicalId>>;
   /** Chunk manifest from last build */
   chunkManifest: ChunkManifest | null;
+  /** Written chunk modules: chunkId -> transpiled path */
+  chunkModules: Map<string, WrittenChunkModule>;
   /** Metadata for invalidation checks */
   metadata: {
     schemaHash: string;
@@ -323,6 +326,7 @@ export const createBuilderSession = (): BuilderSession => {
     moduleAdjacency: new Map(),
     definitionAdjacency: new Map(),
     chunkManifest: null,
+    chunkModules: new Map(),
     metadata: {
       schemaHash: "",
       analyzerVersion: "",
@@ -412,24 +416,33 @@ export const createBuilderSession = (): BuilderSession => {
     // Store input for fallback rebuilds
     state.lastInput = input;
 
-    // Create intermediate module
+    // Create intermediate module chunks
     const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-    const intermediateModule = await createIntermediateModule({
+    const chunksResult = await createIntermediateModuleChunks({
       graph,
+      graphIndex: state.graphIndex,
       outDir: runtimeDir,
     });
 
-    if (intermediateModule.isErr()) {
-      return err(intermediateModule.error);
+    if (chunksResult.isErr()) {
+      return err(chunksResult.error);
     }
 
-    const { transpiledPath } = intermediateModule.value;
+    // Store written chunks
+    const writtenChunks = chunksResult.value;
+    state.chunkModules = writtenChunks;
 
-    // Build artifact
+    // Build chunk paths map for artifact builder
+    const chunkPaths = new Map<string, string>();
+    for (const [chunkId, chunk] of writtenChunks.entries()) {
+      chunkPaths.set(chunkId, chunk.transpiledPath);
+    }
+
+    // Build artifact from all chunks
     const artifactResult = await buildArtifact({
       graph,
       cache: { hits: cacheHits, misses: cacheMisses },
-      intermediateModulePath: transpiledPath,
+      intermediateModulePaths: chunkPaths,
     });
 
     if (artifactResult.isErr()) {
@@ -452,6 +465,7 @@ export const createBuilderSession = (): BuilderSession => {
       state.moduleAdjacency.clear();
       state.definitionAdjacency.clear();
       state.chunkManifest = null;
+      state.chunkModules.clear();
       state.metadata = {
         schemaHash: "",
         analyzerVersion: "",

@@ -201,6 +201,7 @@ describe("BuilderSession - Internal Helpers", () => {
           ["/src/a.ts::foo" as CanonicalId, new Set(["/src/b.ts::bar" as CanonicalId])],
         ]),
         chunkManifest: null,
+        chunkModules: new Map(),
         metadata: { schemaHash: "", analyzerVersion: "" },
         lastInput: null,
         lastArtifact: null,

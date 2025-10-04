@@ -10,9 +10,7 @@ import type { BuildArtifactInput, BuilderArtifact } from "./types";
 /**
  * Load multiple chunk modules and merge their elements.
  */
-export const loadChunkModules = async (
-  chunkPaths: Map<string, string>,
-): Promise<Result<IntermediateModule, BuilderError>> => {
+export const loadChunkModules = async (chunkPaths: Map<string, string>): Promise<Result<IntermediateModule, BuilderError>> => {
   const mergedElements: Record<string, IntermediateArtifactElement> = {};
   const issueRegistry = createIssueRegistry();
 
