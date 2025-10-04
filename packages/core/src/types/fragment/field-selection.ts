@@ -34,7 +34,7 @@ export type AnyFieldSelection = {
 /** Nested selection produced when resolving an object field. */
 export type AnyNestedObject = { [alias: string]: AnyFieldSelection };
 /** Nested selection produced when resolving a union field. */
-export type AnyNestedUnion = { [typeName: string]: { [alias: string]: AnyFieldSelection } | undefined };
+export type AnyNestedUnion = { [typeName: string]: AnyNestedObject | undefined };
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {

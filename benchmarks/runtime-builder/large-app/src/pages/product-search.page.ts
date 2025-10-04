@@ -1,18 +1,22 @@
 import { gql } from "@/graphql-system";
-import { productModel } from "../entities/product";
+import { productSearchSlice } from "../entities/product";
 
 export const productSearchQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
+      operationName: "ProductSearch",
       variables: {
         ...$("query").scalar("String:!"),
         ...$("limit").scalar("Int:?"),
+        ...$("offset").scalar("Int:?"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.searchProducts({ query: $.query, limit: $.limit }, () => ({
-        ...productModel.fragment(),
-      })),
+    ({ $ }) => ({
+      searchResults: productSearchSlice.build({
+        query: $.query,
+        limit: $.limit,
+        offset: $.offset,
+      }),
     }),
   ),
 );

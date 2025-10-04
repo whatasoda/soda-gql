@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactories } from "../../../packages/core/src/buildtime/fields-builder";
+import { createFieldFactoriesInner } from "../../../packages/core/src/buildtime/fields-builder";
 import { createVarBuilder } from "../../../packages/core/src/buildtime/var-builder";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
@@ -61,7 +61,7 @@ describe("Schema Edge Cases", () => {
       // Attempting to create field factories for non-existent object
       expect(() => {
         // @ts-expect-error - Testing runtime error handling for non-existent type
-        createFieldFactories(schema, "NonExistentObject");
+        createFieldFactoriesInner(schema, "NonExistentObject");
       }).toThrow();
     });
   });
@@ -96,7 +96,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactories(schema, "Query");
+        createFieldFactoriesInner(schema, "Query");
       }).toThrow("Unsupported field type");
     });
   });
@@ -132,7 +132,7 @@ describe("Schema Edge Cases", () => {
 
       // The current implementation doesn't throw, it handles it gracefully
       // We should test that it doesn't crash instead
-      const factories = createFieldFactories(schema, "Query");
+      const factories = createFieldFactoriesInner(schema, "Query");
       expect(factories).toBeDefined();
       expect(factories.result).toBeDefined();
     });
@@ -175,7 +175,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       // Should handle circular references without infinite loop
-      const factories = createFieldFactories(schema, "Node");
+      const factories = createFieldFactoriesInner(schema, "Node");
       expect(factories).toBeDefined();
       expect(factories.parent).toBeDefined();
       expect(factories.children).toBeDefined();

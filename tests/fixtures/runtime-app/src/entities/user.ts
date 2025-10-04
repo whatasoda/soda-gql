@@ -12,21 +12,22 @@ type UserModel = {
 };
 
 export const userModel = gql.default(({ model }, { $ }) =>
-  model(
+  model.User(
     {
-      typename: "User",
-      variables: { ...$("categoryId").scalar("ID:?") },
+      variables: [$("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
-    (selection): UserModel => ({
-      id: selection.id,
+    ({ f, $ }) => [
+      //
+      f.id(null, { alias: "uuid" }),
+      f.name(),
+      f.posts({ categoryId: $.categoryId })(({ f }) => [
+        //
+        f.id(),
+        f.title(),
+      ]),
+    ],
+    (selection) => ({
+      id: selection.uuid,
       name: selection.name,
       posts: selection.posts.map((post) => ({
         id: post.id,
@@ -38,14 +39,13 @@ export const userModel = gql.default(({ model }, { $ }) =>
 
 export const userRemote = {
   forIterate: gql.default(({ model }) =>
-    model(
-      {
-        typename: "User",
-      },
-      ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
+    model.User(
+      {},
+      ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ],
       (selection) => ({
         id: selection.id,
         name: selection.name,
@@ -57,16 +57,18 @@ export const userRemote = {
 export const userSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
-        ...userModel.fragment({ categoryId: $.categoryId }),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.users({
+        id: [$.id],
+        categoryId: $.categoryId,
+      })(() => [
+        //
+        userModel.fragment({ categoryId: $.categoryId }),
+      ]),
+    ],
     ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userModel.normalize(user)))),
   ),
 );
@@ -75,17 +77,19 @@ export const userSliceCatalog = {
   byId: gql.default(({ slice }, { $ }) =>
     slice.query(
       {
-        variables: {
-          ...$("id").scalar("ID:!"),
-          ...$("categoryId").scalar("ID:?"),
-        },
+        variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
       },
-      ({ f, $ }) => ({
-        ...f.users({ id: [$.id], categoryId: $.categoryId }, ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-      }),
+      ({ f, $ }) => [
+        //
+        f.users({
+          id: [$.id],
+          categoryId: $.categoryId,
+        })(({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ]),
+      ],
       ({ select }) =>
         select(["$.users"], (result) => result.safeUnwrap(([data]) => data.map((user) => userRemote.forIterate.normalize(user)))),
     ),

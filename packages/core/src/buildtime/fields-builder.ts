@@ -1,13 +1,14 @@
-import type { AnyFieldSelection, AnyFields, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
-import type {
-  AnyFieldSelectionFactory,
-  FieldSelectionFactories,
-  FieldSelectionFactoryFieldArguments,
-  FieldSelectionFactoryObject,
-  FieldSelectionFactoryPrimitive,
-  FieldSelectionFactoryUnion,
-  NestedObjectFieldsBuilder,
-  NestedUnionFieldsBuilder,
+import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
+import {
+  type AnyFieldSelectionFactory,
+  type AnyFieldSelectionFactoryReturn,
+  type FieldSelectionFactories,
+  type FieldSelectionFactoryObjectReturn,
+  type FieldSelectionFactoryPrimitiveReturn,
+  type FieldSelectionFactoryUnionReturn,
+  mergeFields,
+  type NestedObjectFieldsBuilder,
+  type NestedUnionFieldsBuilder,
 } from "../types/operation";
 import type {
   AnyGraphqlSchema,
@@ -20,7 +21,24 @@ import type {
 } from "../types/schema";
 import { wrapValueByKey } from "../types/shared/utility";
 
+const cache = new Map<string, Record<string, AnyFieldSelectionFactory>>();
+
 export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
+  schema: TSchema,
+  typeName: TTypeName,
+): FieldSelectionFactories<TSchema, TTypeName> => {
+  const cached = cache.get(typeName);
+  if (cached) {
+    return cached as unknown as FieldSelectionFactories<TSchema, TTypeName>;
+  }
+
+  const factories = createFieldFactoriesInner(schema, typeName);
+  cache.set(typeName, factories as unknown as Record<string, AnyFieldSelectionFactory>);
+
+  return factories;
+};
+
+const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
   schema: TSchema,
   typeName: TTypeName,
 ): FieldSelectionFactories<TSchema, TTypeName> => {
@@ -29,122 +47,77 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName
     throw new Error(`Type ${typeName} is not defined in schema objects`);
   }
 
-  const entries = Object.entries(typeDef.fields).map(([fieldName, type]): [string, AnyFieldSelectionFactory<TSchema>] => {
-    if (type.kind === "object") {
-      type TReference = AnyFieldSelection & { type: OutputObjectRef };
-      const factory: FieldSelectionFactoryObject<TSchema, TReference> = <TNested extends AnyNestedObject>(
-        argsAndDirectives: FieldSelectionFactoryFieldArguments<TReference>,
-        objectBuilder?: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>,
-      ) => {
-        // Handle builder-only invocation: f.field(builder) instead of f.field(args, builder)
-        let actualBuilder: NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>;
-        let actualArgs: any;
-        let actualDirectives: any = {};
+  const entries = Object.entries(typeDef.fields).map(([fieldName, type]): [string, AnyFieldSelectionFactory] => {
+    const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
+      fieldArgs: AnyFieldSelection["args"] | null | void,
+      extras?: { alias?: TAlias; directives?: AnyFieldSelection["directives"] },
+    ) => {
+      const wrap = <T>(value: T) => wrapValueByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
 
-        if (typeof argsAndDirectives === "function" && objectBuilder === undefined) {
-          // Builder-only call: f.field(() => {...})
-          actualBuilder = argsAndDirectives as NestedObjectFieldsBuilder<TSchema, TReference["type"]["name"], TNested>;
-          actualArgs = {};
-        } else if (objectBuilder !== undefined) {
-          // Full call: f.field(args, builder)
-          const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
-          actualBuilder = objectBuilder;
-          actualArgs = args ?? {};
-          actualDirectives = directives;
-        } else {
-          throw new Error(`Field ${String(fieldName)} requires a builder function`);
-        }
+      if (type.kind === "object") {
+        type TSelection = AnyFieldSelection & { type: OutputObjectRef };
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject[]>(
+          nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
+        ) =>
+          wrap({
+            parent: typeName,
+            field: fieldName,
+            type: type,
+            args: fieldArgs ?? {},
+            directives: extras?.directives ?? {},
+            object: mergeFields(nest({ f: createFieldFactories(schema, type.name) })),
+            union: null,
+          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>;
 
-        const nestedFactories = createFieldFactories(schema, type.name);
+        return factoryReturn;
+      }
 
-        return wrapValueByKey(fieldName, {
-          parent: typeName,
-          field: fieldName,
-          type: type,
-          args: actualArgs,
-          directives: actualDirectives,
-          object: actualBuilder({
-            _: nestedFactories,
-            f: nestedFactories,
-            fields: nestedFactories,
-          }),
-          union: null,
-        } satisfies AnyFieldSelection);
-      };
+      if (type.kind === "union") {
+        type TSelection = AnyFieldSelection & { type: OutputUnionRef };
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedUnion>(
+          nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
+        ) =>
+          wrap({
+            parent: typeName,
+            field: fieldName,
+            type: type,
+            args: fieldArgs ?? {},
+            directives: extras?.directives ?? {},
+            object: null,
+            union: Object.fromEntries(
+              (Object.entries(nest) as [string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]>][]).map(
+                ([memberName, builder]) => {
+                  const f = createFieldFactories(schema, memberName);
+                  return [memberName, mergeFields(builder({ f }))];
+                },
+              ),
+            ) as TNested,
+          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
 
-      return [fieldName, factory] as const;
-    }
+        return factoryReturn;
+      }
 
-    if (type.kind === "union") {
-      type TReference = AnyFieldSelection & { type: OutputUnionRef };
-      const factory: FieldSelectionFactoryUnion<TSchema, TReference> = <TNested extends AnyNestedUnion>(
-        argsAndDirectives: FieldSelectionFactoryFieldArguments<TReference>,
-        unionBuilder?: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>,
-      ) => {
-        // Handle builder-only invocation: f.field(builder) instead of f.field(args, builder)
-        let actualBuilder: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>;
-        let actualArgs: any;
-        let actualDirectives: any = {};
-
-        if (typeof argsAndDirectives === "object" && !Array.isArray(argsAndDirectives) && unionBuilder === undefined) {
-          // Builder-only call: f.field({ TypeA: ..., TypeB: ... })
-          actualBuilder = argsAndDirectives as NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TReference["type"]>, TNested>;
-          actualArgs = {};
-        } else if (unionBuilder !== undefined) {
-          // Full call: f.field(args, builder)
-          const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
-          actualBuilder = unionBuilder;
-          actualArgs = args ?? {};
-          actualDirectives = directives;
-        } else {
-          throw new Error(`Field ${String(fieldName)} requires a union builder object`);
-        }
-
-        return wrapValueByKey(fieldName, {
-          parent: typeName,
-          field: fieldName,
-          type: type,
-          args: actualArgs,
-          directives: actualDirectives,
-          object: null,
-          union: Object.fromEntries(
-            (Object.entries(actualBuilder) as [string, NestedObjectFieldsBuilder<TSchema, string, AnyFields>][]).map(
-              ([memberName, builder]) => {
-                const nestedFactories = createFieldFactories(schema, memberName);
-                return [memberName, builder({ _: nestedFactories, f: nestedFactories, fields: nestedFactories })];
-              },
-            ),
-          ) as TNested,
-        } satisfies AnyFieldSelection);
-      };
-
-      return [fieldName, factory] as const;
-    }
-
-    if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
-      type TReference = AnyFieldSelection & { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef };
-      const factory: FieldSelectionFactoryPrimitive<TReference> = (
-        argsAndDirectives: FieldSelectionFactoryFieldArguments<TReference>,
-      ) => {
-        const [args, directives = {}] = Array.isArray(argsAndDirectives) ? argsAndDirectives : [argsAndDirectives, {}];
-        return wrapValueByKey(fieldName, {
+      if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
+        type TSelection = AnyFieldSelection & { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef };
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = wrap({
           parent: typeName,
           field: fieldName,
           type,
-          args: args ?? {},
-          directives,
+          args: fieldArgs ?? {},
+          directives: extras?.directives ?? {},
           object: null,
           union: null,
-        } satisfies AnyFieldSelection);
-      };
+        } satisfies AnyFieldSelection) satisfies FieldSelectionFactoryPrimitiveReturn<TSelection, TAlias>;
+        return factoryReturn;
+      }
 
-      return [fieldName, factory] as const;
-    }
+      throw new Error(`Unsupported field type: ${type satisfies never}`);
+    };
 
-    throw new Error(`Unsupported field type: ${type satisfies never}`);
+    return [fieldName, factory] as const;
   });
 
-  const factories: Record<string, AnyFieldSelectionFactory<TSchema>> = Object.fromEntries(entries);
+  const factories: Record<string, AnyFieldSelectionFactory> = Object.fromEntries(entries);
 
-  return factories as FieldSelectionFactories<TSchema, TTypeName>;
+  return factories as unknown as FieldSelectionFactories<TSchema, TTypeName>;
 };

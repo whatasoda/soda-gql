@@ -1,9 +1,10 @@
 import { gql } from "@/graphql-system";
-import { userModel } from "../entities/user";
+import { updateUserSlice } from "../entities/user";
 
 export const updateUserMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
+      operationName: "UpdateUser",
       variables: {
         ...$("id").scalar("ID:!"),
         ...$("firstName").scalar("String:?"),
@@ -11,10 +12,13 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
         ...$("avatar").scalar("String:?"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.updateUserProfile({ id: $.id, firstName: $.firstName, lastName: $.lastName, avatar: $.avatar }, () => ({
-        ...userModel.fragment(),
-      })),
+    ({ $ }) => ({
+      user: updateUserSlice.build({
+        id: $.id,
+        firstName: $.firstName,
+        lastName: $.lastName,
+        avatar: $.avatar,
+      }),
     }),
   ),
 );

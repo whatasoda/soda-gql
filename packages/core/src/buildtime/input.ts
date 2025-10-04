@@ -1,10 +1,21 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../types/schema";
-import type { VoidIfEmptyObject } from "../types/shared/empty-object";
+import type { UnionToIntersection } from "../types/shared/utility";
+
+export const mergeVarDefinitions = <TVarDefinitions extends InputTypeRefs[]>(definitions: TVarDefinitions) =>
+  Object.assign({}, ...definitions) as MergeVarDefinitions<TVarDefinitions>;
+
+export type MergeVarDefinitions<TVarDefinitions extends InputTypeRefs[]> = UnionToIntersection<
+  TVarDefinitions[number]
+> extends infer TDefinitions
+  ? {
+      [K in keyof TDefinitions]: TDefinitions[K];
+    } & {}
+  : never;
 
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeRefs>(
   definitions: TVariableDefinitions,
-  provided: AnyAssignableInput | VoidIfEmptyObject<{}>,
+  provided: AnyAssignableInput | void,
 ): AssignableInput<TSchema, TVariableDefinitions> => {
   if (Object.keys(definitions).length === 0) {
     return {} as AssignableInput<TSchema, TVariableDefinitions>;

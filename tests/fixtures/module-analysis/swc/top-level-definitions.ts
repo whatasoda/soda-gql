@@ -12,7 +12,7 @@ export const pageQuery = gql.default(({ operation, slice }, { $ }) =>
       user: slice
         .query(
           {},
-          ({ f }) => ({ ...f.user({ id: $.userId }, ({ f }) => ({ ...f.id() })) }),
+          ({ _: f }) => ({ ...f.user({ id: $.userId }, ({ f }) => ({ ...f.id() })) }),
           ({ select }) => select(["$.user"], (result) => result),
         )
         .build(),

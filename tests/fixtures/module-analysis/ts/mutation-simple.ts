@@ -8,7 +8,7 @@ const createPostSlice = gql.default(({ slice }, { $ }) =>
         ...$("body").scalar("String:?"),
       },
     },
-    ({ $, f }) => ({
+    ({ $, _: f }) => ({
       ...f.createPost({ title: $.title, body: $.body }, ({ f }) => ({
         ...f.id(),
         ...f.title(),

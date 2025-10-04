@@ -1,22 +1,16 @@
 import { gql } from "@/graphql-system";
-import { productModel } from "../entities/product";
+import { productDetailSlice } from "../entities/product";
 
 export const productDetailQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
+      operationName: "ProductDetail",
       variables: {
         ...$("id").scalar("ID:!"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.product({ id: $.id }, () => ({
-        ...productModel.fragment(),
-        ...f.relatedProducts({ limit: 5 }, () => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.price(),
-        })),
-      })),
+    ({ $ }) => ({
+      product: productDetailSlice.build({ id: $.id }),
     }),
   ),
 );

@@ -1,9 +1,10 @@
 import { gql } from "@/graphql-system";
-import { productModel } from "../entities/product";
+import { productListSlice } from "../entities/product";
 
 export const productListQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
+      operationName: "ProductList",
       variables: {
         ...$("categoryId").scalar("ID:?"),
         ...$("brandId").scalar("ID:?"),
@@ -11,22 +12,13 @@ export const productListQuery = gql.default(({ operation }, { $ }) =>
         ...$("offset").scalar("Int:?"),
       },
     },
-    ({ f, $ }) => ({
-      ...f.products({ categoryId: $.categoryId, brandId: $.brandId, priceRange: null, limit: $.limit, offset: $.offset }, ({ f }) => ({
-        ...f.edges(({ f }) => ({
-          ...f.node(() => ({
-            ...productModel.fragment(),
-          })),
-          ...f.cursor(),
-        })),
-        ...f.pageInfo(({ f }) => ({
-          ...f.hasNextPage(),
-          ...f.hasPreviousPage(),
-          ...f.startCursor(),
-          ...f.endCursor(),
-        })),
-        ...f.totalCount(),
-      })),
+    ({ $ }) => ({
+      products: productListSlice.build({
+        categoryId: $.categoryId,
+        brandId: $.brandId,
+        limit: $.limit,
+        offset: $.offset,
+      }),
     }),
   ),
 );

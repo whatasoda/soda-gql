@@ -7,7 +7,7 @@ const userUpdatedSlice = gql.default(({ slice }, { $ }) =>
         ...$("userId").scalar("ID:!"),
       },
     },
-    ({ $, f }) => ({
+    ({ $, _: f }) => ({
       ...f.userUpdated({ userId: $.userId }, ({ f }) => ({
         ...f.id(),
         ...f.name(),

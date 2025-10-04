@@ -7,7 +7,7 @@ export const postSlice = gql.default(({ slice }, { $ }) =>
     {
       variables: { ...$("postId").scalar("ID:!") },
     },
-    ({ $, f }) => ({
+    ({ $, _: f }) => ({
       ...f.posts({ id: $.postId }, ({ f }) => ({ ...f.id() })),
     }),
     ({ select }) => select(["$.posts"], (result) => result),

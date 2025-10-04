@@ -15,7 +15,7 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
     {
       variables: { ...$("id").scalar("ID:!") },
     },
-    ({ $, f }) => ({
+    ({ $, _: f }) => ({
       ...f.users({ id: [$.id] }, ({ f: nested }) => ({
         ...nested.id(),
       })),

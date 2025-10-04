@@ -54,3 +54,22 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
     ({ select }) => select(["$.user"], (result) => result.map((data) => (data ? userModel.normalize(data) : null))),
   ),
 );
+
+export const updateUserSlice = gql.default(({ slice }, { $ }) =>
+  slice.mutation(
+    {
+      variables: {
+        ...$("id").scalar("ID:!"),
+        ...$("firstName").scalar("String:?"),
+        ...$("lastName").scalar("String:?"),
+        ...$("avatar").scalar("String:?"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.updateUserProfile({ id: $.id, firstName: $.firstName, lastName: $.lastName, avatar: $.avatar }, () => ({
+        ...userModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.updateUserProfile"], (result) => result.map((data) => userModel.normalize(data))),
+  ),
+);

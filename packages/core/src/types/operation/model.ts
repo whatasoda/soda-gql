@@ -2,7 +2,7 @@
 
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
-import type { VoidIfEmptyObject } from "../shared/empty-object";
+import type { SwitchIfEmpty } from "../shared/empty-object";
 import type { Hidden } from "../shared/hidden";
 import { ArtifactElement } from "./artifact-element";
 
@@ -59,10 +59,21 @@ export class Model<
   >(
     factory: () => {
       typename: TTypeName;
-      fragment: (variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>) => TFields;
+      fragment: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
       normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized;
     },
   ) {
-    return new Model(factory);
+    type Fields = TFields & { [key: symbol]: never };
+    type Raw = InferFields<TSchema, TFields> & { [key: symbol]: never };
+
+    return new Model(
+      factory as () => ModelArtifact<
+        TTypeName,
+        SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
+        Fields,
+        Raw,
+        TNormalized
+      >,
+    );
   }
 }

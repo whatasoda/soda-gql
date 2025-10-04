@@ -135,6 +135,22 @@ export const orderModel = gql.default(({ model }) =>
   ),
 );
 
+export const orderDetailSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: {
+        ...$("id").scalar("ID:!"),
+      },
+    },
+    ({ f, $ }) => ({
+      ...f.order({ id: $.id }, () => ({
+        ...orderModel.fragment(),
+      })),
+    }),
+    ({ select }) => select(["$.order"], (result) => result.map((data) => (data ? orderModel.normalize(data) : null))),
+  ),
+);
+
 export const orderSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {

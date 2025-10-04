@@ -30,45 +30,45 @@ export const define = <const TName extends string>(name: TName) => ({
     values: TValues,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       _type: hidden(),
       name,
       values,
       directives,
-    } satisfies EnumDef<keyof TValues & string>),
+    }) satisfies EnumDef<keyof TValues & string>,
 
   input: <TFields extends InputDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       fields,
       directives,
-    } satisfies InputDef),
+    }) satisfies InputDef,
 
   object: <TFields extends ObjectDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       fields: {
         __typename: unsafeOutputRef.typename(`${name}:!`, {}),
         ...fields,
       },
       directives,
-    } satisfies ObjectDef),
+    }) satisfies ObjectDef,
 
   union: <TTypes extends UnionDef["types"], TDirectives extends AnyConstDirectiveAttachments>(
     types: TTypes,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       types,
       directives,
-    } satisfies UnionDef),
+    }) satisfies UnionDef,
 });
 
 export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(operationRoots: TOperationRoots) =>

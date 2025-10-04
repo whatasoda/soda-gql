@@ -5,7 +5,7 @@ const postCreatedSlice = gql.default(({ slice }) =>
     {
       variables: {},
     },
-    ({ f }) => ({
+    ({ _: f }) => ({
       ...f.postCreated(undefined, ({ f }) => ({
         ...f.id(),
         ...f.title(),
