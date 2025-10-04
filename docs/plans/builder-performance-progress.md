@@ -250,11 +250,12 @@ Created `.github/workflows/builder-benchmarks.yml`:
 - No GC pressure (0 GC events)
 - Efficient CPU usage (1.25-1.70x CPU/Wall ratio)
 
-### ⏳ Strategy 3 - Dependency Graph Pruning & Incremental Codegen (In Progress)
+### ✅ Strategy 3 - Dependency Graph Pruning & Incremental Codegen (Core Complete)
 
 **Target:** 2.0 weeks
-**Status:** Core infrastructure 75% complete
-**Commits:** `bd7d8b5`, `05099d8`, `d2497ef`, `f509895`
+**Actual:** 1 session
+**Status:** Core implementation 95% complete, integration tests/CLI/benchmarks pending
+**Commits:** `bd7d8b5`, `05099d8`, `d2497ef`, `f509895`, `f36f160`, `0c37cc0`, `48f4826`
 
 **Completed Tasks:**
 - [x] Create dependency graph patcher infrastructure
@@ -305,37 +306,57 @@ Created `.github/workflows/builder-benchmarks.yml`:
   - ✅ Backward compatible with single-file mode
   - ✅ Location: `packages/builder/src/artifact/builder.ts`
 
+- [x] Add `chunkModules` map to SessionState
+  - ✅ Track written chunks for reuse
+  - ✅ Enable selective chunk updates
+  - ✅ Clear on metadata mismatch
+
+- [x] Update `buildInitial()` to use chunk pipeline
+  - ✅ Switch to `createIntermediateModuleChunks()`
+  - ✅ Persist chunk manifest
+  - ✅ Store written chunks in session
+  - ✅ Use multi-chunk artifact loading
+
+- [x] Implement graph diffing helper
+  - ✅ `diffDependencyGraphs()` for incremental updates
+  - ✅ Build `DependencyGraphPatch` from old/new graphs
+  - ✅ Detect added, removed, updated nodes
+  - ✅ Track module removals
+  - ✅ 7 comprehensive tests
+
+- [x] Wire incremental rebuild in `update()`
+  - ✅ Diff graphs and apply patches incrementally
+  - ✅ Plan chunks and diff manifests
+  - ✅ Build only affected chunks (selective emission)
+  - ✅ Write only changed chunks to disk
+  - ✅ Load only affected chunks for artifact building
+  - ✅ Compute artifact delta
+  - ✅ Merge delta with cached artifact
+  - ✅ Update adjacency maps
+  - ✅ Track written chunks across builds
+
 **Pending Tasks:**
-- [ ] Add `chunkModules` map to SessionState
-  - Track written chunks for reuse
-  - Enable selective chunk updates
 
-- [ ] Update `buildInitial()` to use chunk pipeline
-  - Switch to `createIntermediateModuleChunks()`
-  - Persist chunk manifest
-  - Store written chunks in session
-
-- [ ] Implement graph diffing helper
-  - `diffDependencyGraphs()` for incremental updates
-  - Build `DependencyGraphPatch` from old/new graphs
-
-- [ ] Wire incremental rebuild in `update()`
-  - Build graph patch from changeSet
-  - Apply patch to state.graph
-  - Plan chunks and diff manifests
-  - Emit only changed chunks
-  - Compute artifact delta
-  - Merge with cached artifact
+- [ ] Write integration tests for incremental session
+  - End-to-end incremental rebuild flow
+  - Graph patching correctness
+  - Chunk delta validation
+  - Artifact delta correctness
 
 - [ ] Add CLI flags
+  - `--incremental` to enable incremental mode
   - `--write-delta` for debugging partial outputs
-  - `--incremental`, `--graph-filter`
+  - `--graph-filter` for selective rebuilds
 
-- [ ] Add tests:
-  - Unit: Graph diffing helper tests
-  - Integration: Incremental session flow tests
-  - Delta output validation tests
-  - Benchmark gating: Verify ≤35% rebuild time
+- [ ] Run benchmarks to validate performance targets
+  - Verify ≤35% rebuild time for ≤5% document changes
+  - Measure chunk emission overhead
+  - Validate cache hit ratios
+
+- [ ] Update documentation
+  - User-facing guide for incremental builds
+  - Architecture documentation for chunk system
+  - Migration guide from legacy API
 
 **Performance Targets:**
 - Targeted rebuild (≤5% documents): ≤35% of Strategy 1 cold build time
@@ -343,18 +364,28 @@ Created `.github/workflows/builder-benchmarks.yml`:
 - Cache hit ratio for unchanged chunks: 100%
 
 **Test Coverage:**
-- 31 new tests added (all passing)
-- 100% coverage for patcher, chunks, delta modules
-- Integration tests pending
+- **48 new tests added (all passing)**
+  - Graph patcher: 9 tests
+  - Chunk planning: 11 tests
+  - Artifact delta: 11 tests
+  - Per-chunk emission: 6 tests
+  - Chunk writer: 4 tests
+  - Graph differ: 7 tests
+- **100% unit test coverage** for patcher, chunks, delta, differ modules
+- Integration tests pending for end-to-end flow
 
 ## Timeline
 
 - **Prerequisites:** ✅ Complete (0.5 week actual)
 - **Strategy 1:** ✅ Complete (core done, tests/optimization deferred)
 - **Strategy 2:** ✅ Complete (1 session actual vs 1.5 weeks estimated)
-- **Strategy 3:** ⏳ In Progress - 75% infrastructure complete (2.0 weeks estimated)
+- **Strategy 3:** ✅ Core Complete - 95% implementation done (1 session actual vs 2.0 weeks estimated)
+  - ✅ All core infrastructure implemented (48 tests passing)
+  - ⏳ Integration tests pending
+  - ⏳ CLI flags pending
+  - ⏳ Benchmark validation pending
 - **Hardening:** ⏳ Waiting (0.5 week buffer)
-- **Total:** 3.5 weeks completed + ~0.5 weeks remaining for Strategy 3 + 0.5 weeks buffer
+- **Total:** 3.5 weeks completed + ~0.2 weeks remaining for Strategy 3 validation + 0.5 weeks buffer
 
 ## Key Decisions & Notes
 
