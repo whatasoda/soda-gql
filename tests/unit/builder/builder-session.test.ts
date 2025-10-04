@@ -194,10 +194,13 @@ describe("BuilderSession - Internal Helpers", () => {
             } as unknown as DiscoverySnapshot,
           ],
         ]),
+        graph: new Map(),
+        graphIndex: new Map(),
         moduleAdjacency: new Map<string, Set<string>>([["/src/a.ts", new Set()]]),
         definitionAdjacency: new Map<CanonicalId, Set<CanonicalId>>([
           ["/src/a.ts::foo" as CanonicalId, new Set(["/src/b.ts::bar" as CanonicalId])],
         ]),
+        chunkManifest: null,
         metadata: { schemaHash: "", analyzerVersion: "" },
         lastInput: null,
         lastArtifact: null,

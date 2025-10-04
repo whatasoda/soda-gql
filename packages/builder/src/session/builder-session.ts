@@ -7,12 +7,14 @@ import { getAstAnalyzer } from "../ast";
 import { createJsonCache } from "../cache/json-cache";
 import type { CanonicalId } from "../canonical-id/canonical-id";
 import { buildDependencyGraph } from "../dependency-graph";
+import { buildGraphIndex, type GraphIndex } from "../dependency-graph/patcher";
 import type { DependencyGraph } from "../dependency-graph/types";
 import { createDiscoveryCache } from "../discovery";
 import { discoverModules } from "../discovery/discoverer";
 import { resolveEntryPaths } from "../discovery/entry-paths";
 import type { DiscoverySnapshot } from "../discovery/types";
 import { createIntermediateModule } from "../intermediate-module";
+import type { ChunkManifest } from "../intermediate-module/chunks";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
 
@@ -22,10 +24,16 @@ import type { BuilderChangeSet } from "./change-set";
 type SessionState = {
   /** Discovery snapshots keyed by normalized file path */
   snapshots: Map<string, DiscoverySnapshot>;
+  /** Full dependency graph from last build */
+  graph: DependencyGraph;
+  /** Graph index: file path -> set of canonical IDs */
+  graphIndex: GraphIndex;
   /** Module-level adjacency: file -> files that import it */
   moduleAdjacency: Map<string, Set<string>>;
   /** Definition-level adjacency: canonical ID -> IDs that depend on it */
   definitionAdjacency: Map<CanonicalId, Set<CanonicalId>>;
+  /** Chunk manifest from last build */
+  chunkManifest: ChunkManifest | null;
   /** Metadata for invalidation checks */
   metadata: {
     schemaHash: string;
@@ -310,8 +318,11 @@ export const createBuilderSession = (): BuilderSession => {
   // Session state stored in closure
   const state: SessionState = {
     snapshots: new Map(),
+    graph: new Map(),
+    graphIndex: new Map(),
     moduleAdjacency: new Map(),
     definitionAdjacency: new Map(),
+    chunkManifest: null,
     metadata: {
       schemaHash: "",
       analyzerVersion: "",
@@ -387,6 +398,10 @@ export const createBuilderSession = (): BuilderSession => {
 
     const graph = dependencyGraph.value;
 
+    // Store graph and build index
+    state.graph = graph;
+    state.graphIndex = buildGraphIndex(graph);
+
     // Extract and store adjacency maps
     state.moduleAdjacency = extractModuleAdjacency(graph);
     state.definitionAdjacency = extractDefinitionAdjacency(graph);
@@ -432,8 +447,11 @@ export const createBuilderSession = (): BuilderSession => {
     if (!metadataMatches(changeSet.metadata, state.metadata)) {
       // Clear state and rebuild
       state.snapshots.clear();
+      state.graph.clear();
+      state.graphIndex.clear();
       state.moduleAdjacency.clear();
       state.definitionAdjacency.clear();
+      state.chunkManifest = null;
       state.metadata = {
         schemaHash: "",
         analyzerVersion: "",
@@ -550,6 +568,10 @@ export const createBuilderSession = (): BuilderSession => {
     }
 
     const graph = dependencyGraph.value;
+
+    // Store graph and build index
+    state.graph = graph;
+    state.graphIndex = buildGraphIndex(graph);
 
     // Extract and store adjacency maps
     state.moduleAdjacency = extractModuleAdjacency(graph);
