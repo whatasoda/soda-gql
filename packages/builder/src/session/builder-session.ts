@@ -481,8 +481,8 @@ export const createBuilderSession = (): BuilderSession => {
     const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
     const _affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
 
-    // V1 Strategy: Full rebuild on changes (maintains correctness)
-    // State management and adjacency tracking are in place for future optimization
+    // V2 Strategy: Use fingerprint-based cache invalidation
+    // Pass invalidated files to discoverModules for smart cache skipping
     if (!state.lastInput) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
@@ -492,12 +492,97 @@ export const createBuilderSession = (): BuilderSession => {
       });
     }
 
-    // FUTURE (Strategy 2/3): True incremental discovery and graph merging
-    // - Partial discovery using fingerprint matching
+    // For now: Full rebuild with fingerprint-aware caching
+    // This avoids re-reading unchanged files (major performance win)
+    // FUTURE (Strategy 3): True incremental discovery and graph merging
     // - Rebuild only affected subgraph
     // - Merge with unchanged nodes
-    // For now: Full rebuild maintains correctness while infrastructure is proven
-    return buildInitial(state.lastInput);
+
+    // Create or reuse discovery infrastructure
+    if (!discoveryCache) {
+      discoveryCache = createDiscoveryCache({
+        factory: cacheFactory,
+        analyzer: state.lastInput.analyzer,
+        evaluatorId: "default",
+      });
+    }
+
+    if (!astAnalyzer) {
+      astAnalyzer = getAstAnalyzer(state.lastInput.analyzer);
+    }
+
+    // Resolve entry paths
+    const entryPathsResult = resolveEntryPaths(state.lastInput.entry);
+    if (entryPathsResult.isErr()) {
+      return err(entryPathsResult.error);
+    }
+
+    const entryPaths = entryPathsResult.value;
+
+    // Pass changed files as invalidated paths for fingerprint-based skipping
+    const invalidatedPaths = new Set(changedFiles);
+
+    // Run discovery with invalidations
+    const { snapshots } = discoverModules({
+      entryPaths,
+      astAnalyzer,
+      cache: discoveryCache,
+      metadata: state.metadata,
+      invalidatedPaths,
+    });
+
+    // Store discovery snapshots
+    state.snapshots.clear();
+    for (const snapshot of snapshots) {
+      state.snapshots.set(snapshot.normalizedFilePath, snapshot);
+    }
+
+    // Build analyses from snapshots
+    const analyses = snapshots.map((s) => s.analysis);
+
+    // Build dependency graph
+    const dependencyGraph = buildDependencyGraph(analyses);
+    if (dependencyGraph.isErr()) {
+      return err({
+        code: "CIRCULAR_DEPENDENCY",
+        chain: dependencyGraph.error.chain,
+      });
+    }
+
+    const graph = dependencyGraph.value;
+
+    // Extract and store adjacency maps
+    state.moduleAdjacency = extractModuleAdjacency(graph);
+    state.definitionAdjacency = extractDefinitionAdjacency(graph);
+
+    // Create intermediate module
+    const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
+    const intermediateModule = await createIntermediateModule({
+      graph,
+      outDir: runtimeDir,
+    });
+
+    if (intermediateModule.isErr()) {
+      return err(intermediateModule.error);
+    }
+
+    const { transpiledPath } = intermediateModule.value;
+
+    // Build artifact
+    const artifactResult = await buildArtifact({
+      graph,
+      cache: { hits: 0, misses: 0 }, // TODO: Track cache stats from discovery
+      intermediateModulePath: transpiledPath,
+    });
+
+    if (artifactResult.isErr()) {
+      return err(artifactResult.error);
+    }
+
+    // Store artifact for future incremental updates
+    state.lastArtifact = artifactResult.value;
+
+    return artifactResult;
   };
 
   const getSnapshot = (): BuilderSessionSnapshot => {
