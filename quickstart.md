@@ -117,7 +117,7 @@ bun run soda-gql builder \
 
 ### Step 1: Define Models with `gql.default`
 
-Models are declared with `model(options, fieldsBuilder, normalize)`. The fields builder receives `f` for selections and `$` for model-scoped variables.
+Models are declared with `model.<TypeName>(options, fieldsBuilder, normalize)` using the array-based API. The fields builder receives `f` for selections and `$` for model-scoped variables, and returns an array of field selections.
 
 ```typescript
 // src/models/user.model.ts
@@ -125,12 +125,13 @@ import { gql } from "@/graphql-system";
 
 // Basic user model with field selection
 export const userBasic = gql.default(({ model }) =>
-  model(
-    { typename: "User" },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
+  model.User(
+    {},
+    ({ f }) => [
+      //
+      f.id(),
+      f.name(),
+    ],
     (selected) => ({
       id: selected.id,
       name: selected.name,
@@ -140,21 +141,20 @@ export const userBasic = gql.default(({ model }) =>
 
 // User with nested posts selection
 export const userWithPosts = gql.default(({ model }, { $ }) =>
-  model(
+  model.User(
     {
-      typename: "User",
-      variables: {
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.id(),
+      f.name(),
+      f.posts({ categoryId: $.categoryId })(({ f }) => [
+        //
+        f.id(),
+        f.title(),
+      ]),
+    ],
     (selected) => ({
       id: selected.id,
       name: selected.name,
@@ -173,7 +173,7 @@ export type UserWithPosts = ReturnType<typeof userWithPosts["normalize"]>;
 
 ### Step 2: Compose slices with projections
 
-`slice.query`/`slice.mutation` wrap reusable field selections. Provide variable definitions via `$`, build fields with `f`, and map execution results through `select`.
+`slice.query`/`slice.mutation` wrap reusable field selections using array-based builders. Provide variable definitions as arrays, build fields returning arrays, and map execution results through `select`.
 
 ```typescript
 // src/slices/user.slice.ts
@@ -183,16 +183,18 @@ import { userWithPosts } from "../models/user.model";
 export const userSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
-        ...userWithPosts.fragment({ categoryId: $.categoryId }),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.users({
+        id: [$.id],
+        categoryId: $.categoryId,
+      })(() => [
+        //
+        userWithPosts.fragment({ categoryId: $.categoryId }),
+      ]),
+    ],
     ({ select }) =>
       select(["$.users"], (result) =>
         result.safeUnwrap(([users]) => users.map((user) => userWithPosts.normalize(user))),
@@ -203,15 +205,14 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 export const updateUserSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("name").scalar("String:!"),
-      },
+      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
     },
-    ({ f, $ }) => ({
-      ...f.updateUser({ id: $.id, name: $.name }, ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
+    ({ f, $ }) => [
+      //
+      f.updateUser({ id: $.id, name: $.name })(({ f }) => [
+        //
+        f.id(),
+        f.name(),
       })),
     }),
     ({ select }) =>
@@ -233,10 +234,7 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProfilePageQuery",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
       users: userSlice.build({
@@ -257,10 +255,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
       operationName: "UpdateUser",
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("name").scalar("String:!"),
-      },
+      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
       updateUser: updateUserSlice.build({
@@ -316,7 +311,7 @@ describe("userBasic model", () => {
 ```typescript
 export const profileQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
-    { operationName: "ProfilePageQuery", variables: { ...$("userId").scalar("ID:!") } },
+    { operationName: "ProfilePageQuery", variables: [$("userId").scalar("ID:!")] },
     ({ $ }) => ({
       users: userSlice.build({ id: $.userId }),
     }),
@@ -368,15 +363,15 @@ import { userBasic } from "@/models/user.model";
 export const safeUserSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.user({ id: $.id }, () => ({
-        ...userBasic.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.user({ id: $.id })(() => [
+        //
+        userBasic.fragment(),
+      ]),
+    ],
     ({ select }) =>
       select(["$.user"], (result) => {
         const outcome = result.safeUnwrap(([user]) => userBasic.normalize(user));
@@ -395,9 +390,7 @@ export const safeGetUserQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "SafeGetUser",
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [$("id").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: safeUserSlice.build({ id: $.id }),

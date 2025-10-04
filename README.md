@@ -49,23 +49,24 @@ The generated runtime module imports your scalar and adapter implementations fro
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Define a reusable model
+// Define a reusable model with array-based API
 export const userModel = gql.default(({ model }, { $ }) =>
-  model(
+  model.User(
     {
-      typename: "User",
-      variables: { ...$("categoryId").scalar("ID:?") },
+      variables: [$("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.posts({ categoryId: $.categoryId }, ({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.id(null, { alias: "uuid" }),
+      f.name(),
+      f.posts({ categoryId: $.categoryId })(({ f }) => [
+        //
+        f.id(),
+        f.title(),
+      ]),
+    ],
     (selection) => ({
-      id: selection.id,
+      id: selection.uuid,
       name: selection.name,
       posts: selection.posts.map((post) => ({
         id: post.id,
@@ -79,16 +80,18 @@ export const userModel = gql.default(({ model }, { $ }) =>
 export const userSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.users({ id: [$.id], categoryId: $.categoryId }, () => ({
-        ...userModel.fragment({ categoryId: $.categoryId }),
-      })),
-    }),
+    ({ f, $ }) => [
+      //
+      f.users({
+        id: [$.id],
+        categoryId: $.categoryId,
+      })(() => [
+        //
+        userModel.fragment({ categoryId: $.categoryId }),
+      ]),
+    ],
     ({ select }) =>
       select(["$.users"], (result) =>
         result.safeUnwrap(([users]) => users.map((user) => userModel.normalize(user))),
@@ -101,10 +104,7 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProfileQuery",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("categoryId").scalar("ID:?"),
-      },
+      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
       users: userSlice.build({
@@ -115,6 +115,8 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
   ),
 );
 ```
+
+**Note on API**: Variables are now declared as arrays (`variables: [$(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
 
 ### For Contributors
 

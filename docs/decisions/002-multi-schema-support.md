@@ -24,24 +24,34 @@ We will implement multi-schema support using a named-access pattern where each s
 ```typescript
 import { gql } from "@/graphql-system";
 
-// All schemas accessed by name
-const userModel = gql.default(({ model, scalar }) =>
-  model("User", ({ f }) => ({
-    id: f.id(),
-    name: f.name(),
-  }))
+// All schemas accessed by name with array-based API
+const userModel = gql.default(({ model }) =>
+  model.User(
+    {},
+    ({ f }) => [
+      //
+      f.id(),
+      f.name(),
+    ],
+    (selected) => selected,
+  )
 );
 
 const adminUser = gql.admin(({ model }) =>
-  model("AdminUser", ({ f }) => ({
-    id: f.id(),
-    permissions: f.permissions(),
-  }))
+  model.AdminUser(
+    {},
+    ({ f }) => [
+      //
+      f.id(),
+      f.permissions(),
+    ],
+    (selected) => selected,
+  )
 );
 
 // Users can choose short names for convenience
 const post = gql._(({ model }) =>  // "_" as main schema
-  model("Post", /* ... */)
+  model.Post({}, ({ f }) => [ /* ... */ ], (s) => s)
 );
 ```
 
