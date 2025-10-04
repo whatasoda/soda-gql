@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
-import { err, ok, type Result } from "neverthrow";
 import { getActiveRegistry, setActiveRegistry } from "@soda-gql/core";
+import { err, ok, type Result } from "neverthrow";
 import type { IntermediateModule } from "../intermediate-module";
 import type { BuilderError } from "../types";
 import { toBuilderError } from "./issue-handler";
