@@ -351,11 +351,20 @@ export const createBuilderSession = (): BuilderSession => {
 
     const entryPaths = entryPathsResult.value;
 
+    // Compute metadata for snapshots
+    // For V1: Use analyzer as schema hash (simple but functional)
+    // Future: Hash actual GraphQL schema file content
+    const snapshotMetadata = {
+      schemaHash: input.analyzer, // Using analyzer as proxy for schema version in V1
+      analyzerVersion: input.analyzer,
+    };
+
     // Run discovery
     const { snapshots, cacheHits, cacheMisses } = discoverModules({
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
+      metadata: snapshotMetadata,
     });
 
     // Store discovery snapshots
@@ -383,12 +392,7 @@ export const createBuilderSession = (): BuilderSession => {
     state.definitionAdjacency = extractDefinitionAdjacency(graph);
 
     // Store metadata
-    // For V1: Use analyzer as schema hash (simple but functional)
-    // Future: Hash actual GraphQL schema file content
-    state.metadata = {
-      schemaHash: input.analyzer, // Using analyzer as proxy for schema version in V1
-      analyzerVersion: input.analyzer,
-    };
+    state.metadata = snapshotMetadata;
 
     // Store input for fallback rebuilds
     state.lastInput = input;

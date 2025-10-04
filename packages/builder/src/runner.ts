@@ -35,7 +35,17 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
     evaluatorId: "default",
   });
 
-  const pipeline = createDiscoveryPipeline({ analyzer: options.analyzer, cache });
+  // Compute metadata for discovery
+  const metadata = {
+    schemaHash: options.analyzer, // V1: Use analyzer as schema hash proxy
+    analyzerVersion: options.analyzer,
+  };
+
+  const pipeline = createDiscoveryPipeline({
+    analyzer: options.analyzer,
+    cache,
+    metadata,
+  });
   const modules = pipeline.load(options.entry);
 
   if (modules.isErr()) {

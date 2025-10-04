@@ -3,12 +3,14 @@ import type { getAstAnalyzer } from "../ast";
 import { createCanonicalId } from "../canonical-id/canonical-id";
 import { normalizeToPosix } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
-import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
+import { computeFingerprint } from "./fingerprint";
+import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition, DiscoverySnapshotMetadata } from "./types";
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   readonly cache?: DiscoveryCache;
+  readonly metadata: DiscoverySnapshotMetadata;
 };
 
 export type DiscoverModulesResult = {
@@ -22,7 +24,7 @@ export type DiscoverModulesResult = {
  * Uses AST parsing instead of RegExp for reliable dependency extraction.
  * Supports caching to skip re-parsing unchanged files.
  */
-export const discoverModules = ({ entryPaths, astAnalyzer, cache }: DiscoverModulesOptions): DiscoverModulesResult => {
+export const discoverModules = ({ entryPaths, astAnalyzer, cache, metadata }: DiscoverModulesOptions): DiscoverModulesResult => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   let cacheHits = 0;
@@ -74,12 +76,21 @@ export const discoverModules = ({ entryPaths, astAnalyzer, cache }: DiscoverModu
       canonicalId: createCanonicalId(filePath, def.astPath),
     }));
 
+    // Compute fingerprint
+    const fingerprintResult = computeFingerprint(filePath);
+    if (fingerprintResult.isErr()) {
+      throw new Error(`Failed to compute fingerprint for ${filePath}: ${fingerprintResult.error.message}`);
+    }
+    const fingerprint = fingerprintResult.value;
+
     // Create snapshot
     const snapshot: DiscoverySnapshot = {
       filePath,
       normalizedFilePath: normalizeToPosix(filePath),
       analyzer: astAnalyzer.type,
       signature,
+      fingerprint,
+      metadata,
       createdAtMs: Date.now(),
       analysis,
       definitions,

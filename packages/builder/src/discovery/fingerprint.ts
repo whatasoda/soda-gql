@@ -112,7 +112,8 @@ export function computeFingerprint(
 function computeHashSync(contents: Buffer): string {
   // If xxhash is already loaded, use it
   if (xxhashInstance !== null) {
-    return xxhashInstance.h64ToString(contents);
+    const hash = xxhashInstance.h64Raw(new Uint8Array(contents));
+    return hash.toString(16);
   }
 
   // First call: trigger async loading for next time
@@ -128,8 +129,11 @@ function computeHashSync(contents: Buffer): string {
 function simpleHash(buffer: Buffer): string {
   let hash = 0;
   for (let i = 0; i < buffer.length; i++) {
-    hash = (hash << 5) - hash + buffer[i];
-    hash = hash & hash; // Convert to 32bit integer
+    const byte = buffer[i];
+    if (byte !== undefined) {
+      hash = (hash << 5) - hash + byte;
+      hash = hash & hash; // Convert to 32bit integer
+    }
   }
   return hash.toString(16);
 }

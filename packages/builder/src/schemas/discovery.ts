@@ -10,6 +10,18 @@ import {
 
 const BuilderAnalyzerSchema = z.enum(["ts", "swc"]);
 
+const FileFingerprintSchema = z.object({
+  hash: z.string(),
+  sizeBytes: z.number(),
+  mtimeMs: z.number(),
+});
+
+const DiscoverySnapshotMetadataSchema = z.object({
+  analyzerVersion: z.string(),
+  schemaHash: z.string(),
+  pluginOptionsHash: z.string().optional(),
+});
+
 // Type-safe schema for CanonicalId - validates as string but types as branded
 const CanonicalIdSchema: z.ZodType<CanonicalId> = z.string() as unknown as z.ZodType<CanonicalId>;
 
@@ -28,6 +40,8 @@ export const DiscoverySnapshotSchema = z.object({
   normalizedFilePath: z.string(),
   analyzer: BuilderAnalyzerSchema,
   signature: z.string(),
+  fingerprint: FileFingerprintSchema,
+  metadata: DiscoverySnapshotMetadataSchema,
   createdAtMs: z.number(),
   analysis: ModuleAnalysisSchema,
   definitions: z.array(DiscoverySnapshotDefinitionSchema).readonly(),
