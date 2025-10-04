@@ -8,6 +8,7 @@ import type { DiscoveryCache, DiscoverySnapshotMetadata } from "./types";
 export type ModuleLoadStats = {
   readonly hits: number;
   readonly misses: number;
+  readonly skips?: number;
 };
 
 export type LoadedModules = {

@@ -523,7 +523,7 @@ export const createBuilderSession = (): BuilderSession => {
     const invalidatedPaths = new Set(changedFiles);
 
     // Run discovery with invalidations
-    const { snapshots } = discoverModules({
+    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
@@ -571,7 +571,7 @@ export const createBuilderSession = (): BuilderSession => {
     // Build artifact
     const artifactResult = await buildArtifact({
       graph,
-      cache: { hits: 0, misses: 0 }, // TODO: Track cache stats from discovery
+      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
       intermediateModulePath: transpiledPath,
     });
 

@@ -38,6 +38,7 @@ export type BuilderArtifact = {
     readonly cache: {
       readonly hits: number;
       readonly misses: number;
+      readonly skips?: number;
     };
   };
 };
