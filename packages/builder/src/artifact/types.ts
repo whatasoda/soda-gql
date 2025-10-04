@@ -7,7 +7,8 @@ import type { ChunkDiff, ChunkManifest } from "../intermediate-module/chunks";
 export type BuildArtifactInput = {
   readonly graph: DependencyGraph;
   readonly cache: ModuleLoadStats;
-  readonly intermediateModulePath: string;
+  readonly intermediateModulePath?: string; // Legacy single-file mode
+  readonly intermediateModulePaths?: Map<string, string>; // Chunk mode: chunkId → transpiledPath
 };
 
 export type BuilderArtifactOperation = {
