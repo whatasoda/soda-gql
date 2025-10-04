@@ -2,20 +2,23 @@ import { dirname, join, normalize, resolve } from "node:path";
 
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../artifact";
+import { computeArtifactDelta } from "../artifact/delta";
 import type { BuilderArtifact } from "../artifact/types";
 import { getAstAnalyzer } from "../ast";
 import { createJsonCache } from "../cache/json-cache";
 import type { CanonicalId } from "../canonical-id/canonical-id";
 import { buildDependencyGraph } from "../dependency-graph";
-import { buildGraphIndex, type GraphIndex } from "../dependency-graph/patcher";
+import { diffDependencyGraphs } from "../dependency-graph/differ";
+import { applyGraphPatch, buildGraphIndex, type GraphIndex } from "../dependency-graph/patcher";
 import type { DependencyGraph } from "../dependency-graph/types";
 import { createDiscoveryCache } from "../discovery";
 import { discoverModules } from "../discovery/discoverer";
 import { resolveEntryPaths } from "../discovery/entry-paths";
 import type { DiscoverySnapshot } from "../discovery/types";
-import { createIntermediateModule, createIntermediateModuleChunks } from "../intermediate-module";
-import type { WrittenChunkModule } from "../intermediate-module/chunk-writer";
-import type { ChunkManifest } from "../intermediate-module/chunks";
+import { createIntermediateModuleChunks } from "../intermediate-module";
+import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
+import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
+import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
 
@@ -513,8 +516,7 @@ export const createBuilderSession = (): BuilderSession => {
     const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
     const _affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
 
-    // V2 Strategy: Use fingerprint-based cache invalidation
-    // Pass invalidated files to discoverModules for smart cache skipping
+    // Strategy 3: True incremental rebuild with graph patches and chunk updates
     if (!state.lastInput) {
       return err({
         code: "MODULE_EVALUATION_FAILED",
@@ -523,12 +525,6 @@ export const createBuilderSession = (): BuilderSession => {
         message: "Cannot perform incremental update without previous input",
       });
     }
-
-    // For now: Full rebuild with fingerprint-aware caching
-    // This avoids re-reading unchanged files (major performance win)
-    // FUTURE (Strategy 3): True incremental discovery and graph merging
-    // - Rebuild only affected subgraph
-    // - Merge with unchanged nodes
 
     // Create or reuse discovery infrastructure
     if (!discoveryCache) {
@@ -572,7 +568,7 @@ export const createBuilderSession = (): BuilderSession => {
     // Build analyses from snapshots
     const analyses = snapshots.map((s) => s.analysis);
 
-    // Build dependency graph
+    // Build NEW dependency graph from fresh discovery
     const dependencyGraph = buildDependencyGraph(analyses);
     if (dependencyGraph.isErr()) {
       return err({
@@ -581,44 +577,133 @@ export const createBuilderSession = (): BuilderSession => {
       });
     }
 
-    const graph = dependencyGraph.value;
+    const newGraph = dependencyGraph.value;
 
-    // Store graph and build index
-    state.graph = graph;
-    state.graphIndex = buildGraphIndex(graph);
+    // Diff graphs to compute patch
+    const graphPatch = diffDependencyGraphs(state.graph, newGraph);
 
-    // Extract and store adjacency maps
-    state.moduleAdjacency = extractModuleAdjacency(graph);
-    state.definitionAdjacency = extractDefinitionAdjacency(graph);
+    // Apply patch to existing graph
+    applyGraphPatch(state.graph, state.graphIndex, graphPatch);
 
-    // Create intermediate module
+    // Update adjacency maps (full rebuild for now - could be optimized)
+    state.moduleAdjacency = extractModuleAdjacency(state.graph);
+    state.definitionAdjacency = extractDefinitionAdjacency(state.graph);
+
+    // Plan chunks from updated graph
     const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-    const intermediateModule = await createIntermediateModule({
-      graph,
-      outDir: runtimeDir,
-    });
+    const newManifest = planChunks(state.graph, state.graphIndex, runtimeDir);
 
-    if (intermediateModule.isErr()) {
-      return err(intermediateModule.error);
+    // Diff chunk manifests to find changed chunks
+    const chunkDiff = state.chunkManifest
+      ? diffChunkManifests(state.chunkManifest, newManifest)
+      : { added: newManifest.chunks, updated: new Map(), removed: new Set<string>() };
+
+    // Build only affected chunks
+    const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
+
+    if (affectedChunkIds.size > 0) {
+      // Build chunk modules for affected files
+      const allChunks = buildChunkModules({
+        graph: state.graph,
+        graphIndex: state.graphIndex,
+        outDir: runtimeDir,
+        gqlImportPath: "@/graphql-system", // TODO: compute dynamically like in buildInitial
+      });
+
+      // Filter to only affected chunks
+      const affectedChunks = new Map();
+      for (const [chunkId, chunk] of allChunks.entries()) {
+        if (affectedChunkIds.has(chunkId)) {
+          affectedChunks.set(chunkId, chunk);
+        }
+      }
+
+      // Write affected chunks to disk
+      const writeResult = await writeChunkModules({ chunks: affectedChunks, outDir: runtimeDir });
+      if (writeResult.isErr()) {
+        return err(writeResult.error);
+      }
+
+      // Update written chunks map
+      for (const [chunkId, writtenChunk] of writeResult.value.entries()) {
+        state.chunkModules.set(chunkId, writtenChunk);
+      }
+
+      // Remove deleted chunks from map
+      for (const removedChunkId of chunkDiff.removed) {
+        state.chunkModules.delete(removedChunkId as string);
+      }
     }
 
-    const { transpiledPath } = intermediateModule.value;
+    // Store updated manifest
+    state.chunkManifest = newManifest;
 
-    // Build artifact
-    const artifactResult = await buildArtifact({
-      graph,
-      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-      intermediateModulePath: transpiledPath,
-    });
-
-    if (artifactResult.isErr()) {
-      return err(artifactResult.error);
+    // Build chunk paths map for affected chunks only
+    const affectedChunkPaths = new Map<string, string>();
+    for (const chunkId of affectedChunkIds) {
+      const chunk = state.chunkModules.get(chunkId);
+      if (chunk) {
+        affectedChunkPaths.set(chunkId, chunk.transpiledPath);
+      }
     }
 
-    // Store artifact for future incremental updates
-    state.lastArtifact = artifactResult.value;
+    // Build artifact from affected chunks only if there are changes
+    if (affectedChunkPaths.size > 0) {
+      const artifactResult = await buildArtifact({
+        graph: state.graph,
+        cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+        intermediateModulePaths: affectedChunkPaths,
+      });
 
-    return artifactResult;
+      if (artifactResult.isErr()) {
+        return err(artifactResult.error);
+      }
+
+      // Merge with existing artifact
+      if (state.lastArtifact) {
+        // Compute delta
+        const delta = computeArtifactDelta(state.lastArtifact, artifactResult.value, chunkDiff, newManifest);
+
+        // Merge elements: start with old, remove deleted, add/update new
+        const mergedElements = { ...state.lastArtifact.elements };
+
+        // Remove deleted elements
+        for (const removedId of delta.removed) {
+          delete mergedElements[removedId];
+        }
+
+        // Add/update elements
+        Object.assign(mergedElements, delta.added, delta.updated);
+
+        // Create merged artifact
+        const mergedArtifact: BuilderArtifact = {
+          elements: mergedElements,
+          report: {
+            ...artifactResult.value.report,
+            cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+          },
+        };
+
+        state.lastArtifact = mergedArtifact;
+        return ok(mergedArtifact);
+      }
+
+      // No previous artifact - use new one directly
+      state.lastArtifact = artifactResult.value;
+      return ok(artifactResult.value);
+    }
+
+    // No affected chunks - return cached artifact
+    if (state.lastArtifact) {
+      return ok(state.lastArtifact);
+    }
+
+    return err({
+      code: "MODULE_EVALUATION_FAILED",
+      filePath: "",
+      astPath: "",
+      message: "No changes but no cached artifact available",
+    });
   };
 
   const getSnapshot = (): BuilderSessionSnapshot => {
