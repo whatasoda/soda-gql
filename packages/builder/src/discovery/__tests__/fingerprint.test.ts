@@ -1,13 +1,8 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, writeFileSync, rmSync, utimesSync } from "node:fs";
-import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import {
-  computeFingerprint,
-  invalidateFingerprint,
-  clearFingerprintCache,
-  type FileFingerprint,
-} from "../fingerprint.js";
+import { join } from "node:path";
+import { clearFingerprintCache, computeFingerprint, invalidateFingerprint } from "../fingerprint.js";
 
 describe("fingerprint", () => {
   let testDir: string;

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { __internal, createBuilderSession } from "@soda-gql/builder/session/builder-session";
 import type { CanonicalId } from "../../../packages/builder/src/canonical-id/canonical-id";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../../../packages/builder/src/dependency-graph/types";
 import type { DiscoverySnapshot } from "../../../packages/builder/src/discovery/types";
-import { __internal, createBuilderSession } from "@soda-gql/builder/session/builder-session";
 
 // Helper: create mock DependencyGraphNode
 const createMockNode = (
@@ -30,8 +30,14 @@ describe("BuilderSession - Internal Helpers", () => {
     test("should build adjacency from dependency graph - simple chain", () => {
       // A depends on B, B depends on C
       const graph: DependencyGraph = new Map([
-        ["/src/a.ts::foo" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/b.ts::bar" as CanonicalId])],
-        ["/src/b.ts::bar" as CanonicalId, createMockNode("/src/b.ts", "/src/b.ts::bar" as CanonicalId, ["/src/c.ts::baz" as CanonicalId])],
+        [
+          "/src/a.ts::foo" as CanonicalId,
+          createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/b.ts::bar" as CanonicalId]),
+        ],
+        [
+          "/src/b.ts::bar" as CanonicalId,
+          createMockNode("/src/b.ts", "/src/b.ts::bar" as CanonicalId, ["/src/c.ts::baz" as CanonicalId]),
+        ],
         ["/src/c.ts::baz" as CanonicalId, createMockNode("/src/c.ts", "/src/c.ts::baz" as CanonicalId, [])],
       ]);
 
@@ -58,7 +64,15 @@ describe("BuilderSession - Internal Helpers", () => {
 
     test("should handle runtime imports for modules with no dependencies", () => {
       const graph: DependencyGraph = new Map([
-        ["/src/a.ts::foo" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, [], [{ source: "./b", imported: "*", local: "b", kind: "namespace", isTypeOnly: false }])],
+        [
+          "/src/a.ts::foo" as CanonicalId,
+          createMockNode(
+            "/src/a.ts",
+            "/src/a.ts::foo" as CanonicalId,
+            [],
+            [{ source: "./b", imported: "*", local: "b", kind: "namespace", isTypeOnly: false }],
+          ),
+        ],
         ["/src/b.ts::bar" as CanonicalId, createMockNode("/src/b.ts", "/src/b.ts::bar" as CanonicalId, [])],
       ]);
 
@@ -72,7 +86,10 @@ describe("BuilderSession - Internal Helpers", () => {
 
     test("should skip self-imports", () => {
       const graph: DependencyGraph = new Map([
-        ["/src/a.ts::foo" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/a.ts::bar" as CanonicalId])],
+        [
+          "/src/a.ts::foo" as CanonicalId,
+          createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/a.ts::bar" as CanonicalId]),
+        ],
         ["/src/a.ts::bar" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::bar" as CanonicalId, [])],
       ]);
 
@@ -86,7 +103,10 @@ describe("BuilderSession - Internal Helpers", () => {
   describe("extractDefinitionAdjacency", () => {
     test("should track canonical ID dependencies", () => {
       const graph: DependencyGraph = new Map([
-        ["/src/a.ts::foo" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/b.ts::bar" as CanonicalId])],
+        [
+          "/src/a.ts::foo" as CanonicalId,
+          createMockNode("/src/a.ts", "/src/a.ts::foo" as CanonicalId, ["/src/b.ts::bar" as CanonicalId]),
+        ],
         ["/src/b.ts::bar" as CanonicalId, createMockNode("/src/b.ts", "/src/b.ts::bar" as CanonicalId, [])],
       ]);
 

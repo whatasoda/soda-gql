@@ -1,5 +1,5 @@
-import { statSync, readFileSync } from "node:fs";
-import { ok, err, type Result } from "neverthrow";
+import { readFileSync, statSync } from "node:fs";
+import { err, ok, type Result } from "neverthrow";
 import type { XXHashAPI } from "xxhash-wasm";
 
 /**
@@ -50,9 +50,7 @@ async function getXXHash(): Promise<XXHashAPI> {
  * @param path - Absolute path to file
  * @returns Result containing FileFingerprint or FingerprintError
  */
-export function computeFingerprint(
-  path: string,
-): Result<FileFingerprint, FingerprintError> {
+export function computeFingerprint(path: string): Result<FileFingerprint, FingerprintError> {
   try {
     const stats = statSync(path);
 

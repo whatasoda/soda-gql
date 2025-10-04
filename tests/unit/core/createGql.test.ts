@@ -144,7 +144,7 @@ describe("createGqlInvoker", () => {
         { variables: [$("id").scalar("ID:!")] },
         ({ f, $ }) => [
           //
-          f.user({ id: $.id })(()=> [
+          f.user({ id: $.id })(() => [
             //
             userModel.fragment(),
           ]),
