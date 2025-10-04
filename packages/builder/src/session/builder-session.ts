@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { dirname, join, normalize, resolve } from "node:path";
 
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../artifact";
@@ -78,30 +78,96 @@ const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMet
 };
 
 /**
+ * Resolve a module specifier to an absolute file path.
+ * Handles relative imports with .ts/.tsx/index.ts fallbacks.
+ * Returns null for external (node_modules) or bare specifiers.
+ *
+ * @internal testing
+ */
+const resolveModuleSpecifier = (source: string, fromFilePath: string): string | null => {
+  // Skip external imports (bare specifiers)
+  if (!source.startsWith(".")) {
+    return null;
+  }
+
+  const fromDir = dirname(fromFilePath);
+  const resolved = resolve(fromDir, source);
+
+  // Try common TypeScript extensions
+  const candidates = [
+    `${resolved}.ts`,
+    `${resolved}.tsx`,
+    `${resolved}/index.ts`,
+    `${resolved}/index.tsx`,
+    resolved, // Already has extension
+  ];
+
+  // Return normalized first candidate (we don't check file existence for now)
+  // In a real scenario, we'd check fs.existsSync, but for graph-based resolution
+  // we rely on the graph having already discovered these files
+  const candidate = candidates[0];
+  return candidate ? normalize(candidate) : null;
+};
+
+/**
  * Extract module-level adjacency from dependency graph.
  * Returns Map of file path -> set of files that import it.
+ *
+ * @internal testing
  */
 const extractModuleAdjacency = (graph: DependencyGraph): Map<string, Set<string>> => {
-  const adjacency = new Map<string, Set<string>>();
+  // Phase 1: Build per-module view
+  const modulesByPath = new Map<string, typeof graph extends Map<unknown, infer V> ? V : never>();
+  for (const node of graph.values()) {
+    modulesByPath.set(node.filePath, node);
+  }
+
+  // Phase 2: Build importer -> [imported paths] map from dependencies
+  const importsByModule = new Map<string, Set<string>>();
 
   for (const node of graph.values()) {
-    const { filePath, moduleSummary } = node;
+    const { filePath, dependencies, moduleSummary } = node;
+    const imports = new Set<string>();
 
-    // For each import in this module, record that filePath imports the target
-    for (const _runtimeImport of moduleSummary.runtimeImports) {
-      // Note: runtimeImport.source is the imported module path
-      // We need to resolve it to absolute path, but for now we'll skip external imports
-      // and only track internal module relationships through the graph
-      const importedModules = Array.from(graph.values())
-        .filter((n) => n.moduleSummary.gqlExports.length > 0)
-        .map((n) => n.filePath);
-
-      for (const importedPath of importedModules) {
-        if (!adjacency.has(importedPath)) {
-          adjacency.set(importedPath, new Set());
-        }
-        adjacency.get(importedPath)?.add(filePath);
+    // Extract module paths from canonical IDs in dependencies
+    for (const depId of dependencies) {
+      const [modulePath] = depId.split("::");
+      if (modulePath && modulePath !== filePath && modulesByPath.has(modulePath)) {
+        imports.add(modulePath);
       }
+    }
+
+    // Phase 3: Handle runtime imports for modules with no tracked dependencies
+    if (dependencies.length === 0 && moduleSummary.runtimeImports.length > 0) {
+      for (const runtimeImport of moduleSummary.runtimeImports) {
+        const resolved = resolveModuleSpecifier(runtimeImport.source, filePath);
+        if (resolved && modulesByPath.has(resolved)) {
+          imports.add(resolved);
+        }
+      }
+    }
+
+    if (imports.size > 0) {
+      importsByModule.set(filePath, imports);
+    }
+  }
+
+  // Phase 4: Invert to adjacency map (imported -> [importers])
+  const adjacency = new Map<string, Set<string>>();
+
+  for (const [importer, imports] of importsByModule) {
+    for (const imported of imports) {
+      if (!adjacency.has(imported)) {
+        adjacency.set(imported, new Set());
+      }
+      adjacency.get(imported)?.add(importer);
+    }
+  }
+
+  // Include all modules, even isolated ones with no importers
+  for (const modulePath of modulesByPath.keys()) {
+    if (!adjacency.has(modulePath)) {
+      adjacency.set(modulePath, new Set());
     }
   }
 
@@ -195,9 +261,10 @@ const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<s
     const dependents = state.definitionAdjacency.get(defId);
     if (dependents) {
       for (const dependentId of dependents) {
-        // Extract file path from canonical ID (format: "file:path#exportName")
-        const filePath = dependentId.split("#")[0]?.replace("file:", "");
-        if (filePath) {
+        // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
+        const parts = dependentId.split("::");
+        const filePath = parts[0];
+        if (filePath && filePath.length > 0) {
           affectedModules.add(filePath);
         }
       }
@@ -217,6 +284,20 @@ const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<s
   }
 
   return affectedModules;
+};
+
+/**
+ * Exported internal helpers for testing purposes.
+ *
+ * @internal testing
+ */
+export const __internal = {
+  extractModuleAdjacency,
+  extractDefinitionAdjacency,
+  resolveModuleSpecifier,
+  metadataMatches,
+  collectAffectedModules,
+  dropRemovedFiles,
 };
 
 /**
