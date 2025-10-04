@@ -172,6 +172,12 @@ export interface DiscoveryCache {
    */
   load(filePath: string, signature: string): DiscoverySnapshot | null;
   /**
+   * Peek at cached snapshot without signature validation.
+   * Used for fingerprint-based cache invalidation.
+   * Returns null when the cache entry is missing.
+   */
+  peek(filePath: string): DiscoverySnapshot | null;
+  /**
    * Persist the provided snapshot.
    */
   store(snapshot: DiscoverySnapshot): void;

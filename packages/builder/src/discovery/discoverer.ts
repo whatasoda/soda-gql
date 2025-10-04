@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import type { getAstAnalyzer } from "../ast";
 import { createCanonicalId } from "../canonical-id/canonical-id";
 import { normalizeToPosix } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
-import { computeFingerprint } from "./fingerprint";
+import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition, DiscoverySnapshotMetadata } from "./types";
 
 export type DiscoverModulesOptions = {
@@ -11,24 +11,35 @@ export type DiscoverModulesOptions = {
   readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   readonly cache?: DiscoveryCache;
   readonly metadata: DiscoverySnapshotMetadata;
+  /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
+  readonly invalidatedPaths?: ReadonlySet<string>;
 };
 
 export type DiscoverModulesResult = {
   readonly snapshots: readonly DiscoverySnapshot[];
   readonly cacheHits: number;
   readonly cacheMisses: number;
+  readonly cacheSkips: number;
 };
 
 /**
  * Discover and analyze all modules starting from entry points.
  * Uses AST parsing instead of RegExp for reliable dependency extraction.
- * Supports caching to skip re-parsing unchanged files.
+ * Supports caching with fingerprint-based invalidation to skip re-parsing unchanged files.
  */
-export const discoverModules = ({ entryPaths, astAnalyzer, cache, metadata }: DiscoverModulesOptions): DiscoverModulesResult => {
+export const discoverModules = ({
+  entryPaths,
+  astAnalyzer,
+  cache,
+  metadata,
+  invalidatedPaths,
+}: DiscoverModulesOptions): DiscoverModulesResult => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
+  const invalidatedSet = invalidatedPaths ?? new Set<string>();
   let cacheHits = 0;
   let cacheMisses = 0;
+  let cacheSkips = 0;
 
   while (stack.length > 0) {
     const filePath = stack.pop();
@@ -36,25 +47,42 @@ export const discoverModules = ({ entryPaths, astAnalyzer, cache, metadata }: Di
       continue;
     }
 
+    // Check if explicitly invalidated
+    if (invalidatedSet.has(filePath)) {
+      invalidateFingerprint(filePath);
+      cacheSkips++;
+      // Fall through to re-read and re-parse
+    } else if (cache) {
+      // Try fingerprint-based cache check (avoid reading file)
+      const cached = cache.peek(filePath);
+      if (cached) {
+        try {
+          // Fast path: check mtime/size without reading file content
+          const stats = statSync(filePath);
+          const mtimeMs = stats.mtimeMs;
+          const sizeBytes = stats.size;
+
+          // If fingerprint matches, reuse cached snapshot
+          if (cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
+            snapshots.set(filePath, cached);
+            cacheHits++;
+            // Enqueue dependencies from cache
+            for (const dep of cached.dependencies) {
+              if (dep.resolvedPath && !snapshots.has(dep.resolvedPath)) {
+                stack.push(dep.resolvedPath);
+              }
+            }
+            continue;
+          }
+        } catch {
+          // File may have been deleted or inaccessible, fall through to re-read
+        }
+      }
+    }
+
     // Read source and compute signature
     const source = readFileSync(filePath, "utf8");
     const signature = createSourceHash(source);
-
-    // Check cache first
-    if (cache) {
-      const cached = cache.load(filePath, signature);
-      if (cached) {
-        snapshots.set(filePath, cached);
-        cacheHits++;
-        // Enqueue dependencies from cache
-        for (const dep of cached.dependencies) {
-          if (dep.resolvedPath && !snapshots.has(dep.resolvedPath)) {
-            stack.push(dep.resolvedPath);
-          }
-        }
-        continue;
-      }
-    }
 
     // Parse module
     const analysis = astAnalyzer.analyze({ filePath, source });
@@ -112,5 +140,6 @@ export const discoverModules = ({ entryPaths, astAnalyzer, cache, metadata }: Di
     snapshots: Array.from(snapshots.values()),
     cacheHits,
     cacheMisses,
+    cacheSkips,
   };
 };
