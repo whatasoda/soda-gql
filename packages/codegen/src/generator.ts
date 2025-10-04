@@ -429,7 +429,7 @@ const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDe
 const renderScalarDefinition = (record: ScalarRecord): string => {
   const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
   const scalarType = `type<{ input: ${typeInfo.input}; output: ${typeInfo.output} }>()`;
-  return `...define("${record.name}").scalar(${scalarType}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").scalar(${scalarType}, ${renderDirectives(record.directives)})`;
 };
 
 const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -439,7 +439,7 @@ const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string =
   }
 
   const fields = renderObjectFields(schema, record.fields);
-  return `...define("${record.name}").object(${fields}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").object(${fields}, ${renderDirectives(record.directives)})`;
 };
 
 const renderInputDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -449,7 +449,7 @@ const renderInputDefinition = (schema: SchemaIndex, typeName: string): string =>
   }
 
   const fields = renderInputFields(schema, record.fields);
-  return `...define("${record.name}").input(${fields}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").input(${fields}, ${renderDirectives(record.directives)})`;
 };
 
 const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -464,7 +464,7 @@ const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => 
     .join(", ");
   const body = values.length === 0 ? "{}" : `{ ${values} }`;
 
-  return `...define("${record.name}").enum(${body}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").enum(${body}, ${renderDirectives(record.directives)})`;
 };
 
 const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -479,7 +479,7 @@ const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string =>
     .join(", ");
   const body = members.length === 0 ? "{}" : `{ ${members} }`;
 
-  return `...define("${record.name}").union(${body}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").union(${body}, ${renderDirectives(record.directives)})`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>

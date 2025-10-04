@@ -33,7 +33,7 @@ const schema = {
   enum: {},
   input: {},
   object: {
-    ...define("Query").object(
+    Query: define("Query").object(
       {
         user: unsafeOutputRef.object("User:!", {
           arguments: {
@@ -44,9 +44,9 @@ const schema = {
       },
       {},
     ),
-    ...define("Mutation").object({}, {}),
-    ...define("Subscription").object({}, {}),
-    ...define("User").object(
+    Mutation: define("Mutation").object({}, {}),
+    Subscription: define("Subscription").object({}, {}),
+    User: define("User").object(
       {
         id: unsafeOutputRef.scalar("ID:!", { directives: {} }),
         name: unsafeOutputRef.scalar("String:!", { directives: {} }),
@@ -74,12 +74,13 @@ describe("createGqlInvoker", () => {
       idVarRef = $("id").scalar("ID:!");
       fieldArgRef = $("id").byField("Query", "user", "id");
 
-      return model(
-        { typename: "User" },
-        ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        }),
+      return model.User(
+        {},
+        ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
         (selected) => ({
           id: selected.id,
           label: selected.name,
@@ -98,12 +99,13 @@ describe("createGqlInvoker", () => {
 
   it("creates model descriptors with fragment + normalize wiring", () => {
     const userModel = gql(({ model }) =>
-      model(
-        { typename: "User" },
-        ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        }),
+      model.User(
+        {},
+        ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
         (selected) => ({
           id: selected.id,
           label: selected.name,
@@ -123,12 +125,13 @@ describe("createGqlInvoker", () => {
 
   it("creates query slices and operations that reuse registered models", () => {
     const userModel = gql(({ model }) =>
-      model(
-        { typename: "User" },
-        ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        }),
+      model.User(
+        {},
+        ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
         (selected) => ({
           id: selected.id,
           name: selected.name,
@@ -138,12 +141,14 @@ describe("createGqlInvoker", () => {
 
     const userSlice = gql(({ slice }, { $ }) =>
       slice.query(
-        { variables: $("id").scalar("ID:!") },
-        ({ _: f, $: $$ }) => ({
-          ...f.user({ id: $$.id }, () => ({
-            ...userModel.fragment(),
-          })),
-        }),
+        { variables: [$("id").scalar("ID:!")] },
+        ({ f, $ }) => [
+          //
+          f.user({ id: $.id })(()=> [
+            //
+            userModel.fragment(),
+          ]),
+        ],
         ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.normalize(data))),
       ),
     );
@@ -155,10 +160,10 @@ describe("createGqlInvoker", () => {
       operation.query(
         {
           operationName: "ProfilePageQuery",
-          variables: $("userId").scalar("ID:!"),
+          variables: [$("userId").scalar("ID:!")],
         },
-        ({ $: $$ }) => ({
-          user: userSlice.build({ id: $$.userId }),
+        ({ $ }) => ({
+          user: userSlice.build({ id: $.userId }),
         }),
       ),
     );

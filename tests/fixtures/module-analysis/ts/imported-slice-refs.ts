@@ -6,7 +6,7 @@ export const pageQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProfilePageQuery",
-      variables: { ...$("userId").scalar("ID:!") },
+      variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       users: userSlice.build({ id: $.userId }),

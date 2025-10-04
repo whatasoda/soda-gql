@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactoriesInner } from "../../../packages/core/src/buildtime/fields-builder";
+import { createFieldFactories } from "../../../packages/core/src/buildtime/fields-builder";
 import { createVarBuilder } from "../../../packages/core/src/buildtime/var-builder";
 import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
 
@@ -14,16 +14,16 @@ describe("Schema Edge Cases", () => {
           subscription: null,
         },
         scalar: {
-          ...defineScalar("String", ({ type }) => ({
+          String: defineScalar("String", ({ type }) => ({
             input: type<string>(),
             output: type<string>(),
             directives: {},
-          })),
+          })).String,
         },
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               user: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
             },
@@ -61,7 +61,7 @@ describe("Schema Edge Cases", () => {
       // Attempting to create field factories for non-existent object
       expect(() => {
         // @ts-expect-error - Testing runtime error handling for non-existent type
-        createFieldFactoriesInner(schema, "NonExistentObject");
+        createFieldFactories(schema, "NonExistentObject");
       }).toThrow();
     });
   });
@@ -78,7 +78,7 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               // Create a field with an invalid kind by casting
               weirdField: {
@@ -96,7 +96,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactoriesInner(schema, "Query");
+        createFieldFactories(schema, "Query");
       }).toThrow("Unsupported field type");
     });
   });
@@ -113,7 +113,7 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               result: unsafeOutputRef.union("SearchResult:!", { arguments: {}, directives: {} }),
             },
@@ -121,7 +121,7 @@ describe("Schema Edge Cases", () => {
           ),
         },
         union: {
-          ...define("SearchResult").union(
+          SearchResult: define("SearchResult").union(
             {
               MissingType: true, // This type doesn't exist in objects
             },
@@ -132,7 +132,7 @@ describe("Schema Edge Cases", () => {
 
       // The current implementation doesn't throw, it handles it gracefully
       // We should test that it doesn't crash instead
-      const factories = createFieldFactoriesInner(schema, "Query");
+      const factories = createFieldFactories(schema, "Query");
       expect(factories).toBeDefined();
       expect(factories.result).toBeDefined();
     });
@@ -156,13 +156,13 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               node: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }),
             },
             {},
           ),
-          ...define("Node").object(
+          Node: define("Node").object(
             {
               id: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
               parent: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }), // Circular reference
@@ -175,7 +175,7 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       // Should handle circular references without infinite loop
-      const factories = createFieldFactoriesInner(schema, "Node");
+      const factories = createFieldFactories(schema, "Node");
       expect(factories).toBeDefined();
       expect(factories.parent).toBeDefined();
       expect(factories.children).toBeDefined();
