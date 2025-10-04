@@ -18,7 +18,7 @@ export const userModel = gql.default(({ model }, { $ }) =>
     },
     ({ f, $ }) => [
       //
-      f.id(null, { alias: "uuid" }),
+      f.id(),
       f.name(),
       f.posts({ categoryId: $.categoryId })(({ f }) => [
         //
@@ -27,7 +27,7 @@ export const userModel = gql.default(({ model }, { $ }) =>
       ]),
     ],
     (selection) => ({
-      id: selection.uuid,
+      id: selection.id,
       name: selection.name,
       posts: selection.posts.map((post) => ({
         id: post.id,

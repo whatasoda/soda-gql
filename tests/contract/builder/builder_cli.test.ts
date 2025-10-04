@@ -164,9 +164,9 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "DuplicatedName",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+      ],
     },
     ({ $ }) => ({
       users: userSlice.build({ id: $.userId }),

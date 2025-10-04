@@ -21,19 +21,33 @@ import type {
 } from "../types/schema";
 import { wrapValueByKey } from "../types/shared/utility";
 
-const cache = new Map<string, Record<string, AnyFieldSelectionFactory>>();
+// Cache is schema-scoped to avoid cross-schema contamination when multiple schemas share type names
+type CacheMap = Map<string, Record<string, AnyFieldSelectionFactory>>;
+
+const cacheMapBySchema = new WeakMap<AnyGraphqlSchema, CacheMap>();
+const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
+  const cachedCacheMap = cacheMapBySchema.get(schema);
+  if (cachedCacheMap) {
+    return cachedCacheMap;
+  }
+
+  const cacheMap: CacheMap = new Map();
+  cacheMapBySchema.set(schema, cacheMap);
+  return cacheMap;
+};
 
 export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
   schema: TSchema,
   typeName: TTypeName,
 ): FieldSelectionFactories<TSchema, TTypeName> => {
-  const cached = cache.get(typeName);
+  const cacheMap = ensureCacheMapBySchema(schema);
+  const cached = cacheMap.get(typeName);
   if (cached) {
     return cached as unknown as FieldSelectionFactories<TSchema, TTypeName>;
   }
 
   const factories = createFieldFactoriesInner(schema, typeName);
-  cache.set(typeName, factories as unknown as Record<string, AnyFieldSelectionFactory>);
+  cacheMap.set(typeName, factories as unknown as Record<string, AnyFieldSelectionFactory>);
 
   return factories;
 };

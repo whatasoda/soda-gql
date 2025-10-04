@@ -96,7 +96,9 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactories(schema, "Query");
+        const factories = createFieldFactories(schema, "Query");
+        // Trigger the factory to execute by accessing the invalid field
+        (factories as any).weirdField();
       }).toThrow("Unsupported field type");
     });
   });
