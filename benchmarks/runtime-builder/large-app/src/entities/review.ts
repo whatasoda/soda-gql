@@ -14,26 +14,24 @@ type ReviewModel = {
 };
 
 export const reviewModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Review",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.product(({ f }) => ({
-        ...f.id(),
-      })),
-      ...f.user(({ f }) => ({
-        ...f.id(),
-      })),
-      ...f.rating(),
-      ...f.title(),
-      ...f.comment(),
-      ...f.helpful(),
-      ...f.verified(),
-      ...f.createdAt(),
-      ...f.updatedAt(),
-    }),
+  model.Review(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.product()(({ f }) => [
+        f.id(),
+      ]),
+      f.user()(({ f }) => [
+        f.id(),
+      ]),
+      f.rating(),
+      f.title(),
+      f.comment(),
+      f.helpful(),
+      f.verified(),
+      f.createdAt(),
+      f.updatedAt(),
+    ],
     (selection): ReviewModel => ({
       id: selection.id,
       productId: selection.product.id,
@@ -52,18 +50,18 @@ export const reviewModel = gql.default(({ model }) =>
 export const reviewSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("productId").scalar("ID:?"),
-        ...$("userId").scalar("ID:?"),
-        ...$("minRating").scalar("Int:?"),
-        ...$("limit").scalar("Int:?"),
-      },
+      variables: [
+        $("productId").scalar("ID:?"),
+        $("userId").scalar("ID:?"),
+        $("minRating").scalar("Int:?"),
+        $("limit").scalar("Int:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.reviews({ productId: $.productId, userId: $.userId, minRating: $.minRating, limit: $.limit }, () => ({
-        ...reviewModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.reviews({ productId: $.productId, userId: $.userId, minRating: $.minRating, limit: $.limit })(() => [
+        reviewModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.reviews"], (result) => result.map((data) => data.map((review) => reviewModel.normalize(review)))),
   ),
 );
@@ -71,19 +69,19 @@ export const reviewSlice = gql.default(({ slice }, { $ }) =>
 export const addReviewSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("productId").scalar("ID:!"),
-        ...$("userId").scalar("ID:!"),
-        ...$("rating").scalar("Int:!"),
-        ...$("title").scalar("String:?"),
-        ...$("comment").scalar("String:?"),
-      },
+      variables: [
+        $("productId").scalar("ID:!"),
+        $("userId").scalar("ID:!"),
+        $("rating").scalar("Int:!"),
+        $("title").scalar("String:?"),
+        $("comment").scalar("String:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.addReview({ input: { productId: $.productId, userId: $.userId, rating: $.rating, title: $.title, comment: $.comment } }, () => ({
-        ...reviewModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.addReview({ input: { productId: $.productId, userId: $.userId, rating: $.rating, title: $.title, comment: $.comment } })(() => [
+        reviewModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.addReview"], (result) => result.map((data) => reviewModel.normalize(data))),
   ),
 );

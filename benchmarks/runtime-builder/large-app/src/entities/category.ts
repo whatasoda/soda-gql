@@ -9,17 +9,15 @@ type CategoryModel = {
 };
 
 export const categoryModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Category",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.slug(),
-      ...f.description(),
-      ...f.productCount(),
-    }),
+  model.Category(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+      f.slug(),
+      f.description(),
+      f.productCount(),
+    ],
     (selection): CategoryModel => ({
       id: selection.id,
       name: selection.name,
@@ -33,15 +31,13 @@ export const categoryModel = gql.default(({ model }) =>
 export const categorySlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("parentId").scalar("ID:?"),
-      },
+      variables: [$("parentId").scalar("ID:?")],
     },
-    ({ f, $ }) => ({
-      ...f.categories({ parentId: $.parentId }, () => ({
-        ...categoryModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.categories({ parentId: $.parentId })(() => [
+        categoryModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.categories"], (result) => result.map((data) => data.map((category) => categoryModel.normalize(category)))),
   ),
 );

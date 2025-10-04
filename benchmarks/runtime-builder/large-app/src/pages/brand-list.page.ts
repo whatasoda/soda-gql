@@ -5,9 +5,9 @@ export const brandListQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "BrandList",
-      variables: {
-        ...$("limit").scalar("Int:?"),
-      },
+      variables: [
+        $("limit").scalar("Int:?"),
+      ],
     },
     ({ $ }) => ({
       brands: brandSlice.build({ limit: $.limit }),

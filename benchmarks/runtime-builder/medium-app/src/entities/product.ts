@@ -14,14 +14,12 @@ type ProductModel = {
 };
 
 export const categoryFragment = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Category",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
+  model.Category(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+    ],
     (selection): CategoryModel => ({
       id: selection.id,
       name: selection.name,
@@ -30,19 +28,17 @@ export const categoryFragment = gql.default(({ model }) =>
 );
 
 export const productModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Product",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.description(),
-      ...f.price(),
-      ...f.category(() => ({
-        ...categoryFragment.fragment(),
-      })),
-    }),
+  model.Product(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+      f.description(),
+      f.price(),
+      f.category()(() => [
+        categoryFragment.fragment(),
+      ]),
+    ],
     (selection): ProductModel => ({
       id: selection.id,
       name: selection.name,
@@ -56,29 +52,29 @@ export const productModel = gql.default(({ model }) =>
 export const productSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("categoryId").scalar("ID:?"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("categoryId").scalar("ID:?"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.products({ categoryId: $.categoryId, limit: $.limit, offset: $.offset }, ({ f }) => ({
-        ...f.edges(({ f }) => ({
-          ...f.node(() => ({
-            ...productModel.fragment(),
-          })),
-          ...f.cursor(),
-        })),
-        ...f.pageInfo(({ f }) => ({
-          ...f.hasNextPage(),
-          ...f.hasPreviousPage(),
-          ...f.startCursor(),
-          ...f.endCursor(),
-        })),
-        ...f.totalCount(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.products({ categoryId: $.categoryId, limit: $.limit, offset: $.offset })(({ f }) => [
+        f.edges()(({ f }) => [
+          f.node()(() => [
+            productModel.fragment(),
+          ]),
+          f.cursor(),
+        ]),
+        f.pageInfo()(({ f }) => [
+          f.hasNextPage(),
+          f.hasPreviousPage(),
+          f.startCursor(),
+          f.endCursor(),
+        ]),
+        f.totalCount(),
+      ]),
+    ],
     ({ select }) => select(["$.products"], (result) => result.map((data) => ({
       products: data.edges.map((edge) => productModel.normalize(edge.node)),
       pageInfo: data.pageInfo,
@@ -90,18 +86,18 @@ export const productSlice = gql.default(({ slice }, { $ }) =>
 export const createProductSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("name").scalar("String:!"),
-        ...$("description").scalar("String:?"),
-        ...$("price").scalar("Float:!"),
-        ...$("categoryId").scalar("ID:!"),
-      },
+      variables: [
+        $("name").scalar("String:!"),
+        $("description").scalar("String:?"),
+        $("price").scalar("Float:!"),
+        $("categoryId").scalar("ID:!"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.createProduct({ name: $.name, description: $.description, price: $.price, categoryId: $.categoryId }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.createProduct({ name: $.name, description: $.description, price: $.price, categoryId: $.categoryId })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.createProduct"], (result) => result.map((data) => productModel.normalize(data))),
   ),
 );

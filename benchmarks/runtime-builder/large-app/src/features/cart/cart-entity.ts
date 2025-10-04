@@ -19,27 +19,25 @@ type CartModel = {
 };
 
 export const cartModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Cart",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.userId(),
-      ...f.items(({ f }) => ({
-        ...f.id(),
-        ...f.product(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.price(),
-        })),
-        ...f.quantity(),
-        ...f.addedAt(),
-      })),
-      ...f.subtotal(),
-      ...f.itemCount(),
-      ...f.updatedAt(),
-    }),
+  model.Cart(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.userId(),
+      f.items()(({ f }) => [
+        f.id(),
+        f.product()(({ f}) => [
+          f.id(),
+          f.name(),
+          f.price(),
+        ]),
+        f.quantity(),
+        f.addedAt(),
+      ]),
+      f.subtotal(),
+      f.itemCount(),
+      f.updatedAt(),
+    ],
     (selection): CartModel => ({
       id: selection.id,
       userId: selection.userId,
@@ -61,15 +59,13 @@ export const cartModel = gql.default(({ model }) =>
 export const cartSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-      },
+      variables: [$("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.cart({ userId: $.userId }, () => ({
-        ...cartModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.cart({ userId: $.userId })(() => [
+        cartModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.cart"], (result) => result.map((data) => (data ? cartModel.normalize(data) : null))),
   ),
 );
@@ -77,17 +73,17 @@ export const cartSlice = gql.default(({ slice }, { $ }) =>
 export const addToCartSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("productId").scalar("ID:!"),
-        ...$("quantity").scalar("Int:!"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("productId").scalar("ID:!"),
+        $("quantity").scalar("Int:!"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.addToCart({ input: { userId: $.userId, productId: $.productId, quantity: $.quantity } }, () => ({
-        ...cartModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.addToCart({ input: { userId: $.userId, productId: $.productId, quantity: $.quantity } })(() => [
+        cartModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.addToCart"], (result) => result.map((data) => cartModel.normalize(data))),
   ),
 );
@@ -95,15 +91,13 @@ export const addToCartSlice = gql.default(({ slice }, { $ }) =>
 export const cartUpdatedSlice = gql.default(({ slice }, { $ }) =>
   slice.subscription(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-      },
+      variables: [$("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.cartUpdated({ userId: $.userId }, () => ({
-        ...cartModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.cartUpdated({ userId: $.userId })(() => [
+        cartModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.cartUpdated"], (result) => result.map((data) => cartModel.normalize(data))),
   ),
 );

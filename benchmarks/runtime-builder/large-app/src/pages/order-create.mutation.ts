@@ -5,13 +5,13 @@ export const createOrderMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
       operationName: "CreateOrder",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("items").scalar("[OrderItemInput!]:!"),
-        ...$("shippingAddressId").scalar("ID:!"),
-        ...$("billingAddressId").scalar("ID:!"),
-        ...$("notes").scalar("String:?"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("items").scalar("[OrderItemInput!]:!"),
+        $("shippingAddressId").scalar("ID:!"),
+        $("billingAddressId").scalar("ID:!"),
+        $("notes").scalar("String:?"),
+      ],
     },
     ({ $ }) => ({
       order: createOrderSlice.build({

@@ -12,20 +12,18 @@ type UserModel = {
 };
 
 export const userModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "User",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.email(),
-      ...f.firstName(),
-      ...f.lastName(),
-      ...f.role(),
-      ...f.avatar(),
-      ...f.createdAt(),
-      ...f.lastLoginAt(),
-    }),
+  model.User(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.email(),
+      f.firstName(),
+      f.lastName(),
+      f.role(),
+      f.avatar(),
+      f.createdAt(),
+      f.lastLoginAt(),
+    ],
     (selection): UserModel => ({
       id: selection.id,
       email: selection.email,
@@ -42,15 +40,13 @@ export const userModel = gql.default(({ model }) =>
 export const userSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.user({ id: $.id }, () => ({
-        ...userModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.id })(() => [
+        userModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.user"], (result) => result.map((data) => (data ? userModel.normalize(data) : null))),
   ),
 );
@@ -58,18 +54,18 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 export const updateUserSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-        ...$("firstName").scalar("String:?"),
-        ...$("lastName").scalar("String:?"),
-        ...$("avatar").scalar("String:?"),
-      },
+      variables: [
+        $("id").scalar("ID:!"),
+        $("firstName").scalar("String:?"),
+        $("lastName").scalar("String:?"),
+        $("avatar").scalar("String:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.updateUserProfile({ id: $.id, firstName: $.firstName, lastName: $.lastName, avatar: $.avatar }, () => ({
-        ...userModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.updateUserProfile({ id: $.id, firstName: $.firstName, lastName: $.lastName, avatar: $.avatar })(() => [
+        userModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.updateUserProfile"], (result) => result.map((data) => userModel.normalize(data))),
   ),
 );

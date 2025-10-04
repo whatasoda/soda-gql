@@ -9,17 +9,15 @@ type BrandModel = {
 };
 
 export const brandModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Brand",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.slug(),
-      ...f.description(),
-      ...f.logo(),
-    }),
+  model.Brand(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+      f.slug(),
+      f.description(),
+      f.logo(),
+    ],
     (selection): BrandModel => ({
       id: selection.id,
       name: selection.name,
@@ -33,15 +31,13 @@ export const brandModel = gql.default(({ model }) =>
 export const brandSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("limit").scalar("Int:?"),
-      },
+      variables: [$("limit").scalar("Int:?")],
     },
-    ({ f, $ }) => ({
-      ...f.brands({ limit: $.limit }, () => ({
-        ...brandModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.brands({ limit: $.limit })(() => [
+        brandModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.brands"], (result) => result.map((data) => data.map((brand) => brandModel.normalize(brand)))),
   ),
 );

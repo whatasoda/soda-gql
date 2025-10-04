@@ -5,9 +5,9 @@ export const cartUpdatedSubscription = gql.default(({ operation }, { $ }) =>
   operation.subscription(
     {
       operationName: "CartUpdated",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+      ],
     },
     ({ $ }) => ({
       cart: cartUpdatedSlice.build({ userId: $.userId }),

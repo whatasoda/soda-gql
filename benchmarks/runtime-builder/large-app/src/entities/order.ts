@@ -40,55 +40,53 @@ type OrderModel = {
 };
 
 export const orderModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Order",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.userId(),
-      ...f.items(({ f }) => ({
-        ...f.id(),
-        ...f.product(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-        ...f.quantity(),
-        ...f.priceAtPurchase(),
-        ...f.discountAtPurchase(),
-        ...f.totalPrice(),
-      })),
-      ...f.status(),
-      ...f.paymentStatus(),
-      ...f.shippingAddress(({ f }) => ({
-        ...f.id(),
-        ...f.type(),
-        ...f.street(),
-        ...f.city(),
-        ...f.state(),
-        ...f.country(),
-        ...f.postalCode(),
-        ...f.isDefault(),
-      })),
-      ...f.billingAddress(({ f }) => ({
-        ...f.id(),
-        ...f.type(),
-        ...f.street(),
-        ...f.city(),
-        ...f.state(),
-        ...f.country(),
-        ...f.postalCode(),
-        ...f.isDefault(),
-      })),
-      ...f.subtotal(),
-      ...f.tax(),
-      ...f.shippingCost(),
-      ...f.discount(),
-      ...f.totalAmount(),
-      ...f.notes(),
-      ...f.createdAt(),
-      ...f.updatedAt(),
-    }),
+  model.Order(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.userId(),
+      f.items()(({ f }) => [
+        f.id(),
+        f.product()(({ f }) => [
+          f.id(),
+          f.name(),
+        ]),
+        f.quantity(),
+        f.priceAtPurchase(),
+        f.discountAtPurchase(),
+        f.totalPrice(),
+      ]),
+      f.status(),
+      f.paymentStatus(),
+      f.shippingAddress()(({ f }) => [
+        f.id(),
+        f.type(),
+        f.street(),
+        f.city(),
+        f.state(),
+        f.country(),
+        f.postalCode(),
+        f.isDefault(),
+      ]),
+      f.billingAddress()(({ f }) => [
+        f.id(),
+        f.type(),
+        f.street(),
+        f.city(),
+        f.state(),
+        f.country(),
+        f.postalCode(),
+        f.isDefault(),
+      ]),
+      f.subtotal(),
+      f.tax(),
+      f.shippingCost(),
+      f.discount(),
+      f.totalAmount(),
+      f.notes(),
+      f.createdAt(),
+      f.updatedAt(),
+    ],
     (selection): OrderModel => ({
       id: selection.id,
       userId: selection.userId,
@@ -138,15 +136,13 @@ export const orderModel = gql.default(({ model }) =>
 export const orderDetailSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.order({ id: $.id }, () => ({
-        ...orderModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.order({ id: $.id })(() => [
+        orderModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.order"], (result) => result.map((data) => (data ? orderModel.normalize(data) : null))),
   ),
 );
@@ -154,30 +150,30 @@ export const orderDetailSlice = gql.default(({ slice }, { $ }) =>
 export const orderSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("status").scalar("OrderStatus:?"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("status").scalar("OrderStatus:?"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.orders({ userId: $.userId, status: $.status, dateRange: null, limit: $.limit, offset: $.offset }, ({ f }) => ({
-        ...f.edges(({ f }) => ({
-          ...f.node(() => ({
-            ...orderModel.fragment(),
-          })),
-          ...f.cursor(),
-        })),
-        ...f.pageInfo(({ f }) => ({
-          ...f.hasNextPage(),
-          ...f.hasPreviousPage(),
-          ...f.startCursor(),
-          ...f.endCursor(),
-        })),
-        ...f.totalCount(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.orders({ userId: $.userId, status: $.status, dateRange: null, limit: $.limit, offset: $.offset })(({ f }) => [
+        f.edges()(({ f }) => [
+          f.node()(() => [
+            orderModel.fragment(),
+          ]),
+          f.cursor(),
+        ]),
+        f.pageInfo()(({ f }) => [
+          f.hasNextPage(),
+          f.hasPreviousPage(),
+          f.startCursor(),
+          f.endCursor(),
+        ]),
+        f.totalCount(),
+      ]),
+    ],
     ({ select }) => select(["$.orders"], (result) => result.map((data) => ({
       orders: data.edges.map((edge) => orderModel.normalize(edge.node)),
       pageInfo: data.pageInfo,
@@ -189,16 +185,16 @@ export const orderSlice = gql.default(({ slice }, { $ }) =>
 export const createOrderSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("items").scalar("[OrderItemInput!]:!"),
-        ...$("shippingAddressId").scalar("ID:!"),
-        ...$("billingAddressId").scalar("ID:!"),
-        ...$("notes").scalar("String:?"),
-      },
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("items").scalar("[OrderItemInput!]:!"),
+        $("shippingAddressId").scalar("ID:!"),
+        $("billingAddressId").scalar("ID:!"),
+        $("notes").scalar("String:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.createOrder({
+    ({ f, $ }) => [
+      f.createOrder({
         input: {
           userId: $.userId,
           items: $.items,
@@ -206,10 +202,10 @@ export const createOrderSlice = gql.default(({ slice }, { $ }) =>
           billingAddressId: $.billingAddressId,
           notes: $.notes,
         },
-      }, () => ({
-        ...orderModel.fragment(),
-      })),
-    }),
+      })(() => [
+        orderModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.createOrder"], (result) => result.map((data) => orderModel.normalize(data))),
   ),
 );
@@ -217,15 +213,13 @@ export const createOrderSlice = gql.default(({ slice }, { $ }) =>
 export const orderStatusSlice = gql.default(({ slice }, { $ }) =>
   slice.subscription(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-      },
+      variables: [$("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.orderStatusChanged({ userId: $.userId }, () => ({
-        ...orderModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.orderStatusChanged({ userId: $.userId })(() => [
+        orderModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.orderStatusChanged"], (result) => result.map((data) => orderModel.normalize(data))),
   ),
 );

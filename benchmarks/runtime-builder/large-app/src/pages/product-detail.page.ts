@@ -5,9 +5,9 @@ export const productDetailQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProductDetail",
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [
+        $("id").scalar("ID:!"),
+      ],
     },
     ({ $ }) => ({
       product: productDetailSlice.build({ id: $.id }),

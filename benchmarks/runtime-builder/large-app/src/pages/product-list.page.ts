@@ -5,12 +5,12 @@ export const productListQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProductList",
-      variables: {
-        ...$("categoryId").scalar("ID:?"),
-        ...$("brandId").scalar("ID:?"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("categoryId").scalar("ID:?"),
+        $("brandId").scalar("ID:?"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
     ({ $ }) => ({
       products: productListSlice.build({

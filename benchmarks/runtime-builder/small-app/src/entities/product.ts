@@ -7,15 +7,13 @@ type ProductModel = {
 };
 
 export const productModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Product",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.price(),
-    }),
+  model.Product(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+      f.price(),
+    ],
     (selection): ProductModel => ({
       id: selection.id,
       name: selection.name,
@@ -27,15 +25,13 @@ export const productModel = gql.default(({ model }) =>
 export const productSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("limit").scalar("Int:?"),
-      },
+      variables: [$("limit").scalar("Int:?")],
     },
-    ({ f, $ }) => ({
-      ...f.products({ limit: $.limit }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.products({ limit: $.limit })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.products"], (result) => result.map((data) => data.map((product) => productModel.normalize(product)))),
   ),
 );
@@ -43,16 +39,13 @@ export const productSlice = gql.default(({ slice }, { $ }) =>
 export const createProductSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("name").scalar("String:!"),
-        ...$("price").scalar("Float:!"),
-      },
+      variables: [$("name").scalar("String:!"), $("price").scalar("Float:!")],
     },
-    ({ f, $ }) => ({
-      ...f.createProduct({ name: $.name, price: $.price }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.createProduct({ name: $.name, price: $.price })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.createProduct"], (result) => result.map((data) => productModel.normalize(data))),
   ),
 );

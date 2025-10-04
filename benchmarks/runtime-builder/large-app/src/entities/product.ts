@@ -43,43 +43,41 @@ type ProductModel = {
 };
 
 export const productModel = gql.default(({ model }) =>
-  model(
-    {
-      typename: "Product",
-    },
-    ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.description(),
-      ...f.price(),
-      ...f.discountedPrice(),
-      ...f.sku(),
-      ...f.stockQuantity(),
-      ...f.category(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.slug(),
-      })),
-      ...f.brand(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.slug(),
-      })),
-      ...f.images(({ f }) => ({
-        ...f.id(),
-        ...f.url(),
-        ...f.alt(),
-        ...f.isPrimary(),
-        ...f.order(),
-      })),
-      ...f.attributes(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.value(),
-      })),
-      ...f.averageRating(),
-      ...f.reviewCount(),
-    }),
+  model.Product(
+    {},
+    ({ f }) => [
+      f.id(),
+      f.name(),
+      f.description(),
+      f.price(),
+      f.discountedPrice(),
+      f.sku(),
+      f.stockQuantity(),
+      f.category()(({ f }) => [
+        f.id(),
+        f.name(),
+        f.slug(),
+      ]),
+      f.brand()(({ f }) => [
+        f.id(),
+        f.name(),
+        f.slug(),
+      ]),
+      f.images()(({ f }) => [
+        f.id(),
+        f.url(),
+        f.alt(),
+        f.isPrimary(),
+        f.order(),
+      ]),
+      f.attributes()(({ f }) => [
+        f.id(),
+        f.name(),
+        f.value(),
+      ]),
+      f.averageRating(),
+      f.reviewCount(),
+    ],
     (selection): ProductModel => ({
       id: selection.id,
       name: selection.name,
@@ -119,30 +117,30 @@ export const productModel = gql.default(({ model }) =>
 export const productListSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("categoryId").scalar("ID:?"),
-        ...$("brandId").scalar("ID:?"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("categoryId").scalar("ID:?"),
+        $("brandId").scalar("ID:?"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.products({ categoryId: $.categoryId, brandId: $.brandId, priceRange: null, limit: $.limit, offset: $.offset }, ({ f }) => ({
-        ...f.edges(({ f }) => ({
-          ...f.node(() => ({
-            ...productModel.fragment(),
-          })),
-          ...f.cursor(),
-        })),
-        ...f.pageInfo(({ f }) => ({
-          ...f.hasNextPage(),
-          ...f.hasPreviousPage(),
-          ...f.startCursor(),
-          ...f.endCursor(),
-        })),
-        ...f.totalCount(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.products({ categoryId: $.categoryId, brandId: $.brandId, priceRange: null, limit: $.limit, offset: $.offset })(({ f }) => [
+        f.edges()(({ f }) => [
+          f.node()(() => [
+            productModel.fragment(),
+          ]),
+          f.cursor(),
+        ]),
+        f.pageInfo()(({ f }) => [
+          f.hasNextPage(),
+          f.hasPreviousPage(),
+          f.startCursor(),
+          f.endCursor(),
+        ]),
+        f.totalCount(),
+      ]),
+    ],
     ({ select }) => select(["$.products"], (result) => result.map((data) => ({
       products: data.edges.map((edge) => productModel.normalize(edge.node)),
       pageInfo: data.pageInfo,
@@ -154,15 +152,13 @@ export const productListSlice = gql.default(({ slice }, { $ }) =>
 export const productDetailSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("id").scalar("ID:!"),
-      },
+      variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      ...f.product({ id: $.id }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.product({ id: $.id })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.product"], (result) => result.map((data) => (data ? productModel.normalize(data) : null))),
   ),
 );
@@ -170,17 +166,17 @@ export const productDetailSlice = gql.default(({ slice }, { $ }) =>
 export const productSearchSlice = gql.default(({ slice }, { $ }) =>
   slice.query(
     {
-      variables: {
-        ...$("query").scalar("String:!"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("query").scalar("String:!"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.searchProducts({ query: $.query, limit: $.limit, offset: $.offset }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.searchProducts({ query: $.query, limit: $.limit, offset: $.offset })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.searchProducts"], (result) => result.map((data) => data.map((product) => productModel.normalize(product)))),
   ),
 );
@@ -188,18 +184,18 @@ export const productSearchSlice = gql.default(({ slice }, { $ }) =>
 export const createProductSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("name").scalar("String:!"),
-        ...$("description").scalar("String:?"),
-        ...$("price").scalar("Float:!"),
-        ...$("sku").scalar("String:!"),
-        ...$("stockQuantity").scalar("Int:!"),
-        ...$("categoryId").scalar("ID:!"),
-        ...$("brandId").scalar("ID:!"),
-      },
+      variables: [
+        $("name").scalar("String:!"),
+        $("description").scalar("String:?"),
+        $("price").scalar("Float:!"),
+        $("sku").scalar("String:!"),
+        $("stockQuantity").scalar("Int:!"),
+        $("categoryId").scalar("ID:!"),
+        $("brandId").scalar("ID:!"),
+      ],
     },
-    ({ f, $ }) => ({
-      ...f.createProduct({
+    ({ f, $ }) => [
+      f.createProduct({
         input: {
           name: $.name,
           description: $.description,
@@ -209,10 +205,10 @@ export const createProductSlice = gql.default(({ slice }, { $ }) =>
           categoryId: $.categoryId,
           brandId: $.brandId,
         },
-      }, () => ({
-        ...productModel.fragment(),
-      })),
-    }),
+      })(() => [
+        productModel.fragment(),
+      ]),
+    ],
     ({ select }) => select(["$.createProduct"], (result) => result.map((data) => productModel.normalize(data))),
   ),
 );

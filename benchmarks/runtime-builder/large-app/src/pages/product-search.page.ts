@@ -5,11 +5,11 @@ export const productSearchQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ProductSearch",
-      variables: {
-        ...$("query").scalar("String:!"),
-        ...$("limit").scalar("Int:?"),
-        ...$("offset").scalar("Int:?"),
-      },
+      variables: [
+        $("query").scalar("String:!"),
+        $("limit").scalar("Int:?"),
+        $("offset").scalar("Int:?"),
+      ],
     },
     ({ $ }) => ({
       searchResults: productSearchSlice.build({
