@@ -15,9 +15,13 @@ interface Violation {
 	line: number;
 	found: string;
 	suggestion: string;
+	pos: number;
+	end: number;
 }
 
 const PROJECT_ROOT = path.resolve(import.meta.dir, "..");
+const FIX_MODE = process.argv.includes("--fix");
+const DRY_RUN = process.argv.includes("--dry-run");
 
 async function loadAliasMap(): Promise<AliasMapping[]> {
 	const tsConfigPath = path.join(PROJECT_ROOT, "tsconfig.editor.json");
@@ -68,8 +72,8 @@ async function* walkDirectory(dir: string): AsyncGenerator<string> {
 function extractImports(
 	filePath: string,
 	sourceFile: ts.SourceFile,
-): { specifier: string; line: number }[] {
-	const imports: { specifier: string; line: number }[] = [];
+): { specifier: string; line: number; pos: number; end: number }[] {
+	const imports: { specifier: string; line: number; pos: number; end: number }[] = [];
 
 	function visit(node: ts.Node) {
 		// Import declarations: import { x } from "module"
@@ -77,7 +81,12 @@ function extractImports(
 			if (ts.isStringLiteral(node.moduleSpecifier)) {
 				const line =
 					sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
-				imports.push({ specifier: node.moduleSpecifier.text, line });
+				imports.push({
+					specifier: node.moduleSpecifier.text,
+					line,
+					pos: node.moduleSpecifier.getStart() + 1, // +1 to skip opening quote
+					end: node.moduleSpecifier.getEnd() - 1, // -1 to skip closing quote
+				});
 			}
 		}
 
@@ -89,7 +98,12 @@ function extractImports(
 		) {
 			const line =
 				sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
-			imports.push({ specifier: node.moduleSpecifier.text, line });
+			imports.push({
+				specifier: node.moduleSpecifier.text,
+				line,
+				pos: node.moduleSpecifier.getStart() + 1,
+				end: node.moduleSpecifier.getEnd() - 1,
+			});
 		}
 
 		// Dynamic imports: import("module")
@@ -101,7 +115,12 @@ function extractImports(
 			if (arg && ts.isStringLiteral(arg)) {
 				const line =
 					sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
-				imports.push({ specifier: arg.text, line });
+				imports.push({
+					specifier: arg.text,
+					line,
+					pos: arg.getStart() + 1,
+					end: arg.getEnd() - 1,
+				});
 			}
 		}
 
@@ -157,7 +176,7 @@ async function validateTestFile(
 	const imports = extractImports(filePath, sourceFile);
 	const violations: Violation[] = [];
 
-	for (const { specifier, line } of imports) {
+	for (const { specifier, line, pos, end } of imports) {
 		// Skip non-relative imports
 		if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
 			continue;
@@ -189,10 +208,42 @@ async function validateTestFile(
 			line,
 			found: specifier,
 			suggestion,
+			pos,
+			end,
 		});
 	}
 
 	return violations;
+}
+
+async function fixTestFile(
+	filePath: string,
+	violations: Violation[],
+): Promise<void> {
+	if (violations.length === 0) return;
+
+	const content = await fs.readFile(filePath, "utf-8");
+
+	// Sort violations by position in reverse order to apply edits from end to start
+	const sortedViolations = [...violations].sort((a, b) => b.pos - a.pos);
+
+	let modifiedContent = content;
+	for (const violation of sortedViolations) {
+		modifiedContent =
+			modifiedContent.slice(0, violation.pos) +
+			violation.suggestion +
+			modifiedContent.slice(violation.end);
+	}
+
+	if (DRY_RUN) {
+		const relativePath = path.relative(PROJECT_ROOT, filePath).replace(/\\/g, "/");
+		console.log(`\n[DRY-RUN] Would fix ${relativePath}:`);
+		for (const violation of violations) {
+			console.log(`  Line ${violation.line}: ${violation.found} → ${violation.suggestion}`);
+		}
+	} else {
+		await fs.writeFile(filePath, modifiedContent, "utf-8");
+	}
 }
 
 async function main() {
@@ -228,11 +279,31 @@ async function main() {
 
 	// Check imports
 	console.log("\nValidating import paths...");
-	const allViolations: Violation[] = [];
+	const fileViolations = new Map<string, Violation[]>();
 
 	for (const file of testFiles) {
 		const violations = await validateTestFile(file, aliasMap);
-		allViolations.push(...violations);
+		if (violations.length > 0) {
+			fileViolations.set(file, violations);
+		}
+	}
+
+	const allViolations = Array.from(fileViolations.values()).flat();
+
+	// Fix mode
+	if (FIX_MODE && allViolations.length > 0) {
+		console.log(`\n${DRY_RUN ? "🔍 DRY-RUN MODE" : "🔧 FIXING"} ${allViolations.length} import violations...`);
+
+		for (const [file, violations] of fileViolations) {
+			await fixTestFile(file, violations);
+		}
+
+		if (!DRY_RUN) {
+			console.log("\n✅ All import paths have been fixed!");
+			console.log("Run 'bun typecheck' to verify the changes.");
+			process.exitCode = 0;
+			return;
+		}
 	}
 
 	// Report import violations

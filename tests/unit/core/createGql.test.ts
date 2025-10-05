@@ -9,8 +9,8 @@ import {
   Projection,
   unsafeInputRef,
   unsafeOutputRef,
-} from "../../../packages/core";
-import { createRuntimeAdapter } from "../../../packages/runtime";
+} from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/core/runtime";
 
 const schema = {
   operations: defineOperationRoots({

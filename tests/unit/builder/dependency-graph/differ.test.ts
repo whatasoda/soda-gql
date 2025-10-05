@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { createCanonicalId } from "../../../../packages/builder/src/canonical-id/canonical-id";
-import { diffDependencyGraphs } from "../../../../packages/builder/src/dependency-graph/differ";
-import type { DependencyGraph, DependencyGraphNode } from "../../../../packages/builder/src/dependency-graph/types";
+import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
+import { diffDependencyGraphs } from "@soda-gql/builder/dependency-graph/differ";
+import type { DependencyGraph, DependencyGraphNode } from "@soda-gql/builder/dependency-graph/types";
 
 const createTestNode = (filePath: string, localPath: string, dependencies: string[] = []): DependencyGraphNode => {
   const id = createCanonicalId(filePath, localPath);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_BUILDER_CONFIG, DEFAULT_CONFIG_FILENAMES, DEFAULT_CORE_PATH } from "../../../packages/config/src/defaults";
+import { DEFAULT_BUILDER_CONFIG, DEFAULT_CONFIG_FILENAMES, DEFAULT_CORE_PATH } from "@soda-gql/config/defaults";
 
 describe("defaults.ts", () => {
   test("DEFAULT_CONFIG_FILENAMES contains expected filenames", () => {

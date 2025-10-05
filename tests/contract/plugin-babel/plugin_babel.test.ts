@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
-import type { ArtifactSource } from "../../../packages/plugin-babel/src/types";
+import type { ArtifactSource } from "@soda-gql/plugin-babel/types";
 import { createTestConfig } from "../../helpers/test-config";
 
 type PluginOptions = {
@@ -38,7 +38,7 @@ const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOpti
 });
 
 const loadPlugin = async (): Promise<babel.PluginItem> => {
-  const module = await import("../../../packages/plugin-babel/src/index");
+  const module = await import("@soda-gql/plugin-babel");
   const candidate = (module as { default?: babel.PluginItem }).default;
 
   if (typeof candidate === "function") {

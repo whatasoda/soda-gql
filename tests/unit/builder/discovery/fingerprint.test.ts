@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { clearFingerprintCache, computeFingerprint, invalidateFingerprint } from "../../../../packages/builder/src/discovery/fingerprint.js";
+import { clearFingerprintCache, computeFingerprint, invalidateFingerprint } from "@soda-gql/builder/discovery/fingerprint";
 
 describe("fingerprint", () => {
   let testDir: string;

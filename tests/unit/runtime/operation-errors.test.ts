@@ -1,15 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import { createExecutionResultParser } from "../../../packages/core/src/runtime/parse-execution-result";
-import type { ProjectionPathGraphNode } from "../../../packages/core/src/types/operation/operation";
-import type { NormalizedExecutionResult } from "../../../packages/core/src/types/runtime/execution-result";
-import { Projection } from "../../../packages/core/src/types/runtime/projection";
-import type { AnyGraphqlRuntimeAdapter } from "../../../packages/core/src/types/runtime/runtime-adapter";
+import { createExecutionResultParser } from "@soda-gql/core/runtime/parse-execution-result";
+import type { ProjectionPathGraphNode } from "@soda-gql/core/types/operation/operation";
+import type { NormalizedExecutionResult } from "@soda-gql/core/types/runtime/execution-result";
+import { Projection } from "@soda-gql/core/types/runtime/projection";
+import type { AnyGraphqlRuntimeAdapter } from "@soda-gql/core/types/runtime/runtime-adapter";
 import {
   SlicedExecutionResultEmpty,
   SlicedExecutionResultError,
   SlicedExecutionResultSuccess,
-} from "../../../packages/core/src/types/runtime/sliced-execution-result";
-import { createRuntimeAdapter } from "../../../packages/runtime/src/index";
+} from "@soda-gql/core/types/runtime/sliced-execution-result";
+import { createRuntimeAdapter } from "@soda-gql/runtime";
 import { createTestSlices } from "../../utils/runtime";
 
 /**

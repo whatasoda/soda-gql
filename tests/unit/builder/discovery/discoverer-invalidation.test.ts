@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getAstAnalyzer } from "../../../../packages/builder/src/ast";
-import { createJsonCache } from "../../../../packages/builder/src/cache/json-cache";
-import { createDiscoveryCache } from "../../../../packages/builder/src/discovery/cache";
-import { discoverModules } from "../../../../packages/builder/src/discovery/discoverer";
-import type { DiscoverySnapshotMetadata } from "../../../../packages/builder/src/discovery/types";
+import { getAstAnalyzer } from "@soda-gql/builder/ast";
+import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
+import { createDiscoveryCache } from "@soda-gql/builder/discovery/cache";
+import { discoverModules } from "@soda-gql/builder/discovery/discoverer";
+import type { DiscoverySnapshotMetadata } from "@soda-gql/builder/discovery/types";
 
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 const cacheFactory = createJsonCache({ rootDir: join(fixtureRoot, ".cache") });

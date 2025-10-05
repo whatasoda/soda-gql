@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { ModuleAnalysis } from "../../../packages/builder/src/ast/types";
-import { createJsonCache, ModuleCacheManager } from "../../../packages/builder/src/cache";
+import type { ModuleAnalysis } from "@soda-gql/builder/ast/types";
+import { createJsonCache, ModuleCacheManager } from "@soda-gql/builder/cache";
 import { createTestSuite, TestSuite } from "../../utils/base";
 
 class CacheManagerTestSuite extends TestSuite {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import type { ModuleAnalysis } from "../../../packages/builder/src/ast";
-import { buildDependencyGraph } from "../../../packages/builder/src/dependency-graph";
-import { createCanonicalId } from "../../../packages/builder/src/index";
+import type { ModuleAnalysis } from "@soda-gql/builder/ast";
+import { buildDependencyGraph } from "@soda-gql/builder/dependency-graph";
+import { createCanonicalId } from "@soda-gql/builder";
 
 describe("dependency graph builder", () => {
   const baseAnalysis = (overrides: Partial<ModuleAnalysis>): ModuleAnalysis => ({

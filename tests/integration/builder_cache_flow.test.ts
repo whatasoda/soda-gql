@@ -2,8 +2,8 @@ import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runBuilder } from "../../packages/builder/src/index";
-import { runMultiSchemaCodegen } from "../../packages/codegen/src/index";
+import { runBuilder } from "@soda-gql/builder";
+import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
 import { createTestConfig } from "../helpers/test-config";
 

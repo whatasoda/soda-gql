@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createCanonicalId } from "../../../../packages/builder/src/canonical-id/canonical-id";
-import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../../../../packages/builder/src/dependency-graph";
-import { buildGraphIndex } from "../../../../packages/builder/src/dependency-graph/patcher";
-import { diffChunkManifests, planChunks } from "../../../../packages/builder/src/intermediate-module/chunks";
+import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
+import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph";
+import { buildGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
+import { diffChunkManifests, planChunks } from "@soda-gql/builder/intermediate-module/chunks";
 
 const createTestNode = (filePath: string, localPath: string, deps: string[] = []): DependencyGraphNode => {
   const id = createCanonicalId(filePath, localPath);

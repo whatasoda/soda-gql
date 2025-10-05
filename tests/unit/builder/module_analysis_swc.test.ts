@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+import { getAstAnalyzer } from "@soda-gql/builder/ast";
 import { loadModuleAnalysisFixture } from "../../utils";
 
 const analyzeModule = getAstAnalyzer("swc").analyze;
