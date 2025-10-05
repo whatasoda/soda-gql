@@ -1,10 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { dirname, join, normalize, resolve } from "node:path";
 
-import { clearPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
+import { clearPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../artifact";
-import { computeArtifactDelta } from "../artifact/delta";
 import type { BuilderArtifact } from "../artifact/types";
 import { getAstAnalyzer } from "../ast";
 import { createJsonCache } from "../cache/json-cache";
@@ -266,13 +264,11 @@ const collectAffectedDefinitions = (removedFiles: Set<string>, snapshots: Map<st
  * Returns an error if any node references a missing dependency.
  */
 const validateGraphDependencies = (graph: DependencyGraph): Result<void, BuilderError> => {
-  for (const [nodeId, node] of graph.entries()) {
+  for (const node of graph.values()) {
     for (const depId of node.dependencies) {
       if (!graph.has(depId)) {
         // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
-        const depParts = depId.split("::");
-        const depFilePath = depParts[0] || "";
-        const depExport = depParts[1] || depId;
+        const [depFilePath = ""] = depId.split("::");
 
         return err({
           code: "CIRCULAR_DEPENDENCY" as const,

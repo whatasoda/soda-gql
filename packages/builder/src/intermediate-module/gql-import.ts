@@ -19,11 +19,11 @@ const resolveImportPath = (outDir: string, targetPath: string): string => {
 
   // Map TypeScript extensions to JavaScript extensions
   if (relativePath.endsWith(".ts")) {
-    relativePath = relativePath.slice(0, -3) + ".js";
+    relativePath = `${relativePath.slice(0, -3)}.js`;
   } else if (relativePath.endsWith(".mts")) {
-    relativePath = relativePath.slice(0, -4) + ".mjs";
+    relativePath = `${relativePath.slice(0, -4)}.mjs`;
   } else if (relativePath.endsWith(".cts")) {
-    relativePath = relativePath.slice(0, -4) + ".cjs";
+    relativePath = `${relativePath.slice(0, -4)}.cjs`;
   }
 
   return relativePath;

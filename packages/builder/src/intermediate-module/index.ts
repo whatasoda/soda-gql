@@ -3,7 +3,7 @@ import { err, type Result } from "neverthrow";
 import type { DependencyGraph } from "../dependency-graph";
 import type { GraphIndex } from "../dependency-graph/patcher";
 import type { BuilderError } from "../types";
-import { analyzeGraph, findWorkspaceRoot } from "./analysis";
+import { analyzeGraph } from "./analysis";
 import { type WrittenChunkModule, writeChunkModules } from "./chunk-writer";
 import { buildIntermediateModuleSource } from "./codegen";
 import { emitIntermediateModule } from "./emitter";
@@ -28,7 +28,7 @@ export const createIntermediateModule = async ({
   evaluatorId,
 }: CreateIntermediateModuleInput): Promise<Result<{ transpiledPath: string; sourceCode: string }, BuilderError>> => {
   // Analyze the graph
-  const { fileGroups, summaries, missingExpressions, workspaceRoot } = analyzeGraph(graph);
+  const { fileGroups, summaries, missingExpressions } = analyzeGraph(graph);
 
   // Check for missing expressions
   if (missingExpressions.length > 0) {

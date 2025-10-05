@@ -254,7 +254,7 @@ describe("BuilderSession incremental end-to-end", () => {
       console.error("Initial build failed:", initial.error);
     }
     expect(initial.isOk()).toBe(true);
-    const initialArtifact = initial._unsafeUnwrap();
+    const _initialArtifact = initial._unsafeUnwrap();
 
     // Remove user.catalog.ts
     const targetPath = path.join(workspaceRoot, "src/entities/user.catalog.ts");

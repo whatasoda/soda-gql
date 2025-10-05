@@ -1,5 +1,5 @@
-import { join } from "node:path";
 import { expect } from "bun:test";
+import { join } from "node:path";
 import { getProjectRoot } from ".";
 
 export type CliResult = {

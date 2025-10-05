@@ -6,11 +6,11 @@ import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import { copyDefaultInject } from "../fixtures/inject-module";
+import { createTestConfig } from "../helpers/test-config";
 import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoader";
 import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
-import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");

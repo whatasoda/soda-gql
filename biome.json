@@ -50,6 +50,7 @@
       "!**/tests/.tmp/**/*",
       "!**/.cache/**/*",
       "!**/dist/**/*",
+      "!**/test_dist/**/*",
       "!**/node_modules/**/*"
     ],
     "ignoreUnknown": false
