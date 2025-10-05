@@ -8,7 +8,10 @@ export const loadIntermediateModule = async (
   intermediateModulePath: string,
 ): Promise<Result<IntermediateModuleRaw, BuilderError>> => {
   try {
-    const module = (await import(pathToFileURL(intermediateModulePath).href)) as IntermediateModuleRaw;
+    // Add cache-busting query parameter to force fresh import
+    const url = pathToFileURL(intermediateModulePath);
+    url.searchParams.set("t", Date.now().toString());
+    const module = (await import(url.href)) as IntermediateModuleRaw;
     return ok(module);
   } catch (error) {
     return err({

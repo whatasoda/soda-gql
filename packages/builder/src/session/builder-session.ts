@@ -324,7 +324,7 @@ export const __internal = {
  * Call buildInitial() first, then use update() for subsequent changes.
  */
 export const createBuilderSession = (options: { readonly evaluatorId?: string } = {}): BuilderSession => {
-  const evaluatorId = options.evaluatorId ?? randomUUID();
+  const evaluatorId = options.evaluatorId ?? "default";
 
   // Session state stored in closure
   const state: SessionState = {
@@ -669,73 +669,28 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Store updated manifest
     state.chunkManifest = newManifest;
 
-    // Build chunk paths map for affected chunks only
-    const affectedChunkPaths = new Map<string, string>();
-    for (const chunkId of affectedChunkIds) {
-      const chunk = state.chunkModules.get(chunkId);
-      if (chunk) {
-        affectedChunkPaths.set(chunkId, chunk.transpiledPath);
-      }
+    // Build chunk paths map for ALL chunks (not just affected)
+    // This is necessary because chunks may depend on each other
+    const allChunkPaths = new Map<string, string>();
+    for (const [chunkId, chunk] of state.chunkModules.entries()) {
+      allChunkPaths.set(chunkId, chunk.transpiledPath);
     }
 
-    // Build artifact from affected chunks only if there are changes
-    if (affectedChunkPaths.size > 0) {
-      const artifactResult = await buildArtifact({
-        graph: state.graph,
-        cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-        intermediateModulePaths: affectedChunkPaths,
-        evaluatorId,
-      });
-
-      if (artifactResult.isErr()) {
-        return err(artifactResult.error);
-      }
-
-      // Merge with existing artifact
-      if (state.lastArtifact) {
-        // Compute delta
-        const delta = computeArtifactDelta(state.lastArtifact, artifactResult.value, chunkDiff, newManifest);
-
-        // Merge elements: start with old, remove deleted, add/update new
-        const mergedElements = { ...state.lastArtifact.elements };
-
-        // Remove deleted elements
-        for (const removedId of delta.removed) {
-          delete mergedElements[removedId];
-        }
-
-        // Add/update elements
-        Object.assign(mergedElements, delta.added, delta.updated);
-
-        // Create merged artifact
-        const mergedArtifact: BuilderArtifact = {
-          elements: mergedElements,
-          report: {
-            ...artifactResult.value.report,
-            cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-          },
-        };
-
-        state.lastArtifact = mergedArtifact;
-        return ok(mergedArtifact);
-      }
-
-      // No previous artifact - use new one directly
-      state.lastArtifact = artifactResult.value;
-      return ok(artifactResult.value);
-    }
-
-    // No affected chunks - return cached artifact
-    if (state.lastArtifact) {
-      return ok(state.lastArtifact);
-    }
-
-    return err({
-      code: "MODULE_EVALUATION_FAILED",
-      filePath: "",
-      astPath: "",
-      message: "No changes but no cached artifact available",
+    // Build artifact from all chunks
+    const artifactResult = await buildArtifact({
+      graph: state.graph,
+      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+      intermediateModulePaths: allChunkPaths,
+      evaluatorId,
     });
+
+    if (artifactResult.isErr()) {
+      return err(artifactResult.error);
+    }
+
+    // Store and return the artifact
+    state.lastArtifact = artifactResult.value;
+    return ok(artifactResult.value);
   };
 
   const getSnapshot = (): BuilderSessionSnapshot => {
