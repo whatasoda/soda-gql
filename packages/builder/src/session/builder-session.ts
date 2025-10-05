@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { dirname, join, normalize, resolve } from "node:path";
 
+import { clearPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../artifact";
 import { computeArtifactDelta } from "../artifact/delta";
@@ -18,6 +20,7 @@ import type { DiscoverySnapshot } from "../discovery/types";
 import { createIntermediateModuleChunks } from "../intermediate-module";
 import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
 import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
+import { resolveGqlImportPath } from "../intermediate-module/gql-import";
 import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
@@ -321,7 +324,7 @@ export const __internal = {
  * Call buildInitial() first, then use update() for subsequent changes.
  */
 export const createBuilderSession = (options: { readonly evaluatorId?: string } = {}): BuilderSession => {
-  const evaluatorId = options.evaluatorId ?? "default";
+  const evaluatorId = options.evaluatorId ?? randomUUID();
 
   // Session state stored in closure
   const state: SessionState = {
@@ -350,12 +353,15 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
   let astAnalyzer: ReturnType<typeof getAstAnalyzer> | null = null;
 
   const buildInitial = async (input: BuilderInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+    // Clear registry for clean slate
+    clearPseudoModuleRegistry(evaluatorId);
+
     // Create or reuse discovery infrastructure
     if (!discoveryCache) {
       discoveryCache = createDiscoveryCache({
         factory: cacheFactory,
         analyzer: input.analyzer,
-        evaluatorId: "default",
+        evaluatorId,
       });
     }
 
@@ -423,6 +429,11 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Create intermediate module chunks
     const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
+
+    // Plan chunks and persist manifest
+    const manifest = planChunks(graph, state.graphIndex, runtimeDir);
+    state.chunkManifest = manifest;
+
     const chunksResult = await createIntermediateModuleChunks({
       graph,
       graphIndex: state.graphIndex,
@@ -535,7 +546,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       discoveryCache = createDiscoveryCache({
         factory: cacheFactory,
         analyzer: state.lastInput.analyzer,
-        evaluatorId: "default",
+        evaluatorId,
       });
     }
 
@@ -602,16 +613,31 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       ? diffChunkManifests(state.chunkManifest, newManifest)
       : { added: newManifest.chunks, updated: new Map(), removed: new Set<string>() };
 
+    // Persist new manifest
+    state.chunkManifest = newManifest;
+
+    // Clear registry entries for removed and updated chunks
+    const registry = getPseudoModuleRegistry(evaluatorId);
+    for (const removedChunkId of chunkDiff.removed) {
+      registry.removeModule(removedChunkId as string);
+    }
+    for (const [updatedChunkId] of chunkDiff.updated) {
+      registry.removeModule(updatedChunkId);
+    }
+
     // Build only affected chunks
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
     if (affectedChunkIds.size > 0) {
+      // Compute gqlImportPath dynamically
+      const gqlImportPath = resolveGqlImportPath({ graph: state.graph, outDir: runtimeDir });
+
       // Build chunk modules for affected files
       const allChunks = buildChunkModules({
         graph: state.graph,
         graphIndex: state.graphIndex,
         outDir: runtimeDir,
-        gqlImportPath: "@/graphql-system", // TODO: compute dynamically like in buildInitial
+        gqlImportPath,
         evaluatorId,
       });
 

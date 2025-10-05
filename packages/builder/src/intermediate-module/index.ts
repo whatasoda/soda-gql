@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
 import { err, type Result } from "neverthrow";
 import type { DependencyGraph } from "../dependency-graph";
 import type { GraphIndex } from "../dependency-graph/patcher";
@@ -8,6 +6,7 @@ import { analyzeGraph, findWorkspaceRoot } from "./analysis";
 import { type WrittenChunkModule, writeChunkModules } from "./chunk-writer";
 import { buildIntermediateModuleSource } from "./codegen";
 import { emitIntermediateModule } from "./emitter";
+import { resolveGqlImportPath } from "./gql-import";
 import { buildChunkModules } from "./per-chunk-emission";
 
 export type CreateIntermediateModuleInput = {
@@ -42,18 +41,7 @@ export const createIntermediateModule = async ({
   }
 
   // Determine gqlImportPath
-  const graphqlSystemIndex = join(workspaceRoot, "graphql-system", "index.ts");
-  let gqlImportPath = "@/graphql-system";
-
-  if (existsSync(graphqlSystemIndex)) {
-    const jsFilePath = join(outDir, "temp.mjs");
-    const relativePath = relative(dirname(jsFilePath), graphqlSystemIndex).replace(/\\/g, "/");
-    let sanitized = relativePath.length > 0 ? relativePath : "./index.ts";
-    if (!sanitized.startsWith(".")) {
-      sanitized = `./${sanitized}`;
-    }
-    gqlImportPath = sanitized.endsWith(".ts") ? sanitized.slice(0, -3) : sanitized;
-  }
+  const gqlImportPath = resolveGqlImportPath({ graph, outDir });
 
   // Generate code
   const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath, evaluatorId });
@@ -96,19 +84,7 @@ export const createIntermediateModuleChunks = async ({
   }
 
   // Determine gqlImportPath
-  const workspaceRoot = findWorkspaceRoot(graph);
-  const graphqlSystemIndex = join(workspaceRoot, "graphql-system", "index.ts");
-  let gqlImportPath = "@/graphql-system";
-
-  if (existsSync(graphqlSystemIndex)) {
-    const jsFilePath = join(outDir, "temp.mjs");
-    const relativePath = relative(dirname(jsFilePath), graphqlSystemIndex).replace(/\\/g, "/");
-    let sanitized = relativePath.length > 0 ? relativePath : "./index.ts";
-    if (!sanitized.startsWith(".")) {
-      sanitized = `./${sanitized}`;
-    }
-    gqlImportPath = sanitized.endsWith(".ts") ? sanitized.slice(0, -3) : sanitized;
-  }
+  const gqlImportPath = resolveGqlImportPath({ graph, outDir });
 
   // Build chunk modules
   const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, evaluatorId });
