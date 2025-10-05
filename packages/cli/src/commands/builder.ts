@@ -5,6 +5,7 @@ import type {
   BuilderAnalyzer,
   BuilderError,
   BuilderFormat,
+  BuilderInput,
   BuilderMode,
   BuilderOptions,
   BuilderSuccess,
@@ -18,7 +19,9 @@ import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
 const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
 
-type BuilderCommandOptions = BuilderOptions & {
+type BuilderCommandOptions = Omit<BuilderInput, 'config'> & {
+  outPath: string;
+  format: BuilderFormat;
   watch?: boolean;
 };
 

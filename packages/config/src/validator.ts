@@ -26,7 +26,7 @@ const ProjectConfigSchema = z.object({
   corePath: z.string().optional(),
   builder: BuilderConfigSchema.optional(),
   codegen: CodegenConfigSchema.optional(),
-  plugins: z.record(z.unknown()).optional(),
+  plugins: z.record(z.string(), z.unknown()).optional(),
 });
 
 const SodaGqlConfigSchema = z.object({
@@ -35,10 +35,10 @@ const SodaGqlConfigSchema = z.object({
   corePath: z.string().optional(),
   builder: BuilderConfigSchema.optional(),
   codegen: CodegenConfigSchema.optional(),
-  plugins: z.record(z.unknown()).optional(),
+  plugins: z.record(z.string(), z.unknown()).optional(),
 
   // Multi-project mode
-  projects: z.record(ProjectConfigSchema).optional(),
+  projects: z.record(z.string(), ProjectConfigSchema).optional(),
   defaultProject: z.string().optional(),
 });
 

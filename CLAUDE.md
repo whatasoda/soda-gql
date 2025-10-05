@@ -256,12 +256,6 @@ const { filePath, source } = loadFixture("model-definition");
 const result = analyze({ filePath, source });
 ```
 
-### Tool Utilities
-
-**@soda-gql/tool-utils**: Toolchain utilities only
-- **NEVER use in core/runtime packages**
-- [unwrap-nullish](packages/tool-utils/docs/unwrap-nullish.md): Safely unwrap nullable values
-
 ### Architecture Decision Records
 
 **Location**: `docs/decisions/`

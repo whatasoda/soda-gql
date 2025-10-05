@@ -4,7 +4,6 @@ import { parse } from "graphql";
 import { aggregate } from "../../../packages/builder/src/artifact/aggregate";
 import type { DependencyGraph, DependencyGraphNode } from "../../../packages/builder/src/dependency-graph/types";
 import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/index";
-import type { IntermediateModule } from "../../../packages/builder/src/intermediate-module";
 import type { IntermediateArtifactElement } from "../../../packages/core/src/intermediate/pseudo-module";
 import { Model, Operation, Slice } from "../../../packages/core/src/types/operation";
 
@@ -41,7 +40,7 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
   },
 });
 
-const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>): IntermediateModule => ({
+const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
   elements,
 });
 

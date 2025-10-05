@@ -45,6 +45,7 @@ export const createBuilderService = (config: BuilderServiceConfig): BuilderServi
     mode: config.mode,
     entry: [...config.entry],
     analyzer: config.analyzer,
+    config: config.config,
     ...(config.debugDir !== undefined && { debugDir: config.debugDir }),
   };
 

@@ -19,7 +19,6 @@ packages/
 ├── builder/        # Static analysis & doc generation
 ├── plugin-babel/   # Babel transformation plugin
 ├── runtime/        # Runtime execution helpers
-├── tool-utils/     # Build-time utilities
 └── cli/            # Command-line interface
 ```
 

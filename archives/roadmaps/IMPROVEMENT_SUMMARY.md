@@ -9,7 +9,6 @@
 - Clean dependency tree with no unused packages
 
 #### 1.2 File System Standardization
-- Created centralized `fs-utils.ts` in tool-utils package
 - Implemented async file operations with Result types
 - Standardized error handling for file operations
 
@@ -85,7 +84,6 @@ Created focused modules in plugin-babel:
 - `/packages/cli/src/schemas/args.ts`
 
 ### New Utility Files
-- `/packages/tool-utils/src/fs-utils.ts`
 - `/packages/plugin-babel/src/transform/ast-builders.ts`
 - `/packages/plugin-babel/src/transform/runtime-builders.ts`
 - `/packages/plugin-babel/src/transform/import-utils.ts`

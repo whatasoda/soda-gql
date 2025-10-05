@@ -276,9 +276,7 @@ const validateGraphDependencies = (graph: DependencyGraph): Result<void, Builder
 
         return err({
           code: "CIRCULAR_DEPENDENCY" as const,
-          filePath: node.filePath,
-          astPath: node.localPath,
-          message: `Missing dependency: '${depExport}' from '${depFilePath}' is referenced but not found in the graph. The file may have been deleted or the export may no longer exist.`,
+          chain: [node.filePath, depFilePath],
         });
       }
     }
