@@ -1,59 +1,62 @@
+---
+role: "quick-brief"
+includes_by_default: true
+best_for_query:
+  - "current status"
+  - "immediate blockers"
+  - "where to look next"
+last_updated: 2025-10-05
+---
+
 # Builder Performance Optimization
 
-**Status:** In Progress - Strategy 3 integration tests in progress
+## Snapshot
+
+**Status:** Strategy 3 integration tests in progress (90% complete)
+**Focus:** Fix 3/5 failing tests, update 4 files for config, run benchmarks
 **Branch:** `feat/improved-performance-of-builder`
-**Last Updated:** 2025-10-05
 
-## Overview
+## Focus Window
 
-This directory contains documentation for the builder performance optimization initiative, which implements three sequential strategies to improve build performance:
+**Current Sprint Goal:** Complete Strategy 3 validation
 
-1. **Strategy 1:** Long-lived incremental service (session infrastructure)
-2. **Strategy 2:** Smarter discovery & cache invalidation (fingerprint-based caching)
-3. **Strategy 3:** Dependency graph pruning & incremental codegen
+- Fix integration test failures (cache assertions, deleted file handling)
+- Update 4 test files to use config system
+- Run performance benchmarks vs targets (≤35% rebuild time)
 
-## Documentation
+## Critical Metrics
 
-- **[Roadmap](./roadmap.md)** - Strategic overview, objectives, and implementation timeline
-- **[Status](./status.md)** - Current progress, metrics, and blockers
-- **[History](./history.md)** - Completed milestones and session summaries
-- **[Upcoming](./upcoming.md)** - Prioritized future work with dependencies
-- **[Original Plan](./plan-original.md)** - Canonical detailed implementation plan
-
-## Quick Links
-
-- **Profiling Guide:** [docs/guides/performance-profiling.md](../../guides/performance-profiling.md)
-- **Archives:** [docs/plans/archives/builder-performance/](../archives/builder-performance/)
-
-## Benchmark Data Sources
-
-Performance metrics are collected via `bun run perf:builder` and stored in `.cache/perf/<timestamp>/<fixture>/metrics.json`. The benchmark pipeline:
-
-1. Runs builder on fixtures (small-app, medium-app, large-app)
-2. Collects wall time, CPU time, memory usage, GC stats
-3. Tracks cache hits/misses/skips for discovery phase
-4. Generates JSON reports for regression analysis
-
-### Key Metrics (as of 2025-10-05)
-
-| Fixture | Elements | Avg Wall Time | Cache (warmup) |
-|---------|----------|---------------|----------------|
-| small-app | 5 | 15.35ms | 3 hits / 0 miss |
-| medium-app | 16 | 18.30ms | 9 hits / 0 miss |
-| large-app | 40 | 23.60ms | 23 hits / 0 miss |
-
-**Performance Characteristics:**
+**Current Performance:** [See metrics.md](./metrics.md#current)
+- Wall time: 15-24ms (small to large apps)
+- Cache hit rate: 100% after warmup
 - Linear scaling with codebase size
-- 100% cache hit rate after warmup
-- stat-only fast path for unchanged files (~100-500x speedup)
 
-## Dependencies
+**Strategy 3 Pending:** Benchmark validation needed
 
-**Strategy 3 Config Dependency:**
-Strategy 3 requires the `@soda-gql/config` package for path resolution. The config system:
-- Replaces CLI parameters with configuration files
-- Enables proper import path resolution for generated files
-- Status: ✅ Implemented (commit `d218e27`, 51 tests passing)
-- Integration: ✅ Complete (commits `f777cac`, `021e7c2`, `38b6d04`)
+## Where Next
 
-See [config-package-implementation.md](../config-package-implementation.md) for full details.
+| Query | Document | Section |
+|-------|----------|---------|
+| What's blocking? | [progress.md](./progress.md) | Active Risks |
+| Next tasks? | [progress.md](./progress.md) | Next Actions |
+| How does it work? | [roadmap.md](./roadmap.md) | Strategies Overview |
+| Performance data? | [metrics.md](./metrics.md) | Current Benchmarks |
+| Past decisions? | [decisions.md](./decisions.md) | Architecture |
+| Timeline? | [history.md](./history.md) | Timeline |
+| Full plan? | [reference/plan-original.md](./reference/plan-original.md) | - |
+
+## Quick Reference
+
+**Tier 0 (Always read):**
+- This file (quick brief)
+- [progress.md](./progress.md) (status + next actions)
+
+**Tier 1 (Query-specific):**
+- [roadmap.md](./roadmap.md) (architecture, strategies)
+- [decisions.md](./decisions.md) (constraints, key decisions)
+- [metrics.md](./metrics.md) (performance data)
+
+**Tier 2 (Reference):**
+- [history.md](./history.md) (milestones)
+- [reference/](./reference/) (detailed artifacts)
+- [Archives](../archives/builder-performance/) (historical docs)

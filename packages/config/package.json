@@ -10,42 +10,50 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./loader": {
-      "types": "./dist/loader.d.ts",
-      "import": "./dist/loader.js"
+      "types": "./src/loader.ts",
+      "import": "./src/loader.ts",
+      "default": "./src/loader.ts"
     },
     "./path-resolver": {
-      "types": "./dist/path-resolver.d.ts",
-      "import": "./dist/path-resolver.js"
+      "types": "./src/path-resolver.ts",
+      "import": "./src/path-resolver.ts",
+      "default": "./src/path-resolver.ts"
     },
     "./helper": {
-      "types": "./dist/helper.d.ts",
-      "import": "./dist/helper.js"
+      "types": "./src/helper.ts",
+      "import": "./src/helper.ts",
+      "default": "./src/helper.ts"
     },
     "./validator": {
-      "types": "./dist/validator.d.ts",
-      "import": "./dist/validator.js"
+      "types": "./src/validator.ts",
+      "import": "./src/validator.ts",
+      "default": "./src/validator.ts"
     },
     "./errors": {
-      "types": "./dist/errors.d.ts",
-      "import": "./dist/errors.js"
+      "types": "./src/errors.ts",
+      "import": "./src/errors.ts",
+      "default": "./src/errors.ts"
     },
     "./defaults": {
-      "types": "./dist/defaults.d.ts",
-      "import": "./dist/defaults.js"
+      "types": "./src/defaults.ts",
+      "import": "./src/defaults.ts",
+      "default": "./src/defaults.ts"
     },
     "./test-utils": {
-      "types": "./dist/test-utils.d.ts",
-      "import": "./dist/test-utils.js"
+      "types": "./src/test-utils.ts",
+      "import": "./src/test-utils.ts",
+      "default": "./src/test-utils.ts"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "scripts": {
     "clean": "rm -rf dist",
     "build": "bunx tsc -p tsconfig.json",

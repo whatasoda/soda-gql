@@ -1,172 +1,171 @@
-# Builder Performance Optimization - Roadmap
+---
+role: "architecture"
+includes_by_default: false
+best_for_query:
+  - "how does it work"
+  - "architecture design"
+  - "future strategies"
+last_updated: 2025-10-05
+---
 
-**Document:** Strategic roadmap and implementation timeline
-**Source:** Derived from [plan-original.md](./plan-original.md)
+# Builder Performance - Roadmap
 
 ## Objectives
 
-Implement comprehensive performance overhaul through three sequential strategies:
-1. Long-lived incremental service
-2. Smarter discovery & cache invalidation
-3. Dependency-graph pruning with incremental codegen
+Comprehensive performance overhaul through three sequential strategies:
+1. Long-lived incremental service (session infrastructure)
+2. Smarter discovery & cache invalidation (fingerprint-based)
+3. Dependency-graph pruning with incremental codegen (chunk system)
 
-**Pre-release status:** Breaking changes acceptable. Ideal architecture takes priority over backward compatibility.
+**Philosophy:** Pre-release status allows breaking changes—ideal architecture over compatibility.
 
 ## Strategies Overview
 
-### Strategy 1 - Long-Lived Incremental Service
+### Strategy 1 - Session Infrastructure
 
-**Goal:** Build session infrastructure for incremental builds
+**Goal:** Enable incremental builds with warm state
 
-**Key Components:**
-- `BuilderSession` with warm state (discovery cache, dependency graph, intermediate modules)
-- `BuilderChangeSet` type for tracking file changes
-- Session persistence across builds
-- Module-level and definition-level adjacency tracking
-- CLI `--watch` and `--incremental-cache-dir` flags
-
-**Deliverables:**
-- Session-based service API with `load()`, `update()`, `dispose()`
-- Adjacency maps keyed by CanonicalId
+**Architecture:**
+- `BuilderSession` maintains discovery cache, dependency graph, intermediate modules
+- Adjacency maps (module + definition level) keyed by CanonicalId
+- `BuilderChangeSet` tracks file additions/updates/removals
 - Persistent cache in `.cache/soda-gql/builder/session.json`
 
-### Strategy 2 - Smarter Discovery & Cache Invalidation
+**API:**
+```typescript
+BuilderSession {
+  buildInitial(input): BuilderArtifact
+  update(changeSet): BuilderArtifact
+  getSnapshot(): SessionSnapshot
+}
+```
 
-**Goal:** Optimize file discovery with fingerprint-based caching
+**Status:** ✅ V1 complete (full rebuild fallback, correctness first)
 
-**Key Components:**
-- File fingerprint computation (xxhash-wasm: hash + size + mtime)
-- stat-only fast path for unchanged files
+### Strategy 2 - Fingerprint Caching
+
+**Goal:** Optimize discovery with stat-only fast path
+
+**Architecture:**
+- File fingerprint: `{ hash, size, mtimeMs }` via xxhash-wasm
+- Cache validation: Fingerprint match → reuse snapshot (no file read)
 - Explicit invalidation from BuilderChangeSet
-- Cache hit/miss/skip tracking
-- Schema version and plugin option hashing
+- Version-aware purging (schema hash, analyzer version)
 
-**Deliverables:**
-- Fingerprint-based cache validation
-- Diagnostic logging with hit/miss counts
-- CLI `--show-cache` flag for debugging
-- Version-aware cache purging
+**Performance:**
+```
+Unchanged file:
+  Before: readFileSync() + parse + hash  (~1-5ms)
+  After:  statSync() only               (~0.01ms)
+  Speedup: ~100-500x
+```
 
-### Strategy 3 - Dependency Graph Pruning & Incremental Codegen
+**Status:** ✅ Complete (100% cache hits proven)
 
-**Goal:** Selective rebuilds and chunked code generation
+### Strategy 3 - Graph Pruning & Chunking
 
-**Key Components:**
-- Lazy definition-level adjacency construction
-- Graph pruning with include/exclude predicates
-- Per-module chunk emission (`.cache/soda-gql/builder/modules/<id>.ts`)
-- Incremental artifact diffs
-- Selective module regeneration
+**Goal:** Selective rebuilds and incremental codegen
 
-**Deliverables:**
-- Graph pruning with depth thresholds
-- Chunked intermediate modules
-- CLI flags: `--incremental`, `--write-delta`, `--graph-filter`
-- Delta artifact debugging
+**Architecture:**
+- **Graph Patcher:** Incremental graph updates (add/update/remove nodes)
+- **Chunk Planner:** One chunk per source file
+- **Chunk Writer:** Emit changed chunks only
+- **Artifact Builder:** Load all chunks, rebuild artifact
 
-## Implementation Order & Dependencies
+**Chunk Flow:**
+```
+1. Diff graphs → DependencyGraphPatch
+2. Apply patch → Updated graph
+3. Plan chunks → ChunkManifest
+4. Diff manifests → Changed chunks
+5. Write chunks → .cache/.../modules/*.mjs
+6. Load all chunks → Build artifact
+```
+
+**Why per-file chunks?**
+- Aligns with file-level change detection
+- Simpler invalidation logic
+- Clean separation of concerns
+
+**Status:** 🔄 Core complete, integration tests in progress
+
+## Implementation Flow
 
 ```
 Prerequisites (benchmarks + tooling)
     ↓
 Strategy 1 (session infrastructure)
     ↓
-Strategy 2 (fingerprint caching) ← requires Strategy 1 session API
+Strategy 2 (fingerprints) ← requires session.update() API
     ↓
 Strategy 3 (graph pruning) ← requires Strategy 1 + 2
+    ↓
+Config Package ← Strategy 3 path resolution dependency
 ```
 
 **Critical Dependencies:**
-- Strategy 2 feeds fingerprints into Strategy 1's `update()` path
-- Strategy 3 uses Strategy 2 fingerprints for change detection
-- Strategy 3 uses Strategy 1 session APIs for cache invalidation
-- **Config package:** Strategy 3 depends on `@soda-gql/config` for path resolution
+- S2 feeds fingerprints into S1's update() path
+- S3 uses S2 fingerprints for change detection
+- S3 uses S1 session APIs for cache invalidation
+- Config package enables S3 path resolution
 
-## Performance Checkpoints
+## Performance Targets
 
-### Checkpoint S1 (Strategy 1 Complete)
-- ✅ Cold build: ≥25% wall time improvement
-- ✅ Peak RSS: ≥20% reduction
-- ✅ Repeat build: ≤40% of cold build time
+### Strategy 1 Checkpoints
+- ✅ Cold build: ≥25% improvement (via S2 fingerprints)
+- ✅ Peak RSS: ≥20% reduction (efficient session state)
+- ⚠️ Repeat build: ≤40% of cold (V1 doesn't meet, S3 will)
 
-### Checkpoint S2 (Strategy 2 Complete)
-- ✅ Discovery CPU: ≥40% reduction vs Strategy 1
-- ✅ Cache hit ratio: ≥85% on unchanged reruns
-- ✅ Plugin config change triggers rebuild in one pass
+### Strategy 2 Checkpoints
+- ✅ Discovery CPU: ~90% reduction (stat vs read+parse)
+- ✅ Cache hit ratio: 100% (proven in benchmarks)
+- ✅ Plugin config change: Triggers rebuild
 
-### Checkpoint S3 (Strategy 3 Complete)
-- ⏳ Targeted rebuild (≤5% changes): ≤35% of Strategy 1 cold build
-- ⏳ Delta artifact matches full rebuild (snapshot tests)
-- ⏳ Unchanged chunks: 100% cache hit ratio
-
-### Acceptance Criteria
-- CLI exposes session-backed `--watch`
-- Identical artifacts for runtime/zero-runtime modes
-- 3 consecutive green nightly benchmark runs
-- Instrumentation data archived in `.cache/perf/`
-
-## Timeline Estimate
-
-| Phase | Duration | Focus Areas |
-|-------|----------|-------------|
-| **Prerequisites** | 0.5 week | Fixtures, metrics, CI, docs |
-| **Strategy 1** | 2.0 weeks | Session, adjacency, CLI watch |
-| **Strategy 2** | 1.5 weeks | Fingerprints, cache, invalidation |
-| **Strategy 3** | 2.0 weeks | Graph pruning, chunking, incremental |
-| **Hardening** | 0.5 week | Benchmarks, docs |
-| **Total** | **6.0 weeks** | |
-
-**Actual Progress (as of 2025-10-05):**
-- Prerequisites: ✅ 0.5 week
-- Strategy 1: ✅ Core complete (tests/docs deferred)
-- Strategy 2: ✅ 1 session (vs 1.5 weeks)
-- Strategy 3: 🔄 2 sessions (core + bugs, integration tests in progress)
-- **Elapsed:** ~3.5 weeks
-
-## Config Package Dependency
-
-**Requirement:** Strategy 3 needs config-driven path resolution for generated imports.
-
-**Why:** Generated `.mjs` files use path aliases (`@/graphql-system`, `@soda-gql/core`) that don't resolve without config.
-
-**Solution:** `@soda-gql/config` package provides:
-- TypeScript config file support (executed via esbuild)
-- File extension mapping (.ts → .js)
-- Domain-separated config (builder/codegen/plugins)
-- Multi-project workspace support
-
-**Status:**
-- ✅ Package implementation complete (commit `d218e27`)
-- ✅ Builder integration complete (commits `021e7c2`, `38b6d04`)
-- ✅ 51 tests passing, 100% coverage
-
-See [config-package-implementation.md](../config-package-implementation.md) for details.
+### Strategy 3 Checkpoints
+- ⏳ Targeted rebuild: ≤35% of S1 cold build
+- ⏳ Chunk cache hits: 100% for unchanged
+- ⏳ Artifact equality: 100% match with full rebuild
 
 ## Testing Strategy
 
-### Unit Tests
-- Session lifecycle and state management
-- Fingerprint computation and caching
-- Adjacency graph construction
-- Graph pruning predicates
-- Chunk manifest diffing
+### Unit Tests (48 passing for S3)
+- Graph patcher: Add/update/remove nodes
+- Chunk planner: File grouping, content hashing
+- Artifact delta: Diff computation
+- Session lifecycle: State management
 
-### Integration Tests
-- Cache flow (session reuse scenarios)
-- Watch mode (chokidar + file changes)
-- Zero-runtime mode (no runtime imports)
-- Plugin-babel integration
-- Incremental rebuild correctness
+### Integration Tests (2/5 passing for S3)
+- Incremental session flow
+- Config-driven builds
+- Multi-chunk loading
+- Zero-runtime mode
 
 ### Benchmarks
-- Three fixtures: small-app, medium-app, large-app
-- Nightly CI runs (macOS + Linux)
-- Regression detection (5% threshold)
-- CPU profiling with `--cpu-prof`
-- Flame graphs via Clinic.js
+- Three fixtures: small (5 files), medium (16), large (40)
+- Nightly CI: macOS + Linux
+- Regression threshold: 5%
+- Profiling: CPU (--cpu-prof), flame graphs (Clinic.js)
+
+## Future Work (Post-Strategy 3)
+
+### P1 - CLI Enhancement
+- `--incremental` flag
+- `--write-delta` debugging
+- `--graph-filter` selective rebuilds
+
+### P2 - Optimization
+- File watcher integration (chokidar)
+- Session persistence across processes
+- Memory profiling improvements
+
+### P2 - CI/CD
+- Nightly benchmark automation
+- PR performance comments
+- Regression alerts (Slack)
 
 ## References
 
-- **Detailed Plan:** [plan-original.md](./plan-original.md)
-- **Current Status:** [status.md](./status.md)
-- **Profiling Guide:** [docs/guides/performance-profiling.md](../../guides/performance-profiling.md)
+- Full plan: [reference/plan-original.md](./reference/plan-original.md)
+- Current status: [progress.md](./progress.md)
+- Decisions rationale: [decisions.md](./decisions.md)
+- Performance data: [metrics.md](./metrics.md)

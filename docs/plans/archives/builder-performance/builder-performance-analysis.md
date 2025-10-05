@@ -481,5 +481,5 @@ Since Strategy 1 V1 doesn't do true incremental builds, **we should NOT expect 4
 - **Implementation:** `packages/builder/src/session/builder-session.ts`
 - **Discovery:** `packages/builder/src/discovery/discoverer.ts`
 - **Fingerprinting:** `packages/builder/src/discovery/fingerprint.ts`
-- **Current Status:** [../../builder-performance/status.md](../../builder-performance/status.md)
-- **Original Plan:** [../../builder-performance/plan-original.md](../../builder-performance/plan-original.md)
+- **Current Status:** [../../builder-performance/progress.md](../../builder-performance/progress.md)
+- **Original Plan:** [../../builder-performance/reference/plan-original.md](../../builder-performance/reference/plan-original.md)

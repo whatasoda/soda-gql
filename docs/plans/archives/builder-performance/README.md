@@ -34,7 +34,7 @@ This directory contains historical documentation from the builder performance op
 
 For current project status, see:
 - **[docs/plans/builder-performance/](../../builder-performance/)** - Active documentation
-- **[docs/plans/builder-performance/status.md](../../builder-performance/status.md)** - Current progress
+- **[docs/plans/builder-performance/progress.md](../../builder-performance/progress.md)** - Current progress
 - **[docs/plans/builder-performance/roadmap.md](../../builder-performance/roadmap.md)** - Strategic overview
 
 ## Usage

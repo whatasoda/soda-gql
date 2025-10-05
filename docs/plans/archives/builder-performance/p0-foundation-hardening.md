@@ -627,8 +627,8 @@ Created `tests/integration/builder_incremental_session.test.ts` with 4 E2E scena
 ## References
 
 - **Strategy 1 Summary:** [strategy-1-summary.md](./strategy-1-summary.md)
-- **Current Status:** [../../builder-performance/status.md](../../builder-performance/status.md)
-- **Optimization Plan:** [../../builder-performance/plan-original.md](../../builder-performance/plan-original.md)
+- **Current Status:** [../../builder-performance/progress.md](../../builder-performance/progress.md)
+- **Optimization Plan:** [../../builder-performance/reference/plan-original.md](../../builder-performance/reference/plan-original.md)
 - **Branch:** `feat/improved-performance-of-builder`
 - **Last Evaluation:** 2025-10-03
 - **Completion Date:** 2025-10-04 (Task 1 & 3)
