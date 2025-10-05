@@ -23,7 +23,7 @@ interface MetricsResult {
 
 const FIXTURES: Record<
   FixtureType,
-  { schema: string; entry: string; out: string; runtimeAdapter: string; codegenOut: string }
+  { schema: string; entry: string; out: string; runtimeAdapter: string; codegenOut: string; dir: string }
 > = {
   "small-app": {
     schema: "./benchmarks/runtime-builder/small-app/schema.graphql",
@@ -31,6 +31,7 @@ const FIXTURES: Record<
     out: "./.cache/soda-gql/benchmarks/small-app-runtime.json",
     runtimeAdapter: "./benchmarks/runtime-builder/small-app/runtime-adapter.ts",
     codegenOut: "./benchmarks/runtime-builder/small-app/graphql-system/index.ts",
+    dir: "./benchmarks/runtime-builder/small-app",
   },
   "medium-app": {
     schema: "./benchmarks/runtime-builder/medium-app/schema.graphql",
@@ -38,6 +39,7 @@ const FIXTURES: Record<
     out: "./.cache/soda-gql/benchmarks/medium-app-runtime.json",
     runtimeAdapter: "./benchmarks/runtime-builder/medium-app/runtime-adapter.ts",
     codegenOut: "./benchmarks/runtime-builder/medium-app/graphql-system/index.ts",
+    dir: "./benchmarks/runtime-builder/medium-app",
   },
   "large-app": {
     schema: "./benchmarks/runtime-builder/large-app/schema.graphql",
@@ -45,6 +47,7 @@ const FIXTURES: Record<
     out: "./.cache/soda-gql/benchmarks/large-app-runtime.json",
     runtimeAdapter: "./benchmarks/runtime-builder/large-app/runtime-adapter.ts",
     codegenOut: "./benchmarks/runtime-builder/large-app/graphql-system/index.ts",
+    dir: "./benchmarks/runtime-builder/large-app",
   },
 };
 
@@ -97,18 +100,26 @@ const collectMetrics = async (fixture: FixtureType): Promise<Omit<MetricsResult,
   }, 10);
 
   try {
-    // Run builder command
-    const exitCode = await builderCommand([
-      "--mode",
-      "runtime",
-      "--entry",
-      fixtureConfig.entry,
-      "--out",
-      fixtureConfig.out,
-    ]);
+    // Change cwd to fixture directory for config discovery
+    const originalCwd = process.cwd();
+    process.chdir(fixtureConfig.dir);
 
-    if (exitCode !== 0) {
-      throw new Error(`Builder command failed with exit code ${exitCode}`);
+    try {
+      // Run builder command
+      const exitCode = await builderCommand([
+        "--mode",
+        "runtime",
+        "--entry",
+        "./src/**/*.ts",
+        "--out",
+        "../../.cache/soda-gql/benchmarks/" + fixture + "-runtime.json",
+      ]);
+
+      if (exitCode !== 0) {
+        throw new Error(`Builder command failed with exit code ${exitCode}`);
+      }
+    } finally {
+      process.chdir(originalCwd);
     }
   } finally {
     clearInterval(memInterval);
