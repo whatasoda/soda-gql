@@ -6,13 +6,13 @@
   },
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/config" },
-    { "path": "./packages/codegen" },
-    { "path": "./packages/cli" },
-    { "path": "./packages/builder" },
-    { "path": "./packages/plugin-babel" },
-    { "path": "./packages/runtime" },
-    { "path": "./tests" }
+    { "path": "./packages/core/tsconfig.editor.json" },
+    { "path": "./packages/config/tsconfig.editor.json" },
+    { "path": "./packages/codegen/tsconfig.editor.json" },
+    { "path": "./packages/cli/tsconfig.editor.json" },
+    { "path": "./packages/builder/tsconfig.editor.json" },
+    { "path": "./packages/plugin-babel/tsconfig.editor.json" },
+    { "path": "./packages/runtime/tsconfig.editor.json" },
+    { "path": "./tests/tsconfig.editor.json" }
   ]
 }
