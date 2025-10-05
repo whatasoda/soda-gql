@@ -41,8 +41,6 @@
   },
   "files": {
     "includes": [
-      "debug.ts",
-      "debug.transformed.ts",
       "packages/**/*",
       "examples/**/*",
       "**/tests/**/*",

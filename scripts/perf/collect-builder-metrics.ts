@@ -175,7 +175,7 @@ const runBenchmark = async (fixture: FixtureType, iterations: number): Promise<M
     results.push(metrics);
   }
 
-  const lastResult = results[results.length - 1];
+  const lastResult = results[results.length - 1]!;
   const averageWallTime = results.reduce((sum, r) => sum + r.wallTime, 0) / results.length;
 
   return {

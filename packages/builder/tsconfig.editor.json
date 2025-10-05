@@ -2,10 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "outDir": "./dist",
+    "outDir": "../../.typecheck/builder",
+    "tsBuildInfoFile": "../../.typecheck/builder/tsconfig.tsbuildinfo",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "exclude": ["node_modules", "dist"],
   "references": [{ "path": "../core/tsconfig.editor.json" }, { "path": "../codegen/tsconfig.editor.json" }]
 }

@@ -3,9 +3,10 @@
   "compilerOptions": {
     "composite": true,
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "../../.typecheck/runtime",
+    "tsBuildInfoFile": "../../.typecheck/runtime/tsconfig.tsbuildinfo"
   },
-  "include": ["./src/**/*.ts"],
+  "include": ["./src/**/*"],
   "exclude": ["node_modules", "dist"],
   "references": [{ "path": "../core/tsconfig.editor.json" }]
 }
