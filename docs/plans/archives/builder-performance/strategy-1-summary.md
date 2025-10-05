@@ -134,7 +134,7 @@ Successfully implemented the foundational infrastructure for incremental builds 
 - `packages/builder/src/session/builder-session.ts`
 - `tests/unit/builder/change-set.test.ts`
 - `tests/unit/builder/builder-session.test.ts` (placeholder)
-- `docs/plans/builder-performance-progress.md`
+- `docs/plans/builder-performance/status.md` (was builder-performance-progress.md)
 - `docs/plans/strategy-1-summary.md` (this file)
 
 ### Modified Files (2)

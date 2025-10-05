@@ -274,7 +274,7 @@ Iteration 5/5: Cache hits 23, misses 0
 
 ### Performance Target Evaluation
 
-**Original Targets (from `builder-performance-optimization.md`):**
+**Original Targets (from plan-original.md):**
 
 | Target | Goal | Actual | Status |
 |--------|------|--------|--------|
@@ -310,7 +310,7 @@ Since Strategy 1 V1 doesn't do true incremental builds, **we should NOT expect 4
    - Compare with/without fingerprint caching
 
 3. **Document Current Limitations:**
-   - Update `builder-performance-progress.md`
+   - Update status documentation
    - Clarify that "incremental" is cache-based, not graph-based
    - Set realistic expectations for Strategy 3
 
@@ -481,5 +481,5 @@ Since Strategy 1 V1 doesn't do true incremental builds, **we should NOT expect 4
 - **Implementation:** `packages/builder/src/session/builder-session.ts`
 - **Discovery:** `packages/builder/src/discovery/discoverer.ts`
 - **Fingerprinting:** `packages/builder/src/discovery/fingerprint.ts`
-- **Progress Tracking:** `docs/plans/builder-performance-progress.md`
-- **Original Plan:** `docs/plans/builder-performance-optimization.md`
+- **Current Status:** [../../builder-performance/status.md](../../builder-performance/status.md)
+- **Original Plan:** [../../builder-performance/plan-original.md](../../builder-performance/plan-original.md)

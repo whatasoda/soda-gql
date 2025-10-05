@@ -2,7 +2,7 @@
 
 **Review Date:** 2025-10-04
 **Branch:** `feat/improved-performance-of-builder`
-**Reviewed Document:** [builder-performance-progress.md](./builder-performance-progress.md)
+**Reviewed Document:** [../../builder-performance/status.md](../../builder-performance/status.md) (was builder-performance-progress.md)
 
 ## Executive Summary
 
@@ -267,7 +267,7 @@ Consider:
 
 ## References
 
-- **Progress Document:** [builder-performance-progress.md](./builder-performance-progress.md)
-- **Original Plan:** [builder-performance-optimization.md](./builder-performance-optimization.md)
+- **Current Status:** [../../builder-performance/status.md](../../builder-performance/status.md)
+- **Original Plan:** [../../builder-performance/plan-original.md](../../builder-performance/plan-original.md)
 - **Profiling Guide:** [docs/guides/performance-profiling.md](../guides/performance-profiling.md)
 - **ADR-001:** [Zero-runtime plan](../decisions/001-zero-runtime-plan.md)
