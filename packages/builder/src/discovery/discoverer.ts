@@ -81,7 +81,20 @@ export const discoverModules = ({
     }
 
     // Read source and compute signature
-    const source = readFileSync(filePath, "utf8");
+    let source: string;
+    try {
+      source = readFileSync(filePath, "utf8");
+    } catch (error) {
+      // Handle deleted files gracefully - they may be in cache but removed from disk
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        // Delete from cache and invalidate fingerprint
+        cache?.delete(filePath);
+        invalidateFingerprint(filePath);
+        continue;
+      }
+      // Re-throw other IO errors
+      throw error;
+    }
     const signature = createSourceHash(source);
 
     // Parse module

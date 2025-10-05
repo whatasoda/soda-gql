@@ -16,6 +16,7 @@ import type { DependencyGraph } from "../dependency-graph/types";
 import { createDiscoveryCache } from "../discovery";
 import { discoverModules } from "../discovery/discoverer";
 import { resolveEntryPaths } from "../discovery/entry-paths";
+import { invalidateFingerprint } from "../discovery/fingerprint";
 import type { DiscoverySnapshot } from "../discovery/types";
 import { createIntermediateModuleChunks } from "../intermediate-module";
 import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
@@ -479,6 +480,15 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Validate metadata - fall back to full rebuild if mismatch
     if (!metadataMatches(changeSet.metadata, state.metadata)) {
+      // Purge removed files from caches before rebuild
+      for (const removedPath of changeSet.removed) {
+        if (discoveryCache) {
+          discoveryCache.delete(removedPath);
+        }
+        invalidateFingerprint(removedPath);
+        state.snapshots.delete(removedPath);
+      }
+
       // Clear state and rebuild
       state.snapshots.clear();
       state.graph.clear();
@@ -565,8 +575,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     const entryPaths = entryPathsResult.value;
 
-    // Pass changed files as invalidated paths for fingerprint-based skipping
-    const invalidatedPaths = new Set(changedFiles);
+    // Pass changed files AND removed dependents as invalidated paths
+    const invalidatedPaths = new Set([...changedFiles, ...removedAffected]);
 
     // Run discovery with invalidations
     const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
@@ -619,7 +629,15 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Persist new manifest
     state.chunkManifest = newManifest;
 
-    // Build only affected chunks
+    // Create next chunk modules map (copy current state)
+    const nextChunkModules = new Map(state.chunkModules);
+
+    // Remove deleted chunks from next map immediately
+    for (const removedChunkId of chunkDiff.removed) {
+      nextChunkModules.delete(removedChunkId as string);
+    }
+
+    // Build and write affected chunks
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
     if (affectedChunkIds.size > 0) {
@@ -649,34 +667,15 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
         return err(writeResult.error);
       }
 
-      // Update written chunks map
+      // Update next map with freshly written chunks
       for (const [chunkId, writtenChunk] of writeResult.value.entries()) {
-        state.chunkModules.set(chunkId, writtenChunk);
-      }
-
-      // Remove deleted chunks from map
-      for (const removedChunkId of chunkDiff.removed) {
-        state.chunkModules.delete(removedChunkId as string);
+        nextChunkModules.set(chunkId, writtenChunk);
       }
     }
 
-    // Store updated manifest
-    state.chunkManifest = newManifest;
-
-    // Clear registry entries for removed and updated chunks BEFORE loading
-    // This ensures old module factories don't interfere with new ones
-    const registry = getPseudoModuleRegistry(evaluatorId);
-    for (const removedChunkId of chunkDiff.removed) {
-      registry.removeModule(removedChunkId as string);
-    }
-    for (const [updatedChunkId] of chunkDiff.updated) {
-      registry.removeModule(updatedChunkId);
-    }
-
-    // Build chunk paths map for ALL chunks (not just affected)
-    // This is necessary because chunks may depend on each other
+    // Build chunk paths map from NEXT chunk modules (includes fresh chunks, excludes removed)
     const allChunkPaths = new Map<string, string>();
-    for (const [chunkId, chunk] of state.chunkModules.entries()) {
+    for (const [chunkId, chunk] of nextChunkModules.entries()) {
       allChunkPaths.set(chunkId, chunk.transpiledPath);
     }
 
@@ -691,6 +690,9 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     if (artifactResult.isErr()) {
       return err(artifactResult.error);
     }
+
+    // Commit the chunk module changes now that loading succeeded
+    state.chunkModules = nextChunkModules;
 
     // Store and return the artifact
     state.lastArtifact = artifactResult.value;
