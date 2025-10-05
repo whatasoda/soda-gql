@@ -1,7 +1,7 @@
+import type { Hidden } from "../../utils/hidden";
+import type { Prettify } from "../../utils/prettify";
 import type { ApplyTypeModifier } from "../schema/type-modifier";
 import type { AnyDefaultValue, InputTypeRef } from "../schema/type-ref";
-import type { Hidden } from "../shared/hidden";
-import type { Prettify } from "../shared/prettify";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 export type AnyVarRef = VarRef<any>;

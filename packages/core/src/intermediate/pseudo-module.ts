@@ -22,6 +22,13 @@ export const getPseudoModuleRegistry = (evaluatorId: string) => {
   return registry;
 };
 
+export const clearPseudoModuleRegistry = (evaluatorId: string) => {
+  const registry = pseudoModuleRegistries.get(evaluatorId);
+  if (registry) {
+    registry.clear();
+  }
+};
+
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => ArtifactRecord>();
   const caches = new Map<string, ArtifactRecord>();
@@ -57,6 +64,24 @@ export const createPseudoModuleRegistry = () => {
     return factory();
   };
 
+  const removeModule = (filePath: string) => {
+    modules.delete(filePath);
+    caches.delete(filePath);
+    // Remove all entries that belong to this module (canonicalId prefix is "filePath::")
+    const prefix = `${filePath}::`;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i]?.[0].startsWith(prefix)) {
+        entries.splice(i, 1);
+      }
+    }
+  };
+
+  const clear = () => {
+    modules.clear();
+    caches.clear();
+    entries.length = 0;
+  };
+
   const evaluate = (): Record<string, IntermediateArtifactElement> => {
     // First, register all modules by calling their factories
     for (const mod of modules.values()) {
@@ -87,6 +112,8 @@ export const createPseudoModuleRegistry = () => {
     addModule,
     addElement,
     import: import_,
+    removeModule,
+    clear,
     evaluate,
   };
 };

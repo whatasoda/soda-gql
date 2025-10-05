@@ -1,9 +1,9 @@
 /** Model helper types mirroring the `gql.model` API. */
 
+import type { SwitchIfEmpty } from "../../utils/empty-object";
+import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
-import type { SwitchIfEmpty } from "../shared/empty-object";
-import type { Hidden } from "../shared/hidden";
 import { ArtifactElement } from "./artifact-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;

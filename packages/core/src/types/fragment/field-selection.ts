@@ -1,5 +1,6 @@
 /** Canonical field selection types used by models and slices. */
 
+import type { Prettify } from "../../utils/prettify";
 import type {
   AnyFieldName,
   AnyGraphqlSchema,
@@ -12,7 +13,6 @@ import type {
   OutputUnionRef,
   PickTypeRefByFieldName,
 } from "../schema";
-import type { Prettify } from "../shared/prettify";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
 

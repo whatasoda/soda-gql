@@ -1,4 +1,7 @@
 /** Field builder factories shared by model and slice helpers. */
+
+import type { IfEmpty } from "../../utils/empty-object";
+import type { UnionToIntersection } from "../../utils/type-utils";
 import type {
   AbstractFieldSelection,
   AnyAssignableInput,
@@ -21,8 +24,6 @@ import type {
   OutputUnionRef,
   UnionMemberName,
 } from "../schema";
-import type { IfEmpty } from "../shared/empty-object";
-import type { UnionToIntersection } from "../shared/utility";
 
 export const mergeFields = <TFieldEntries extends AnyFields[]>(fields: TFieldEntries) =>
   Object.assign({}, ...fields) as MergeFields<TFieldEntries>;

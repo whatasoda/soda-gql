@@ -1,6 +1,6 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../types/schema";
-import type { UnionToIntersection } from "../types/shared/utility";
+import type { UnionToIntersection } from "../utils/type-utils";
 
 export const mergeVarDefinitions = <TVarDefinitions extends InputTypeRefs[]>(definitions: TVarDefinitions) =>
   Object.assign({}, ...definitions) as MergeVarDefinitions<TVarDefinitions>;

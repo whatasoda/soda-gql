@@ -1,6 +1,6 @@
 /** Schema description DSL and type inference helpers. */
 
-import type { Hidden } from "../shared/hidden";
+import type { Hidden } from "../../utils/hidden";
 import type { AnyConstDirectiveAttachments } from "./const-directives";
 import type { ApplyTypeModifier } from "./type-modifier";
 import type {

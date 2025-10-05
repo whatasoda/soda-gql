@@ -1,8 +1,8 @@
+import type { SwitchIfEmpty } from "../../utils/empty-object";
+import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
-import type { SwitchIfEmpty } from "../shared/empty-object";
-import type { Hidden } from "../shared/hidden";
 import { ArtifactElement } from "./artifact-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;

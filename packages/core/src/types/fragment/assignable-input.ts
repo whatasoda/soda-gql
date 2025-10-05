@@ -1,3 +1,4 @@
+import type { ConstValue } from "../schema/const-value";
 import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "../schema/schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "../schema/type-modifier";
 import type {
@@ -7,7 +8,6 @@ import type {
   InputTypeRefs,
   StripTailingListFromTypeRef,
 } from "../schema/type-ref";
-import type { ConstValue } from "../shared/const-value";
 import type { AnyVarRef, VarRefBy } from "./var-ref";
 
 export type AnyAssignableInputValue =

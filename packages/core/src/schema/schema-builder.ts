@@ -7,8 +7,8 @@ import type {
   ScalarDef,
   UnionDef,
 } from "../types/schema";
-import { type Hidden, hidden } from "../types/shared/hidden";
-import { wrapValueByKey } from "../types/shared/utility";
+import { type Hidden, hidden } from "../utils/hidden";
+import { wrapByKey } from "../utils/wrap-by-key";
 import { unsafeOutputRef } from "./type-ref-builder";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
@@ -19,7 +19,7 @@ export const defineScalar = <const TName extends string, TInput, TOutput, TDirec
     directives: TDirectives;
   },
 ) =>
-  wrapValueByKey(name, {
+  wrapByKey(name, {
     _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
     name,
     directives: definition({ type: hidden }).directives,

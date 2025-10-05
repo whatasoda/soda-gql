@@ -1,5 +1,5 @@
-import type { ConstValue } from "../shared/const-value";
 import type { AnyConstDirectiveAttachments } from "./const-directives";
+import type { ConstValue } from "./const-value";
 import type { ListTypeModifierSuffix, StripTailingListFromTypeModifier, TypeModifier } from "./type-modifier";
 
 export type AnyDefaultValue = { default: ConstValue };

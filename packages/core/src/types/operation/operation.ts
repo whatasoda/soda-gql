@@ -1,11 +1,11 @@
 /** Operation composition helpers (`gql.query`, `gql.mutation`, `gql.subscription`). */
 import type { TypedQueryDocumentNode } from "graphql";
+import type { Hidden } from "../../utils/hidden";
+import type { Prettify } from "../../utils/prettify";
+import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType } from "../schema";
-import type { Hidden } from "../shared/hidden";
-import type { Prettify } from "../shared/prettify";
-import type { UnionToIntersection } from "../shared/utility";
 import { ArtifactElement } from "./artifact-element";
 import type { AnySliceContents } from "./slice";
 

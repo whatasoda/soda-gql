@@ -1,6 +1,6 @@
 /** Variable helper types for binding GraphQL inputs. */
 
-import type { ConstValue } from "../shared/const-value";
+import type { ConstValue } from "./const-value";
 import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "./schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "./type-modifier";
 import type {

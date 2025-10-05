@@ -19,7 +19,7 @@ import type {
   OutputUnionRef,
   UnionMemberName,
 } from "../types/schema";
-import { wrapValueByKey } from "../types/shared/utility";
+import { wrapByKey } from "../utils/wrap-by-key";
 
 // Cache is schema-scoped to avoid cross-schema contamination when multiple schemas share type names
 type CacheMap = Map<string, Record<string, AnyFieldSelectionFactory>>;
@@ -66,7 +66,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       fieldArgs: AnyFieldSelection["args"] | null | void,
       extras?: { alias?: TAlias; directives?: AnyFieldSelection["directives"] },
     ) => {
-      const wrap = <T>(value: T) => wrapValueByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
+      const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
 
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectRef };

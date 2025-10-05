@@ -3,7 +3,7 @@ import { createVarRefs } from "../buildtime/input";
 import type { AnyAssignableInput } from "../types/fragment";
 import type { AnyOperationOf, AnySliceContent } from "../types/operation";
 import type { AnyGraphqlSchema, InputTypeRef, InputTypeRefs, OperationType } from "../types/schema";
-import type { StripFunctions, StripSymbols } from "../types/shared/utility";
+import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 import { createExecutionResultParser } from "./parse-execution-result";
 import { registerOperation } from "./runtime-registry";
 
