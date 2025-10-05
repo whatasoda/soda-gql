@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getAstAnalyzer } from "../../ast";
-import { createJsonCache } from "../../cache/json-cache";
-import { createDiscoveryCache } from "../cache";
-import { discoverModules } from "../discoverer";
-import type { DiscoverySnapshotMetadata } from "../types";
+import { getAstAnalyzer } from "../../../../packages/builder/src/ast";
+import { createJsonCache } from "../../../../packages/builder/src/cache/json-cache";
+import { createDiscoveryCache } from "../../../../packages/builder/src/discovery/cache";
+import { discoverModules } from "../../../../packages/builder/src/discovery/discoverer";
+import type { DiscoverySnapshotMetadata } from "../../../../packages/builder/src/discovery/types";
 
-const fixtureRoot = join(import.meta.dir, "..", "..", "..", "tests", "fixtures", "discoverer-invalidation");
+const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 const cacheFactory = createJsonCache({ rootDir: join(fixtureRoot, ".cache") });
 
 const metadata: DiscoverySnapshotMetadata = {

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createCanonicalId } from "../../canonical-id/canonical-id";
-import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../../dependency-graph";
-import { buildGraphIndex } from "../../dependency-graph/patcher";
-import { diffChunkManifests, planChunks } from "../chunks";
+import { createCanonicalId } from "../../../../packages/builder/src/canonical-id/canonical-id";
+import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../../../../packages/builder/src/dependency-graph";
+import { buildGraphIndex } from "../../../../packages/builder/src/dependency-graph/patcher";
+import { diffChunkManifests, planChunks } from "../../../../packages/builder/src/intermediate-module/chunks";
 
 const createTestNode = (filePath: string, localPath: string, deps: string[] = []): DependencyGraphNode => {
   const id = createCanonicalId(filePath, localPath);

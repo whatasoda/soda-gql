@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SodaGqlConfig } from "../src/types";
-import { resolveConfig, validateConfig } from "../src/validator";
+import type { SodaGqlConfig } from "../../../packages/config/src/types";
+import { resolveConfig, validateConfig } from "../../../packages/config/src/validator";
 
 describe("validator.ts", () => {
   describe("validateConfig", () => {

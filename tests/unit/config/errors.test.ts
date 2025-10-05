@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ConfigErrorCode } from "../src/errors";
-import { configError } from "../src/errors";
+import type { ConfigErrorCode } from "../../../packages/config/src/errors";
+import { configError } from "../../../packages/config/src/errors";
 
 describe("errors.ts", () => {
   test("configError creates error with code and message", () => {

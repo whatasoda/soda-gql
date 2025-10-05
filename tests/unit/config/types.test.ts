@@ -6,7 +6,7 @@ import type {
   ProjectConfig,
   ResolvedSodaGqlConfig,
   SodaGqlConfig,
-} from "../src/types.ts";
+} from "../../../packages/config/src/types.ts";
 
 describe("types.ts", () => {
   test("BuilderConfig accepts valid configuration", () => {
