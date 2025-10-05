@@ -261,6 +261,31 @@ const collectAffectedDefinitions = (removedFiles: Set<string>, snapshots: Map<st
 };
 
 /**
+ * Validate that all dependencies in the graph exist.
+ * Returns an error if any node references a missing dependency.
+ */
+const validateGraphDependencies = (graph: DependencyGraph): Result<void, BuilderError> => {
+  for (const [nodeId, node] of graph.entries()) {
+    for (const depId of node.dependencies) {
+      if (!graph.has(depId)) {
+        // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
+        const depParts = depId.split("::");
+        const depFilePath = depParts[0] || "";
+        const depExport = depParts[1] || depId;
+
+        return err({
+          code: "CIRCULAR_DEPENDENCY" as const,
+          filePath: node.filePath,
+          astPath: node.localPath,
+          message: `Missing dependency: '${depExport}' from '${depFilePath}' is referenced but not found in the graph. The file may have been deleted or the export may no longer exist.`,
+        });
+      }
+    }
+  }
+  return ok(undefined);
+};
+
+/**
  * Remove files from session state and return affected modules.
  */
 const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<string> => {
@@ -406,9 +431,18 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Build dependency graph
     const dependencyGraph = buildDependencyGraph(analyses);
     if (dependencyGraph.isErr()) {
+      const graphError = dependencyGraph.error;
+      if (graphError.code === "MISSING_IMPORT") {
+        return err({
+          code: "MODULE_EVALUATION_FAILED",
+          filePath: graphError.chain[0] || "",
+          astPath: "",
+          message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
+        });
+      }
       return err({
         code: "CIRCULAR_DEPENDENCY",
-        chain: dependencyGraph.error.chain,
+        chain: graphError.chain as readonly string[],
       });
     }
 
@@ -599,9 +633,18 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Build NEW dependency graph from fresh discovery
     const dependencyGraph = buildDependencyGraph(analyses);
     if (dependencyGraph.isErr()) {
+      const graphError = dependencyGraph.error;
+      if (graphError.code === "MISSING_IMPORT") {
+        return err({
+          code: "MODULE_EVALUATION_FAILED",
+          filePath: graphError.chain[0] || "",
+          astPath: "",
+          message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
+        });
+      }
       return err({
         code: "CIRCULAR_DEPENDENCY",
-        chain: dependencyGraph.error.chain,
+        chain: graphError.chain as readonly string[],
       });
     }
 
@@ -612,6 +655,12 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Apply patch to existing graph
     applyGraphPatch(state.graph, state.graphIndex, graphPatch);
+
+    // Validate that all dependencies are satisfied after patching
+    const validationResult = validateGraphDependencies(state.graph);
+    if (validationResult.isErr()) {
+      return err(validationResult.error);
+    }
 
     // Update adjacency maps (full rebuild for now - could be optimized)
     state.moduleAdjacency = extractModuleAdjacency(state.graph);
