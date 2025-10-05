@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 
+import { clearPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "./artifact";
 import type { BuilderArtifact } from "./artifact/types";
@@ -25,6 +26,7 @@ type PipelineData = {
 
 const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData, BuilderError>> => {
   const evaluatorId = options.evaluatorId ?? "default";
+  clearPseudoModuleRegistry(evaluatorId);
   const cacheFactory = createJsonCache({
     rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
     prefix: ["builder"],
@@ -68,6 +70,7 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
     graph: dependencyGraph.value,
     outDir: runtimeDir,
     evaluatorId,
+    config: options.config,
   });
 
   if (intermediateModule.isErr()) {

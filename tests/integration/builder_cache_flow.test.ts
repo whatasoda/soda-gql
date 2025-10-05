@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { runBuilder } from "../../packages/builder/src/index";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
+import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -40,6 +41,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
       format: "json",
       analyzer: "ts",
       debugDir,
+      config: createTestConfig(workspaceRoot),
     });
 
     if (result.isErr()) {

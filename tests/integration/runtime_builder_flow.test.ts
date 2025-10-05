@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { type CanonicalId, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
+import { createTestConfig } from "../helpers/test-config";
 
 type CliResult = {
   readonly stdout: string;
@@ -47,6 +48,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outPath: str
       format: "json",
       analyzer: "ts",
       debugDir,
+      config: createTestConfig(workspaceRoot),
     });
 
     if (result.isErr()) {

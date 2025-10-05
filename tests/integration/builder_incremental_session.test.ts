@@ -6,6 +6,7 @@ import { createBuilderSession } from "@soda-gql/builder/session/builder-session"
 import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
+import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -73,6 +74,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspace),
     });
 
     expect(result.isOk()).toBe(true);
@@ -92,6 +94,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspace),
     });
 
     expect(initialResult.isOk()).toBe(true);
@@ -133,6 +136,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspace),
     });
 
     expect(initialResult.isOk()).toBe(true);
@@ -166,6 +170,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspace),
     });
 
     expect(initialResult.isOk()).toBe(true);

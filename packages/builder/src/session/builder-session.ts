@@ -548,6 +548,14 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
         });
       }
 
+      // Sanitize entry paths by filtering out removed files
+      const normalizedRemoved = new Set(coercePaths(changeSet.removed));
+      const sanitizedEntry = state.lastInput.entry.filter((path) => !normalizedRemoved.has(path));
+      state.lastInput = {
+        ...state.lastInput,
+        entry: sanitizedEntry,
+      };
+
       return buildInitial(state.lastInput);
     }
 
@@ -604,6 +612,16 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     if (!astAnalyzer) {
       astAnalyzer = getAstAnalyzer(state.lastInput.analyzer);
+    }
+
+    // Guard: ensure state.lastInput and config are available
+    if (!state.lastInput || !state.lastInput.config) {
+      return err({
+        code: "MODULE_EVALUATION_FAILED",
+        filePath: "",
+        astPath: "",
+        message: "Missing lastInput or config for incremental rebuild",
+      });
     }
 
     // Resolve entry paths
@@ -696,8 +714,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     if (affectedChunkIds.size > 0) {
       // Get import paths from config
-      const gqlImportPath = resolveGqlImportPath({ config: input.config, outDir: runtimeDir });
-      const coreImportPath = resolveCoreImportPath({ config: input.config, outDir: runtimeDir });
+      const gqlImportPath = resolveGqlImportPath({ config: state.lastInput.config, outDir: runtimeDir });
+      const coreImportPath = resolveCoreImportPath({ config: state.lastInput.config, outDir: runtimeDir });
 
       // Build chunk modules for affected files
       const allChunks = buildChunkModules({

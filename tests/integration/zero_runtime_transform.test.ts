@@ -10,6 +10,7 @@ import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoade
 import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
+import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -71,6 +72,7 @@ describe("zero-runtime transform", () => {
         format: "json",
         analyzer: "ts",
         debugDir,
+        config: createTestConfig(workspace),
       });
 
       if (builderResult.isErr()) {
