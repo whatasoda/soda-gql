@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import {
   type BuilderArtifact,
-  type BuilderArtifactEntry,
+  type BuilderArtifactElement,
   BuilderArtifactSchema,
   type CanonicalId,
   createCanonicalId,
@@ -47,6 +47,6 @@ export const loadArtifact = (path: string): Result<BuilderArtifact, ArtifactErro
 export const resolveCanonicalId = (filename: string, astPath: string): CanonicalId =>
   createCanonicalId(resolve(filename), astPath);
 
-export const lookupArtifact = (artifact: BuilderArtifact, canonicalId: string): BuilderArtifactEntry | undefined => {
+export const lookupArtifact = (artifact: BuilderArtifact, canonicalId: string): BuilderArtifactElement | undefined => {
   return artifact.elements[canonicalId as CanonicalId];
 };

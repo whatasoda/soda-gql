@@ -1,6 +1,6 @@
 export type {
   BuilderArtifact,
-  BuilderArtifactElement as BuilderArtifactEntry,
+  BuilderArtifactElement,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,

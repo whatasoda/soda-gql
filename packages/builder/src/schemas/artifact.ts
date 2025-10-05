@@ -42,14 +42,14 @@ declare function __validate_BuilderArtifactModelSchema<
   _ extends z.infer<typeof BuilderArtifactModelSchema> = BuilderArtifactModel,
 >(): never;
 
-const BuilderArtifactEntrySchema = z.discriminatedUnion("type", [
+const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
   BuilderArtifactOperationSchema,
   BuilderArtifactSliceSchema,
   BuilderArtifactModelSchema,
 ]);
 
 export const BuilderArtifactSchema = z.object({
-  elements: z.record(z.string<CanonicalId>(), BuilderArtifactEntrySchema),
+  elements: z.record(z.string<CanonicalId>(), BuilderArtifactElementSchema),
   report: z.object({
     durationMs: z.number(),
     warnings: z.array(z.string()),
@@ -61,4 +61,4 @@ export const BuilderArtifactSchema = z.object({
 });
 
 export type BuilderArtifact = z.infer<typeof BuilderArtifactSchema>;
-export type BuilderArtifactEntry = z.infer<typeof BuilderArtifactEntrySchema>;
+export type BuilderArtifactElement = z.infer<typeof BuilderArtifactElementSchema>;

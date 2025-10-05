@@ -1,6 +1,6 @@
 import {
   type BuilderArtifact,
-  type BuilderArtifactEntry,
+  type BuilderArtifactElement,
   type BuilderError,
   type CanonicalId,
   createBuilderService,
@@ -130,7 +130,7 @@ export type PluginError =
   | PluginAnalysisArtifactMissingError
   | PluginAnalysisUnsupportedArtifactTypeError;
 
-type AllArtifacts = Record<CanonicalId, BuilderArtifactEntry>;
+type AllArtifacts = Record<CanonicalId, BuilderArtifactElement>;
 
 export type PluginState = {
   readonly options: NormalizedOptions;
