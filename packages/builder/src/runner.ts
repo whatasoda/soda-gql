@@ -24,6 +24,7 @@ type PipelineData = {
 };
 
 const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData, BuilderError>> => {
+  const evaluatorId = options.evaluatorId ?? "default";
   const cacheFactory = createJsonCache({
     rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
     prefix: ["builder"],
@@ -32,7 +33,7 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
   const cache = createDiscoveryCache({
     factory: cacheFactory,
     analyzer: options.analyzer,
-    evaluatorId: "default",
+    evaluatorId,
   });
 
   // Compute metadata for discovery
@@ -66,6 +67,7 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
   const intermediateModule = await createIntermediateModule({
     graph: dependencyGraph.value,
     outDir: runtimeDir,
+    evaluatorId,
   });
 
   if (intermediateModule.isErr()) {
@@ -78,6 +80,7 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
     graph: dependencyGraph.value,
     cache: stats,
     intermediateModulePath: transpiledPath,
+    evaluatorId,
   });
 
   if (artifactResult.isErr()) {

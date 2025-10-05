@@ -11,6 +11,7 @@ export type BuilderInput = {
   readonly entry: readonly string[];
   readonly analyzer: BuilderAnalyzer;
   readonly debugDir?: string;
+  readonly evaluatorId?: string;
 };
 
 export type BuilderOptions = BuilderInput & {

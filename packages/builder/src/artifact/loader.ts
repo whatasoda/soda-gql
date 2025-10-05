@@ -1,36 +1,47 @@
 import { pathToFileURL } from "node:url";
-import { getActiveRegistry, setActiveRegistry } from "@soda-gql/core";
+import { getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
-import type { IntermediateModule } from "../intermediate-module";
+import type { IntermediateModuleOutput, IntermediateModuleRaw } from "../intermediate-module/types";
 import type { BuilderError } from "../types";
-import { toBuilderError } from "./issue-handler";
 
 export const loadIntermediateModule = async (
   intermediateModulePath: string,
-): Promise<Result<IntermediateModule, BuilderError>> => {
+): Promise<Result<IntermediateModuleRaw, BuilderError>> => {
   try {
-    const module = (await import(pathToFileURL(intermediateModulePath).href)) as IntermediateModule;
-    // Clear active registry after successful import
-    setActiveRegistry(null);
+    const module = (await import(pathToFileURL(intermediateModulePath).href)) as IntermediateModuleRaw;
     return ok(module);
   } catch (error) {
-    // Try to retrieve issues from active registry before clearing
-    const registry = getActiveRegistry();
-    const issues = registry?.getIssues() ?? [];
-    setActiveRegistry(null);
-
-    // Check if we have actionable issues (e.g., duplicate operation names)
-    if (issues.length > 0) {
-      const builderError = toBuilderError(issues);
-      if (builderError) {
-        return err(builderError);
-      }
-    }
-
-    // Fallback to generic MODULE_EVALUATION_FAILED
     return err({
       code: "MODULE_EVALUATION_FAILED",
       filePath: intermediateModulePath,
+      astPath: "runtime",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+export const loadIntermediateModules = async ({
+  chunkPaths,
+  evaluatorId,
+}: {
+  chunkPaths: Map<string, string>;
+  evaluatorId: string;
+}): Promise<Result<IntermediateModuleOutput, BuilderError>> => {
+  try {
+    for (const [_chunkId, transpiledPath] of chunkPaths.entries()) {
+      const moduleResult = await loadIntermediateModule(transpiledPath);
+      if (moduleResult.isErr()) {
+        return err(moduleResult.error);
+      }
+    }
+
+    const registry = getPseudoModuleRegistry(evaluatorId);
+
+    return ok({ elements: registry.evaluate() });
+  } catch (error) {
+    return err({
+      code: "MODULE_EVALUATION_FAILED",
+      filePath: "",
       astPath: "runtime",
       message: error instanceof Error ? error.message : String(error),
     });

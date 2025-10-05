@@ -63,7 +63,8 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("initial build creates chunks and artifact", async () => {
-    const session = createBuilderSession();
+    const evaluatorId = Bun.randomUUIDv7();
+    const session = createBuilderSession({ evaluatorId });
 
     const result = await session.buildInitial({
       mode: "runtime",
@@ -92,7 +93,9 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("applies graph patch when a module changes", async () => {
-    const session = createBuilderSession();
+    const evaluatorId = Bun.randomUUIDv7();
+    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const session = createBuilderSession({ evaluatorId });
 
     // Initial build
     const initial = await session.buildInitial({
@@ -101,9 +104,12 @@ describe("BuilderSession incremental end-to-end", () => {
       analyzer: "ts",
     });
 
+    if (initial.isErr()) {
+      console.error("Build failed:", initial.error);
+    }
     expect(initial.isOk()).toBe(true);
     const initialArtifact = initial._unsafeUnwrap();
-    const initialElementCount = Object.keys(initialArtifact.elements).length;
+    const _initialElementCount = Object.keys(initialArtifact.elements).length;
 
     // Wait to ensure mtime changes
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -134,6 +140,9 @@ describe("BuilderSession incremental end-to-end", () => {
     // Incremental update
     const updateResult = await session.update(changeSet);
 
+    if (updateResult.isErr()) {
+      console.error("Update failed:", updateResult.error);
+    }
     expect(updateResult.isOk()).toBe(true);
     const updatedArtifact = updateResult._unsafeUnwrap();
 
@@ -145,13 +154,16 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updatedArtifact.report.cache.hits).toBeGreaterThan(0);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession();
+    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
     const fullRebuild = await fullRebuildSession.buildInitial({
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
     });
 
+    if (fullRebuild.isErr()) {
+      console.error("Full rebuild failed:", fullRebuild.error);
+    }
     expect(fullRebuild.isOk()).toBe(true);
     const fullRebuildArtifact = fullRebuild._unsafeUnwrap();
 
@@ -160,7 +172,9 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("adds new module without touching unaffected chunks", async () => {
-    const session = createBuilderSession();
+    const evaluatorId = Bun.randomUUIDv7();
+    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const session = createBuilderSession({ evaluatorId });
 
     // Initial build
     const initial = await session.buildInitial({
@@ -169,15 +183,15 @@ describe("BuilderSession incremental end-to-end", () => {
       analyzer: "ts",
     });
 
+    if (initial.isErr()) {
+      console.error("Initial build failed:", initial.error);
+    }
     expect(initial.isOk()).toBe(true);
     const initialArtifact = initial._unsafeUnwrap();
-    const initialChunkManifest = session.getSnapshot("chunkManifest");
+    const _initialChunkManifest = session.getSnapshot("chunkManifest");
 
     // Copy new catalog file
-    const variantPath = path.join(
-      originalCwd,
-      "tests/fixtures/builder-session-incremental/variants/catalog.new.ts",
-    );
+    const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
     const targetPath = path.join(workspaceRoot, "src/entities/catalog.ts");
     await fs.copyFile(variantPath, targetPath);
 
@@ -195,6 +209,9 @@ describe("BuilderSession incremental end-to-end", () => {
     // Incremental update
     const updateResult = await session.update(changeSet);
 
+    if (updateResult.isErr()) {
+      console.error("Update failed:", updateResult.error);
+    }
     expect(updateResult.isOk()).toBe(true);
     const updatedArtifact = updateResult._unsafeUnwrap();
 
@@ -202,13 +219,16 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(Object.keys(updatedArtifact.elements).length).toBeGreaterThan(Object.keys(initialArtifact.elements).length);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession();
+    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
     const fullRebuild = await fullRebuildSession.buildInitial({
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
     });
 
+    if (fullRebuild.isErr()) {
+      console.error("Full rebuild failed:", fullRebuild.error);
+    }
     expect(fullRebuild.isOk()).toBe(true);
     const fullRebuildArtifact = fullRebuild._unsafeUnwrap();
 
@@ -217,7 +237,9 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("removes module and updates artifact", async () => {
-    const session = createBuilderSession();
+    const evaluatorId = Bun.randomUUIDv7();
+    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const session = createBuilderSession({ evaluatorId });
 
     // Initial build
     const initial = await session.buildInitial({
@@ -226,6 +248,9 @@ describe("BuilderSession incremental end-to-end", () => {
       analyzer: "ts",
     });
 
+    if (initial.isErr()) {
+      console.error("Initial build failed:", initial.error);
+    }
     expect(initial.isOk()).toBe(true);
     const initialArtifact = initial._unsafeUnwrap();
 
@@ -247,6 +272,9 @@ describe("BuilderSession incremental end-to-end", () => {
     // Incremental update
     const updateResult = await session.update(changeSet);
 
+    if (updateResult.isErr()) {
+      console.error("Update failed:", updateResult.error);
+    }
     expect(updateResult.isOk()).toBe(true);
     const updatedArtifact = updateResult._unsafeUnwrap();
 
@@ -254,13 +282,16 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(Object.keys(updatedArtifact.elements).length).toBeLessThan(Object.keys(initialArtifact.elements).length);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession();
+    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
     const fullRebuild = await fullRebuildSession.buildInitial({
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
     });
 
+    if (fullRebuild.isErr()) {
+      console.error("Full rebuild failed:", fullRebuild.error);
+    }
     expect(fullRebuild.isOk()).toBe(true);
     const fullRebuildArtifact = fullRebuild._unsafeUnwrap();
 
@@ -269,7 +300,9 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("handles mixed add/update/remove in one pass", async () => {
-    const session = createBuilderSession();
+    const evaluatorId = Bun.randomUUIDv7();
+    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const session = createBuilderSession({ evaluatorId });
 
     // Initial build
     const initial = await session.buildInitial({
@@ -278,16 +311,16 @@ describe("BuilderSession incremental end-to-end", () => {
       analyzer: "ts",
     });
 
+    if (initial.isErr()) {
+      console.error("Initial build failed:", initial.error);
+    }
     expect(initial.isOk()).toBe(true);
 
     // Wait to ensure mtime changes
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Add catalog.ts
-    const catalogVariant = path.join(
-      originalCwd,
-      "tests/fixtures/builder-session-incremental/variants/catalog.new.ts",
-    );
+    const catalogVariant = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
     const catalogTarget = path.join(workspaceRoot, "src/entities/catalog.ts");
     await fs.copyFile(catalogVariant, catalogTarget);
 
@@ -319,6 +352,9 @@ describe("BuilderSession incremental end-to-end", () => {
     // Incremental update
     const updateResult = await session.update(changeSet);
 
+    if (updateResult.isErr()) {
+      console.error("Update failed:", updateResult.error);
+    }
     expect(updateResult.isOk()).toBe(true);
     const updatedArtifact = updateResult._unsafeUnwrap();
 
@@ -330,13 +366,16 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updatedArtifact.report.cache.hits).toBeGreaterThan(0);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession();
+    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
     const fullRebuild = await fullRebuildSession.buildInitial({
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
     });
 
+    if (fullRebuild.isErr()) {
+      console.error("Full rebuild failed:", fullRebuild.error);
+    }
     expect(fullRebuild.isOk()).toBe(true);
     const fullRebuildArtifact = fullRebuild._unsafeUnwrap();
 

@@ -320,7 +320,9 @@ export const __internal = {
  * The session maintains in-memory state across builds to enable incremental processing.
  * Call buildInitial() first, then use update() for subsequent changes.
  */
-export const createBuilderSession = (): BuilderSession => {
+export const createBuilderSession = (options: { readonly evaluatorId?: string } = {}): BuilderSession => {
+  const evaluatorId = options.evaluatorId ?? "default";
+
   // Session state stored in closure
   const state: SessionState = {
     snapshots: new Map(),
@@ -378,7 +380,7 @@ export const createBuilderSession = (): BuilderSession => {
     };
 
     // Run discovery
-    const { snapshots, cacheHits, cacheMisses } = discoverModules({
+    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
@@ -425,6 +427,7 @@ export const createBuilderSession = (): BuilderSession => {
       graph,
       graphIndex: state.graphIndex,
       outDir: runtimeDir,
+      evaluatorId,
     });
 
     if (chunksResult.isErr()) {
@@ -444,8 +447,9 @@ export const createBuilderSession = (): BuilderSession => {
     // Build artifact from all chunks
     const artifactResult = await buildArtifact({
       graph,
-      cache: { hits: cacheHits, misses: cacheMisses },
+      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
       intermediateModulePaths: chunkPaths,
+      evaluatorId,
     });
 
     if (artifactResult.isErr()) {
@@ -608,6 +612,7 @@ export const createBuilderSession = (): BuilderSession => {
         graphIndex: state.graphIndex,
         outDir: runtimeDir,
         gqlImportPath: "@/graphql-system", // TODO: compute dynamically like in buildInitial
+        evaluatorId,
       });
 
       // Filter to only affected chunks
@@ -653,6 +658,7 @@ export const createBuilderSession = (): BuilderSession => {
         graph: state.graph,
         cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
         intermediateModulePaths: affectedChunkPaths,
+        evaluatorId,
       });
 
       if (artifactResult.isErr()) {

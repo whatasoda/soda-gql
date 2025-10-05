@@ -21,6 +21,7 @@ export type BuildChunkModulesInput = {
   readonly graphIndex: GraphIndex;
   readonly outDir: string;
   readonly gqlImportPath: string;
+  readonly evaluatorId: string;
 };
 
 /**
@@ -64,6 +65,7 @@ export const buildChunkModules = ({
   graphIndex: _graphIndex,
   outDir,
   gqlImportPath,
+  evaluatorId,
 }: BuildChunkModulesInput): Map<string, ChunkModule> => {
   const chunks = new Map<string, ChunkModule>();
   const summaries = getModuleSummaries(graph);
@@ -84,6 +86,7 @@ export const buildChunkModules = ({
       fileGroups: [fileGroup],
       summaries,
       gqlImportPath,
+      evaluatorId,
     } satisfies IntermediateModuleSourceInput);
 
     // Compute content hash

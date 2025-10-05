@@ -43,12 +43,6 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
 
 const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>): IntermediateModule => ({
   elements,
-  issueRegistry: {
-    addIssue: () => {},
-    registerOperationName: () => true,
-    getIssues: () => [],
-    hasErrors: () => false,
-  },
 });
 
 describe("artifact aggregate", () => {
@@ -92,7 +86,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(
@@ -136,7 +130,7 @@ describe("artifact aggregate", () => {
       // Missing modelId
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -174,7 +168,7 @@ describe("artifact aggregate", () => {
     });
 
     // First pass succeeds
-    const result1 = aggregate(graph, intermediateModule);
+    const result1 = aggregate({ graph, elements: intermediateModule.elements });
     expect(result1.isOk()).toBe(true);
 
     // To test duplicate detection, we need to simulate the aggregator seeing the same ID twice
@@ -198,7 +192,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -240,7 +234,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(

@@ -7,7 +7,7 @@ export const createBuilderArtifact = (
   overrides?: {
     durationMs?: number;
     warnings?: readonly string[];
-    cache?: { hits?: number; misses?: number };
+    cache?: { hits?: number; misses?: number; skips?: number };
   },
 ): BuilderArtifact => {
   const elementsMap: Record<string, BuilderArtifactEntry> = {};
@@ -23,6 +23,7 @@ export const createBuilderArtifact = (
       cache: {
         hits: overrides?.cache?.hits ?? 0,
         misses: overrides?.cache?.misses ?? 0,
+        skips: overrides?.cache?.skips ?? 0,
       },
     },
   };

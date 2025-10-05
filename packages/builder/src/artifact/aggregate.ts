@@ -1,6 +1,6 @@
+import type { IntermediateArtifactElement } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import type { DependencyGraph, DependencyGraphNode } from "../dependency-graph/types";
-import type { IntermediateModule } from "../intermediate-module";
 import type { BuilderError } from "../types";
 import type { BuilderArtifactElement } from "./types";
 
@@ -13,13 +13,13 @@ const emitRegistrationError = (node: DependencyGraphNode, message: string): Buil
   message,
 });
 
-export const aggregate = (
-  graph: DependencyGraph,
-  intermediateModule: IntermediateModule,
-): Result<Map<string, BuilderArtifactElement>, BuilderError> => {
-  const registry = new Map<string, BuilderArtifactElement>();
+type AggregateInput = {
+  readonly graph: DependencyGraph;
+  readonly elements: Record<string, IntermediateArtifactElement>;
+};
 
-  const { elements } = intermediateModule;
+export const aggregate = ({ graph, elements }: AggregateInput): Result<Map<string, BuilderArtifactElement>, BuilderError> => {
+  const registry = new Map<string, BuilderArtifactElement>();
 
   for (const node of graph.values()) {
     const element = elements[node.id];

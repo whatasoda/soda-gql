@@ -9,6 +9,7 @@ export type BuildArtifactInput = {
   readonly cache: ModuleLoadStats;
   readonly intermediateModulePath?: string; // Legacy single-file mode
   readonly intermediateModulePaths?: Map<string, string>; // Chunk mode: chunkId → transpiledPath
+  readonly evaluatorId: string;
 };
 
 export type BuilderArtifactOperation = {
@@ -40,7 +41,7 @@ export type BuilderArtifact = {
     readonly cache: {
       readonly hits: number;
       readonly misses: number;
-      readonly skips?: number;
+      readonly skips: number;
     };
   };
 };

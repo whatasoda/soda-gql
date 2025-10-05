@@ -10,12 +10,24 @@ export type IntermediateArtifactElement =
   | { readonly type: "slice"; readonly element: AnySlice }
   | { readonly type: "operation"; readonly element: AnyOperation };
 
+const pseudoModuleRegistries = new Map<string, ReturnType<typeof createPseudoModuleRegistry>>();
+export const getPseudoModuleRegistry = (evaluatorId: string) => {
+  const existing = pseudoModuleRegistries.get(evaluatorId);
+  if (existing) {
+    return existing;
+  }
+
+  const registry = createPseudoModuleRegistry();
+  pseudoModuleRegistries.set(evaluatorId, registry);
+  return registry;
+};
+
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => ArtifactRecord>();
   const caches = new Map<string, ArtifactRecord>();
   const entries: [string, AcceptableArtifact][] = [];
 
-  const register = (filePath: string, factory: () => ArtifactRecord) => {
+  const addModule = (filePath: string, factory: () => ArtifactRecord) => {
     modules.set(filePath, () => {
       const cached = caches.get(filePath);
       if (cached) {
@@ -29,7 +41,7 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addBuilder = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
+  const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
     const builder = factory();
     ArtifactElement.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered
@@ -72,8 +84,8 @@ export const createPseudoModuleRegistry = () => {
   };
 
   return {
-    register,
-    addBuilder,
+    addModule,
+    addElement,
     import: import_,
     evaluate,
   };

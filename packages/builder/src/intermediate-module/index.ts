@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { IntermediateArtifactElement, IssueRegistry } from "@soda-gql/core";
 import { err, type Result } from "neverthrow";
 import type { DependencyGraph } from "../dependency-graph";
 import type { GraphIndex } from "../dependency-graph/patcher";
@@ -11,14 +10,10 @@ import { buildIntermediateModuleSource } from "./codegen";
 import { emitIntermediateModule } from "./emitter";
 import { buildChunkModules } from "./per-chunk-emission";
 
-export type IntermediateModule = {
-  readonly elements: Record<string, IntermediateArtifactElement>;
-  readonly issueRegistry: IssueRegistry;
-};
-
 export type CreateIntermediateModuleInput = {
   readonly graph: DependencyGraph;
   readonly outDir: string;
+  readonly evaluatorId: string;
 };
 
 /**
@@ -28,6 +23,7 @@ export type CreateIntermediateModuleInput = {
 export const createIntermediateModule = async ({
   graph,
   outDir,
+  evaluatorId,
 }: CreateIntermediateModuleInput): Promise<Result<{ transpiledPath: string; sourceCode: string }, BuilderError>> => {
   // Analyze the graph
   const { fileGroups, summaries, missingExpressions, workspaceRoot } = analyzeGraph(graph);
@@ -60,7 +56,7 @@ export const createIntermediateModule = async ({
   }
 
   // Generate code
-  const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath });
+  const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath, evaluatorId });
 
   // Emit the module
   const emitResult = await emitIntermediateModule({ outDir, sourceCode });
@@ -72,6 +68,7 @@ export type CreateIntermediateModuleChunksInput = {
   readonly graph: DependencyGraph;
   readonly graphIndex: GraphIndex;
   readonly outDir: string;
+  readonly evaluatorId: string;
 };
 
 /**
@@ -82,6 +79,7 @@ export const createIntermediateModuleChunks = async ({
   graph,
   graphIndex,
   outDir,
+  evaluatorId,
 }: CreateIntermediateModuleChunksInput): Promise<Result<Map<string, WrittenChunkModule>, BuilderError>> => {
   // Check for missing expressions
   const { missingExpressions } = analyzeGraph(graph);
@@ -113,7 +111,7 @@ export const createIntermediateModuleChunks = async ({
   }
 
   // Build chunk modules
-  const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath });
+  const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, evaluatorId });
 
   // Write chunks to disk
   return await writeChunkModules({ chunks, outDir });

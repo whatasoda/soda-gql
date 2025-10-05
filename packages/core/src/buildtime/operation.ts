@@ -1,17 +1,10 @@
 import { createExecutionResultParser } from "../runtime/parse-execution-result";
-import {
-  type AnySliceContents,
-  type BuilderContext,
-  type ConcatSliceContents,
-  Operation,
-  type OperationDefinitionBuilder,
-} from "../types/operation";
+import { type AnySliceContents, type ConcatSliceContents, Operation, type OperationDefinitionBuilder } from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
-import { onOperationEvaluated } from "./issues";
 import { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
 export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>() => {
@@ -34,20 +27,11 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
         TOperationName,
         MergeVarDefinitions<TVarDefinitions>,
         TSliceFragments
-      >((context: BuilderContext | null) => {
+      >(() => {
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs(variables);
         const fragments = builder({ $ });
-
-        // Report operation evaluation for duplicate detection and slice count validation
-        if (context) {
-          onOperationEvaluated({
-            canonicalId: context.canonicalId,
-            operationName,
-            sliceCount: Object.keys(fragments).length,
-          });
-        }
 
         const fields = Object.fromEntries(
           Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>

@@ -8,7 +8,7 @@ import type { DiscoveryCache, DiscoverySnapshotMetadata } from "./types";
 export type ModuleLoadStats = {
   readonly hits: number;
   readonly misses: number;
-  readonly skips?: number;
+  readonly skips: number;
 };
 
 export type LoadedModules = {
@@ -35,7 +35,7 @@ export const createDiscoveryPipeline = ({ analyzer, cache, metadata }: CreateDis
   return {
     load(entry: readonly string[]): Result<LoadedModules, BuilderError> {
       return resolveEntryPaths(entry).map((paths) => {
-        const { snapshots, cacheHits, cacheMisses } = discoverModules({
+        const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
           entryPaths: paths,
           astAnalyzer,
           cache,
@@ -46,7 +46,7 @@ export const createDiscoveryPipeline = ({ analyzer, cache, metadata }: CreateDis
 
         return {
           modules,
-          stats: { hits: cacheHits, misses: cacheMisses },
+          stats: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
         } satisfies LoadedModules;
       });
     },
