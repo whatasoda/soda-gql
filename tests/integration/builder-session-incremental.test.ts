@@ -87,11 +87,11 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(artifact.report.cache.hits).toBeGreaterThanOrEqual(0);
     expect(artifact.report.cache.misses).toBeGreaterThan(0);
 
-    // Session should have graph state
-    expect(session.getSnapshot("graph")).toBeDefined();
-    expect(session.getSnapshot("graphIndex")).toBeDefined();
-    expect(session.getSnapshot("chunkManifest")).toBeDefined();
-    expect(session.getSnapshot("chunkModules")).toBeDefined();
+    // Session should have snapshot
+    const snapshot = session.getSnapshot();
+    expect(snapshot).toBeDefined();
+    expect(snapshot.snapshotCount).toBeGreaterThanOrEqual(0);
+    expect(snapshot.metadata).toBeDefined();
   });
 
   test("applies graph patch when a module changes", async () => {
@@ -134,10 +134,7 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set(),
       updated: new Set([targetPath]),
       removed: new Set(),
-      metadata: {
-        schemaHash: session.getSnapshot("metadata")?.schemaHash ?? "",
-        analyzerVersion: session.getSnapshot("metadata")?.analyzerVersion ?? "",
-      },
+      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update
@@ -194,7 +191,7 @@ describe("BuilderSession incremental end-to-end", () => {
     }
     expect(initial.isOk()).toBe(true);
     const initialArtifact = initial._unsafeUnwrap();
-    const _initialChunkManifest = session.getSnapshot("chunkManifest");
+    const _initialSnapshot = session.getSnapshot();
 
     // Copy new catalog file
     const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
@@ -206,10 +203,7 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set([targetPath]),
       updated: new Set(),
       removed: new Set(),
-      metadata: {
-        schemaHash: session.getSnapshot("metadata")?.schemaHash ?? "",
-        analyzerVersion: session.getSnapshot("metadata")?.analyzerVersion ?? "",
-      },
+      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update
@@ -271,10 +265,7 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set(),
       updated: new Set(),
       removed: new Set([targetPath]),
-      metadata: {
-        schemaHash: session.getSnapshot("metadata")?.schemaHash ?? "",
-        analyzerVersion: session.getSnapshot("metadata")?.analyzerVersion ?? "",
-      },
+      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
@@ -282,9 +273,12 @@ describe("BuilderSession incremental end-to-end", () => {
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
-      expect(updateResult.error.code).toBe("MODULE_EVALUATION_FAILED");
-      expect(updateResult.error.message).toContain("Cannot resolve import");
-      expect(updateResult.error.message).toContain("user.catalog");
+      const error = updateResult.error;
+      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
+      if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.message).toContain("Cannot resolve import");
+        expect(error.message).toContain("user.catalog");
+      }
     }
 
     // Full rebuild should also fail with the same error
@@ -298,8 +292,11 @@ describe("BuilderSession incremental end-to-end", () => {
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
-      expect(fullRebuild.error.code).toBe("MODULE_EVALUATION_FAILED");
-      expect(fullRebuild.error.message).toContain("Cannot resolve import");
+      const error = fullRebuild.error;
+      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
+      if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.message).toContain("Cannot resolve import");
+      }
     }
   });
 
@@ -348,10 +345,7 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set([catalogTarget]),
       updated: new Set([nestedTarget]),
       removed: new Set([removeTarget]),
-      metadata: {
-        schemaHash: session.getSnapshot("metadata")?.schemaHash ?? "",
-        analyzerVersion: session.getSnapshot("metadata")?.analyzerVersion ?? "",
-      },
+      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
@@ -359,9 +353,12 @@ describe("BuilderSession incremental end-to-end", () => {
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
-      expect(updateResult.error.code).toBe("MODULE_EVALUATION_FAILED");
-      expect(updateResult.error.message).toContain("Cannot resolve import");
-      expect(updateResult.error.message).toContain("user.catalog");
+      const error = updateResult.error;
+      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
+      if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.message).toContain("Cannot resolve import");
+        expect(error.message).toContain("user.catalog");
+      }
     }
 
     // Full rebuild should also fail with the same error
@@ -375,8 +372,11 @@ describe("BuilderSession incremental end-to-end", () => {
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
-      expect(fullRebuild.error.code).toBe("MODULE_EVALUATION_FAILED");
-      expect(fullRebuild.error.message).toContain("Cannot resolve import");
+      const error = fullRebuild.error;
+      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
+      if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.message).toContain("Cannot resolve import");
+      }
     }
   });
 });

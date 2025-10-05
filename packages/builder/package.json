@@ -20,7 +20,9 @@
       "types": "./src/session/builder-session.ts",
       "import": "./src/session/builder-session.ts",
       "default": "./src/session/builder-session.ts"
-    }
+    },
+    "./package.json": "./package.json",
+    "./tsconfig.json": "./tsconfig.json"
   },
   "dependencies": {
     "@soda-gql/codegen": "workspace:*",

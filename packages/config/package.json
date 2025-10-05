@@ -49,7 +49,8 @@
       "import": "./src/test-utils.ts",
       "default": "./src/test-utils.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./tsconfig.json": "./tsconfig.json"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",

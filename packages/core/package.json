@@ -15,7 +15,9 @@
       "types": "./src/runtime/index.ts",
       "import": "./src/runtime/index.ts",
       "default": "./src/runtime/index.ts"
-    }
+    },
+    "./package.json": "./package.json",
+    "./tsconfig.json": "./tsconfig.json"
   },
   "dependencies": {
     "graphql": "^16.8.1"

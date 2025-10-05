@@ -3,13 +3,13 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "../test_dist",
-    "rootDir": "./",
+    "rootDir": "../",
     "baseUrl": ".",
     "paths": {
       "@/graphql-system": ["./fixtures/runtime-app/graphql-system/index.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.test.ts"],
+  "include": ["**/*.ts", "**/*.test.ts", "../packages/**/*.ts"],
   "exclude": ["node_modules", ".tmp/**/*"],
   "references": [
     { "path": "../packages/core" },

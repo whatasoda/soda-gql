@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
 import type { ArtifactSource } from "../../../packages/plugin-babel/src/types";
+import { createTestConfig } from "../../helpers/test-config";
 
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
@@ -24,11 +25,12 @@ const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
 const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOptions => ({
   mode: "zero-runtime",
   artifactSource: {
-    source: "builder",
+    source: "builder" as const,
     config: {
       mode: "zero-runtime",
       analyzer: "ts",
       entry: [profileQueryPath],
+      config: createTestConfig(fixturesRoot),
       debugDir: join(tmpRoot, "builder-debug"),
     },
   },
@@ -189,6 +191,7 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         analyzer: "ts",
         entry: [profileQueryPath],
+        config: createTestConfig(fixturesRoot),
       });
 
       const buildResult = await service.build();
@@ -236,6 +239,7 @@ describe("@soda-gql/plugin-babel", () => {
               mode: "zero-runtime",
               analyzer: "ts",
               entry: [nonExistentEntry],
+              config: createTestConfig(fixturesRoot),
             },
           },
         }),
@@ -251,6 +255,7 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         analyzer: "ts",
         entry: [profileQueryPath],
+        config: createTestConfig(fixturesRoot),
       });
 
       const buildResult = await service.build();
