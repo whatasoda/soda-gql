@@ -1,55 +1,9 @@
-import { existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { DependencyGraph } from "../dependency-graph/types";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 /**
- * Find workspace root by looking for package.json with workspaces field.
- * Starts from a sample file path and walks up the directory tree.
- */
-const findWorkspaceRoot = (graph: DependencyGraph): string => {
-  const paths = Array.from(graph.values()).map((node) => node.filePath);
-  if (paths.length === 0) {
-    return process.cwd();
-  }
-
-  // Start from first file and walk up
-  let currentDir = dirname(paths[0] ?? process.cwd());
-  while (currentDir !== dirname(currentDir)) {
-    const packageJsonPath = join(currentDir, "package.json");
-    if (existsSync(packageJsonPath)) {
-      // Check if it has workspaces field (monorepo root)
-      try {
-        const packageJson = JSON.parse(require("fs").readFileSync(packageJsonPath, "utf8"));
-        if (packageJson.workspaces) {
-          return currentDir;
-        }
-      } catch {
-        // Continue searching
-      }
-    }
-    currentDir = dirname(currentDir);
-  }
-
-  // Fallback to common parent if no monorepo root found
-  let commonPath = dirname(paths[0] ?? "");
-  for (const path of paths.slice(1)) {
-    if (!path) {
-      continue;
-    }
-    while (!path.startsWith(commonPath)) {
-      const parent = dirname(commonPath);
-      if (parent === commonPath) {
-        break;
-      }
-      commonPath = parent;
-    }
-  }
-
-  return commonPath;
-};
-
-/**
- * Resolve import path to a package/file as a relative path.
+ * Resolve import path from outDir to target file with proper ESM extension mapping.
+ * Maps .ts → .js, .mts → .mjs, .cts → .cjs as per resolveImportPath from @soda-gql/config.
  */
 const resolveImportPath = (outDir: string, targetPath: string): string => {
   // Compute relative path from a temp file in outDir
@@ -63,41 +17,32 @@ const resolveImportPath = (outDir: string, targetPath: string): string => {
     relativePath = `./${relativePath}`;
   }
 
-  // Remove .ts extension for imports
+  // Map TypeScript extensions to JavaScript extensions
   if (relativePath.endsWith(".ts")) {
-    relativePath = relativePath.slice(0, -3);
-  }
-
-  // Remove /src/index suffix and use package root
-  if (relativePath.endsWith("/src/index")) {
-    relativePath = relativePath.slice(0, -10); // Remove "/src/index"
+    relativePath = relativePath.slice(0, -3) + ".js";
+  } else if (relativePath.endsWith(".mts")) {
+    relativePath = relativePath.slice(0, -4) + ".mjs";
+  } else if (relativePath.endsWith(".cts")) {
+    relativePath = relativePath.slice(0, -4) + ".cjs";
   }
 
   return relativePath;
 };
 
 /**
- * Resolve the gqlImportPath for intermediate module code generation.
- *
- * Computes a relative path from outDir to graphql-system/index.ts if it exists,
- * otherwise returns the package alias as-is.
+ * Resolve the gqlImportPath using config's canonical graphqlSystemPath.
  */
-export const resolveGqlImportPath = ({ graph, outDir }: { graph: DependencyGraph; outDir: string }): string => {
-  const workspaceRoot = findWorkspaceRoot(graph);
-  const graphqlSystemIndex = join(workspaceRoot, "graphql-system", "index.ts");
-
-  return resolveImportPath(outDir, graphqlSystemIndex);
+export const resolveGqlImportPath = ({ config, outDir }: { config: ResolvedSodaGqlConfig; outDir: string }): string => {
+  return resolveImportPath(outDir, config.graphqlSystemPath);
 };
 
 /**
- * Resolve the @soda-gql/core import path for intermediate module code generation.
- *
- * Computes a relative path from outDir to packages/core/src/index.ts if it exists,
- * otherwise returns "@soda-gql/core" as-is.
+ * Resolve the @soda-gql/core import path using config's canonical corePath.
  */
-export const resolveCoreImportPath = ({ graph, outDir }: { graph: DependencyGraph; outDir: string }): string => {
-  const workspaceRoot = findWorkspaceRoot(graph);
-  const coreIndex = join(workspaceRoot, "packages", "core", "src", "index.ts");
-
-  return resolveImportPath(outDir, coreIndex);
+export const resolveCoreImportPath = ({ config, outDir }: { config: ResolvedSodaGqlConfig; outDir: string }): string => {
+  // If corePath is a package name (starts with @), return as-is
+  if (config.corePath.startsWith("@")) {
+    return config.corePath;
+  }
+  return resolveImportPath(outDir, config.corePath);
 };

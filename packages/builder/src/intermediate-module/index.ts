@@ -1,4 +1,5 @@
 import { err, type Result } from "neverthrow";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { DependencyGraph } from "../dependency-graph";
 import type { GraphIndex } from "../dependency-graph/patcher";
 import type { BuilderError } from "../types";
@@ -11,6 +12,7 @@ import { buildChunkModules } from "./per-chunk-emission";
 
 export type CreateIntermediateModuleInput = {
   readonly graph: DependencyGraph;
+  readonly config: ResolvedSodaGqlConfig;
   readonly outDir: string;
   readonly evaluatorId: string;
 };
@@ -21,6 +23,7 @@ export type CreateIntermediateModuleInput = {
  */
 export const createIntermediateModule = async ({
   graph,
+  config,
   outDir,
   evaluatorId,
 }: CreateIntermediateModuleInput): Promise<Result<{ transpiledPath: string; sourceCode: string }, BuilderError>> => {
@@ -40,9 +43,9 @@ export const createIntermediateModule = async ({
     });
   }
 
-  // Determine import paths
-  const gqlImportPath = resolveGqlImportPath({ graph, outDir });
-  const coreImportPath = resolveCoreImportPath({ graph, outDir });
+  // Determine import paths from config
+  const gqlImportPath = resolveGqlImportPath({ config, outDir });
+  const coreImportPath = resolveCoreImportPath({ config, outDir });
 
   // Generate code
   const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath, coreImportPath, evaluatorId });
@@ -56,6 +59,7 @@ export const createIntermediateModule = async ({
 export type CreateIntermediateModuleChunksInput = {
   readonly graph: DependencyGraph;
   readonly graphIndex: GraphIndex;
+  readonly config: ResolvedSodaGqlConfig;
   readonly outDir: string;
   readonly evaluatorId: string;
 };
@@ -67,6 +71,7 @@ export type CreateIntermediateModuleChunksInput = {
 export const createIntermediateModuleChunks = async ({
   graph,
   graphIndex,
+  config,
   outDir,
   evaluatorId,
 }: CreateIntermediateModuleChunksInput): Promise<Result<Map<string, WrittenChunkModule>, BuilderError>> => {
@@ -84,9 +89,9 @@ export const createIntermediateModuleChunks = async ({
     });
   }
 
-  // Determine import paths
-  const gqlImportPath = resolveGqlImportPath({ graph, outDir });
-  const coreImportPath = resolveCoreImportPath({ graph, outDir });
+  // Determine import paths from config
+  const gqlImportPath = resolveGqlImportPath({ config, outDir });
+  const coreImportPath = resolveCoreImportPath({ config, outDir });
 
   // Build chunk modules
   const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, coreImportPath, evaluatorId });

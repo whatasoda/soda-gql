@@ -473,6 +473,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const chunksResult = await createIntermediateModuleChunks({
       graph,
       graphIndex: state.graphIndex,
+      config: input.config,
       outDir: runtimeDir,
       evaluatorId,
     });
@@ -697,9 +698,9 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
     if (affectedChunkIds.size > 0) {
-      // Compute import paths dynamically
-      const gqlImportPath = resolveGqlImportPath({ graph: state.graph, outDir: runtimeDir });
-      const coreImportPath = resolveCoreImportPath({ graph: state.graph, outDir: runtimeDir });
+      // Get import paths from config
+      const gqlImportPath = resolveGqlImportPath({ config: input.config, outDir: runtimeDir });
+      const coreImportPath = resolveCoreImportPath({ config: input.config, outDir: runtimeDir });
 
       // Build chunk modules for affected files
       const allChunks = buildChunkModules({

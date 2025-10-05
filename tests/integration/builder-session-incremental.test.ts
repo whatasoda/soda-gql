@@ -1,10 +1,35 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { ResolvedSodaGqlConfig } from "../../packages/config/src/types";
 import { createBuilderSession } from "../../packages/builder/src/session/builder-session";
 import type { BuilderChangeSet } from "../../packages/builder/src/session/change-set";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
+
+/**
+ * Create a test config for integration tests.
+ * Uses mock values suitable for temporary test workspaces.
+ */
+const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
+  graphqlSystemPath: path.join(workspaceRoot, "graphql-system", "index.ts"),
+  corePath: "@soda-gql/core",
+  builder: {
+    entry: [path.join(workspaceRoot, "src/**/*.ts")],
+    outDir: path.join(workspaceRoot, ".cache/soda-gql"),
+    analyzer: "ts" as const,
+    mode: "runtime" as const,
+  },
+  codegen: {
+    schema: path.join(workspaceRoot, "schema.graphql"),
+    outDir: path.join(workspaceRoot, "graphql-system"),
+  },
+  plugins: {},
+  configDir: workspaceRoot,
+  configPath: path.join(workspaceRoot, "soda-gql.config.ts"),
+  configHash: `test-${Date.now()}`,
+  configMtime: Date.now(),
+});
 
 /**
  * Integration tests for BuilderSession incremental rebuild flow.
@@ -70,6 +95,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspaceRoot),
     });
 
     if (result.isErr()) {
@@ -102,6 +128,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspaceRoot),
     });
 
     if (initial.isErr()) {
@@ -182,6 +209,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspaceRoot),
     });
 
     if (initial.isErr()) {
@@ -247,6 +275,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspaceRoot),
     });
 
     if (initial.isErr()) {
@@ -310,6 +339,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      config: createTestConfig(workspaceRoot),
     });
 
     if (initial.isErr()) {
