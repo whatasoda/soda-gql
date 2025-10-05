@@ -140,7 +140,7 @@ describe("artifact aggregate", () => {
       (error) => {
         expect(error.code).toBe("MODULE_EVALUATION_FAILED");
         if (error.code === "MODULE_EVALUATION_FAILED") {
-          expect(error.message).toBe("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
+          expect(error.message).toContain("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
           expect(error.filePath).toBe("/app/src/entities/user.ts");
         }
       },

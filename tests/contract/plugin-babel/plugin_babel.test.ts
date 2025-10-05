@@ -192,6 +192,10 @@ describe("@soda-gql/plugin-babel", () => {
       });
 
       const buildResult = await service.build();
+
+      if (!buildResult.isOk()) {
+        console.error("Build error:", buildResult.error);
+      }
       expect(buildResult.isOk()).toBe(true);
 
       if (!buildResult.isOk()) {
@@ -250,6 +254,10 @@ describe("@soda-gql/plugin-babel", () => {
       });
 
       const buildResult = await service.build();
+
+      if (!buildResult.isOk()) {
+        console.error("Build error:", buildResult.error);
+      }
       expect(buildResult.isOk()).toBe(true);
 
       if (!buildResult.isOk()) {
