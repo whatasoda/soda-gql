@@ -1,6 +1,6 @@
-import type { BuilderArtifact, BuilderArtifactEntry, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 
-type ArtifactElementTuple = [id: CanonicalId, element: BuilderArtifactEntry];
+type ArtifactElementTuple = [id: CanonicalId, element: BuilderArtifactElement];
 
 export const createBuilderArtifact = (
   elements: ArtifactElementTuple[],
@@ -10,13 +10,13 @@ export const createBuilderArtifact = (
     cache?: { hits?: number; misses?: number; skips?: number };
   },
 ): BuilderArtifact => {
-  const elementsMap: Record<string, BuilderArtifactEntry> = {};
+  const elementsMap: Record<string, BuilderArtifactElement> = {};
   for (const [id, element] of elements) {
     elementsMap[id] = element;
   }
 
   return {
-    elements: elementsMap as Record<CanonicalId, BuilderArtifactEntry>,
+    elements: elementsMap as Record<CanonicalId, BuilderArtifactElement>,
     report: {
       durationMs: overrides?.durationMs ?? 0,
       warnings: overrides?.warnings ?? [],
@@ -29,6 +29,6 @@ export const createBuilderArtifact = (
   };
 };
 
-export const createInvalidArtifactElement = (data: object): BuilderArtifactEntry => {
-  return data as unknown as BuilderArtifactEntry;
+export const createInvalidArtifactElement = (data: object): BuilderArtifactElement => {
+  return data as unknown as BuilderArtifactElement;
 };
