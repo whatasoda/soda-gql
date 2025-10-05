@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { defineConfig, defineWorkspace } from "../src/helper.ts";
-import type { SodaGqlConfig } from "../src/types.ts";
+import { defineConfig, defineWorkspace } from "../src/helper";
+import type { SodaGqlConfig } from "../src/types";
 
 describe("helper.ts", () => {
   describe("defineConfig", () => {

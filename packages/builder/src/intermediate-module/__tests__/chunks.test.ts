@@ -18,12 +18,11 @@ const createTestNode = (filePath: string, localPath: string, deps: string[] = []
     localPath,
     isExported: true,
     definition: {
-      type: "model",
       astPath: localPath,
+      isTopLevel: true,
       isExported: true,
-      source: "",
-      imports: [],
-      exports: [],
+      expression: "",
+      loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
     },
     dependencies: deps.map((d) => createCanonicalId(...(d.split("::") as [string, string]))),
     moduleSummary: summary,
@@ -73,7 +72,10 @@ describe("planChunks", () => {
     const hash2 = manifest2.chunks.get("/a.ts")?.contentHash;
 
     expect(hash1).toBeDefined();
-    expect(hash1).toBe(hash2);
+    expect(hash2).toBeDefined();
+    if (hash1 && hash2) {
+      expect(hash1).toBe(hash2);
+    }
   });
 
   test("produces different hashes when dependencies change", () => {

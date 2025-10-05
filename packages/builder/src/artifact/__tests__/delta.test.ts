@@ -27,6 +27,7 @@ const createTestArtifact = (elements: BuilderArtifactElement[]): BuilderArtifact
       cache: {
         hits: 0,
         misses: 0,
+        skips: 0,
       },
     },
   };
@@ -182,8 +183,9 @@ describe("applyArtifactDelta", () => {
     const result = applyArtifactDelta(baseArtifact, delta);
 
     expect(Object.keys(result.elements)).toHaveLength(1);
-    expect(result.elements[element1Updated.id]).toBe(element1Updated);
-    expect(result.elements[element1Updated.id].prebuild).toEqual({ data: "data1-updated" });
+    const updatedElement = result.elements[element1Updated.id];
+    expect(updatedElement).toBe(element1Updated);
+    expect((updatedElement?.prebuild as any)?.data).toBe("data1-updated");
   });
 
   test("applies removals", () => {

@@ -9,12 +9,12 @@ const internalPostModel = gql.default(({ model }) =>
       //
       f.id(),
       f.title(),
-      f.content(), // ADDED: New field
+      f.body(),
     ],
     (selection) => ({
       id: selection.id,
       title: selection.title,
-      content: selection.content, // ADDED: New field
+      body: selection.body,
     }),
   ),
 );
@@ -118,7 +118,7 @@ export const nestedQueries = {
             //
             f.id(),
             f.name(),
-            f.email(), // ADDED: New field
+            f.email(),
           ]),
         ],
         ({ select }) => select(["$.users"], (result) => result),

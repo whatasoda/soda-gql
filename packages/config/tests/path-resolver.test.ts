@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { getCoreImportPath, getGqlImportPath, resolveImportPath } from "../src/path-resolver.ts";
-import type { ResolvedSodaGqlConfig } from "../src/types.ts";
+import { getCoreImportPath, getGqlImportPath, resolveImportPath } from "../src/path-resolver";
+import type { ResolvedSodaGqlConfig } from "../src/types";
 
 describe("path-resolver.ts", () => {
   describe("resolveImportPath", () => {

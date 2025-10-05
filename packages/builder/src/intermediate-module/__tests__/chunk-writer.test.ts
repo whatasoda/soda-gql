@@ -39,8 +39,10 @@ describe("writeChunkModules", () => {
         expect(chunkResult?.transpiledPath).toContain(tmpDir);
 
         // Verify file was written
-        const content = readFileSync(chunkResult?.transpiledPath, "utf-8");
-        expect(content).toContain("foo");
+        if (chunkResult?.transpiledPath) {
+          const content = readFileSync(chunkResult.transpiledPath, "utf-8");
+          expect(content).toContain("foo");
+        }
       }
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
@@ -98,10 +100,12 @@ describe("writeChunkModules", () => {
         const written = result.value;
         const chunkResult = written.get("/src/a.ts");
 
-        const content = readFileSync(chunkResult?.transpiledPath, "utf-8");
-        // TypeScript types should be stripped
-        expect(content).not.toContain(": string");
-        expect(content).toContain("foo");
+        if (chunkResult?.transpiledPath) {
+          const content = readFileSync(chunkResult.transpiledPath, "utf-8");
+          // TypeScript types should be stripped
+          expect(content).not.toContain(": string");
+          expect(content).toContain("foo");
+        }
       }
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });

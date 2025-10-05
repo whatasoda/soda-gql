@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SodaGqlConfig } from "../src/types.ts";
-import { resolveConfig, validateConfig } from "../src/validator.ts";
+import type { SodaGqlConfig } from "../src/types";
+import { resolveConfig, validateConfig } from "../src/validator";
 
 describe("validator.ts", () => {
   describe("validateConfig", () => {
@@ -40,8 +40,7 @@ describe("validator.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          // @ts-expect-error - testing invalid value
-          analyzer: "invalid",
+          analyzer: "invalid" as any,
         },
       };
 

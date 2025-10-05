@@ -10,7 +10,7 @@ export type MergeVarDefinitions<TVarDefinitions extends InputTypeRefs[]> = Union
   TVarDefinitions[number]
 > extends infer TDefinitions
   ? {
-      [K in keyof TDefinitions]: TDefinitions[K];
+      readonly [K in keyof TDefinitions]: TDefinitions[K];
     } & {}
   : never;
 

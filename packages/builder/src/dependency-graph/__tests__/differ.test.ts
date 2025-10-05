@@ -12,8 +12,10 @@ const createTestNode = (filePath: string, localPath: string, dependencies: strin
     isExported: true,
     definition: {
       astPath: "",
+      isTopLevel: true,
+      isExported: true,
       expression: "test",
-      range: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
+      loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
     },
     dependencies: dependencies.map((dep) => createCanonicalId(dep, "default")),
     moduleSummary: {
