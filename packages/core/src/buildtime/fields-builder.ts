@@ -99,12 +99,15 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             args: fieldArgs ?? {},
             directives: extras?.directives ?? {},
             object: null,
-            union: mapValues(nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>, (builder, memberName) => {
-              if (!builder) {
-                throw new Error(`Builder is undefined for member name: ${memberName}`);
-              }
-              return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
-            }) as TNested,
+            union: mapValues(
+              nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>,
+              (builder, memberName) => {
+                if (!builder) {
+                  throw new Error(`Builder is undefined for member name: ${memberName}`);
+                }
+                return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
+              },
+            ) as TNested,
           } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;

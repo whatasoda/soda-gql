@@ -11,6 +11,7 @@ import type {
 } from "@soda-gql/builder";
 import { createBuilderService, runBuilder } from "@soda-gql/builder";
 import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
+import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
@@ -175,6 +176,15 @@ const formatBuilderError = (format: OutputFormat, error: BuilderError) => {
 };
 
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
+  // Load config first
+  const configResult = loadConfig();
+  if (configResult.isErr()) {
+    const error = configResult.error;
+    process.stdout.write(`Config error: ${error.code} - ${error.message}\n`);
+    return 1;
+  }
+  const config = configResult.value;
+
   const parsed = parseBuilderArgs(argv);
 
   if (parsed.isErr()) {
@@ -193,6 +203,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
       mode: options.mode,
       entry: options.entry,
       analyzer: options.analyzer,
+      config,
       debugDir: options.debugDir,
     });
 
@@ -305,7 +316,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   }
 
   // Normal mode: Single build
-  const result = await runBuilder(options);
+  const result = await runBuilder({ ...options, config });
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);

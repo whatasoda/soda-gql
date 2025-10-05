@@ -1,5 +1,5 @@
-import { err, type Result } from "neverthrow";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { err, type Result } from "neverthrow";
 import type { DependencyGraph } from "../dependency-graph";
 import type { GraphIndex } from "../dependency-graph/patcher";
 import type { BuilderError } from "../types";

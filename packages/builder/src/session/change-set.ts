@@ -50,13 +50,11 @@ export const hasFileChanged = (currentFingerprint: string | undefined, incomingF
  * Normalize BuilderChangeSet paths to absolute strings.
  * Handles both BuilderFileChange objects and raw string paths.
  */
-export const coercePaths = (
-  changes: readonly BuilderFileChange[] | ReadonlySet<string | BuilderFileChange>,
-): Set<string> => {
+export const coercePaths = (changes: readonly BuilderFileChange[] | ReadonlySet<string | BuilderFileChange>): Set<string> => {
   if (Array.isArray(changes)) {
     return new Set(changes.map((c) => c.filePath));
   }
-  
+
   const result = new Set<string>();
   for (const item of changes) {
     if (typeof item === "string") {

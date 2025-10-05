@@ -1,5 +1,5 @@
-import type { Result } from "neverthrow";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
 
 export type BuilderMode = "runtime" | "zero-runtime";

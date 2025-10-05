@@ -552,10 +552,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     }
 
     // Track changed and removed files using coercePaths helper
-    const changedFiles = new Set<string>([
-      ...coercePaths(changeSet.added),
-      ...coercePaths(changeSet.updated),
-    ]);
+    const changedFiles = new Set<string>([...coercePaths(changeSet.added), ...coercePaths(changeSet.updated)]);
     const removedFiles = coercePaths(changeSet.removed);
 
     // Early return if no changes
