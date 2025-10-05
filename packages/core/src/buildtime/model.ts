@@ -43,7 +43,7 @@ export const createGqlModels = <TSchema extends AnyGraphqlSchema>(schema: NoInfe
   };
 
   type ModelBuildersAll = {
-    [TTypeName in keyof TSchema["object"]]: TTypeName extends string ? ModelBuilder<TTypeName> : never;
+    readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string ? ModelBuilder<TTypeName> : never;
   };
   type ModelBuilders = Omit<ModelBuildersAll, TSchema["operations"][OperationType] & keyof ModelBuildersAll>;
 

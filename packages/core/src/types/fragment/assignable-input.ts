@@ -19,11 +19,11 @@ export type AnyAssignableInputValue =
   | null;
 
 export type AnyAssignableInput = {
-  [key: string]: AnyAssignableInputValue;
+  readonly [key: string]: AnyAssignableInputValue;
 };
 
 export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeRefs> = {
-  [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
+  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
 };
 export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeRef> =
   | VarRefBy<TRef>

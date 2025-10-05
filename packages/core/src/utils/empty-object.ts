@@ -1,5 +1,5 @@
 const __EMPTY_SYMBOL__: unique symbol = Symbol("EmptyObjectBrand");
-export type EmptyObject = { [__EMPTY_SYMBOL__]: never };
+export type EmptyObject = { readonly [__EMPTY_SYMBOL__]: never };
 
 type IsEmptyObject<T> = keyof (T & EmptyObject) extends keyof EmptyObject ? true : false;
 export type IfEmpty<TTarget, TType> = IsEmptyObject<TTarget> extends true ? TType : never;

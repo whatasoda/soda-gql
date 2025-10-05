@@ -13,11 +13,11 @@ import type {
 
 export type AnyConstAssignableInputValue = ConstValue;
 export type AnyConstAssignableInput = {
-  [key: string]: AnyConstAssignableInputValue;
+  readonly [key: string]: AnyConstAssignableInputValue;
 };
 
 export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeRefs> = {
-  [K in keyof ApplyTypeModifierToKeys<TRefs>]: ConstAssignableInputValue<TSchema, TRefs[K]>;
+  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: ConstAssignableInputValue<TSchema, TRefs[K]>;
 };
 
 export type ConstAssignableInputValue<

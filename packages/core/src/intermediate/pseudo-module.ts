@@ -2,7 +2,7 @@ import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model
 
 type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
 type ArtifactRecord = {
-  [key: string]: AcceptableArtifact | ArtifactRecord;
+  readonly [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
 export type IntermediateArtifactElement =

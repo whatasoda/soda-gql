@@ -26,12 +26,12 @@ export type AnyFieldName = string;
 
 /** Root schema shape describing scalars, objects, unions, and inputs. */
 export type AnyGraphqlSchema = {
-  operations: OperationRoots;
-  scalar: { [name: string]: ScalarDef<any> };
-  enum: { [name: string]: EnumDef<any> };
-  input: { [name: string]: InputDef };
-  object: { [name: string]: ObjectDef };
-  union: { [name: string]: UnionDef };
+  readonly operations: OperationRoots;
+  readonly scalar: { readonly [name: string]: ScalarDef<any> };
+  readonly enum: { readonly [name: string]: EnumDef<any> };
+  readonly input: { readonly [name: string]: InputDef };
+  readonly object: { readonly [name: string]: ObjectDef };
+  readonly union: { readonly [name: string]: UnionDef };
   // directives: {
   //   query: { [typename: string]: Directive<any> }
   //   mutation: { [typename: string]: true };
@@ -41,59 +41,59 @@ export type AnyGraphqlSchema = {
 };
 
 export type OperationRoots = {
-  query: string | null;
-  mutation: string | null;
-  subscription: string | null;
+  readonly query: string | null;
+  readonly mutation: string | null;
+  readonly subscription: string | null;
 };
 
 /** Scalar definition carries a phantom type for inference. */
 export type ScalarDef<T extends { input: unknown; output: unknown }> = {
-  _type: Hidden<{ input: T["input"]; output: T["output"] }>;
+  readonly _type: Hidden<{ input: T["input"]; output: T["output"] }>;
 
-  name: string;
+  readonly name: string;
 
-  directives: AnyConstDirectiveAttachments;
+  readonly directives: AnyConstDirectiveAttachments;
 };
 
 /** Enum definition capturing the literal union of values. */
 export type EnumDef<T extends string> = {
-  _type: Hidden<T>;
+  readonly _type: Hidden<T>;
 
-  name: string;
+  readonly name: string;
 
-  values: { [_ in T]: true };
+  readonly values: { readonly [_ in T]: true };
 
-  directives: AnyConstDirectiveAttachments;
+  readonly directives: AnyConstDirectiveAttachments;
 };
 
 /** Input object definition describing its typed fields. */
 export type InputDef = {
-  name: string;
+  readonly name: string;
 
   // TODO: implement
   // oneOf: boolean;
 
-  fields: InputTypeRefs;
+  readonly fields: InputTypeRefs;
 
-  directives: AnyConstDirectiveAttachments;
+  readonly directives: AnyConstDirectiveAttachments;
 };
 
 /** Object definition including argument metadata for every field. */
 export type ObjectDef = {
-  name: string;
+  readonly name: string;
 
-  fields: OutputTypeRefs;
+  readonly fields: OutputTypeRefs;
 
-  directives: AnyConstDirectiveAttachments;
+  readonly directives: AnyConstDirectiveAttachments;
 };
 
 /** Union definition listing the concrete object members. */
 export type UnionDef = {
-  name: string;
+  readonly name: string;
 
-  types: { [typename: string]: true };
+  readonly types: { [typename: string]: true };
 
-  directives: AnyConstDirectiveAttachments;
+  readonly directives: AnyConstDirectiveAttachments;
 };
 
 /** Resolve the TypeScript type represented by a schema type reference. */
@@ -129,12 +129,12 @@ export type InputFieldRecord<
 
 /** Convenience alias exposing all fields for an object type. */
 export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
-  [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
+  readonly [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
 };
 
 /** Map union member names to their object definitions. */
 export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TRef extends OutputUnionRef> = {
-  [TTypeName in UnionMemberName<TSchema, TRef>]: TSchema["object"][TTypeName];
+  readonly [TTypeName in UnionMemberName<TSchema, TRef>]: TSchema["object"][TTypeName];
 };
 
 export type UnionMemberName<TSchema extends AnyGraphqlSchema, TRef extends OutputUnionRef> = Extract<

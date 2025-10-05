@@ -1,4 +1,11 @@
-export type ConstValue = string | number | boolean | null | undefined | { [key: string]: ConstValue } | ConstValue[];
+export type ConstValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | { readonly [key: string]: ConstValue }
+  | readonly ConstValue[];
 export type ConstValues = {
-  [key: string]: ConstValue;
+  readonly [key: string]: ConstValue;
 };
