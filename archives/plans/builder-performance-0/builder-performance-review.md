@@ -270,4 +270,3 @@ Consider:
 - **Current Status:** [../../builder-performance/progress.md](../../builder-performance/progress.md)
 - **Original Plan:** [../../builder-performance/reference/plan-original.md](../../builder-performance/reference/plan-original.md)
 - **Profiling Guide:** [docs/guides/performance-profiling.md](../guides/performance-profiling.md)
-- **ADR-001:** [Zero-runtime plan](../decisions/001-zero-runtime-plan.md)

@@ -255,18 +255,3 @@ const result = analyze(source);
 const { filePath, source } = loadFixture("model-definition");
 const result = analyze({ filePath, source });
 ```
-
-### Architecture Decision Records
-
-**Location**: `docs/decisions/`
-
-**When to write**:
-- Multiple viable approaches exist
-- Decision is hard to reverse
-- Deviating from established patterns
-
-**Process**: See [ADR-000](docs/decisions/000-adr-process.md)
-
-### Recent Changes
-
-- 2025-09-20 (ADR-001): Documented zero-runtime plan, added codegen/builder commands

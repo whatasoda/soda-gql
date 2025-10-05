@@ -278,7 +278,6 @@ gh run download <run-id> --name benchmark-results
 - [Builder Incremental Guide](./builder-incremental.md) - Incremental build architecture
 - [Optimization Roadmap](../plans/builder-performance/roadmap.md) - Strategic overview and timeline
 - [Current Status](../plans/builder-performance/status.md) - Live progress tracking
-- [ADR-001](../decisions/001-zero-runtime-plan.md) - Zero-runtime architecture decisions
 
 ## References
 
