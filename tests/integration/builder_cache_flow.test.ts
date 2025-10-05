@@ -4,7 +4,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runBuilder } from "../../packages/builder/src/index";
 import { runMultiSchemaCodegen } from "../../packages/codegen/src/index";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
+import { copyDefaultInject } from "../fixtures/inject-module/index";
+import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -12,7 +13,7 @@ const tmpRoot = join(projectRoot, "tests", ".tmp", "builder-cache-flow");
 
 const generateGraphqlSystem = async (workspaceRoot: string, schemaPath: string) => {
   const injectPath = join(workspaceRoot, "graphql-inject.ts");
-  copyDefaultInjectModule(injectPath);
+  copyDefaultInject(injectPath);
 
   const outPath = join(workspaceRoot, "graphql-system", "index.ts");
   const result = await runMultiSchemaCodegen({
@@ -40,6 +41,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
       format: "json",
       analyzer: "ts",
       debugDir,
+      config: createTestConfig(workspaceRoot),
     });
 
     if (result.isErr()) {

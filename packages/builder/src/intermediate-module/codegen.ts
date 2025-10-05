@@ -148,7 +148,7 @@ const renderTreeNode = (node: TreeNode, indent: number): string => {
   if (node.expression && node.children.size === 0 && node.canonicalId) {
     // Leaf node - use addBuilder
     const expr = formatFactory(node.expression);
-    return `registry.addBuilder("${node.canonicalId}", () => ${expr})`;
+    return `registry.addElement("${node.canonicalId}", () => ${expr})`;
   }
 
   // Branch node - render nested object
@@ -178,9 +178,9 @@ const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
       declarations.push(`    const ${rootName} = ${objectLiteral};`);
       returnEntries.push(rootName);
     } else if (node.expression && node.canonicalId) {
-      // Single export - use addBuilder
+      // Single export - use addElement
       const expr = formatFactory(node.expression);
-      declarations.push(`    const ${rootName} = registry.addBuilder("${node.canonicalId}", () => ${expr});`);
+      declarations.push(`    const ${rootName} = registry.addElement("${node.canonicalId}", () => ${expr});`);
       returnEntries.push(rootName);
     }
   });
@@ -282,13 +282,15 @@ const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, Module
   const { imports } = renderImportStatements(summary, summaries);
   const body = buildNestedObject(nodes);
 
-  return `registry.register("${filePath}", () => {${imports}\n${body}\n});`;
+  return `registry.addModule("${filePath}", () => {${imports}\n${body}\n});`;
 };
 
 export type IntermediateModuleSourceInput = {
   readonly fileGroups: FileGroup[];
   readonly summaries: Map<string, ModuleSummary>;
   readonly gqlImportPath: string;
+  readonly coreImportPath: string;
+  readonly evaluatorId: string;
 };
 
 /**
@@ -298,23 +300,27 @@ export const buildIntermediateModuleSource = ({
   fileGroups,
   summaries,
   gqlImportPath,
+  coreImportPath,
+  evaluatorId,
 }: IntermediateModuleSourceInput): string => {
   const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, summaries));
 
   const imports = [
+    //
     `import { gql } from "${gqlImportPath}";`,
-    `import { createPseudoModuleRegistry, createIssueRegistry, setActiveRegistry } from "@soda-gql/core";`,
-  ];
+    `import { getPseudoModuleRegistry } from "${coreImportPath}";`,
+  ].join("\n");
 
-  const registrySection = `// Initialize issue registry for build-time validation
-export const issueRegistry = createIssueRegistry();
-setActiveRegistry(issueRegistry);`;
+  const registrySection = `const registry = getPseudoModuleRegistry("${evaluatorId ?? "default"}");`;
 
-  const pseudoRegistrySection = `const registry = createPseudoModuleRegistry();`;
+  const registerFuncSection = [
+    //
+    "export const register = () => {",
+    registryBlocks.join("\n\n"),
+    "}",
+  ].join("\n");
 
-  const registryBlocksSection = registryBlocks.join("\n\n");
+  // const exportSection = `export const elements = registry.evaluate();`;
 
-  const evaluationSection = `export const elements = registry.evaluate();`;
-
-  return `${imports.join("\n")}\n\n${registrySection}\n\n${pseudoRegistrySection}\n\n${registryBlocksSection}\n\n${evaluationSection}\n`;
+  return `${imports}\n\n${registrySection}\n\n${registerFuncSection}\n\n`;
 };

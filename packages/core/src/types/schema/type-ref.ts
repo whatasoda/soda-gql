@@ -1,5 +1,5 @@
-import type { ConstValue } from "../shared/const-value";
 import type { AnyConstDirectiveAttachments } from "./const-directives";
+import type { ConstValue } from "./const-value";
 import type { ListTypeModifierSuffix, StripTailingListFromTypeModifier, TypeModifier } from "./type-modifier";
 
 export type AnyDefaultValue = { default: ConstValue };
@@ -8,20 +8,20 @@ export type InputTypeKind = "scalar" | "enum" | "input";
 export type OutputTypeKind = "scalar" | "enum" | "object" | "union" | "typename";
 
 export type AnyTypeRef = {
-  kind: string;
-  name: string;
-  modifier: TypeModifier;
-  directives: AnyConstDirectiveAttachments;
-  defaultValue?: AnyDefaultValue | null;
-  arguments?: InputTypeRefs;
+  readonly kind: string;
+  readonly name: string;
+  readonly modifier: TypeModifier;
+  readonly directives: AnyConstDirectiveAttachments;
+  readonly defaultValue?: AnyDefaultValue | null;
+  readonly arguments?: InputTypeRefs;
 };
 
 type AbstractInputTypeRef<TKind extends InputTypeKind> = {
-  kind: TKind;
-  name: string;
-  modifier: TypeModifier;
-  directives: AnyConstDirectiveAttachments;
-  defaultValue: AnyDefaultValue | null;
+  readonly kind: TKind;
+  readonly name: string;
+  readonly modifier: TypeModifier;
+  readonly directives: AnyConstDirectiveAttachments;
+  readonly defaultValue: AnyDefaultValue | null;
 };
 export type InputTypeRefs = { [key: string]: InputTypeRef };
 export type InputTypeRef = InputScalarRef | InputEnumRef | InputInputObjectRef;
@@ -31,11 +31,11 @@ export type InputEnumRef = AbstractInputTypeRef<"enum">;
 export type InputInputObjectRef = AbstractInputTypeRef<"input">;
 
 type AbstractOutputTypeRef<TKind extends OutputTypeKind> = {
-  kind: TKind;
-  name: string;
-  modifier: TypeModifier;
-  directives: AnyConstDirectiveAttachments;
-  arguments: InputTypeRefs;
+  readonly kind: TKind;
+  readonly name: string;
+  readonly modifier: TypeModifier;
+  readonly directives: AnyConstDirectiveAttachments;
+  readonly arguments: InputTypeRefs;
 };
 export type OutputTypeRefs = { [key: string]: OutputTypeRef };
 export type OutputTypeRef = OutputScalarRef | OutputEnumRef | OutputObjectRef | OutputUnionRef | OutputTypenameRef;
@@ -48,18 +48,18 @@ export type OutputTypenameRef = AbstractOutputTypeRef<"typename">;
 
 export type StripTailingListFromTypeRef<TRef extends AnyTypeRef> = TRef extends { defaultValue: AnyDefaultValue | null }
   ? {
-      kind: TRef["kind"];
-      name: TRef["name"];
-      modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
-      directives: TRef["directives"];
-      defaultValue: TRef["modifier"] extends `${string}${ListTypeModifierSuffix}` ? null : TRef["defaultValue"];
+      readonly kind: TRef["kind"];
+      readonly name: TRef["name"];
+      readonly modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
+      readonly directives: TRef["directives"];
+      readonly defaultValue: TRef["modifier"] extends `${string}${ListTypeModifierSuffix}` ? null : TRef["defaultValue"];
     }
   : TRef extends { arguments: InputTypeRefs }
     ? {
-        kind: TRef["kind"];
-        name: TRef["name"];
-        modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
-        directives: TRef["directives"];
-        arguments: TRef["arguments"];
+        readonly kind: TRef["kind"];
+        readonly name: TRef["name"];
+        readonly modifier: StripTailingListFromTypeModifier<TRef["modifier"]>;
+        readonly directives: TRef["directives"];
+        readonly arguments: TRef["arguments"];
       }
     : never;

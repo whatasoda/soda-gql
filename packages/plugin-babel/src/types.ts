@@ -23,8 +23,6 @@ export type ArtifactSource =
 
 export type SodaGqlBabelOptions = {
   readonly mode: "runtime" | "zero-runtime";
-  /** @deprecated Use artifactSource instead. Kept for backward compatibility. */
-  readonly artifactsPath?: string;
   readonly artifactSource?: ArtifactSource;
   readonly importIdentifier?: string;
   readonly diagnostics?: "json" | "console";

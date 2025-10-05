@@ -1,4 +1,4 @@
-import type { Hidden } from "../shared/hidden";
+import type { Hidden } from "../../utils/hidden";
 
 /**
  * Defines the runtime surface that the typed layer depends on. Implementations

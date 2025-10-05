@@ -3,8 +3,8 @@ import { JsonEntityCache } from "../cache/json-entity-cache";
 import { DiscoverySnapshotSchema } from "../schemas/discovery";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
-// Bumped to v2 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
-const DISCOVERY_CACHE_VERSION = "discovery-cache/v2";
+// Bumped to v3 for DiscoverySnapshot schema change (added fingerprint and metadata fields)
+const DISCOVERY_CACHE_VERSION = "discovery-cache/v3";
 
 export type DiscoveryCacheOptions = {
   readonly factory: JsonCacheFactory;
@@ -39,6 +39,11 @@ export class JsonDiscoveryCache extends JsonEntityCache<string, DiscoverySnapsho
     }
 
     return snapshot;
+  }
+
+  peek(filePath: string): DiscoverySnapshot | null {
+    const key = this.normalizeKey(filePath);
+    return this.loadRaw(key);
   }
 
   store(snapshot: DiscoverySnapshot): void {

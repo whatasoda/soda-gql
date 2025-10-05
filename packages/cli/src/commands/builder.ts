@@ -1,17 +1,29 @@
+import { watch } from "node:fs";
+import { resolve } from "node:path";
+
 import type {
   BuilderAnalyzer,
   BuilderError,
   BuilderFormat,
+  BuilderInput,
   BuilderMode,
   BuilderOptions,
   BuilderSuccess,
 } from "@soda-gql/builder";
-import { runBuilder } from "@soda-gql/builder";
+import { createBuilderService, runBuilder } from "@soda-gql/builder";
+import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
+import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
 const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
+
+type BuilderCommandOptions = Omit<BuilderInput, "config"> & {
+  outPath: string;
+  format: BuilderFormat;
+  watch?: boolean;
+};
 
 const parseBuilderArgs = (argv: readonly string[]) => {
   const args = [...argv];
@@ -21,6 +33,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   let format: BuilderFormat = "human";
   let analyzer: BuilderAnalyzer = "ts";
   let debugDir: string | undefined;
+  let watch = false;
 
   while (args.length > 0) {
     const current = args.shift();
@@ -29,6 +42,10 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     }
 
     switch (current) {
+      case "--watch": {
+        watch = true;
+        break;
+      }
       case "--mode": {
         const value = args.shift();
         if (!value || !isMode(value)) {
@@ -123,13 +140,14 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     });
   }
 
-  return ok<BuilderOptions, BuilderError>({
+  return ok<BuilderCommandOptions, BuilderError>({
     mode,
     entry: entries,
     outPath,
     format,
     analyzer,
     debugDir,
+    watch,
   });
 };
 
@@ -161,6 +179,15 @@ const formatBuilderError = (format: OutputFormat, error: BuilderError) => {
 };
 
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
+  // Load config first
+  const configResult = await loadConfig();
+  if (configResult.isErr()) {
+    const error = configResult.error;
+    process.stdout.write(`Config error: ${error.code} - ${error.message}\n`);
+    return 1;
+  }
+  const config = configResult.value;
+
   const parsed = parseBuilderArgs(argv);
 
   if (parsed.isErr()) {
@@ -168,8 +195,131 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     return 1;
   }
 
-  const options: BuilderOptions = parsed.value;
-  const result = await runBuilder(options);
+  const options = parsed.value;
+
+  if (options.watch) {
+    // Watch mode: Use BuilderService with session
+    process.stdout.write("Watch mode enabled - building and watching for changes...\n");
+
+    // Create service with session
+    const service = createBuilderService({
+      mode: options.mode,
+      entry: options.entry,
+      analyzer: options.analyzer,
+      config,
+      debugDir: options.debugDir,
+    });
+
+    // Initial build
+    const initialResult = await service.build();
+
+    if (initialResult.isErr()) {
+      process.stdout.write(`${formatBuilderError(options.format, initialResult.error)}\n`);
+      // Don't exit in watch mode - continue watching
+    } else {
+      const output = formatBuilderSuccess(
+        options.format,
+        { artifact: initialResult.value, outPath: options.outPath },
+        options.mode,
+      );
+      if (output) {
+        process.stdout.write(`${output}\n`);
+      }
+    }
+
+    process.stdout.write("Watching for changes... (Press Ctrl+C to exit)\n");
+
+    // Watch directories containing entry files
+    const watchedDirs = new Set<string>();
+    for (const entry of options.entry) {
+      const dir = resolve(entry).split("/").slice(0, -1).join("/");
+      watchedDirs.add(dir);
+    }
+
+    // Set up file watchers
+    const watchers: ReturnType<typeof watch>[] = [];
+    const changedFiles = new Set<string>();
+    let rebuildTimeout: NodeJS.Timeout | null = null;
+
+    const triggerRebuild = async () => {
+      if (changedFiles.size === 0) return;
+
+      const files = [...changedFiles];
+      changedFiles.clear();
+
+      process.stdout.write(`\nRebuilding (${files.length} files changed)...\n`);
+
+      // Create change set
+      const changeSet: BuilderChangeSet = {
+        added: [],
+        updated: files.map((filePath) => ({
+          filePath,
+          fingerprint: `${Date.now()}`, // Simple timestamp-based fingerprint
+          mtimeMs: Date.now(),
+        })),
+        removed: [],
+        metadata: {
+          schemaHash: options.analyzer, // Match buildInitial logic
+          analyzerVersion: options.analyzer,
+        },
+      };
+
+      // Use service.update() if available, otherwise rebuild
+      const result = service.update ? await service.update(changeSet) : await service.build();
+
+      if (result.isErr()) {
+        process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
+      } else {
+        const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath }, options.mode);
+        if (output) {
+          process.stdout.write(`${output}\n`);
+        }
+      }
+
+      process.stdout.write("Watching for changes...\n");
+    };
+
+    for (const dir of watchedDirs) {
+      const watcher = watch(dir, { recursive: true }, (_eventType, filename) => {
+        if (!filename) return;
+
+        const fullPath = resolve(dir, filename);
+
+        // Filter for TypeScript files
+        if (!fullPath.endsWith(".ts") && !fullPath.endsWith(".tsx")) {
+          return;
+        }
+
+        changedFiles.add(fullPath);
+
+        // Debounce rebuilds (300ms)
+        if (rebuildTimeout) {
+          clearTimeout(rebuildTimeout);
+        }
+        rebuildTimeout = setTimeout(() => {
+          triggerRebuild();
+        }, 300);
+      });
+
+      watchers.push(watcher);
+    }
+
+    // Keep process alive and handle cleanup
+    await new Promise<void>((resolve) => {
+      process.on("SIGINT", () => {
+        process.stdout.write("\nStopping watch mode...\n");
+        for (const watcher of watchers) {
+          watcher.close();
+        }
+        resolve();
+      });
+    });
+
+    return 0;
+  }
+
+  // Normal mode: Single build
+  const result = await runBuilder({ ...options, config });
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);

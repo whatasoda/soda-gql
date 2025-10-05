@@ -7,7 +7,7 @@ import {
   parseModifiedTypeName,
   type TypeModifier,
 } from "../types/schema";
-import { wrapValueByKey } from "../types/shared/utility";
+import { wrapByKey } from "../utils/wrap-by-key";
 
 type AssignableDefaultValue<
   TSchema extends AnyGraphqlSchema,
@@ -57,7 +57,7 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
           directives?: TDirectives;
         },
       ) =>
-        wrapValueByKey(varName, {
+        wrapByKey(varName, {
           kind,
           ...parseModifiedTypeName(type),
           defaultValue: extras?.default ? { default: extras.default() } : null,

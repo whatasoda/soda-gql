@@ -8,7 +8,7 @@ import {
   parseModifiedTypeName,
   type TypeModifier,
 } from "../types/schema";
-import type { ConstValue } from "../types/shared/const-value";
+import type { ConstValue } from "../types/schema/const-value";
 
 const createUnsafeInputRefFactory = <const TKind extends InputTypeKind>(kind: TKind) => {
   type UnsafeInputRef<

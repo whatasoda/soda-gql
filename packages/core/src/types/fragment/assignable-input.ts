@@ -1,3 +1,4 @@
+import type { ConstValue } from "../schema/const-value";
 import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "../schema/schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "../schema/type-modifier";
 import type {
@@ -7,7 +8,6 @@ import type {
   InputTypeRefs,
   StripTailingListFromTypeRef,
 } from "../schema/type-ref";
-import type { ConstValue } from "../shared/const-value";
 import type { AnyVarRef, VarRefBy } from "./var-ref";
 
 export type AnyAssignableInputValue =
@@ -19,11 +19,11 @@ export type AnyAssignableInputValue =
   | null;
 
 export type AnyAssignableInput = {
-  [key: string]: AnyAssignableInputValue;
+  readonly [key: string]: AnyAssignableInputValue;
 };
 
 export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeRefs> = {
-  [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
+  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
 };
 export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeRef> =
   | VarRefBy<TRef>

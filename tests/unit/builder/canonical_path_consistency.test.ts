@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+import { loadModuleAnalysisFixture } from "../../utils";
 
 describe("Canonical path consistency", () => {
   // Helper to safely access array elements while satisfying linter
@@ -13,14 +12,7 @@ describe("Canonical path consistency", () => {
     return value;
   }
 
-  const fixturesDir = join(__dirname, "../../fixtures/module-analysis/shared");
-  const loadFixture = (name: string) => {
-    const fixturePath = join(fixturesDir, `${name}.ts`);
-    return {
-      filePath: fixturePath,
-      source: readFileSync(fixturePath, "utf-8"),
-    };
-  };
+  const loadFixture = (name: string) => loadModuleAnalysisFixture("shared", name);
 
   describe("TypeScript and SWC adapters produce consistent astPath", () => {
     const analyzeWithTS = getAstAnalyzer("ts").analyze;

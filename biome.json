@@ -50,13 +50,20 @@
       "!**/tests/.tmp/**/*",
       "!**/.cache/**/*",
       "!**/dist/**/*",
+      "!**/test_dist/**/*",
       "!**/node_modules/**/*"
     ],
     "ignoreUnknown": false
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts", "packages/core/src/types/**/*.ts"],
+      "includes": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "tests/**/*.ts",
+        "packages/core/src/types/**/*.ts",
+        "packages/core/src/utils/**/*.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

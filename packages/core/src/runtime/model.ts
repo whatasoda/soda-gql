@@ -1,6 +1,6 @@
 import type { AnyModel } from "../types/operation";
-import { hidden } from "../types/shared/hidden";
-import type { StripFunctions, StripSymbols } from "../types/shared/utility";
+import { hidden } from "../utils/hidden";
+import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 
 export type RuntimeModelInput = {
   prebuild: StripFunctions<AnyModel>;

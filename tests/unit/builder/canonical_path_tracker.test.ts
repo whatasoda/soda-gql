@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createCanonicalTracker } from "../../../packages/builder/src/index";
+import { type CanonicalId, createCanonicalTracker } from "../../../packages/builder/src/index";
 
 describe("CanonicalPathTracker", () => {
   const filePath = "/test/src/test.ts";
@@ -128,7 +128,7 @@ describe("CanonicalPathTracker", () => {
 
       const canonicalId = tracker.resolveCanonicalId("foo.bar");
 
-      expect(canonicalId).toBe("/test/src/test.ts::foo.bar" as any);
+      expect(canonicalId).toBe("/test/src/test.ts::foo.bar" as CanonicalId);
     });
 
     it("handles empty astPath", () => {
@@ -136,7 +136,7 @@ describe("CanonicalPathTracker", () => {
 
       const canonicalId = tracker.resolveCanonicalId("");
 
-      expect(canonicalId).toBe("/test/src/test.ts::" as any);
+      expect(canonicalId).toBe("/test/src/test.ts::" as CanonicalId);
     });
   });
 

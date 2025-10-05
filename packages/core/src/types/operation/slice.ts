@@ -1,9 +1,8 @@
-/** Operation slice builders (`gql.querySlice`, etc.). */
+import type { SwitchIfEmpty } from "../../utils/empty-object";
+import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
-import type { VoidIfEmptyObject } from "../shared/empty-object";
-import type { Hidden } from "../shared/hidden";
 import { ArtifactElement } from "./artifact-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
@@ -55,15 +54,18 @@ export class Slice<
     factory: () => {
       operationType: TOperationType;
       build: (
-        variables: VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>,
+        variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
       ) => SliceContent<
-        VoidIfEmptyObject<TVariableDefinitions> | AssignableInput<TSchema, TVariableDefinitions>,
+        SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
         TFields,
         TProjection
       >;
     },
   ) {
-    return new Slice(factory);
+    type Fields = TFields & { [key: symbol]: never };
+    type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
+
+    return new Slice(factory as () => SliceArtifact<TOperationType, Variables, Fields, TProjection>);
   }
 }
 

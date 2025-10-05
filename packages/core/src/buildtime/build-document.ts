@@ -23,7 +23,7 @@ import {
   VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType, TypeModifier } from "../types/schema";
-import type { ConstValue } from "../types/shared/const-value";
+import type { ConstValue } from "../types/schema/const-value";
 
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {

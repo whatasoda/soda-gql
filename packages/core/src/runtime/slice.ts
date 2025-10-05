@@ -1,8 +1,8 @@
 import type { AnyExecutionResultProjectionsBuilder, AnySliceOf } from "../types/operation";
 import { Projection } from "../types/runtime";
 import type { OperationType } from "../types/schema";
-import { hidden } from "../types/shared/hidden";
-import type { StripFunctions, StripSymbols } from "../types/shared/utility";
+import { hidden } from "../utils/hidden";
+import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 
 export type RuntimeSliceInput = {
   prebuild: StripFunctions<AnySliceOf<OperationType>>;

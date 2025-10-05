@@ -1,18 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+import { loadModuleAnalysisFixture } from "../../utils";
 
 const analyzeModule = getAstAnalyzer("ts").analyze;
 
-const fixturesDir = join(__dirname, "../../fixtures/module-analysis/ts");
-const loadFixture = (name: string) => {
-  const fixturePath = join(fixturesDir, `${name}.ts`);
-  return {
-    filePath: fixturePath,
-    source: readFileSync(fixturePath, "utf-8"),
-  };
-};
+const loadFixture = (name: string) => loadModuleAnalysisFixture("ts", name);
 
 describe("Module analyzer - TypeScript", () => {
   it("extracts top-level gql definitions with schema metadata", () => {
@@ -21,10 +13,10 @@ describe("Module analyzer - TypeScript", () => {
     const analysis = analyzeModule({ filePath, source });
 
     const summary = analysis.definitions.map((definition) => ({
-      exportName: definition.exportName,
+      astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([{ exportName: "userModel" }, { exportName: "userSlice" }, { exportName: "pageQuery" }]);
+    expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "userSlice" }, { astPath: "pageQuery" }]);
   });
 
   it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -53,7 +45,7 @@ describe("Module analyzer - TypeScript", () => {
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
     expect(pageQuery).toBeDefined();
-    expect(pageQuery?.exportName).toBe("pageQuery");
+    expect(pageQuery?.astPath).toBe("pageQuery");
   });
 
   it("captures nested dependencies for slices", () => {
@@ -64,7 +56,7 @@ describe("Module analyzer - TypeScript", () => {
     expect(analysis.definitions).toHaveLength(1);
     const [pageQuery] = analysis.definitions;
     expect(pageQuery).toBeDefined();
-    expect(pageQuery?.exportName).toBe("pageQuery");
+    expect(pageQuery?.astPath).toBe("pageQuery");
   });
 
   it("captures references in nested object values", () => {
@@ -75,7 +67,7 @@ describe("Module analyzer - TypeScript", () => {
     expect(analysis.definitions).toHaveLength(1);
     const [complexQuery] = analysis.definitions;
     expect(complexQuery).toBeDefined();
-    expect(complexQuery?.exportName).toBe("complexQuery");
+    expect(complexQuery?.astPath).toBe("complexQuery");
   });
 
   it("captures both local and imported dependencies", () => {
@@ -83,8 +75,8 @@ describe("Module analyzer - TypeScript", () => {
 
     const analysis = analyzeModule({ filePath, source });
 
-    const pageQuery = analysis.definitions.find((def) => def.exportName === "pageQuery");
-    expect(pageQuery?.exportName).toBe("pageQuery");
+    const pageQuery = analysis.definitions.find((def) => def.astPath === "pageQuery");
+    expect(pageQuery?.astPath).toBe("pageQuery");
   });
 
   it("extracts definitions from multiple schemas", () => {
@@ -93,9 +85,9 @@ describe("Module analyzer - TypeScript", () => {
     const analysis = analyzeModule({ filePath, source });
 
     const summary = analysis.definitions.map((definition) => ({
-      exportName: definition.exportName,
+      astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([{ exportName: "adminModel" }, { exportName: "defaultQuery" }]);
+    expect(summary).toEqual([{ astPath: "adminModel" }, { astPath: "defaultQuery" }]);
   });
 });

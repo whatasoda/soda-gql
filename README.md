@@ -4,7 +4,6 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ## Features
 
-- 🚀 **Zero Runtime Overhead**: All GraphQL queries are generated at build time
 - 🔍 **Full Type Safety**: Complete TypeScript inference from schema to query results
 - 🎯 **No Code Generation Loop**: Unlike traditional GraphQL codegen, no constant regeneration needed
 - 🔧 **Transform Functions**: Built-in data normalization at the model level
@@ -16,10 +15,10 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 ```
 packages/
 ├── core/           # Runtime GraphQL utilities
-├── codegen/        # Schema code generation  
+├── codegen/        # Schema code generation
 ├── builder/        # Static analysis & doc generation
 ├── plugin-babel/   # Babel transformation plugin
-├── plugin-bun/     # Bun plugin
+├── runtime/        # Runtime execution helpers
 └── cli/            # Command-line interface
 ```
 
@@ -31,9 +30,6 @@ packages/
 # Install packages
 bun add @soda-gql/core
 bun add -D @soda-gql/cli @soda-gql/plugin-babel
-
-# Initialize project
-bunx soda-gql init
 
 # Scaffold scalar + adapter definitions for the runtime
 bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
@@ -52,60 +48,74 @@ The generated runtime module imports your scalar and adapter implementations fro
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Define a reusable model
-const userModel = gql.model(
-  ["User", { postCategoryId: gql.scalar("ID", "?") }],
-  ({ f, $ }) => ({
-    ...f.id(),
-    ...f.name(),
-    ...f.email(),
-    ...f.posts(
-      { postCategoryId: $.postCategoryId },
-      ({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      }),
-    ),
-  }),
-  (data) => ({
-    id: data.id,
-    displayName: data.name,
-    email: data.email.toLowerCase(),
-    posts: data.posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-    })),
-  })
+// Define a reusable model with array-based API
+export const userModel = gql.default(({ model }, { $ }) =>
+  model.User(
+    {
+      variables: [$("categoryId").scalar("ID:?")],
+    },
+    ({ f, $ }) => [
+      //
+      f.id(null, { alias: "uuid" }),
+      f.name(),
+      f.posts({ categoryId: $.categoryId })(({ f }) => [
+        //
+        f.id(),
+        f.title(),
+      ]),
+    ],
+    (selection) => ({
+      id: selection.uuid,
+      name: selection.name,
+      posts: selection.posts.map((post) => ({
+        id: post.id,
+        title: post.title,
+      })),
+    }),
+  ),
 );
 
 // Create a query slice
-const getUserQuery = gql.querySlice(
-  [
+export const userSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
     {
-      id: gql.scalar("ID", "!"),
-      postCategoryId: gql.scalar("ID", "?"),
+      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
-  ],
-  ({ query, $ }) => ({
-    user: query.user({ id: $.id, postCategoryId: $.postCategoryId }, userModel),
-  }),
-  ({ select }) => select("$.user", (result) => result.safeUnwrap((data) => data.user))
+    ({ f, $ }) => [
+      //
+      f.users({
+        id: [$.id],
+        categoryId: $.categoryId,
+      })(() => [
+        //
+        userModel.fragment({ categoryId: $.categoryId }),
+      ]),
+    ],
+    ({ select }) =>
+      select(["$.users"], (result) =>
+        result.safeUnwrap(([users]) => users.map((user) => userModel.normalize(user))),
+      ),
+  ),
 );
 
-const pageQuery = gql.query(
-  "PageQuery",
-  {
-    userId: gql.scalar("ID", "!"),
-    postCategoryId: gql.scalar("ID", "?"),
-  },
-  ({ $ }) => ({
-    user: getUserQuery({
-      id: $.userId,
-      postCategoryId: $.postCategoryId,
+// Build a complete operation
+export const profileQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "ProfileQuery",
+      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+    },
+    ({ $ }) => ({
+      users: userSlice.build({
+        id: $.userId,
+        categoryId: $.categoryId,
+      }),
     }),
-  }),
+  ),
 );
 ```
+
+**Note on API**: Variables are now declared as arrays (`variables: [$(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
 
 ### For Contributors
 

@@ -4,7 +4,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type CanonicalId, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
-import { copyDefaultInjectModule } from "../fixtures/inject-module/index";
+import { copyDefaultInject } from "../fixtures/inject-module/index";
+import { createTestConfig } from "../helpers/test-config";
 
 type CliResult = {
   readonly stdout: string;
@@ -19,7 +20,7 @@ const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
 const generateGraphqlSystem = async (workspaceRoot: string) => {
   const schemaPath = join(workspaceRoot, "schema.graphql");
   const injectPath = join(workspaceRoot, "graphql-inject.ts");
-  copyDefaultInjectModule(injectPath);
+  copyDefaultInject(injectPath);
 
   const outPath = join(workspaceRoot, "graphql-system", "index.ts");
   const result = await runMultiSchemaCodegen({
@@ -47,6 +48,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outPath: str
       format: "json",
       analyzer: "ts",
       debugDir,
+      config: createTestConfig(workspaceRoot),
     });
 
     if (result.isErr()) {
@@ -87,8 +89,8 @@ const copyFixtureWorkspace = (name: string) => {
   return workspaceRoot;
 };
 
-describe("runtime builder flow", () => {
-  it("runs codegen then builder runtime to produce artifact", async () => {
+describe("runBuilder runtime mode flow", () => {
+  it("runs codegen then runBuilder in runtime mode to produce the artifact manifest", async () => {
     const workspace = copyFixtureWorkspace("runtime-flow");
 
     await generateGraphqlSystem(workspace);

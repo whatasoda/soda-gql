@@ -14,16 +14,16 @@ describe("Schema Edge Cases", () => {
           subscription: null,
         },
         scalar: {
-          ...defineScalar("String", ({ type }) => ({
+          String: defineScalar("String", ({ type }) => ({
             input: type<string>(),
             output: type<string>(),
             directives: {},
-          })),
+          })).String,
         },
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               user: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
             },
@@ -78,7 +78,7 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               // Create a field with an invalid kind by casting
               weirdField: {
@@ -96,7 +96,9 @@ describe("Schema Edge Cases", () => {
       } satisfies AnyGraphqlSchema;
 
       expect(() => {
-        createFieldFactories(schema, "Query");
+        const factories = createFieldFactories(schema, "Query");
+        // Trigger the factory to execute by accessing the invalid field
+        (factories as any).weirdField();
       }).toThrow("Unsupported field type");
     });
   });
@@ -113,7 +115,7 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               result: unsafeOutputRef.union("SearchResult:!", { arguments: {}, directives: {} }),
             },
@@ -121,7 +123,7 @@ describe("Schema Edge Cases", () => {
           ),
         },
         union: {
-          ...define("SearchResult").union(
+          SearchResult: define("SearchResult").union(
             {
               MissingType: true, // This type doesn't exist in objects
             },
@@ -156,13 +158,13 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          ...define("Query").object(
+          Query: define("Query").object(
             {
               node: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }),
             },
             {},
           ),
-          ...define("Node").object(
+          Node: define("Node").object(
             {
               id: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
               parent: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }), // Circular reference

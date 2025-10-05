@@ -3,7 +3,6 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
-import { unwrapNullish } from "@soda-gql/tool-utils";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
 import { createCanonicalTracker } from "../../canonical-id/path-tracker";
@@ -42,8 +41,11 @@ const toPositionResolver = (source: string) => {
     let high = lineStarts.length - 1;
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const start = unwrapNullish(lineStarts[mid], "safe-array-item-access");
-      const next = mid + 1 < lineStarts.length ? unwrapNullish(lineStarts[mid + 1], "safe-array-item-access") : source.length + 1;
+      const start = lineStarts[mid];
+      const next = mid + 1 < lineStarts.length ? lineStarts[mid + 1] : source.length + 1;
+      if (start == null || next == null) {
+        break;
+      }
       if (offset < start) {
         high = mid - 1;
       } else if (offset >= next) {
@@ -54,7 +56,8 @@ const toPositionResolver = (source: string) => {
     }
     return {
       line: lineStarts.length,
-      column: offset - unwrapNullish(lineStarts[lineStarts.length - 1], "safe-array-item-access") + 1,
+      // biome-ignore lint/style/noNonNullAssertion: lineStarts is guaranteed to have at least one item
+      column: offset - lineStarts[lineStarts.length - 1]! + 1,
     } satisfies SourcePosition;
   };
 };
@@ -321,7 +324,6 @@ const collectAllDefinitions = (
 
   type PendingDefinition = {
     readonly astPath: string;
-    readonly exportName: string; // For backward compat
     readonly isTopLevel: boolean;
     readonly isExported: boolean;
     readonly exportBinding?: string;
@@ -408,7 +410,6 @@ const collectAllDefinitions = (
       handledCalls.push(node);
       pending.push({
         astPath,
-        exportName: astPath, // For backward compat
         isTopLevel,
         isExported,
         exportBinding,
@@ -535,7 +536,6 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
-        exportName: item.exportName,
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,

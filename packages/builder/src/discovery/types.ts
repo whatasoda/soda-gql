@@ -1,6 +1,7 @@
 import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
 import type { CanonicalId } from "../canonical-id/canonical-id";
 import type { BuilderAnalyzer } from "../types";
+import type { FileFingerprint } from "./fingerprint";
 
 /**
  * Result of resolving a single import specifier encountered during discovery.
@@ -23,6 +24,18 @@ export type DiscoverySnapshotDefinition = ModuleDefinition & {
 };
 
 /**
+ * Metadata for cache validation and invalidation.
+ */
+export type DiscoverySnapshotMetadata = {
+  /** Analyzer version used to create this snapshot. */
+  readonly analyzerVersion: string;
+  /** Schema hash to detect schema changes. */
+  readonly schemaHash: string;
+  /** Plugin options hash to detect configuration changes. */
+  readonly pluginOptionsHash?: string;
+};
+
+/**
  * Immutable cacheable record produced by the discovery phase for a single source file.
  * Captures analyzer output, dependency fan-out, and bookkeeping metadata.
  */
@@ -35,6 +48,10 @@ export type DiscoverySnapshot = {
   readonly analyzer: BuilderAnalyzer;
   /** Signature of the source contents used to validate cache entries. */
   readonly signature: string;
+  /** File fingerprint for fast cache invalidation. */
+  readonly fingerprint: FileFingerprint;
+  /** Metadata for cache validation (analyzer version, schema hash, etc.). */
+  readonly metadata: DiscoverySnapshotMetadata;
   /** Milliseconds since epoch when this snapshot was created. */
   readonly createdAtMs: number;
   /** Raw analyzer output (imports, exports, definitions, diagnostics). */
@@ -154,6 +171,12 @@ export interface DiscoveryCache {
    * Returns null when the cache entry is missing or stale.
    */
   load(filePath: string, signature: string): DiscoverySnapshot | null;
+  /**
+   * Peek at cached snapshot without signature validation.
+   * Used for fingerprint-based cache invalidation.
+   * Returns null when the cache entry is missing.
+   */
+  peek(filePath: string): DiscoverySnapshot | null;
   /**
    * Persist the provided snapshot.
    */

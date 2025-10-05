@@ -4,7 +4,7 @@ import { createCanonicalId } from "@soda-gql/builder";
 import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { assertTransformRemovesGql, createTestSource, runBabelTransform } from "../../utils/transform";
 
-describe("gql.querySlice characterization tests", () => {
+describe("slice.query characterization tests", () => {
   const testFilePath = join(process.cwd(), "tests/characterization/plugin-babel/test-slice.ts");
 
   it("transforms top-level exported slice definition", async () => {

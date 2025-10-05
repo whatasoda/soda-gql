@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 
+import { clearPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "./artifact";
 import type { BuilderArtifact } from "./artifact/types";
@@ -24,6 +25,8 @@ type PipelineData = {
 };
 
 const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData, BuilderError>> => {
+  const evaluatorId = options.evaluatorId ?? "default";
+  clearPseudoModuleRegistry(evaluatorId);
   const cacheFactory = createJsonCache({
     rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
     prefix: ["builder"],
@@ -32,10 +35,20 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
   const cache = createDiscoveryCache({
     factory: cacheFactory,
     analyzer: options.analyzer,
-    evaluatorId: "default",
+    evaluatorId,
   });
 
-  const pipeline = createDiscoveryPipeline({ analyzer: options.analyzer, cache });
+  // Compute metadata for discovery
+  const metadata = {
+    schemaHash: options.analyzer, // V1: Use analyzer as schema hash proxy
+    analyzerVersion: options.analyzer,
+  };
+
+  const pipeline = createDiscoveryPipeline({
+    analyzer: options.analyzer,
+    cache,
+    metadata,
+  });
   const modules = pipeline.load(options.entry);
 
   if (modules.isErr()) {
@@ -56,6 +69,8 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
   const intermediateModule = await createIntermediateModule({
     graph: dependencyGraph.value,
     outDir: runtimeDir,
+    evaluatorId,
+    config: options.config,
   });
 
   if (intermediateModule.isErr()) {
@@ -68,6 +83,7 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
     graph: dependencyGraph.value,
     cache: stats,
     intermediateModulePath: transpiledPath,
+    evaluatorId,
   });
 
   if (artifactResult.isErr()) {

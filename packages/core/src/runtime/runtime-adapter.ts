@@ -1,5 +1,5 @@
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import { hidden } from "../types/shared/hidden";
+import { hidden } from "../utils/hidden";
 
 type RuntimeAdapterFactory<TRuntimeAdapter extends AnyGraphqlRuntimeAdapter> = (tools: {
   type: typeof hidden;

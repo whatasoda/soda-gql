@@ -1,6 +1,7 @@
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import { generateArtifact } from "./runner";
+import { createBuilderSession } from "./session/builder-session";
+import type { BuilderChangeSet } from "./session/change-set";
 import type { BuilderError, BuilderInput } from "./types";
 
 /**
@@ -18,13 +19,20 @@ export interface BuilderService {
    * Returns Result containing BuilderArtifact on success or BuilderError on failure.
    */
   build(): Promise<Result<BuilderArtifact, BuilderError>>;
+
+  /**
+   * Perform incremental update based on file changes.
+   * Optional method for incremental builds. Falls back to full rebuild if not supported.
+   */
+  update?(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
 }
 
 /**
- * Create a builder service instance.
+ * Create a builder service instance with session support.
  *
- * The service encapsulates artifact generation configuration and provides
- * a simple build() method for on-demand artifact creation.
+ * The service maintains a long-lived session for incremental builds.
+ * First build() call initializes the session, subsequent calls reuse cached state.
+ * Use update() for incremental processing when files change.
  *
  * Note: Empty entry arrays will produce ENTRY_NOT_FOUND errors at build time.
  *
@@ -37,10 +45,43 @@ export const createBuilderService = (config: BuilderServiceConfig): BuilderServi
     mode: config.mode,
     entry: [...config.entry],
     analyzer: config.analyzer,
+    config: config.config,
     ...(config.debugDir !== undefined && { debugDir: config.debugDir }),
   };
 
+  // Lazy session initialization
+  let session: ReturnType<typeof createBuilderSession> | null = null;
+  let isInitialized = false;
+
   return {
-    build: async () => generateArtifact(normalizedConfig),
+    build: async () => {
+      if (!session) {
+        session = createBuilderSession();
+      }
+
+      if (!isInitialized) {
+        isInitialized = true;
+        return session.buildInitial(normalizedConfig);
+      }
+
+      // Subsequent builds reuse session (for now, just call buildInitial again)
+      // NOTE: Change detection via update() is handled by CLI watch mode
+      // Direct service.build() calls do full rebuild for correctness
+      return session.buildInitial(normalizedConfig);
+    },
+
+    update: async (changeSet: BuilderChangeSet) => {
+      if (!session) {
+        session = createBuilderSession();
+      }
+
+      if (!isInitialized) {
+        // First call should use buildInitial
+        isInitialized = true;
+        return session.buildInitial(normalizedConfig);
+      }
+
+      return session.update(changeSet);
+    },
   };
 };

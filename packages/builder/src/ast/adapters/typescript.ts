@@ -236,7 +236,6 @@ const collectAllDefinitions = (
 } => {
   type PendingDefinition = {
     readonly astPath: string;
-    readonly exportName: string; // For backward compat
     readonly isTopLevel: boolean;
     readonly isExported: boolean;
     readonly exportBinding?: string;
@@ -303,7 +302,6 @@ const collectAllDefinitions = (
       handledCalls.push(node);
       pending.push({
         astPath,
-        exportName: astPath, // For backward compat
         isTopLevel,
         isExported,
         exportBinding,
@@ -414,7 +412,6 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
-        exportName: item.exportName,
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,

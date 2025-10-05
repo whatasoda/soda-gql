@@ -9,10 +9,9 @@ const defaultScalarPath = join(fixtureDir, "default-scalar.ts");
 
 /**
  * Copies the default inject module fixture to the specified destination.
- * This provides a consistent inject module implementation for tests.
- * @deprecated Use copyDefaultRuntimeAdapter and copyDefaultScalar instead
+ * This provides a consistent inject module (adapter + scalar) implementation for tests.
  */
-export const copyDefaultInjectModule = (destinationPath: string): void => {
+export const copyDefaultInject = (destinationPath: string): void => {
   cpSync(defaultInjectPath, destinationPath);
 };
 
@@ -33,9 +32,8 @@ export const copyDefaultScalar = (destinationPath: string): void => {
 /**
  * Gets the path to the default inject module fixture.
  * Useful when you want to reference the fixture directly without copying.
- * @deprecated Use getDefaultRuntimeAdapterPath and getDefaultScalarPath instead
  */
-export const getDefaultInjectModulePath = (): string => {
+export const getDefaultInjectPath = (): string => {
   return defaultInjectPath;
 };
 

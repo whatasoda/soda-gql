@@ -1,7 +1,7 @@
+import type { Tuple } from "../../utils/type-utils";
 import type { AnyFields, AvailableFieldPathOf, InferByFieldPath } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection, Projection, SlicedExecutionResult } from "../runtime";
 import type { AnyGraphqlSchema } from "../schema";
-import type { Tuple } from "../shared/utility";
 
 export type AnyExecutionResultProjectionsBuilder = ExecutionResultProjectionsBuilder<
   AnyGraphqlSchema,

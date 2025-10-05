@@ -7,8 +7,8 @@ import type {
   ScalarDef,
   UnionDef,
 } from "../types/schema";
-import { type Hidden, hidden } from "../types/shared/hidden";
-import { wrapValueByKey } from "../types/shared/utility";
+import { type Hidden, hidden } from "../utils/hidden";
+import { wrapByKey } from "../utils/wrap-by-key";
 import { unsafeOutputRef } from "./type-ref-builder";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
@@ -19,7 +19,7 @@ export const defineScalar = <const TName extends string, TInput, TOutput, TDirec
     directives: TDirectives;
   },
 ) =>
-  wrapValueByKey(name, {
+  wrapByKey(name, {
     _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
     name,
     directives: definition({ type: hidden }).directives,
@@ -30,45 +30,45 @@ export const define = <const TName extends string>(name: TName) => ({
     values: TValues,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       _type: hidden(),
       name,
       values,
       directives,
-    } satisfies EnumDef<keyof TValues & string>),
+    }) satisfies EnumDef<keyof TValues & string>,
 
   input: <TFields extends InputDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       fields,
       directives,
-    } satisfies InputDef),
+    }) satisfies InputDef,
 
   object: <TFields extends ObjectDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       fields: {
         __typename: unsafeOutputRef.typename(`${name}:!`, {}),
         ...fields,
       },
       directives,
-    } satisfies ObjectDef),
+    }) satisfies ObjectDef,
 
   union: <TTypes extends UnionDef["types"], TDirectives extends AnyConstDirectiveAttachments>(
     types: TTypes,
     directives: TDirectives,
   ) =>
-    wrapValueByKey(name, {
+    ({
       name,
       types,
       directives,
-    } satisfies UnionDef),
+    }) satisfies UnionDef,
 });
 
 export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(operationRoots: TOperationRoots) =>

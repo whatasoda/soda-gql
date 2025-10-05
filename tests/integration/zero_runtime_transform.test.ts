@@ -1,12 +1,14 @@
-import { describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { afterEach, describe, expect, it } from "bun:test";
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
-import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
-import { copyDefaultInjectModule } from "../fixtures/inject-module";
+import { copyDefaultInject } from "../fixtures/inject-module";
+import { createTestConfig } from "../helpers/test-config";
+import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoader";
+import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
 
@@ -25,58 +27,21 @@ const copyFixtureWorkspace = (name: string) => {
   return workspaceRoot;
 };
 
-/**
- * Helper to spy on runtime operation registrations
- */
-const withOperationSpy = async <T>(fn: (recordedOperations: Array<AnyOperationOf<OperationType>>) => Promise<T>): Promise<T> => {
-  const recordedOperations: Array<AnyOperationOf<OperationType>> = [];
-  const originalOperation = gqlRuntime.operation;
-
-  try {
-    gqlRuntime.operation = (input: any) => {
-      const operation = originalOperation(input);
-      recordedOperations.push(operation);
-      return operation;
-    };
-
-    return await fn(recordedOperations);
-  } finally {
-    gqlRuntime.operation = originalOperation;
-  }
-};
-
-/**
- * Loads transformed TypeScript code as an ESM module
- */
-const loadTransformedModule = async (filePath: string, transformedCode: string, outputDir: string) => {
-  const relativePath = filePath.slice(filePath.lastIndexOf("/src/"));
-  const outputPath = join(outputDir, relativePath.replace(/\.ts$/, ".mjs"));
-
-  // Transpile TypeScript to JavaScript
-  const transpiler = new Bun.Transpiler({
-    loader: "ts",
-    target: "node",
-  });
-
-  const jsCode = transpiler.transformSync(transformedCode);
-
-  mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, jsCode);
-
-  // Dynamic import with cache busting
-  const moduleUrl = `file://${outputPath}?t=${Date.now()}`;
-  return await import(moduleUrl);
-};
+// Global cleanup to ensure test isolation
+afterEach(() => {
+  __resetRuntimeRegistry();
+  clearTransformCache();
+});
 
 describe("zero-runtime transform", () => {
-  it("transforms and executes runtime code correctly", async () => {
+  it("transforms gql modules in zero-runtime mode and verifies runtime exports", async () => {
     const workspace = copyFixtureWorkspace("zero-runtime");
     const schemaPath = join(workspace, "schema.graphql");
     const graphqlSystemDir = join(workspace, "graphql-system");
     const graphqlSystemEntry = join(graphqlSystemDir, "index.ts");
     const injectPath = join(workspace, "graphql-inject.ts");
 
-    copyDefaultInjectModule(injectPath);
+    copyDefaultInject(injectPath);
 
     // Use multi-schema codegen with a single "default" schema
     const codegenResult = await runMultiSchemaCodegen({
@@ -107,6 +72,7 @@ describe("zero-runtime transform", () => {
         format: "json",
         analyzer: "ts",
         debugDir,
+        config: createTestConfig(workspace),
       });
 
       if (builderResult.isErr()) {
@@ -137,7 +103,6 @@ describe("zero-runtime transform", () => {
       const sourceCode = await Bun.file(filePath).text();
       const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
         mode: "zero-runtime",
-        artifactsPath: artifactPath,
         skipTypeCheck: true,
       });
 

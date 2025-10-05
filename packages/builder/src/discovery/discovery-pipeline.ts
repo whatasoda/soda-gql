@@ -3,11 +3,12 @@ import { getAstAnalyzer, type ModuleAnalysis } from "../ast";
 import type { BuilderAnalyzer, BuilderError } from "../types";
 import { discoverModules } from "./discoverer";
 import { resolveEntryPaths } from "./entry-paths";
-import type { DiscoveryCache } from "./types";
+import type { DiscoveryCache, DiscoverySnapshotMetadata } from "./types";
 
 export type ModuleLoadStats = {
   readonly hits: number;
   readonly misses: number;
+  readonly skips: number;
 };
 
 export type LoadedModules = {
@@ -22,28 +23,30 @@ export type DiscoveryPipeline = {
 export type CreateDiscoveryPipelineOptions = {
   readonly analyzer: BuilderAnalyzer;
   readonly cache?: DiscoveryCache;
+  readonly metadata: DiscoverySnapshotMetadata;
 };
 
 /**
  * Create a discovery pipeline that can load modules with the given configuration.
  * The pipeline encapsulates entry path resolution and module discovery logic.
  */
-export const createDiscoveryPipeline = ({ analyzer, cache }: CreateDiscoveryPipelineOptions): DiscoveryPipeline => {
+export const createDiscoveryPipeline = ({ analyzer, cache, metadata }: CreateDiscoveryPipelineOptions): DiscoveryPipeline => {
   const astAnalyzer = getAstAnalyzer(analyzer);
   return {
     load(entry: readonly string[]): Result<LoadedModules, BuilderError> {
       return resolveEntryPaths(entry).map((paths) => {
-        const { snapshots, cacheHits, cacheMisses } = discoverModules({
+        const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
           entryPaths: paths,
           astAnalyzer,
           cache,
+          metadata,
         });
 
         const modules = snapshots.map((snapshot) => snapshot.analysis);
 
         return {
           modules,
-          stats: { hits: cacheHits, misses: cacheMisses },
+          stats: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
         } satisfies LoadedModules;
       });
     },

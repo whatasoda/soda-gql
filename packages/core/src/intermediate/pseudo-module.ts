@@ -2,7 +2,7 @@ import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model
 
 type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
 type ArtifactRecord = {
-  [key: string]: AcceptableArtifact | ArtifactRecord;
+  readonly [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
 export type IntermediateArtifactElement =
@@ -10,12 +10,31 @@ export type IntermediateArtifactElement =
   | { readonly type: "slice"; readonly element: AnySlice }
   | { readonly type: "operation"; readonly element: AnyOperation };
 
+const pseudoModuleRegistries = new Map<string, ReturnType<typeof createPseudoModuleRegistry>>();
+export const getPseudoModuleRegistry = (evaluatorId: string) => {
+  const existing = pseudoModuleRegistries.get(evaluatorId);
+  if (existing) {
+    return existing;
+  }
+
+  const registry = createPseudoModuleRegistry();
+  pseudoModuleRegistries.set(evaluatorId, registry);
+  return registry;
+};
+
+export const clearPseudoModuleRegistry = (evaluatorId: string) => {
+  const registry = pseudoModuleRegistries.get(evaluatorId);
+  if (registry) {
+    registry.clear();
+  }
+};
+
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => ArtifactRecord>();
   const caches = new Map<string, ArtifactRecord>();
   const entries: [string, AcceptableArtifact][] = [];
 
-  const register = (filePath: string, factory: () => ArtifactRecord) => {
+  const addModule = (filePath: string, factory: () => ArtifactRecord) => {
     modules.set(filePath, () => {
       const cached = caches.get(filePath);
       if (cached) {
@@ -29,7 +48,7 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addBuilder = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
+  const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
     const builder = factory();
     ArtifactElement.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered
@@ -43,6 +62,24 @@ export const createPseudoModuleRegistry = () => {
       throw new Error(`Module not found or yet to be registered: ${filePath}`);
     }
     return factory();
+  };
+
+  const removeModule = (filePath: string) => {
+    modules.delete(filePath);
+    caches.delete(filePath);
+    // Remove all entries that belong to this module (canonicalId prefix is "filePath::")
+    const prefix = `${filePath}::`;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i]?.[0].startsWith(prefix)) {
+        entries.splice(i, 1);
+      }
+    }
+  };
+
+  const clear = () => {
+    modules.clear();
+    caches.clear();
+    entries.length = 0;
   };
 
   const evaluate = (): Record<string, IntermediateArtifactElement> => {
@@ -72,9 +109,11 @@ export const createPseudoModuleRegistry = () => {
   };
 
   return {
-    register,
-    addBuilder,
+    addModule,
+    addElement,
     import: import_,
+    removeModule,
+    clear,
     evaluate,
   };
 };

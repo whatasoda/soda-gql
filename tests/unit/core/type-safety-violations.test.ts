@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
-describe("Type Safety Violations", () => {
-  describe("ExecutionResultProjection validation", () => {
-    it("should validate projection paths start with $", () => {
+describe("Projection guard placeholders", () => {
+  describe("Projection path guard checks", () => {
+    it("throws when placeholder guard sees path without '$.' prefix", () => {
       // Test with actual ExecutionResultProjection constructor
       expect(() => {
         // Invalid path that doesn't start with $
@@ -13,15 +13,15 @@ describe("Type Safety Violations", () => {
       }).toThrow("Field path must start with $");
     });
 
-    it("should handle valid projection paths", () => {
+    it("accepts projection paths that pass the placeholder guard", () => {
       // Valid path starting with $
       const validPath = "$user.profile.name";
       expect(validPath).toMatch(/^\$/);
     });
   });
 
-  describe("Array element projection", () => {
-    it("should ignore numeric segments in projections", () => {
+  describe("Projection path numeric segment check", () => {
+    it("flags numeric segments in projection paths", () => {
       // Path with numeric segments
       const pathWithNumeric = "$items.0.name"; // Contains numeric segment
 
@@ -33,8 +33,8 @@ describe("Type Safety Violations", () => {
     });
   });
 
-  describe("Primitive vs Object type violations", () => {
-    it("should detect when primitive is accessed as object", () => {
+  describe("Manual primitive/object guard examples", () => {
+    it("throws placeholder error when guard hits primitive-as-object", () => {
       const data = {
         user: "John Doe", // String primitive, not an object
       };
@@ -51,7 +51,7 @@ describe("Type Safety Violations", () => {
       expect(attemptAccess).toThrow("Expected object but got primitive");
     });
 
-    it("should detect when object is accessed as primitive", () => {
+    it("throws placeholder error when guard hits object-as-primitive", () => {
       const data = {
         count: { value: 42 }, // Object, not a primitive number
       };
@@ -69,8 +69,8 @@ describe("Type Safety Violations", () => {
     });
   });
 
-  describe("Null safety violations", () => {
-    it("should handle null values in required fields", () => {
+  describe("Manual null/undefined guard examples", () => {
+    it("throws when placeholder guard sees null", () => {
       const data = {
         requiredField: null,
       };
@@ -85,7 +85,7 @@ describe("Type Safety Violations", () => {
       expect(validateRequired).toThrow("Required field cannot be null");
     });
 
-    it("should handle undefined in GraphQL results", () => {
+    it("throws when placeholder guard sees undefined", () => {
       const data = {
         field: undefined, // GraphQL doesn't return undefined, only null
       };
@@ -101,8 +101,8 @@ describe("Type Safety Violations", () => {
     });
   });
 
-  describe("Type modifier violations", () => {
-    it("should validate array types", () => {
+  describe("Placeholder type modifier guards", () => {
+    it("throws when guard sees non-array", () => {
       const data = {
         items: "not-an-array", // Should be an array
       };
@@ -117,7 +117,7 @@ describe("Type Safety Violations", () => {
       expect(validateArray).toThrow("Expected array but got string");
     });
 
-    it("should validate non-null types", () => {
+    it("throws when guard sees null", () => {
       const data = {
         nonNullField: null,
       };
@@ -132,7 +132,7 @@ describe("Type Safety Violations", () => {
       expect(validateNonNull).toThrow("Non-null field cannot be null");
     });
 
-    it("should validate list of non-null items", () => {
+    it("throws when guard finds null element", () => {
       const data = {
         items: [1, null, 3], // Contains null in non-null list
       };
@@ -150,8 +150,8 @@ describe("Type Safety Violations", () => {
     });
   });
 
-  describe("Union type violations", () => {
-    it("should validate union type members", () => {
+  describe("Placeholder union member guard", () => {
+    it("throws when guard sees unknown union member", () => {
       const data = {
         result: {
           __typename: "UnknownType", // Not a valid union member
@@ -171,8 +171,8 @@ describe("Type Safety Violations", () => {
     });
   });
 
-  describe("Enum value violations", () => {
-    it("should validate enum values", () => {
+  describe("Placeholder enum guard", () => {
+    it("throws when guard sees invalid enum", () => {
       const data = {
         status: "INVALID_STATUS", // Not a valid enum value
       };

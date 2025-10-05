@@ -1,7 +1,7 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type {
-  BuilderArtifactEntry,
+  BuilderArtifactElement,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,
@@ -18,7 +18,7 @@ import type {
   PluginError,
 } from "../state";
 
-export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactEntry | undefined;
+export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
 export type GqlCallBase = {
   readonly nodePath: NodePath<t.CallExpression>;

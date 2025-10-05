@@ -17,9 +17,9 @@ export type ApplyTypeModifier<TModifier extends TypeModifier, TInner> = TModifie
         : never;
 
 export type ApplyTypeModifierToKeys<T extends { [key: string]: { modifier: TypeModifier } }> = {
-  [K in keyof T as T[K]["modifier"] extends `${string}!` ? K : never]-?: T[K];
+  readonly [K in keyof T as T[K]["modifier"] extends `${string}!` ? K : never]-?: T[K];
 } & {
-  [K in keyof T as T[K]["modifier"] extends `${string}!` ? never : K]+?: T[K];
+  readonly [K in keyof T as T[K]["modifier"] extends `${string}!` ? never : K]+?: T[K];
 };
 
 export type ModifiedTypeName<TNameCandidate extends string, TName extends TNameCandidate, TModifier extends AnyTypeModifier> =

@@ -40,7 +40,6 @@ describe("module cache manager", () => {
       signature: "hash-1",
       definitions: [
         {
-          exportName: "userModel",
           astPath: "userModel",
           isTopLevel: true,
           isExported: true,
@@ -100,7 +99,6 @@ describe("module cache manager", () => {
       signature: "hash-2",
       definitions: [
         {
-          exportName: "profileQuery",
           astPath: "profileQuery",
           isTopLevel: true,
           isExported: true,

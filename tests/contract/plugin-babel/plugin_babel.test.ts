@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
 import type { ArtifactSource } from "../../../packages/plugin-babel/src/types";
+import { createTestConfig } from "../../helpers/test-config";
 
 type PluginOptions = {
   readonly mode: "runtime" | "zero-runtime";
-  readonly artifactsPath?: string;
   readonly artifactSource?: ArtifactSource;
   readonly importIdentifier?: string;
   readonly diagnostics?: "json" | "console";
@@ -25,11 +25,12 @@ const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
 const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOptions => ({
   mode: "zero-runtime",
   artifactSource: {
-    source: "builder",
+    source: "builder" as const,
     config: {
       mode: "zero-runtime",
       analyzer: "ts",
       entry: [profileQueryPath],
+      config: createTestConfig(fixturesRoot),
       debugDir: join(tmpRoot, "builder-debug"),
     },
   },
@@ -78,7 +79,7 @@ describe("@soda-gql/plugin-babel", () => {
     await expect(
       transformWithPlugin(code, profileQueryPath, {
         mode: "zero-runtime",
-        artifactsPath: missingArtifact,
+        artifactSource: { source: "artifact-file", path: missingArtifact },
       }),
     ).rejects.toThrow("SODA_GQL_ARTIFACT_NOT_FOUND");
   });
@@ -111,7 +112,7 @@ describe("@soda-gql/plugin-babel", () => {
     await expect(
       transformWithPlugin(code, profileQueryPath, {
         mode: "zero-runtime",
-        artifactsPath: artifactPath,
+        artifactSource: { source: "artifact-file", path: artifactPath },
       }),
     ).rejects.toThrow("No builder artifact found for canonical ID");
   });
@@ -162,7 +163,7 @@ describe("@soda-gql/plugin-babel", () => {
 
     const result = await transformWithPlugin(code, profileQueryPath, {
       mode: "zero-runtime",
-      artifactsPath: artifactPath,
+      artifactSource: { source: "artifact-file", path: artifactPath },
     });
 
     expect(result).not.toBeNull();
@@ -190,9 +191,14 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         analyzer: "ts",
         entry: [profileQueryPath],
+        config: createTestConfig(fixturesRoot),
       });
 
       const buildResult = await service.build();
+
+      if (!buildResult.isOk()) {
+        console.error("Build error:", buildResult.error);
+      }
       expect(buildResult.isOk()).toBe(true);
 
       if (!buildResult.isOk()) {
@@ -213,7 +219,7 @@ describe("@soda-gql/plugin-babel", () => {
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
         mode: "zero-runtime",
-        artifactsPath: artifactPath,
+        artifactSource: { source: "artifact-file", path: artifactPath },
       });
 
       expect(result).not.toBeNull();
@@ -233,13 +239,14 @@ describe("@soda-gql/plugin-babel", () => {
               mode: "zero-runtime",
               analyzer: "ts",
               entry: [nonExistentEntry],
+              config: createTestConfig(fixturesRoot),
             },
           },
         }),
       ).rejects.toThrow("SODA_GQL_BUILDER_ENTRY_NOT_FOUND");
     });
 
-    it("supports legacy artifactsPath with builder-generated artifact", async () => {
+    it("supports artifact file with builder-generated artifact", async () => {
       // Generate artifact via builder
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
@@ -248,23 +255,28 @@ describe("@soda-gql/plugin-babel", () => {
         mode: "zero-runtime",
         analyzer: "ts",
         entry: [profileQueryPath],
+        config: createTestConfig(fixturesRoot),
       });
 
       const buildResult = await service.build();
+
+      if (!buildResult.isOk()) {
+        console.error("Build error:", buildResult.error);
+      }
       expect(buildResult.isOk()).toBe(true);
 
       if (!buildResult.isOk()) {
         throw new Error("Builder failed");
       }
 
-      const artifactPath = join(builderArtifactsDir, `legacy-${Date.now()}.json`);
+      const artifactPath = join(builderArtifactsDir, `artifact-${Date.now()}.json`);
       await Bun.write(artifactPath, JSON.stringify(buildResult.value, null, 2));
 
-      // Use legacy artifactsPath option
+      // Use artifactSource option
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
         mode: "zero-runtime",
-        artifactsPath: artifactPath,
+        artifactSource: { source: "artifact-file", path: artifactPath },
       });
 
       expect(result).not.toBeNull();

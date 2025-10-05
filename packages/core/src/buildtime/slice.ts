@@ -1,11 +1,17 @@
 import { handleProjectionBuilder } from "../runtime/slice";
 import type { AnyFields } from "../types/fragment";
-import { type ExecutionResultProjectionsBuilder, type FieldsBuilder, Slice } from "../types/operation";
+import {
+  type ExecutionResultProjectionsBuilder,
+  type FieldsBuilder,
+  type MergeFields,
+  mergeFields,
+  Slice,
+} from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
 
 import { createFieldFactories } from "./fields-builder";
-import { createVarAssignments } from "./input";
+import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
 export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
   schema: NoInfer<TSchema>,
@@ -13,49 +19,30 @@ export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAda
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];
-    const getFieldFactories = (() => {
-      const get = () => {
-        if (operationTypeName === null) {
-          throw new Error(`Operation type ${operationType} is not defined in schema roots`);
-        }
+    if (operationTypeName === null) {
+      throw new Error(`Operation type ${operationType} is not defined in schema roots`);
+    }
 
-        return createFieldFactories(schema, operationTypeName);
-      };
-
-      let cache: ReturnType<typeof get> | null = null;
-      return () => {
-        if (cache === null) {
-          cache = get();
-        }
-        return cache;
-      };
-    })();
-
-    return <TFields extends AnyFields, TProjection extends AnyProjection, TVarDefinitions extends InputTypeRefs = {}>(
+    return <TFieldEntries extends AnyFields[], TProjection extends AnyProjection, TVarDefinitions extends InputTypeRefs[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
       },
-      builder: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>,
-      projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, TFields, TProjection>,
-    ) => {
-      return Slice.create<TSchema, TOperationType, TVarDefinitions, TFields, TProjection>(() => {
-        const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
+      builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
+      projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, MergeFields<TFieldEntries>, TProjection>,
+    ) =>
+      Slice.create<TSchema, TOperationType, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TProjection>(() => {
+        const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const projection = handleProjectionBuilder(projectionBuilder);
 
         return {
           operationType,
           build: (variables) => {
-            const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);
-            const fieldFactories = getFieldFactories();
-            const fields = builder({
-              _: fieldFactories,
-              f: fieldFactories,
-              $,
-            });
+            const f = createFieldFactories(schema, operationTypeName);
+            const $ = createVarAssignments(varDefinitions, variables);
+            const fields = mergeFields(builder({ f, $ }));
             return { variables, getFields: () => fields, projection };
           },
         };
       });
-    };
   };
 };

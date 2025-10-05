@@ -2,23 +2,35 @@ import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
 import { aggregate } from "./aggregate";
 import { checkIssues } from "./issue-handler";
-import { loadIntermediateModule } from "./loader";
+import { loadIntermediateModules } from "./loader";
 import type { BuildArtifactInput, BuilderArtifact } from "./types";
 
 export const buildArtifact = async ({
   graph,
   cache,
   intermediateModulePath,
+  intermediateModulePaths,
+  evaluatorId,
 }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
-  // Load intermediate module first to classify definitions at runtime
-  const moduleResult = await loadIntermediateModule(intermediateModulePath);
+  const chunkPaths = intermediateModulePaths ?? (intermediateModulePath ? new Map([["", intermediateModulePath]]) : undefined);
+
+  if (!chunkPaths) {
+    return err({
+      code: "MODULE_EVALUATION_FAILED",
+      filePath: "",
+      astPath: "",
+      message: "Either intermediateModulePath or intermediateModulePaths must be provided",
+    });
+  }
+
+  // Chunk mode: load multiple chunks
+  const moduleResult = await loadIntermediateModules({ chunkPaths, evaluatorId });
   if (moduleResult.isErr()) {
     return err(moduleResult.error);
   }
-
   const intermediateModule = moduleResult.value;
 
-  // Check for errors from issue registry
+  // Check for errors
   const issuesResult = checkIssues(intermediateModule);
   if (issuesResult.isErr()) {
     return err(issuesResult.error);
@@ -27,7 +39,7 @@ export const buildArtifact = async ({
   const warnings = issuesResult.value;
 
   // Classify and register nodes
-  const aggregationResult = aggregate(graph, intermediateModule);
+  const aggregationResult = aggregate({ graph, elements: intermediateModule.elements });
   if (aggregationResult.isErr()) {
     return err(aggregationResult.error);
   }

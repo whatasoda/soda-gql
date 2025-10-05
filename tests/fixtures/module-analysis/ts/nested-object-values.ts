@@ -6,10 +6,7 @@ export const complexQuery = gql.default(({ operation }, { $ }) =>
   operation.query(
     {
       operationName: "ComplexQuery",
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("postId").scalar("ID:!"),
-      },
+      variables: [$("userId").scalar("ID:!"), $("postId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),

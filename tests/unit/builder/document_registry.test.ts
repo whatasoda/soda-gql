@@ -4,7 +4,6 @@ import { parse } from "graphql";
 import { aggregate } from "../../../packages/builder/src/artifact/aggregate";
 import type { DependencyGraph, DependencyGraphNode } from "../../../packages/builder/src/dependency-graph/types";
 import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/index";
-import type { IntermediateModule } from "../../../packages/builder/src/intermediate-module";
 import type { IntermediateArtifactElement } from "../../../packages/core/src/intermediate/pseudo-module";
 import { Model, Operation, Slice } from "../../../packages/core/src/types/operation";
 
@@ -26,7 +25,6 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
   localPath: id.split("::")[1] ?? "",
   isExported: true,
   definition: {
-    exportName: id.split("::")[1] ?? "",
     astPath: id.split("::")[1] ?? "",
     isTopLevel: true,
     isExported: true,
@@ -42,14 +40,8 @@ const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraph
   },
 });
 
-const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>): IntermediateModule => ({
+const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
   elements,
-  issueRegistry: {
-    addIssue: () => {},
-    registerOperationName: () => true,
-    getIssues: () => [],
-    hasErrors: () => false,
-  },
 });
 
 describe("artifact aggregate", () => {
@@ -93,7 +85,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(
@@ -137,7 +129,7 @@ describe("artifact aggregate", () => {
       // Missing modelId
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -147,7 +139,7 @@ describe("artifact aggregate", () => {
       (error) => {
         expect(error.code).toBe("MODULE_EVALUATION_FAILED");
         if (error.code === "MODULE_EVALUATION_FAILED") {
-          expect(error.message).toBe("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
+          expect(error.message).toContain("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
           expect(error.filePath).toBe("/app/src/entities/user.ts");
         }
       },
@@ -175,7 +167,7 @@ describe("artifact aggregate", () => {
     });
 
     // First pass succeeds
-    const result1 = aggregate(graph, intermediateModule);
+    const result1 = aggregate({ graph, elements: intermediateModule.elements });
     expect(result1.isOk()).toBe(true);
 
     // To test duplicate detection, we need to simulate the aggregator seeing the same ID twice
@@ -199,7 +191,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -241,7 +233,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate(graph, intermediateModule);
+    const result = aggregate({ graph, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(

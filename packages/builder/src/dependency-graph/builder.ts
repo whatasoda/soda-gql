@@ -3,7 +3,7 @@ import type { ModuleAnalysis } from "../ast";
 import { type CanonicalId, createCanonicalId } from "../canonical-id/canonical-id";
 import { detectCycles } from "./cycles";
 import { buildExportTable } from "./export-table";
-import { normalizePath } from "./paths";
+import { normalizePath, resolveModuleSpecifier } from "./paths";
 import { buildModuleDependencies, buildModuleSummaries } from "./summaries";
 import type { DependencyGraph, DependencyGraphError } from "./types";
 
@@ -18,6 +18,30 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
   const exportTable = buildExportTable(modules, moduleLookup);
   const summaries = buildModuleSummaries(modules, exportTable);
 
+  // Validate that all relative imports can be resolved
+  for (const module of modules) {
+    const modulePath = normalizePath(module.filePath);
+    const summary = summaries.get(modulePath);
+    if (!summary) {
+      continue;
+    }
+
+    for (const imp of summary.runtimeImports) {
+      // Only check relative imports (project modules)
+      if (imp.source.startsWith(".")) {
+        const resolvedModule = resolveModuleSpecifier(modulePath, imp.source, moduleLookup);
+        if (!resolvedModule) {
+          // Import points to a module that doesn't exist in the analysis
+          return err({
+            code: "MISSING_IMPORT" as const,
+            chain: [modulePath, imp.source],
+          });
+        }
+      }
+    }
+  }
+
+  // Build graph nodes
   modules.forEach((module) => {
     const modulePath = normalizePath(module.filePath);
     const summary = summaries.get(modulePath);

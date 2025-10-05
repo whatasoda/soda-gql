@@ -14,39 +14,6 @@ This package provides the core type definitions for the soda-gql system:
 - **PageQuery**: Complete GraphQL operations composed from slices
 - **FieldSelection**: Type-safe field selection with relation support
 
-### Design Decisions
-
-#### Relations vs Objects (ADR-001)
-
-GraphQL relations are explicitly marked using the `__relation__` property:
-
-```typescript
-type User = {
-  id: string;
-  profile: { bio: string };        // Regular object - boolean selection only
-  __relation__: {
-    posts: Post[];                 // Relation - supports nested selection
-    company: Company;              // Relation - supports nested selection
-  };
-};
-```
-
-This provides precise control over what constitutes a relation versus an embedded object.
-See [ADR-001](../../docs/decisions/001-relation-field-selection.md) for details.
-
-#### Type Brand Safety (ADR-002)
-
-Type brand properties use functions to ensure runtime safety:
-
-```typescript
-interface QuerySlice<TData, TArgs> {
-  readonly _data: () => TData;     // Function returns type
-  readonly _args: () => TArgs;     // Safe to access at runtime
-}
-```
-
-See [ADR-002](../../docs/decisions/002-type-brand-safety.md) for details.
-
 ## Usage
 
 ```typescript

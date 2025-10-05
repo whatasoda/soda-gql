@@ -1,5 +1,5 @@
-import type { Hidden } from "../shared/hidden";
-import type { Tuple } from "../shared/utility";
+import type { Hidden } from "../../utils/hidden";
+import type { Tuple } from "../../utils/type-utils";
 import type { AnySlicedExecutionResult } from "./sliced-execution-result";
 
 /** Shape of a single selection slice projection. */

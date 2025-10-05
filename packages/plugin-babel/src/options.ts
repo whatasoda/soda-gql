@@ -26,59 +26,51 @@ export const normalizeOptions = (raw: Partial<SodaGqlBabelOptions>): Result<Norm
   const diagnostics = raw.diagnostics ?? "json";
 
   // Determine artifact source
-  let artifactSource: ArtifactSource;
-
-  if (raw.artifactSource) {
-    // New discriminated union path
-    if (raw.artifactSource.source === "artifact-file") {
-      if (!raw.artifactSource.path) {
-        return err({
-          type: "OptionsError",
-          code: "MISSING_ARTIFACT_PATH",
-          message: "artifactsPath option is required",
-        });
-      }
-      artifactSource = raw.artifactSource;
-    } else {
-      // source === "builder"
-      const config = raw.artifactSource.config;
-      if (!config.entry || config.entry.length === 0) {
-        return err({
-          type: "OptionsError",
-          code: "INVALID_BUILDER_CONFIG",
-          message: "builder config must include non-empty entry array",
-        });
-      }
-      if (!config.analyzer) {
-        return err({
-          type: "OptionsError",
-          code: "INVALID_BUILDER_CONFIG",
-          message: "builder config must include analyzer",
-        });
-      }
-
-      // Default mode to plugin mode if not specified
-      artifactSource = {
-        source: "builder",
-        config: {
-          ...config,
-          mode: config.mode ?? mode,
-        },
-      };
-    }
-  } else if (raw.artifactsPath) {
-    // Legacy fallback path
-    artifactSource = {
-      source: "artifact-file",
-      path: raw.artifactsPath,
-    };
-  } else {
-    // No artifact source provided
+  if (!raw.artifactSource) {
     return err({
       type: "OptionsError",
       code: "MISSING_ARTIFACT_PATH",
-      message: "artifactsPath option is required",
+      message: "artifactSource option is required",
     });
+  }
+
+  let artifactSource: ArtifactSource;
+
+  if (raw.artifactSource.source === "artifact-file") {
+    if (!raw.artifactSource.path) {
+      return err({
+        type: "OptionsError",
+        code: "MISSING_ARTIFACT_PATH",
+        message: "artifactSource.path is required when source is artifact-file",
+      });
+    }
+    artifactSource = raw.artifactSource;
+  } else {
+    // source === "builder"
+    const config = raw.artifactSource.config;
+    if (!config.entry || config.entry.length === 0) {
+      return err({
+        type: "OptionsError",
+        code: "INVALID_BUILDER_CONFIG",
+        message: "builder config must include non-empty entry array",
+      });
+    }
+    if (!config.analyzer) {
+      return err({
+        type: "OptionsError",
+        code: "INVALID_BUILDER_CONFIG",
+        message: "builder config must include analyzer",
+      });
+    }
+
+    // Default mode to plugin mode if not specified
+    artifactSource = {
+      source: "builder",
+      config: {
+        ...config,
+        mode: config.mode ?? mode,
+      },
+    };
   }
 
   return ok({

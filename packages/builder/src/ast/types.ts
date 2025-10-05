@@ -13,8 +13,6 @@ export type SourceLocation = {
 };
 
 export type ModuleDefinition = {
-  /** @deprecated Use astPath instead. Kept for backward compatibility during migration. */
-  readonly exportName: string;
   /** AST-derived path uniquely identifying this definition's location (e.g., "MyComponent.useQuery.def") */
   readonly astPath: string;
   /** Whether this definition is at the top level of the module */

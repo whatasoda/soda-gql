@@ -29,7 +29,12 @@ export type DependencyGraphNode = {
 
 export type DependencyGraph = Map<CanonicalId, DependencyGraphNode>;
 
-export type DependencyGraphError = {
-  readonly code: "CIRCULAR_DEPENDENCY";
-  readonly chain: readonly CanonicalId[];
-};
+export type DependencyGraphError =
+  | {
+      readonly code: "CIRCULAR_DEPENDENCY";
+      readonly chain: readonly CanonicalId[];
+    }
+  | {
+      readonly code: "MISSING_IMPORT";
+      readonly chain: readonly string[]; // [importing file, import specifier]
+    };

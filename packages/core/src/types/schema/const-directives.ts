@@ -5,5 +5,5 @@ import type { AnyConstAssignableInputValue } from "./const-assignable-input";
  * directive support can extend this map without changing slice builders.
  */
 export type AnyConstDirectiveAttachments = {
-  [key: string]: AnyConstAssignableInputValue;
+  readonly [key: string]: AnyConstAssignableInputValue;
 };
