@@ -474,6 +474,9 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
   };
 
   const update = async (changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>> => {
+    // Clear registry for clean slate (avoids import cache issues)
+    clearPseudoModuleRegistry(evaluatorId);
+
     // Validate metadata - fall back to full rebuild if mismatch
     if (!metadataMatches(changeSet.metadata, state.metadata)) {
       // Clear state and rebuild

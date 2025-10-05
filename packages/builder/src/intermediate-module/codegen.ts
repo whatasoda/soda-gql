@@ -307,13 +307,18 @@ export const buildIntermediateModuleSource = ({
     //
     `import { gql } from "${gqlImportPath}";`,
     `import { getPseudoModuleRegistry } from "@soda-gql/core";`,
-  ];
+  ].join("\n");
 
   const registrySection = `const registry = getPseudoModuleRegistry("${evaluatorId ?? "default"}");`;
 
-  const registryBlocksSection = registryBlocks.join("\n\n");
+  const registerFuncSection = [
+    //
+    "export const register = () => {",
+    registryBlocks.join("\n\n"),
+    "}",
+  ].join("\n");
 
   // const exportSection = `export const elements = registry.evaluate();`;
 
-  return `${imports.join("\n")}\n\n${registrySection}\n\n${registryBlocksSection}\n\n`;
+  return `${imports}\n\n${registrySection}\n\n${registerFuncSection}\n\n`;
 };

@@ -1,7 +1,7 @@
 import type { IntermediateArtifactElement } from "@soda-gql/core";
 
 export type IntermediateModuleRaw = {
-  _?: never;
+  register: () => void;
 };
 
 export type IntermediateModuleOutput = {

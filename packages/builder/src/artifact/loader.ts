@@ -12,6 +12,7 @@ export const loadIntermediateModule = async (
     const url = pathToFileURL(intermediateModulePath);
     url.searchParams.set("t", Date.now().toString());
     const module = (await import(url.href)) as IntermediateModuleRaw;
+    module.register();
     return ok(module);
   } catch (error) {
     return err({
