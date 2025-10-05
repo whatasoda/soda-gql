@@ -4,7 +4,8 @@
     "composite": true,
     "outDir": "../../.typecheck/config",
     "tsBuildInfoFile": "../../.typecheck/config/tsconfig.tsbuildinfo",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {}
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

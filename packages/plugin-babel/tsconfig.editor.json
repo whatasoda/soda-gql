@@ -4,7 +4,8 @@
     "composite": true,
     "outDir": "../../.typecheck/plugin-babel",
     "tsBuildInfoFile": "../../.typecheck/plugin-babel/tsconfig.tsbuildinfo",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {}
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],

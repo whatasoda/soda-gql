@@ -2,7 +2,16 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@soda-gql/builder/*": ["./packages/builder/src/*"],
+      "@soda-gql/cli/*": ["./packages/cli/src/*"],
+      "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
+      "@soda-gql/config/*": ["./packages/config/src/*"],
+      "@soda-gql/core/*": ["./packages/core/src/*"],
+      "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
+      "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
+    }
   },
   "files": [],
   "references": [
