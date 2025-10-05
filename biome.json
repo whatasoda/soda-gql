@@ -45,11 +45,11 @@
       "examples/**/*",
       "**/tests/**/*",
       "!bun.lock",
-      "!**/tests/.tmp/**/*",
-      "!**/.cache/**/*",
+      "!**/node_modules/**/*",
       "!**/dist/**/*",
-      "!**/test_dist/**/*",
-      "!**/node_modules/**/*"
+      "!**/tests/.tmp/**/*",
+      "!**/.typecheck/**/*",
+      "!**/.cache/**/*"
     ],
     "ignoreUnknown": false
   },

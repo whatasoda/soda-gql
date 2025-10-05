@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { parse } from "graphql";
+import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 
 import { aggregate } from "@soda-gql/builder/artifact/aggregate";
 import type { DependencyGraph, DependencyGraphNode } from "@soda-gql/builder/dependency-graph/types";
-import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 import type { IntermediateArtifactElement } from "@soda-gql/core/intermediate/pseudo-module";
 import { Model, Operation, Slice } from "@soda-gql/core/types/operation";
+import { parse } from "graphql";
 
 describe("canonical identifier helpers", () => {
   it("normalizes absolute file paths and export names", () => {

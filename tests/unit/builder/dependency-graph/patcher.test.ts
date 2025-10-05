@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
-import { applyGraphPatch, buildGraphIndex, type DependencyGraphPatch, type GraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
+import {
+  applyGraphPatch,
+  buildGraphIndex,
+  type DependencyGraphPatch,
+  type GraphIndex,
+} from "@soda-gql/builder/dependency-graph/patcher";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph/types";
 
 const createTestNode = (filePath: string, localPath: string, deps: string[] = []): DependencyGraphNode => {

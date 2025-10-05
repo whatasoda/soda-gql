@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { __internal, createBuilderSession } from "@soda-gql/builder/session/builder-session";
-import { ok } from "neverthrow";
 import type { BuilderArtifact } from "@soda-gql/builder/artifact/types";
 import type { CanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph/types";
 import type { DiscoverySnapshot } from "@soda-gql/builder/discovery/types";
 import type { ChunkManifest } from "@soda-gql/builder/intermediate-module/chunks";
+import { __internal, createBuilderSession } from "@soda-gql/builder/session/builder-session";
 import type { BuilderInput } from "@soda-gql/builder/types";
+import { ok } from "neverthrow";
 
 // Helper: create mock DependencyGraphNode
 const createMockNode = (
