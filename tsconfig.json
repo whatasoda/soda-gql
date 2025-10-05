@@ -7,6 +7,7 @@
   "files": [],
   "references": [
     { "path": "./packages/core" },
+    { "path": "./packages/config" },
     { "path": "./packages/codegen" },
     { "path": "./packages/cli" },
     { "path": "./packages/builder" },

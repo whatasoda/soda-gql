@@ -1,0 +1,63 @@
+{
+  "name": "@soda-gql/config",
+  "version": "0.1.0",
+  "description": "Centralized configuration loader and helpers for soda-gql tooling.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./loader": {
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js"
+    },
+    "./path-resolver": {
+      "types": "./dist/path-resolver.d.ts",
+      "import": "./dist/path-resolver.js"
+    },
+    "./helper": {
+      "types": "./dist/helper.d.ts",
+      "import": "./dist/helper.js"
+    },
+    "./validator": {
+      "types": "./dist/validator.d.ts",
+      "import": "./dist/validator.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./defaults": {
+      "types": "./dist/defaults.d.ts",
+      "import": "./dist/defaults.js"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils.d.ts",
+      "import": "./dist/test-utils.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "bunx tsc -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.10",
+    "neverthrow": "^8.2.0",
+    "zod": "^4.1.11"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}
