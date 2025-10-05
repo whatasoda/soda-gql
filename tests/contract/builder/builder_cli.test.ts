@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index";
 import type { CliResult } from "../../utils/cli";
@@ -15,7 +15,7 @@ const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
 
 const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Promise<CliResult> => {
   return runBuilderCliUtil(args, {
-    cwd: projectRoot,
+    cwd: workspaceRoot,
     env: {
       NODE_PATH: [join(workspaceRoot, "node_modules"), join(projectRoot, "node_modules"), process.env.NODE_PATH ?? ""]
         .filter(Boolean)
@@ -32,6 +32,22 @@ const prepareWorkspace = (name: string) => {
     recursive: true,
     filter: (src) => !src.includes("graphql-system"),
   });
+
+  // Create soda-gql.config.ts for CLI tests
+  // Use absolute paths to match integration test pattern
+  const graphqlSystemPath = join(workspaceRoot, "node_modules/@/graphql-system");
+  const corePath = join(projectRoot, "packages/core/src/index.ts");
+
+  const configContent = `
+import { defineConfig } from "@soda-gql/config";
+
+export default defineConfig({
+  graphqlSystemPath: "${graphqlSystemPath.replace(/\\/g, "/")}",
+  corePath: "${corePath.replace(/\\/g, "/")}",
+});
+`;
+  writeFileSync(join(workspaceRoot, "soda-gql.config.ts"), configContent, "utf-8");
+
   return workspaceRoot;
 };
 

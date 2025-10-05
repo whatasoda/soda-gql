@@ -177,7 +177,7 @@ const formatBuilderError = (format: OutputFormat, error: BuilderError) => {
 
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
   // Load config first
-  const configResult = loadConfig();
+  const configResult = await loadConfig();
   if (configResult.isErr()) {
     const error = configResult.error;
     process.stdout.write(`Config error: ${error.code} - ${error.message}\n`);

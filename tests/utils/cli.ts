@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { expect } from "bun:test";
 import { getProjectRoot } from ".";
 
@@ -28,8 +29,11 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
     cwd = getProjectRoot(),
   } = options;
 
+  // Call CLI entry point directly to preserve cwd for config discovery
+  const cliEntryPoint = join(getProjectRoot(), "packages/cli/src/index.ts");
+
   const subprocess = Bun.spawn({
-    cmd: ["bun", "run", "soda-gql", command, ...args],
+    cmd: ["bun", cliEntryPoint, command, ...args],
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: {
