@@ -128,7 +128,7 @@ describe("CanonicalPathTracker", () => {
 
       const canonicalId = tracker.resolveCanonicalId("foo.bar");
 
-      expect(canonicalId).toBe("/test/src/test.ts::foo.bar" as any);
+      expect(canonicalId).toBe("/test/src/test.ts::foo.bar");
     });
 
     it("handles empty astPath", () => {
@@ -136,7 +136,7 @@ describe("CanonicalPathTracker", () => {
 
       const canonicalId = tracker.resolveCanonicalId("");
 
-      expect(canonicalId).toBe("/test/src/test.ts::" as any);
+      expect(canonicalId).toBe("/test/src/test.ts::");
     });
   });
 

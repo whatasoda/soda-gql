@@ -185,7 +185,7 @@ describe("applyArtifactDelta", () => {
     expect(Object.keys(result.elements)).toHaveLength(1);
     const updatedElement = result.elements[element1Updated.id];
     expect(updatedElement).toBe(element1Updated);
-    expect((updatedElement?.prebuild as any)?.data).toBe("data1-updated");
+    expect(updatedElement?.prebuild).toEqual(expect.objectContaining({ data: "data1-updated" }));
   });
 
   test("applies removals", () => {

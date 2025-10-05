@@ -243,7 +243,7 @@ describe("artifact aggregate", () => {
         if (operation?.type === "operation") {
           expect(operation.prebuild.operationType).toBe("query");
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
-          expect(operation.prebuild.document).toBe(document as any);
+          expect(operation.prebuild.document).toBe(document);
           expect(operation.prebuild.variableNames).toEqual(["userId"]);
           expect(operation.prebuild.projectionPathGraph).toEqual(projectionPathGraph);
         }
