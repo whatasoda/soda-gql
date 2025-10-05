@@ -25,6 +25,7 @@ import { resolveCoreImportPath, resolveGqlImportPath } from "../intermediate-mod
 import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
+import { coercePaths } from "./change-set";
 
 /**
  * Session state maintained across incremental builds.
@@ -549,12 +550,12 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       return buildInitial(state.lastInput);
     }
 
-    // Track changed and removed files
+    // Track changed and removed files using coercePaths helper
     const changedFiles = new Set<string>([
-      ...changeSet.added.map((f) => f.filePath),
-      ...changeSet.updated.map((f) => f.filePath),
+      ...coercePaths(changeSet.added),
+      ...coercePaths(changeSet.updated),
     ]);
-    const removedFiles = new Set<string>(changeSet.removed);
+    const removedFiles = coercePaths(changeSet.removed);
 
     // Early return if no changes
     if (changedFiles.size === 0 && removedFiles.size === 0) {
@@ -573,6 +574,12 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // 1. Drop removed files and collect their dependents
     const removedAffected = dropRemovedFiles(removedFiles, state);
+
+    // Clear discovery cache for removed files
+    for (const path of removedFiles) {
+      discoveryCache?.delete(path);
+      invalidateFingerprint(path);
+    }
 
     // 2. Collect all affected modules (changed + dependents from removed + transitive)
     const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
@@ -609,8 +616,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     const entryPaths = entryPathsResult.value;
 
-    // Pass changed files AND removed dependents as invalidated paths
-    const invalidatedPaths = new Set([...changedFiles, ...removedAffected]);
+    // Pass changed files, removed files, AND removed dependents as invalidated paths
+    const invalidatedPaths = new Set([...changedFiles, ...removedFiles, ...removedAffected]);
 
     // Run discovery with invalidations
     const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
