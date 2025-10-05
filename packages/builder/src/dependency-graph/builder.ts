@@ -18,14 +18,14 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
   const exportTable = buildExportTable(modules, moduleLookup);
   const summaries = buildModuleSummaries(modules, exportTable);
 
-  modules.forEach((module) => {
+  // Validate that all relative imports can be resolved
+  for (const module of modules) {
     const modulePath = normalizePath(module.filePath);
     const summary = summaries.get(modulePath);
     if (!summary) {
-      return;
+      continue;
     }
 
-    // Validate that all relative imports can be resolved
     for (const imp of summary.runtimeImports) {
       // Only check relative imports (project modules)
       if (imp.source.startsWith(".")) {
@@ -38,6 +38,15 @@ export const buildDependencyGraph = (modules: readonly ModuleAnalysis[]): Result
           });
         }
       }
+    }
+  }
+
+  // Build graph nodes
+  modules.forEach((module) => {
+    const modulePath = normalizePath(module.filePath);
+    const summary = summaries.get(modulePath);
+    if (!summary) {
+      return;
     }
 
     // Build module-level dependencies (all gql exports from imported modules)

@@ -21,7 +21,7 @@ import type { DiscoverySnapshot } from "../discovery/types";
 import { createIntermediateModuleChunks } from "../intermediate-module";
 import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
 import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
-import { resolveGqlImportPath } from "../intermediate-module/gql-import";
+import { resolveCoreImportPath, resolveGqlImportPath } from "../intermediate-module/gql-import";
 import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
 import type { BuilderError, BuilderInput } from "../types";
 import type { BuilderChangeSet } from "./change-set";
@@ -690,8 +690,9 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
     if (affectedChunkIds.size > 0) {
-      // Compute gqlImportPath dynamically
+      // Compute import paths dynamically
       const gqlImportPath = resolveGqlImportPath({ graph: state.graph, outDir: runtimeDir });
+      const coreImportPath = resolveCoreImportPath({ graph: state.graph, outDir: runtimeDir });
 
       // Build chunk modules for affected files
       const allChunks = buildChunkModules({
@@ -699,6 +700,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
         graphIndex: state.graphIndex,
         outDir: runtimeDir,
         gqlImportPath,
+        coreImportPath,
         evaluatorId,
       });
 

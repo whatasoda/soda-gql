@@ -289,6 +289,7 @@ export type IntermediateModuleSourceInput = {
   readonly fileGroups: FileGroup[];
   readonly summaries: Map<string, ModuleSummary>;
   readonly gqlImportPath: string;
+  readonly coreImportPath: string;
   readonly evaluatorId: string;
 };
 
@@ -299,6 +300,7 @@ export const buildIntermediateModuleSource = ({
   fileGroups,
   summaries,
   gqlImportPath,
+  coreImportPath,
   evaluatorId,
 }: IntermediateModuleSourceInput): string => {
   const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, summaries));
@@ -306,7 +308,7 @@ export const buildIntermediateModuleSource = ({
   const imports = [
     //
     `import { gql } from "${gqlImportPath}";`,
-    `import { getPseudoModuleRegistry } from "@soda-gql/core";`,
+    `import { getPseudoModuleRegistry } from "${coreImportPath}";`,
   ].join("\n");
 
   const registrySection = `const registry = getPseudoModuleRegistry("${evaluatorId ?? "default"}");`;

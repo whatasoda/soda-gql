@@ -6,7 +6,7 @@ import { analyzeGraph, findWorkspaceRoot } from "./analysis";
 import { type WrittenChunkModule, writeChunkModules } from "./chunk-writer";
 import { buildIntermediateModuleSource } from "./codegen";
 import { emitIntermediateModule } from "./emitter";
-import { resolveGqlImportPath } from "./gql-import";
+import { resolveCoreImportPath, resolveGqlImportPath } from "./gql-import";
 import { buildChunkModules } from "./per-chunk-emission";
 
 export type CreateIntermediateModuleInput = {
@@ -40,11 +40,12 @@ export const createIntermediateModule = async ({
     });
   }
 
-  // Determine gqlImportPath
+  // Determine import paths
   const gqlImportPath = resolveGqlImportPath({ graph, outDir });
+  const coreImportPath = resolveCoreImportPath({ graph, outDir });
 
   // Generate code
-  const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath, evaluatorId });
+  const sourceCode = buildIntermediateModuleSource({ fileGroups, summaries, gqlImportPath, coreImportPath, evaluatorId });
 
   // Emit the module
   const emitResult = await emitIntermediateModule({ outDir, sourceCode });
@@ -83,11 +84,12 @@ export const createIntermediateModuleChunks = async ({
     });
   }
 
-  // Determine gqlImportPath
+  // Determine import paths
   const gqlImportPath = resolveGqlImportPath({ graph, outDir });
+  const coreImportPath = resolveCoreImportPath({ graph, outDir });
 
   // Build chunk modules
-  const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, evaluatorId });
+  const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, coreImportPath, evaluatorId });
 
   // Write chunks to disk
   return await writeChunkModules({ chunks, outDir });

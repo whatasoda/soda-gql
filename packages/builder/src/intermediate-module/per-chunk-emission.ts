@@ -21,6 +21,7 @@ export type BuildChunkModulesInput = {
   readonly graphIndex: GraphIndex;
   readonly outDir: string;
   readonly gqlImportPath: string;
+  readonly coreImportPath: string;
   readonly evaluatorId: string;
 };
 
@@ -65,6 +66,7 @@ export const buildChunkModules = ({
   graphIndex: _graphIndex,
   outDir,
   gqlImportPath,
+  coreImportPath,
   evaluatorId,
 }: BuildChunkModulesInput): Map<string, ChunkModule> => {
   const chunks = new Map<string, ChunkModule>();
@@ -86,6 +88,7 @@ export const buildChunkModules = ({
       fileGroups: [fileGroup],
       summaries,
       gqlImportPath,
+      coreImportPath,
       evaluatorId,
     } satisfies IntermediateModuleSourceInput);
 
