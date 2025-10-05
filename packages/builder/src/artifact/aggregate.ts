@@ -24,7 +24,9 @@ export const aggregate = ({ graph, elements }: AggregateInput): Result<Map<strin
   for (const node of graph.values()) {
     const element = elements[node.id];
     if (!element) {
-      return err(emitRegistrationError(node, `ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE`));
+      const availableIds = Object.keys(elements).join(", ");
+      const message = `ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE: ${node.id}\nAvailable: ${availableIds}`;
+      return err(emitRegistrationError(node, message));
     }
 
     if (registry.has(node.id)) {

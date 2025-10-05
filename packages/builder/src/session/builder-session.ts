@@ -616,15 +616,6 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Persist new manifest
     state.chunkManifest = newManifest;
 
-    // Clear registry entries for removed and updated chunks
-    const registry = getPseudoModuleRegistry(evaluatorId);
-    for (const removedChunkId of chunkDiff.removed) {
-      registry.removeModule(removedChunkId as string);
-    }
-    for (const [updatedChunkId] of chunkDiff.updated) {
-      registry.removeModule(updatedChunkId);
-    }
-
     // Build only affected chunks
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
@@ -668,6 +659,16 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Store updated manifest
     state.chunkManifest = newManifest;
+
+    // Clear registry entries for removed and updated chunks BEFORE loading
+    // This ensures old module factories don't interfere with new ones
+    const registry = getPseudoModuleRegistry(evaluatorId);
+    for (const removedChunkId of chunkDiff.removed) {
+      registry.removeModule(removedChunkId as string);
+    }
+    for (const [updatedChunkId] of chunkDiff.updated) {
+      registry.removeModule(updatedChunkId);
+    }
 
     // Build chunk paths map for ALL chunks (not just affected)
     // This is necessary because chunks may depend on each other
