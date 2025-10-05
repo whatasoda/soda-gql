@@ -1,5 +1,6 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
 import type { AnyGraphqlSchema, InputTypeRefs } from "../types/schema";
+import { mapValues } from "../utils/map-values";
 import type { UnionToIntersection } from "../utils/type-utils";
 
 export const mergeVarDefinitions = <TVarDefinitions extends InputTypeRefs[]>(definitions: TVarDefinitions) =>
@@ -31,6 +32,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
 export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeRefs>(
   definitions: TVarDefinitions,
 ) =>
-  Object.fromEntries(
-    Object.entries(definitions).map(([name, ref]) => [name, VarRef.create<typeof ref>(name)]),
-  ) as AssignableInput<TSchema, TVarDefinitions>;
+  mapValues(definitions as InputTypeRefs, (_ref, name) => VarRef.create<typeof _ref>(name)) as AssignableInput<
+    TSchema,
+    TVarDefinitions
+  >;

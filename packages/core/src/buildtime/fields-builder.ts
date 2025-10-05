@@ -19,6 +19,7 @@ import type {
   OutputUnionRef,
   UnionMemberName,
 } from "../types/schema";
+import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 
 // Cache is schema-scoped to avoid cross-schema contamination when multiple schemas share type names
@@ -98,14 +99,12 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             args: fieldArgs ?? {},
             directives: extras?.directives ?? {},
             object: null,
-            union: Object.fromEntries(
-              (Object.entries(nest) as [string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]>][]).map(
-                ([memberName, builder]) => {
-                  const f = createFieldFactories(schema, memberName);
-                  return [memberName, mergeFields(builder({ f }))];
-                },
-              ),
-            ) as TNested,
+            union: mapValues(nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>, (builder, memberName) => {
+              if (!builder) {
+                throw new Error(`Builder is undefined for member name: ${memberName}`);
+              }
+              return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
+            }) as TNested,
           } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;

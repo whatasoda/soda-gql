@@ -1,6 +1,7 @@
 import type { AnyFields, InferFields } from "../types/fragment";
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/operation";
 import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
+import { mapValues } from "../utils/map-values";
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
@@ -46,5 +47,5 @@ export const createGqlModels = <TSchema extends AnyGraphqlSchema>(schema: NoInfe
   };
   type ModelBuilders = Omit<ModelBuildersAll, TSchema["operations"][OperationType] & keyof ModelBuildersAll>;
 
-  return Object.fromEntries(Object.keys(schema.object).map((typename) => [typename, createBuilder(typename)])) as ModelBuilders;
+  return mapValues(schema.object, (_, typename) => createBuilder(typename)) as ModelBuilders;
 };
