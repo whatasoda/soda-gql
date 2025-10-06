@@ -83,7 +83,7 @@ describe("BuilderSession E2E", () => {
     const snapshot = session.getSnapshot();
     expect(snapshot.snapshotCount).toBeGreaterThan(0);
     expect(snapshot.moduleAdjacencySize).toBeGreaterThan(0);
-    expect(snapshot.metadata.schemaHash).toBe("ts");
+    expect(snapshot.metadata.schemaHash).toBe("test-schema");
     expect(snapshot.metadata.analyzerVersion).toBe("ts");
   });
 
@@ -198,8 +198,8 @@ describe("BuilderSession E2E", () => {
 
     const snapshot = session.getSnapshot();
     // V1 implementation: metadata mismatch triggers buildInitial with lastInput,
-    // which resets metadata back to original values from input.analyzer
-    expect(snapshot.metadata.schemaHash).toBe("ts");
+    // which resets metadata back to original values from input.schemaHash
+    expect(snapshot.metadata.schemaHash).toBe("test-schema");
     expect(snapshot.snapshotCount).toBeGreaterThan(0);
   });
 });
