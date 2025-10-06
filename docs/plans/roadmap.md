@@ -50,8 +50,8 @@
 
 **Commits**: e7858b1, 12caa88, a3ce47c, 4cf0920, 62194eb, 91282b0
 
-### 🚧 In Progress: DX Performance & Developer Experience (Week 5-6)
-**Status**: IN PROGRESS (Started 2025-10-06)
+### ✅ Completed: DX Performance & Developer Experience (Week 5-6)
+**Status**: COMPLETED (2025-10-06)
 
 **DX-8A/8B: Package Design Cleanup**
 - ✅ DX-8A: Created internal modules and tightened exports
@@ -70,6 +70,14 @@
 
 **DX-10: Plugin Artifact Memoization**
 - ✅ Complete (artifact-file mode with portable FS/hasher + memoization)
+- Migrated loadArtifact from sync Node.js fs to async portable APIs
+- Implemented hash-based caching with mtime + content hash validation
+- Added cache invalidation API for watch mode integration
+- Schema hash support for DI-4 compatibility
+- 9 new unit tests, all 325 tests passing
+- Expected 90%+ cache hit rate in watch mode
+- Breaking change: loadArtifact signature (sync → async Result type)
+- Note: Builder-mode service caching deferred to future iteration
 
 **DX-9A: Builder neverthrow Migration**
 - ✅ Complete
@@ -90,9 +98,9 @@
 - 1867529 (DX-9A Stage 2: discoverer migration)
 - 84dbce7 (DX-9A Stage 3: internal invariants)
 - a29e2dd (DX-9B: error formatting helpers)
-- (pending) (DX-10: artifact-file memoization with portable APIs)
+- dcd7610 (DX-10: artifact-file memoization with portable APIs)
 
-**Status**: DX-10 artifact-file caching complete. Builder-mode service caching deferred.
+**Next**: QA-7 (Quality Assurance)
 
 ---
 
@@ -121,8 +129,8 @@ This roadmap consolidates all improvement initiatives into two parallel tracks:
 |------|---------------|------------------|--------|
 | 1-2 | **PL-1** Foundation Portability | - | ✅ Completed |
 | 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | ✅ Completed |
-| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | 🚧 In Progress (DX-8A/8B ✅) |
-| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | Blocked by DX |
+| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | ✅ Completed |
+| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | 🎯 Next |
 | 9 | Release Preparation | **PE-Release** Release Readiness | Blocked by QA |
 
 ---
@@ -244,7 +252,7 @@ Plugin implementations can proceed in parallel:
 
 - [x] **PL-1**: All code runs on both Bun and Node.js
 - [x] **DI**: Resolver handles .tsx, chunks skip unchanged writes, schema changes invalidate cache
-- [~] **DX**: Package exports tightened ✅, neverthrow migration (builder ✅, plugin ✅), artifact memoization pending
+- [x] **DX**: Package exports tightened ✅, neverthrow migration (builder ✅, plugin ✅), artifact memoization ✅
 - [ ] **QA**: 80%+ test coverage, comprehensive testing guide
 
 ### Plugin Ecosystem Track
