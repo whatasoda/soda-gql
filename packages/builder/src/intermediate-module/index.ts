@@ -64,9 +64,14 @@ export type CreateIntermediateModuleChunksInput = {
   readonly evaluatorId: string;
 };
 
+export type CreateIntermediateModuleChunksResult = {
+  readonly written: Map<string, WrittenChunkModule>;
+  readonly skipped: number;
+};
+
 /**
  * Create intermediate modules per chunk (one chunk per source file).
- * Returns a map of chunk ID to written chunk info.
+ * Returns written chunks and skip statistics.
  */
 export const createIntermediateModuleChunks = async ({
   graph,
@@ -74,7 +79,7 @@ export const createIntermediateModuleChunks = async ({
   config,
   outDir,
   evaluatorId,
-}: CreateIntermediateModuleChunksInput): Promise<Result<Map<string, WrittenChunkModule>, BuilderError>> => {
+}: CreateIntermediateModuleChunksInput): Promise<Result<CreateIntermediateModuleChunksResult, BuilderError>> => {
   // Check for missing expressions
   const { missingExpressions } = analyzeGraph(graph);
   if (missingExpressions.length > 0) {
@@ -98,5 +103,5 @@ export const createIntermediateModuleChunks = async ({
 
   // Write chunks to disk
   const writeResult = await writeChunkModules({ chunks, outDir });
-  return writeResult.map((result) => result.written);
+  return writeResult;
 };

@@ -8,6 +8,7 @@ import type { BuildArtifactInput, BuilderArtifact } from "./types";
 export const buildArtifact = async ({
   graph,
   cache,
+  chunks,
   intermediateModulePath,
   intermediateModulePaths,
   evaluatorId,
@@ -52,6 +53,7 @@ export const buildArtifact = async ({
       durationMs: 0,
       warnings,
       cache,
+      chunks: chunks ?? { written: 0, skipped: 0 },
     },
   } satisfies BuilderArtifact);
 };

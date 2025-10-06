@@ -29,6 +29,10 @@ const createTestArtifact = (elements: BuilderArtifactElement[]): BuilderArtifact
         misses: 0,
         skips: 0,
       },
+      chunks: {
+        written: 0,
+        skipped: 0,
+      },
     },
   };
 };

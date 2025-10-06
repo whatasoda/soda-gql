@@ -8,6 +8,7 @@ export const createBuilderArtifact = (
     durationMs?: number;
     warnings?: readonly string[];
     cache?: { hits?: number; misses?: number; skips?: number };
+    chunks?: { written?: number; skipped?: number };
   },
 ): BuilderArtifact => {
   const elementsMap: Record<string, BuilderArtifactElement> = {};
@@ -24,6 +25,10 @@ export const createBuilderArtifact = (
         hits: overrides?.cache?.hits ?? 0,
         misses: overrides?.cache?.misses ?? 0,
         skips: overrides?.cache?.skips ?? 0,
+      },
+      chunks: {
+        written: overrides?.chunks?.written ?? 0,
+        skipped: overrides?.chunks?.skipped ?? 0,
       },
     },
   };

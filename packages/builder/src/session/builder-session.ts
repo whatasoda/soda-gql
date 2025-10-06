@@ -489,8 +489,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       return err(chunksResult.error);
     }
 
-    // Store written chunks
-    const writtenChunks = chunksResult.value;
+    // Store written chunks and extract statistics
+    const { written: writtenChunks, skipped: chunksSkipped } = chunksResult.value;
     state.chunkModules = writtenChunks;
 
     // Build chunk paths map for artifact builder
@@ -503,6 +503,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const artifactResult = await buildArtifact({
       graph,
       cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+      chunks: { written: writtenChunks.size, skipped: chunksSkipped },
       intermediateModulePaths: chunkPaths,
       evaluatorId,
     });
@@ -719,6 +720,10 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Build and write affected chunks
     const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
 
+    // Track chunk write statistics
+    let chunksWritten = 0;
+    let chunksSkipped = 0;
+
     if (affectedChunkIds.size > 0) {
       // Get import paths from config
       const gqlImportPath = resolveGqlImportPath({ config: state.lastInput.config, outDir: runtimeDir });
@@ -754,10 +759,9 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
         nextChunkModules.set(chunkId, writtenChunk);
       }
 
-      // Log skip statistics for debugging
-      if (skipped > 0) {
-        // TODO: Add to build report
-      }
+      // Track chunk write statistics
+      chunksWritten = written.size;
+      chunksSkipped = skipped;
     }
 
     // Build chunk paths map from NEXT chunk modules (includes fresh chunks, excludes removed)
@@ -770,6 +774,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const artifactResult = await buildArtifact({
       graph: state.graph,
       cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+      chunks: { written: chunksWritten, skipped: chunksSkipped },
       intermediateModulePaths: allChunkPaths,
       evaluatorId,
     });

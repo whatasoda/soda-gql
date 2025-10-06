@@ -362,7 +362,7 @@ const fakeWrittenChunks = new Map([
 ]);
 const fakeArtifact: BuilderArtifact = {
   elements: {},
-  report: { durationMs: 0, warnings: [], cache: { hits: 0, misses: 0, skips: 0 } },
+  report: { durationMs: 0, warnings: [], cache: { hits: 0, misses: 0, skips: 0 }, chunks: { written: 0, skipped: 0 } },
 };
 const defaultDiscoverResult = { snapshots: [fakeSnapshot], cacheHits: 0, cacheMisses: 1, cacheSkips: 0 };
 const fakeInput: BuilderInput = {
