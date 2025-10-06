@@ -50,7 +50,36 @@
 
 **Commits**: e7858b1, 12caa88, a3ce47c, 4cf0920, 62194eb, 91282b0
 
-**Next**: Ready for DX (Performance & Developer Experience) phase
+### 🚧 In Progress: DX Performance & Developer Experience (Week 5-6)
+**Status**: IN PROGRESS (Started 2025-10-06)
+
+**DX-8A/8B: Package Design Cleanup**
+- ✅ DX-8A: Created internal modules and tightened exports
+  - Moved builder/session → builder/internal/session
+  - Moved builder/intermediate-module → builder/internal/intermediate-module
+  - Moved plugin-babel internals to internal/ subdirectories
+  - Flattened nested directory structures
+  - Updated package.json exports to block ./internal/* access
+- ✅ DX-8B: Tightened package boundaries
+  - Created public API re-export surfaces (change-set.ts, errors.ts)
+  - Renamed createPlugin → createSodaGqlPlugin
+  - Updated tsconfig.json with explicit path aliases
+  - All tests passing (315 pass, 1 skip, 0 fail)
+  - TypeScript compilation: 0 errors
+- ⏭️ Skipped: CLI config loader unification (deferred - different use case)
+
+**DX-10: Plugin Artifact Memoization**
+- ⏳ Pending
+
+**DX-9A: Builder neverthrow Migration**
+- ⏳ Pending
+
+**DX-9B: Plugin neverthrow Migration**
+- ⏳ Pending
+
+**Commits**: 2f710fa (WIP), 2c25766 (completed DX-8A/8B)
+
+**Next**: DX-9A (Builder error handling) or DX-10 (artifact caching)
 
 ---
 
@@ -79,7 +108,7 @@ This roadmap consolidates all improvement initiatives into two parallel tracks:
 |------|---------------|------------------|--------|
 | 1-2 | **PL-1** Foundation Portability | - | ✅ Completed |
 | 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | ✅ Completed |
-| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | Ready |
+| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | 🚧 In Progress (DX-8A/8B ✅) |
 | 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | Blocked by DX |
 | 9 | Release Preparation | **PE-Release** Release Readiness | Blocked by QA |
 
@@ -202,7 +231,7 @@ Plugin implementations can proceed in parallel:
 
 - [x] **PL-1**: All code runs on both Bun and Node.js
 - [x] **DI**: Resolver handles .tsx, chunks skip unchanged writes, schema changes invalidate cache
-- [ ] **DX**: Artifact memoization working, all errors use neverthrow, package exports tightened
+- [~] **DX**: Package exports tightened ✅, artifact memoization pending, neverthrow migration pending
 - [ ] **QA**: 80%+ test coverage, comprehensive testing guide
 
 ### Plugin Ecosystem Track
