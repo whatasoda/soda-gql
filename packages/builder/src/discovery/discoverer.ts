@@ -57,13 +57,19 @@ export const discoverModules = ({
       const cached = cache.peek(filePath);
       if (cached) {
         try {
-          // Fast path: check mtime/size without reading file content
+          // Fast path: check metadata first, then mtime/size without reading file content
           const stats = statSync(filePath);
           const mtimeMs = stats.mtimeMs;
           const sizeBytes = stats.size;
 
-          // If fingerprint matches, reuse cached snapshot
-          if (cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
+          // Validate metadata matches (schema hash, analyzer version, plugin options)
+          const metadataMatches =
+            cached.metadata.schemaHash === metadata.schemaHash &&
+            cached.metadata.analyzerVersion === metadata.analyzerVersion &&
+            cached.metadata.pluginOptionsHash === metadata.pluginOptionsHash;
+
+          // If metadata and fingerprint match, reuse cached snapshot
+          if (metadataMatches && cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
             snapshots.set(filePath, cached);
             cacheHits++;
             // Enqueue dependencies from cache
@@ -73,6 +79,13 @@ export const discoverModules = ({
               }
             }
             continue;
+          }
+
+          // If metadata doesn't match, invalidate this entry
+          if (!metadataMatches) {
+            cache.delete(filePath);
+            cacheSkips++;
+            // Fall through to re-read and re-parse
           }
         } catch {
           // File may have been deleted or inaccessible, fall through to re-read

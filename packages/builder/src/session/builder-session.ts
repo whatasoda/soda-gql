@@ -414,10 +414,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const entryPaths = entryPathsResult.value;
 
     // Compute metadata for snapshots
-    // For V1: Use analyzer as schema hash (simple but functional)
-    // Future: Hash actual GraphQL schema file content
     const snapshotMetadata = {
-      schemaHash: input.analyzer, // Using analyzer as proxy for schema version in V1
+      schemaHash: input.schemaHash,
       analyzerVersion: input.analyzer,
     };
 

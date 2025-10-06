@@ -46,6 +46,7 @@ export const createBuilderService = (config: BuilderServiceConfig): BuilderServi
     entry: [...config.entry],
     analyzer: config.analyzer,
     config: config.config,
+    schemaHash: config.schemaHash,
     ...(config.debugDir !== undefined && { debugDir: config.debugDir }),
   };
 

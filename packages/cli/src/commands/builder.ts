@@ -146,6 +146,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     outPath,
     format,
     analyzer,
+    schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
     debugDir,
     watch,
   });
@@ -207,6 +208,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
       entry: options.entry,
       analyzer: options.analyzer,
       config,
+      schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
       debugDir: options.debugDir,
     });
 
@@ -259,7 +261,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
         })),
         removed: [],
         metadata: {
-          schemaHash: options.analyzer, // Match buildInitial logic
+          schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
           analyzerVersion: options.analyzer,
         },
       };
@@ -319,7 +321,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   }
 
   // Normal mode: Single build
-  const result = await runBuilder({ ...options, config });
+  const result = await runBuilder({ ...options, config, schemaHash: "cli-placeholder" });
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);

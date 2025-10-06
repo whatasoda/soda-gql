@@ -12,6 +12,7 @@ export type BuilderInput = {
   readonly entry: readonly string[];
   readonly analyzer: BuilderAnalyzer;
   readonly config: ResolvedSodaGqlConfig;
+  readonly schemaHash: string;
   readonly debugDir?: string;
   readonly evaluatorId?: string;
 };

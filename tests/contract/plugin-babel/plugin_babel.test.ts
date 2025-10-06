@@ -29,6 +29,7 @@ const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOpti
     config: {
       mode: "zero-runtime",
       analyzer: "ts",
+      schemaHash: "test-schema",
       entry: [profileQueryPath],
       config: createTestConfig(fixturesRoot),
       debugDir: join(tmpRoot, "builder-debug"),
@@ -190,6 +191,7 @@ describe("@soda-gql/plugin-babel", () => {
       const service = createBuilderService({
         mode: "zero-runtime",
         analyzer: "ts",
+        schemaHash: "test-schema",
         entry: [profileQueryPath],
         config: createTestConfig(fixturesRoot),
       });
@@ -238,6 +240,7 @@ describe("@soda-gql/plugin-babel", () => {
             config: {
               mode: "zero-runtime",
               analyzer: "ts",
+              schemaHash: "test-schema",
               entry: [nonExistentEntry],
               config: createTestConfig(fixturesRoot),
             },
@@ -254,6 +257,7 @@ describe("@soda-gql/plugin-babel", () => {
       const service = createBuilderService({
         mode: "zero-runtime",
         analyzer: "ts",
+        schemaHash: "test-schema",
         entry: [profileQueryPath],
         config: createTestConfig(fixturesRoot),
       });

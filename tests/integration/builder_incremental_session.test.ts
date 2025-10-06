@@ -74,6 +74,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspace),
     });
 
@@ -94,6 +95,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspace),
     });
 
@@ -136,6 +138,7 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspace),
     });
 
@@ -170,13 +173,14 @@ describe("BuilderSession E2E", () => {
       mode: "runtime",
       entry: [join(workspace, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspace),
     });
 
     expect(initialResult.isOk()).toBe(true);
 
     const initialSnapshot = session.getSnapshot();
-    expect(initialSnapshot.metadata.schemaHash).toBe("ts");
+    expect(initialSnapshot.metadata.schemaHash).toBe("test-schema");
 
     // Trigger rebuild with different schemaHash
     const changeSet: BuilderChangeSet = {

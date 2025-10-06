@@ -71,6 +71,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -104,6 +105,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -160,6 +162,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -183,6 +186,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -224,6 +228,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -247,6 +252,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -287,6 +293,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -310,6 +317,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 
@@ -367,6 +375,7 @@ describe("BuilderSession incremental end-to-end", () => {
       mode: "runtime",
       entry: [path.join(workspaceRoot, "src/**/*.ts")],
       analyzer: "ts",
+      schemaHash: "test-schema",
       config: createTestConfig(workspaceRoot),
     });
 

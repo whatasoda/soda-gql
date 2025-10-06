@@ -71,6 +71,7 @@ describe("zero-runtime transform", () => {
         outPath: artifactPath,
         format: "json",
         analyzer: "ts",
+        schemaHash: "test-schema",
         debugDir,
         config: createTestConfig(workspace),
       });

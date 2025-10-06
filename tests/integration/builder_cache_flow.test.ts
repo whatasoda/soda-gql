@@ -40,6 +40,7 @@ const executeBuilder = async (workspaceRoot: string, entry: string, outFile: str
       outPath: outFile,
       format: "json",
       analyzer: "ts",
+      schemaHash: "test-schema",
       debugDir,
       config: createTestConfig(workspaceRoot),
     });

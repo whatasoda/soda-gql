@@ -369,6 +369,7 @@ const fakeInput: BuilderInput = {
   mode: "runtime",
   entry: ["/repo/src/foo.ts"],
   analyzer: "ts",
+  schemaHash: "test-schema",
   config: {
     graphqlSystemPath: "/repo/graphql",
     corePath: "/repo/core",
