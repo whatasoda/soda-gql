@@ -25,6 +25,11 @@
       "@soda-gql/plugin-babel/errors": ["./packages/plugin-babel/src/errors.ts"],
       "@soda-gql/plugin-babel/internal/*": ["./packages/plugin-babel/src/internal/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
+      "@soda-gql/plugin-shared": ["./packages/plugin-shared/src/index.ts"],
+      "@soda-gql/plugin-shared/errors": ["./packages/plugin-shared/src/errors.ts"],
+      "@soda-gql/plugin-shared/transform": ["./packages/plugin-shared/src/transform/index.ts"],
+      "@soda-gql/plugin-shared/internal/*": ["./packages/plugin-shared/src/internal/*"],
+      "@soda-gql/plugin-shared/*": ["./packages/plugin-shared/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
     }
   },
@@ -38,6 +43,7 @@
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
+    { "path": "./packages/plugin-shared/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" }
   ]
 }

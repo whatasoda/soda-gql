@@ -5,9 +5,16 @@
     "outDir": "../../.typecheck/plugin-babel",
     "tsBuildInfoFile": "../../.typecheck/plugin-babel/tsconfig.tsbuildinfo",
     "rootDir": "./src",
-    "paths": {}
+    "paths": {
+      "@soda-gql/plugin-shared": ["../plugin-shared/src/index.ts"],
+      "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../builder/tsconfig.editor.json" }, { "path": "../common/tsconfig.editor.json" }]
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../plugin-shared/tsconfig.editor.json" }
+  ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@soda-gql/plugin-babel",
+  "name": "@soda-gql/plugin-shared",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -11,15 +11,15 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./types": {
-      "types": "./src/types.ts",
-      "import": "./src/types.ts",
-      "default": "./src/types.ts"
-    },
     "./errors": {
       "types": "./src/errors.ts",
       "import": "./src/errors.ts",
       "default": "./src/errors.ts"
+    },
+    "./transform": {
+      "types": "./src/transform/index.ts",
+      "import": "./src/transform/index.ts",
+      "default": "./src/transform/index.ts"
     },
     "./package.json": "./package.json",
     "./internal/*": null
@@ -27,7 +27,7 @@
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
-    "@soda-gql/plugin-shared": "workspace:*",
+    "@soda-gql/core": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/parser": "^7.24.0",
     "@babel/traverse": "^7.24.0",

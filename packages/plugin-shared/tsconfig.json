@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@soda-gql/builder": ["../builder/src/index.ts"],
+      "@soda-gql/builder/*": ["../builder/src/*"],
+      "@soda-gql/common": ["../common/src/index.ts"],
+      "@soda-gql/common/*": ["../common/src/*"],
+      "@soda-gql/core": ["../core/src/index.ts"],
+      "@soda-gql/core/*": ["../core/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../builder" },
+    { "path": "../common" },
+    { "path": "../core" }
+  ]
+}

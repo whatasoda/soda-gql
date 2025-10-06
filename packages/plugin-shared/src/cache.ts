@@ -7,7 +7,7 @@ import {
   type CanonicalId,
   createCanonicalId,
 } from "@soda-gql/builder";
-import { getPortableFS, getPortableHasher } from "@soda-gql/common";
+import { getPortableFS, getPortableHasher } from "@soda-gql/common/portable";
 import { err, ok, type Result } from "neverthrow";
 
 export type ArtifactError = {

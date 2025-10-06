@@ -46,7 +46,7 @@ export class TestSuite {
   /**
    * Write content to a file in the temp directory
    */
-  protected async writeTempFile(relativePath: string, content: string): Promise<string> {
+  public async writeTempFile(relativePath: string, content: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
     const fs = getPortableFS();
     await fs.writeFile(fullPath, content);
@@ -56,7 +56,7 @@ export class TestSuite {
   /**
    * Read content from a file in the temp directory
    */
-  protected async readTempFile(relativePath: string): Promise<string> {
+  public async readTempFile(relativePath: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
     const fs = getPortableFS();
     return await fs.readFile(fullPath);
@@ -65,7 +65,7 @@ export class TestSuite {
   /**
    * Check if a file exists in the temp directory
    */
-  protected async tempFileExists(relativePath: string): Promise<boolean> {
+  public async tempFileExists(relativePath: string): Promise<boolean> {
     const fullPath = this.tempDir.join(relativePath);
     const fs = getPortableFS();
     return await fs.exists(fullPath);
@@ -74,7 +74,7 @@ export class TestSuite {
   /**
    * Get the full path to a file in the temp directory
    */
-  protected getTempPath(relativePath = ""): string {
+  public getTempPath(relativePath = ""): string {
     return relativePath ? this.tempDir.join(relativePath) : this.tempDir.path;
   }
 }

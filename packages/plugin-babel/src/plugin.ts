@@ -1,11 +1,14 @@
 import type { PluginObj, PluginPass, types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { formatPluginError } from "./errors";
-import type { ArtifactLookup } from "./internal/analysis/gql-call";
-import { collectGqlDefinitionMetadata } from "./internal/metadata/collector";
-import { type PluginState, preparePluginState } from "./internal/state";
-import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./internal/transform/import-utils";
-import { insertRuntimeCalls, transformCallExpression } from "./internal/transform/transformer";
+import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
+import type { ArtifactLookup } from "@soda-gql/plugin-shared/transform";
+import {
+  collectGqlDefinitionMetadata,
+  ensureGqlRuntimeImport,
+  insertRuntimeCalls,
+  maybeRemoveUnusedGqlImport,
+  transformCallExpression,
+} from "@soda-gql/plugin-shared/transform";
 import type { SodaGqlBabelOptions } from "./types";
 
 type PluginPassState = PluginPass & { _state?: PluginState };

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../../.typecheck/plugin-shared",
+    "tsBuildInfoFile": "../../.typecheck/plugin-shared/tsconfig.tsbuildinfo",
+    "rootDir": "./src",
+    "paths": {}
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../core/tsconfig.editor.json" }
+  ]
+}
