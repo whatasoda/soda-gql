@@ -95,35 +95,50 @@ const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMet
 };
 
 /**
- * Resolve a module specifier to an absolute file path.
- * Handles relative imports with .ts/.tsx/index.ts fallbacks.
+ * Resolve a module specifier to an absolute file path for runtime imports.
+ * Uses hybrid resolution: tries in-memory graph first, falls back to filesystem.
  * Returns null for external (node_modules) or bare specifiers.
  *
  * @internal testing
  */
-const resolveModuleSpecifier = (source: string, fromFilePath: string): string | null => {
+const resolveModuleSpecifierRuntime = async (
+  source: string,
+  fromFilePath: string,
+  modulesByPath: Map<string, DependencyGraph extends Map<unknown, infer V> ? V : never>,
+): Promise<string | null> => {
   // Skip external imports (bare specifiers)
   if (!source.startsWith(".")) {
     return null;
   }
 
+  // Try to find in existing graph first (fast path)
   const fromDir = dirname(fromFilePath);
   const resolved = resolve(fromDir, source);
+  const normalized = normalize(resolved);
 
-  // Try common TypeScript extensions
+  // Check common candidates in the graph
   const candidates = [
-    `${resolved}.ts`,
-    `${resolved}.tsx`,
-    `${resolved}/index.ts`,
-    `${resolved}/index.tsx`,
-    resolved, // Already has extension
+    normalized,
+    `${normalized}.ts`,
+    `${normalized}.tsx`,
+    `${normalized}.js`,
+    `${normalized}.jsx`,
+    join(normalized, "index.ts"),
+    join(normalized, "index.tsx"),
+    join(normalized, "index.js"),
+    join(normalized, "index.jsx"),
   ];
 
-  // Return normalized first candidate (we don't check file existence for now)
-  // In a real scenario, we'd check fs.existsSync, but for graph-based resolution
-  // we rely on the graph having already discovered these files
-  const candidate = candidates[0];
-  return candidate ? normalize(candidate) : null;
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalize(candidate).replace(/\\/g, "/");
+    if (modulesByPath.has(normalizedCandidate)) {
+      return normalizedCandidate;
+    }
+  }
+
+  // Fallback: use filesystem resolution (handles .tsx and index.tsx that might not be in graph)
+  const { resolveModuleSpecifierFS } = await import("../dependency-graph/resolver");
+  return resolveModuleSpecifierFS(fromFilePath, source);
 };
 
 /**
@@ -132,9 +147,9 @@ const resolveModuleSpecifier = (source: string, fromFilePath: string): string | 
  *
  * @internal testing
  */
-const extractModuleAdjacency = (graph: DependencyGraph): Map<string, Set<string>> => {
+const extractModuleAdjacency = async (graph: DependencyGraph): Promise<Map<string, Set<string>>> => {
   // Phase 1: Build per-module view
-  const modulesByPath = new Map<string, typeof graph extends Map<unknown, infer V> ? V : never>();
+  const modulesByPath = new Map<string, DependencyGraph extends Map<unknown, infer V> ? V : never>();
   for (const node of graph.values()) {
     modulesByPath.set(node.filePath, node);
   }
@@ -157,8 +172,8 @@ const extractModuleAdjacency = (graph: DependencyGraph): Map<string, Set<string>
     // Phase 3: Handle runtime imports for modules with no tracked dependencies
     if (dependencies.length === 0 && moduleSummary.runtimeImports.length > 0) {
       for (const runtimeImport of moduleSummary.runtimeImports) {
-        const resolved = resolveModuleSpecifier(runtimeImport.source, filePath);
-        if (resolved && modulesByPath.has(resolved)) {
+        const resolved = await resolveModuleSpecifierRuntime(runtimeImport.source, filePath, modulesByPath);
+        if (resolved) {
           imports.add(resolved);
         }
       }
@@ -332,7 +347,7 @@ const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<s
 export const __internal = {
   extractModuleAdjacency,
   extractDefinitionAdjacency,
-  resolveModuleSpecifier,
+  resolveModuleSpecifierRuntime,
   metadataMatches,
   collectAffectedModules,
   dropRemovedFiles,
@@ -448,7 +463,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     state.graphIndex = buildGraphIndex(graph);
 
     // Extract and store adjacency maps
-    state.moduleAdjacency = extractModuleAdjacency(graph);
+    state.moduleAdjacency = await extractModuleAdjacency(graph);
     state.definitionAdjacency = extractDefinitionAdjacency(graph);
 
     // Store metadata
@@ -680,7 +695,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     }
 
     // Update adjacency maps (full rebuild for now - could be optimized)
-    state.moduleAdjacency = extractModuleAdjacency(state.graph);
+    state.moduleAdjacency = await extractModuleAdjacency(state.graph);
     state.definitionAdjacency = extractDefinitionAdjacency(state.graph);
 
     // Plan chunks from updated graph

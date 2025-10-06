@@ -31,7 +31,7 @@ const createMockNode = (
 
 describe("BuilderSession - Internal Helpers", () => {
   describe("extractModuleAdjacency", () => {
-    test("should build adjacency from dependency graph - simple chain", () => {
+    test("should build adjacency from dependency graph - simple chain", async () => {
       // A depends on B, B depends on C
       const graph: DependencyGraph = new Map([
         [
@@ -45,7 +45,7 @@ describe("BuilderSession - Internal Helpers", () => {
         ["/src/c.ts::baz" as CanonicalId, createMockNode("/src/c.ts", "/src/c.ts::baz" as CanonicalId, [])],
       ]);
 
-      const adjacency = __internal.extractModuleAdjacency(graph);
+      const adjacency = await __internal.extractModuleAdjacency(graph);
 
       // B is imported by A
       expect(adjacency.get("/src/b.ts")?.has("/src/a.ts")).toBe(true);
@@ -55,18 +55,18 @@ describe("BuilderSession - Internal Helpers", () => {
       expect(adjacency.get("/src/a.ts")?.size).toBe(0);
     });
 
-    test("should include isolated modules with empty sets", () => {
+    test("should include isolated modules with empty sets", async () => {
       const graph: DependencyGraph = new Map([
         ["/src/isolated.ts::foo" as CanonicalId, createMockNode("/src/isolated.ts", "/src/isolated.ts::foo" as CanonicalId, [])],
       ]);
 
-      const adjacency = __internal.extractModuleAdjacency(graph);
+      const adjacency = await __internal.extractModuleAdjacency(graph);
 
       expect(adjacency.has("/src/isolated.ts")).toBe(true);
       expect(adjacency.get("/src/isolated.ts")?.size).toBe(0);
     });
 
-    test("should handle runtime imports for modules with no dependencies", () => {
+    test("should handle runtime imports for modules with no dependencies", async () => {
       const graph: DependencyGraph = new Map([
         [
           "/src/a.ts::foo" as CanonicalId,
@@ -80,15 +80,14 @@ describe("BuilderSession - Internal Helpers", () => {
         ["/src/b.ts::bar" as CanonicalId, createMockNode("/src/b.ts", "/src/b.ts::bar" as CanonicalId, [])],
       ]);
 
-      const adjacency = __internal.extractModuleAdjacency(graph);
+      const adjacency = await __internal.extractModuleAdjacency(graph);
 
-      // Note: resolveModuleSpecifier resolves "./b" from "/src/a.ts" to "/src/b.ts"
-      // Due to extension handling, it becomes "/src/b.ts.ts" in the current implementation
-      // We test the behavior exists, not exact path matching
+      // Note: resolveModuleSpecifierRuntime resolves "./b" from "/src/a.ts" to "/src/b.ts"
+      // It first tries the in-memory graph, then falls back to filesystem
       expect(adjacency.has("/src/b.ts")).toBe(true);
     });
 
-    test("should skip self-imports", () => {
+    test("should skip self-imports", async () => {
       const graph: DependencyGraph = new Map([
         [
           "/src/a.ts::foo" as CanonicalId,
@@ -97,7 +96,7 @@ describe("BuilderSession - Internal Helpers", () => {
         ["/src/a.ts::bar" as CanonicalId, createMockNode("/src/a.ts", "/src/a.ts::bar" as CanonicalId, [])],
       ]);
 
-      const adjacency = __internal.extractModuleAdjacency(graph);
+      const adjacency = await __internal.extractModuleAdjacency(graph);
 
       // Self-import should not create adjacency edge
       expect(adjacency.get("/src/a.ts")?.size).toBe(0);
@@ -123,19 +122,22 @@ describe("BuilderSession - Internal Helpers", () => {
     });
   });
 
-  describe("resolveModuleSpecifier", () => {
-    test("should resolve relative imports", () => {
-      const resolved = __internal.resolveModuleSpecifier("./foo", "/src/bar.ts");
-      expect(resolved).toMatch(/\/src\/foo\.ts$/);
+  describe("resolveModuleSpecifierRuntime", () => {
+    test("should resolve from in-memory graph first", async () => {
+      const modulesByPath = new Map([["/src/foo.ts", createMockNode("/src/foo.ts", "/src/foo.ts::x" as CanonicalId, [])]]);
+      const resolved = await __internal.resolveModuleSpecifierRuntime("./foo", "/src/bar.ts", modulesByPath);
+      expect(resolved).toBe("/src/foo.ts");
     });
 
-    test("should return null for bare specifiers", () => {
-      const resolved = __internal.resolveModuleSpecifier("react", "/src/bar.ts");
+    test("should return null for bare specifiers", async () => {
+      const modulesByPath = new Map();
+      const resolved = await __internal.resolveModuleSpecifierRuntime("react", "/src/bar.ts", modulesByPath);
       expect(resolved).toBeNull();
     });
 
-    test("should return null for external imports", () => {
-      const resolved = __internal.resolveModuleSpecifier("@scope/package", "/src/bar.ts");
+    test("should return null for external imports", async () => {
+      const modulesByPath = new Map();
+      const resolved = await __internal.resolveModuleSpecifierRuntime("@scope/package", "/src/bar.ts", modulesByPath);
       expect(resolved).toBeNull();
     });
   });

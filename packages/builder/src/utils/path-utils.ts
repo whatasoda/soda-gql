@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
-import { dirname, join, normalize, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { normalizePath } from "../dependency-graph/resolver";
 
 /**
  * Normalize a path to use POSIX separators (forward slashes).
  * Ensures consistent path handling across platforms.
+ * @deprecated Use normalizePath from dependency-graph/resolver instead
  */
-export const normalizeToPosix = (value: string): string => normalize(value).replace(/\\/g, "/");
+export const normalizeToPosix = normalizePath;
 
 /**
  * File extensions to try when resolving module specifiers.
@@ -32,14 +34,14 @@ export const resolveRelativeImport = (from: string, specifier: string): string |
 
   // Try exact path first
   if (existsSync(base)) {
-    return normalizeToPosix(base);
+    return normalizePath(base);
   }
 
   // Try with extensions
   for (const ext of MODULE_EXTENSION_CANDIDATES) {
     const candidate = `${base}${ext}`;
     if (existsSync(candidate)) {
-      return normalizeToPosix(candidate);
+      return normalizePath(candidate);
     }
   }
 
@@ -47,7 +49,7 @@ export const resolveRelativeImport = (from: string, specifier: string): string |
   for (const ext of MODULE_EXTENSION_CANDIDATES) {
     const candidate = join(base, `index${ext}`);
     if (existsSync(candidate)) {
-      return normalizeToPosix(candidate);
+      return normalizePath(candidate);
     }
   }
 
