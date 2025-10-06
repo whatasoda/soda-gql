@@ -69,7 +69,7 @@
 - ⏭️ Skipped: CLI config loader unification (deferred - different use case)
 
 **DX-10: Plugin Artifact Memoization**
-- ⏳ Pending
+- ✅ Complete (artifact-file mode with portable FS/hasher + memoization)
 
 **DX-9A: Builder neverthrow Migration**
 - ✅ Complete
@@ -90,8 +90,9 @@
 - 1867529 (DX-9A Stage 2: discoverer migration)
 - 84dbce7 (DX-9A Stage 3: internal invariants)
 - a29e2dd (DX-9B: error formatting helpers)
+- (pending) (DX-10: artifact-file memoization with portable APIs)
 
-**Next**: DX-10 (artifact caching)
+**Status**: DX-10 artifact-file caching complete. Builder-mode service caching deferred.
 
 ---
 

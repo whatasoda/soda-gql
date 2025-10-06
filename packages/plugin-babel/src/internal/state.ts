@@ -151,40 +151,42 @@ const defaultDeps: PreparePluginStateDeps = {
 
 export type PluginStateResult = Result<PluginState, PluginError>;
 
-export const preparePluginState = (
+export const preparePluginState = async (
   rawOptions: Partial<SodaGqlBabelOptions>,
   deps: PreparePluginStateDeps = defaultDeps,
 ): Promise<PluginStateResult> => {
   const optionsResult = deps.normalizeOptions(rawOptions);
 
   if (optionsResult.isErr()) {
-    return Promise.resolve(err(mapOptionsError(optionsResult.error)));
+    return err(mapOptionsError(optionsResult.error));
   }
 
   const options = optionsResult.value;
 
   if (options.artifactSource.source === "artifact-file") {
-    const artifactResult = deps.loadArtifact(options.artifactSource.path);
+    // loadArtifact is now async - await the result
+    const artifactResult = await deps.loadArtifact(options.artifactSource.path);
 
     if (artifactResult.isErr()) {
-      return Promise.resolve(err(mapArtifactError(artifactResult.error)));
+      return err(mapArtifactError(artifactResult.error));
     }
 
-    return Promise.resolve(ok(createPluginState(options, artifactResult.value)));
+    return ok(createPluginState(options, artifactResult.value));
   }
 
   const service = deps.createBuilderService(options.artifactSource.config);
 
-  return service
-    .build()
-    .then((buildResult) => {
-      if (buildResult.isErr()) {
-        return err(mapBuilderError(buildResult.error));
-      }
+  try {
+    const buildResult = await service.build();
 
-      return ok(createPluginState(options, buildResult.value));
-    })
-    .catch((cause) => err(mapUnexpectedBuilderError(cause)));
+    if (buildResult.isErr()) {
+      return err(mapBuilderError(buildResult.error));
+    }
+
+    return ok(createPluginState(options, buildResult.value));
+  } catch (cause) {
+    return err(mapUnexpectedBuilderError(cause));
+  }
 };
 
 const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
