@@ -1,7 +1,7 @@
-import * as Bun from "bun";
 import type { ModuleAnalysis } from "../ast/types";
 import { isExternalSpecifier, resolveRelativeImport } from "../utils/path-utils";
 import type { DiscoveredDependency } from "./types";
+import { getPortableHasher } from "@soda-gql/common";
 
 /**
  * Extract all unique dependencies (relative + external) from the analysis.
@@ -38,4 +38,7 @@ export const extractModuleDependencies = (analysis: ModuleAnalysis): readonly Di
   return Array.from(dependencies.values());
 };
 
-export const createSourceHash = (source: string): string => Bun.hash(source).toString(16);
+export const createSourceHash = (source: string): string => {
+	const hasher = getPortableHasher();
+	return hasher.hash(source, "xxhash");
+};

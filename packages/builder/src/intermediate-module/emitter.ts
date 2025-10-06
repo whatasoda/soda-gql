@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
+import { getPortableFS } from "@soda-gql/common";
 
 /**
  * Generate a unique filename for the intermediate module.
@@ -74,7 +75,8 @@ export const emitIntermediateModule = async ({
 
   // Write transpiled code to disk
   try {
-    await Bun.write(jsFilePath, transpiledCode);
+    const fs = getPortableFS();
+    await fs.writeFile(jsFilePath, transpiledCode);
     return ok({ transpiledPath: jsFilePath, fileName });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

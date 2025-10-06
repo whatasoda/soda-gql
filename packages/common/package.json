@@ -11,6 +11,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./portable": {
+      "types": "./src/portable/index.ts",
+      "import": "./src/portable/index.ts",
+      "default": "./src/portable/index.ts"
+    },
     "./package.json": "./package.json",
     "./tsconfig.json": "./tsconfig.json"
   }

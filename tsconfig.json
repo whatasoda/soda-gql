@@ -7,6 +7,7 @@
       "@soda-gql/builder/*": ["./packages/builder/src/*"],
       "@soda-gql/cli/*": ["./packages/cli/src/*"],
       "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
+      "@soda-gql/common/portable": ["./packages/common/src/portable/index.ts"],
       "@soda-gql/common/*": ["./packages/common/src/*"],
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],

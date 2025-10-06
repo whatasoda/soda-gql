@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { BuilderArtifact } from "../artifact/types";
 import type { ModuleAnalysis } from "../ast";
 import type { DependencyGraph } from "../dependency-graph";
+import { getPortableFS } from "@soda-gql/common";
 
 export type DebugWriter = {
   writeDiscoverySnapshot(modules: readonly ModuleAnalysis[], graph: DependencyGraph): Promise<void>;
@@ -19,20 +20,22 @@ const createNoOpWriter = (): DebugWriter => ({
 const createRealWriter = (debugDir: string): DebugWriter => {
   const debugPath = resolve(debugDir);
   mkdirSync(debugPath, { recursive: true });
+  const fs = getPortableFS();
 
   return {
     async writeDiscoverySnapshot(modules: readonly ModuleAnalysis[], graph: DependencyGraph): Promise<void> {
-      await Bun.write(resolve(debugPath, "modules.json"), JSON.stringify(modules, null, 2));
-      await Bun.write(resolve(debugPath, "graph.json"), JSON.stringify(Array.from(graph.entries()), null, 2));
+      await fs.writeFile(resolve(debugPath, "modules.json"), JSON.stringify(modules, null, 2));
+      await fs.writeFile(resolve(debugPath, "graph.json"), JSON.stringify(Array.from(graph.entries()), null, 2));
     },
 
     async writeIntermediateModule({ sourceCode, transpiledPath }: { sourceCode: string; transpiledPath: string }): Promise<void> {
-      await Bun.write(resolve(debugPath, "intermediate-module.ts"), sourceCode);
-      await Bun.write(resolve(debugPath, "intermediate-module.mjs"), await Bun.file(transpiledPath).text());
+      await fs.writeFile(resolve(debugPath, "intermediate-module.ts"), sourceCode);
+      const transpiledContent = await fs.readFile(transpiledPath);
+      await fs.writeFile(resolve(debugPath, "intermediate-module.mjs"), transpiledContent);
     },
 
     async writeArtifact(artifact: BuilderArtifact): Promise<void> {
-      await Bun.write(resolve(debugPath, "artifact.json"), JSON.stringify(artifact, null, 2));
+      await fs.writeFile(resolve(debugPath, "artifact.json"), JSON.stringify(artifact, null, 2));
     },
   };
 };

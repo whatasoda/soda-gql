@@ -9,5 +9,9 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core/tsconfig.editor.json" }, { "path": "../codegen/tsconfig.editor.json" }]
+  "references": [
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../core/tsconfig.editor.json" },
+    { "path": "../codegen/tsconfig.editor.json" }
+  ]
 }

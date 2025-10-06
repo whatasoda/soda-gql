@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
+import { getPortableFS } from "@soda-gql/common";
 
 export type ChunkModule = {
   readonly chunkId: string;
@@ -84,7 +85,8 @@ export const writeChunkModules = async ({
 
     // Write transpiled code to disk
     try {
-      await Bun.write(jsFilePath, transpiledCode);
+      const fs = getPortableFS();
+      await fs.writeFile(jsFilePath, transpiledCode);
       written.set(chunkId, {
         chunkId,
         transpiledPath: jsFilePath,

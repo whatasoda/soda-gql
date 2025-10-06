@@ -4,6 +4,7 @@
  */
 
 import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
+import { getPortableHasher } from "@soda-gql/common";
 
 /**
  * Adapter interface that each parser implementation (TS, SWC) must provide.
@@ -70,11 +71,14 @@ export const analyzeModuleCore = <TFile, THandle>(
   adapter: AnalyzerAdapter<TFile, THandle>,
 ): ModuleAnalysis => {
   // Parse source
+  const hasher = getPortableHasher();
+  const signature = hasher.hash(input.source, "xxhash");
+
   const file = adapter.parse(input);
   if (!file) {
     return {
       filePath: input.filePath,
-      signature: Bun.hash(input.source).toString(16),
+      signature,
       definitions: [],
       diagnostics: [],
       imports: [],
@@ -104,7 +108,7 @@ export const analyzeModuleCore = <TFile, THandle>(
 
   return {
     filePath: input.filePath,
-    signature: Bun.hash(input.source).toString(16),
+    signature,
     definitions,
     diagnostics,
     imports,
