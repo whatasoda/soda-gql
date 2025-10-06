@@ -1,9 +1,9 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { getPortableFS } from "@soda-gql/common";
 import type { BuilderArtifact } from "../artifact/types";
 import type { ModuleAnalysis } from "../ast";
 import type { DependencyGraph } from "../dependency-graph";
-import { getPortableFS } from "@soda-gql/common";
 
 export type DebugWriter = {
   writeDiscoverySnapshot(modules: readonly ModuleAnalysis[], graph: DependencyGraph): Promise<void>;

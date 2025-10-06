@@ -1,9 +1,9 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { getPortableFS } from "@soda-gql/common";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
-import { getPortableFS } from "@soda-gql/common";
 
 /**
  * Generate a unique filename for the intermediate module.

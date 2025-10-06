@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { z } from "zod";
 import { getPortableHasher } from "@soda-gql/common";
+import { z } from "zod";
 
 type CacheNamespace = readonly string[];
 
@@ -43,8 +43,8 @@ const ensureDirectory = (directory: string): void => {
 const toNamespacePath = (root: string, segments: CacheNamespace): string => join(root, ...segments.map(sanitizeSegment));
 
 const toEntryFilename = (key: string): string => {
-	const hasher = getPortableHasher();
-	return `${hasher.hash(key, "xxhash")}${JSON_EXT}`;
+  const hasher = getPortableHasher();
+  return `${hasher.hash(key, "xxhash")}${JSON_EXT}`;
 };
 
 export const createJsonCache = ({ rootDir, prefix = [] }: JsonCacheFactoryOptions): JsonCacheFactory => {

@@ -3,8 +3,8 @@
  * Adapters (TypeScript, SWC, etc.) implement the adapter interface to plug into this pipeline.
  */
 
-import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 import { getPortableHasher } from "@soda-gql/common";
+import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 
 /**
  * Adapter interface that each parser implementation (TS, SWC) must provide.

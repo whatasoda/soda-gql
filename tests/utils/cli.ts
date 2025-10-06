@@ -1,7 +1,7 @@
 import { expect } from "bun:test";
 import { join } from "node:path";
-import { getProjectRoot } from ".";
 import { spawn } from "@soda-gql/common";
+import { getProjectRoot } from ".";
 
 export type CliResult = {
   readonly stdout: string;

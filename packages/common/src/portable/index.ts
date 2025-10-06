@@ -3,22 +3,20 @@
  */
 
 export {
-	createPortableFS,
-	getPortableFS,
-	__resetPortableFSForTests,
-	type PortableFS,
+  __resetPortableFSForTests,
+  createPortableFS,
+  getPortableFS,
+  type PortableFS,
 } from "./fs";
 
 export {
-	createPortableHasher,
-	getPortableHasher,
-	__resetPortableHasherForTests,
-	type PortableHasher,
-	type HashAlgorithm,
+  __resetPortableHasherForTests,
+  createPortableHasher,
+  getPortableHasher,
+  type HashAlgorithm,
+  type PortableHasher,
 } from "./hash";
 
 export { generateId } from "./id";
-
-export { spawn, type SpawnOptions, type SpawnResult } from "./spawn";
-
-export { runtime, once, resetPortableForTests } from "./runtime";
+export { once, resetPortableForTests, runtime } from "./runtime";
+export { type SpawnOptions, type SpawnResult, spawn } from "./spawn";

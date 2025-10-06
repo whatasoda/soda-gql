@@ -3,10 +3,10 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
+import { getPortableFS } from "@soda-gql/common";
 import createPlugin from "@soda-gql/plugin-babel";
 import { getProjectRoot, TestTempDir } from ".";
 import { typeCheckFiles } from "./type-check";
-import { getPortableFS } from "@soda-gql/common";
 
 const resolveBiomeBinary = (): string => {
   const projectRoot = getProjectRoot();
