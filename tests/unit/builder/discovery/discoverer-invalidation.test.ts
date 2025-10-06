@@ -44,10 +44,11 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       cache,
       metadata,
     });
+    if (result1.isErr()) throw result1.error;
 
-    expect(result1.cacheHits).toBe(0);
-    expect(result1.cacheMisses).toBe(3); // a, b, c
-    expect(result1.cacheSkips).toBe(0);
+    expect(result1.value.cacheHits).toBe(0);
+    expect(result1.value.cacheMisses).toBe(3); // a, b, c
+    expect(result1.value.cacheSkips).toBe(0);
 
     // Second discovery: with 2 files invalidated
     const invalidatedPaths = new Set([fileA, fileB]);
@@ -58,10 +59,11 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       metadata,
       invalidatedPaths,
     });
+    if (result2.isErr()) throw result2.error;
 
-    expect(result2.cacheSkips).toBe(2); // fileA and fileB invalidated
-    expect(result2.cacheHits).toBe(1); // fileC reused from cache
-    expect(result2.cacheMisses).toBe(2); // fileA and fileB re-read
+    expect(result2.value.cacheSkips).toBe(2); // fileA and fileB invalidated
+    expect(result2.value.cacheHits).toBe(1); // fileC reused from cache
+    expect(result2.value.cacheMisses).toBe(2); // fileA and fileB re-read
 
     // Cleanup
     rmSync(fixtureRoot, { recursive: true, force: true });
@@ -102,9 +104,10 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       metadata,
       invalidatedPaths,
     });
+    if (result.isErr()) throw result.error;
 
-    expect(result.cacheSkips).toBe(1); // Only fileB
-    expect(result.cacheHits).toBe(1); // fileA reused
+    expect(result.value.cacheSkips).toBe(1); // Only fileB
+    expect(result.value.cacheHits).toBe(1); // fileA reused
 
     // Cleanup
     rmSync(fixtureRoot, { recursive: true, force: true });
@@ -141,10 +144,11 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       metadata,
       invalidatedPaths: new Set(),
     });
+    if (result.isErr()) throw result.error;
 
-    expect(result.cacheSkips).toBe(0);
-    expect(result.cacheHits).toBe(1);
-    expect(result.cacheMisses).toBe(0);
+    expect(result.value.cacheSkips).toBe(0);
+    expect(result.value.cacheHits).toBe(1);
+    expect(result.value.cacheMisses).toBe(0);
 
     // Cleanup
     rmSync(fixtureRoot, { recursive: true, force: true });

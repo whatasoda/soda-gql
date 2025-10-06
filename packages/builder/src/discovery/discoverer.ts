@@ -1,6 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
+import { err, ok } from "neverthrow";
 import type { getAstAnalyzer } from "../ast";
 import { createCanonicalId } from "../canonical-id/canonical-id";
+import { builderErrors, type BuilderResult } from "../errors";
 import { normalizeToPosix } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
@@ -33,7 +35,7 @@ export const discoverModules = ({
   cache,
   metadata,
   invalidatedPaths,
-}: DiscoverModulesOptions): DiscoverModulesResult => {
+}: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   const invalidatedSet = invalidatedPaths ?? new Set<string>();
@@ -105,8 +107,8 @@ export const discoverModules = ({
         invalidateFingerprint(filePath);
         continue;
       }
-      // Re-throw other IO errors
-      throw error;
+      // Return other IO errors
+      return err(builderErrors.discoveryIOError(filePath, error instanceof Error ? error.message : String(error)));
     }
     const signature = createSourceHash(source);
 
@@ -133,7 +135,7 @@ export const discoverModules = ({
     // Compute fingerprint
     const fingerprintResult = computeFingerprint(filePath);
     if (fingerprintResult.isErr()) {
-      throw new Error(`Failed to compute fingerprint for ${filePath}: ${fingerprintResult.error.message}`);
+      return err(builderErrors.discoveryIOError(filePath, `Failed to compute fingerprint: ${fingerprintResult.error.message}`));
     }
     const fingerprint = fingerprintResult.value;
 
@@ -162,10 +164,10 @@ export const discoverModules = ({
     }
   }
 
-  return {
+  return ok({
     snapshots: Array.from(snapshots.values()),
     cacheHits,
     cacheMisses,
     cacheSkips,
-  };
+  });
 };

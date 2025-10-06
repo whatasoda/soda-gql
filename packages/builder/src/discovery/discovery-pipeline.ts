@@ -34,20 +34,20 @@ export const createDiscoveryPipeline = ({ analyzer, cache, metadata }: CreateDis
   const astAnalyzer = getAstAnalyzer(analyzer);
   return {
     load(entry: readonly string[]): Result<LoadedModules, BuilderError> {
-      return resolveEntryPaths(entry).map((paths) => {
-        const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
+      return resolveEntryPaths(entry).andThen((paths) => {
+        return discoverModules({
           entryPaths: paths,
           astAnalyzer,
           cache,
           metadata,
+        }).map(({ snapshots, cacheHits, cacheMisses, cacheSkips }) => {
+          const modules = snapshots.map((snapshot) => snapshot.analysis);
+
+          return {
+            modules,
+            stats: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+          } satisfies LoadedModules;
         });
-
-        const modules = snapshots.map((snapshot) => snapshot.analysis);
-
-        return {
-          modules,
-          stats: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-        } satisfies LoadedModules;
       });
     },
   };

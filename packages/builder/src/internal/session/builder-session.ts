@@ -420,12 +420,16 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     };
 
     // Run discovery
-    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
+    const discoveryResult = discoverModules({
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
       metadata: snapshotMetadata,
     });
+    if (discoveryResult.isErr()) {
+      return err(discoveryResult.error);
+    }
+    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
 
     // Store discovery snapshots
     state.snapshots.clear();
@@ -644,13 +648,17 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const invalidatedPaths = new Set([...changedFiles, ...removedFiles, ...removedAffected]);
 
     // Run discovery with invalidations
-    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoverModules({
+    const discoveryResult = discoverModules({
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
       metadata: state.metadata,
       invalidatedPaths,
     });
+    if (discoveryResult.isErr()) {
+      return err(discoveryResult.error);
+    }
+    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
 
     // Store discovery snapshots
     state.snapshots.clear();
