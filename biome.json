@@ -38,6 +38,9 @@
       "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
     }
   },
   "files": {

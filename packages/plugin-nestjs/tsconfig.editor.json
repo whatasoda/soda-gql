@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../../.typecheck/plugin-nestjs",
+    "tsBuildInfoFile": "../../.typecheck/plugin-nestjs/tsconfig.tsbuildinfo",
+    "rootDir": "./src",
+    "paths": {
+      "@soda-gql/plugin-shared": ["../plugin-shared/src/index.ts"],
+      "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../core/tsconfig.editor.json" },
+    { "path": "../plugin-shared/tsconfig.editor.json" },
+    { "path": "../runtime/tsconfig.editor.json" }
+  ]
+}
