@@ -749,8 +749,14 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       }
 
       // Update next map with freshly written chunks
-      for (const [chunkId, writtenChunk] of writeResult.value.entries()) {
+      const { written, skipped } = writeResult.value;
+      for (const [chunkId, writtenChunk] of written.entries()) {
         nextChunkModules.set(chunkId, writtenChunk);
+      }
+
+      // Log skip statistics for debugging
+      if (skipped > 0) {
+        // TODO: Add to build report
       }
     }
 

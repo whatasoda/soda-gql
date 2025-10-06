@@ -4,6 +4,13 @@ import { getPortableFS } from "@soda-gql/common";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
+import {
+  createEmptyManifest,
+  loadChunkManifest,
+  saveChunkManifest,
+  shouldWriteChunk,
+  updateManifestEntry,
+} from "./chunk-manifest";
 
 export type ChunkModule = {
   readonly chunkId: string;
@@ -26,13 +33,19 @@ export type WriteChunkModulesInput = {
   readonly outDir: string;
 };
 
+export type WriteChunkModulesResult = {
+  readonly written: Map<string, WrittenChunkModule>;
+  readonly skipped: number;
+};
+
 /**
  * Write chunk modules to disk, transpiling TypeScript to JavaScript.
+ * Uses manifest to skip writing chunks with unchanged content hash.
  */
 export const writeChunkModules = async ({
   chunks,
   outDir,
-}: WriteChunkModulesInput): Promise<Result<Map<string, WrittenChunkModule>, BuilderError>> => {
+}: WriteChunkModulesInput): Promise<Result<WriteChunkModulesResult, BuilderError>> => {
   // Create output directory
   try {
     mkdirSync(outDir, { recursive: true });
@@ -45,7 +58,14 @@ export const writeChunkModules = async ({
     });
   }
 
+  // Load existing manifest
+  let manifest = await loadChunkManifest(outDir);
+  if (!manifest) {
+    manifest = createEmptyManifest();
+  }
+
   const written = new Map<string, WrittenChunkModule>();
+  let skipped = 0;
 
   for (const [chunkId, chunk] of chunks.entries()) {
     const { sourceCode, contentHash } = chunk;
@@ -53,6 +73,23 @@ export const writeChunkModules = async ({
     // Generate unique filename based on content hash
     const fileName = `${contentHash}.mjs`;
     const jsFilePath = join(outDir, fileName);
+
+    // Check if we need to write this chunk
+    const needsWrite = await shouldWriteChunk(chunkId, contentHash, manifest);
+
+    if (!needsWrite) {
+      // Chunk hasn't changed - reuse from manifest
+      const existingEntry = manifest.chunks[chunkId];
+      if (existingEntry) {
+        written.set(chunkId, {
+          chunkId,
+          transpiledPath: existingEntry.transpiledPath,
+          contentHash: existingEntry.contentHash,
+        });
+        skipped++;
+        continue;
+      }
+    }
 
     // Transpile TypeScript to JavaScript using SWC
     let transpiledCode: string;
@@ -92,6 +129,9 @@ export const writeChunkModules = async ({
         transpiledPath: jsFilePath,
         contentHash,
       });
+
+      // Update manifest with new chunk
+      manifest = updateManifestEntry(manifest, chunkId, contentHash, jsFilePath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return err({
@@ -102,5 +142,13 @@ export const writeChunkModules = async ({
     }
   }
 
-  return ok(written);
+  // Save updated manifest
+  try {
+    await saveChunkManifest(outDir, manifest);
+  } catch (_error) {
+    // Non-fatal - log but don't fail the build
+    // Manifest will be rebuilt next time
+  }
+
+  return ok({ written, skipped });
 };

@@ -31,8 +31,9 @@ describe("writeChunkModules", () => {
       expect(result.isOk()).toBe(true);
 
       if (result.isOk()) {
-        const written = result.value;
+        const { written, skipped } = result.value;
         expect(written.size).toBe(1);
+        expect(skipped).toBe(0);
 
         const chunkResult = written.get("/src/a.ts");
         expect(chunkResult).toBeDefined();
@@ -63,8 +64,9 @@ describe("writeChunkModules", () => {
       expect(result.isOk()).toBe(true);
 
       if (result.isOk()) {
-        const written = result.value;
+        const { written, skipped } = result.value;
         expect(written.size).toBe(2);
+        expect(skipped).toBe(0);
         expect(written.has("/src/a.ts")).toBe(true);
         expect(written.has("/src/b.ts")).toBe(true);
       }
@@ -97,7 +99,7 @@ describe("writeChunkModules", () => {
       expect(result.isOk()).toBe(true);
 
       if (result.isOk()) {
-        const written = result.value;
+        const { written } = result.value;
         const chunkResult = written.get("/src/a.ts");
 
         if (chunkResult?.transpiledPath) {

@@ -97,5 +97,6 @@ export const createIntermediateModuleChunks = async ({
   const chunks = buildChunkModules({ graph, graphIndex, outDir, gqlImportPath, coreImportPath, evaluatorId });
 
   // Write chunks to disk
-  return await writeChunkModules({ chunks, outDir });
+  const writeResult = await writeChunkModules({ chunks, outDir });
+  return writeResult.map((result) => result.written);
 };
