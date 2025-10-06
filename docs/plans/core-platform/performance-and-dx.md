@@ -45,7 +45,7 @@ Babel plugin rebuilds entire artifact on every file change during watch mode bec
 **File**: `packages/plugin-babel/src/artifact-cache.ts` (new file)
 
 ```typescript
-import { getPortableHasher, getPortableFS } from '@soda-gql/core/portable'
+import { getPortableHasher, getPortableFS } from '@soda-gql/common/portable'
 import type { BuilderArtifact } from '@soda-gql/builder'
 
 interface ArtifactCacheEntry {
@@ -374,7 +374,7 @@ export function isBuilderError(error: unknown): error is BuilderError {
 ```typescript
 import { BuilderResult, createBuilderError } from '../errors'
 import { ok, err } from 'neverthrow'
-import { getPortableFS } from '@soda-gql/core/portable'
+import { getPortableFS } from '@soda-gql/common/portable'
 
 // BEFORE
 export function loadConfig(path: string): Config {
@@ -713,7 +713,7 @@ export type { Config, ConfigSchema } from './types'
 **File**: `packages/config/src/loader.ts`
 
 ```typescript
-import { getPortableFS } from '@soda-gql/core/portable'
+import { getPortableFS } from '@soda-gql/common/portable'
 import { Result, ok, err } from 'neverthrow'
 
 export interface LoadConfigOptions {

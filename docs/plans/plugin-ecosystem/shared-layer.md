@@ -253,4 +253,4 @@ After PE-Shared completion:
 
 - Original plugin implementation: `packages/plugin-babel/`
 - Builder artifact types: `packages/builder/src/types.ts`
-- Portability layer: `packages/core/src/portable/`
+- Portability layer: `packages/common/src/portable/`

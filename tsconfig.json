@@ -7,6 +7,7 @@
       "@soda-gql/builder/*": ["./packages/builder/src/*"],
       "@soda-gql/cli/*": ["./packages/cli/src/*"],
       "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
+      "@soda-gql/common/*": ["./packages/common/src/*"],
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
@@ -16,11 +17,12 @@
   "files": [],
   "references": [
     { "path": "./tsconfig.editor.json" },
-    { "path": "./packages/core/tsconfig.editor.json" },
-    { "path": "./packages/config/tsconfig.editor.json" },
-    { "path": "./packages/codegen/tsconfig.editor.json" },
-    { "path": "./packages/cli/tsconfig.editor.json" },
     { "path": "./packages/builder/tsconfig.editor.json" },
+    { "path": "./packages/cli/tsconfig.editor.json" },
+    { "path": "./packages/codegen/tsconfig.editor.json" },
+    { "path": "./packages/common/tsconfig.editor.json" },
+    { "path": "./packages/config/tsconfig.editor.json" },
+    { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" }
   ]

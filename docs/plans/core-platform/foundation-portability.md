@@ -22,11 +22,11 @@ Introduce runtime-agnostic portability layer to support both Bun and Node.js exe
 
 ### #5A: Implement Portability Layer
 
-**Complexity**: L (Large) | **Files**: `packages/core/src/portable/*.ts`
+**Complexity**: L (Large) | **Files**: `packages/common/src/portable/*.ts`
 
 #### 1. Create Portable Filesystem API
 
-**File**: `packages/core/src/portable/fs.ts`
+**File**: `packages/common/src/portable/fs.ts`
 
 ```typescript
 export interface PortableFS {
@@ -112,7 +112,7 @@ export function getPortableFS(): PortableFS {
 
 #### 2. Create Portable Hashing API
 
-**File**: `packages/core/src/portable/hash.ts`
+**File**: `packages/common/src/portable/hash.ts`
 
 ```typescript
 export interface PortableHasher {
@@ -162,7 +162,7 @@ export function getPortableHasher(): PortableHasher {
 
 #### 3. Create Portable ID Generation
 
-**File**: `packages/core/src/portable/id.ts`
+**File**: `packages/common/src/portable/id.ts`
 
 ```typescript
 export function generateId(): string {
@@ -180,7 +180,7 @@ export function generateId(): string {
 
 #### 4. Create Portable Subprocess API
 
-**File**: `packages/core/src/portable/spawn.ts`
+**File**: `packages/common/src/portable/spawn.ts`
 
 ```typescript
 export interface SpawnOptions {
@@ -239,7 +239,7 @@ export async function spawn(options: SpawnOptions): Promise<SpawnResult> {
 
 #### 5. Create Runtime Detection Utility
 
-**File**: `packages/core/src/portable/runtime.ts`
+**File**: `packages/common/src/portable/runtime.ts`
 
 ```typescript
 export const runtime = {
@@ -250,7 +250,7 @@ export const runtime = {
 
 #### 6. Create Barrel Export
 
-**File**: `packages/core/src/portable/index.ts`
+**File**: `packages/common/src/portable/index.ts`
 
 ```typescript
 export { createPortableFS, getPortableFS, type PortableFS } from './fs'
@@ -265,7 +265,7 @@ export { runtime } from './runtime'
 - [ ] All APIs work on Bun runtime
 - [ ] All APIs work on Node.js runtime
 - [ ] Benchmark: Bun fast-path within 5% of direct API usage
-- [ ] Unit tests pass: `packages/core/tests/portable/*.test.ts`
+- [ ] Unit tests pass: `packages/common/tests/portable/*.test.ts`
 
 ---
 
@@ -307,7 +307,7 @@ import { writeFile } from 'fs/promises'
 await Bun.write(filePath, content)
 
 // AFTER
-import { getPortableFS } from '@soda-gql/core/portable'
+import { getPortableFS } from '@soda-gql/common/portable'
 const fs = getPortableFS()
 await fs.writeFile(filePath, content)
 ```
@@ -317,7 +317,7 @@ await fs.writeFile(filePath, content)
 const hash = Bun.hash(content)
 
 // AFTER
-import { getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableHasher } from '@soda-gql/common/portable'
 const hasher = getPortableHasher()
 const hash = hasher.hash(content, 'xxhash')
 ```
@@ -327,7 +327,7 @@ const hash = hasher.hash(content, 'xxhash')
 const id = Bun.randomUUIDv7()
 
 // AFTER
-import { generateId } from '@soda-gql/core/portable'
+import { generateId } from '@soda-gql/common/portable'
 const id = generateId()
 ```
 
@@ -345,11 +345,11 @@ const id = generateId()
 
 ### Unit Tests
 
-**File**: `packages/core/tests/portable/fs.test.ts`
+**File**: `packages/common/tests/portable/fs.test.ts`
 
 ```typescript
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { createPortableFS } from '@soda-gql/core/portable'
+import { createPortableFS } from '@soda-gql/common/portable'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -413,11 +413,11 @@ describe('PortableFS', () => {
 })
 ```
 
-**File**: `packages/core/tests/portable/hash.test.ts`
+**File**: `packages/common/tests/portable/hash.test.ts`
 
 ```typescript
 import { describe, test, expect } from 'bun:test'
-import { createPortableHasher } from '@soda-gql/core/portable'
+import { createPortableHasher } from '@soda-gql/common/portable'
 
 describe('PortableHasher', () => {
   test('generates consistent sha256 hashes', () => {
@@ -452,11 +452,11 @@ describe('PortableHasher', () => {
 })
 ```
 
-**File**: `packages/core/tests/portable/id.test.ts`
+**File**: `packages/common/tests/portable/id.test.ts`
 
 ```typescript
 import { describe, test, expect } from 'bun:test'
-import { generateId } from '@soda-gql/core/portable'
+import { generateId } from '@soda-gql/common/portable'
 
 describe('generateId', () => {
   test('generates unique IDs', () => {
@@ -481,7 +481,7 @@ describe('generateId', () => {
 
 ```typescript
 import { describe, test, expect } from 'bun:test'
-import { runtime } from '@soda-gql/core/portable'
+import { runtime } from '@soda-gql/common/portable'
 
 describe('Portability integration', () => {
   test('detects runtime correctly', () => {
@@ -507,7 +507,7 @@ describe('Portability integration', () => {
 
 ```typescript
 import { bench, group } from 'mitata'
-import { getPortableFS, getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableFS, getPortableHasher } from '@soda-gql/common/portable'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'

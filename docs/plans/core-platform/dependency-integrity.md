@@ -78,7 +78,7 @@ export type ModuleExtension = typeof MODULE_EXTENSION_CANDIDATES[number]
 **File**: `packages/builder/src/dependency-graph/resolver.ts` (new file)
 
 ```typescript
-import { getPortableFS } from '@soda-gql/core/portable'
+import { getPortableFS } from '@soda-gql/common/portable'
 import { MODULE_EXTENSION_CANDIDATES } from './paths'
 import * as path from 'node:path'
 
@@ -422,7 +422,7 @@ export async function writeChunkModules(chunks: Chunk[]): Promise<void> {
 ##### Implementation
 
 ```typescript
-import { getPortableFS, getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableFS, getPortableHasher } from '@soda-gql/common/portable'
 
 export interface WriteResult {
   written: string[]
@@ -510,7 +510,7 @@ export async function writeChunkModules(
 ##### Implementation
 
 ```typescript
-import { getPortableFS } from '@soda-gql/core/portable'
+import { getPortableFS } from '@soda-gql/common/portable'
 import * as path from 'node:path'
 
 export interface ChunkManifest {
@@ -730,7 +730,7 @@ export function compareMetadata(
 **File**: `packages/builder/src/cache/json-cache.ts`
 
 ```typescript
-import { getPortableFS, getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableFS, getPortableHasher } from '@soda-gql/common/portable'
 import { CacheMetadata, compareMetadata } from './metadata'
 import * as path from 'node:path'
 
@@ -846,7 +846,7 @@ async function clearNamespace(dir: string): Promise<void> {
 **File**: `packages/codegen/src/schema.ts`
 
 ```typescript
-import { getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableHasher } from '@soda-gql/common/portable'
 
 export function computeSchemaHash(schemaDocument: string): string {
   const hasher = getPortableHasher()
@@ -889,7 +889,7 @@ export async function codegenCommand(options: CodegenOptions) {
 ```typescript
 import { createJsonCache } from '../cache/json-cache'
 import { CacheMetadata } from '../cache/metadata'
-import { getPortableHasher } from '@soda-gql/core/portable'
+import { getPortableHasher } from '@soda-gql/common/portable'
 
 export class BuilderSession {
   private cache: Cache<any>

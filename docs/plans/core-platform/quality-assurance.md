@@ -48,15 +48,15 @@ soda-gql uses a comprehensive testing strategy combining unit, integration, and 
 Test **behavior** (execution results), not **implementation details** (output format).
 
 **Bad Example**:
-\`\`\`typescript
+```typescript
 expect(code).toContain("gqlRuntime.operation")
-\`\`\`
+```
 
 **Good Example**:
-\`\`\`typescript
+```typescript
 const output = executeTransformed(code)
 expect(output.operations).toHaveLength(1)
-\`\`\`
+```
 
 ### Fixture-Based Testing
 
@@ -73,23 +73,23 @@ Store test code as `.ts` fixture files, not inline strings.
 - Use `@ts-expect-error` for intentionally invalid cases
 
 **Bad Example**:
-\`\`\`typescript
+```typescript
 const source = \`import { gql } from "@/graphql-system"
 export const model = gql.default(...)\`
 const result = analyze(source)
-\`\`\`
+```
 
 **Good Example**:
-\`\`\`typescript
+```typescript
 const { filePath, source } = loadFixture("model-definition")
 const result = analyze({ filePath, source })
-\`\`\`
+```
 
 ## Test Organization
 
 ### Directory Structure
 
-\`\`\`
+```
 tests/
 ├── unit/           # Fast, isolated tests
 │   ├── builder/
@@ -111,13 +111,13 @@ tests/
     ├── fixtures.ts
     ├── workspace.ts
     └── assertions.ts
-\`\`\`
+```
 
 ### Package-Level Tests
 
 Each package can also have its own tests:
 
-\`\`\`
+```
 packages/
 ├── builder/
 │   └── tests/      # Builder-specific unit tests
@@ -125,7 +125,7 @@ packages/
 │   └── tests/
 └── plugin-babel/
     └── src/__tests__/  # Co-located with implementation
-\`\`\`
+```
 
 ## Coverage Targets
 
@@ -152,19 +152,19 @@ packages/
 
 ### All Tests
 
-\`\`\`bash
+```bash
 bun test
-\`\`\`
+```
 
 ### With Coverage
 
-\`\`\`bash
+```bash
 bun test:coverage
-\`\`\`
+```
 
 ### Specific Suite
 
-\`\`\`bash
+```bash
 # Unit tests only
 bun test:unit
 
@@ -176,19 +176,19 @@ bun test:contract
 
 # Specific file
 bun test tests/unit/builder/resolver.test.ts
-\`\`\`
+```
 
 ### Watch Mode
 
-\`\`\`bash
+```bash
 bun test --watch
-\`\`\`
+```
 
 ## Writing Tests
 
 ### Unit Test Example
 
-\`\`\`typescript
+```typescript
 import { describe, test, expect } from 'bun:test'
 import { resolveModuleSpecifier } from '../src/resolver'
 
@@ -220,11 +220,11 @@ describe('resolveModuleSpecifier', () => {
     expect(resolved).toBeNull()
   })
 })
-\`\`\`
+```
 
 ### Integration Test Example
 
-\`\`\`typescript
+```typescript
 import { describe, test, expect } from 'bun:test'
 import { setupFixture } from '../utils/fixtures'
 
@@ -244,11 +244,11 @@ describe('Builder incremental builds', () => {
     expect(result2.rebuiltModules).toEqual(['src/module-a.ts'])
   })
 })
-\`\`\`
+```
 
 ### Contract Test Example
 
-\`\`\`typescript
+```typescript
 import { describe, test, expect } from 'bun:test'
 import { runBuilder } from '@soda-gql/builder'
 
@@ -278,13 +278,13 @@ describe('Builder public API', () => {
     }
   })
 })
-\`\`\`
+```
 
 ## Test Utilities
 
 ### Workspace Helper
 
-\`\`\`typescript
+```typescript
 import { setupTestWorkspace } from './utils/workspace'
 
 const workspace = await setupTestWorkspace({
@@ -305,11 +305,11 @@ await workspace.runCodegen()
 
 // Cleanup (automatic in afterEach)
 await workspace.cleanup()
-\`\`\`
+```
 
 ### Fixture Helper
 
-\`\`\`typescript
+```typescript
 import { loadFixture, setupFixture } from './utils/fixtures'
 
 // Load fixture content only
@@ -318,11 +318,11 @@ const { filePath, source } = loadFixture('model-definition')
 // Setup full fixture workspace
 const workspace = await setupFixture('multi-module-project')
 await workspace.runBuilder()
-\`\`\`
+```
 
 ### Assertion Helpers
 
-\`\`\`typescript
+```typescript
 import { expectResult, expectError } from './utils/assertions'
 
 // Result assertions
@@ -334,23 +334,23 @@ expectResult(result).toHaveValue({ foo: 'bar' })
 const errorResult = await failingOperation()
 expectError(errorResult).toHaveCode('INVALID_CONFIG')
 expectError(errorResult).toContainMessage('not found')
-\`\`\`
+```
 
 ## Integration Test Utilities
 
 ### Runtime Registry Reset
 
-\`\`\`typescript
+```typescript
 import { __resetRuntimeRegistry } from '@soda-gql/core/runtime'
 
 beforeEach(() => {
   __resetRuntimeRegistry()
 })
-\`\`\`
+```
 
 ### Transpile & Execute
 
-\`\`\`typescript
+```typescript
 import { Transpiler } from 'bun'
 
 const transpiler = new Transpiler({ loader: 'ts' })
@@ -358,13 +358,13 @@ const code = transpiler.transformSync(source)
 
 // Execute with cache-busting
 const module = await import(\`file://\${path}?t=\${Date.now()}\`)
-\`\`\`
+```
 
 ## Performance Testing
 
 ### Benchmark Example
 
-\`\`\`typescript
+```typescript
 import { bench, group } from 'mitata'
 
 group('Module resolution', () => {
@@ -376,19 +376,19 @@ group('Module resolution', () => {
     await resolveModuleSpecifier('index.ts', './components')
   })
 })
-\`\`\`
+```
 
 ## CI Integration
 
 ### GitHub Actions
 
-\`\`\`yaml
+```yaml
 - name: Run tests
   run: bun test
 
 - name: Check coverage
   run: bun test:coverage
-\`\`\`
+```
 
 ### Coverage Gates
 
@@ -401,25 +401,25 @@ Tests fail if coverage drops below thresholds:
 
 ### Verbose Output
 
-\`\`\`bash
+```bash
 bun test --verbose
-\`\`\`
+```
 
 ### Isolate Failing Test
 
-\`\`\`typescript
+```typescript
 test.only('this specific test', async () => {
   // Only this test runs
 })
-\`\`\`
+```
 
 ### Skip Flaky Test
 
-\`\`\`typescript
+```typescript
 test.skip('flaky test', async () => {
   // Temporarily skip
 })
-\`\`\`
+```
 
 ## Best Practices
 
@@ -453,7 +453,7 @@ test.skip('flaky test', async () => {
 
 ### Example
 
-\`\`\`typescript
+```typescript
 // 1. RED - Test fails
 test('resolves .tsx imports', async () => {
   const resolved = await resolveModuleSpecifier('index.ts', './component')
@@ -474,7 +474,7 @@ async function resolveModuleSpecifier(from, spec) {
   }
   return null
 }
-\`\`\`
+```
 
 ## Troubleshooting
 
@@ -497,7 +497,7 @@ async function resolveModuleSpecifier(from, spec) {
 ---
 
 For more examples, see existing tests in `tests/` directory.
-\`\`\`
+```
 
 ### Package Scripts
 
