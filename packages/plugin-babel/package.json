@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/parser": "^7.24.0",
     "@babel/traverse": "^7.24.0",
