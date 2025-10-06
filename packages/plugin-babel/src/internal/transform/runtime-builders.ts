@@ -6,7 +6,7 @@ import { buildObjectExpression, clone } from "./ast-builders";
 export const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): t.Expression => {
   const [, , normalize] = builderCall.arguments;
   if (!normalize || !t.isExpression(normalize)) {
-    throw new Error("model requires a normalize function");
+    throw new Error("[INTERNAL] model requires a normalize function");
   }
 
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
@@ -24,7 +24,7 @@ export const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): 
 export const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): t.Expression => {
   const [, , projectionBuilder] = builderCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
-    throw new Error("slice requires a projection builder");
+    throw new Error("[INTERNAL] slice requires a projection builder");
   }
 
   return t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("slice")), [
@@ -42,7 +42,7 @@ export const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): 
 export const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOperation) => {
   const [, slicesBuilder] = builderCall.arguments;
   if (!slicesBuilder || !t.isExpression(slicesBuilder)) {
-    throw new Error("operation requires a slices builder");
+    throw new Error("[INTERNAL] operation requires a slices builder");
   }
 
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("operation")), [

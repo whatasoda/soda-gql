@@ -1,5 +1,6 @@
 import type { PluginObj, PluginPass, types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
+import { formatPluginError } from "./errors";
 import type { ArtifactLookup } from "./internal/analysis/gql-call";
 import { collectGqlDefinitionMetadata } from "./internal/metadata/collector";
 import { type PluginState, preparePluginState } from "./internal/state";
@@ -18,7 +19,7 @@ export const createSodaGqlPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?
     const stateResult = await preparePluginState(rawOptions);
 
     if (stateResult.isErr()) {
-      throw new Error(stateResult.error.message);
+      throw new Error(formatPluginError(stateResult.error));
     }
 
     this._state = stateResult.value;

@@ -1,5 +1,6 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
+import { formatPluginError } from "../../errors";
 import type { ArtifactLookup, GqlCall } from "../analysis/gql-call";
 import { extractGqlCall, findGqlBuilderCall } from "../analysis/gql-call";
 import type { GqlDefinitionMetadataMap } from "../metadata/collector";
@@ -36,7 +37,7 @@ export const transformCallExpression = ({
   });
 
   if (gqlCallResult.isErr()) {
-    throw new Error(gqlCallResult.error.message);
+    throw new Error(formatPluginError(gqlCallResult.error));
   }
 
   const gqlCall = gqlCallResult.value;

@@ -21,7 +21,7 @@ export const buildLiteralFromValue = (value: unknown): Expression => {
     const properties = Object.entries(value).map(([key, val]) => t.objectProperty(t.identifier(key), buildLiteralFromValue(val)));
     return t.objectExpression(properties);
   }
-  throw new Error(`Unsupported value type: ${typeof value}`);
+  throw new Error(`[INTERNAL] Unsupported value type: ${typeof value}`);
 };
 
 export const clone = <T extends t.Node>(node: T): T => t.cloneNode(node, true) as T;
