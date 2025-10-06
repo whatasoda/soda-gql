@@ -1,5 +1,5 @@
 import { err, ok, type Result } from "neverthrow";
-import type { ArtifactSource, SodaGqlBabelOptions } from "../../types";
+import type { ArtifactSource, SodaGqlBabelOptions } from "../types";
 
 export type NormalizedOptions = {
   readonly mode: "runtime" | "zero-runtime";
