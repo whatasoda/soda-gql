@@ -40,6 +40,15 @@ export async function spawn(options: SpawnOptions): Promise<SpawnResult> {
 	const { promisify } = await import("node:util");
 	const execFilePromise = promisify(execFile);
 
+	const [command, ...args] = options.cmd;
+	if (!command) {
+		return {
+			stdout: "",
+			stderr: "Error: No command provided",
+			exitCode: 1,
+		};
+	}
+
 	try {
 		const execOptions: {
 			cwd?: string;
@@ -57,8 +66,8 @@ export async function spawn(options: SpawnOptions): Promise<SpawnResult> {
 		}
 
 		const { stdout, stderr } = await execFilePromise(
-			options.cmd[0],
-			options.cmd.slice(1),
+			command,
+			args,
 			execOptions,
 		);
 		return {
