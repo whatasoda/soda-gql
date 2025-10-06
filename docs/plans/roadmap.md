@@ -78,15 +78,20 @@
 - Internal invariants marked with [INTERNAL] prefix
 
 **DX-9B: Plugin neverthrow Migration**
-- ⏳ Pending
+- ✅ Complete (Error formatting layer)
+- Added PluginResult type alias and error helpers
+- formatPluginError() for human-readable messages
+- Internal invariants marked with [INTERNAL] prefix
+- Note: Full migration deferred - plugin already uses Result extensively
 
 **Commits**:
 - 2f710fa (WIP DX-8A/8B), 2c25766 (completed DX-8A/8B), 018f906 (roadmap update)
 - 11fd868 (DX-9A Stage 1: error taxonomy)
 - 1867529 (DX-9A Stage 2: discoverer migration)
 - 84dbce7 (DX-9A Stage 3: internal invariants)
+- a29e2dd (DX-9B: error formatting helpers)
 
-**Next**: DX-9B (Plugin error handling) or DX-10 (artifact caching)
+**Next**: DX-10 (artifact caching)
 
 ---
 
@@ -238,7 +243,7 @@ Plugin implementations can proceed in parallel:
 
 - [x] **PL-1**: All code runs on both Bun and Node.js
 - [x] **DI**: Resolver handles .tsx, chunks skip unchanged writes, schema changes invalidate cache
-- [~] **DX**: Package exports tightened ✅, neverthrow migration (builder) ✅, artifact memoization pending, plugin neverthrow migration pending
+- [~] **DX**: Package exports tightened ✅, neverthrow migration (builder ✅, plugin ✅), artifact memoization pending
 - [ ] **QA**: 80%+ test coverage, comprehensive testing guide
 
 ### Plugin Ecosystem Track
