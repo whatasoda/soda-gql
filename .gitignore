@@ -138,8 +138,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-.serena
-
 # Build directories
 build/
 dist/
