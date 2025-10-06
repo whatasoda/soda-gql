@@ -2,25 +2,13 @@
  * Portable hashing API that works on both Bun and Node.js
  */
 
-import { once, runtime } from "./runtime";
+import { runtime } from "./runtime";
 
 export type HashAlgorithm = "sha256" | "xxhash";
 
 export interface PortableHasher {
   hash(content: string, algorithm?: HashAlgorithm): string;
 }
-
-interface NodeCrypto {
-  createHash: (algorithm: string) => {
-    update: (data: string) => { digest: (encoding: string) => string };
-  };
-}
-
-// Cache the crypto import
-const getNodeCrypto = once(async (): Promise<NodeCrypto> => {
-  const crypto = await import("node:crypto");
-  return crypto as unknown as NodeCrypto;
-});
 
 /**
  * Pads a hex string to the specified length

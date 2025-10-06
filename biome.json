@@ -22,7 +22,8 @@
         "useTemplate": "error"
       },
       "complexity": {
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noUselessCatch": "off"
       },
       "suspicious": {
         "noExplicitAny": "error",
