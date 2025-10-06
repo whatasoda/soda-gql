@@ -1,8 +1,33 @@
 # soda-gql Development Roadmap
 
 **Version**: 0.1.0 (Pre-Release)
-**Status**: Active Planning
-**Last Updated**: 2025-10-05
+**Status**: In Progress
+**Last Updated**: 2025-10-06
+
+---
+
+## Progress Summary
+
+### ✅ Completed: PL-1 Foundation Portability (Week 1-2)
+**Status**: COMPLETED (2025-10-06)
+
+**PL-1A: Implement Portability Layer**
+- ✅ Runtime detection utilities (runtime.ts)
+- ✅ Portable filesystem API (fs.ts)
+- ✅ Portable hashing API (hash.ts)
+- ✅ Portable ID generation (id.ts)
+- ✅ Portable subprocess spawning (spawn.ts)
+- ✅ Unit tests (23 tests passing)
+
+**PL-1B: Migrate Existing Code**
+- ✅ Builder package (6 files): ast/core, discovery/common, cache/json-cache, chunk-writer, emitter, debug-writer
+- ✅ Test utilities (4 files): base, index, transform, cli
+- ✅ All 315 tests passing, no regressions
+- ✅ TypeScript compilation: 0 errors
+
+**Commits**: da1ccbd, d17f8d6, 233672f, b1e9346
+
+**Next**: Ready for DI (Dependency Integrity) phase
 
 ---
 
@@ -29,11 +54,11 @@ This roadmap consolidates all improvement initiatives into two parallel tracks:
 
 | Week | Core Platform | Plugin Ecosystem | Status |
 |------|---------------|------------------|--------|
-| 1-2 | **PL-1** Foundation Portability | - | Planning |
-| 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | Planning |
-| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | Planning |
-| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | Planning |
-| 9 | Release Preparation | **PE-Release** Release Readiness | Planning |
+| 1-2 | **PL-1** Foundation Portability | - | ✅ Completed |
+| 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | Ready |
+| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | Blocked by DI |
+| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | Blocked by DX |
+| 9 | Release Preparation | **PE-Release** Release Readiness | Blocked by QA |
 
 ---
 
