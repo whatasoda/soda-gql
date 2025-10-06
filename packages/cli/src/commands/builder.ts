@@ -12,6 +12,7 @@ import type {
 } from "@soda-gql/builder";
 import { createBuilderService, runBuilder } from "@soda-gql/builder";
 import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
+import { hashSchema, loadSchema } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
@@ -23,6 +24,7 @@ type BuilderCommandOptions = Omit<BuilderInput, "config"> & {
   outPath: string;
   format: BuilderFormat;
   watch?: boolean;
+  schemaPath?: string;
 };
 
 const parseBuilderArgs = (argv: readonly string[]) => {
@@ -34,6 +36,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   let analyzer: BuilderAnalyzer = "ts";
   let debugDir: string | undefined;
   let watch = false;
+  let schemaPath: string | undefined;
 
   while (args.length > 0) {
     const current = args.shift();
@@ -119,6 +122,18 @@ const parseBuilderArgs = (argv: readonly string[]) => {
         debugDir = value;
         break;
       }
+      case "--schema": {
+        const value = args.shift();
+        if (!value) {
+          return err<BuilderOptions, BuilderError>({
+            code: "ENTRY_NOT_FOUND",
+            message: "Missing value for --schema",
+            entry: "",
+          });
+        }
+        schemaPath = value;
+        break;
+      }
       default:
         break;
     }
@@ -146,9 +161,10 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     outPath,
     format,
     analyzer,
-    schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
+    schemaHash: "cli-placeholder", // Will be computed from schemaPath if provided
     debugDir,
     watch,
+    schemaPath,
   });
 };
 
@@ -198,6 +214,17 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
 
   const options = parsed.value;
 
+  // Compute schema hash if schema path provided
+  let schemaHash = "cli-placeholder";
+  if (options.schemaPath) {
+    const schemaResult = await loadSchema(resolve(options.schemaPath));
+    if (schemaResult.isErr()) {
+      process.stdout.write(`Schema load error: ${schemaResult.error.code} - ${schemaResult.error.message}\n`);
+      return 1;
+    }
+    schemaHash = hashSchema(schemaResult.value);
+  }
+
   if (options.watch) {
     // Watch mode: Use BuilderService with session
     process.stdout.write("Watch mode enabled - building and watching for changes...\n");
@@ -208,7 +235,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
       entry: options.entry,
       analyzer: options.analyzer,
       config,
-      schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
+      schemaHash,
       debugDir: options.debugDir,
     });
 
@@ -261,7 +288,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
         })),
         removed: [],
         metadata: {
-          schemaHash: "cli-placeholder", // TODO: Pass actual schema hash from codegen
+          schemaHash,
           analyzerVersion: options.analyzer,
         },
       };
@@ -321,7 +348,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   }
 
   // Normal mode: Single build
-  const result = await runBuilder({ ...options, config, schemaHash: "cli-placeholder" });
+  const result = await runBuilder({ ...options, config, schemaHash });
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
