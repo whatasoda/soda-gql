@@ -27,7 +27,30 @@
 
 **Commits**: da1ccbd, d17f8d6, 233672f, b1e9346
 
-**Next**: Ready for DI (Dependency Integrity) phase
+### ✅ Completed: DI Dependency Integrity (Week 3-4)
+**Status**: COMPLETED (2025-10-06)
+
+**DI-2: Runtime Dependency Resolution Bug**
+- ✅ DI-2A: Implemented filesystem-aware module resolver (resolver.ts)
+- ✅ DI-2B: Integrated resolver into dependency graph, made resolution async
+- ✅ Fixes: .tsx and index.tsx imports now visible to dependency graphs
+- ✅ All tests passing with async resolution
+
+**DI-4: Cache Invalidation Defect**
+- ✅ DI-4A: Added cache metadata types and schema hash computation
+- ✅ DI-4B: Propagated schema hash through codegen CLI to builder
+- ✅ Fixes: Schema/config changes now invalidate cache correctly
+- ✅ Breaking change: BuilderInput now requires schemaHash field
+
+**DI-6: Inefficient Chunk Writing**
+- ✅ DI-6A: Implemented chunk manifest with content-hash short-circuit
+- ✅ DI-6B: Integrated manifest into builder session lifecycle
+- ✅ Fixes: Unchanged chunks skipped, significant performance improvement
+- ✅ Build reports now show chunks.written and chunks.skipped statistics
+
+**Commits**: e7858b1, 12caa88, a3ce47c, 4cf0920, 62194eb, 91282b0
+
+**Next**: Ready for DX (Performance & Developer Experience) phase
 
 ---
 
@@ -55,8 +78,8 @@ This roadmap consolidates all improvement initiatives into two parallel tracks:
 | Week | Core Platform | Plugin Ecosystem | Status |
 |------|---------------|------------------|--------|
 | 1-2 | **PL-1** Foundation Portability | - | ✅ Completed |
-| 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | Ready |
-| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | Blocked by DI |
+| 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | ✅ Completed |
+| 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | Ready |
 | 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | Blocked by DX |
 | 9 | Release Preparation | **PE-Release** Release Readiness | Blocked by QA |
 
@@ -177,8 +200,8 @@ Plugin implementations can proceed in parallel:
 
 ### Core Platform Track
 
-- [ ] **PL-1**: All code runs on both Bun and Node.js
-- [ ] **DI**: Resolver handles .tsx, chunks skip unchanged writes, schema changes invalidate cache
+- [x] **PL-1**: All code runs on both Bun and Node.js
+- [x] **DI**: Resolver handles .tsx, chunks skip unchanged writes, schema changes invalidate cache
 - [ ] **DX**: Artifact memoization working, all errors use neverthrow, package exports tightened
 - [ ] **QA**: 80%+ test coverage, comprehensive testing guide
 
