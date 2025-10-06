@@ -9,7 +9,7 @@ import { err, ok, type Result } from "neverthrow";
 
 import { type ArtifactError, loadArtifact } from "./artifact";
 import { type NormalizedOptions, normalizeOptions, type OptionsError } from "./options";
-import type { SodaGqlBabelOptions } from "./types";
+import type { SodaGqlBabelOptions } from "../types";
 
 type OptionsMissingArtifactPath = Extract<OptionsError, { code: "MISSING_ARTIFACT_PATH" }>;
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;

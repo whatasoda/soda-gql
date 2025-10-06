@@ -2,26 +2,26 @@ import { dirname, join, normalize, resolve } from "node:path";
 
 import { clearPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
-import { buildArtifact } from "../artifact";
-import type { BuilderArtifact } from "../artifact/types";
-import { getAstAnalyzer } from "../ast";
-import { createJsonCache } from "../cache/json-cache";
-import type { CanonicalId } from "../canonical-id/canonical-id";
-import { buildDependencyGraph } from "../dependency-graph";
-import { diffDependencyGraphs } from "../dependency-graph/differ";
-import { applyGraphPatch, buildGraphIndex, type GraphIndex } from "../dependency-graph/patcher";
-import type { DependencyGraph } from "../dependency-graph/types";
-import { createDiscoveryCache } from "../discovery";
-import { discoverModules } from "../discovery/discoverer";
-import { resolveEntryPaths } from "../discovery/entry-paths";
-import { invalidateFingerprint } from "../discovery/fingerprint";
-import type { DiscoverySnapshot } from "../discovery/types";
+import { buildArtifact } from "../../artifact";
+import type { BuilderArtifact } from "../../artifact/types";
+import { getAstAnalyzer } from "../../ast";
+import { createJsonCache } from "../../cache/json-cache";
+import type { CanonicalId } from "../../canonical-id/canonical-id";
+import { buildDependencyGraph } from "../../dependency-graph";
+import { diffDependencyGraphs } from "../../dependency-graph/differ";
+import { applyGraphPatch, buildGraphIndex, type GraphIndex } from "../../dependency-graph/patcher";
+import type { DependencyGraph } from "../../dependency-graph/types";
+import { createDiscoveryCache } from "../../discovery";
+import { discoverModules } from "../../discovery/discoverer";
+import { resolveEntryPaths } from "../../discovery/entry-paths";
+import { invalidateFingerprint } from "../../discovery/fingerprint";
+import type { DiscoverySnapshot } from "../../discovery/types";
 import { createIntermediateModuleChunks } from "../intermediate-module";
 import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
 import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
 import { resolveCoreImportPath, resolveGqlImportPath } from "../intermediate-module/gql-import";
 import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
-import type { BuilderError, BuilderInput } from "../types";
+import type { BuilderError, BuilderInput } from "../../types";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
 
@@ -137,7 +137,7 @@ const resolveModuleSpecifierRuntime = async (
   }
 
   // Fallback: use filesystem resolution (handles .tsx and index.tsx that might not be in graph)
-  const { resolveModuleSpecifierFS } = await import("../dependency-graph/resolver");
+  const { resolveModuleSpecifierFS } = await import("../../dependency-graph/resolver");
   return resolveModuleSpecifierFS(fromFilePath, source);
 };
 

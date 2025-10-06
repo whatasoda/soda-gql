@@ -11,8 +11,18 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./src/types.ts",
+      "default": "./src/types.ts"
+    },
+    "./errors": {
+      "types": "./src/errors.ts",
+      "import": "./src/errors.ts",
+      "default": "./src/errors.ts"
+    },
     "./package.json": "./package.json",
-    "./tsconfig.json": "./tsconfig.json"
+    "./internal/*": null
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",

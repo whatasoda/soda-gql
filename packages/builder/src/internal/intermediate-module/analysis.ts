@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../dependency-graph";
+import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "../../dependency-graph";
 
 export type FileGroup = {
   readonly filePath: string;

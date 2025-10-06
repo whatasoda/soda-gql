@@ -1,5 +1,5 @@
 import { err, ok, type Result } from "neverthrow";
-import type { IntermediateModuleOutput } from "../intermediate-module/types";
+import type { IntermediateModuleOutput } from "../internal/intermediate-module/types";
 import type { BuilderError } from "../types";
 
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;

@@ -9,5 +9,5 @@ export type {
   ModuleLoadStats,
 } from "../discovery";
 export { createDiscoveryPipeline } from "../discovery";
-export type { CreateIntermediateModuleInput } from "../intermediate-module";
-export { createIntermediateModule } from "../intermediate-module";
+export type { CreateIntermediateModuleInput } from "../internal/intermediate-module";
+export { createIntermediateModule } from "../internal/intermediate-module";

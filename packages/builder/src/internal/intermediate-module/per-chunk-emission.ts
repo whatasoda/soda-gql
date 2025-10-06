@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import type { CanonicalId } from "../canonical-id";
-import type { DependencyGraph } from "../dependency-graph";
-import type { GraphIndex } from "../dependency-graph/patcher";
+import type { CanonicalId } from "../../canonical-id";
+import type { DependencyGraph } from "../../dependency-graph";
+import type { GraphIndex } from "../../dependency-graph/patcher";
 import { getModuleSummaries, groupNodesByFile } from "./analysis";
 import { buildIntermediateModuleSource, type IntermediateModuleSourceInput } from "./codegen";
 

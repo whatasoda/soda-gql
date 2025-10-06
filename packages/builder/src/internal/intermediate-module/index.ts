@@ -1,8 +1,8 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, type Result } from "neverthrow";
-import type { DependencyGraph } from "../dependency-graph";
-import type { GraphIndex } from "../dependency-graph/patcher";
-import type { BuilderError } from "../types";
+import type { DependencyGraph } from "../../dependency-graph";
+import type { GraphIndex } from "../../dependency-graph/patcher";
+import type { BuilderError } from "../../types";
 import { analyzeGraph } from "./analysis";
 import { type WrittenChunkModule, writeChunkModules } from "./chunk-writer";
 import { buildIntermediateModuleSource } from "./codegen";

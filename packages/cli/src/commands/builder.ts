@@ -11,7 +11,7 @@ import type {
   BuilderSuccess,
 } from "@soda-gql/builder";
 import { createBuilderService, runBuilder } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/session/change-set";
+import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
 import { hashSchema, loadSchema } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";

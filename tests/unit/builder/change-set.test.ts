@@ -5,7 +5,7 @@ import {
   hasFileChanged,
   shouldInvalidateAnalyzer,
   shouldInvalidateSchema,
-} from "@soda-gql/builder/session/change-set";
+} from "@soda-gql/builder/change-set";
 
 describe("BuilderChangeSet helpers", () => {
   describe("shouldInvalidateSchema", () => {

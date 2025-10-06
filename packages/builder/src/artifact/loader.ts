@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
-import type { IntermediateModuleOutput, IntermediateModuleRaw } from "../intermediate-module/types";
+import type { IntermediateModuleOutput, IntermediateModuleRaw } from "../internal/intermediate-module/types";
 import type { BuilderError } from "../types";
 
 export const loadIntermediateModule = async (

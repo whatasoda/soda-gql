@@ -1,5 +1,5 @@
-import type { ModuleImport } from "../ast";
-import type { DependencyGraphNode, ModuleSummary } from "../dependency-graph";
+import type { ModuleImport } from "../../ast";
+import type { DependencyGraphNode, ModuleSummary } from "../../dependency-graph";
 import type { FileGroup } from "./analysis";
 import { resolveImportPath } from "./analysis";
 

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { getPortableFS } from "@soda-gql/common";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
-import type { BuilderError } from "../types";
+import type { BuilderError } from "../../types";
 import {
   createEmptyManifest,
   loadChunkManifest,

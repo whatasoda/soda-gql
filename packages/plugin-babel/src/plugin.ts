@@ -1,15 +1,15 @@
 import type { PluginObj, PluginPass, types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { ArtifactLookup } from "./analysis/gql-call";
-import { collectGqlDefinitionMetadata } from "./metadata/collector";
-import { type PluginState, preparePluginState } from "./state";
-import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./transform/import-utils";
-import { insertRuntimeCalls, transformCallExpression } from "./transform/transformer";
+import type { ArtifactLookup } from "./internal/analysis/gql-call";
+import { collectGqlDefinitionMetadata } from "./internal/metadata/collector";
+import { type PluginState, preparePluginState } from "./internal/state";
+import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./internal/transform/import-utils";
+import { insertRuntimeCalls, transformCallExpression } from "./internal/transform/transformer";
 import type { SodaGqlBabelOptions } from "./types";
 
 type PluginPassState = PluginPass & { _state?: PluginState };
 
-export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
+export const createSodaGqlPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
   // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
   // Sync transforms are unsupported for builder artifact source mode

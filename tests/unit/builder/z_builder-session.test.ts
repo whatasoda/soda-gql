@@ -3,8 +3,8 @@ import type { BuilderArtifact } from "@soda-gql/builder/artifact/types";
 import type { CanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph/types";
 import type { DiscoverySnapshot } from "@soda-gql/builder/discovery/types";
-import type { ChunkManifest } from "@soda-gql/builder/intermediate-module/chunks";
-import { __internal, createBuilderSession } from "@soda-gql/builder/session/builder-session";
+import type { ChunkManifest } from "@soda-gql/builder/internal/intermediate-module/chunks";
+import { __internal, createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
 import type { BuilderInput } from "@soda-gql/builder/types";
 import { ok } from "neverthrow";
 
@@ -240,9 +240,9 @@ const resolveModule = (specifier: string) => {
     "@soda-gql/builder/dependency-graph": `${projectRoot}/packages/builder/src/dependency-graph/index.ts`,
     "@soda-gql/builder/dependency-graph/patcher": `${projectRoot}/packages/builder/src/dependency-graph/patcher.ts`,
     "@soda-gql/builder/intermediate-module": `${projectRoot}/packages/builder/src/intermediate-module/index.ts`,
-    "@soda-gql/builder/intermediate-module/chunks": `${projectRoot}/packages/builder/src/intermediate-module/chunks.ts`,
-    "@soda-gql/builder/intermediate-module/per-chunk-emission": `${projectRoot}/packages/builder/src/intermediate-module/per-chunk-emission.ts`,
-    "@soda-gql/builder/intermediate-module/chunk-writer": `${projectRoot}/packages/builder/src/intermediate-module/chunk-writer.ts`,
+    "@soda-gql/builder/internal/intermediate-module/chunks": `${projectRoot}/packages/builder/src/intermediate-module/chunks.ts`,
+    "@soda-gql/builder/internal/intermediate-module/per-chunk-emission": `${projectRoot}/packages/builder/src/intermediate-module/per-chunk-emission.ts`,
+    "@soda-gql/builder/internal/intermediate-module/chunk-writer": `${projectRoot}/packages/builder/src/intermediate-module/chunk-writer.ts`,
     "@soda-gql/builder/artifact": `${projectRoot}/packages/builder/src/artifact/index.ts`,
     "@soda-gql/builder/discovery/entry-paths": `${projectRoot}/packages/builder/src/discovery/entry-paths.ts`,
   };
@@ -420,14 +420,14 @@ async function loadSessionWithMocks(overrides: Partial<MockOverrides> = {}) {
   mock.module(resolveModule("@soda-gql/builder/intermediate-module"), () => ({
     createIntermediateModuleChunks: createChunksMock,
   }));
-  mock.module(resolveModule("@soda-gql/builder/intermediate-module/chunks"), () => ({
+  mock.module(resolveModule("@soda-gql/builder/internal/intermediate-module/chunks"), () => ({
     planChunks: planChunksMock,
     diffChunkManifests: mock(() => overrides.chunkDiff ?? { added: new Map(), updated: new Map(), removed: new Set<string>() }),
   }));
-  mock.module(resolveModule("@soda-gql/builder/intermediate-module/per-chunk-emission"), () => ({
+  mock.module(resolveModule("@soda-gql/builder/internal/intermediate-module/per-chunk-emission"), () => ({
     buildChunkModules: mock(() => new Map()),
   }));
-  mock.module(resolveModule("@soda-gql/builder/intermediate-module/chunk-writer"), () => ({
+  mock.module(resolveModule("@soda-gql/builder/internal/intermediate-module/chunk-writer"), () => ({
     writeChunkModules: mock(async () => overrides.writeResult ?? ok(fakeWrittenChunks)),
   }));
   mock.module(resolveModule("@soda-gql/builder/artifact"), () => ({
@@ -674,7 +674,7 @@ describe.skip("BuilderSession", () => {
       }));
 
       const newChunkId = "/repo/src/new.ts";
-      mock.module(resolveModule("@soda-gql/builder/intermediate-module/chunks"), () => ({
+      mock.module(resolveModule("@soda-gql/builder/internal/intermediate-module/chunks"), () => ({
         planChunks: mock(() => fakeManifest),
         diffChunkManifests: mock(() => ({
           added: new Map([[newChunkId, { id: newChunkId }]]),
@@ -755,7 +755,7 @@ describe.skip("BuilderSession", () => {
         })),
       }));
 
-      mock.module(resolveModule("@soda-gql/builder/intermediate-module/chunks"), () => ({
+      mock.module(resolveModule("@soda-gql/builder/internal/intermediate-module/chunks"), () => ({
         planChunks: mock(() => fakeManifest),
         diffChunkManifests: mock(() => ({
           added: new Map(),

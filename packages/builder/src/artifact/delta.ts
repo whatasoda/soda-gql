@@ -1,5 +1,5 @@
 import type { CanonicalId } from "../canonical-id";
-import type { ChunkDiff, ChunkManifest } from "../intermediate-module/chunks";
+import type { ChunkDiff, ChunkManifest } from "../internal/intermediate-module/chunks";
 import type { BuilderArtifact, BuilderArtifactDelta, BuilderArtifactElement } from "./types";
 
 /**

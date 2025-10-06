@@ -1,7 +1,7 @@
 import { types as t } from "@babel/core";
-import type { RuntimeModelInput } from "../../../core/src/runtime/model";
-import type { RuntimeOperationInput } from "../../../core/src/runtime/operation";
-import type { RuntimeSliceInput } from "../../../core/src/runtime/slice";
+import type { RuntimeModelInput } from "@soda-gql/core/runtime/model";
+import type { RuntimeOperationInput } from "@soda-gql/core/runtime/operation";
+import type { RuntimeSliceInput } from "@soda-gql/core/runtime/slice";
 import type { GqlCallModel, GqlCallOperation, GqlCallSlice } from "../analysis/gql-call";
 import { buildObjectExpression, clone } from "./ast-builders";
 

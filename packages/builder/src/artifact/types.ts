@@ -2,7 +2,7 @@ import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from
 import type { CanonicalId } from "../canonical-id";
 import type { DependencyGraph } from "../dependency-graph";
 import type { ModuleLoadStats } from "../discovery/discovery-pipeline";
-import type { ChunkDiff, ChunkManifest } from "../intermediate-module/chunks";
+import type { ChunkDiff, ChunkManifest } from "../internal/intermediate-module/chunks";
 
 export type BuildArtifactInput = {
   readonly graph: DependencyGraph;

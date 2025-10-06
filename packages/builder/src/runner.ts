@@ -10,7 +10,7 @@ import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";
 import type { DependencyGraph } from "./dependency-graph/types";
 import { createDiscoveryCache, createDiscoveryPipeline } from "./discovery";
-import { createIntermediateModule } from "./intermediate-module";
+import { createIntermediateModule } from "./internal/intermediate-module";
 import type { BuilderError, BuilderInput, BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
