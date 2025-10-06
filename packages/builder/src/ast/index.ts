@@ -1,4 +1,5 @@
 import type { BuilderAnalyzer } from "../types";
+import { assertUnreachable } from "../errors";
 import { swcAdapter } from "./adapters/swc";
 import { typescriptAdapter } from "./adapters/typescript";
 import { analyzeModuleCore } from "./core";
@@ -17,14 +18,13 @@ export type {
 
 export const getAstAnalyzer = (analyzer: BuilderAnalyzer) => {
   const analyze = (input: AnalyzeModuleInput): ModuleAnalysis => {
-    switch (analyzer) {
-      case "ts":
-        return analyzeModuleCore(input, typescriptAdapter);
-      case "swc":
-        return analyzeModuleCore(input, swcAdapter);
-      default:
-        throw new Error(`Unsupported analyzer: ${analyzer}`);
+    if (analyzer === "ts") {
+      return analyzeModuleCore(input, typescriptAdapter);
     }
+    if (analyzer === "swc") {
+      return analyzeModuleCore(input, swcAdapter);
+    }
+    return assertUnreachable(analyzer, "getAstAnalyzer");
   };
 
   return {

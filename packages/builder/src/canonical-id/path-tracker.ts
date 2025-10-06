@@ -174,7 +174,7 @@ export const createCanonicalTracker = (options: {
     exitScope(handle: ScopeHandle): void {
       // Validate handle depth matches current stack
       if (handle.depth !== scopeStack.length - 1) {
-        throw new Error(`Invalid scope exit: expected depth ${scopeStack.length - 1}, got ${handle.depth}`);
+        throw new Error(`[INTERNAL] Invalid scope exit: expected depth ${scopeStack.length - 1}, got ${handle.depth}`);
       }
       scopeStack.pop();
     },

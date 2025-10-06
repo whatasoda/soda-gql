@@ -8,7 +8,7 @@ const normalizePath = (value: string): string => normalize(value).replace(/\\/g,
 
 export const createCanonicalId = (filePath: string, astPath: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
-    throw new Error("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
+    throw new Error("[INTERNAL] CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
   }
 
   const resolved = resolve(filePath);
