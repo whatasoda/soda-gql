@@ -22,32 +22,13 @@ export type BuilderOptions = BuilderInput & {
   readonly format: BuilderFormat;
 };
 
-export type BuilderError =
-  | {
-      readonly code: "ENTRY_NOT_FOUND";
-      readonly message: string;
-      readonly entry: string;
-    }
-  | {
-      readonly code: "DOC_DUPLICATE";
-      readonly name: string;
-      readonly sources: readonly string[];
-    }
-  | {
-      readonly code: "CIRCULAR_DEPENDENCY";
-      readonly chain: readonly string[];
-    }
-  | {
-      readonly code: "WRITE_FAILED";
-      readonly message: string;
-      readonly outPath: string;
-    }
-  | {
-      readonly code: "MODULE_EVALUATION_FAILED";
-      readonly filePath: string;
-      readonly astPath: string;
-      readonly message: string;
-    };
+// Re-export consolidated error types from errors.ts
+export type {
+  BuilderError,
+  BuilderErrorCode,
+  BuilderResult as BuilderOperationResult,
+} from "./errors";
+import type { BuilderError } from "./errors";
 
 export type BuilderSuccess = {
   readonly artifact: BuilderArtifact;

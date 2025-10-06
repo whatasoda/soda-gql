@@ -17,6 +17,7 @@ export const checkIssues = (intermediateModule: IntermediateModuleOutput): Resul
       const sources = [canonicalToFilePath(canonicalId)];
       return err({
         code: "DOC_DUPLICATE",
+        message: `Duplicate document name: ${element.operationName}`,
         name: element.operationName,
         sources,
       });

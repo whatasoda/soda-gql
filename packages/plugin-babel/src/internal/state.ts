@@ -295,6 +295,9 @@ const mapBuilderError = (error: BuilderError): PluginError => {
         cause: error as BuilderWriteFailed,
         outPath: error.outPath,
       };
+    default:
+      // Handle new error codes by falling back to unexpected error
+      return mapUnexpectedBuilderError(error);
   }
 };
 
