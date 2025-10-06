@@ -122,7 +122,26 @@
 
 **Commits**: bb971d2
 
-**Next**: PE-Vite (Vite Plugin) or QA-7 (Quality Assurance)
+### ✅ Completed: PE-NestJS NestJS Plugin (Week 7-8)
+**Status**: COMPLETED (2025-10-06)
+
+**PE-NestJS: NestJS webpack plugin implementation**
+- ✅ Created @soda-gql/plugin-nestjs package with webpack integration
+- ✅ Webpack plugin (SodaGqlWebpackPlugin) with builder orchestration
+- ✅ Webpack loader for Babel transformation integration
+- ✅ Config helper (withSodaGql) for ergonomic NestJS webpack config augmentation
+- ✅ NestJS module (SodaGqlModule) with DI and runtime integration
+- ✅ Internal utilities (builder-service, builder-watch, diagnostics, manifest)
+- ✅ Watch mode support with incremental updates
+- ✅ Both "builder" and "artifact-file" artifact source modes
+- ✅ All TypeScript compilation passes (0 errors)
+- ✅ All biome checks pass
+- ⏭️ CLI prebuild command (deferred - extends packages/cli)
+- ⏭️ Integration tests (deferred - requires test fixtures)
+
+**Commits**: 7925c32
+
+**Next**: PE-Vite (Vite Plugin), PE-Metro (Metro Plugin), or QA-7 (Quality Assurance)
 
 ---
 
@@ -152,7 +171,7 @@ This roadmap consolidates all improvement initiatives into two parallel tracks:
 | 1-2 | **PL-1** Foundation Portability | - | ✅ Completed |
 | 3-4 | **DI** Dependency Integrity (parallel tasks) | **PE-Shared** Shared Layer | ✅ Completed |
 | 5-6 | **DX** Performance & DX Improvements | **PE-Vite** Vite Plugin | ✅ Completed |
-| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | 🎯 Next |
+| 7-8 | **QA** Quality Assurance | **PE-Metro**, **PE-NestJS** | ⏳ In Progress |
 | 9 | Release Preparation | **PE-Release** Release Readiness | Blocked by QA |
 
 ---
@@ -282,7 +301,7 @@ Plugin implementations can proceed in parallel:
 - [x] **PE-Shared**: Reusable abstractions extracted from plugin-babel ✅
 - [ ] **PE-Vite**: Vite plugin transforms identically to plugin-babel
 - [ ] **PE-Metro**: React Native bundler integration working
-- [ ] **PE-NestJS**: NestJS webpack plugin functional
+- [x] **PE-NestJS**: NestJS webpack plugin functional ✅
 - [ ] **PE-Release**: Documentation complete, migration guides written
 
 ---
