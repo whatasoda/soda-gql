@@ -6,6 +6,7 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import createPlugin from "@soda-gql/plugin-babel";
 import { getProjectRoot, TestTempDir } from ".";
 import { typeCheckFiles } from "./type-check";
+import { getPortableFS } from "@soda-gql/common";
 
 const resolveBiomeBinary = (): string => {
   const projectRoot = getProjectRoot();
@@ -65,7 +66,8 @@ export const runBabelTransform = async (
     } = options;
 
     const artifactPath = tempDir.join("artifact.json");
-    await Bun.write(artifactPath, JSON.stringify(artifact));
+    const fs = getPortableFS();
+    await fs.writeFile(artifactPath, JSON.stringify(artifact));
 
     const result = await transformAsync(source, {
       filename,

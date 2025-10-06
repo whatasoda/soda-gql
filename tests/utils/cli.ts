@@ -1,6 +1,7 @@
 import { expect } from "bun:test";
 import { join } from "node:path";
 import { getProjectRoot } from ".";
+import { spawn } from "@soda-gql/common";
 
 export type CliResult = {
   readonly stdout: string;
@@ -32,10 +33,16 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
   // Call CLI entry point directly to preserve cwd for config discovery
   const cliEntryPoint = join(getProjectRoot(), "packages/cli/src/index.ts");
 
-  const subprocess = Bun.spawn({
+  // Use portable spawn with timeout handling
+  const timeoutPromise = new Promise<CliResult>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`CLI command timed out after ${timeout}ms`));
+    }, timeout);
+  });
+
+  const spawnPromise = spawn({
     cmd: ["bun", cliEntryPoint, command, ...args],
     cwd,
-    stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
       NODE_ENV: "test",
@@ -43,23 +50,10 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
     },
   });
 
-  // Add timeout handling
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      subprocess.kill();
-      reject(new Error(`CLI command timed out after ${timeout}ms`));
-    }, timeout);
-  });
-
   try {
-    const [stdout, stderr, exitCode] = await Promise.race([
-      Promise.all([new Response(subprocess.stdout).text(), new Response(subprocess.stderr).text(), subprocess.exited]),
-      timeoutPromise,
-    ]);
-
-    return { stdout, stderr, exitCode };
+    const result = await Promise.race([spawnPromise, timeoutPromise]);
+    return result;
   } catch (error) {
-    subprocess.kill();
     throw error;
   }
 };

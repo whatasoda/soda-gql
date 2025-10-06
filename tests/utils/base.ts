@@ -1,5 +1,6 @@
 import { afterEach, beforeEach } from "bun:test";
 import { TestTempDir } from ".";
+import { getPortableFS } from "@soda-gql/common";
 
 /**
  * Base class for test suites with common setup/teardown
@@ -47,7 +48,8 @@ export class TestSuite {
    */
   protected async writeTempFile(relativePath: string, content: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
-    await Bun.write(fullPath, content);
+    const fs = getPortableFS();
+    await fs.writeFile(fullPath, content);
     return fullPath;
   }
 
@@ -56,7 +58,8 @@ export class TestSuite {
    */
   protected async readTempFile(relativePath: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
-    return Bun.file(fullPath).text();
+    const fs = getPortableFS();
+    return await fs.readFile(fullPath);
   }
 
   /**
@@ -64,7 +67,8 @@ export class TestSuite {
    */
   protected async tempFileExists(relativePath: string): Promise<boolean> {
     const fullPath = this.tempDir.join(relativePath);
-    return Bun.file(fullPath).exists();
+    const fs = getPortableFS();
+    return await fs.exists(fullPath);
   }
 
   /**
