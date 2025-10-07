@@ -1,6 +1,6 @@
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import { createBuilderSession } from "./internal/session/builder-session";
+import { type BuilderSession, createBuilderSession } from "./internal/session/builder-session";
 import type { BuilderChangeSet } from "./internal/session/change-set";
 import type { BuilderError, BuilderInput } from "./types";
 
@@ -24,7 +24,7 @@ export interface BuilderService {
    * Perform incremental update based on file changes.
    * Optional method for incremental builds. Falls back to full rebuild if not supported.
    */
-  update?(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
+  update(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
 }
 
 /**
@@ -51,38 +51,48 @@ export const createBuilderService = (config: BuilderServiceConfig): BuilderServi
   };
 
   // Lazy session initialization
-  let session: ReturnType<typeof createBuilderSession> | null = null;
-  let isInitialized = false;
+  const ensureSession = (() => {
+    let session: BuilderSession | null = null;
+
+    return () => {
+      if (!session) {
+        session = createBuilderSession();
+      }
+
+      return session;
+    };
+  })();
+
+  const buildInitialIfNeeded = (() => {
+    let isInitialized = false;
+
+    return (session: BuilderSession, ...args: Parameters<BuilderSession["buildInitial"]>) => {
+      if (!isInitialized) {
+        isInitialized = true;
+        return session.buildInitial(...args);
+      }
+
+      return null;
+    };
+  })();
 
   return {
     build: async () => {
-      if (!session) {
-        session = createBuilderSession();
-      }
+      const session = ensureSession();
 
-      if (!isInitialized) {
-        isInitialized = true;
-        return session.buildInitial(normalizedConfig);
-      }
-
-      // Subsequent builds reuse session (for now, just call buildInitial again)
-      // NOTE: Change detection via update() is handled by CLI watch mode
-      // Direct service.build() calls do full rebuild for correctness
-      return session.buildInitial(normalizedConfig);
+      return (
+        buildInitialIfNeeded(session, normalizedConfig) ??
+        // Subsequent builds reuse session (for now, just call buildInitial again)
+        // NOTE: Change detection via update() is handled by CLI watch mode
+        // Direct service.build() calls do full rebuild for correctness
+        session.buildInitial(normalizedConfig)
+      );
     },
 
     update: async (changeSet: BuilderChangeSet) => {
-      if (!session) {
-        session = createBuilderSession();
-      }
+      const session = ensureSession();
 
-      if (!isInitialized) {
-        // First call should use buildInitial
-        isInitialized = true;
-        return session.buildInitial(normalizedConfig);
-      }
-
-      return session.update(changeSet);
+      return buildInitialIfNeeded(session, normalizedConfig) ?? session.update(changeSet);
     },
   };
 };

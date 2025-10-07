@@ -294,7 +294,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
       };
 
       // Use service.update() if available, otherwise rebuild
-      const result = service.update ? await service.update(changeSet) : await service.build();
+      const result = await service.update(changeSet);
 
       if (result.isErr()) {
         process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
