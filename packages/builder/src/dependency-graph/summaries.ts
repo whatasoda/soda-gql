@@ -1,5 +1,5 @@
+import type { CanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis } from "../ast";
-import type { CanonicalId } from "../canonical-id/canonical-id";
 import { normalizePath, resolveModuleSpecifier } from "./paths";
 import type { ModuleSummary } from "./types";
 

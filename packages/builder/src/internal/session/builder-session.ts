@@ -1,12 +1,11 @@
 import { dirname, join, normalize, resolve } from "node:path";
-
+import type { CanonicalId } from "@soda-gql/common";
 import { clearPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
 import { getAstAnalyzer } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
-import type { CanonicalId } from "../../canonical-id/canonical-id";
 import { buildDependencyGraph } from "../../dependency-graph";
 import { diffDependencyGraphs } from "../../dependency-graph/differ";
 import { applyGraphPatch, buildGraphIndex, type GraphIndex } from "../../dependency-graph/patcher";

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import {
   applyGraphPatch,
   buildGraphIndex,
@@ -7,6 +6,7 @@ import {
   type GraphIndex,
 } from "@soda-gql/builder/dependency-graph/patcher";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph/types";
+import { createCanonicalId } from "@soda-gql/common";
 
 const createTestNode = (filePath: string, localPath: string, deps: string[] = []): DependencyGraphNode => {
   const id = createCanonicalId(filePath, localPath);

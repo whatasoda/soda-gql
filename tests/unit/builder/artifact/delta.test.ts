@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { applyArtifactDelta, computeArtifactDelta } from "@soda-gql/builder/artifact/delta";
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder/artifact/types";
-import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import type { ChunkDiff, ChunkManifest } from "@soda-gql/builder/internal/intermediate-module/chunks";
+import { createCanonicalId } from "@soda-gql/common";
 
 const createTestElement = (id: string, type: "model" | "operation" | "slice", data: string): BuilderArtifactElement => {
   const canonicalId = createCanonicalId(`/test/${id}.ts`, id);

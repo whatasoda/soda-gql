@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import { buildGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
 import type { DependencyGraph, DependencyGraphNode } from "@soda-gql/builder/dependency-graph/types";
 import { buildChunkModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
+import { createCanonicalId } from "@soda-gql/common";
 
 const createTestNode = (
   filePath: string,

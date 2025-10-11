@@ -1,4 +1,4 @@
-import type { CanonicalId } from "../canonical-id/canonical-id";
+import type { CanonicalId } from "@soda-gql/common";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "./types";
 
 /**

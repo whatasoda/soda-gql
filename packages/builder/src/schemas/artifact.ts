@@ -1,6 +1,6 @@
+import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
 import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "../artifact/types";
-import type { CanonicalId } from "../canonical-id";
 
 const BuilderArtifactOperationSchema = z.object({
   id: z.string<CanonicalId>(),

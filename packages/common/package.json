@@ -16,6 +16,11 @@
       "import": "./src/portable/index.ts",
       "default": "./src/portable/index.ts"
     },
+    "./canonical-id": {
+      "types": "./src/canonical-id/index.ts",
+      "import": "./src/canonical-id/index.ts",
+      "default": "./src/canonical-id/index.ts"
+    },
     "./package.json": "./package.json",
     "./tsconfig.json": "./tsconfig.json"
   }

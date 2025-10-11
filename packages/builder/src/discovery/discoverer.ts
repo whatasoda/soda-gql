@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
+import { createCanonicalId } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { getAstAnalyzer } from "../ast";
-import { createCanonicalId } from "../canonical-id/canonical-id";
 import { type BuilderResult, builderErrors } from "../errors";
 import { normalizePath } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";

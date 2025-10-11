@@ -1,5 +1,5 @@
+import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
-import type { CanonicalId } from "../canonical-id/canonical-id";
 import {
   ModuleAnalysisSchema,
   ModuleDefinitionSchema,

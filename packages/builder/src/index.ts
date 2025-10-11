@@ -1,3 +1,17 @@
+/**
+ * @deprecated Import from @soda-gql/common instead. These re-exports will be removed in the next major version.
+ */
+export type { CanonicalId, CanonicalPathTracker, ScopeFrame, ScopeHandle } from "@soda-gql/common";
+/**
+ * @deprecated Import from @soda-gql/common instead. These re-exports will be removed in the next major version.
+ */
+export {
+  buildAstPath,
+  createCanonicalId,
+  createCanonicalTracker,
+  createOccurrenceTracker,
+  createPathTracker,
+} from "@soda-gql/common";
 export type {
   BuilderArtifact,
   BuilderArtifactElement,
@@ -5,14 +19,6 @@ export type {
   BuilderArtifactOperation,
   BuilderArtifactSlice,
 } from "./artifact/types";
-export type { CanonicalId, CanonicalPathTracker, ScopeFrame, ScopeHandle } from "./canonical-id";
-export {
-  buildAstPath,
-  createCanonicalId,
-  createCanonicalTracker,
-  createOccurrenceTracker,
-  createPathTracker,
-} from "./canonical-id";
 export type {
   DiscoveredDependency,
   DiscoveryCache,

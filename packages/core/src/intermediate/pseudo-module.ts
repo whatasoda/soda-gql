@@ -31,19 +31,19 @@ export const clearPseudoModuleRegistry = (evaluatorId: string) => {
 
 export const createPseudoModuleRegistry = () => {
   const modules = new Map<string, () => ArtifactRecord>();
-  const caches = new Map<string, ArtifactRecord>();
-  const entries: [string, AcceptableArtifact][] = [];
+  const moduleCaches = new Map<string, ArtifactRecord>();
+  const elements = new Map<string, AcceptableArtifact>();
 
   const addModule = (filePath: string, factory: () => ArtifactRecord) => {
     modules.set(filePath, () => {
-      const cached = caches.get(filePath);
+      const cached = moduleCaches.get(filePath);
       if (cached) {
         return cached;
       }
 
       const exports = factory();
 
-      caches.set(filePath, exports);
+      moduleCaches.set(filePath, exports);
       return exports;
     });
   };
@@ -52,7 +52,7 @@ export const createPseudoModuleRegistry = () => {
     const builder = factory();
     ArtifactElement.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered
-    entries.push([canonicalId, builder] satisfies [unknown, unknown]);
+    elements.set(canonicalId, builder);
     return builder;
   };
 
@@ -66,20 +66,20 @@ export const createPseudoModuleRegistry = () => {
 
   const removeModule = (filePath: string) => {
     modules.delete(filePath);
-    caches.delete(filePath);
+    moduleCaches.delete(filePath);
     // Remove all entries that belong to this module (canonicalId prefix is "filePath::")
     const prefix = `${filePath}::`;
-    for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i]?.[0].startsWith(prefix)) {
-        entries.splice(i, 1);
+    for (const canonicalId of elements.keys()) {
+      if (canonicalId.startsWith(prefix)) {
+        elements.delete(canonicalId);
       }
     }
   };
 
   const clear = () => {
     modules.clear();
-    caches.clear();
-    entries.length = 0;
+    moduleCaches.clear();
+    elements.clear();
   };
 
   const evaluate = (): Record<string, IntermediateArtifactElement> => {
@@ -89,13 +89,13 @@ export const createPseudoModuleRegistry = () => {
     }
 
     // Then, evaluate all builders after registration
-    for (const [, artifact] of entries) {
-      ArtifactElement.evaluate(artifact);
+    for (const element of elements.values()) {
+      ArtifactElement.evaluate(element);
     }
 
     // Build a single record with discriminated union entries
     const artifacts: Record<string, IntermediateArtifactElement> = {};
-    for (const [canonicalId, element] of entries) {
+    for (const [canonicalId, element] of elements.entries()) {
       if (element instanceof Model) {
         artifacts[canonicalId] = { type: "model", element };
       } else if (element instanceof Slice) {

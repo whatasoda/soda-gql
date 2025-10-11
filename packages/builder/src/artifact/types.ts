@@ -1,5 +1,5 @@
+import type { CanonicalId } from "@soda-gql/common";
 import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { CanonicalId } from "../canonical-id";
 import type { DependencyGraph } from "../dependency-graph";
 import type { ModuleLoadStats } from "../discovery/discovery-pipeline";
 import type { ChunkDiff, ChunkManifest } from "../internal/intermediate-module/chunks";

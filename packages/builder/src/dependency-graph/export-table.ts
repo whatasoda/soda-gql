@@ -1,5 +1,5 @@
+import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis } from "../ast";
-import { type CanonicalId, createCanonicalId } from "../canonical-id/canonical-id";
 import { normalizePath, resolveModuleSpecifier } from "./paths";
 
 export const buildExportTable = (

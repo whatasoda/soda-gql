@@ -4,8 +4,8 @@
  */
 
 import { extname } from "node:path";
+import { createCanonicalTracker } from "@soda-gql/common";
 import ts from "typescript";
-import { createCanonicalTracker } from "../../canonical-id/path-tracker";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 import type {

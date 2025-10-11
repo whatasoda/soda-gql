@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { CanonicalId } from "../../canonical-id/canonical-id";
+import type { CanonicalId } from "@soda-gql/common";
 import type { DependencyGraph } from "../../dependency-graph";
 import type { GraphIndex } from "../../dependency-graph/patcher";
 import { groupNodesByFile } from "./analysis";

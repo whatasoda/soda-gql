@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createCanonicalId } from "@soda-gql/builder/canonical-id/canonical-id";
 import { type ChunkModule, writeChunkModules } from "@soda-gql/builder/internal/intermediate-module/chunk-writer";
+import { createCanonicalId } from "@soda-gql/common";
 
 const createTestChunk = (chunkId: string, sourcePath: string, sourceCode: string): ChunkModule => {
   return {

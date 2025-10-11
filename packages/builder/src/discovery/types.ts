@@ -1,5 +1,5 @@
+import type { CanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
-import type { CanonicalId } from "../canonical-id/canonical-id";
 import type { BuilderAnalyzer } from "../types";
 import type { FileFingerprint } from "./fingerprint";
 

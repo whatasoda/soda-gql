@@ -3,9 +3,9 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
+import { createCanonicalTracker } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
-import { createCanonicalTracker } from "../../canonical-id/path-tracker";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 

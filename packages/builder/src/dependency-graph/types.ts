@@ -1,5 +1,5 @@
+import type { CanonicalId } from "@soda-gql/common";
 import type { ModuleDefinition, ModuleImport } from "../ast";
-import type { CanonicalId } from "../canonical-id/canonical-id";
 
 /**
  * Per-file metadata for module-level dependency analysis.
