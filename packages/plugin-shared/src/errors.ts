@@ -46,7 +46,5 @@ export const formatPluginError = (error: import("./state").PluginError): string 
  * This is the ONLY acceptable throw in plugin code.
  */
 export const assertUnreachable = (value: never, context?: string): never => {
-  throw new Error(
-    `[INTERNAL] Unreachable code path${context ? ` in ${context}` : ""}: received ${JSON.stringify(value)}`,
-  );
+  throw new Error(`[INTERNAL] Unreachable code path${context ? ` in ${context}` : ""}: received ${JSON.stringify(value)}`);
 };

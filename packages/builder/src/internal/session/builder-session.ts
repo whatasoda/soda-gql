@@ -16,12 +16,13 @@ import { discoverModules } from "../../discovery/discoverer";
 import { resolveEntryPaths } from "../../discovery/entry-paths";
 import { invalidateFingerprint } from "../../discovery/fingerprint";
 import type { DiscoverySnapshot } from "../../discovery/types";
+import { builderErrors } from "../../errors";
+import type { BuilderError, BuilderInput } from "../../types";
 import { createIntermediateModuleChunks } from "../intermediate-module";
 import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
 import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
 import { resolveCoreImportPath, resolveGqlImportPath } from "../intermediate-module/gql-import";
 import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
-import type { BuilderError, BuilderInput } from "../../types";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
 
@@ -285,10 +286,7 @@ const validateGraphDependencies = (graph: DependencyGraph): Result<void, Builder
         // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
         const [depFilePath = ""] = depId.split("::");
 
-        return err({
-          code: "CIRCULAR_DEPENDENCY" as const,
-          chain: [node.filePath, depFilePath],
-        });
+        return err(builderErrors.graphCircularDependency([node.filePath, depFilePath]));
       }
     }
   }
@@ -446,16 +444,13 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       const graphError = dependencyGraph.error;
       if (graphError.code === "MISSING_IMPORT") {
         return err({
-          code: "MODULE_EVALUATION_FAILED",
+          code: "RUNTIME_MODULE_LOAD_FAILED",
           filePath: graphError.chain[0] || "",
           astPath: "",
           message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
         });
       }
-      return err({
-        code: "CIRCULAR_DEPENDENCY",
-        chain: graphError.chain as readonly string[],
-      });
+      return err(builderErrors.graphCircularDependency(graphError.chain as readonly string[]));
     }
 
     const graph = dependencyGraph.value;
@@ -553,7 +548,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       // Fall back to buildInitial
       if (!state.lastInput) {
         return err({
-          code: "MODULE_EVALUATION_FAILED",
+          code: "RUNTIME_MODULE_LOAD_FAILED",
           filePath: "",
           astPath: "",
           message: "Metadata mismatch but no previous input available for rebuild",
@@ -583,7 +578,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       }
 
       return err({
-        code: "MODULE_EVALUATION_FAILED",
+        code: "RUNTIME_MODULE_LOAD_FAILED",
         filePath: "",
         astPath: "",
         message: "No changes detected but no cached artifact available",
@@ -606,7 +601,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Strategy 3: True incremental rebuild with graph patches and chunk updates
     if (!state.lastInput) {
       return err({
-        code: "MODULE_EVALUATION_FAILED",
+        code: "RUNTIME_MODULE_LOAD_FAILED",
         filePath: "",
         astPath: "",
         message: "Cannot perform incremental update without previous input",
@@ -629,7 +624,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Guard: ensure state.lastInput and config are available
     if (!state.lastInput || !state.lastInput.config) {
       return err({
-        code: "MODULE_EVALUATION_FAILED",
+        code: "RUNTIME_MODULE_LOAD_FAILED",
         filePath: "",
         astPath: "",
         message: "Missing lastInput or config for incremental rebuild",
@@ -675,16 +670,13 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       const graphError = dependencyGraph.error;
       if (graphError.code === "MISSING_IMPORT") {
         return err({
-          code: "MODULE_EVALUATION_FAILED",
+          code: "RUNTIME_MODULE_LOAD_FAILED",
           filePath: graphError.chain[0] || "",
           astPath: "",
           message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
         });
       }
-      return err({
-        code: "CIRCULAR_DEPENDENCY",
-        chain: graphError.chain as readonly string[],
-      });
+      return err(builderErrors.graphCircularDependency(graphError.chain as readonly string[]));
     }
 
     const newGraph = dependencyGraph.value;

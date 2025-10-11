@@ -31,7 +31,7 @@ export type DependencyGraph = Map<CanonicalId, DependencyGraphNode>;
 
 export type DependencyGraphError =
   | {
-      readonly code: "CIRCULAR_DEPENDENCY";
+      readonly code: "GRAPH_CIRCULAR_DEPENDENCY";
       readonly chain: readonly CanonicalId[];
     }
   | {

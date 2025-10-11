@@ -7,7 +7,7 @@ import type { BuilderArtifactElement } from "./types";
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 
 const emitRegistrationError = (node: DependencyGraphNode, message: string): BuilderError => ({
-  code: "MODULE_EVALUATION_FAILED",
+  code: "RUNTIME_MODULE_LOAD_FAILED",
   filePath: canonicalToFilePath(node.id),
   astPath: node.definition.astPath,
   message,

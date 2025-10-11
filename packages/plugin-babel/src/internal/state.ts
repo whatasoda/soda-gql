@@ -6,10 +6,9 @@ import {
   createBuilderService,
 } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
-
+import type { SodaGqlBabelOptions } from "../types";
 import { type ArtifactError, loadArtifact } from "./artifact";
 import { type NormalizedOptions, normalizeOptions, type OptionsError } from "./options";
-import type { SodaGqlBabelOptions } from "../types";
 
 type OptionsMissingArtifactPath = Extract<OptionsError, { code: "MISSING_ARTIFACT_PATH" }>;
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
@@ -20,8 +19,8 @@ type ArtifactValidationFailed = Extract<ArtifactError, { code: "VALIDATION_FAILE
 
 type BuilderEntryNotFound = Extract<BuilderError, { code: "ENTRY_NOT_FOUND" }>;
 type BuilderDocDuplicate = Extract<BuilderError, { code: "DOC_DUPLICATE" }>;
-type BuilderCircularDependency = Extract<BuilderError, { code: "CIRCULAR_DEPENDENCY" }>;
-type BuilderModuleEvaluationFailed = Extract<BuilderError, { code: "MODULE_EVALUATION_FAILED" }>;
+type BuilderCircularDependency = Extract<BuilderError, { code: "GRAPH_CIRCULAR_DEPENDENCY" }>;
+type BuilderModuleEvaluationFailed = Extract<BuilderError, { code: "RUNTIME_MODULE_LOAD_FAILED" }>;
 type BuilderWriteFailed = Extract<BuilderError, { code: "WRITE_FAILED" }>;
 
 type AnalysisMetadataMissingCause = { readonly filename: string };
@@ -269,7 +268,7 @@ const mapBuilderError = (error: BuilderError): PluginError => {
         name: error.name,
         sources: error.sources,
       };
-    case "CIRCULAR_DEPENDENCY":
+    case "GRAPH_CIRCULAR_DEPENDENCY":
       return {
         type: "PluginError",
         stage: "builder",
@@ -278,7 +277,7 @@ const mapBuilderError = (error: BuilderError): PluginError => {
         cause: error as BuilderCircularDependency,
         chain: error.chain,
       };
-    case "MODULE_EVALUATION_FAILED":
+    case "RUNTIME_MODULE_LOAD_FAILED":
       return {
         type: "PluginError",
         stage: "builder",

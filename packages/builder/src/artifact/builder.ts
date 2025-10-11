@@ -5,6 +5,8 @@ import { checkIssues } from "./issue-handler";
 import { loadIntermediateModules } from "./loader";
 import type { BuildArtifactInput, BuilderArtifact } from "./types";
 
+const LEGACY_CHUNK_ID = "__legacy__";
+
 export const buildArtifact = async ({
   graph,
   cache,
@@ -13,18 +15,22 @@ export const buildArtifact = async ({
   intermediateModulePaths,
   evaluatorId,
 }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
-  const chunkPaths = intermediateModulePaths ?? (intermediateModulePath ? new Map([["", intermediateModulePath]]) : undefined);
+  const chunkPaths =
+    intermediateModulePaths ??
+    (intermediateModulePath ? new Map([[LEGACY_CHUNK_ID, intermediateModulePath]]) : new Map<string, string>());
 
-  if (!chunkPaths) {
+  if (chunkPaths.size === 0) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: "",
       astPath: "",
       message: "Either intermediateModulePath or intermediateModulePaths must be provided",
     });
   }
 
-  // Chunk mode: load multiple chunks
+  const chunkReport = chunks ?? { written: chunkPaths.size, skipped: 0 };
+
+  // Load intermediate chunks and register them
   const moduleResult = await loadIntermediateModules({ chunkPaths, evaluatorId });
   if (moduleResult.isErr()) {
     return err(moduleResult.error);
@@ -53,7 +59,7 @@ export const buildArtifact = async ({
       durationMs: 0,
       warnings,
       cache,
-      chunks: chunks ?? { written: 0, skipped: 0 },
+      chunks: chunkReport,
     },
   } satisfies BuilderArtifact);
 };

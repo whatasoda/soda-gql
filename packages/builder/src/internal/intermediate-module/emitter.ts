@@ -66,7 +66,7 @@ export const emitIntermediateModule = async ({
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: jsFilePath,
       astPath: "",
       message: `SWC transpilation failed: ${message}`,

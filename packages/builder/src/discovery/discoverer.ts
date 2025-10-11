@@ -2,8 +2,8 @@ import { readFileSync, statSync } from "node:fs";
 import { err, ok } from "neverthrow";
 import type { getAstAnalyzer } from "../ast";
 import { createCanonicalId } from "../canonical-id/canonical-id";
-import { builderErrors, type BuilderResult } from "../errors";
-import { normalizeToPosix } from "../utils/path-utils";
+import { type BuilderResult, builderErrors } from "../errors";
+import { normalizePath } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition, DiscoverySnapshotMetadata } from "./types";
@@ -142,7 +142,7 @@ export const discoverModules = ({
     // Create snapshot
     const snapshot: DiscoverySnapshot = {
       filePath,
-      normalizedFilePath: normalizeToPosix(filePath),
+      normalizedFilePath: normalizePath(filePath),
       analyzer: astAnalyzer.type,
       signature,
       fingerprint,

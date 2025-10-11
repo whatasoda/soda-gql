@@ -24,12 +24,9 @@ export type BuilderErrorCode =
   | "CACHE_CORRUPTED"
   // Runtime evaluation errors
   | "RUNTIME_MODULE_LOAD_FAILED"
-  | "MODULE_EVALUATION_FAILED" // Legacy alias for RUNTIME_MODULE_LOAD_FAILED
   | "ARTIFACT_REGISTRATION_FAILED"
   // Internal invariant violations
-  | "INTERNAL_INVARIANT"
-  // Legacy aliases
-  | "CIRCULAR_DEPENDENCY"; // Alias for GRAPH_CIRCULAR_DEPENDENCY
+  | "INTERNAL_INVARIANT";
 
 /**
  * Structured error type for all Builder operations.
@@ -124,23 +121,10 @@ export type BuilderError =
       readonly cause?: unknown;
     }
   | {
-      readonly code: "MODULE_EVALUATION_FAILED"; // Legacy alias
-      readonly message: string;
-      readonly filePath: string;
-      readonly astPath: string;
-      readonly cause?: unknown;
-    }
-  | {
       readonly code: "ARTIFACT_REGISTRATION_FAILED";
       readonly message: string;
       readonly elementId: string;
       readonly reason: string;
-    }
-  // Legacy error variants
-  | {
-      readonly code: "CIRCULAR_DEPENDENCY"; // Legacy alias for GRAPH_CIRCULAR_DEPENDENCY
-      readonly message?: string;
-      readonly chain: readonly string[];
     }
   // Internal invariant
   | {
@@ -375,7 +359,5 @@ export const formatBuilderError = (error: BuilderError): string => {
  * This is the ONLY acceptable throw in builder code.
  */
 export const assertUnreachable = (value: never, context?: string): never => {
-  throw new Error(
-    `Unreachable code path${context ? ` in ${context}` : ""}: received ${JSON.stringify(value)}`
-  );
+  throw new Error(`Unreachable code path${context ? ` in ${context}` : ""}: received ${JSON.stringify(value)}`);
 };

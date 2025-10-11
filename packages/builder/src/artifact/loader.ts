@@ -16,7 +16,7 @@ export const loadIntermediateModule = async (
     return ok(module);
   } catch (error) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: intermediateModulePath,
       astPath: "runtime",
       message: error instanceof Error ? error.message : String(error),
@@ -44,7 +44,7 @@ export const loadIntermediateModules = async ({
     return ok({ elements: registry.evaluate() });
   } catch (error) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: "",
       astPath: "runtime",
       message: error instanceof Error ? error.message : String(error),

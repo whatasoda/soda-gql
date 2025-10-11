@@ -1,5 +1,5 @@
-import type { BuilderAnalyzer } from "../types";
 import { assertUnreachable } from "../errors";
+import type { BuilderAnalyzer } from "../types";
 import { swcAdapter } from "./adapters/swc";
 import { typescriptAdapter } from "./adapters/typescript";
 import { analyzeModuleCore } from "./core";

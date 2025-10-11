@@ -220,7 +220,7 @@ describe("dependency graph builder", () => {
         throw new Error("expected cycle detection to fail");
       },
       (error) => {
-        expect(error.code).toBe("CIRCULAR_DEPENDENCY");
+        expect(error.code).toBe("GRAPH_CIRCULAR_DEPENDENCY");
         expect(error.chain).toEqual([
           createCanonicalId("/app/src/entities/slice-a.ts", "sliceA"),
           createCanonicalId("/app/src/entities/slice-b.ts", "sliceB"),

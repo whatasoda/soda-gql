@@ -37,7 +37,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
 
   if (!resolvedConfigPath) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: "",
       astPath: "",
       message: "Config file not found. Create soda-gql.config.ts in your project root.",
@@ -46,7 +46,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
 
   if (!existsSync(resolvedConfigPath)) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: resolvedConfigPath,
       astPath: "",
       message: `Config file not found: ${resolvedConfigPath}`,
@@ -61,7 +61,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
     config = configModule.default ?? configModule;
   } catch (error) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: resolvedConfigPath,
       astPath: "",
       message: `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
@@ -71,7 +71,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
   // Validate required fields
   if (!config.graphqlSystemPath) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: resolvedConfigPath,
       astPath: "",
       message: "Config must specify graphqlSystemPath",
@@ -80,7 +80,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
 
   if (!config.outDir) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: resolvedConfigPath,
       astPath: "",
       message: "Config must specify outDir",
@@ -89,7 +89,7 @@ export const loadConfig = async (configPath?: string): Promise<Result<ResolvedSo
 
   if (!config.entry || config.entry.length === 0) {
     return err({
-      code: "MODULE_EVALUATION_FAILED",
+      code: "RUNTIME_MODULE_LOAD_FAILED",
       filePath: resolvedConfigPath,
       astPath: "",
       message: "Config must specify entry patterns",

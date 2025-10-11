@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
 import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
 import { createTestConfig } from "../helpers/test-config";
@@ -280,8 +280,8 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
       const error = updateResult.error;
-      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-      if (error.code === "MODULE_EVALUATION_FAILED") {
+      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
         expect(error.message).toContain("Cannot resolve import");
         expect(error.message).toContain("user.catalog");
       }
@@ -300,8 +300,8 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
       const error = fullRebuild.error;
-      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-      if (error.code === "MODULE_EVALUATION_FAILED") {
+      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
         expect(error.message).toContain("Cannot resolve import");
       }
     }
@@ -362,8 +362,8 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
       const error = updateResult.error;
-      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-      if (error.code === "MODULE_EVALUATION_FAILED") {
+      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
         expect(error.message).toContain("Cannot resolve import");
         expect(error.message).toContain("user.catalog");
       }
@@ -382,8 +382,8 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
       const error = fullRebuild.error;
-      expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-      if (error.code === "MODULE_EVALUATION_FAILED") {
+      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
         expect(error.message).toContain("Cannot resolve import");
       }
     }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { getPortableFS, getPortableHasher } from "@soda-gql/common";
-import { TestSuite } from "../../utils/base";
-import { createBuilderArtifact } from "../../utils/artifact-fixtures";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
+import { getPortableFS } from "@soda-gql/common";
+import { createBuilderArtifact } from "../../utils/artifact-fixtures";
+import { TestSuite } from "../../utils/base";
 
 /**
  * Test suite for portable artifact loading

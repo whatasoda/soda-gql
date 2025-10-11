@@ -9,7 +9,7 @@ export const detectCycles = (graph: DependencyGraph): Result<void, DependencyGra
   const visit = (nodeId: CanonicalId, chain: CanonicalId[]): Result<void, DependencyGraphError> => {
     if (stack.has(nodeId)) {
       return err({
-        code: "CIRCULAR_DEPENDENCY",
+        code: "GRAPH_CIRCULAR_DEPENDENCY",
         chain: [...chain, nodeId],
       });
     }

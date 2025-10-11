@@ -2,12 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { normalizePath } from "../dependency-graph/resolver";
 
-/**
- * Normalize a path to use POSIX separators (forward slashes).
- * Ensures consistent path handling across platforms.
- * @deprecated Use normalizePath from dependency-graph/resolver instead
- */
-export const normalizeToPosix = normalizePath;
+export { normalizePath };
 
 /**
  * File extensions to try when resolving module specifiers.

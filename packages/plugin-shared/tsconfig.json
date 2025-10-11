@@ -14,9 +14,5 @@
     }
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "../builder" },
-    { "path": "../common" },
-    { "path": "../core" }
-  ]
+  "references": [{ "path": "../builder" }, { "path": "../common" }, { "path": "../core" }]
 }

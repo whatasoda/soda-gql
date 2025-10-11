@@ -9,5 +9,12 @@ export type {
   ModuleLoadStats,
 } from "../discovery";
 export { createDiscoveryPipeline } from "../discovery";
-export type { CreateIntermediateModuleInput } from "../internal/intermediate-module";
-export { createIntermediateModule } from "../internal/intermediate-module";
+export type {
+  CreateIntermediateModuleChunksInput,
+  CreateIntermediateModuleChunksResult,
+} from "../internal/intermediate-module";
+export { createIntermediateModuleChunks } from "../internal/intermediate-module";
+export type { WrittenChunkModule } from "../internal/intermediate-module/chunk-writer";
+export { writeChunkModules } from "../internal/intermediate-module/chunk-writer";
+export type { ChunkManifest } from "../internal/intermediate-module/chunks";
+export { planChunks } from "../internal/intermediate-module/chunks";

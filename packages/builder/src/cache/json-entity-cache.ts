@@ -1,5 +1,5 @@
 import type { ZodSchema } from "zod";
-import { normalizeToPosix } from "../utils/path-utils";
+import { normalizePath } from "../dependency-graph/resolver";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 
 export type JsonEntityCacheOptions<V> = {
@@ -24,7 +24,7 @@ export abstract class JsonEntityCache<K extends string, V> {
       schema: options.schema,
       version: options.version,
     });
-    this.keyNormalizer = options.keyNormalizer ?? normalizeToPosix;
+    this.keyNormalizer = options.keyNormalizer ?? normalizePath;
   }
 
   /**

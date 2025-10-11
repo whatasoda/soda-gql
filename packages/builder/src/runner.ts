@@ -8,19 +8,29 @@ import type { ModuleAnalysis } from "./ast";
 import { createJsonCache } from "./cache/json-cache";
 import { createDebugWriter } from "./debug/debug-writer";
 import { buildDependencyGraph } from "./dependency-graph";
+import { buildGraphIndex } from "./dependency-graph/patcher";
 import type { DependencyGraph } from "./dependency-graph/types";
 import { createDiscoveryCache, createDiscoveryPipeline } from "./discovery";
-import { createIntermediateModule } from "./internal/intermediate-module";
+import { builderErrors } from "./errors";
+import { createIntermediateModuleChunks } from "./internal/intermediate-module";
+import type { WrittenChunkModule } from "./internal/intermediate-module/chunk-writer";
+import { type ChunkManifest, planChunks } from "./internal/intermediate-module/chunks";
 import type { BuilderError, BuilderInput, BuilderOptions, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
+
+type IntermediateChunks = {
+  readonly manifest: ChunkManifest;
+  readonly modules: Map<string, WrittenChunkModule>;
+  readonly stats: {
+    readonly written: number;
+    readonly skipped: number;
+  };
+};
 
 type PipelineData = {
   readonly analyses: readonly ModuleAnalysis[];
   readonly graph: DependencyGraph;
-  readonly intermediateModule: {
-    readonly transpiledPath: string;
-    readonly sourceCode: string;
-  };
+  readonly intermediateChunks: IntermediateChunks;
   readonly artifact: BuilderArtifact;
 };
 
@@ -59,30 +69,39 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
 
   const dependencyGraph = buildDependencyGraph(analyses);
   if (dependencyGraph.isErr()) {
-    return err({
-      code: "CIRCULAR_DEPENDENCY",
-      chain: dependencyGraph.error.chain,
-    });
+    return err(builderErrors.graphCircularDependency(dependencyGraph.error.chain as readonly string[]));
   }
 
+  const graph = dependencyGraph.value;
   const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-  const intermediateModule = await createIntermediateModule({
-    graph: dependencyGraph.value,
+  const graphIndex = buildGraphIndex(graph);
+  const manifest = planChunks(graph, graphIndex, runtimeDir);
+
+  const intermediateChunksResult = await createIntermediateModuleChunks({
+    graph,
+    graphIndex,
+    config: options.config,
     outDir: runtimeDir,
     evaluatorId,
-    config: options.config,
   });
 
-  if (intermediateModule.isErr()) {
-    return err(intermediateModule.error);
+  if (intermediateChunksResult.isErr()) {
+    return err(intermediateChunksResult.error);
   }
 
-  const { transpiledPath, sourceCode } = intermediateModule.value;
+  const { written: chunkModules, skipped: chunksSkipped } = intermediateChunksResult.value;
+  const chunkPaths = new Map<string, string>();
+  for (const [chunkId, chunk] of chunkModules.entries()) {
+    chunkPaths.set(chunkId, chunk.transpiledPath);
+  }
+
+  const chunkStats = { written: chunkModules.size, skipped: chunksSkipped };
 
   const artifactResult = await buildArtifact({
-    graph: dependencyGraph.value,
+    graph,
     cache: stats,
-    intermediateModulePath: transpiledPath,
+    chunks: chunkStats,
+    intermediateModulePaths: chunkPaths,
     evaluatorId,
   });
 
@@ -92,8 +111,12 @@ const buildPipeline = async (options: BuilderInput): Promise<Result<PipelineData
 
   return ok({
     analyses,
-    graph: dependencyGraph.value,
-    intermediateModule: { transpiledPath, sourceCode },
+    graph,
+    intermediateChunks: {
+      manifest,
+      modules: chunkModules,
+      stats: chunkStats,
+    },
     artifact: artifactResult.value,
   });
 };
@@ -115,10 +138,14 @@ export const runBuilder = async (options: BuilderOptions): Promise<BuilderResult
     return err(pipelineResult.error);
   }
 
-  const { analyses, graph, intermediateModule, artifact } = pipelineResult.value;
+  const { analyses, graph, intermediateChunks, artifact } = pipelineResult.value;
 
   await debugWriter.writeDiscoverySnapshot(analyses, graph);
-  await debugWriter.writeIntermediateModule(intermediateModule);
+  await debugWriter.writeIntermediateModule({
+    manifest: intermediateChunks.manifest,
+    chunks: intermediateChunks.modules,
+    stats: intermediateChunks.stats,
+  });
   await debugWriter.writeArtifact(artifact);
 
   return writeArtifact(resolve(options.outPath), artifact);
