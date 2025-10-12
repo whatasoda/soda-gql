@@ -1,55 +1,42 @@
 import { dirname, join, normalize, resolve } from "node:path";
-import type { CanonicalId } from "@soda-gql/common";
-import { clearPseudoModuleRegistry } from "@soda-gql/core";
+import { cachedFn } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { clearPseudoModuleRegistry, createPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
 import { getAstAnalyzer } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
-import { buildDependencyGraph } from "../../dependency-graph";
-import { diffDependencyGraphs } from "../../dependency-graph/differ";
-import { applyGraphPatch, buildGraphIndex, type GraphIndex } from "../../dependency-graph/patcher";
-import type { DependencyGraph } from "../../dependency-graph/types";
 import { createDiscoveryCache } from "../../discovery";
 import { discoverModules } from "../../discovery/discoverer";
 import { resolveEntryPaths } from "../../discovery/entry-paths";
 import { invalidateFingerprint } from "../../discovery/fingerprint";
 import type { DiscoverySnapshot } from "../../discovery/types";
 import { builderErrors } from "../../errors";
-import type { BuilderError, BuilderInput } from "../../types";
-import { createIntermediateModuleChunks } from "../intermediate-module";
-import { type WrittenChunkModule, writeChunkModules } from "../intermediate-module/chunk-writer";
-import { type ChunkManifest, diffChunkManifests, planChunks } from "../intermediate-module/chunks";
-import { resolveCoreImportPath, resolveGqlImportPath } from "../intermediate-module/gql-import";
-import { buildChunkModules } from "../intermediate-module/per-chunk-emission";
+import type { BuilderError } from "../../types";
+import { buildIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
+import { createContext } from "node:vm";
+import { validateModuleDependencies } from "../../dependency-graph/builder";
 
 /**
  * Session state maintained across incremental builds.
  */
 type SessionState = {
+  /** Entry paths from last build */
+  entrypoints: Set<string>;
   /** Discovery snapshots keyed by normalized file path */
   snapshots: Map<string, DiscoverySnapshot>;
-  /** Full dependency graph from last build */
-  graph: DependencyGraph;
-  /** Graph index: file path -> set of canonical IDs */
-  graphIndex: GraphIndex;
   /** Module-level adjacency: file -> files that import it */
   moduleAdjacency: Map<string, Set<string>>;
-  /** Definition-level adjacency: canonical ID -> IDs that depend on it */
-  definitionAdjacency: Map<CanonicalId, Set<CanonicalId>>;
-  /** Chunk manifest from last build */
-  chunkManifest: ChunkManifest | null;
-  /** Written chunk modules: chunkId -> transpiled path */
-  chunkModules: Map<string, WrittenChunkModule>;
+  /** Written intermediate modules: filePath -> intermediate module */
+  intermediateModules: Map<string, IntermediateModule>;
   /** Metadata for invalidation checks */
   metadata: {
     schemaHash: string;
     analyzerVersion: string;
   };
-  /** Last build input for fallback rebuilds */
-  lastInput: BuilderInput | null;
   /** Last successful artifact */
   lastArtifact: BuilderArtifact | null;
 };
@@ -60,7 +47,6 @@ type SessionState = {
 export type BuilderSessionSnapshot = {
   readonly snapshotCount: number;
   readonly moduleAdjacencySize: number;
-  readonly definitionAdjacencySize: number;
   readonly metadata: {
     readonly schemaHash: string;
     readonly analyzerVersion: string;
@@ -72,9 +58,14 @@ export type BuilderSessionSnapshot = {
  */
 export interface BuilderSession {
   /**
+   * Update the entry points.
+   */
+  updateEntrypoints(input: { toAdd: readonly string[]; toRemove: readonly string[] }): void;
+
+  /**
    * Perform initial full build from entry points.
    */
-  buildInitial(input: BuilderInput): Promise<Result<BuilderArtifact, BuilderError>>;
+  buildInitial(): Promise<Result<BuilderArtifact, BuilderError>>;
 
   /**
    * Perform incremental update based on file changes.
@@ -104,7 +95,7 @@ const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMet
 const resolveModuleSpecifierRuntime = async (
   source: string,
   fromFilePath: string,
-  modulesByPath: Map<string, DependencyGraph extends Map<unknown, infer V> ? V : never>,
+  snapshots: Map<string, DiscoverySnapshot>,
 ): Promise<string | null> => {
   // Skip external imports (bare specifiers)
   if (!source.startsWith(".")) {
@@ -131,7 +122,7 @@ const resolveModuleSpecifierRuntime = async (
 
   for (const candidate of candidates) {
     const normalizedCandidate = normalize(candidate).replace(/\\/g, "/");
-    if (modulesByPath.has(normalizedCandidate)) {
+    if (snapshots.has(normalizedCandidate)) {
       return normalizedCandidate;
     }
   }
@@ -147,32 +138,29 @@ const resolveModuleSpecifierRuntime = async (
  *
  * @internal testing
  */
-const extractModuleAdjacency = async (graph: DependencyGraph): Promise<Map<string, Set<string>>> => {
-  // Phase 1: Build per-module view
-  const modulesByPath = new Map<string, DependencyGraph extends Map<unknown, infer V> ? V : never>();
-  for (const node of graph.values()) {
-    modulesByPath.set(node.filePath, node);
-  }
-
+const extractModuleAdjacency = async (snapshots: Map<string, DiscoverySnapshot>): Promise<Map<string, Set<string>>> => {
   // Phase 2: Build importer -> [imported paths] map from dependencies
   const importsByModule = new Map<string, Set<string>>();
 
-  for (const node of graph.values()) {
-    const { filePath, dependencies, moduleSummary } = node;
+  for (const snapshot of snapshots.values()) {
+    const { filePath, dependencies, analysis } = snapshot;
     const imports = new Set<string>();
 
     // Extract module paths from canonical IDs in dependencies
-    for (const depId of dependencies) {
-      const [modulePath] = depId.split("::");
-      if (modulePath && modulePath !== filePath && modulesByPath.has(modulePath)) {
-        imports.add(modulePath);
+    for (const { resolvedPath } of dependencies) {
+      if (resolvedPath && resolvedPath !== filePath && snapshots.has(resolvedPath)) {
+        imports.add(resolvedPath);
       }
     }
 
     // Phase 3: Handle runtime imports for modules with no tracked dependencies
-    if (dependencies.length === 0 && moduleSummary.runtimeImports.length > 0) {
-      for (const runtimeImport of moduleSummary.runtimeImports) {
-        const resolved = await resolveModuleSpecifierRuntime(runtimeImport.source, filePath, modulesByPath);
+    if (dependencies.length === 0 && analysis.imports.length > 0) {
+      for (const imp of analysis.imports) {
+        if (imp.isTypeOnly) {
+          continue;
+        }
+
+        const resolved = await resolveModuleSpecifierRuntime(imp.source, filePath, snapshots);
         if (resolved) {
           imports.add(resolved);
         }
@@ -197,30 +185,9 @@ const extractModuleAdjacency = async (graph: DependencyGraph): Promise<Map<strin
   }
 
   // Include all modules, even isolated ones with no importers
-  for (const modulePath of modulesByPath.keys()) {
+  for (const modulePath of snapshots.keys()) {
     if (!adjacency.has(modulePath)) {
       adjacency.set(modulePath, new Set());
-    }
-  }
-
-  return adjacency;
-};
-
-/**
- * Extract definition-level adjacency from dependency graph.
- * Returns Map of canonical ID -> set of IDs that depend on it.
- */
-const extractDefinitionAdjacency = (graph: DependencyGraph): Map<CanonicalId, Set<CanonicalId>> => {
-  const adjacency = new Map<CanonicalId, Set<CanonicalId>>();
-
-  for (const node of graph.values()) {
-    const { id, dependencies } = node;
-
-    for (const depId of dependencies) {
-      if (!adjacency.has(depId)) {
-        adjacency.set(depId, new Set());
-      }
-      adjacency.get(depId)?.add(id);
     }
   }
 
@@ -256,85 +223,6 @@ const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<
   return affected;
 };
 
-/**
- * Collect all definitions affected by removed files.
- */
-const collectAffectedDefinitions = (removedFiles: Set<string>, snapshots: Map<string, DiscoverySnapshot>): Set<CanonicalId> => {
-  const affectedDefinitions = new Set<CanonicalId>();
-
-  for (const filePath of removedFiles) {
-    const snapshot = snapshots.get(filePath);
-    if (snapshot) {
-      for (const def of snapshot.definitions) {
-        affectedDefinitions.add(def.canonicalId);
-      }
-    }
-  }
-
-  return affectedDefinitions;
-};
-
-/**
- * Validate that all dependencies in the graph exist.
- * Returns an error if any node references a missing dependency.
- */
-const validateGraphDependencies = (graph: DependencyGraph): Result<void, BuilderError> => {
-  for (const node of graph.values()) {
-    for (const depId of node.dependencies) {
-      if (!graph.has(depId)) {
-        // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
-        const [depFilePath = ""] = depId.split("::");
-
-        return err(builderErrors.graphCircularDependency([node.filePath, depFilePath]));
-      }
-    }
-  }
-  return ok(undefined);
-};
-
-/**
- * Remove files from session state and return affected modules.
- */
-const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<string> => {
-  const affectedModules = new Set<string>();
-
-  // Collect affected definitions before removing snapshots
-  const affectedDefinitions = collectAffectedDefinitions(removedFiles, state.snapshots);
-
-  // Remove from snapshots
-  for (const filePath of removedFiles) {
-    state.snapshots.delete(filePath);
-  }
-
-  // Find modules that depend on removed definitions
-  for (const defId of affectedDefinitions) {
-    const dependents = state.definitionAdjacency.get(defId);
-    if (dependents) {
-      for (const dependentId of dependents) {
-        // Extract file path from canonical ID (format: "path/to/file.ts::exportName")
-        const parts = dependentId.split("::");
-        const filePath = parts[0];
-        if (filePath && filePath.length > 0) {
-          affectedModules.add(filePath);
-        }
-      }
-    }
-    // Remove from adjacency
-    state.definitionAdjacency.delete(defId);
-  }
-
-  // Remove from module adjacency
-  for (const filePath of removedFiles) {
-    state.moduleAdjacency.delete(filePath);
-
-    // Remove from other modules' dependent sets
-    for (const [, dependents] of state.moduleAdjacency) {
-      dependents.delete(filePath);
-    }
-  }
-
-  return affectedModules;
-};
 
 /**
  * Exported internal helpers for testing purposes.
@@ -343,11 +231,9 @@ const dropRemovedFiles = (removedFiles: Set<string>, state: SessionState): Set<s
  */
 export const __internal = {
   extractModuleAdjacency,
-  extractDefinitionAdjacency,
   resolveModuleSpecifierRuntime,
   metadataMatches,
   collectAffectedModules,
-  dropRemovedFiles,
 };
 
 /**
@@ -356,23 +242,23 @@ export const __internal = {
  * The session maintains in-memory state across builds to enable incremental processing.
  * Call buildInitial() first, then use update() for subsequent changes.
  */
-export const createBuilderSession = (options: { readonly evaluatorId?: string } = {}): BuilderSession => {
+export const createBuilderSession = (options: {
+  readonly evaluatorId?: string;
+  readonly config: ResolvedSodaGqlConfig;
+}): BuilderSession => {
+  const config = options.config;
   const evaluatorId = options.evaluatorId ?? "default";
 
   // Session state stored in closure
   const state: SessionState = {
+    entrypoints: new Set(),
     snapshots: new Map(),
-    graph: new Map(),
-    graphIndex: new Map(),
     moduleAdjacency: new Map(),
-    definitionAdjacency: new Map(),
-    chunkManifest: null,
-    chunkModules: new Map(),
+    intermediateModules: new Map(),
     metadata: {
       schemaHash: "",
       analyzerVersion: "",
     },
-    lastInput: null,
     lastArtifact: null,
   };
 
@@ -382,28 +268,59 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     prefix: ["builder"],
   });
 
-  let discoveryCache: ReturnType<typeof createDiscoveryCache> | null = null;
-  let astAnalyzer: ReturnType<typeof getAstAnalyzer> | null = null;
+  const ensureDiscoveryCache = cachedFn(() =>
+    createDiscoveryCache({
+      factory: cacheFactory,
+      analyzer: config.builder.analyzer,
+      evaluatorId,
+    }),
+  );
 
-  const buildInitial = async (input: BuilderInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
+
+  const updateEntrypoints = (input: { toAdd: readonly string[]; toRemove: readonly string[] }) => {
+    for (const entry of input.toAdd) {
+      state.entrypoints.add(entry);
+    }
+    for (const entry of input.toRemove) {
+      state.entrypoints.delete(entry);
+    }
+  };
+
+  const evaluate = async ({ intermediateModules }: { intermediateModules: Map<string, IntermediateModule>; }) => {
+    // Determine import paths from config
+    const registry = createPseudoModuleRegistry();
+    const gqlImportPath = resolve(process.cwd(), config.graphqlSystemPath);
+
+    const vmContext = createContext({
+      ...(await import(gqlImportPath)),
+      registry,
+    });
+
+    for (const { script, filePath } of intermediateModules.values()) {
+      try {
+        script.runInContext(vmContext);
+      } catch (error) {
+        console.error(`Error evaluating intermediate module ${filePath}:`, error);
+        throw error;
+      }
+    }
+
+    const elements = registry.evaluate();
+    registry.clear();
+
+    return elements;
+  }
+
+  const buildInitial = async (): Promise<Result<BuilderArtifact, BuilderError>> => {
     // Clear registry for clean slate
     clearPseudoModuleRegistry(evaluatorId);
 
-    // Create or reuse discovery infrastructure
-    if (!discoveryCache) {
-      discoveryCache = createDiscoveryCache({
-        factory: cacheFactory,
-        analyzer: input.analyzer,
-        evaluatorId,
-      });
-    }
-
-    if (!astAnalyzer) {
-      astAnalyzer = getAstAnalyzer(input.analyzer);
-    }
+    const discoveryCache = ensureDiscoveryCache();
+    const astAnalyzer = ensureAstAnalyzer();
 
     // Resolve entry paths
-    const entryPathsResult = resolveEntryPaths(input.entry);
+    const entryPathsResult = resolveEntryPaths(Array.from(state.entrypoints));
     if (entryPathsResult.isErr()) {
       return err(entryPathsResult.error);
     }
@@ -412,8 +329,8 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Compute metadata for snapshots
     const snapshotMetadata = {
-      schemaHash: input.schemaHash,
-      analyzerVersion: input.analyzer,
+      schemaHash: "TODO",
+      analyzerVersion: config.builder.analyzer,
     };
 
     // Run discovery
@@ -435,75 +352,36 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     }
 
     // Build analyses from snapshots
-    const analyses = snapshots.map((s) => s.analysis);
+    const analyses = new Map(snapshots.map((s) => [s.normalizedFilePath, s.analysis]));
 
     // Build dependency graph
-    const dependencyGraph = buildDependencyGraph(analyses);
-    if (dependencyGraph.isErr()) {
-      const graphError = dependencyGraph.error;
+    const dependenciesValidationResult = validateModuleDependencies({ analyses });
+    if (dependenciesValidationResult.isErr()) {
+      const graphError = dependenciesValidationResult.error;
       if (graphError.code === "MISSING_IMPORT") {
-        return err({
-          code: "RUNTIME_MODULE_LOAD_FAILED",
-          filePath: graphError.chain[0] || "",
-          astPath: "",
-          message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
-        });
+        return err(builderErrors.graphMissingImport(graphError.chain[0], graphError.chain[1]));
       }
-      return err(builderErrors.graphCircularDependency(graphError.chain as readonly string[]));
+      return err(builderErrors.graphCircularDependency(graphError.chain));
     }
 
-    const graph = dependencyGraph.value;
-
-    // Store graph and build index
-    state.graph = graph;
-    state.graphIndex = buildGraphIndex(graph);
-
     // Extract and store adjacency maps
-    state.moduleAdjacency = await extractModuleAdjacency(graph);
-    state.definitionAdjacency = extractDefinitionAdjacency(graph);
+    state.moduleAdjacency = await extractModuleAdjacency(state.snapshots);
 
     // Store metadata
     state.metadata = snapshotMetadata;
 
-    // Store input for fallback rebuilds
-    state.lastInput = input;
-
-    // Create intermediate module chunks
-    const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-
-    // Plan chunks and persist manifest
-    const manifest = planChunks(graph, state.graphIndex, runtimeDir);
-    state.chunkManifest = manifest;
-
-    const chunksResult = await createIntermediateModuleChunks({
-      graph,
-      graphIndex: state.graphIndex,
-      config: input.config,
-      outDir: runtimeDir,
-      evaluatorId,
+    const intermediateModules = buildIntermediateModules({ analyses,
+      targetPaths: new Set(analyses.keys()),
     });
 
-    if (chunksResult.isErr()) {
-      return err(chunksResult.error);
-    }
-
-    // Store written chunks and extract statistics
-    const { written: writtenChunks, skipped: chunksSkipped } = chunksResult.value;
-    state.chunkModules = writtenChunks;
-
-    // Build chunk paths map for artifact builder
-    const chunkPaths = new Map<string, string>();
-    for (const [chunkId, chunk] of writtenChunks.entries()) {
-      chunkPaths.set(chunkId, chunk.transpiledPath);
-    }
-
-    // Build artifact from all chunks
+    // Evaluate all intermediate modules
+    const elements = await evaluate({ intermediateModules: intermediateModules });
+    
+    // Build artifact from all intermediate modules
     const artifactResult = await buildArtifact({
-      graph,
+      analyses,
+      elements,
       cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-      chunks: { written: writtenChunks.size, skipped: chunksSkipped },
-      intermediateModulePaths: chunkPaths,
-      evaluatorId,
     });
 
     if (artifactResult.isErr()) {
@@ -512,6 +390,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
 
     // Store artifact for no-change scenarios
     state.lastArtifact = artifactResult.value;
+    state.intermediateModules = intermediateModules;
 
     return ok(artifactResult.value);
   };
@@ -520,49 +399,33 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     // Clear registry for clean slate (avoids import cache issues)
     clearPseudoModuleRegistry(evaluatorId);
 
+    const discoveryCache = ensureDiscoveryCache();
+    const astAnalyzer = ensureAstAnalyzer();
+
     // Validate metadata - fall back to full rebuild if mismatch
     if (!metadataMatches(changeSet.metadata, state.metadata)) {
       // Purge removed files from caches before rebuild
       for (const removedPath of changeSet.removed) {
-        if (discoveryCache) {
-          discoveryCache.delete(removedPath);
-        }
+        discoveryCache.delete(removedPath);
         invalidateFingerprint(removedPath);
         state.snapshots.delete(removedPath);
       }
 
       // Clear state and rebuild
       state.snapshots.clear();
-      state.graph.clear();
-      state.graphIndex.clear();
       state.moduleAdjacency.clear();
-      state.definitionAdjacency.clear();
-      state.chunkManifest = null;
-      state.chunkModules.clear();
+      state.intermediateModules.clear();
       state.metadata = {
         schemaHash: "",
         analyzerVersion: "",
       };
 
-      // Fall back to buildInitial
-      if (!state.lastInput) {
-        return err({
-          code: "RUNTIME_MODULE_LOAD_FAILED",
-          filePath: "",
-          astPath: "",
-          message: "Metadata mismatch but no previous input available for rebuild",
-        });
-      }
-
       // Sanitize entry paths by filtering out removed files
       const normalizedRemoved = new Set(coercePaths(changeSet.removed));
-      const sanitizedEntry = state.lastInput.entry.filter((path) => !normalizedRemoved.has(path));
-      state.lastInput = {
-        ...state.lastInput,
-        entry: sanitizedEntry,
-      };
+      const sanitizedEntry = Array.from(state.entrypoints).filter((path) => !normalizedRemoved.has(path));
+      updateEntrypoints({ toAdd: sanitizedEntry, toRemove: Array.from(normalizedRemoved) });
 
-      return buildInitial(state.lastInput);
+      return buildInitial();
     }
 
     // Track changed and removed files using coercePaths helper
@@ -584,54 +447,19 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       });
     }
 
-    // 1. Drop removed files and collect their dependents
-    const removedAffected = dropRemovedFiles(removedFiles, state);
-
     // Clear discovery cache for removed files
-    for (const path of removedFiles) {
-      discoveryCache?.delete(path);
-      invalidateFingerprint(path);
+    for (const filePath of removedFiles) {
+      // state.snapshots.delete(filePath);
+      discoveryCache.delete(filePath);
+      invalidateFingerprint(filePath);
     }
 
     // 2. Collect all affected modules (changed + dependents from removed + transitive)
-    const allChangedFiles = new Set([...changedFiles, ...removedAffected]);
-    const _affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
-
-    // Strategy 3: True incremental rebuild with graph patches and chunk updates
-    if (!state.lastInput) {
-      return err({
-        code: "RUNTIME_MODULE_LOAD_FAILED",
-        filePath: "",
-        astPath: "",
-        message: "Cannot perform incremental update without previous input",
-      });
-    }
-
-    // Create or reuse discovery infrastructure
-    if (!discoveryCache) {
-      discoveryCache = createDiscoveryCache({
-        factory: cacheFactory,
-        analyzer: state.lastInput.analyzer,
-        evaluatorId,
-      });
-    }
-
-    if (!astAnalyzer) {
-      astAnalyzer = getAstAnalyzer(state.lastInput.analyzer);
-    }
-
-    // Guard: ensure state.lastInput and config are available
-    if (!state.lastInput || !state.lastInput.config) {
-      return err({
-        code: "RUNTIME_MODULE_LOAD_FAILED",
-        filePath: "",
-        astPath: "",
-        message: "Missing lastInput or config for incremental rebuild",
-      });
-    }
+    const allChangedFiles = new Set([...changedFiles, ...removedFiles]);
+    const affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
 
     // Resolve entry paths
-    const entryPathsResult = resolveEntryPaths(state.lastInput.entry);
+    const entryPathsResult = resolveEntryPaths(Array.from(state.entrypoints));
     if (entryPathsResult.isErr()) {
       return err(entryPathsResult.error);
     }
@@ -639,7 +467,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     const entryPaths = entryPathsResult.value;
 
     // Pass changed files, removed files, AND removed dependents as invalidated paths
-    const invalidatedPaths = new Set([...changedFiles, ...removedFiles, ...removedAffected]);
+    const allAffectedFiles = new Set([...changedFiles, ...removedFiles, ...affectedModules]);
 
     // Run discovery with invalidations
     const discoveryResult = discoverModules({
@@ -647,7 +475,7 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
       astAnalyzer,
       cache: discoveryCache,
       metadata: state.metadata,
-      invalidatedPaths,
+      invalidatedPaths: allAffectedFiles,
     });
     if (discoveryResult.isErr()) {
       return err(discoveryResult.error);
@@ -661,121 +489,45 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     }
 
     // Build analyses from snapshots
-    const analyses = snapshots.map((s) => s.analysis);
+    const analyses = new Map(snapshots.map((s) => [s.normalizedFilePath, s.analysis]));
 
-    // Build NEW dependency graph from fresh discovery
-    const dependencyGraph = buildDependencyGraph(analyses);
-    if (dependencyGraph.isErr()) {
-      const graphError = dependencyGraph.error;
+    const dependenciesValidationResult = validateModuleDependencies({ analyses });
+    if (dependenciesValidationResult.isErr()) {
+      const graphError = dependenciesValidationResult.error;
       if (graphError.code === "MISSING_IMPORT") {
-        return err({
-          code: "RUNTIME_MODULE_LOAD_FAILED",
-          filePath: graphError.chain[0] || "",
-          astPath: "",
-          message: `Cannot resolve import '${graphError.chain[1]}' from '${graphError.chain[0]}'. The imported file may have been deleted or moved.`,
-        });
+        return err(builderErrors.graphMissingImport(graphError.chain[0], graphError.chain[1]));
       }
-      return err(builderErrors.graphCircularDependency(graphError.chain as readonly string[]));
-    }
-
-    const newGraph = dependencyGraph.value;
-
-    // Diff graphs to compute patch
-    const graphPatch = diffDependencyGraphs(state.graph, newGraph);
-
-    // Apply patch to existing graph
-    applyGraphPatch(state.graph, state.graphIndex, graphPatch);
-
-    // Validate that all dependencies are satisfied after patching
-    const validationResult = validateGraphDependencies(state.graph);
-    if (validationResult.isErr()) {
-      return err(validationResult.error);
+      return err(builderErrors.graphCircularDependency(graphError.chain));
     }
 
     // Update adjacency maps (full rebuild for now - could be optimized)
-    state.moduleAdjacency = await extractModuleAdjacency(state.graph);
-    state.definitionAdjacency = extractDefinitionAdjacency(state.graph);
+    state.moduleAdjacency = await extractModuleAdjacency(state.snapshots);
 
-    // Plan chunks from updated graph
-    const runtimeDir = join(process.cwd(), ".cache", "soda-gql", "builder", "runtime");
-    const newManifest = planChunks(state.graph, state.graphIndex, runtimeDir);
-
-    // Diff chunk manifests to find changed chunks
-    const chunkDiff = state.chunkManifest
-      ? diffChunkManifests(state.chunkManifest, newManifest)
-      : { added: newManifest.chunks, updated: new Map(), removed: new Set<string>() };
-
-    // Persist new manifest
-    state.chunkManifest = newManifest;
-
-    // Create next chunk modules map (copy current state)
-    const nextChunkModules = new Map(state.chunkModules);
+    // Create next intermediate modules map (copy current state)
+    const intermediateModules = new Map(state.intermediateModules);
 
     // Remove deleted chunks from next map immediately
-    for (const removedChunkId of chunkDiff.removed) {
-      nextChunkModules.delete(removedChunkId as string);
+    for (const removedFilePath of removedFiles) {
+      intermediateModules.delete(removedFilePath);
     }
 
     // Build and write affected chunks
-    const affectedChunkIds = new Set([...chunkDiff.added.keys(), ...chunkDiff.updated.keys()]);
+    if (affectedModules.size > 0) {
+      // Build intermediate modules for affected files
+      const incrementalIntermediateModules = buildIntermediateModules({ analyses, targetPaths: allAffectedFiles });
 
-    // Track chunk write statistics
-    let chunksWritten = 0;
-    let chunksSkipped = 0;
-
-    if (affectedChunkIds.size > 0) {
-      // Get import paths from config
-      const gqlImportPath = resolveGqlImportPath({ config: state.lastInput.config, outDir: runtimeDir });
-      const coreImportPath = resolveCoreImportPath({ config: state.lastInput.config, outDir: runtimeDir });
-
-      // Build chunk modules for affected files
-      const allChunks = buildChunkModules({
-        graph: state.graph,
-        graphIndex: state.graphIndex,
-        outDir: runtimeDir,
-        gqlImportPath,
-        coreImportPath,
-        evaluatorId,
-      });
-
-      // Filter to only affected chunks
-      const affectedChunks = new Map();
-      for (const [chunkId, chunk] of allChunks.entries()) {
-        if (affectedChunkIds.has(chunkId)) {
-          affectedChunks.set(chunkId, chunk);
-        }
+      for (const [filePath, intermediateModule] of incrementalIntermediateModules.entries()) {
+        intermediateModules.set(filePath, intermediateModule);
       }
-
-      // Write affected chunks to disk
-      const writeResult = await writeChunkModules({ chunks: affectedChunks, outDir: runtimeDir });
-      if (writeResult.isErr()) {
-        return err(writeResult.error);
-      }
-
-      // Update next map with freshly written chunks
-      const { written, skipped } = writeResult.value;
-      for (const [chunkId, writtenChunk] of written.entries()) {
-        nextChunkModules.set(chunkId, writtenChunk);
-      }
-
-      // Track chunk write statistics
-      chunksWritten = written.size;
-      chunksSkipped = skipped;
     }
 
-    // Build chunk paths map from NEXT chunk modules (includes fresh chunks, excludes removed)
-    const allChunkPaths = new Map<string, string>();
-    for (const [chunkId, chunk] of nextChunkModules.entries()) {
-      allChunkPaths.set(chunkId, chunk.transpiledPath);
-    }
+    const elements = await evaluate({ intermediateModules });
 
     // Build artifact from all chunks
     const artifactResult = await buildArtifact({
-      graph: state.graph,
+      analyses,
+      elements,
       cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
-      chunks: { written: chunksWritten, skipped: chunksSkipped },
-      intermediateModulePaths: allChunkPaths,
-      evaluatorId,
     });
 
     if (artifactResult.isErr()) {
@@ -783,26 +535,24 @@ export const createBuilderSession = (options: { readonly evaluatorId?: string } 
     }
 
     // Commit the chunk module changes now that loading succeeded
-    state.chunkModules = nextChunkModules;
+    state.intermediateModules = intermediateModules;
 
     // Store and return the artifact
     state.lastArtifact = artifactResult.value;
     return ok(artifactResult.value);
   };
 
-  const getSnapshot = (): BuilderSessionSnapshot => {
-    return {
-      snapshotCount: state.snapshots.size,
-      moduleAdjacencySize: state.moduleAdjacency.size,
-      definitionAdjacencySize: state.definitionAdjacency.size,
-      metadata: {
-        schemaHash: state.metadata.schemaHash,
-        analyzerVersion: state.metadata.analyzerVersion,
-      },
-    };
-  };
+  const getSnapshot = (): BuilderSessionSnapshot => ({
+    snapshotCount: state.snapshots.size,
+    moduleAdjacencySize: state.moduleAdjacency.size,
+    metadata: {
+      schemaHash: state.metadata.schemaHash,
+      analyzerVersion: state.metadata.analyzerVersion,
+    },
+  });
 
   return {
+    updateEntrypoints,
     buildInitial,
     update,
     getSnapshot,

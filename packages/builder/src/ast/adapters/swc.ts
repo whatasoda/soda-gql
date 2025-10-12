@@ -3,7 +3,7 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
-import { createCanonicalTracker } from "@soda-gql/common";
+import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
@@ -297,14 +297,21 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
   return true;
 };
 
-const collectAllDefinitions = (
-  module: SwcModule,
-  gqlIdentifiers: ReadonlySet<string>,
-  _imports: readonly ModuleImport[],
-  exports: readonly ModuleExport[],
-  resolvePosition: (offset: number) => SourcePosition,
-  source: string,
-): {
+const collectAllDefinitions = ({
+  module,
+  gqlIdentifiers,
+  imports: _imports,
+  exports,
+  resolvePosition,
+  source,
+}: {
+  module: SwcModule;
+  gqlIdentifiers: ReadonlySet<string>;
+  imports: readonly ModuleImport[];
+  exports: readonly ModuleExport[];
+  resolvePosition: (offset: number) => SourcePosition;
+  source: string;
+}): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly CallExpression[];
 } => {
@@ -536,6 +543,7 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
+        canonicalId: createCanonicalId(module.__filePath, item.astPath),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -605,14 +613,14 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     readonly handles: readonly CallExpression[];
   } {
     const resolvePosition = toPositionResolver(context.source);
-    const { definitions, handledCalls } = collectAllDefinitions(
-      file as SwcModule,
-      context.gqlIdentifiers,
-      context.imports,
-      context.exports,
+    const { definitions, handledCalls } = collectAllDefinitions({
+      module: file as SwcModule,
+      gqlIdentifiers: context.gqlIdentifiers,
+      imports: context.imports,
+      exports: context.exports,
       resolvePosition,
-      context.source,
-    );
+      source: context.source,
+    });
     return { definitions, handles: handledCalls };
   },
 

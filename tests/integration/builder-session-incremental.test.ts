@@ -65,15 +65,10 @@ describe("BuilderSession incremental end-to-end", () => {
 
   test("initial build creates chunks and artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId });
+    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
 
-    const result = await session.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      config: createTestConfig(workspaceRoot),
-    });
+    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const result = await session.buildInitial();
 
     if (result.isErr()) {
       console.error("Build failed:", result.error);
@@ -98,16 +93,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("applies graph patch when a module changes", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId });
+    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    const initial = await session.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      config: createTestConfig(workspaceRoot),
-    });
+    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const initial = await session.buildInitial();
 
     if (initial.isErr()) {
       console.error("Build failed:", initial.error);
@@ -157,14 +147,12 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updatedArtifact.report.cache.hits).toBeGreaterThan(0);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
-    const fullRebuild = await fullRebuildSession.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const fullRebuildSession = createBuilderSession({
+      evaluatorId: fullRebuildEvaluatorId,
       config: createTestConfig(workspaceRoot),
     });
+    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const fullRebuild = await fullRebuildSession.buildInitial();
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -179,16 +167,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("adds new module without touching unaffected chunks", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId });
+    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    const initial = await session.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      config: createTestConfig(workspaceRoot),
-    });
+    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const initial = await session.buildInitial();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -223,14 +206,12 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(Object.keys(updatedArtifact.elements).length).toBeGreaterThan(Object.keys(initialArtifact.elements).length);
 
     // Verify incremental equals full rebuild
-    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
-    const fullRebuild = await fullRebuildSession.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const fullRebuildSession = createBuilderSession({
+      evaluatorId: fullRebuildEvaluatorId,
       config: createTestConfig(workspaceRoot),
     });
+    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const fullRebuild = await fullRebuildSession.buildInitial();
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -245,16 +226,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("removes module and updates artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId });
+    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    const initial = await session.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      config: createTestConfig(workspaceRoot),
-    });
+    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const initial = await session.buildInitial();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -280,29 +256,28 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
       const error = updateResult.error;
-      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
-      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-        expect(error.message).toContain("Cannot resolve import");
-        expect(error.message).toContain("user.catalog");
+      expect(error.code).toBe("GRAPH_MISSING_IMPORT");
+      if (error.code === "GRAPH_MISSING_IMPORT") {
+        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
+        expect(error.importee).toBe("../entities/user.catalog");
       }
     }
 
     // Full rebuild should also fail with the same error
-    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
-    const fullRebuild = await fullRebuildSession.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const fullRebuildSession = createBuilderSession({
+      evaluatorId: fullRebuildEvaluatorId,
       config: createTestConfig(workspaceRoot),
     });
+    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const fullRebuild = await fullRebuildSession.buildInitial();
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
       const error = fullRebuild.error;
-      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
-      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-        expect(error.message).toContain("Cannot resolve import");
+      expect(error.code).toBe("GRAPH_MISSING_IMPORT");
+      if (error.code === "GRAPH_MISSING_IMPORT") {
+        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
+        expect(error.importee).toBe("../entities/user.catalog");
       }
     }
   });
@@ -310,16 +285,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("handles mixed add/update/remove in one pass", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId });
+    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    const initial = await session.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      config: createTestConfig(workspaceRoot),
-    });
+    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const initial = await session.buildInitial();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -362,29 +332,28 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
       const error = updateResult.error;
-      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
-      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-        expect(error.message).toContain("Cannot resolve import");
-        expect(error.message).toContain("user.catalog");
+      expect(error.code).toBe("GRAPH_MISSING_IMPORT");
+      if (error.code === "GRAPH_MISSING_IMPORT") {
+        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
+        expect(error.importee).toBe("../entities/user.catalog");
       }
     }
 
     // Full rebuild should also fail with the same error
-    const fullRebuildSession = createBuilderSession({ evaluatorId: fullRebuildEvaluatorId });
-    const fullRebuild = await fullRebuildSession.buildInitial({
-      mode: "runtime",
-      entry: [path.join(workspaceRoot, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const fullRebuildSession = createBuilderSession({
+      evaluatorId: fullRebuildEvaluatorId,
       config: createTestConfig(workspaceRoot),
     });
+    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
+    const fullRebuild = await fullRebuildSession.buildInitial();
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
       const error = fullRebuild.error;
-      expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
-      if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-        expect(error.message).toContain("Cannot resolve import");
+      expect(error.code).toBe("GRAPH_MISSING_IMPORT");
+      if (error.code === "GRAPH_MISSING_IMPORT") {
+        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
+        expect(error.importee).toBe("../entities/user.catalog");
       }
     }
   });

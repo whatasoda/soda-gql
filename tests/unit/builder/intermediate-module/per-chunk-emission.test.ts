@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { buildGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
+import { createGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
 import type { DependencyGraph, DependencyGraphNode } from "@soda-gql/builder/dependency-graph/types";
-import { buildChunkModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
+import { buildIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
 import { createCanonicalId } from "@soda-gql/common";
 
 const createTestNode = (
@@ -38,10 +38,10 @@ describe("buildChunkModules", () => {
       [createCanonicalId("/src/a.ts", "foo"), createTestNode("/src/a.ts", "foo", "gql.default({ name: 'Foo' })")],
     ]);
 
-    const graphIndex = buildGraphIndex(graph);
-    const result = buildChunkModules({
+    const graphIndex = createGraphIndex(graph);
+    const result = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
@@ -53,9 +53,7 @@ describe("buildChunkModules", () => {
 
     const chunk = result.get("/src/a.ts");
     expect(chunk).toBeDefined();
-    expect(chunk?.chunkId).toBe("/src/a.ts");
-    expect(chunk?.sourcePath).toBe("/src/a.ts");
-    expect(chunk?.outputPath).toMatch(/\/out\/.*\.mjs$/);
+    expect(chunk?.filePath).toBe("/src/a.ts");
     expect(chunk?.canonicalIds).toHaveLength(1);
     expect(chunk?.sourceCode).toContain("gql.default({ name: 'Foo' })");
   });
@@ -66,10 +64,10 @@ describe("buildChunkModules", () => {
       [createCanonicalId("/src/b.ts", "bar"), createTestNode("/src/b.ts", "bar", "gql.default({ name: 'Bar' })")],
     ]);
 
-    const graphIndex = buildGraphIndex(graph);
-    const result = buildChunkModules({
+    const graphIndex = createGraphIndex(graph);
+    const result = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
@@ -87,10 +85,10 @@ describe("buildChunkModules", () => {
       [createCanonicalId("/src/a.ts", "bar"), createTestNode("/src/a.ts", "bar", "gql.default({ name: 'Bar' })")],
     ]);
 
-    const graphIndex = buildGraphIndex(graph);
-    const result = buildChunkModules({
+    const graphIndex = createGraphIndex(graph);
+    const result = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
@@ -110,19 +108,19 @@ describe("buildChunkModules", () => {
       [createCanonicalId("/src/a.ts", "foo"), createTestNode("/src/a.ts", "foo", "gql.default({ name: 'Foo' })")],
     ]);
 
-    const graphIndex = buildGraphIndex(graph);
-    const result1 = buildChunkModules({
+    const graphIndex = createGraphIndex(graph);
+    const result1 = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
       evaluatorId: "test",
     });
 
-    const result2 = buildChunkModules({
+    const result2 = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
@@ -150,10 +148,10 @@ describe("buildChunkModules", () => {
       [barId, createTestNode("/src/b.ts", "bar", "gql.default({ name: 'Bar' })")],
     ]);
 
-    const graphIndex = buildGraphIndex(graph);
-    const result = buildChunkModules({
+    const graphIndex = createGraphIndex(graph);
+    const result = buildIntermediateModules({
       graph,
-      graphIndex,
+      graphIndex: graphIndex,
       outDir: "/out",
       gqlImportPath: "@/graphql-system",
       coreImportPath: "@soda-gql/core",
@@ -162,26 +160,5 @@ describe("buildChunkModules", () => {
 
     const chunkA = result.get("/src/a.ts");
     expect(chunkA?.imports).toContain("/src/b.ts");
-  });
-
-  test("should skip self-imports in chunk imports", () => {
-    const graph: DependencyGraph = new Map([
-      [createCanonicalId("/src/a.ts", "foo"), createTestNode("/src/a.ts", "foo", "gql.default({ name: 'Foo' })", ["/src/a.ts"])],
-      [createCanonicalId("/src/a.ts", "bar"), createTestNode("/src/a.ts", "bar", "gql.default({ name: 'Bar' })")],
-    ]);
-
-    const graphIndex = buildGraphIndex(graph);
-    const result = buildChunkModules({
-      graph,
-      graphIndex,
-      outDir: "/out",
-      gqlImportPath: "@/graphql-system",
-      coreImportPath: "@soda-gql/core",
-      evaluatorId: "test",
-    });
-
-    const chunk = result.get("/src/a.ts");
-    expect(chunk?.imports).not.toContain("/src/a.ts");
-    expect(chunk?.imports).toHaveLength(0);
   });
 });

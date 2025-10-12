@@ -68,15 +68,12 @@ describe("BuilderSession E2E", () => {
   });
 
   it("should perform initial build and cache state", async () => {
-    const session = createBuilderSession();
-
-    const result = await session.buildInitial({
-      mode: "runtime",
-      entry: [join(workspace, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const session = createBuilderSession({
       config: createTestConfig(workspace),
     });
+
+    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
+    const result = await session.buildInitial();
 
     expect(result.isOk()).toBe(true);
 
@@ -88,17 +85,17 @@ describe("BuilderSession E2E", () => {
   });
 
   it("should handle file modification incrementally", async () => {
-    const session = createBuilderSession();
-
-    // Initial build
-    const initialResult = await session.buildInitial({
-      mode: "runtime",
-      entry: [join(workspace, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const session = createBuilderSession({
       config: createTestConfig(workspace),
     });
 
+    // Initial build
+    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
+    const initialResult = await session.buildInitial();
+
+    if (initialResult.isErr()) {
+      console.error("Build failed:", initialResult.error);
+    }
     expect(initialResult.isOk()).toBe(true);
 
     // Modify a file
@@ -131,16 +128,13 @@ describe("BuilderSession E2E", () => {
   });
 
   it("should handle empty update (no actual changes)", async () => {
-    const session = createBuilderSession();
-
-    // Initial build
-    const initialResult = await session.buildInitial({
-      mode: "runtime",
-      entry: [join(workspace, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const session = createBuilderSession({
       config: createTestConfig(workspace),
     });
+
+    // Initial build
+    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
+    const initialResult = await session.buildInitial();
 
     expect(initialResult.isOk()).toBe(true);
 
@@ -166,16 +160,13 @@ describe("BuilderSession E2E", () => {
   });
 
   it("should rebuild when metadata changes", async () => {
-    const session = createBuilderSession();
-
-    // Initial build
-    const initialResult = await session.buildInitial({
-      mode: "runtime",
-      entry: [join(workspace, "src/**/*.ts")],
-      analyzer: "ts",
-      schemaHash: "test-schema",
+    const session = createBuilderSession({
       config: createTestConfig(workspace),
     });
+
+    // Initial build
+    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
+    const initialResult = await session.buildInitial();
 
     expect(initialResult.isOk()).toBe(true);
 

@@ -35,25 +35,29 @@ export const normalizePath = (value: string): string => normalize(value).replace
  * Resolve a module specifier using an in-memory module lookup.
  * This is the fast path used during dependency graph building.
  *
- * @param currentFile - Absolute path to the importing file
+ * @param filePath - Absolute path to the importing file
  * @param specifier - Module specifier (e.g., './component', '../utils')
- * @param candidates - Map of normalized file paths to ModuleAnalysis
+ * @param analyses - Map of normalized file paths to ModuleAnalysis
  * @returns ModuleAnalysis if found, null otherwise
  */
-export const resolveModuleSpecifier = (
-  currentFile: string,
-  specifier: string,
-  candidates: ReadonlyMap<string, ModuleAnalysis>,
-): ModuleAnalysis | null => {
+export const resolveModuleSpecifier = ({
+  filePath,
+  specifier,
+  analyses,
+}: {
+  filePath: string;
+  specifier: string;
+  analyses: ReadonlyMap<string, ModuleAnalysis>;
+}): ModuleAnalysis | null => {
   // Skip external imports (node_modules, bare specifiers)
   if (!specifier.startsWith(".")) {
     return null;
   }
 
-  const base = normalizePath(resolve(dirname(currentFile), specifier));
+  const base = normalizePath(resolve(dirname(filePath), specifier));
 
   // Try all extension candidates
-  const possible = [
+  const candidates = [
     base, // Already has extension
     `${base}.ts`,
     `${base}.tsx`,
@@ -65,8 +69,8 @@ export const resolveModuleSpecifier = (
     join(base, "index.jsx"),
   ];
 
-  for (const candidate of possible) {
-    const module = candidates.get(normalizePath(candidate));
+  for (const candidate of candidates) {
+    const module = analyses.get(normalizePath(candidate));
     if (module) {
       return module;
     }
@@ -137,7 +141,7 @@ export async function resolveModuleHybrid(
 ): Promise<string | null> {
   // Try Map-based lookup first if available
   if (candidates) {
-    const module = resolveModuleSpecifier(from, specifier, candidates);
+    const module = resolveModuleSpecifier({ filePath: from, specifier, analyses: candidates });
     if (module) {
       return normalizePath(module.filePath);
     }

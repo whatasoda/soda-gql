@@ -4,9 +4,7 @@ import type { BuilderServiceConfig } from "@soda-gql/builder";
  * Builder configuration for artifact generation.
  * Similar to BuilderServiceConfig but mode is optional (defaults to plugin mode).
  */
-export type BuilderConfig = Omit<BuilderServiceConfig, "mode"> & {
-  readonly mode: BuilderServiceConfig["mode"];
-};
+export type BuilderConfig = BuilderServiceConfig;
 
 /**
  * Discriminated union for artifact sources.

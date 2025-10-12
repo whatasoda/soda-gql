@@ -1,2 +1,2 @@
-export { buildDependencyGraph } from "./builder";
-export type { DependencyGraph, DependencyGraphError, DependencyGraphNode, ModuleSummary } from "./types";
+export { validateModuleDependencies } from "./builder";
+export type { DependencyGraphError } from "./types";

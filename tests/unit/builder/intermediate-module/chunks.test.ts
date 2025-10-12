@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph";
-import { buildGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
+import { createGraphIndex } from "@soda-gql/builder/dependency-graph/patcher";
 import { diffChunkManifests, planChunks } from "@soda-gql/builder/internal/intermediate-module/chunks";
 import { createCanonicalId } from "@soda-gql/common";
 
@@ -38,7 +38,7 @@ describe("planChunks", () => {
     graph.set(node1.id, node1);
     graph.set(node2.id, node2);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest = planChunks(graph, index, "/out");
 
     expect(manifest.chunks.size).toBe(2);
@@ -64,7 +64,7 @@ describe("planChunks", () => {
     const node1 = createTestNode("/a.ts", "foo");
     graph.set(node1.id, node1);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest1 = planChunks(graph, index, "/out");
     const manifest2 = planChunks(graph, index, "/out");
 
@@ -87,8 +87,8 @@ describe("planChunks", () => {
     const node2 = createTestNode("/a.ts", "foo", ["/b.ts::bar"]);
     graph2.set(node2.id, node2);
 
-    const index1 = buildGraphIndex(graph1);
-    const index2 = buildGraphIndex(graph2);
+    const index1 = createGraphIndex(graph1);
+    const index2 = createGraphIndex(graph2);
 
     const manifest1 = planChunks(graph1, index1, "/out");
     const manifest2 = planChunks(graph2, index2, "/out");
@@ -109,7 +109,7 @@ describe("planChunks", () => {
     graph.set(node1.id, node1);
     graph.set(node2.id, node2);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest = planChunks(graph, index, "/out");
 
     expect(manifest.chunks.size).toBe(1);
@@ -130,7 +130,7 @@ describe("planChunks", () => {
     graph.set(node2.id, node2);
     graph.set(node3.id, node3);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest = planChunks(graph, index, "/out");
 
     const chunkC = manifest.chunks.get("/c.ts");
@@ -150,7 +150,7 @@ describe("diffChunkManifests", () => {
     const node1 = createTestNode("/a.ts", "foo");
     graph.set(node1.id, node1);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest = planChunks(graph, index, "/out");
 
     const diff = diffChunkManifests(null, manifest);
@@ -171,8 +171,8 @@ describe("diffChunkManifests", () => {
     const node2 = createTestNode("/b.ts", "bar");
     graph2.set(node2.id, node2);
 
-    const index1 = buildGraphIndex(graph1);
-    const index2 = buildGraphIndex(graph2);
+    const index1 = createGraphIndex(graph1);
+    const index2 = createGraphIndex(graph2);
 
     const manifest1 = planChunks(graph1, index1, "/out");
     const manifest2 = planChunks(graph2, index2, "/out");
@@ -194,8 +194,8 @@ describe("diffChunkManifests", () => {
     const node2 = createTestNode("/a.ts", "foo", ["/b.ts::bar"]);
     graph2.set(node2.id, node2);
 
-    const index1 = buildGraphIndex(graph1);
-    const index2 = buildGraphIndex(graph2);
+    const index1 = createGraphIndex(graph1);
+    const index2 = createGraphIndex(graph2);
 
     const manifest1 = planChunks(graph1, index1, "/out");
     const manifest2 = planChunks(graph2, index2, "/out");
@@ -218,8 +218,8 @@ describe("diffChunkManifests", () => {
     const graph2: DependencyGraph = new Map();
     graph2.set(node1.id, node1);
 
-    const index1 = buildGraphIndex(graph1);
-    const index2 = buildGraphIndex(graph2);
+    const index1 = createGraphIndex(graph1);
+    const index2 = createGraphIndex(graph2);
 
     const manifest1 = planChunks(graph1, index1, "/out");
     const manifest2 = planChunks(graph2, index2, "/out");
@@ -245,8 +245,8 @@ describe("diffChunkManifests", () => {
     graph2.set(node1Updated.id, node1Updated);
     graph2.set(node3.id, node3);
 
-    const index1 = buildGraphIndex(graph1);
-    const index2 = buildGraphIndex(graph2);
+    const index1 = createGraphIndex(graph1);
+    const index2 = createGraphIndex(graph2);
 
     const manifest1 = planChunks(graph1, index1, "/out");
     const manifest2 = planChunks(graph2, index2, "/out");
@@ -263,7 +263,7 @@ describe("diffChunkManifests", () => {
     const node1 = createTestNode("/a.ts", "foo");
     graph.set(node1.id, node1);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
     const manifest1 = planChunks(graph, index, "/out");
     const manifest2 = planChunks(graph, index, "/out");
 

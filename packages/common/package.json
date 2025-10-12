@@ -23,5 +23,8 @@
     },
     "./package.json": "./package.json",
     "./tsconfig.json": "./tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
   }
 }

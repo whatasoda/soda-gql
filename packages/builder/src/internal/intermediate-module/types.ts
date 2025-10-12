@@ -1,9 +1,11 @@
-import type { IntermediateArtifactElement } from "@soda-gql/core";
+import type { Script } from "node:vm";
+import type { CanonicalId } from "@soda-gql/common";
 
-export type IntermediateModuleRaw = {
-  register: () => void;
-};
-
-export type IntermediateModuleOutput = {
-  readonly elements: Record<string, IntermediateArtifactElement>;
+export type IntermediateModule = {
+  readonly filePath: string;
+  readonly contentHash: string;
+  readonly canonicalIds: readonly CanonicalId[];
+  readonly sourceCode: string;
+  readonly transpiledCode: string;
+  readonly script: Script;
 };

@@ -1,11 +1,15 @@
 import { isAbsolute, normalize, resolve } from "node:path";
+import z from "zod";
 
 export type CanonicalId = string & { readonly __brand: "CanonicalId" };
 
 const canonicalIdSeparator = "::" as const;
 
-const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
+export const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
+export const CanonicalIdSchema: z.ZodType<CanonicalId> = z.string() as unknown as z.ZodType<CanonicalId>;
+
+// Type-safe schema for CanonicalId - validates as string but types as branded
 export const createCanonicalId = (filePath: string, astPath: string): CanonicalId => {
   if (!isAbsolute(filePath)) {
     throw new Error("[INTERNAL] CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");

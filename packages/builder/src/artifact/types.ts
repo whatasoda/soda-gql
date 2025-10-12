@@ -1,16 +1,15 @@
 import type { CanonicalId } from "@soda-gql/common";
+import type { IntermediateArtifactElement } from "@soda-gql/core";
 import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { DependencyGraph } from "../dependency-graph";
+import type { ModuleAnalysis } from "../ast";
 import type { ModuleLoadStats } from "../discovery/discovery-pipeline";
-import type { ChunkDiff, ChunkManifest } from "../internal/intermediate-module/chunks";
+
+export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;
 
 export type BuildArtifactInput = {
-  readonly graph: DependencyGraph;
+  readonly elements: IntermediateElements;
+  readonly analyses: Map<string, ModuleAnalysis>;
   readonly cache: ModuleLoadStats;
-  readonly chunks?: { written: number; skipped: number }; // Chunk write statistics
-  readonly intermediateModulePath?: string; // Legacy single-file mode
-  readonly intermediateModulePaths?: Map<string, string>; // Chunk mode: chunkId → transpiledPath
-  readonly evaluatorId: string;
 };
 
 export type BuilderArtifactOperation = {
@@ -44,25 +43,5 @@ export type BuilderArtifact = {
       readonly misses: number;
       readonly skips: number;
     };
-    readonly chunks: {
-      readonly written: number;
-      readonly skipped: number;
-    };
   };
-};
-
-/**
- * Delta representing changes in builder artifact between builds.
- */
-export type BuilderArtifactDelta = {
-  /** Added elements (new definitions) */
-  readonly added: Record<CanonicalId, BuilderArtifactElement>;
-  /** Updated elements (modified definitions) */
-  readonly updated: Record<CanonicalId, BuilderArtifactElement>;
-  /** Removed element IDs */
-  readonly removed: Set<CanonicalId>;
-  /** Chunk-level changes */
-  readonly chunks: ChunkDiff;
-  /** Updated chunk manifest */
-  readonly manifest: ChunkManifest;
 };

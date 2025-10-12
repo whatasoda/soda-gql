@@ -1,14 +1,16 @@
+import { cachedFn } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import { type BuilderSession, createBuilderSession } from "./internal/session/builder-session";
+import { createBuilderSession } from "./internal/session/builder-session";
 import type { BuilderChangeSet } from "./internal/session/change-set";
-import type { BuilderError, BuilderInput } from "./types";
+import type { BuilderError } from "./types";
 
 /**
  * Configuration for BuilderService.
  * Mirrors BuilderInput shape.
  */
-export type BuilderServiceConfig = BuilderInput;
+export type BuilderServiceConfig = ResolvedSodaGqlConfig;
 
 /**
  * Builder service interface providing artifact generation.
@@ -40,59 +42,23 @@ export interface BuilderService {
  * @returns BuilderService instance
  */
 export const createBuilderService = (config: BuilderServiceConfig): BuilderService => {
-  // Normalize config to prevent accidental mutation
-  const normalizedConfig: BuilderInput = {
-    mode: config.mode,
-    entry: [...config.entry],
-    analyzer: config.analyzer,
-    config: config.config,
-    schemaHash: config.schemaHash,
-    ...(config.debugDir !== undefined && { debugDir: config.debugDir }),
-  };
-
   // Lazy session initialization
-  const ensureSession = (() => {
-    let session: BuilderSession | null = null;
-
-    return () => {
-      if (!session) {
-        session = createBuilderSession();
-      }
-
-      return session;
-    };
-  })();
-
-  const buildInitialIfNeeded = (() => {
-    let isInitialized = false;
-
-    return (session: BuilderSession, ...args: Parameters<BuilderSession["buildInitial"]>) => {
-      if (!isInitialized) {
-        isInitialized = true;
-        return session.buildInitial(...args);
-      }
-
-      return null;
-    };
-  })();
+  const ensureSession = cachedFn(() => createBuilderSession({ config }));
 
   return {
     build: async () => {
       const session = ensureSession();
 
-      return (
-        buildInitialIfNeeded(session, normalizedConfig) ??
-        // Subsequent builds reuse session (for now, just call buildInitial again)
-        // NOTE: Change detection via update() is handled by CLI watch mode
-        // Direct service.build() calls do full rebuild for correctness
-        session.buildInitial(normalizedConfig)
-      );
+      // Subsequent builds reuse session (for now, just call buildInitial again)
+      // NOTE: Change detection via update() is handled by CLI watch mode
+      // Direct service.build() calls do full rebuild for correctness
+      return session.buildInitial();
     },
 
     update: async (changeSet: BuilderChangeSet) => {
       const session = ensureSession();
 
-      return buildInitialIfNeeded(session, normalizedConfig) ?? session.update(changeSet);
+      return session.update(changeSet);
     },
   };
 };

@@ -473,7 +473,6 @@ describe.skip("BuilderSession", () => {
 
       expect(snapshot.snapshotCount).toBe(0);
       expect(snapshot.moduleAdjacencySize).toBe(0);
-      expect(snapshot.definitionAdjacencySize).toBe(0);
       expect(snapshot.metadata.schemaHash).toBe("");
       expect(snapshot.metadata.analyzerVersion).toBe("");
     });

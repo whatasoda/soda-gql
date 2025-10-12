@@ -205,7 +205,7 @@ export const builderErrors = {
 
   graphMissingImport: (importer: string, importee: string): BuilderError => ({
     code: "GRAPH_MISSING_IMPORT",
-    message: `Missing import: ${importer} imports ${importee} but it's not in the graph`,
+    message: `Missing import: "${importer}" imports "${importee}" but it's not in the graph`,
     importer,
     importee,
   }),

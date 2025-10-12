@@ -2,7 +2,7 @@
 export type BuilderConfig = {
   readonly entry: readonly string[];
   readonly outDir: string;
-  readonly analyzer?: "ts" | "babel";
+  readonly analyzer: "ts" | "swc";
   readonly mode?: "runtime" | "zero-runtime";
 };
 

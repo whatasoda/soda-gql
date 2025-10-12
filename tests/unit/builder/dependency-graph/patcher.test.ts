@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   applyGraphPatch,
-  buildGraphIndex,
+  createGraphIndex,
   type DependencyGraphPatch,
-  type GraphIndex,
+  type GraphIndexByFilePath,
 } from "@soda-gql/builder/dependency-graph/patcher";
 import type { DependencyGraph, DependencyGraphNode, ModuleSummary } from "@soda-gql/builder/dependency-graph/types";
 import { createCanonicalId } from "@soda-gql/common";
@@ -44,7 +44,7 @@ describe("buildGraphIndex", () => {
     graph.set(node2.id, node2);
     graph.set(node3.id, node3);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     expect(index.size).toBe(2);
     expect(index.get("/a.ts")?.size).toBe(2);
@@ -56,7 +56,7 @@ describe("buildGraphIndex", () => {
 
   test("handles empty graph", () => {
     const graph: DependencyGraph = new Map();
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     expect(index.size).toBe(0);
   });
@@ -71,7 +71,7 @@ describe("applyGraphPatch", () => {
     graph.set(node1.id, node1);
     graph.set(node2.id, node2);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     const patch: DependencyGraphPatch = {
       removedModules: new Set(["/a.ts"]),
@@ -98,7 +98,7 @@ describe("applyGraphPatch", () => {
     graph.set(node1.id, node1);
     graph.set(node2.id, node2);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     const patch: DependencyGraphPatch = {
       removedModules: new Set(),
@@ -122,7 +122,7 @@ describe("applyGraphPatch", () => {
 
     graph.set(node1.id, node1);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     const patch: DependencyGraphPatch = {
       removedModules: new Set(),
@@ -139,7 +139,7 @@ describe("applyGraphPatch", () => {
 
   test("upserts new node", () => {
     const graph: DependencyGraph = new Map();
-    const index: GraphIndex = new Map();
+    const index: GraphIndexByFilePath = new Map();
 
     const newNode = createTestNode("/a.ts", "foo");
 
@@ -164,7 +164,7 @@ describe("applyGraphPatch", () => {
 
     graph.set(oldNode.id, oldNode);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     const updatedNode = createTestNode("/a.ts", "foo", ["/c.ts::baz"]);
 
@@ -191,7 +191,7 @@ describe("applyGraphPatch", () => {
     graph.set(node2.id, node2);
     graph.set(node3.id, node3);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     const newNode = createTestNode("/d.ts", "qux");
     const updatedNode2 = createTestNode("/b.ts", "bar", ["/d.ts::qux"]);
@@ -228,7 +228,7 @@ describe("applyGraphPatch", () => {
     graph.set(node1.id, node1);
     graph.set(node2.id, node2);
 
-    const index = buildGraphIndex(graph);
+    const index = createGraphIndex(graph);
 
     // Remove b.ts and update a.ts to depend on c.ts instead
     const node3 = createTestNode("/c.ts", "bar");

@@ -1,5 +1,7 @@
 import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model, Operation, Slice } from "../types/operation";
 
+export type PseudoModuleRegistry = ReturnType<typeof createPseudoModuleRegistry>;
+
 type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
 type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
@@ -34,7 +36,7 @@ export const createPseudoModuleRegistry = () => {
   const moduleCaches = new Map<string, ArtifactRecord>();
   const elements = new Map<string, AcceptableArtifact>();
 
-  const addModule = (filePath: string, factory: () => ArtifactRecord) => {
+  const setModule = (filePath: string, factory: () => ArtifactRecord) => {
     modules.set(filePath, () => {
       const cached = moduleCaches.get(filePath);
       if (cached) {
@@ -109,7 +111,7 @@ export const createPseudoModuleRegistry = () => {
   };
 
   return {
-    addModule,
+    setModule,
     addElement,
     import: import_,
     removeModule,

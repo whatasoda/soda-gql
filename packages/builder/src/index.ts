@@ -32,7 +32,6 @@ export type {
   ModuleEvaluatorContext,
   ModuleEvaluatorInput,
 } from "./discovery/types";
-export { generateArtifact, runBuilder } from "./runner";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";

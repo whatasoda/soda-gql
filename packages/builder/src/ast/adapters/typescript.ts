@@ -4,7 +4,7 @@
  */
 
 import { extname } from "node:path";
-import { createCanonicalTracker } from "@soda-gql/common";
+import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import ts from "typescript";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
@@ -226,11 +226,15 @@ const getPropertyName = (name: ts.PropertyName): string | null => {
 /**
  * Collect all gql definitions (exported, non-exported, top-level, nested)
  */
-const collectAllDefinitions = (
-  sourceFile: ts.SourceFile,
-  identifiers: ReadonlySet<string>,
-  exports: readonly ModuleExport[],
-): {
+const collectAllDefinitions = ({
+  sourceFile,
+  identifiers,
+  exports,
+}: {
+  sourceFile: ts.SourceFile;
+  identifiers: ReadonlySet<string>;
+  exports: readonly ModuleExport[];
+}): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly ts.CallExpression[];
 } => {
@@ -412,6 +416,7 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
+        canonicalId: createCanonicalId(sourceFile.fileName, item.astPath),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -469,7 +474,11 @@ export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     readonly definitions: readonly ModuleDefinition[];
     readonly handles: readonly ts.CallExpression[];
   } {
-    const { definitions, handledCalls } = collectAllDefinitions(file, context.gqlIdentifiers, context.exports);
+    const { definitions, handledCalls } = collectAllDefinitions({
+      sourceFile: file,
+      identifiers: context.gqlIdentifiers,
+      exports: context.exports,
+    });
     return { definitions, handles: handledCalls };
   },
 

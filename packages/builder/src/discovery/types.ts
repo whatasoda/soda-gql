@@ -1,6 +1,5 @@
 import type { CanonicalId } from "@soda-gql/common";
-import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
-import type { BuilderAnalyzer } from "../types";
+import type { ModuleAnalysis, ModuleDefinition, SourceLocation } from "../ast";
 import type { FileFingerprint } from "./fingerprint";
 
 /**
@@ -27,8 +26,6 @@ export type DiscoverySnapshotDefinition = ModuleDefinition & {
  * Metadata for cache validation and invalidation.
  */
 export type DiscoverySnapshotMetadata = {
-  /** Analyzer version used to create this snapshot. */
-  readonly analyzerVersion: string;
   /** Schema hash to detect schema changes. */
   readonly schemaHash: string;
   /** Plugin options hash to detect configuration changes. */
@@ -44,8 +41,6 @@ export type DiscoverySnapshot = {
   readonly filePath: string;
   /** Normalized path (POSIX separators) used as a stable cache key. */
   readonly normalizedFilePath: string;
-  /** Analyzer implementation that produced this snapshot (ts, swc, …). */
-  readonly analyzer: BuilderAnalyzer;
   /** Signature of the source contents used to validate cache entries. */
   readonly signature: string;
   /** File fingerprint for fast cache invalidation. */
@@ -56,16 +51,8 @@ export type DiscoverySnapshot = {
   readonly createdAtMs: number;
   /** Raw analyzer output (imports, exports, definitions, diagnostics). */
   readonly analysis: ModuleAnalysis;
-  /** Convenience view with canonical IDs attached to each top-level definition. */
-  readonly definitions: readonly DiscoverySnapshotDefinition[];
   /** Resolved graph edges for relative imports encountered in the file. */
   readonly dependencies: readonly DiscoveredDependency[];
-  /** Analyzer diagnostics preserved for incremental builds and tooling. */
-  readonly diagnostics: readonly ModuleDiagnostic[];
-  /** Module exports captured for dep-graph construction. */
-  readonly exports: readonly ModuleExport[];
-  /** Module imports captured for dep-graph construction. */
-  readonly imports: readonly ModuleImport[];
 };
 
 /**

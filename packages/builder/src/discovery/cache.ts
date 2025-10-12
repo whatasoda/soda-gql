@@ -15,7 +15,7 @@ export type DiscoveryCacheOptions = {
 };
 
 export class JsonDiscoveryCache extends JsonEntityCache<string, DiscoverySnapshot> implements DiscoveryCache {
-  constructor(private readonly options: DiscoveryCacheOptions) {
+  constructor(options: DiscoveryCacheOptions) {
     const namespace = [...(options.namespacePrefix ?? ["discovery"]), options.analyzer, options.evaluatorId];
 
     super({

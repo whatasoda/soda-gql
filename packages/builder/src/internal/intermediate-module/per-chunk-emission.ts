@@ -1,28 +1,16 @@
 import { createHash } from "node:crypto";
-import { join } from "node:path";
-import type { CanonicalId } from "@soda-gql/common";
-import type { DependencyGraph } from "../../dependency-graph";
-import type { GraphIndex } from "../../dependency-graph/patcher";
-import { getModuleSummaries, groupNodesByFile } from "./analysis";
-import { buildIntermediateModuleSource, type IntermediateModuleSourceInput } from "./codegen";
+import { Script } from "node:vm";
+import { transformSync } from "@swc/core";
+import { err, ok, type Result } from "neverthrow";
+import type { ModuleAnalysis } from "../../ast";
+import type { BuilderError } from "../../errors";
+import { renderRegistryBlock } from "./codegen";
+import type { IntermediateModule } from "./types";
 
-export type ChunkModule = {
-  readonly chunkId: string;
-  readonly sourcePath: string;
-  readonly outputPath: string;
-  readonly contentHash: string;
-  readonly canonicalIds: readonly CanonicalId[];
-  readonly imports: readonly string[];
-  readonly sourceCode: string;
-};
 
-export type BuildChunkModulesInput = {
-  readonly graph: DependencyGraph;
-  readonly graphIndex: GraphIndex;
-  readonly outDir: string;
-  readonly gqlImportPath: string;
-  readonly coreImportPath: string;
-  readonly evaluatorId: string;
+export type BuildIntermediateModulesInput = {
+  readonly analyses: Map<string, ModuleAnalysis>;
+  readonly targetPaths: Set<string>;
 };
 
 /**
@@ -32,84 +20,85 @@ const computeContentHash = (sourceCode: string): string => {
   return createHash("sha256").update(sourceCode).digest("hex").slice(0, 16);
 };
 
-/**
- * Extract chunk imports from a set of nodes.
- * Returns file paths of dependencies, excluding self-imports.
- */
-const extractChunkImports = (filePath: string, nodeIds: Set<CanonicalId>, graph: DependencyGraph): string[] => {
-  const importedFiles = new Set<string>();
+const transpile = ({
+  filePath,
+  sourceCode,
+  contentHash,
+}: {
+  filePath: string;
+  sourceCode: string;
+  contentHash: string;
+}): Result<string, BuilderError> => {
+  try {
+    const result = transformSync(sourceCode, {
+      filename: `${contentHash}.ts`,
+      jsc: {
+        parser: {
+          syntax: "typescript",
+          tsx: false,
+        },
+        target: "es2022",
+      },
+      module: {
+        type: "es6",
+      },
+      sourceMaps: false,
+      minify: false,
+    });
 
-  for (const nodeId of nodeIds) {
-    const node = graph.get(nodeId);
-    if (!node) continue;
-
-    for (const depId of node.dependencies) {
-      const depNode = graph.get(depId);
-      if (!depNode) continue;
-
-      // Skip self-imports
-      if (depNode.filePath === filePath) continue;
-
-      importedFiles.add(depNode.filePath);
-    }
+    return ok(result.code);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return err({
+      code: "RUNTIME_MODULE_LOAD_FAILED",
+      filePath: filePath,
+      astPath: "",
+      message: `SWC transpilation failed: ${message}`,
+    });
   }
-
-  return Array.from(importedFiles).sort();
 };
 
 /**
- * Build chunk modules from dependency graph.
- * Each chunk corresponds to one source file.
+ * Build intermediate modules from dependency graph.
+ * Each intermediate module corresponds to one source file.
  */
-export const buildChunkModules = ({
-  graph,
-  graphIndex: _graphIndex,
-  outDir,
-  gqlImportPath,
-  coreImportPath,
-  evaluatorId,
-}: BuildChunkModulesInput): Map<string, ChunkModule> => {
-  const chunks = new Map<string, ChunkModule>();
-  const summaries = getModuleSummaries(graph);
-  const fileGroups = groupNodesByFile(graph);
+export const buildIntermediateModules = ({ analyses, targetPaths }: BuildIntermediateModulesInput): Map<string, IntermediateModule> => {
+  const intermediateModules = new Map<string, IntermediateModule>();
 
-  for (const fileGroup of fileGroups) {
-    const { filePath, nodes } = fileGroup;
+  for (const filePath of targetPaths) {
+    const analysis = analyses.get(filePath);
+    if (!analysis) {
+      continue;
+    }
 
-    // Get canonical IDs for this chunk
-    const canonicalIds = nodes.map((node) => node.id);
+    // Get canonical IDs for this intermediate module
+    const canonicalIds = analysis.definitions.map(({ canonicalId }) => canonicalId);
 
-    // Extract chunk imports
-    const nodeIdSet = new Set(canonicalIds);
-    const imports = extractChunkImports(filePath, nodeIdSet, graph);
-
-    // Generate source code for this chunk
-    const sourceCode = buildIntermediateModuleSource({
-      fileGroups: [fileGroup],
-      summaries,
-      gqlImportPath,
-      coreImportPath,
-      evaluatorId,
-    } satisfies IntermediateModuleSourceInput);
+    // Generate source code for this intermediate module
+    const sourceCode = renderRegistryBlock({ filePath, analysis, analyses });
 
     // Compute content hash
     const contentHash = computeContentHash(sourceCode);
 
-    // Generate output path
-    const chunkId = filePath;
-    const fileName = `${contentHash}.mjs`;
-    const outputPath = join(outDir, fileName);
+    // Transpile TypeScript to JavaScript using SWC
+    const transpiledCodeResult = transpile({ filePath, sourceCode, contentHash });
+    if (transpiledCodeResult.isErr()) {
+      // error
+      continue;
+    }
+    const transpiledCode = transpiledCodeResult.value;
 
-    chunks.set(chunkId, {
-      chunkId,
-      sourcePath: filePath,
-      outputPath,
+    const script = new Script(transpiledCode);
+
+    intermediateModules.set(filePath, {
+      filePath,
       contentHash,
       canonicalIds,
-      imports,
       sourceCode,
+      transpiledCode,
+      script,
     });
   }
 
-  return chunks;
+  return intermediateModules;
 };

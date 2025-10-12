@@ -1,12 +1,11 @@
 import { readFileSync, statSync } from "node:fs";
-import { createCanonicalId } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { getAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
 import { normalizePath } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
-import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition, DiscoverySnapshotMetadata } from "./types";
+import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotMetadata } from "./types";
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
@@ -57,6 +56,7 @@ export const discoverModules = ({
     } else if (cache) {
       // Try fingerprint-based cache check (avoid reading file)
       const cached = cache.peek(filePath);
+
       if (cached) {
         try {
           // Fast path: check metadata first, then mtime/size without reading file content
@@ -67,7 +67,6 @@ export const discoverModules = ({
           // Validate metadata matches (schema hash, analyzer version, plugin options)
           const metadataMatches =
             cached.metadata.schemaHash === metadata.schemaHash &&
-            cached.metadata.analyzerVersion === metadata.analyzerVersion &&
             cached.metadata.pluginOptionsHash === metadata.pluginOptionsHash;
 
           // If metadata and fingerprint match, reuse cached snapshot
@@ -126,12 +125,6 @@ export const discoverModules = ({
       }
     }
 
-    // Create definitions with canonical IDs
-    const definitions: DiscoverySnapshotDefinition[] = analysis.definitions.map((def) => ({
-      ...def,
-      canonicalId: createCanonicalId(filePath, def.astPath),
-    }));
-
     // Compute fingerprint
     const fingerprintResult = computeFingerprint(filePath);
     if (fingerprintResult.isErr()) {
@@ -143,17 +136,12 @@ export const discoverModules = ({
     const snapshot: DiscoverySnapshot = {
       filePath,
       normalizedFilePath: normalizePath(filePath),
-      analyzer: astAnalyzer.type,
       signature,
       fingerprint,
       metadata,
       createdAtMs: Date.now(),
       analysis,
-      definitions,
       dependencies,
-      diagnostics: analysis.diagnostics,
-      exports: analysis.exports,
-      imports: analysis.imports,
     };
 
     snapshots.set(filePath, snapshot);
