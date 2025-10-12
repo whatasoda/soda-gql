@@ -80,8 +80,6 @@ describe("BuilderSession E2E", () => {
     const snapshot = session.getSnapshot();
     expect(snapshot.snapshotCount).toBeGreaterThan(0);
     expect(snapshot.moduleAdjacencySize).toBeGreaterThan(0);
-    expect(snapshot.metadata.schemaHash).toBe("test-schema");
-    expect(snapshot.metadata.analyzerVersion).toBe("ts");
   });
 
   it("should handle file modification incrementally", async () => {
@@ -114,10 +112,6 @@ describe("BuilderSession E2E", () => {
         },
       ],
       removed: [],
-      metadata: {
-        schemaHash: "ts",
-        analyzerVersion: "ts",
-      },
     };
 
     const updateResult = await session.update(changeSet);
@@ -145,10 +139,6 @@ describe("BuilderSession E2E", () => {
       added: [],
       updated: [],
       removed: [],
-      metadata: {
-        schemaHash: "ts",
-        analyzerVersion: "ts",
-      },
     };
 
     const updateResult = await session.update(changeSet);
@@ -159,38 +149,4 @@ describe("BuilderSession E2E", () => {
     expect(finalSnapshot.snapshotCount).toBe(initialSnapshot.snapshotCount);
   });
 
-  it("should rebuild when metadata changes", async () => {
-    const session = createBuilderSession({
-      config: createTestConfig(workspace),
-    });
-
-    // Initial build
-    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
-    const initialResult = await session.buildInitial();
-
-    expect(initialResult.isOk()).toBe(true);
-
-    const initialSnapshot = session.getSnapshot();
-    expect(initialSnapshot.metadata.schemaHash).toBe("test-schema");
-
-    // Trigger rebuild with different schemaHash
-    const changeSet: BuilderChangeSet = {
-      added: [],
-      updated: [],
-      removed: [],
-      metadata: {
-        schemaHash: "new-schema-hash", // Changed
-        analyzerVersion: "ts",
-      },
-    };
-
-    const updateResult = await session.update(changeSet);
-    expect(updateResult.isOk()).toBe(true);
-
-    const snapshot = session.getSnapshot();
-    // V1 implementation: metadata mismatch triggers buildInitial with lastInput,
-    // which resets metadata back to original values from input.schemaHash
-    expect(snapshot.metadata.schemaHash).toBe("test-schema");
-    expect(snapshot.snapshotCount).toBeGreaterThan(0);
-  });
 });

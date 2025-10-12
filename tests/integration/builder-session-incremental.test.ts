@@ -87,7 +87,6 @@ describe("BuilderSession incremental end-to-end", () => {
     const snapshot = session.getSnapshot();
     expect(snapshot).toBeDefined();
     expect(snapshot.snapshotCount).toBeGreaterThanOrEqual(0);
-    expect(snapshot.metadata).toBeDefined();
   });
 
   test("applies graph patch when a module changes", async () => {
@@ -126,7 +125,6 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set(),
       updated: new Set([targetPath]),
       removed: new Set(),
-      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update
@@ -190,7 +188,6 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set([targetPath]),
       updated: new Set(),
       removed: new Set(),
-      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update
@@ -247,7 +244,6 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set(),
       updated: new Set(),
       removed: new Set([targetPath]),
-      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
@@ -323,7 +319,6 @@ describe("BuilderSession incremental end-to-end", () => {
       added: new Set([catalogTarget]),
       updated: new Set([nestedTarget]),
       removed: new Set([removeTarget]),
-      metadata: session.getSnapshot().metadata,
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts

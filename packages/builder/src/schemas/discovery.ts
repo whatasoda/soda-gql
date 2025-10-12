@@ -7,11 +7,6 @@ const FileFingerprintSchema = z.object({
   mtimeMs: z.number(),
 });
 
-const DiscoverySnapshotMetadataSchema = z.object({
-  analyzerVersion: z.string(),
-  pluginOptionsHash: z.string().optional(),
-});
-
 export const DiscoveredDependencySchema = z.object({
   specifier: z.string(),
   resolvedPath: z.string().nullable(),
@@ -23,7 +18,7 @@ export const DiscoverySnapshotSchema = z.object({
   normalizedFilePath: z.string(),
   signature: z.string(),
   fingerprint: FileFingerprintSchema,
-  metadata: DiscoverySnapshotMetadataSchema,
+  analyzer: z.string(),
   createdAtMs: z.number(),
   analysis: ModuleAnalysisSchema,
   dependencies: z.array(DiscoveredDependencySchema).readonly(),

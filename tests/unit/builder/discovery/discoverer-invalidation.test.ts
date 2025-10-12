@@ -5,16 +5,11 @@ import { getAstAnalyzer } from "@soda-gql/builder/ast";
 import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
 import { createDiscoveryCache } from "@soda-gql/builder/discovery/cache";
 import { discoverModules } from "@soda-gql/builder/discovery/discoverer";
-import type { DiscoverySnapshotMetadata } from "@soda-gql/builder/discovery/types";
 
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 const cacheFactory = createJsonCache({ rootDir: join(fixtureRoot, ".cache") });
 
-const metadata: DiscoverySnapshotMetadata = {
-  schemaHash: "test-schema-hash",
-  analyzerVersion: "1.0.0",
-  pluginOptionsHash: "test-plugin-hash",
-};
+const analyzer = "ts";
 
 describe("discoverModules - invalidatedPaths behavior", () => {
   test("cacheSkips equals invalidatedPaths.size when all invalidated files exist", () => {
@@ -42,7 +37,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
     });
     if (result1.isErr()) throw result1.error;
 
@@ -56,7 +51,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
       invalidatedPaths,
     });
     if (result2.isErr()) throw result2.error;
@@ -92,7 +87,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
     });
 
     // Second discovery: invalidate only dependency (fileB)
@@ -101,7 +96,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
       invalidatedPaths,
     });
     if (result.isErr()) throw result.error;
@@ -133,7 +128,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
     });
 
     // Second discovery: no invalidations
@@ -141,7 +136,7 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      metadata,
+      analyzer,
       invalidatedPaths: new Set(),
     });
     if (result.isErr()) throw result.error;

@@ -32,10 +32,6 @@ type SessionState = {
   moduleAdjacency: Map<string, Set<string>>;
   /** Written intermediate modules: filePath -> intermediate module */
   intermediateModules: Map<string, IntermediateModule>;
-  /** Metadata for invalidation checks */
-  metadata: {
-    analyzerVersion: string;
-  };
   /** Last successful artifact */
   lastArtifact: BuilderArtifact | null;
 };
@@ -46,7 +42,6 @@ type SessionState = {
 export type BuilderSessionSnapshot = {
   readonly snapshotCount: number;
   readonly moduleAdjacencySize: number;
-  readonly metadata: { readonly analyzerVersion: string; };
 };
 
 /**
@@ -73,13 +68,6 @@ export interface BuilderSession {
    */
   getSnapshot(): BuilderSessionSnapshot;
 }
-
-/**
- * Validate if metadata matches between change set and session.
- */
-const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMeta: SessionState["metadata"]): boolean => {
-  return changeSetMeta.analyzerVersion === sessionMeta.analyzerVersion;
-};
 
 /**
  * Resolve a module specifier to an absolute file path for runtime imports.
@@ -227,7 +215,6 @@ const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<
 export const __internal = {
   extractModuleAdjacency,
   resolveModuleSpecifierRuntime,
-  metadataMatches,
   collectAffectedModules,
 };
 
@@ -250,9 +237,6 @@ export const createBuilderSession = (options: {
     snapshots: new Map(),
     moduleAdjacency: new Map(),
     intermediateModules: new Map(),
-    metadata: {
-      analyzerVersion: "",
-    },
     lastArtifact: null,
   };
 
@@ -319,19 +303,12 @@ export const createBuilderSession = (options: {
       return err(entryPathsResult.error);
     }
 
-    const entryPaths = entryPathsResult.value;
-
-    // Compute metadata for snapshots
-    const snapshotMetadata = {
-      analyzerVersion: config.builder.analyzer,
-    };
-
     // Run discovery
     const discoveryResult = discoverModules({
-      entryPaths,
+      entryPaths: entryPathsResult.value,
       astAnalyzer,
       cache: discoveryCache,
-      metadata: snapshotMetadata,
+      analyzer: config.builder.analyzer,
     });
     if (discoveryResult.isErr()) {
       return err(discoveryResult.error);
@@ -359,9 +336,6 @@ export const createBuilderSession = (options: {
 
     // Extract and store adjacency maps
     state.moduleAdjacency = await extractModuleAdjacency(state.snapshots);
-
-    // Store metadata
-    state.metadata = snapshotMetadata;
 
     const intermediateModules = buildIntermediateModules({ analyses, targetPaths: new Set(analyses.keys()) });
 
@@ -392,31 +366,6 @@ export const createBuilderSession = (options: {
 
     const discoveryCache = ensureDiscoveryCache();
     const astAnalyzer = ensureAstAnalyzer();
-
-    // Validate metadata - fall back to full rebuild if mismatch
-    if (!metadataMatches(changeSet.metadata, state.metadata)) {
-      // Purge removed files from caches before rebuild
-      for (const removedPath of changeSet.removed) {
-        discoveryCache.delete(removedPath);
-        invalidateFingerprint(removedPath);
-        state.snapshots.delete(removedPath);
-      }
-
-      // Clear state and rebuild
-      state.snapshots.clear();
-      state.moduleAdjacency.clear();
-      state.intermediateModules.clear();
-      state.metadata = {
-        analyzerVersion: "",
-      };
-
-      // Sanitize entry paths by filtering out removed files
-      const normalizedRemoved = new Set(coercePaths(changeSet.removed));
-      const sanitizedEntry = Array.from(state.entrypoints).filter((path) => !normalizedRemoved.has(path));
-      updateEntrypoints({ toAdd: sanitizedEntry, toRemove: Array.from(normalizedRemoved) });
-
-      return buildInitial();
-    }
 
     // Track changed and removed files using coercePaths helper
     const changedFiles = new Set<string>([...coercePaths(changeSet.added), ...coercePaths(changeSet.updated)]);
@@ -464,7 +413,7 @@ export const createBuilderSession = (options: {
       entryPaths,
       astAnalyzer,
       cache: discoveryCache,
-      metadata: state.metadata,
+      analyzer: config.builder.analyzer,
       invalidatedPaths: allAffectedFiles,
     });
     if (discoveryResult.isErr()) {
@@ -535,9 +484,6 @@ export const createBuilderSession = (options: {
   const getSnapshot = (): BuilderSessionSnapshot => ({
     snapshotCount: state.snapshots.size,
     moduleAdjacencySize: state.moduleAdjacency.size,
-    metadata: {
-      analyzerVersion: state.metadata.analyzerVersion,
-    },
   });
 
   return {

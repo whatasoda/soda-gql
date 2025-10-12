@@ -5,13 +5,13 @@ import { type BuilderResult, builderErrors } from "../errors";
 import { normalizePath } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
-import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotMetadata } from "./types";
+import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   readonly cache?: DiscoveryCache;
-  readonly metadata: DiscoverySnapshotMetadata;
+  readonly analyzer: string;
   /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
   readonly invalidatedPaths?: ReadonlySet<string>;
 };
@@ -32,7 +32,7 @@ export const discoverModules = ({
   entryPaths,
   astAnalyzer,
   cache,
-  metadata,
+  analyzer,
   invalidatedPaths,
 }: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
   const snapshots = new Map<string, DiscoverySnapshot>();
@@ -59,16 +59,13 @@ export const discoverModules = ({
 
       if (cached) {
         try {
-          // Fast path: check metadata first, then mtime/size without reading file content
+          // Fast path: check fingerprint without reading file content
           const stats = statSync(filePath);
           const mtimeMs = stats.mtimeMs;
           const sizeBytes = stats.size;
 
-          // Validate metadata matches (analyzer version, plugin options)
-          const metadataMatches = cached.metadata.pluginOptionsHash === metadata.pluginOptionsHash;
-
-          // If metadata and fingerprint match, reuse cached snapshot
-          if (metadataMatches && cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
+          // If fingerprint matches, reuse cached snapshot
+          if (cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
             snapshots.set(filePath, cached);
             cacheHits++;
             // Enqueue dependencies from cache
@@ -78,13 +75,6 @@ export const discoverModules = ({
               }
             }
             continue;
-          }
-
-          // If metadata doesn't match, invalidate this entry
-          if (!metadataMatches) {
-            cache.delete(filePath);
-            cacheSkips++;
-            // Fall through to re-read and re-parse
           }
         } catch {
           // File may have been deleted or inaccessible, fall through to re-read
@@ -136,7 +126,7 @@ export const discoverModules = ({
       normalizedFilePath: normalizePath(filePath),
       signature,
       fingerprint,
-      metadata,
+      analyzer,
       createdAtMs: Date.now(),
       analysis,
       dependencies,

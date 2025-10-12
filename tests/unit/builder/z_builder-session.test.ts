@@ -34,14 +34,9 @@ const createMockSnapshot = (
     analyzer: "ts",
     signature: `sig-${filePath}`,
     fingerprint: { hash: `hash-${filePath}`, sizeBytes: 100, mtimeMs: Date.now() },
-    metadata: { analyzerVersion: "ts", schemaHash: "test" },
     createdAtMs: Date.now(),
     analysis,
-    definitions: [definition],
     dependencies,
-    diagnostics: [],
-    exports: [],
-    imports,
   };
 };
 
@@ -128,26 +123,6 @@ describe("BuilderSession - Internal Helpers", () => {
       const snapshots = new Map();
       const resolved = await __internal.resolveModuleSpecifierRuntime("@scope/package", "/src/bar.ts", snapshots);
       expect(resolved).toBeNull();
-    });
-  });
-
-  describe("metadataMatches", () => {
-    test("should return true when metadata matches", () => {
-      const changeSetMeta = { schemaHash: "abc", analyzerVersion: "ts" };
-      const sessionMeta = { schemaHash: "abc", analyzerVersion: "ts" };
-      expect(__internal.metadataMatches(changeSetMeta, sessionMeta)).toBe(true);
-    });
-
-    test("should return false when schema hash differs", () => {
-      const changeSetMeta = { schemaHash: "xyz", analyzerVersion: "ts" };
-      const sessionMeta = { schemaHash: "abc", analyzerVersion: "ts" };
-      expect(__internal.metadataMatches(changeSetMeta, sessionMeta)).toBe(false);
-    });
-
-    test("should return false when analyzer version differs", () => {
-      const changeSetMeta = { schemaHash: "abc", analyzerVersion: "rust" };
-      const sessionMeta = { schemaHash: "abc", analyzerVersion: "ts" };
-      expect(__internal.metadataMatches(changeSetMeta, sessionMeta)).toBe(false);
     });
   });
 

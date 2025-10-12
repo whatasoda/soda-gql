@@ -8,27 +8,12 @@ export type BuilderFileChange = {
 };
 
 /**
- * Metadata for validating incremental build compatibility.
- */
-export type BuilderChangeSetMetadata = {
-  readonly analyzerVersion: string;
-};
-
-/**
  * Represents a set of changes to builder inputs for incremental processing.
  */
 export type BuilderChangeSet = {
   readonly added: readonly BuilderFileChange[] | ReadonlySet<BuilderFileChange | string>;
   readonly updated: readonly BuilderFileChange[] | ReadonlySet<BuilderFileChange | string>;
   readonly removed: readonly string[] | ReadonlySet<string>;
-  readonly metadata: BuilderChangeSetMetadata;
-};
-
-/**
- * Check if analyzer version has changed, requiring full rebuild.
- */
-export const shouldInvalidateAnalyzer = (current: string, incoming: string): boolean => {
-  return current !== incoming;
 };
 
 /**

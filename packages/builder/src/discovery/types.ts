@@ -23,16 +23,6 @@ export type DiscoverySnapshotDefinition = ModuleDefinition & {
 };
 
 /**
- * Metadata for cache validation and invalidation.
- */
-export type DiscoverySnapshotMetadata = {
-  /** Analyzer version to detect analyzer changes. */
-  readonly analyzerVersion: string;
-  /** Plugin options hash to detect configuration changes. */
-  readonly pluginOptionsHash?: string;
-};
-
-/**
  * Immutable cacheable record produced by the discovery phase for a single source file.
  * Captures analyzer output, dependency fan-out, and bookkeeping metadata.
  */
@@ -45,8 +35,8 @@ export type DiscoverySnapshot = {
   readonly signature: string;
   /** File fingerprint for fast cache invalidation. */
   readonly fingerprint: FileFingerprint;
-  /** Metadata for cache validation (analyzer version, schema hash, etc.). */
-  readonly metadata: DiscoverySnapshotMetadata;
+  /** Analyzer type used for this snapshot (for debugging). */
+  readonly analyzer: string;
   /** Milliseconds since epoch when this snapshot was created. */
   readonly createdAtMs: number;
   /** Raw analyzer output (imports, exports, definitions, diagnostics). */
