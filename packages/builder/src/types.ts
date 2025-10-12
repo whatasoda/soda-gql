@@ -6,9 +6,7 @@ export type BuilderFormat = "json" | "human";
 
 export type BuilderAnalyzer = "ts" | "swc";
 
-export type BuilderInput = {
-  readonly schemaHash: string;
-};
+export type BuilderInput = Record<string, never>;
 
 export type BuilderOptions = BuilderInput & {
   readonly outPath: string;

@@ -1,4 +1,5 @@
 import { dirname, join, normalize, resolve } from "node:path";
+import { createContext } from "node:vm";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { clearPseudoModuleRegistry, createPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
@@ -7,6 +8,7 @@ import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
 import { getAstAnalyzer } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
+import { validateModuleDependencies } from "../../dependency-graph/builder";
 import { createDiscoveryCache } from "../../discovery";
 import { discoverModules } from "../../discovery/discoverer";
 import { resolveEntryPaths } from "../../discovery/entry-paths";
@@ -17,8 +19,6 @@ import type { BuilderError } from "../../types";
 import { buildIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
-import { createContext } from "node:vm";
-import { validateModuleDependencies } from "../../dependency-graph/builder";
 
 /**
  * Session state maintained across incremental builds.
@@ -34,7 +34,6 @@ type SessionState = {
   intermediateModules: Map<string, IntermediateModule>;
   /** Metadata for invalidation checks */
   metadata: {
-    schemaHash: string;
     analyzerVersion: string;
   };
   /** Last successful artifact */
@@ -47,10 +46,7 @@ type SessionState = {
 export type BuilderSessionSnapshot = {
   readonly snapshotCount: number;
   readonly moduleAdjacencySize: number;
-  readonly metadata: {
-    readonly schemaHash: string;
-    readonly analyzerVersion: string;
-  };
+  readonly metadata: { readonly analyzerVersion: string; };
 };
 
 /**
@@ -82,7 +78,7 @@ export interface BuilderSession {
  * Validate if metadata matches between change set and session.
  */
 const metadataMatches = (changeSetMeta: BuilderChangeSet["metadata"], sessionMeta: SessionState["metadata"]): boolean => {
-  return changeSetMeta.schemaHash === sessionMeta.schemaHash && changeSetMeta.analyzerVersion === sessionMeta.analyzerVersion;
+  return changeSetMeta.analyzerVersion === sessionMeta.analyzerVersion;
 };
 
 /**
@@ -223,7 +219,6 @@ const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<
   return affected;
 };
 
-
 /**
  * Exported internal helpers for testing purposes.
  *
@@ -256,7 +251,6 @@ export const createBuilderSession = (options: {
     moduleAdjacency: new Map(),
     intermediateModules: new Map(),
     metadata: {
-      schemaHash: "",
       analyzerVersion: "",
     },
     lastArtifact: null,
@@ -287,7 +281,7 @@ export const createBuilderSession = (options: {
     }
   };
 
-  const evaluate = async ({ intermediateModules }: { intermediateModules: Map<string, IntermediateModule>; }) => {
+  const evaluate = async ({ intermediateModules }: { intermediateModules: Map<string, IntermediateModule> }) => {
     // Determine import paths from config
     const registry = createPseudoModuleRegistry();
     const gqlImportPath = resolve(process.cwd(), config.graphqlSystemPath);
@@ -310,7 +304,7 @@ export const createBuilderSession = (options: {
     registry.clear();
 
     return elements;
-  }
+  };
 
   const buildInitial = async (): Promise<Result<BuilderArtifact, BuilderError>> => {
     // Clear registry for clean slate
@@ -329,7 +323,6 @@ export const createBuilderSession = (options: {
 
     // Compute metadata for snapshots
     const snapshotMetadata = {
-      schemaHash: "TODO",
       analyzerVersion: config.builder.analyzer,
     };
 
@@ -370,13 +363,11 @@ export const createBuilderSession = (options: {
     // Store metadata
     state.metadata = snapshotMetadata;
 
-    const intermediateModules = buildIntermediateModules({ analyses,
-      targetPaths: new Set(analyses.keys()),
-    });
+    const intermediateModules = buildIntermediateModules({ analyses, targetPaths: new Set(analyses.keys()) });
 
     // Evaluate all intermediate modules
     const elements = await evaluate({ intermediateModules: intermediateModules });
-    
+
     // Build artifact from all intermediate modules
     const artifactResult = await buildArtifact({
       analyses,
@@ -416,7 +407,6 @@ export const createBuilderSession = (options: {
       state.moduleAdjacency.clear();
       state.intermediateModules.clear();
       state.metadata = {
-        schemaHash: "",
         analyzerVersion: "",
       };
 
@@ -546,7 +536,6 @@ export const createBuilderSession = (options: {
     snapshotCount: state.snapshots.size,
     moduleAdjacencySize: state.moduleAdjacency.size,
     metadata: {
-      schemaHash: state.metadata.schemaHash,
       analyzerVersion: state.metadata.analyzerVersion,
     },
   });

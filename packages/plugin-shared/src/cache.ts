@@ -1,12 +1,7 @@
 import { resolve } from "node:path";
 
-import {
-  type BuilderArtifact,
-  type BuilderArtifactElement,
-  BuilderArtifactSchema,
-  type CanonicalId,
-  createCanonicalId,
-} from "@soda-gql/builder";
+import { type BuilderArtifact, type BuilderArtifactElement, BuilderArtifactSchema } from "@soda-gql/builder";
+import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
 import { getPortableFS, getPortableHasher } from "@soda-gql/common/portable";
 import { err, ok, type Result } from "neverthrow";
 

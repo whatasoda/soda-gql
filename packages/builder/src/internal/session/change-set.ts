@@ -11,7 +11,6 @@ export type BuilderFileChange = {
  * Metadata for validating incremental build compatibility.
  */
 export type BuilderChangeSetMetadata = {
-  readonly schemaHash: string;
   readonly analyzerVersion: string;
 };
 
@@ -23,13 +22,6 @@ export type BuilderChangeSet = {
   readonly updated: readonly BuilderFileChange[] | ReadonlySet<BuilderFileChange | string>;
   readonly removed: readonly string[] | ReadonlySet<string>;
   readonly metadata: BuilderChangeSetMetadata;
-};
-
-/**
- * Check if schema hash has changed, requiring full rebuild.
- */
-export const shouldInvalidateSchema = (current: string, incoming: string): boolean => {
-  return current !== incoming;
 };
 
 /**

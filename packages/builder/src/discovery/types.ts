@@ -26,8 +26,8 @@ export type DiscoverySnapshotDefinition = ModuleDefinition & {
  * Metadata for cache validation and invalidation.
  */
 export type DiscoverySnapshotMetadata = {
-  /** Schema hash to detect schema changes. */
-  readonly schemaHash: string;
+  /** Analyzer version to detect analyzer changes. */
+  readonly analyzerVersion: string;
   /** Plugin options hash to detect configuration changes. */
   readonly pluginOptionsHash?: string;
 };

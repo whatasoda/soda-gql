@@ -5,14 +5,12 @@ import type {
   BuilderAnalyzer,
   BuilderError,
   BuilderFormat,
-  BuilderInput,
   BuilderMode,
   BuilderOptions,
   BuilderSuccess,
 } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
 import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
-import { hashSchema, loadSchema } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
@@ -20,9 +18,13 @@ import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
 const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
 
-type BuilderCommandOptions = Omit<BuilderInput, "config"> & {
+type BuilderCommandOptions = {
+  mode: BuilderMode;
+  entry: string[];
   outPath: string;
   format: BuilderFormat;
+  analyzer: BuilderAnalyzer;
+  debugDir?: string;
   watch?: boolean;
   schemaPath?: string;
 };
@@ -161,7 +163,6 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     outPath,
     format,
     analyzer,
-    schemaHash: "cli-placeholder", // Will be computed from schemaPath if provided
     debugDir,
     watch,
     schemaPath,
@@ -214,30 +215,12 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
 
   const options = parsed.value;
 
-  // Compute schema hash if schema path provided
-  let schemaHash = "cli-placeholder";
-  if (options.schemaPath) {
-    const schemaResult = await loadSchema(resolve(options.schemaPath));
-    if (schemaResult.isErr()) {
-      process.stdout.write(`Schema load error: ${schemaResult.error.code} - ${schemaResult.error.message}\n`);
-      return 1;
-    }
-    schemaHash = hashSchema(schemaResult.value);
-  }
-
   if (options.watch) {
     // Watch mode: Use BuilderService with session
     process.stdout.write("Watch mode enabled - building and watching for changes...\n");
 
     // Create service with session
-    const service = createBuilderService({
-      mode: options.mode,
-      entry: options.entry,
-      analyzer: options.analyzer,
-      config,
-      schemaHash,
-      debugDir: options.debugDir,
-    });
+    const service = createBuilderService(config);
 
     // Initial build
     const initialResult = await service.build();
@@ -288,8 +271,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
         })),
         removed: [],
         metadata: {
-          schemaHash,
-          analyzerVersion: options.analyzer,
+          analyzerVersion: config.builder.analyzer,
         },
       };
 
@@ -348,14 +330,15 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   }
 
   // Normal mode: Single build
-  const result = await runBuilder({ ...options, config, schemaHash });
+  const service = createBuilderService(config);
+  const result = await service.build();
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
     return 1;
   }
 
-  const output = formatBuilderSuccess(options.format, result.value, options.mode);
+  const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath }, options.mode);
   if (output) {
     process.stdout.write(`${output}\n`);
   }

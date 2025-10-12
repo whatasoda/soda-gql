@@ -9,7 +9,6 @@ const FileFingerprintSchema = z.object({
 
 const DiscoverySnapshotMetadataSchema = z.object({
   analyzerVersion: z.string(),
-  schemaHash: z.string(),
   pluginOptionsHash: z.string().optional(),
 });
 

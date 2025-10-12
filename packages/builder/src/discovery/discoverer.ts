@@ -64,10 +64,8 @@ export const discoverModules = ({
           const mtimeMs = stats.mtimeMs;
           const sizeBytes = stats.size;
 
-          // Validate metadata matches (schema hash, analyzer version, plugin options)
-          const metadataMatches =
-            cached.metadata.schemaHash === metadata.schemaHash &&
-            cached.metadata.pluginOptionsHash === metadata.pluginOptionsHash;
+          // Validate metadata matches (analyzer version, plugin options)
+          const metadataMatches = cached.metadata.pluginOptionsHash === metadata.pluginOptionsHash;
 
           // If metadata and fingerprint match, reuse cached snapshot
           if (metadataMatches && cached.fingerprint.mtimeMs === mtimeMs && cached.fingerprint.sizeBytes === sizeBytes) {
