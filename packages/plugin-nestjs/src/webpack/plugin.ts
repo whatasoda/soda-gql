@@ -1,15 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
 import type { BuilderArtifact, BuilderChangeSet, BuilderServiceConfig } from "@soda-gql/builder";
-import { invalidateArtifactCache } from "@soda-gql/plugin-shared";
-import type { Compiler, WebpackPluginInstance } from "webpack";
+import { invalidateArtifactCache, createPluginRuntimeFromNormalized, type PluginRuntime } from "@soda-gql/plugin-shared";
 import {
-  type BuilderServiceController,
-  type BuilderServiceFailure,
-  type BuilderServiceResult,
   createBuilderServiceController,
-} from "../internal/builder-service.js";
-import { type BuilderWatch, createBuilderWatch } from "../internal/builder-watch.js";
+  createBuilderWatch,
+  type DevBuilderSessionLike,
+} from "@soda-gql/plugin-shared/dev";
+import type { Compiler, WebpackPluginInstance } from "webpack";
 import { DiagnosticsReporter } from "../internal/diagnostics.js";
 import { type ArtifactManifest, createArtifactManifest, manifestChanged } from "../internal/manifest.js";
 import type { DiagnosticsMode, WebpackPluginOptions } from "../schemas/webpack.js";
@@ -18,6 +16,9 @@ import { registerCompilerHooks } from "./hooks.js";
 
 const PLUGIN_NAME = "SodaGqlWebpackPlugin";
 const DIAGNOSTICS_ASSET_NAME = "soda-gql.diagnostics.json";
+
+// Module-level runtime cache shared across plugin instances
+const runtimeCache = new Map<string, Promise<PluginRuntime>>();
 
 type BuilderSourceConfig = {
   readonly source: "builder";
@@ -58,7 +59,7 @@ const persistArtifact = async (artifactPath: string, artifact: BuilderArtifact):
   await writeFile(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
 };
 
-const toWebpackError = (failure: BuilderServiceFailure): Error => {
+const toWebpackError = (failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure): Error => {
   if (failure.type === "builder-error") {
     return new Error(`[${PLUGIN_NAME}] ${failure.error.code}: ${failure.error.message}`);
   }
@@ -74,6 +75,30 @@ const toWebpackError = (failure: BuilderServiceFailure): Error => {
     (error as Error & { cause?: unknown }).cause = failure.error;
   }
   return error;
+};
+
+const getOrCreateRuntime = async (artifactPath: string, mode: "runtime" | "zero-runtime"): Promise<PluginRuntime> => {
+  const key = JSON.stringify({ artifactPath, mode });
+
+  let promise = runtimeCache.get(key);
+  if (!promise) {
+    promise = (async () => {
+      const { normalizePluginOptions } = await import("@soda-gql/plugin-shared");
+      const optionsResult = await normalizePluginOptions({
+        mode,
+        artifact: { useBuilder: false, path: artifactPath },
+      });
+
+      if (optionsResult.isErr()) {
+        throw new Error(`Failed to normalize runtime options: ${optionsResult.error.message}`);
+      }
+
+      return createPluginRuntimeFromNormalized(optionsResult.value);
+    })();
+    runtimeCache.set(key, promise);
+  }
+
+  return promise;
 };
 
 const normalizeOptions = (compiler: Compiler, raw: Partial<WebpackPluginOptions>): NormalizedOptions => {
@@ -139,11 +164,11 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME);
     const diagnostics = new DiagnosticsReporter(options.diagnostics, logger);
 
+    const runtimePromise = getOrCreateRuntime(options.artifactPath, options.mode);
+
     const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
-    const builderController: BuilderServiceController | null = builderSource
-      ? createBuilderServiceController(builderSource.config)
-      : null;
-    const builderWatch: BuilderWatch | null = builderSource
+    const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
+    const builderWatch = builderSource
       ? createBuilderWatch({
           rootDir: options.contextDir,
           schemaHash: builderSource.config.schemaHash,
@@ -153,7 +178,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
     let manifest: ArtifactManifest | null = null;
 
-    const handleResult = async (result: BuilderServiceResult): Promise<void> => {
+    const handleResult = async (result: import("@soda-gql/plugin-shared/dev").BuilderServiceResult): Promise<void> => {
       if (result.isErr()) {
         diagnostics.recordError(result.error);
         if (options.bailOnError) {
@@ -171,9 +196,10 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
       if (changed) {
         await persistArtifact(options.artifactPath, artifact);
+        invalidateArtifactCache(options.artifactPath);
+        const runtime = await runtimePromise;
+        await runtime.refresh();
       }
-
-      invalidateArtifactCache(options.artifactPath);
     };
 
     const runInitialBuild = async (): Promise<void> => {
@@ -190,36 +216,42 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       await handleResult(await builderController.update(changeSet));
     };
 
-    const handleWatchRun = async (
-      modifiedFiles: ReadonlySet<string> | undefined,
-      removedFiles: ReadonlySet<string> | undefined,
-    ): Promise<void> => {
-      if (!builderController || !builderWatch) {
-        const changed = collectChangedFiles(options.contextDir, [modifiedFiles, removedFiles]);
-        if (changed.has(options.artifactPath)) {
-          invalidateArtifactCache(options.artifactPath);
-        }
+    const handleArtifactFileChange = async (changed: Set<string>): Promise<void> => {
+      if (!changed.has(options.artifactPath)) {
         return;
       }
-
-      if (!builderController.initialized) {
-        await handleResult(await builderController.build());
-      }
-
-      builderWatch.trackChanges(modifiedFiles, removedFiles);
-      const changeSet = await builderWatch.flush();
-      if (!changeSet) {
-        return;
-      }
-      await runIncrementalBuild(changeSet);
+      invalidateArtifactCache(options.artifactPath);
+      const runtime = await runtimePromise;
+      await runtime.refresh();
     };
 
     registerCompilerHooks(compiler, {
       pluginName: PLUGIN_NAME,
-      run: runInitialBuild,
+      run: async () => {
+        await runtimePromise; // Ensure runtime is ready
+        if (builderController) {
+          await runInitialBuild();
+        } else {
+          invalidateArtifactCache(options.artifactPath);
+          const runtime = await runtimePromise;
+          await runtime.refresh();
+        }
+      },
       watchRun: async ({ modifiedFiles, removedFiles }) => {
-        await runInitialBuild();
-        await handleWatchRun(modifiedFiles, removedFiles);
+        await runtimePromise; // Ensure runtime is ready
+        if (builderController && builderWatch) {
+          if (!builderController.initialized) {
+            await runInitialBuild();
+          }
+          builderWatch.trackChanges(modifiedFiles, removedFiles);
+          const changeSet = await builderWatch.flush();
+          if (changeSet) {
+            await runIncrementalBuild(changeSet);
+          }
+        } else {
+          const changed = collectChangedFiles(options.contextDir, [modifiedFiles, removedFiles]);
+          await handleArtifactFileChange(changed);
+        }
       },
       onInvalid: () => {
         builderWatch?.reset();
@@ -227,6 +259,10 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       onWatchClose: () => {
         builderController?.reset();
         builderWatch?.reset();
+        void (async () => {
+          const runtime = await runtimePromise;
+          runtime.dispose();
+        })();
       },
     });
 
