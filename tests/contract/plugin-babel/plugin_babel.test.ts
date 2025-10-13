@@ -25,15 +25,8 @@ const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
 const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOptions => ({
   mode: "zero-runtime",
   artifactSource: {
-    source: "builder" as const,
-    config: {
-      mode: "zero-runtime",
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      entry: [profileQueryPath],
-      config: createTestConfig(fixturesRoot),
-      debugDir: join(tmpRoot, "builder-debug"),
-    },
+    source: "builder",
+    config: createTestConfig(fixturesRoot),
   },
   ...overrides,
 });
@@ -225,6 +218,7 @@ describe("@soda-gql/plugin-babel", () => {
     it("throws SODA_GQL_BUILDER_ENTRY_NOT_FOUND when entry file does not exist", async () => {
       const code = await Bun.file(profileQueryPath).text();
       const nonExistentEntry = join(tmpRoot, "does-not-exist.ts");
+      const testConfig = createTestConfig(fixturesRoot);
 
       await expect(
         transformWithPlugin(code, profileQueryPath, {
@@ -232,11 +226,11 @@ describe("@soda-gql/plugin-babel", () => {
           artifactSource: {
             source: "builder",
             config: {
-              mode: "zero-runtime",
-              analyzer: "ts",
-              schemaHash: "test-schema",
-              entry: [nonExistentEntry],
-              config: createTestConfig(fixturesRoot),
+              ...testConfig,
+              builder: {
+                ...testConfig.builder,
+                entry: [nonExistentEntry],
+              },
             },
           },
         }),

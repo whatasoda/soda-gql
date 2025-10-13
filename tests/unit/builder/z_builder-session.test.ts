@@ -19,13 +19,21 @@ const createMockSnapshot = (
     isExported: true,
     expression: "gql.default({})",
     loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
-    dependencies: dependencies.map((d) => ({ canonicalId: d.canonicalId, source: d.resolvedPath || "" })),
   };
 
   const analysis: ModuleAnalysis = {
     filePath,
+    signature: `sig-${filePath}`,
     definitions: [definition],
-    imports,
+    diagnostics: [],
+    imports: imports.map((imp) => ({
+      source: imp.source,
+      imported: imp.imported,
+      local: imp.local,
+      kind: imp.kind as "named" | "namespace" | "default",
+      isTypeOnly: imp.isTypeOnly,
+    })),
+    exports: [],
   };
 
   return {
@@ -35,7 +43,11 @@ const createMockSnapshot = (
     fingerprint: { hash: `hash-${filePath}`, sizeBytes: 100, mtimeMs: Date.now() },
     createdAtMs: Date.now(),
     analysis,
-    dependencies,
+    dependencies: dependencies.map((d) => ({
+      specifier: d.resolvedPath || "",
+      resolvedPath: d.resolvedPath,
+      isExternal: false,
+    })),
   };
 };
 
@@ -100,26 +112,6 @@ describe("BuilderSession - Internal Helpers", () => {
 
       // Self-import should not create adjacency edge
       expect(adjacency.get("/src/a.ts")?.size).toBe(0);
-    });
-  });
-
-  describe("resolveModuleSpecifierRuntime", () => {
-    test("should resolve from in-memory snapshots first", async () => {
-      const snapshots = new Map([["/src/foo.ts", createMockSnapshot("/src/foo.ts", [])]]);
-      const resolved = await __internal.resolveModuleSpecifierRuntime("./foo", "/src/bar.ts", snapshots);
-      expect(resolved).toBe("/src/foo.ts");
-    });
-
-    test("should return null for bare specifiers", async () => {
-      const snapshots = new Map();
-      const resolved = await __internal.resolveModuleSpecifierRuntime("react", "/src/bar.ts", snapshots);
-      expect(resolved).toBeNull();
-    });
-
-    test("should return null for scoped package imports", async () => {
-      const snapshots = new Map();
-      const resolved = await __internal.resolveModuleSpecifierRuntime("@scope/package", "/src/bar.ts", snapshots);
-      expect(resolved).toBeNull();
     });
   });
 
