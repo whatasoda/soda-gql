@@ -12,9 +12,9 @@
       "default": "./src/index.ts"
     },
     "./adapter": {
-      "types": "./src/adapter/babel/adapter.ts",
-      "import": "./src/adapter/babel/adapter.ts",
-      "default": "./src/adapter/babel/adapter.ts"
+      "types": "./src/adapter/index.ts",
+      "import": "./src/adapter/index.ts",
+      "default": "./src/adapter/index.ts"
     },
     "./types": {
       "types": "./src/types.ts",
