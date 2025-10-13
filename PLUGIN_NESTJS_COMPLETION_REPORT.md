@@ -98,6 +98,25 @@ plugin-nestjs now uses the same shared runtime infrastructure as plugin-babel, a
 - `types.ts`:
   - Commented out non-existent plugin-shared type exports
 
+### All Remaining TypeScript Errors Fixed
+
+**Commit**: `87dcd29`
+
+**Fixed**:
+- `tsconfig.base.json`:
+  - Enabled `experimentalDecorators` for NestJS parameter decorators
+  - Enabled `emitDecoratorMetadata` for runtime decorator metadata
+  - Resolves TS1206 "Decorators are not valid here" errors in `nest/providers.ts`
+- `webpack/loader.ts`:
+  - Changed `RawSourceMap` types to `any` for source-map compatibility
+  - Added type assertion for Buffer.toString() call
+- `webpack/hooks.ts`:
+  - Updated `InvalidCallback` to accept `string | null` for fileName parameter
+- `config/with-soda-gql.ts`:
+  - Added default value `DEFAULT_ARTIFACT_PATH` when `pluginOptions.artifactPath` is undefined
+
+**Result**: ✅ All TypeScript errors resolved - `bun typecheck` now passes with zero errors
+
 ## Architecture Improvements
 
 ### Unified Runtime State Management
@@ -139,27 +158,7 @@ Builder Update → Artifact Persisted → invalidateArtifactCache()
                                     → Nest providers see new state
 ```
 
-## Remaining Issues
-
-### Unresolved TypeScript Errors (9 errors)
-
-**Location**: Existing legacy code not yet migrated
-
-1. **config/with-soda-gql.ts** (1 error)
-   - `Type 'string | undefined' is not assignable to type 'string'`
-
-2. **nest/providers.ts** (3 errors)
-   - Decorator positioning errors (lines 147-149)
-
-3. **webpack/hooks.ts** (1 error)
-   - `InvalidCallback` type incompatibility
-
-4. **webpack/loader.ts** (4 errors)
-   - `RawSourceMap` version type incompatibility (string vs number)
-   - `BabelParserPlugin[]` vs `PluginConfig[]` type mismatch
-   - `Property 'toString' does not exist on type 'never'`
-
-**Note**: These errors are in code paths not critical to the core runtime integration.
+## Remaining Work
 
 ### Pending Steps
 
@@ -202,7 +201,7 @@ Builder Update → Artifact Persisted → invalidateArtifactCache()
 
 ### Manual Testing
 
-✅ TypeScript compilation succeeds (with known legacy code warnings)
+✅ TypeScript compilation succeeds with zero errors
 ✅ Webpack loader compiles without errors
 ✅ Webpack plugin compiles without errors
 ⏳ Runtime execution testing pending
@@ -217,10 +216,11 @@ Builder Update → Artifact Persisted → invalidateArtifactCache()
 
 ### High Priority
 
-1. **Fix remaining TypeScript errors** (1-2 hours)
-   - Update `webpack/loader.ts` source-map handling
-   - Fix `nest/providers.ts` decorator syntax
-   - Fix `webpack/hooks.ts` callback types
+1. ✅ **Fix remaining TypeScript errors** ~~(1-2 hours)~~ **COMPLETED**
+   - ✅ Updated `webpack/loader.ts` source-map handling
+   - ✅ Fixed `nest/providers.ts` decorator syntax (enabled experimentalDecorators)
+   - ✅ Fixed `webpack/hooks.ts` callback types
+   - ✅ Fixed `config/with-soda-gql.ts` undefined handling
 
 2. **Complete Step 6: Nest module wiring** (2-3 hours)
    - Update `createNestArtifactProvider` to use `PluginRuntime`
@@ -252,8 +252,8 @@ Builder Update → Artifact Persisted → invalidateArtifactCache()
 
 ### Commits
 
-- **Total Commits**: 6
-- **Time Span**: ~2 hours
+- **Total Commits**: 7
+- **Time Span**: ~3 hours
 - **Average Commit Size**: 50-100 lines
 
 ## Conclusion
@@ -266,17 +266,18 @@ plugin-nestjs now shares the same runtime infrastructure as plugin-babel, achiev
 
 1. ✅ Unified `PluginRuntime` API
 2. ✅ Shared dev session infrastructure
-3. ✅ Eliminated code duplication
+3. ✅ Eliminated code duplication (~250 lines removed)
 4. ✅ Module-level runtime caching
 5. ✅ State synchronization via `runtime.refresh()`
 6. ✅ TypeScript project references configured
+7. ✅ All TypeScript compilation errors resolved
 
 ### Remaining Work Estimate
 
-- **TypeScript fixes**: 1-2 hours
+- ~~**TypeScript fixes**: 1-2 hours~~ ✅ **COMPLETED**
 - **Step 6 (Nest wiring)**: 2-3 hours
 - **Testing**: 3-4 hours
-- **Total**: 6-9 hours to 100% completion
+- **Total**: 5-7 hours to 100% completion
 
 ---
 
