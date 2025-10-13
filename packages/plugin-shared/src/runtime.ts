@@ -3,10 +3,10 @@ import { err, ok, type Result } from "neverthrow";
 
 import type { ArtifactProvider } from "./artifact";
 import { createArtifactProvider } from "./artifact";
+import type { NormalizedOptions } from "./options";
 import { normalizePluginOptions } from "./options";
 import type { PluginError, PluginState } from "./state";
 import type { PluginOptions } from "./types";
-import type { NormalizedOptions } from "./options";
 
 /**
  * Plugin runtime instance that manages plugin state lifecycle
@@ -43,9 +43,7 @@ type RuntimeCache = {
 /**
  * Create a plugin runtime from normalized options
  */
-export const createPluginRuntimeFromNormalized = async (
-  normalized: NormalizedOptions,
-): Promise<PluginRuntime> => {
+export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOptions): Promise<PluginRuntime> => {
   const provider = createArtifactProvider(normalized);
 
   const cache: RuntimeCache = {
@@ -97,9 +95,7 @@ export const createPluginRuntimeFromNormalized = async (
 /**
  * Create a plugin runtime from raw options
  */
-export const createPluginRuntime = async (
-  opts: Partial<PluginOptions> = {},
-): Promise<PluginRuntime> => {
+export const createPluginRuntime = async (opts: Partial<PluginOptions> = {}): Promise<PluginRuntime> => {
   const optionsResult = await normalizePluginOptions(opts);
 
   if (optionsResult.isErr()) {
@@ -127,11 +123,7 @@ const loadState = async (cache: RuntimeCache): Promise<Result<PluginState, Plugi
     return err(artifactResult.error);
   }
 
-  const state = createPluginStateWithProvider(
-    cache.options,
-    artifactResult.value,
-    cache.provider,
-  );
+  const state = createPluginStateWithProvider(cache.options, artifactResult.value, cache.provider);
 
   return ok(state);
 };

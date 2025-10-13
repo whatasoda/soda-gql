@@ -1,12 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
 import type { BuilderArtifact, BuilderChangeSet, BuilderServiceConfig } from "@soda-gql/builder";
-import { invalidateArtifactCache, createPluginRuntimeFromNormalized, type PluginRuntime } from "@soda-gql/plugin-shared";
-import {
-  createBuilderServiceController,
-  createBuilderWatch,
-  type DevBuilderSessionLike,
-} from "@soda-gql/plugin-shared/dev";
+import { createPluginRuntimeFromNormalized, invalidateArtifactCache, type PluginRuntime } from "@soda-gql/plugin-shared";
+import { createBuilderServiceController, createBuilderWatch } from "@soda-gql/plugin-shared/dev";
 import type { Compiler, WebpackPluginInstance } from "webpack";
 import { DiagnosticsReporter } from "../internal/diagnostics.js";
 import { type ArtifactManifest, createArtifactManifest, manifestChanged } from "../internal/manifest.js";
@@ -119,6 +115,7 @@ const normalizeOptions = (compiler: Compiler, raw: Partial<WebpackPluginOptions>
       artifactPath = resolved;
     }
   } else if (parsed.artifactSource?.source === "builder") {
+    // biome-ignore lint/suspicious/noExplicitAny: BuilderServiceConfig type compatibility
     const configInput = parsed.artifactSource.config as any;
     const builderConfig: BuilderServiceConfig = configInput;
     artifactSource = { source: "builder", config: builderConfig };
@@ -163,6 +160,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
     const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
     const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
+    // biome-ignore lint/suspicious/noExplicitAny: BuilderWatchOptions type compatibility
     const builderWatch = builderSource ? createBuilderWatch(builderSource.config as any) : null;
 
     let manifest: ArtifactManifest | null = null;

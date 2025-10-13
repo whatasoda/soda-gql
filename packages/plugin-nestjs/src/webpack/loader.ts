@@ -4,7 +4,7 @@ import { type TransformOptions, type types as t, transformAsync } from "@babel/c
 import type { NodePath } from "@babel/traverse";
 import { type BabelEnv, babelTransformAdapterFactory } from "@soda-gql/plugin-babel/adapter";
 import type { TransformAdapterFactory } from "@soda-gql/plugin-shared";
-import { normalizePluginOptions, type PluginRuntime, createPluginRuntimeFromNormalized } from "@soda-gql/plugin-shared";
+import { createPluginRuntimeFromNormalized, normalizePluginOptions, type PluginRuntime } from "@soda-gql/plugin-shared";
 import type { LoaderDefinitionFunction } from "webpack";
 
 import { formatPluginError, isPluginError } from "../errors.js";
@@ -73,6 +73,7 @@ const transformWithAdapter = async (
   importIdentifier: string | undefined,
   inputSourceMap: unknown,
   generateSourceMaps: boolean,
+  // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
 ): Promise<{ code: string; map?: any }> => {
   // Normalize plugin options using the new API
   const normalizedResult = await normalizePluginOptions({
@@ -92,6 +93,7 @@ const transformWithAdapter = async (
 
   // Short-circuit for runtime mode - no transformation needed
   if (normalizedOptions.mode === "runtime") {
+    // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
     return { code: sourceCode, map: inputSourceMap as any };
   }
 
@@ -122,17 +124,20 @@ const transformWithAdapter = async (
   // Use Babel's transformAsync to get the AST and create adapter environment
   let transformed = false;
   let resultCode = sourceCode;
+  // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
   let resultMap: any;
 
   const babelOptions: TransformOptions = {
     filename: resourcePath,
     sourceFileName: resourcePath,
+    // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
     inputSourceMap: inputSourceMap as any,
     sourceMaps: generateSourceMaps,
     configFile: false,
     babelrc: false,
     parserOpts: {
       sourceType: "unambiguous",
+      // biome-ignore lint/suspicious/noExplicitAny: Babel plugin type compatibility
       plugins: createParserPlugins(resourcePath) as any,
     },
     plugins: [
@@ -153,8 +158,7 @@ const transformWithAdapter = async (
             // Create transform context
             const context = {
               filename: resourcePath,
-              artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) =>
-                pluginState.allArtifacts[canonicalId],
+              artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => pluginState.allArtifacts[canonicalId],
             };
 
             // Transform the program
@@ -197,6 +201,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
   const sourceCode = typeof input === "string" ? input : (input as Buffer).toString("utf8");
 
   if (TS_DECLARATION_REGEX.test(this.resourcePath)) {
+    // biome-ignore lint/suspicious/noExplicitAny: webpack loader callback type compatibility
     callback(null, sourceCode, inputSourceMap as any);
     return;
   }
