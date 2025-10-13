@@ -171,7 +171,7 @@ const buildDiscovered = async ({
   const artifactResult = await buildArtifact({
     analyses,
     elements,
-    stats: stats,
+    stats,
   });
 
   if (artifactResult.isErr()) {

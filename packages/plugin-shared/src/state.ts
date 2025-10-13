@@ -1,15 +1,8 @@
-import {
-  type BuilderArtifact,
-  type BuilderArtifactElement,
-  type BuilderError,
-  type CanonicalId,
-  createBuilderService,
-} from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
 
-import { type ArtifactError, loadArtifact } from "./cache";
-import { type NormalizedOptions, type NormalizedOptionsLegacy, normalizePluginOptionsLegacy, type OptionsError } from "./options";
-import type { SodaGqlPluginOptions } from "./types";
+import type { ArtifactError } from "./cache";
+import type { NormalizedOptions, OptionsError } from "./options";
 
 type OptionsMissingArtifactPath = Extract<OptionsError, { code: "MISSING_ARTIFACT_PATH" }>;
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
@@ -41,12 +34,13 @@ type PluginErrorBase<Code extends string, Cause> = {
 
 export type PluginOptionsMissingArtifactPathError = PluginErrorBase<
   "OPTIONS_MISSING_ARTIFACT_PATH",
-  OptionsMissingArtifactPath
+  OptionsMissingArtifactPath | Extract<OptionsError, { code: "INVALID_ARTIFACT_OVERRIDE" }>
 > & { readonly stage: "normalize-options" };
 
 export type PluginOptionsInvalidBuilderConfigError = PluginErrorBase<
   "OPTIONS_INVALID_BUILDER_CONFIG",
-  OptionsInvalidBuilderConfig
+  | OptionsInvalidBuilderConfig
+  | Extract<OptionsError, { code: "MISSING_BUILDER_CONFIG" | "CONFIG_LOAD_FAILED" | "PROJECT_NOT_FOUND" }>
 > & { readonly stage: "normalize-options" };
 
 export type PluginArtifactNotFoundError = PluginErrorBase<"SODA_GQL_ARTIFACT_NOT_FOUND", ArtifactNotFound> & {
@@ -138,62 +132,12 @@ export type PluginState = {
   readonly artifactProvider?: import("./artifact").ArtifactProvider;
 };
 
-type PreparePluginStateDeps = {
-  readonly normalizePluginOptions: (raw: Partial<SodaGqlPluginOptions>) => Promise<Result<NormalizedOptionsLegacy, OptionsError>>;
-  readonly loadArtifact: typeof loadArtifact;
-  readonly createBuilderService: typeof createBuilderService;
-};
-
-const defaultDeps: PreparePluginStateDeps = {
-  normalizePluginOptions: async (raw) => normalizePluginOptionsLegacy(raw),
-  loadArtifact,
-  createBuilderService,
-};
-
 export type PluginStateResult = Result<PluginState, PluginError>;
-
-export const preparePluginState = async (
-  rawOptions: Partial<SodaGqlPluginOptions>,
-  deps: PreparePluginStateDeps = defaultDeps,
-): Promise<PluginStateResult> => {
-  const optionsResult = await deps.normalizePluginOptions(rawOptions);
-
-  if (optionsResult.isErr()) {
-    return err(mapOptionsError(optionsResult.error));
-  }
-
-  const options = optionsResult.value;
-
-  if (options.artifactSource.source === "artifact-file") {
-    // loadArtifact is now async - await the result
-    const artifactResult = await deps.loadArtifact(options.artifactSource.path);
-
-    if (artifactResult.isErr()) {
-      return err(mapArtifactError(artifactResult.error));
-    }
-
-    return ok(createPluginState(options, artifactResult.value));
-  }
-
-  const service = deps.createBuilderService(options.artifactSource.config);
-
-  try {
-    const buildResult = await service.build();
-
-    if (buildResult.isErr()) {
-      return err(mapBuilderError(buildResult.error));
-    }
-
-    return ok(createPluginState(options, buildResult.value));
-  } catch (cause) {
-    return err(mapUnexpectedBuilderError(cause));
-  }
-};
 
 /**
  * New preparePluginState that uses new PluginOptions and ArtifactProvider
  */
-export const preparePluginStateNew = async (rawOptions: Partial<import("./types").PluginOptions>): Promise<PluginStateResult> => {
+export const preparePluginState = async (rawOptions: Partial<import("./types").PluginOptions>): Promise<PluginStateResult> => {
   // Dynamically import to avoid circular dependency
   const { normalizePluginOptions: normalizeNew } = await import("./options");
   const { createArtifactProvider } = await import("./artifact");
@@ -201,7 +145,7 @@ export const preparePluginStateNew = async (rawOptions: Partial<import("./types"
   const optionsResult = await normalizeNew(rawOptions);
 
   if (optionsResult.isErr()) {
-    return err(mapOptionsErrorNew(optionsResult.error));
+    return err(mapOptionsError(optionsResult.error));
   }
 
   const options = optionsResult.value;
@@ -219,11 +163,6 @@ export const preparePluginStateNew = async (rawOptions: Partial<import("./types"
 
 const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
 
-const createPluginState = (options: NormalizedOptions | NormalizedOptionsLegacy, artifact: BuilderArtifact): PluginState => ({
-  options: options as NormalizedOptions, // Legacy options are compatible
-  allArtifacts: createAllArtifacts(artifact),
-});
-
 const createPluginStateWithProvider = (
   options: NormalizedOptions,
   artifact: BuilderArtifact,
@@ -235,26 +174,6 @@ const createPluginStateWithProvider = (
 });
 
 const mapOptionsError = (error: OptionsError): PluginError => {
-  if (error.code === "MISSING_ARTIFACT_PATH") {
-    return {
-      type: "PluginError",
-      stage: "normalize-options",
-      code: "OPTIONS_MISSING_ARTIFACT_PATH",
-      message: error.message,
-      cause: error as OptionsMissingArtifactPath,
-    };
-  }
-
-  return {
-    type: "PluginError",
-    stage: "normalize-options",
-    code: "OPTIONS_INVALID_BUILDER_CONFIG",
-    message: error.message,
-    cause: error as OptionsInvalidBuilderConfig,
-  };
-};
-
-const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginError => {
   switch (error.code) {
     case "MISSING_ARTIFACT_PATH":
       return {
@@ -262,7 +181,7 @@ const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginErro
         stage: "normalize-options",
         code: "OPTIONS_MISSING_ARTIFACT_PATH",
         message: error.message,
-        cause: error as any, // TODO: Update PluginError types to support new error codes
+        cause: error,
       };
     case "INVALID_BUILDER_CONFIG":
     case "MISSING_BUILDER_CONFIG":
@@ -271,7 +190,7 @@ const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginErro
         stage: "normalize-options",
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: error.message,
-        cause: error as any, // TODO: Update PluginError types to support new error codes
+        cause: error,
       };
     case "CONFIG_LOAD_FAILED":
       return {
@@ -279,7 +198,7 @@ const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginErro
         stage: "normalize-options",
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: `Config load failed: ${error.message}`,
-        cause: error as any, // TODO: Update PluginError types to support new error codes
+        cause: error,
       };
     case "PROJECT_NOT_FOUND":
       return {
@@ -287,7 +206,7 @@ const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginErro
         stage: "normalize-options",
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: `Project not found: ${error.project}`,
-        cause: error as any, // TODO: Update PluginError types to support new error codes
+        cause: error,
       };
     case "INVALID_ARTIFACT_OVERRIDE":
       return {
@@ -295,116 +214,7 @@ const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginErro
         stage: "normalize-options",
         code: "OPTIONS_MISSING_ARTIFACT_PATH",
         message: error.message,
-        cause: error as any, // TODO: Update PluginError types to support new error codes
+        cause: error,
       };
-  }
-};
-
-const mapArtifactError = (error: ArtifactError): PluginError => {
-  switch (error.code) {
-    case "NOT_FOUND":
-      return {
-        type: "PluginError",
-        stage: "artifact",
-        code: "SODA_GQL_ARTIFACT_NOT_FOUND",
-        message: "SODA_GQL_ARTIFACT_NOT_FOUND",
-        cause: error as ArtifactNotFound,
-        path: error.path,
-      };
-    case "PARSE_FAILED":
-      return {
-        type: "PluginError",
-        stage: "artifact",
-        code: "SODA_GQL_ARTIFACT_PARSE_FAILED",
-        message: "SODA_GQL_ARTIFACT_PARSE_FAILED",
-        cause: error as ArtifactParseFailed,
-        path: error.path,
-      };
-    default:
-      return {
-        type: "PluginError",
-        stage: "artifact",
-        code: "SODA_GQL_ARTIFACT_VALIDATION_FAILED",
-        message: "SODA_GQL_ARTIFACT_VALIDATION_FAILED",
-        cause: error as ArtifactValidationFailed,
-        path: error.path,
-      };
-  }
-};
-
-const mapBuilderError = (error: BuilderError): PluginError => {
-  switch (error.code) {
-    case "ENTRY_NOT_FOUND":
-      return {
-        type: "PluginError",
-        stage: "builder",
-        code: "SODA_GQL_BUILDER_ENTRY_NOT_FOUND",
-        message: `SODA_GQL_BUILDER_ENTRY_NOT_FOUND: ${error.message} (entry: ${error.entry})`,
-        cause: error as BuilderEntryNotFound,
-        entry: error.entry,
-      };
-    case "DOC_DUPLICATE":
-      return {
-        type: "PluginError",
-        stage: "builder",
-        code: "SODA_GQL_BUILDER_DOC_DUPLICATE",
-        message: `SODA_GQL_BUILDER_DOC_DUPLICATE: ${error.name} found in multiple sources: ${error.sources.join(", ")}`,
-        cause: error as BuilderDocDuplicate,
-        name: error.name,
-        sources: error.sources,
-      };
-    case "GRAPH_CIRCULAR_DEPENDENCY":
-      return {
-        type: "PluginError",
-        stage: "builder",
-        code: "SODA_GQL_BUILDER_CIRCULAR_DEPENDENCY",
-        message: `SODA_GQL_BUILDER_CIRCULAR_DEPENDENCY: ${error.chain.join(" → ")}`,
-        cause: error as BuilderCircularDependency,
-        chain: error.chain,
-      };
-    case "RUNTIME_MODULE_LOAD_FAILED":
-      return {
-        type: "PluginError",
-        stage: "builder",
-        code: "SODA_GQL_BUILDER_MODULE_EVALUATION_FAILED",
-        message: `SODA_GQL_BUILDER_MODULE_EVALUATION_FAILED: ${error.message} at ${error.filePath}:${error.astPath}`,
-        cause: error as BuilderModuleEvaluationFailed,
-        filePath: error.filePath,
-        astPath: error.astPath,
-      };
-    case "WRITE_FAILED":
-      return {
-        type: "PluginError",
-        stage: "builder",
-        code: "SODA_GQL_BUILDER_WRITE_FAILED",
-        message: `SODA_GQL_BUILDER_WRITE_FAILED: ${error.message} (path: ${error.outPath})`,
-        cause: error as BuilderWriteFailed,
-        outPath: error.outPath,
-      };
-    default:
-      // Handle new error codes by falling back to unexpected error
-      return mapUnexpectedBuilderError(error);
-  }
-};
-
-const mapUnexpectedBuilderError = (cause: unknown): PluginBuilderUnexpectedError => ({
-  type: "PluginError",
-  stage: "builder",
-  code: "SODA_GQL_BUILDER_UNEXPECTED",
-  message: `SODA_GQL_BUILDER_UNEXPECTED: ${describeUnknown(cause)}`,
-  cause,
-});
-
-const describeUnknown = (value: unknown): string => {
-  if (value instanceof Error) {
-    return value.message;
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
   }
 };

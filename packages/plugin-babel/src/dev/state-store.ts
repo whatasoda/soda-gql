@@ -13,7 +13,7 @@ export type StateStore = {
 export const createStateStore = (): StateStore => {
   let currentState: PluginState | null = null;
   let generation = 0;
-  let lastError: Error | null = null;
+  let _lastError: Error | null = null;
   const listeners = new Set<() => void>();
 
   const notify = () => {
@@ -58,13 +58,13 @@ export const createStateStore = (): StateStore => {
         options: currentState.options,
         allArtifacts: artifact.elements,
       };
-      lastError = null;
+      _lastError = null;
 
       notify();
     },
 
     setError(error) {
-      lastError = error;
+      _lastError = error;
       notify();
     },
 

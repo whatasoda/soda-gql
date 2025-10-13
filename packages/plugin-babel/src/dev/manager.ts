@@ -126,8 +126,8 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
         unsubscribe();
         unsubscribe = null;
       }
-      if (session && typeof (session as any).reset === "function") {
-        (session as any).reset();
+      if (session && typeof session.reset === "function") {
+        session.reset();
       }
       stateStore = null;
       session = null;

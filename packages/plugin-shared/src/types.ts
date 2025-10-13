@@ -1,35 +1,3 @@
-import type { BuilderServiceConfig } from "@soda-gql/builder";
-
-/**
- * Builder configuration for artifact generation.
- * @deprecated Use ResolvedSodaGqlConfig directly. Will be removed in future versions.
- */
-export type BuilderConfig = BuilderServiceConfig;
-
-/**
- * Discriminated union for artifact sources.
- * @deprecated Use new PluginOptions with artifact override. Will be removed in future versions.
- */
-export type ArtifactSource =
-  | {
-      readonly source: "artifact-file";
-      readonly path: string;
-    }
-  | {
-      readonly source: "builder";
-      readonly config: BuilderConfig;
-    };
-
-/**
- * @deprecated Use new PluginOptions. Will be removed in future versions.
- */
-export type SodaGqlPluginOptions = {
-  readonly mode: "runtime" | "zero-runtime";
-  readonly artifactSource?: ArtifactSource;
-  readonly importIdentifier?: string;
-  readonly diagnostics?: "json" | "console";
-};
-
 /**
  * New plugin options with simplified config discovery.
  */

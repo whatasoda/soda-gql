@@ -1,6 +1,13 @@
 import { createSodaGqlPlugin } from "./plugin";
 
-export type { PluginError } from "./errors";
-export type { SodaGqlBabelOptions } from "./types";
+export {
+  assertUnreachable,
+  formatPluginError,
+  isPluginError,
+  type PluginError,
+  type PluginResult,
+  pluginErr,
+} from "@soda-gql/plugin-shared/errors";
+
 export { createSodaGqlPlugin };
 export default createSodaGqlPlugin;

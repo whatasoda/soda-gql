@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
-import type { ArtifactSource, PluginOptions, SodaGqlPluginOptions } from "./types";
+import type { PluginOptions } from "./types";
 
 export type NormalizedOptions = {
   readonly mode: "runtime" | "zero-runtime";
@@ -154,78 +154,4 @@ export const normalizePluginOptions = async (raw: Partial<PluginOptions>): Promi
       config: builderServiceConfig,
     },
   });
-};
-
-/**
- * Legacy normalize function for backward compatibility
- * @deprecated Use normalizePluginOptions with PluginOptions instead
- */
-export const normalizePluginOptionsLegacy = (
-  raw: Partial<SodaGqlPluginOptions>,
-): Result<NormalizedOptionsLegacy, OptionsError> => {
-  const mode = raw.mode ?? "runtime";
-  const importIdentifier = raw.importIdentifier ?? "@/graphql-system";
-  const diagnostics = raw.diagnostics ?? "json";
-
-  // Determine artifact source
-  if (!raw.artifactSource) {
-    return err({
-      type: "OptionsError",
-      code: "MISSING_ARTIFACT_PATH",
-      message: "artifactSource option is required",
-    });
-  }
-
-  let artifactSource: ArtifactSource;
-
-  if (raw.artifactSource.source === "artifact-file") {
-    if (!raw.artifactSource.path) {
-      return err({
-        type: "OptionsError",
-        code: "MISSING_ARTIFACT_PATH",
-        message: "artifactSource.path is required when source is artifact-file",
-      });
-    }
-    artifactSource = raw.artifactSource;
-  } else {
-    // source === "builder"
-    const builderConfig = raw.artifactSource.config;
-    if (!builderConfig.entrypoints || (Array.isArray(builderConfig.entrypoints) && builderConfig.entrypoints.length === 0)) {
-      return err({
-        type: "OptionsError",
-        code: "INVALID_BUILDER_CONFIG",
-        message: "builder config must include non-empty entrypoints array",
-      });
-    }
-    if (!builderConfig.config.builder.analyzer) {
-      return err({
-        type: "OptionsError",
-        code: "INVALID_BUILDER_CONFIG",
-        message: "builder config must include analyzer",
-      });
-    }
-
-    // Artifact source uses the resolved config directly
-    artifactSource = {
-      source: "builder",
-      config: builderConfig,
-    };
-  }
-
-  return ok({
-    mode,
-    importIdentifier,
-    diagnostics,
-    artifactSource,
-  });
-};
-
-/**
- * @deprecated Legacy normalized options type
- */
-export type NormalizedOptionsLegacy = {
-  readonly mode: "runtime" | "zero-runtime";
-  readonly importIdentifier: string;
-  readonly diagnostics: "json" | "console";
-  readonly artifactSource: ArtifactSource;
 };
