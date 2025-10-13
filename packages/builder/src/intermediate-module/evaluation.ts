@@ -4,8 +4,8 @@ import { createContext, Script } from "node:vm";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
-import type { ModuleAnalysis } from "../../ast";
-import type { BuilderError } from "../../errors";
+import type { ModuleAnalysis } from "../ast";
+import type { BuilderError } from "../errors";
 import { renderRegistryBlock } from "./codegen";
 import type { IntermediateModule } from "./types";
 

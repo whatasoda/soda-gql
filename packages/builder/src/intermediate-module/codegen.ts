@@ -1,4 +1,4 @@
-import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "../../ast";
+import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "../ast";
 import { resolveImportPath } from "./analysis";
 
 const formatFactory = (expression: string): string => {

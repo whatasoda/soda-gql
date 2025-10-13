@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import type { DiscoverySnapshot } from "@soda-gql/builder/discovery/types";
-import { collectAffectedFiles, extractModuleAdjacency } from "@soda-gql/builder/internal/session/module-adjacency";
+import { collectAffectedFiles, extractModuleAdjacency } from "@soda-gql/builder/session";
 import type { CanonicalId } from "@soda-gql/common";
 import { createCanonicalId } from "@soda-gql/common";
 

@@ -2,10 +2,9 @@ import { join } from "node:path";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
-import { buildArtifact } from "../../artifact";
-import type { BuilderArtifact } from "../../artifact/types";
-import { getAstAnalyzer, type ModuleAnalysis } from "../../ast";
-import { createJsonCache } from "../../cache/json-cache";
+import { type BuilderArtifact, buildArtifact } from "../artifact";
+import { getAstAnalyzer, type ModuleAnalysis } from "../ast";
+import { createJsonCache } from "../cache/json-cache";
 import {
   createDiscoveryCache,
   type DiscoveryCache,
@@ -13,10 +12,10 @@ import {
   discoverModules,
   type ModuleLoadStats,
   resolveEntryPaths,
-} from "../../discovery";
-import { builderErrors } from "../../errors";
-import type { BuilderError } from "../../types";
+} from "../discovery";
+import { builderErrors } from "../errors";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
+import type { BuilderError } from "../types";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
 import { validateModuleDependencies } from "./dependency-validation";

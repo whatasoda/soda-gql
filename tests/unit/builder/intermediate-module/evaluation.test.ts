@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Script } from "node:vm";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import { generateIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/evaluation";
+import { generateIntermediateModules } from "@soda-gql/builder/intermediate-module/evaluation";
 import { createCanonicalId } from "@soda-gql/common";
 
 const createTestAnalysis = (
@@ -27,7 +27,7 @@ const createTestAnalysis = (
   };
 };
 
-describe("buildIntermediateModules", () => {
+describe("generateIntermediateModules", () => {
   test("should create single module for single file", () => {
     const analyses = new Map([
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],

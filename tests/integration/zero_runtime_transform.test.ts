@@ -60,7 +60,7 @@ describe("zero-runtime transform", () => {
     const cacheDir = join(workspace, ".cache", "soda-gql");
     mkdirSync(cacheDir, { recursive: true });
     const artifactPath = join(cacheDir, "runtime.json");
-    const debugDir = join(cacheDir, "debug");
+    const _debugDir = join(cacheDir, "debug");
 
     const originalCwd = process.cwd();
     process.chdir(workspace);

@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuilderChangeSet } from "@soda-gql/builder";
-import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
+import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
 import { createTestConfig } from "../helpers/test-config";

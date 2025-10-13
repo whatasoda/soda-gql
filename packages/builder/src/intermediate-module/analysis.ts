@@ -1,5 +1,5 @@
 import { dirname, join, resolve } from "node:path";
-import type { ModuleAnalysis } from "../../ast";
+import type { ModuleAnalysis } from "../ast";
 
 /**
  * Normalize path for consistent comparison.

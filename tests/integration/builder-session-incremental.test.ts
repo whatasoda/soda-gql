@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuilderChangeSet } from "@soda-gql/builder";
-import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
+import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
 import { createTestConfig } from "../helpers/test-config";

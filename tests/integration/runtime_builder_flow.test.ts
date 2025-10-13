@@ -37,7 +37,7 @@ const generateGraphqlSystem = async (workspaceRoot: string) => {
   return outPath;
 };
 
-const executeBuilder = async (workspaceRoot: string, entry: string, artifactPath: string, debugDir: string) => {
+const executeBuilder = async (workspaceRoot: string, entry: string, artifactPath: string, _debugDir: string) => {
   const originalCwd = process.cwd();
   process.chdir(workspaceRoot);
   try {

@@ -1,8 +1,8 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import { createBuilderSession } from "./internal/session/builder-session";
-import type { BuilderChangeSet } from "./internal/session/change-set";
+import { createBuilderSession } from "./session";
+import type { BuilderChangeSet } from "./session";
 import type { BuilderError } from "./types";
 
 /**

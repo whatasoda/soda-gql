@@ -1,5 +1,5 @@
 import { resolveRelativeImportWithReferences } from "@soda-gql/common";
-import type { DiscoverySnapshot } from "../../discovery";
+import type { DiscoverySnapshot } from "../discovery";
 
 /**
  * Extract module-level adjacency from dependency graph.
