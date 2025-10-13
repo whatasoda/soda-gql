@@ -26,8 +26,6 @@ export type {
 } from "./discovery/types";
 export type { BuilderChangeSet, BuilderFileChange, BuilderSession, BuilderSessionSnapshot } from "./internal/session";
 export { createBuilderSession } from "./internal/session";
-export type { LegacyBuilderOptions } from "./runner";
-export { runBuilder } from "./runner";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";
@@ -38,6 +36,4 @@ export type {
   BuilderInput,
   BuilderMode,
   BuilderOptions,
-  BuilderResult,
-  BuilderSuccess,
 } from "./types";

@@ -3,11 +3,11 @@ import { resolve } from "node:path";
 
 import type {
   BuilderAnalyzer,
+  BuilderArtifact,
   BuilderError,
   BuilderFormat,
   BuilderMode,
   BuilderOptions,
-  BuilderSuccess,
 } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
 import type { BuilderChangeSet } from "@soda-gql/builder";
@@ -169,7 +169,11 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   });
 };
 
-const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mode: BuilderMode) => {
+const formatBuilderSuccess = (
+  format: OutputFormat,
+  success: { readonly artifact: BuilderArtifact; readonly outPath: string },
+  mode: BuilderMode,
+) => {
   if (mode !== "runtime") {
     return "";
   }

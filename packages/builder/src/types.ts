@@ -1,6 +1,3 @@
-import type { Result } from "neverthrow";
-import type { BuilderArtifact } from "./artifact/types";
-
 export type BuilderMode = "runtime" | "zero-runtime";
 export type BuilderFormat = "json" | "human";
 
@@ -19,12 +16,3 @@ export type {
   BuilderErrorCode,
   BuilderResult as BuilderOperationResult,
 } from "./errors";
-
-import type { BuilderError } from "./errors";
-
-export type BuilderSuccess = {
-  readonly artifact: BuilderArtifact;
-  readonly outPath: string;
-};
-
-export type BuilderResult = Result<BuilderSuccess, BuilderError>;

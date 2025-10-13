@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type BuilderArtifact, runBuilder } from "@soda-gql/builder";
+import { type BuilderArtifact, createBuilderService } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import { copyDefaultInject } from "../fixtures/inject-module";
@@ -65,20 +65,24 @@ describe("zero-runtime transform", () => {
     const originalCwd = process.cwd();
     process.chdir(workspace);
     try {
-      const builderResult = await runBuilder({
-        mode: "runtime",
-        entry: [join(workspace, "src", "pages", "profile.page.ts")],
-        outPath: artifactPath,
-        format: "json",
-        analyzer: "ts",
-        schemaHash: "test-schema",
-        debugDir,
+      // Create builder service directly
+      const service = createBuilderService({
         config: createTestConfig(workspace),
+        entrypoints: [join(workspace, "src", "pages", "profile.page.ts")],
       });
 
-      if (builderResult.isErr()) {
-        throw new Error(`builder failed: ${builderResult.error.code}`);
+      // Build artifact
+      const buildResult = await service.build();
+
+      if (buildResult.isErr()) {
+        throw new Error(`builder failed: ${buildResult.error.code}`);
       }
+
+      const artifact = buildResult.value;
+
+      // Write artifact to disk
+      mkdirSync(dirname(artifactPath), { recursive: true });
+      await Bun.write(artifactPath, JSON.stringify(artifact, null, 2));
     } finally {
       process.chdir(originalCwd);
     }

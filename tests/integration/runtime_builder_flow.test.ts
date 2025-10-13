@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type CanonicalId, runBuilder } from "@soda-gql/builder";
+import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
 import { createTestConfig } from "../helpers/test-config";
@@ -37,26 +37,30 @@ const generateGraphqlSystem = async (workspaceRoot: string) => {
   return outPath;
 };
 
-const executeBuilder = async (workspaceRoot: string, entry: string, outPath: string, debugDir: string) => {
+const executeBuilder = async (workspaceRoot: string, entry: string, artifactPath: string, debugDir: string) => {
   const originalCwd = process.cwd();
   process.chdir(workspaceRoot);
   try {
-    const result = await runBuilder({
-      mode: "runtime",
-      entry: [entry],
-      outPath,
-      format: "json",
-      analyzer: "ts",
-      schemaHash: "test-schema",
-      debugDir,
+    // Create builder service directly
+    const service = createBuilderService({
       config: createTestConfig(workspaceRoot),
+      entrypoints: [entry],
     });
 
-    if (result.isErr()) {
-      throw new Error(`builder failed: ${result.error.code}`);
+    // Build artifact
+    const buildResult = await service.build();
+
+    if (buildResult.isErr()) {
+      throw new Error(`builder failed: ${buildResult.error.code}`);
     }
 
-    return result.value;
+    const artifact = buildResult.value;
+
+    // Write artifact to disk
+    mkdirSync(dirname(artifactPath), { recursive: true });
+    await Bun.write(artifactPath, JSON.stringify(artifact, null, 2));
+
+    return { artifact, outPath: artifactPath };
   } finally {
     process.chdir(originalCwd);
   }
