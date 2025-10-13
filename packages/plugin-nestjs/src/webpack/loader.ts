@@ -5,7 +5,6 @@ import type { NodePath } from "@babel/traverse";
 import { type BabelEnv, babelTransformAdapterFactory } from "@soda-gql/plugin-babel/adapter";
 import type { TransformAdapterFactory } from "@soda-gql/plugin-shared";
 import { normalizePluginOptions, type PluginRuntime, createPluginRuntimeFromNormalized } from "@soda-gql/plugin-shared";
-import type { RawSourceMap } from "source-map";
 import type { LoaderDefinitionFunction } from "webpack";
 
 import { formatPluginError, isPluginError } from "../errors.js";
@@ -74,7 +73,7 @@ const transformWithAdapter = async (
   importIdentifier: string | undefined,
   inputSourceMap: unknown,
   generateSourceMaps: boolean,
-): Promise<{ code: string; map?: RawSourceMap }> => {
+): Promise<{ code: string; map?: any }> => {
   // Normalize plugin options using the new API
   const normalizedResult = await normalizePluginOptions({
     mode,
@@ -93,7 +92,7 @@ const transformWithAdapter = async (
 
   // Short-circuit for runtime mode - no transformation needed
   if (normalizedOptions.mode === "runtime") {
-    return { code: sourceCode, map: inputSourceMap as RawSourceMap | undefined };
+    return { code: sourceCode, map: inputSourceMap as any };
   }
 
   // Create runtime key for caching
@@ -123,18 +122,18 @@ const transformWithAdapter = async (
   // Use Babel's transformAsync to get the AST and create adapter environment
   let transformed = false;
   let resultCode = sourceCode;
-  let resultMap: RawSourceMap | undefined;
+  let resultMap: any;
 
   const babelOptions: TransformOptions = {
     filename: resourcePath,
     sourceFileName: resourcePath,
-    inputSourceMap: (inputSourceMap ?? undefined) as RawSourceMap | undefined,
+    inputSourceMap: inputSourceMap as any,
     sourceMaps: generateSourceMaps,
     configFile: false,
     babelrc: false,
     parserOpts: {
       sourceType: "unambiguous",
-      plugins: createParserPlugins(resourcePath),
+      plugins: createParserPlugins(resourcePath) as any,
     },
     plugins: [
       // Custom plugin that uses the adapter
@@ -181,7 +180,7 @@ const transformWithAdapter = async (
   if (babelResult && transformed) {
     resultCode = babelResult.code ?? sourceCode;
     const mapValue = babelResult.map ?? (generateSourceMaps ? inputSourceMap : undefined);
-    resultMap = typeof mapValue === "string" ? (JSON.parse(mapValue) as RawSourceMap) : (mapValue as RawSourceMap | undefined);
+    resultMap = typeof mapValue === "string" ? JSON.parse(mapValue) : mapValue;
   }
 
   return { code: resultCode, map: resultMap };
@@ -195,10 +194,10 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
 
   this.cacheable(true);
 
-  const sourceCode = typeof input === "string" ? input : input.toString("utf8");
+  const sourceCode = typeof input === "string" ? input : (input as Buffer).toString("utf8");
 
   if (TS_DECLARATION_REGEX.test(this.resourcePath)) {
-    callback(null, sourceCode, inputSourceMap as RawSourceMap | undefined);
+    callback(null, sourceCode, inputSourceMap as any);
     return;
   }
 

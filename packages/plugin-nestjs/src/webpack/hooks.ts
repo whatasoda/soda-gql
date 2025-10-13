@@ -8,7 +8,7 @@ export type WatchRunCallback = (args: {
 
 export type RunCallback = () => Promise<void>;
 
-export type InvalidCallback = (fileName: string, changeTime: number) => void;
+export type InvalidCallback = (fileName: string | null, changeTime: number) => void;
 
 export type WatchCloseCallback = () => void | Promise<void>;
 

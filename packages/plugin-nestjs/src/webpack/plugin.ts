@@ -163,7 +163,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
     const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
     const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
-    const builderWatch = builderSource ? createBuilderWatch(builderSource.config) : null;
+    const builderWatch = builderSource ? createBuilderWatch(builderSource.config as any) : null;
 
     let manifest: ArtifactManifest | null = null;
 

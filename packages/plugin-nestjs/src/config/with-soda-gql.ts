@@ -42,12 +42,13 @@ const createLoaderRule = (loaderOptions: WebpackLoaderOptions): RuleSetRule => (
 });
 
 const createLoaderOptions = (pluginOptions: SodaGqlConfig["plugin"]): WebpackLoaderOptions => {
+  const artifactPath = pluginOptions.artifactPath ?? DEFAULT_ARTIFACT_PATH;
   const options: WebpackLoaderOptions = {
     mode: pluginOptions.mode,
-    artifactPath: pluginOptions.artifactPath,
+    artifactPath,
     artifactSource: {
       source: "artifact-file",
-      path: pluginOptions.artifactPath,
+      path: artifactPath,
     },
   };
 
