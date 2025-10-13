@@ -19,6 +19,22 @@ export const getOperation = (name: string) => {
 };
 
 /**
+ * Replace an existing operation or register a new one
+ * Used for HMR to hot-swap operations without throwing
+ */
+export const replaceOperation = (operation: AnyOperationOf<OperationType>) => {
+  registry.set(operation.operationName, operation);
+};
+
+/**
+ * Remove an operation from the registry
+ * Used for HMR to clean up removed operations
+ */
+export const removeOperation = (name: string) => {
+  registry.delete(name);
+};
+
+/**
  * Test-only function to reset the operation registry
  * @internal
  */
