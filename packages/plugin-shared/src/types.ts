@@ -56,4 +56,10 @@ export type PluginOptions = {
     /** Custom artifact file path (required when useBuilder is false) */
     readonly path?: string;
   };
+
+  /** Development mode options */
+  readonly dev?: {
+    /** Enable Hot Module Replacement (HMR) support (default: false) */
+    readonly hmr?: boolean;
+  };
 };
