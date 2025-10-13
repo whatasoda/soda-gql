@@ -1,8 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
-
-import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import type { BuilderArtifact, BuilderChangeSet, BuilderServiceConfig } from "@soda-gql/builder";
 import { invalidateArtifactCache } from "@soda-gql/plugin-shared";
 import type { Compiler, WebpackPluginInstance } from "webpack";
 import {

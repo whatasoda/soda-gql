@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Script } from "node:vm";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import { generateIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
+import { generateIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/evaluation";
 import { createCanonicalId } from "@soda-gql/common";
 
 const createTestAnalysis = (

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
@@ -14,25 +13,10 @@ export type BuildIntermediateModulesInput = {
   readonly targetFiles: Set<string>;
 };
 
-/**
- * Compute a stable content hash for chunk source code.
- */
-const computeContentHash = (sourceCode: string): string => {
-  return createHash("sha256").update(sourceCode).digest("hex").slice(0, 16);
-};
-
-const transpile = ({
-  filePath,
-  sourceCode,
-  contentHash,
-}: {
-  filePath: string;
-  sourceCode: string;
-  contentHash: string;
-}): Result<string, BuilderError> => {
+const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: string }): Result<string, BuilderError> => {
   try {
     const result = transformSync(sourceCode, {
-      filename: `${contentHash}.ts`,
+      filename: `${filePath}.ts`,
       jsc: {
         parser: {
           syntax: "typescript",
@@ -73,17 +57,11 @@ export const generateIntermediateModules = function* ({
       continue;
     }
 
-    // Get canonical IDs for this intermediate module
-    const canonicalIds = analysis.definitions.map(({ canonicalId }) => canonicalId);
-
     // Generate source code for this intermediate module
     const sourceCode = renderRegistryBlock({ filePath, analysis, analyses });
 
-    // Compute content hash
-    const contentHash = computeContentHash(sourceCode);
-
     // Transpile TypeScript to JavaScript using SWC
-    const transpiledCodeResult = transpile({ filePath, sourceCode, contentHash });
+    const transpiledCodeResult = transpile({ filePath, sourceCode });
     if (transpiledCodeResult.isErr()) {
       // error
       continue;
@@ -94,8 +72,6 @@ export const generateIntermediateModules = function* ({
 
     yield {
       filePath,
-      contentHash,
-      canonicalIds,
       sourceCode,
       transpiledCode,
       script,

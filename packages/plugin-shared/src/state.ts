@@ -8,7 +8,7 @@ import {
 import { err, ok, type Result } from "neverthrow";
 
 import { type ArtifactError, loadArtifact } from "./cache";
-import { type NormalizedOptions, normalizePluginOptions, type OptionsError } from "./options";
+import { type NormalizedOptions, type NormalizedOptionsLegacy, normalizePluginOptionsLegacy, type OptionsError } from "./options";
 import type { SodaGqlPluginOptions } from "./types";
 
 type OptionsMissingArtifactPath = Extract<OptionsError, { code: "MISSING_ARTIFACT_PATH" }>;
@@ -138,13 +138,13 @@ export type PluginState = {
 };
 
 type PreparePluginStateDeps = {
-  readonly normalizePluginOptions: typeof normalizePluginOptions;
+  readonly normalizePluginOptions: (raw: Partial<SodaGqlPluginOptions>) => Promise<Result<NormalizedOptionsLegacy, OptionsError>>;
   readonly loadArtifact: typeof loadArtifact;
   readonly createBuilderService: typeof createBuilderService;
 };
 
 const defaultDeps: PreparePluginStateDeps = {
-  normalizePluginOptions,
+  normalizePluginOptions: async (raw) => normalizePluginOptionsLegacy(raw),
   loadArtifact,
   createBuilderService,
 };
@@ -155,7 +155,7 @@ export const preparePluginState = async (
   rawOptions: Partial<SodaGqlPluginOptions>,
   deps: PreparePluginStateDeps = defaultDeps,
 ): Promise<PluginStateResult> => {
-  const optionsResult = deps.normalizePluginOptions(rawOptions);
+  const optionsResult = await deps.normalizePluginOptions(rawOptions);
 
   if (optionsResult.isErr()) {
     return err(mapOptionsError(optionsResult.error));
@@ -189,10 +189,53 @@ export const preparePluginState = async (
   }
 };
 
+/**
+ * New preparePluginState that uses new PluginOptions
+ */
+export const preparePluginStateNew = async (
+  rawOptions: Partial<import("./types").PluginOptions>,
+): Promise<PluginStateResult> => {
+  // Dynamically import to avoid circular dependency
+  const { normalizePluginOptions: normalizeNew } = await import("./options");
+
+  const optionsResult = await normalizeNew(rawOptions);
+
+  if (optionsResult.isErr()) {
+    return err(mapOptionsErrorNew(optionsResult.error));
+  }
+
+  const options = optionsResult.value;
+
+  if (options.artifact.type === "artifact-file") {
+    const artifactResult = await loadArtifact(options.artifact.path);
+
+    if (artifactResult.isErr()) {
+      return err(mapArtifactError(artifactResult.error));
+    }
+
+    return ok(createPluginState(options, artifactResult.value));
+  }
+
+  // Builder mode
+  const service = createBuilderService(options.artifact.config);
+
+  try {
+    const buildResult = await service.build();
+
+    if (buildResult.isErr()) {
+      return err(mapBuilderError(buildResult.error));
+    }
+
+    return ok(createPluginState(options, buildResult.value));
+  } catch (cause) {
+    return err(mapUnexpectedBuilderError(cause));
+  }
+};
+
 const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
 
-const createPluginState = (options: NormalizedOptions, artifact: BuilderArtifact): PluginState => ({
-  options,
+const createPluginState = (options: NormalizedOptions | NormalizedOptionsLegacy, artifact: BuilderArtifact): PluginState => ({
+  options: options as NormalizedOptions, // Legacy options are compatible
   allArtifacts: createAllArtifacts(artifact),
 });
 
@@ -214,6 +257,52 @@ const mapOptionsError = (error: OptionsError): PluginError => {
     message: error.message,
     cause: error as OptionsInvalidBuilderConfig,
   };
+};
+
+const mapOptionsErrorNew = (error: import("./options").OptionsError): PluginError => {
+  switch (error.code) {
+    case "MISSING_ARTIFACT_PATH":
+      return {
+        type: "PluginError",
+        stage: "normalize-options",
+        code: "OPTIONS_MISSING_ARTIFACT_PATH",
+        message: error.message,
+        cause: error as any, // TODO: Update PluginError types to support new error codes
+      };
+    case "INVALID_BUILDER_CONFIG":
+    case "MISSING_BUILDER_CONFIG":
+      return {
+        type: "PluginError",
+        stage: "normalize-options",
+        code: "OPTIONS_INVALID_BUILDER_CONFIG",
+        message: error.message,
+        cause: error as any, // TODO: Update PluginError types to support new error codes
+      };
+    case "CONFIG_LOAD_FAILED":
+      return {
+        type: "PluginError",
+        stage: "normalize-options",
+        code: "OPTIONS_INVALID_BUILDER_CONFIG",
+        message: `Config load failed: ${error.message}`,
+        cause: error as any, // TODO: Update PluginError types to support new error codes
+      };
+    case "PROJECT_NOT_FOUND":
+      return {
+        type: "PluginError",
+        stage: "normalize-options",
+        code: "OPTIONS_INVALID_BUILDER_CONFIG",
+        message: `Project not found: ${error.project}`,
+        cause: error as any, // TODO: Update PluginError types to support new error codes
+      };
+    case "INVALID_ARTIFACT_OVERRIDE":
+      return {
+        type: "PluginError",
+        stage: "normalize-options",
+        code: "OPTIONS_MISSING_ARTIFACT_PATH",
+        message: error.message,
+        cause: error as any, // TODO: Update PluginError types to support new error codes
+      };
+  }
 };
 
 const mapArtifactError = (error: ArtifactError): PluginError => {
