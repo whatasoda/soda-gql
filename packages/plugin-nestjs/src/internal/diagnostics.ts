@@ -1,8 +1,8 @@
 import type { BuilderArtifact, BuilderError } from "@soda-gql/builder";
+import type { BuilderServiceFailure } from "@soda-gql/plugin-shared/dev";
 import type { Compiler } from "webpack";
 
 import type { DiagnosticsMode } from "../schemas/webpack.js";
-import type { BuilderServiceFailure } from "./builder-service.js";
 
 type InfrastructureLogger = ReturnType<Compiler["getInfrastructureLogger"]>;
 
@@ -13,8 +13,6 @@ export type DiagnosticSummary =
       readonly elementCount: number;
       readonly warnings: readonly string[];
       readonly durationMs: number;
-      readonly cache: BuilderArtifact["report"]["cache"];
-      readonly chunks: BuilderArtifact["report"]["chunks"];
     }
   | {
       readonly status: "error";
@@ -39,8 +37,6 @@ export class DiagnosticsReporter {
       elementCount: Object.keys(artifact.elements).length,
       warnings: artifact.report.warnings,
       durationMs: artifact.report.durationMs,
-      cache: artifact.report.cache,
-      chunks: artifact.report.chunks,
     };
 
     this.summary = summary;
@@ -49,11 +45,6 @@ export class DiagnosticsReporter {
       this.logger.info(
         `[@soda-gql/plugin-nestjs] builder completed in ${Math.round(summary.durationMs)}ms (${summary.elementCount} elements)`,
       );
-      if (summary.chunks.written > 0 || summary.chunks.skipped > 0) {
-        this.logger.debug?.(
-          `[@soda-gql/plugin-nestjs] chunk stats: written ${summary.chunks.written}, skipped ${summary.chunks.skipped}`,
-        );
-      }
       for (const warning of summary.warnings) {
         this.logger.warn(`[@soda-gql/plugin-nestjs] ${warning}`);
       }

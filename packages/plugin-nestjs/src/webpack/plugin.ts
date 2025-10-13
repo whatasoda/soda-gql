@@ -119,13 +119,8 @@ const normalizeOptions = (compiler: Compiler, raw: Partial<WebpackPluginOptions>
       artifactPath = resolved;
     }
   } else if (parsed.artifactSource?.source === "builder") {
-    const configInput = parsed.artifactSource.config as unknown as BuilderServiceConfig;
-    const normalizedEntry = configInput.entry.map((entry) => ensureAbsolutePath(contextDir, entry));
-    const builderConfig: BuilderServiceConfig = {
-      ...configInput,
-      mode: configInput.mode ?? parsed.mode,
-      entry: normalizedEntry,
-    };
+    const configInput = parsed.artifactSource.config as any;
+    const builderConfig: BuilderServiceConfig = configInput;
     artifactSource = { source: "builder", config: builderConfig };
   } else if (artifactPath) {
     artifactSource = { source: "artifact-file", path: artifactPath };
@@ -168,13 +163,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
     const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
     const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
-    const builderWatch = builderSource
-      ? createBuilderWatch({
-          rootDir: options.contextDir,
-          schemaHash: builderSource.config.schemaHash,
-          analyzerVersion: builderSource.config.analyzer ?? "ts",
-        })
-      : null;
+    const builderWatch = builderSource ? createBuilderWatch(builderSource.config) : null;
 
     let manifest: ArtifactManifest | null = null;
 

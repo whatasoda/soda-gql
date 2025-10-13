@@ -1,9 +1,10 @@
 // Re-export shared plugin types
-export type {
-  ArtifactSource,
-  BuilderConfig,
-  SodaGqlPluginOptions,
-} from "@soda-gql/plugin-shared";
+// TODO: Re-enable after plugin-shared exports are updated
+// export type {
+//   ArtifactSource,
+//   BuilderConfig,
+//   SodaGqlPluginOptions,
+// } from "@soda-gql/plugin-shared";
 export type { SodaGqlConfig } from "./schemas/config.js";
 
 export type {
