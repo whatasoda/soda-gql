@@ -23,7 +23,6 @@
       "@soda-gql/plugin-babel": ["./packages/plugin-babel/src/index.ts"],
       "@soda-gql/plugin-babel/types": ["./packages/plugin-babel/src/types.ts"],
       "@soda-gql/plugin-babel/errors": ["./packages/plugin-babel/src/errors.ts"],
-      "@soda-gql/plugin-babel/internal/*": ["./packages/plugin-babel/src/internal/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
       "@soda-gql/plugin-shared": ["./packages/plugin-shared/src/index.ts"],
       "@soda-gql/plugin-shared/errors": ["./packages/plugin-shared/src/errors.ts"],

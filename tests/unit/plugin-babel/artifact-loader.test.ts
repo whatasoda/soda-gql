@@ -42,7 +42,7 @@ suite.setup();
 
 describe("loadArtifact (portable)", () => {
   it("should load valid artifact file using portable FS", async () => {
-    const { loadArtifact } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact } = await import("@soda-gql/plugin-shared");
     const { artifactPath } = await suite.createTestArtifact("valid.json");
 
     const result = await loadArtifact(artifactPath);
@@ -55,7 +55,7 @@ describe("loadArtifact (portable)", () => {
   });
 
   it("should return error for non-existent file using portable FS", async () => {
-    const { loadArtifact } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact } = await import("@soda-gql/plugin-shared");
     const nonExistentPath = suite.getTempPath("nonexistent.json");
 
     const result = await loadArtifact(nonExistentPath);
@@ -68,7 +68,7 @@ describe("loadArtifact (portable)", () => {
   });
 
   it("should return error for malformed JSON using portable FS", async () => {
-    const { loadArtifact } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact } = await import("@soda-gql/plugin-shared");
     const malformedPath = await suite.writeTempFile("malformed.json", "{ invalid json");
 
     const result = await loadArtifact(malformedPath);
@@ -80,7 +80,7 @@ describe("loadArtifact (portable)", () => {
   });
 
   it("should return error for invalid artifact schema", async () => {
-    const { loadArtifact } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact } = await import("@soda-gql/plugin-shared");
     const invalidPath = await suite.writeTempFile("invalid.json", JSON.stringify({ wrong: "schema" }));
 
     const result = await loadArtifact(invalidPath);
@@ -94,7 +94,7 @@ describe("loadArtifact (portable)", () => {
 
 describe("Artifact memoization", () => {
   it("should return same instance on repeated calls with unchanged file", async () => {
-    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-shared");
     const { artifactPath } = await suite.createTestArtifact("memo-test.json");
 
     // Clear cache first
@@ -113,7 +113,7 @@ describe("Artifact memoization", () => {
   });
 
   it("should invalidate cache when file content changes", async () => {
-    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-shared");
     const artifactPath = suite.getTempPath("change-test.json");
 
     // Clear cache first
@@ -181,7 +181,7 @@ describe("Artifact memoization", () => {
   });
 
   it("should manually invalidate cache for specific path", async () => {
-    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-shared");
     const { artifactPath } = await suite.createTestArtifact("invalidate-test.json");
 
     // Clear cache first
@@ -204,9 +204,7 @@ describe("Artifact memoization", () => {
   });
 
   it("should clear all caches when called without path", async () => {
-    const { loadArtifact, invalidateArtifactCache, getArtifactCacheStats } = await import(
-      "@soda-gql/plugin-babel/internal/artifact"
-    );
+    const { loadArtifact, invalidateArtifactCache, getArtifactCacheStats } = await import("@soda-gql/plugin-shared");
 
     // Clear cache first
     invalidateArtifactCache();
@@ -228,7 +226,7 @@ describe("Artifact memoization", () => {
   });
 
   it("should include schema hash in cache key", async () => {
-    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-babel/internal/artifact");
+    const { loadArtifact, invalidateArtifactCache } = await import("@soda-gql/plugin-shared");
     const { artifactPath } = await suite.createTestArtifact("schema-hash-test.json");
 
     // Clear cache first
