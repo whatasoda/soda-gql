@@ -12,13 +12,16 @@ import type {
 
 // Utilities
 const deferred = <T>() => {
-  let resolve: (value: T) => void;
-  let reject: (error: Error) => void;
+  let resolve: ((value: T) => void) | undefined;
+  let reject: ((error: Error) => void) | undefined;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
   });
-  return { promise, resolve: resolve!, reject: reject! };
+  if (!resolve || !reject) {
+    throw new Error("[INTERNAL] Promise executor should be synchronous");
+  }
+  return { promise, resolve, reject };
 };
 
 const createMockOptions = (): NormalizedOptions => ({

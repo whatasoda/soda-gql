@@ -8,7 +8,7 @@ import type { PluginOptions } from "@soda-gql/plugin-shared";
 import { createTestConfig } from "../../helpers/test-config";
 
 // Helper to create temp config file for tests
-const createTestTempConfig = (tmpDir: string, artifactPath: string): string => {
+const createTestTempConfig = (tmpDir: string, _artifactPath: string): string => {
   const configPath = join(tmpDir, "soda-gql.config.ts");
   const configContent = `export default {
   graphqlSystemPath: "./src/graphql-system/index.ts",

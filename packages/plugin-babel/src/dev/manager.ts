@@ -72,18 +72,22 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
           if (!stateStore) return;
 
           if (event.type === "artifact") {
+            if (!cachedOptions) {
+              throw new Error("[INTERNAL] cachedOptions is not set");
+            }
+
             try {
               // Initialize if not yet initialized, otherwise update
               const snapshot = stateStore.getSnapshot();
               if (!snapshot) {
-                stateStore.initialize(cachedOptions!, event.artifact);
+                stateStore.initialize(cachedOptions, event.artifact);
               } else {
                 stateStore.updateArtifact(event.artifact);
               }
             } catch (err) {
               // If getSnapshot throws (not initialized), initialize now
               if (err instanceof Error && err.message.includes("not initialized")) {
-                stateStore.initialize(cachedOptions!, event.artifact);
+                stateStore.initialize(cachedOptions, event.artifact);
               } else {
                 throw err;
               }
