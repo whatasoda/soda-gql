@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger, type OnModuleInit, type Provider } from "@nestjs/common";
 import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "@soda-gql/builder";
-import { loadArtifact } from "@soda-gql/plugin-shared";
+import type { ArtifactProvider } from "@soda-gql/plugin-shared";
 import type { NestModuleOptions } from "../schemas/module.js";
+import { createNestArtifactProvider } from "../shared/artifact-provider.js";
 import {
   SODA_GQL_ARTIFACT,
   SODA_GQL_DIAGNOSTICS,
@@ -10,122 +11,109 @@ import {
   type SodaGqlDiagnostics,
 } from "./tokens.js";
 
-const ARTIFACT_LOADER = Symbol.for("@soda-gql/plugin-nestjs:artifact-loader");
+const ARTIFACT_PROVIDER = Symbol.for("@soda-gql/plugin-nestjs:artifact-provider");
 
-type ArtifactLoadResult = {
-  readonly artifact: SodaGqlArtifact;
-  readonly diagnostics: SodaGqlDiagnostics;
-};
-
-type ArtifactLoader = () => Promise<ArtifactLoadResult>;
-
-const createArtifactLoader = (options: NestModuleOptions, logger: Logger): ArtifactLoader => {
-  let cached: Promise<ArtifactLoadResult> | null = null;
-  const shouldLog = options.diagnostics !== "off";
-
-  const logWarning = (message: string) => {
-    if (shouldLog) {
-      logger.warn(`[@soda-gql/plugin-nestjs] ${message}`);
+/**
+ * Create artifact provider for Nest module.
+ * Uses the shared ArtifactProvider abstraction from plugin-shared.
+ */
+const createArtifactProviderForNest = async (options: NestModuleOptions, logger: Logger): Promise<ArtifactProvider> => {
+  try {
+    return await createNestArtifactProvider(options);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.diagnostics !== "off") {
+      logger.error(`[@soda-gql/plugin-nestjs] Failed to create artifact provider: ${message}`);
     }
-  };
-
-  const load = async (): Promise<ArtifactLoadResult> => {
-    const timestamp = new Date();
-    const artifactPath = options.artifactPath;
-
-    if (!artifactPath || artifactPath.trim().length === 0) {
-      const message = "Artifact path is empty; provide a valid path in NestModuleOptions.artifactPath.";
-      logWarning(message);
-      return {
-        artifact: null,
-        diagnostics: {
-          status: "error",
-          artifactPath: artifactPath ?? "",
-          timestamp,
-          message,
-        },
-      };
-    }
-
-    try {
-      const result = await loadArtifact(artifactPath);
-
-      if (result.isErr()) {
-        const error = result.error;
-        logWarning(`Failed to load artifact at ${artifactPath} (${error.code}): ${error.message}`);
-        return {
-          artifact: null,
-          diagnostics: {
-            status: "error",
-            artifactPath,
-            timestamp,
-            message: error.message,
-            code: error.code,
-          },
-        };
-      }
-
-      const artifact = result.value;
-
-      if (shouldLog && artifact.report.warnings.length > 0) {
-        for (const warning of artifact.report.warnings) {
-          logger.warn(`[@soda-gql/plugin-nestjs] ${warning}`);
-        }
-      }
-
-      return {
-        artifact,
-        diagnostics: {
-          status: "loaded",
-          artifactPath,
-          loadedAt: timestamp,
-          warnings: artifact.report.warnings,
-        },
-      };
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : String(cause);
-      logWarning(`Unexpected error while loading artifact at ${artifactPath}: ${message}`);
-      return {
-        artifact: null,
-        diagnostics: {
-          status: "error",
-          artifactPath,
-          timestamp,
-          message,
-        },
-      };
-    }
-  };
-
-  return () => {
-    if (!cached) {
-      cached = load();
-    }
-    return cached;
-  };
+    throw error;
+  }
 };
 
 export const createSodaGqlArtifactProviders = (): Provider[] => [
   {
-    provide: ARTIFACT_LOADER,
-    useFactory: (options: NestModuleOptions) => createArtifactLoader(options, new Logger("SodaGqlModule")),
+    provide: ARTIFACT_PROVIDER,
+    useFactory: async (options: NestModuleOptions) => {
+      return createArtifactProviderForNest(options, new Logger("SodaGqlModule"));
+    },
     inject: [SODA_GQL_MODULE_OPTIONS],
   },
   {
     provide: SODA_GQL_ARTIFACT,
-    useFactory: async (loader: ArtifactLoader) => {
-      const { artifact } = await loader();
-      return artifact;
+    useFactory: async (provider: ArtifactProvider, options: NestModuleOptions) => {
+      const logger = new Logger("SodaGqlModule");
+      const shouldLog = options.diagnostics !== "off";
+
+      try {
+        const result = await provider.load();
+
+        if (result.isErr()) {
+          const error = result.error;
+          if (shouldLog) {
+            logger.warn(`[@soda-gql/plugin-nestjs] Failed to load artifact: ${error.message}`);
+          }
+          return null;
+        }
+
+        const artifact = result.value;
+
+        if (shouldLog && artifact.report.warnings.length > 0) {
+          for (const warning of artifact.report.warnings) {
+            logger.warn(`[@soda-gql/plugin-nestjs] ${warning}`);
+          }
+        }
+
+        return artifact;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (shouldLog) {
+          logger.error(`[@soda-gql/plugin-nestjs] Unexpected error loading artifact: ${message}`);
+        }
+        return null;
+      }
     },
-    inject: [ARTIFACT_LOADER],
+    inject: [ARTIFACT_PROVIDER, SODA_GQL_MODULE_OPTIONS],
   },
   {
     provide: SODA_GQL_DIAGNOSTICS,
-    useFactory: async (loader: ArtifactLoader) => {
-      const { diagnostics } = await loader();
-      return diagnostics;
+    useFactory: async (provider: ArtifactProvider, options: NestModuleOptions) => {
+      const logger = new Logger("SodaGqlModule");
+      const timestamp = new Date();
+
+      try {
+        const result = await provider.load();
+
+        if (result.isErr()) {
+          const error = result.error;
+          return {
+            status: "error" as const,
+            artifactPath: options.artifactPath,
+            timestamp,
+            message: error.message,
+            code: error.code,
+          };
+        }
+
+        const artifact = result.value;
+        return {
+          status: "loaded" as const,
+          artifactPath: options.artifactPath,
+          loadedAt: timestamp,
+          warnings: artifact.report.warnings,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (options.diagnostics !== "off") {
+          logger.error(`[@soda-gql/plugin-nestjs] Unexpected error in diagnostics: ${message}`);
+        }
+        return {
+          status: "error" as const,
+          artifactPath: options.artifactPath,
+          timestamp,
+          message,
+        };
+      }
     },
-    inject: [ARTIFACT_LOADER],
+    inject: [ARTIFACT_PROVIDER, SODA_GQL_MODULE_OPTIONS],
   },
 ];
 
