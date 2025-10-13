@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
@@ -70,10 +71,17 @@ export const generateIntermediateModules = function* ({
 
     const script = new Script(transpiledCode);
 
+    const hash = createHash("sha1");
+    hash.update(transpiledCode);
+    const contentHash = hash.digest("hex");
+    const canonicalIds = analysis.definitions.map((definition) => definition.canonicalId);
+
     yield {
       filePath,
+      canonicalIds,
       sourceCode,
       transpiledCode,
+      contentHash,
       script,
     };
   }

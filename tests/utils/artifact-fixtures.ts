@@ -1,6 +1,7 @@
 import type { BuilderArtifact, BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import { createMockArtifactElement } from "../helpers/artifact";
 
-type ArtifactElementTuple = [id: CanonicalId, element: BuilderArtifactElement];
+type ArtifactElementTuple = [id: CanonicalId, element: Omit<BuilderArtifactElement, "metadata">];
 
 export const createBuilderArtifact = (
   elements: ArtifactElementTuple[],
@@ -13,7 +14,7 @@ export const createBuilderArtifact = (
 ): BuilderArtifact => {
   const elementsMap: Record<string, BuilderArtifactElement> = {};
   for (const [id, element] of elements) {
-    elementsMap[id] = element;
+    elementsMap[id] = createMockArtifactElement(element);
   }
 
   return {

@@ -1,10 +1,18 @@
+import { createHash } from "node:crypto";
+
 import type { IntermediateArtifactElement } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { BuilderError } from "../types";
-import type { BuilderArtifactElement } from "./types";
+import type { BuilderArtifactElement, BuilderArtifactElementMetadata } from "./types";
 
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
+
+const computeContentHash = (prebuild: unknown): string => {
+	const hash = createHash("sha1");
+	hash.update(JSON.stringify(prebuild));
+	return hash.digest("hex");
+};
 
 const emitRegistrationError = (definition: ModuleDefinition, message: string): BuilderError => ({
   code: "RUNTIME_MODULE_LOAD_FAILED",
@@ -34,35 +42,47 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         return err(emitRegistrationError(definition, `ARTIFACT_ALREADY_REGISTERED`));
       }
 
+      const metadata: BuilderArtifactElementMetadata = {
+        sourcePath: analysis.filePath ?? canonicalToFilePath(definition.canonicalId),
+        sourceHash: analysis.signature,
+        contentHash: "", // Will be computed after prebuild creation
+      };
+
       if (element.type === "model") {
+        const prebuild = { typename: element.element.typename };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "model",
-          prebuild: { typename: element.element.typename },
+          prebuild,
+          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });
         continue;
       }
 
       if (element.type === "slice") {
+        const prebuild = { operationType: element.element.operationType };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "slice",
-          prebuild: { operationType: element.element.operationType },
+          prebuild,
+          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });
         continue;
       }
 
       if (element.type === "operation") {
+        const prebuild = {
+          operationType: element.element.operationType,
+          operationName: element.element.operationName,
+          document: element.element.document,
+          variableNames: element.element.variableNames,
+          projectionPathGraph: element.element.projectionPathGraph,
+        };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "operation",
-          prebuild: {
-            operationType: element.element.operationType,
-            operationName: element.element.operationName,
-            document: element.element.document,
-            variableNames: element.element.variableNames,
-            projectionPathGraph: element.element.projectionPathGraph,
-          },
+          prebuild,
+          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });
         continue;
       }

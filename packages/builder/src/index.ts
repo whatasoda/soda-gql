@@ -15,6 +15,7 @@ export {
 export type {
   BuilderArtifact,
   BuilderArtifactElement,
+  BuilderArtifactElementMetadata,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,

@@ -12,20 +12,28 @@ export type BuildArtifactInput = {
   readonly stats: ModuleLoadStats;
 };
 
-export type BuilderArtifactOperation = {
+export type BuilderArtifactElementMetadata = {
+  readonly sourcePath: string;
+  readonly sourceHash: string;
+  readonly contentHash: string;
+};
+
+type BuilderArtifactElementBase = {
   readonly id: CanonicalId;
+  readonly metadata: BuilderArtifactElementMetadata;
+};
+
+export type BuilderArtifactOperation = BuilderArtifactElementBase & {
   readonly type: "operation";
   readonly prebuild: RuntimeOperationInput["prebuild"];
 };
 
-export type BuilderArtifactSlice = {
-  readonly id: CanonicalId;
+export type BuilderArtifactSlice = BuilderArtifactElementBase & {
   readonly type: "slice";
   readonly prebuild: RuntimeSliceInput["prebuild"];
 };
 
-export type BuilderArtifactModel = {
-  readonly id: CanonicalId;
+export type BuilderArtifactModel = BuilderArtifactElementBase & {
   readonly type: "model";
   readonly prebuild: RuntimeModelInput["prebuild"];
 };
