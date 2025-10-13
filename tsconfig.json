@@ -27,6 +27,7 @@
       "@soda-gql/plugin-shared": ["./packages/plugin-shared/src/index.ts"],
       "@soda-gql/plugin-shared/errors": ["./packages/plugin-shared/src/errors.ts"],
       "@soda-gql/plugin-shared/transform": ["./packages/plugin-shared/src/transform/index.ts"],
+      "@soda-gql/plugin-shared/dev": ["./packages/plugin-shared/src/dev/index.ts"],
       "@soda-gql/plugin-shared/internal/*": ["./packages/plugin-shared/src/internal/*"],
       "@soda-gql/plugin-shared/*": ["./packages/plugin-shared/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]

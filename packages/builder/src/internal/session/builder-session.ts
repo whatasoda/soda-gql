@@ -6,7 +6,6 @@ import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
 import { getAstAnalyzer, type ModuleAnalysis } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
-import { validateModuleDependencies } from "./dependency-validation";
 import {
   createDiscoveryCache,
   type DiscoveryCache,
@@ -20,6 +19,7 @@ import type { BuilderError } from "../../types";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
+import { validateModuleDependencies } from "./dependency-validation";
 import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
 
 /**

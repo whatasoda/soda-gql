@@ -123,7 +123,11 @@ describe("Module Adjacency", () => {
       ]);
 
       const changed = new Set(["/src/a.ts"]);
-      const affected = collectAffectedFiles({ changedFiles: changed, removedFiles: new Set(), previousModuleAdjacency: adjacency });
+      const affected = collectAffectedFiles({
+        changedFiles: changed,
+        removedFiles: new Set(),
+        previousModuleAdjacency: adjacency,
+      });
 
       expect(affected.has("/src/a.ts")).toBe(true);
       expect(affected.has("/src/b.ts")).toBe(true);
@@ -134,7 +138,11 @@ describe("Module Adjacency", () => {
       const adjacency = new Map<string, Set<string>>([["/src/a.ts", new Set()]]);
 
       const changed = new Set(["/src/a.ts"]);
-      const affected = collectAffectedFiles({ changedFiles: changed, removedFiles: new Set(), previousModuleAdjacency: adjacency });
+      const affected = collectAffectedFiles({
+        changedFiles: changed,
+        removedFiles: new Set(),
+        previousModuleAdjacency: adjacency,
+      });
 
       expect(affected.size).toBe(1);
       expect(affected.has("/src/a.ts")).toBe(true);
@@ -147,7 +155,11 @@ describe("Module Adjacency", () => {
       ]);
 
       const changed = new Set(["/src/a.ts", "/src/c.ts"]);
-      const affected = collectAffectedFiles({ changedFiles: changed, removedFiles: new Set(), previousModuleAdjacency: adjacency });
+      const affected = collectAffectedFiles({
+        changedFiles: changed,
+        removedFiles: new Set(),
+        previousModuleAdjacency: adjacency,
+      });
 
       expect(affected.size).toBe(4);
       expect(affected.has("/src/a.ts")).toBe(true);

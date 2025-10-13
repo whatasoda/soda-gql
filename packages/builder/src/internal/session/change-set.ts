@@ -14,6 +14,10 @@ export type BuilderChangeSet = {
   readonly added: readonly BuilderFileChange[] | ReadonlySet<BuilderFileChange | string>;
   readonly updated: readonly BuilderFileChange[] | ReadonlySet<BuilderFileChange | string>;
   readonly removed: readonly string[] | ReadonlySet<string>;
+  readonly metadata?: {
+    readonly schemaHash?: string;
+    readonly analyzerVersion?: string;
+  };
 };
 
 /**

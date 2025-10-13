@@ -1,44 +1,23 @@
-import { watch } from "node:fs";
-import { resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
-import type {
-  BuilderAnalyzer,
-  BuilderArtifact,
-  BuilderError,
-  BuilderFormat,
-  BuilderMode,
-  BuilderOptions,
-} from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderError, BuilderFormat } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
-import { err, ok } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 
-const isMode = (value: string): value is BuilderMode => value === "runtime" || value === "zero-runtime";
-const isAnalyzer = (value: string): value is BuilderAnalyzer => value === "ts" || value === "swc";
-
 type BuilderCommandOptions = {
-  mode: BuilderMode;
   entry: string[];
   outPath: string;
   format: BuilderFormat;
-  analyzer: BuilderAnalyzer;
-  debugDir?: string;
-  watch?: boolean;
-  schemaPath?: string;
 };
 
 const parseBuilderArgs = (argv: readonly string[]) => {
   const args = [...argv];
   const entries: string[] = [];
   let outPath: string | undefined;
-  let mode: BuilderMode = "runtime";
   let format: BuilderFormat = "human";
-  let analyzer: BuilderAnalyzer = "ts";
-  let debugDir: string | undefined;
-  let watch = false;
-  let schemaPath: string | undefined;
 
   while (args.length > 0) {
     const current = args.shift();
@@ -47,26 +26,10 @@ const parseBuilderArgs = (argv: readonly string[]) => {
     }
 
     switch (current) {
-      case "--watch": {
-        watch = true;
-        break;
-      }
-      case "--mode": {
-        const value = args.shift();
-        if (!value || !isMode(value)) {
-          return err<BuilderOptions, BuilderError>({
-            code: "ENTRY_NOT_FOUND",
-            message: `Unsupported mode: ${value ?? ""}`,
-            entry: "",
-          });
-        }
-        mode = value;
-        break;
-      }
       case "--entry": {
         const value = args.shift();
         if (!value) {
-          return err<BuilderOptions, BuilderError>({
+          return err<BuilderCommandOptions, BuilderError>({
             code: "ENTRY_NOT_FOUND",
             message: "Missing value for --entry",
             entry: "",
@@ -78,7 +41,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
       case "--out": {
         const value = args.shift();
         if (!value) {
-          return err<BuilderOptions, BuilderError>({
+          return err<BuilderCommandOptions, BuilderError>({
             code: "WRITE_FAILED",
             message: "Missing value for --out",
             outPath: "",
@@ -91,7 +54,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
         const value = args.shift();
         const supportedFormats = ["json", "human"];
         if (!value || !supportedFormats.includes(value)) {
-          return err<BuilderOptions, BuilderError>({
+          return err<BuilderCommandOptions, BuilderError>({
             code: "ENTRY_NOT_FOUND",
             message: `Unsupported format: ${value ?? ""}`,
             entry: "",
@@ -100,49 +63,13 @@ const parseBuilderArgs = (argv: readonly string[]) => {
         format = value as BuilderFormat;
         break;
       }
-      case "--analyzer": {
-        const value = args.shift();
-        if (!value || !isAnalyzer(value)) {
-          return err<BuilderOptions, BuilderError>({
-            code: "ENTRY_NOT_FOUND",
-            message: `Unsupported analyzer: ${value ?? ""}`,
-            entry: "",
-          });
-        }
-        analyzer = value;
-        break;
-      }
-      case "--debug-dir": {
-        const value = args.shift();
-        if (!value) {
-          return err<BuilderOptions, BuilderError>({
-            code: "ENTRY_NOT_FOUND",
-            message: "Missing value for --debug-dir",
-            entry: "",
-          });
-        }
-        debugDir = value;
-        break;
-      }
-      case "--schema": {
-        const value = args.shift();
-        if (!value) {
-          return err<BuilderOptions, BuilderError>({
-            code: "ENTRY_NOT_FOUND",
-            message: "Missing value for --schema",
-            entry: "",
-          });
-        }
-        schemaPath = value;
-        break;
-      }
       default:
         break;
     }
   }
 
   if (entries.length === 0) {
-    return err<BuilderOptions, BuilderError>({
+    return err<BuilderCommandOptions, BuilderError>({
       code: "ENTRY_NOT_FOUND",
       message: "No entry provided",
       entry: "",
@@ -150,7 +77,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   }
 
   if (!outPath) {
-    return err<BuilderOptions, BuilderError>({
+    return err<BuilderCommandOptions, BuilderError>({
       code: "WRITE_FAILED",
       message: "Output path not provided",
       outPath: "",
@@ -158,26 +85,16 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   }
 
   return ok<BuilderCommandOptions, BuilderError>({
-    mode,
     entry: entries,
     outPath,
     format,
-    analyzer,
-    debugDir,
-    watch,
-    schemaPath,
   });
 };
 
 const formatBuilderSuccess = (
   format: OutputFormat,
   success: { readonly artifact: BuilderArtifact; readonly outPath: string },
-  mode: BuilderMode,
 ) => {
-  if (mode !== "runtime") {
-    return "";
-  }
-
   if (format === "json") {
     return formatOutput(success.artifact, "json");
   }
@@ -200,6 +117,13 @@ const formatBuilderError = (format: OutputFormat, error: BuilderError) => {
   return `${error.code}: ${"message" in error ? error.message : ""}`;
 };
 
+const writeArtifact = async (artifact: BuilderArtifact, outPath: string): Promise<void> => {
+  const dir = dirname(outPath);
+  await mkdir(dir, { recursive: true });
+  const content = JSON.stringify(artifact, null, 2);
+  await writeFile(outPath, content, "utf-8");
+};
+
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
   // Load config first
   const configResult = await loadConfig();
@@ -219,127 +143,46 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
 
   const options = parsed.value;
 
-  if (options.watch) {
-    // Watch mode: Use BuilderService with session
-    process.stdout.write("Watch mode enabled - building and watching for changes...\n");
-
-    // Create service with session
-    const service = createBuilderService({ config, entrypoints: options.entry });
-
-    // Initial build
-    const initialResult = await service.build();
-
-    if (initialResult.isErr()) {
-      process.stdout.write(`${formatBuilderError(options.format, initialResult.error)}\n`);
-      // Don't exit in watch mode - continue watching
-    } else {
-      const output = formatBuilderSuccess(
-        options.format,
-        { artifact: initialResult.value, outPath: options.outPath },
-        options.mode,
-      );
-      if (output) {
-        process.stdout.write(`${output}\n`);
-      }
-    }
-
-    process.stdout.write("Watching for changes... (Press Ctrl+C to exit)\n");
-
-    // Watch directories containing entry files
-    const watchedDirs = new Set<string>();
-    for (const entry of options.entry) {
-      const dir = resolve(entry).split("/").slice(0, -1).join("/");
-      watchedDirs.add(dir);
-    }
-
-    // Set up file watchers
-    const watchers: ReturnType<typeof watch>[] = [];
-    const changedFiles = new Set<string>();
-    let rebuildTimeout: NodeJS.Timeout | null = null;
-
-    const triggerRebuild = async () => {
-      if (changedFiles.size === 0) return;
-
-      const files = [...changedFiles];
-      changedFiles.clear();
-
-      process.stdout.write(`\nRebuilding (${files.length} files changed)...\n`);
-
-      // Create change set
-      const changeSet: BuilderChangeSet = {
-        added: [],
-        updated: files.map((filePath) => ({
-          filePath,
-          fingerprint: `${Date.now()}`, // Simple timestamp-based fingerprint
-          mtimeMs: Date.now(),
-        })),
-        removed: [],
-      };
-
-      // Use service.update() if available, otherwise rebuild
-      const result = await service.update(changeSet);
-
-      if (result.isErr()) {
-        process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
-      } else {
-        const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath }, options.mode);
-        if (output) {
-          process.stdout.write(`${output}\n`);
-        }
-      }
-
-      process.stdout.write("Watching for changes...\n");
-    };
-
-    for (const dir of watchedDirs) {
-      const watcher = watch(dir, { recursive: true }, (_eventType, filename) => {
-        if (!filename) return;
-
-        const fullPath = resolve(dir, filename);
-
-        // Filter for TypeScript files
-        if (!fullPath.endsWith(".ts") && !fullPath.endsWith(".tsx")) {
-          return;
-        }
-
-        changedFiles.add(fullPath);
-
-        // Debounce rebuilds (300ms)
-        if (rebuildTimeout) {
-          clearTimeout(rebuildTimeout);
-        }
-        rebuildTimeout = setTimeout(() => {
-          triggerRebuild();
-        }, 300);
-      });
-
-      watchers.push(watcher);
-    }
-
-    // Keep process alive and handle cleanup
-    await new Promise<void>((resolve) => {
-      process.on("SIGINT", () => {
-        process.stdout.write("\nStopping watch mode...\n");
-        for (const watcher of watchers) {
-          watcher.close();
-        }
-        resolve();
-      });
-    });
-
-    return 0;
-  }
-
-  // Normal mode: Single build
+  // Single build
   const service = createBuilderService({ config, entrypoints: options.entry });
-  const result = await service.build();
+
+  let result: Result<BuilderArtifact, BuilderError>;
+  try {
+    result = await service.build();
+  } catch (cause) {
+    const error: BuilderError =
+      cause && typeof cause === "object" && "code" in cause
+        ? (cause as BuilderError)
+        : {
+            code: "RUNTIME_MODULE_LOAD_FAILED",
+            message: cause instanceof Error ? cause.message : String(cause),
+            filePath: "",
+            astPath: "",
+            cause,
+          };
+    process.stdout.write(`${formatBuilderError(options.format, error)}\n`);
+    return 1;
+  }
 
   if (result.isErr()) {
     process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
     return 1;
   }
 
-  const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath }, options.mode);
+  // Write artifact to disk
+  try {
+    await writeArtifact(result.value, options.outPath);
+  } catch (error) {
+    const writeError: BuilderError = {
+      code: "WRITE_FAILED",
+      message: error instanceof Error ? error.message : "Failed to write artifact",
+      outPath: options.outPath,
+    };
+    process.stdout.write(`${formatBuilderError(options.format, writeError)}\n`);
+    return 1;
+  }
+
+  const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath });
   if (output) {
     process.stdout.write(`${output}\n`);
   }

@@ -21,6 +21,11 @@
       "import": "./src/transform/index.ts",
       "default": "./src/transform/index.ts"
     },
+    "./dev": {
+      "types": "./src/dev/index.ts",
+      "import": "./src/dev/index.ts",
+      "default": "./src/dev/index.ts"
+    },
     "./package.json": "./package.json",
     "./internal/*": null
   },
