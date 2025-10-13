@@ -10,11 +10,11 @@ import { clearFingerprintCache } from "@soda-gql/builder/discovery/fingerprint";
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 
 const makeCache = (root: string) =>
-	createDiscoveryCache({
-		factory: createJsonCache({ rootDir: join(root, ".cache") }),
-		analyzer: "test-analyzer",
-		evaluatorId: "test-evaluator",
-	});
+  createDiscoveryCache({
+    factory: createJsonCache({ rootDir: join(root, ".cache") }),
+    analyzer: "test-analyzer",
+    evaluatorId: "test-evaluator",
+  });
 
 describe.skip("discoverModules - invalidatedPaths behavior", () => {
   test("cacheSkips equals invalidatedPaths.size when all invalidated files exist", () => {

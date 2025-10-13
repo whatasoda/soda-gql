@@ -9,9 +9,9 @@ import type { BuilderArtifactElement, BuilderArtifactElementMetadata } from "./t
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 
 const computeContentHash = (prebuild: unknown): string => {
-	const hash = createHash("sha1");
-	hash.update(JSON.stringify(prebuild));
-	return hash.digest("hex");
+  const hash = createHash("sha1");
+  hash.update(JSON.stringify(prebuild));
+  return hash.digest("hex");
 };
 
 const emitRegistrationError = (definition: ModuleDefinition, message: string): BuilderError => ({

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
+import { createDevManager, type StateStore } from "@soda-gql/plugin-babel/dev";
 import type { NormalizedOptions } from "@soda-gql/plugin-shared";
 import type {
   BuilderServiceController,
@@ -8,7 +9,6 @@ import type {
   DevBuilderSessionLike,
   DevBuilderSessionOptions,
 } from "@soda-gql/plugin-shared/dev";
-import { createDevManager, type StateStore } from "@soda-gql/plugin-babel/dev";
 
 // Utilities
 const deferred = <T>() => {

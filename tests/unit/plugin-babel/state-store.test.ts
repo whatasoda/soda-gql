@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { BuilderArtifact } from "@soda-gql/builder";
-import type { NormalizedOptions } from "@soda-gql/plugin-shared";
 import { createStateStore } from "@soda-gql/plugin-babel/dev";
+import type { NormalizedOptions } from "@soda-gql/plugin-shared";
 
 const createMockOptions = (): NormalizedOptions => ({
   mode: "zero-runtime",

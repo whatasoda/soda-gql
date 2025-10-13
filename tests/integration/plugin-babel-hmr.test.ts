@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { transformAsync } from "@babel/core";
-import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
-import { createTempConfigFile } from "@soda-gql/config/test-utils";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
+import { createTempConfigFile } from "@soda-gql/config/test-utils";
+import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
 
 describe("Plugin-Babel HMR Integration", () => {
   it("bootstraps DevManager when dev.hmr is enabled", async () => {
