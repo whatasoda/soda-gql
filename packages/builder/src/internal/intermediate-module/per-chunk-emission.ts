@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
-import { Script } from "node:vm";
+import { resolve } from "node:path";
+import { createContext, Script } from "node:vm";
+import { createPseudoModuleRegistry } from "@soda-gql/core";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../../ast";
@@ -7,10 +9,9 @@ import type { BuilderError } from "../../errors";
 import { renderRegistryBlock } from "./codegen";
 import type { IntermediateModule } from "./types";
 
-
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
-  readonly targetPaths: Set<string>;
+  readonly targetFilePaths: Set<string>;
 };
 
 /**
@@ -62,10 +63,11 @@ const transpile = ({
  * Build intermediate modules from dependency graph.
  * Each intermediate module corresponds to one source file.
  */
-export const buildIntermediateModules = ({ analyses, targetPaths }: BuildIntermediateModulesInput): Map<string, IntermediateModule> => {
-  const intermediateModules = new Map<string, IntermediateModule>();
-
-  for (const filePath of targetPaths) {
+export const generateIntermediateModules = function* ({
+  analyses,
+  targetFilePaths,
+}: BuildIntermediateModulesInput): Generator<IntermediateModule, void, undefined> {
+  for (const filePath of targetFilePaths) {
     const analysis = analyses.get(filePath);
     if (!analysis) {
       continue;
@@ -90,15 +92,44 @@ export const buildIntermediateModules = ({ analyses, targetPaths }: BuildInterme
 
     const script = new Script(transpiledCode);
 
-    intermediateModules.set(filePath, {
+    yield {
       filePath,
       contentHash,
       canonicalIds,
       sourceCode,
       transpiledCode,
       script,
-    });
+    };
+  }
+};
+
+export const evaluateIntermediateModules = async ({
+  intermediateModules,
+  graphqlSystemPath,
+}: {
+  intermediateModules: Map<string, IntermediateModule>;
+  graphqlSystemPath: string;
+}) => {
+  // Determine import paths from config
+  const registry = createPseudoModuleRegistry();
+  const gqlImportPath = resolve(process.cwd(), graphqlSystemPath);
+
+  const vmContext = createContext({
+    ...(await import(gqlImportPath)),
+    registry,
+  });
+
+  for (const { script, filePath } of intermediateModules.values()) {
+    try {
+      script.runInContext(vmContext);
+    } catch (error) {
+      console.error(`Error evaluating intermediate module ${filePath}:`, error);
+      throw error;
+    }
   }
 
-  return intermediateModules;
+  const elements = registry.evaluate();
+  registry.clear();
+
+  return elements;
 };

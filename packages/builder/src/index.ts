@@ -45,3 +45,9 @@ export type {
   BuilderResult,
   BuilderSuccess,
 } from "./types";
+export type { BuilderChangeSet, BuilderFileChange } from "./change-set";
+export { coercePaths, hasFileChanged } from "./change-set";
+export type { BuilderSession, BuilderSessionSnapshot } from "./internal/session/builder-session";
+export { createBuilderSession, __internal } from "./internal/session/builder-session";
+export type { LegacyBuilderOptions } from "./runner";
+export { runBuilder, generateArtifact } from "./runner";

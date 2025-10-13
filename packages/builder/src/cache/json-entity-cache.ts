@@ -1,5 +1,5 @@
+import { normalizePath } from "@soda-gql/common";
 import type { ZodSchema } from "zod";
-import { normalizePath } from "../dependency-graph/resolver";
 import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
 
 export type JsonEntityCacheOptions<V> = {

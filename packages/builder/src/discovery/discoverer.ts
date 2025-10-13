@@ -1,8 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
+import { normalizePath } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { getAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
-import { normalizePath } from "../utils/path-utils";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
@@ -11,7 +11,6 @@ export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   readonly cache?: DiscoveryCache;
-  readonly analyzer: string;
   /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
   readonly invalidatedPaths?: ReadonlySet<string>;
 };
@@ -32,7 +31,6 @@ export const discoverModules = ({
   entryPaths,
   astAnalyzer,
   cache,
-  analyzer,
   invalidatedPaths,
 }: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
   const snapshots = new Map<string, DiscoverySnapshot>();
@@ -126,7 +124,6 @@ export const discoverModules = ({
       normalizedFilePath: normalizePath(filePath),
       signature,
       fingerprint,
-      analyzer,
       createdAtMs: Date.now(),
       analysis,
       dependencies,

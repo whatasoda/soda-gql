@@ -1,6 +1,5 @@
-import { getPortableHasher } from "@soda-gql/common";
+import { getPortableHasher, isExternalSpecifier, resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
 import type { ModuleAnalysis } from "../ast/types";
-import { isExternalSpecifier, resolveRelativeImport } from "../utils/path-utils";
 import type { DiscoveredDependency } from "./types";
 
 /**
@@ -16,7 +15,7 @@ export const extractModuleDependencies = (analysis: ModuleAnalysis): readonly Di
     }
 
     const isExternal = isExternalSpecifier(specifier);
-    const resolvedPath = isExternal ? null : resolveRelativeImport(analysis.filePath, specifier);
+    const resolvedPath = isExternal ? null : resolveRelativeImportWithExistenceCheck({ filePath: analysis.filePath, specifier });
 
     dependencies.set(specifier, {
       specifier,

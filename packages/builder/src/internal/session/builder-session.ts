@@ -1,22 +1,22 @@
 import { dirname, join, normalize, resolve } from "node:path";
 import { createContext } from "node:vm";
-import { cachedFn } from "@soda-gql/common";
+import { cachedFn, resolveRelativeImportWithReferences } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { clearPseudoModuleRegistry, createPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
-import { getAstAnalyzer } from "../../ast";
+import { getAstAnalyzer, type ModuleAnalysis } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
 import { validateModuleDependencies } from "../../dependency-graph/builder";
-import { createDiscoveryCache } from "../../discovery";
+import { createDiscoveryCache, type ModuleLoadStats } from "../../discovery";
 import { discoverModules } from "../../discovery/discoverer";
 import { resolveEntryPaths } from "../../discovery/entry-paths";
 import { invalidateFingerprint } from "../../discovery/fingerprint";
-import type { DiscoverySnapshot } from "../../discovery/types";
+import type { DiscoveryCache, DiscoverySnapshot } from "../../discovery/types";
 import { builderErrors } from "../../errors";
 import type { BuilderError } from "../../types";
-import { buildIntermediateModules, type IntermediateModule } from "../intermediate-module";
+import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
 
@@ -70,59 +70,12 @@ export interface BuilderSession {
 }
 
 /**
- * Resolve a module specifier to an absolute file path for runtime imports.
- * Uses hybrid resolution: tries in-memory graph first, falls back to filesystem.
- * Returns null for external (node_modules) or bare specifiers.
- *
- * @internal testing
- */
-const resolveModuleSpecifierRuntime = async (
-  source: string,
-  fromFilePath: string,
-  snapshots: Map<string, DiscoverySnapshot>,
-): Promise<string | null> => {
-  // Skip external imports (bare specifiers)
-  if (!source.startsWith(".")) {
-    return null;
-  }
-
-  // Try to find in existing graph first (fast path)
-  const fromDir = dirname(fromFilePath);
-  const resolved = resolve(fromDir, source);
-  const normalized = normalize(resolved);
-
-  // Check common candidates in the graph
-  const candidates = [
-    normalized,
-    `${normalized}.ts`,
-    `${normalized}.tsx`,
-    `${normalized}.js`,
-    `${normalized}.jsx`,
-    join(normalized, "index.ts"),
-    join(normalized, "index.tsx"),
-    join(normalized, "index.js"),
-    join(normalized, "index.jsx"),
-  ];
-
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalize(candidate).replace(/\\/g, "/");
-    if (snapshots.has(normalizedCandidate)) {
-      return normalizedCandidate;
-    }
-  }
-
-  // Fallback: use filesystem resolution (handles .tsx and index.tsx that might not be in graph)
-  const { resolveModuleSpecifierFS } = await import("../../dependency-graph/resolver");
-  return resolveModuleSpecifierFS(fromFilePath, source);
-};
-
-/**
  * Extract module-level adjacency from dependency graph.
  * Returns Map of file path -> set of files that import it.
  *
  * @internal testing
  */
-const extractModuleAdjacency = async (snapshots: Map<string, DiscoverySnapshot>): Promise<Map<string, Set<string>>> => {
+const extractModuleAdjacency = (snapshots: Map<string, DiscoverySnapshot>): Map<string, Set<string>> => {
   // Phase 2: Build importer -> [imported paths] map from dependencies
   const importsByModule = new Map<string, Set<string>>();
 
@@ -144,7 +97,7 @@ const extractModuleAdjacency = async (snapshots: Map<string, DiscoverySnapshot>)
           continue;
         }
 
-        const resolved = await resolveModuleSpecifierRuntime(imp.source, filePath, snapshots);
+        const resolved = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: snapshots });
         if (resolved) {
           imports.add(resolved);
         }
@@ -182,7 +135,7 @@ const extractModuleAdjacency = async (snapshots: Map<string, DiscoverySnapshot>)
  * Collect all modules affected by changes, including transitive dependents.
  * Uses BFS to traverse module adjacency graph.
  */
-const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<string, Set<string>>): Set<string> => {
+const collectAffectedFiles = (changedFiles: Set<string>, moduleAdjacency: Map<string, Set<string>>): Set<string> => {
   const affected = new Set<string>(changedFiles);
   const queue = [...changedFiles];
   const visited = new Set<string>(changedFiles);
@@ -214,8 +167,136 @@ const collectAffectedModules = (changedFiles: Set<string>, moduleAdjacency: Map<
  */
 export const __internal = {
   extractModuleAdjacency,
-  resolveModuleSpecifierRuntime,
-  collectAffectedModules,
+  collectAffectedFiles,
+};
+
+const prepare = (input: {
+  entrypoints: Set<string>;
+  readonly changeSet: BuilderChangeSet | null;
+  lastArtifact: BuilderArtifact | null;
+}) => {
+  const changeSet = (input.lastArtifact ? input.changeSet : null) ?? { added: [], updated: [], removed: [] };
+
+  const changedFiles = new Set<string>([...coercePaths(changeSet.added), ...coercePaths(changeSet.updated)]);
+  const removedFiles = coercePaths(changeSet.removed);
+
+  if (changedFiles.size === 0 && removedFiles.size === 0 && input.lastArtifact) {
+    return ok({ type: "should-skip" as const, data: { artifact: input.lastArtifact } });
+  }
+
+  // Resolve entry paths
+  const entryPathsResult = resolveEntryPaths(Array.from(input.entrypoints));
+  if (entryPathsResult.isErr()) {
+    return err(entryPathsResult.error);
+  }
+
+  const entryPaths = entryPathsResult.value;
+
+  return ok({ type: "should-build" as const, data: { changedFiles, removedFiles, entryPaths } });
+};
+
+const discover = ({
+  discoveryCache,
+  astAnalyzer,
+  removedFiles,
+  changedFiles,
+  entryPaths,
+  currentModuleAdjacency,
+}: {
+  discoveryCache: DiscoveryCache;
+  astAnalyzer: ReturnType<typeof getAstAnalyzer>;
+  removedFiles: Set<string>;
+  changedFiles: Set<string>;
+  entryPaths: readonly string[];
+  currentModuleAdjacency: Map<string, Set<string>>;
+}) => {
+  for (const filePath of removedFiles) {
+    discoveryCache.delete(filePath);
+    invalidateFingerprint(filePath);
+  }
+
+  // Collect all affected modules (changed + dependents from removed + transitive)
+  const allChangedFiles = new Set([...changedFiles, ...removedFiles]);
+  const affectedFiles = collectAffectedFiles(allChangedFiles, currentModuleAdjacency);
+
+  // Pass changed files, removed files, AND removed dependents as invalidated paths
+  const allAffectedFiles = new Set([...changedFiles, ...removedFiles, ...affectedFiles]);
+
+  // Run discovery with invalidations
+  const discoveryResult = discoverModules({
+    entryPaths,
+    astAnalyzer,
+    cache: discoveryCache,
+    invalidatedPaths: allAffectedFiles,
+  });
+  if (discoveryResult.isErr()) {
+    return err(discoveryResult.error);
+  }
+
+  const { cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
+
+  const snapshots = new Map(discoveryResult.value.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot]));
+  const analyses = new Map(discoveryResult.value.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot.analysis]));
+
+  const dependenciesValidationResult = validateModuleDependencies({ analyses });
+  if (dependenciesValidationResult.isErr()) {
+    const error = dependenciesValidationResult.error;
+    return err(builderErrors.graphMissingImport(error.chain[0], error.chain[1]));
+  }
+
+  const moduleAdjacency = extractModuleAdjacency(snapshots);
+
+  const stats: ModuleLoadStats = {
+    hits: cacheHits,
+    misses: cacheMisses,
+    skips: cacheSkips,
+  };
+
+  return ok({ snapshots, analyses, moduleAdjacency, affectedFiles, stats });
+};
+
+const build = async ({
+  analyses,
+  affectedFiles,
+  stats,
+  currentIntermediateModules,
+  graphqlSystemPath,
+}: {
+  analyses: Map<string, ModuleAnalysis>;
+  affectedFiles: Set<string>;
+  stats: ModuleLoadStats;
+  currentIntermediateModules: Map<string, IntermediateModule>;
+  graphqlSystemPath: string;
+}) => {
+  // Create next intermediate modules map (copy current state)
+  const intermediateModules = new Map(currentIntermediateModules);
+
+  const targetFilePaths = affectedFiles.size > 0 ? affectedFiles : new Set(analyses.keys());
+
+  // Remove deleted chunks from next map immediately
+  for (const targetFilePath of targetFilePaths) {
+    intermediateModules.delete(targetFilePath);
+  }
+
+  // Build and write affected chunks
+  for (const intermediateModule of generateIntermediateModules({ analyses, targetFilePaths })) {
+    intermediateModules.set(intermediateModule.filePath, intermediateModule);
+  }
+
+  const elements = await evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
+
+  // Build artifact from all chunks
+  const artifactResult = await buildArtifact({
+    analyses,
+    elements,
+    stats: stats,
+  });
+
+  if (artifactResult.isErr()) {
+    return err(artifactResult.error);
+  }
+
+  return ok({ intermediateModules, artifact: artifactResult.value });
 };
 
 /**
@@ -265,220 +346,102 @@ export const createBuilderSession = (options: {
     }
   };
 
-  const evaluate = async ({ intermediateModules }: { intermediateModules: Map<string, IntermediateModule> }) => {
-    // Determine import paths from config
-    const registry = createPseudoModuleRegistry();
-    const gqlImportPath = resolve(process.cwd(), config.graphqlSystemPath);
-
-    const vmContext = createContext({
-      ...(await import(gqlImportPath)),
-      registry,
-    });
-
-    for (const { script, filePath } of intermediateModules.values()) {
-      try {
-        script.runInContext(vmContext);
-      } catch (error) {
-        console.error(`Error evaluating intermediate module ${filePath}:`, error);
-        throw error;
-      }
+  const buildInitial = async (): Promise<Result<BuilderArtifact, BuilderError>> => {
+    const prepareResult = prepare({ entrypoints: state.entrypoints, changeSet: null, lastArtifact: null });
+    if (prepareResult.isErr()) {
+      return err(prepareResult.error);
     }
 
-    const elements = registry.evaluate();
-    registry.clear();
+    if (prepareResult.value.type === "should-skip") {
+      return ok(prepareResult.value.data.artifact);
+    }
 
-    return elements;
-  };
-
-  const buildInitial = async (): Promise<Result<BuilderArtifact, BuilderError>> => {
-    // Clear registry for clean slate
-    clearPseudoModuleRegistry(evaluatorId);
+    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
 
     const discoveryCache = ensureDiscoveryCache();
     const astAnalyzer = ensureAstAnalyzer();
 
-    // Resolve entry paths
-    const entryPathsResult = resolveEntryPaths(Array.from(state.entrypoints));
-    if (entryPathsResult.isErr()) {
-      return err(entryPathsResult.error);
-    }
-
-    // Run discovery
-    const discoveryResult = discoverModules({
-      entryPaths: entryPathsResult.value,
+    const discoveryResult = discover({
+      discoveryCache,
       astAnalyzer,
-      cache: discoveryCache,
-      analyzer: config.builder.analyzer,
+      removedFiles,
+      changedFiles,
+      entryPaths,
+      currentModuleAdjacency: state.moduleAdjacency,
     });
     if (discoveryResult.isErr()) {
       return err(discoveryResult.error);
     }
-    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
 
-    // Store discovery snapshots
-    state.snapshots.clear();
-    for (const snapshot of snapshots) {
-      state.snapshots.set(snapshot.normalizedFilePath, snapshot);
-    }
+    const { snapshots, analyses, affectedFiles, moduleAdjacency, stats } = discoveryResult.value;
 
-    // Build analyses from snapshots
-    const analyses = new Map(snapshots.map((s) => [s.normalizedFilePath, s.analysis]));
-
-    // Build dependency graph
-    const dependenciesValidationResult = validateModuleDependencies({ analyses });
-    if (dependenciesValidationResult.isErr()) {
-      const graphError = dependenciesValidationResult.error;
-      if (graphError.code === "MISSING_IMPORT") {
-        return err(builderErrors.graphMissingImport(graphError.chain[0], graphError.chain[1]));
-      }
-      return err(builderErrors.graphCircularDependency(graphError.chain));
-    }
-
-    // Extract and store adjacency maps
-    state.moduleAdjacency = await extractModuleAdjacency(state.snapshots);
-
-    const intermediateModules = buildIntermediateModules({ analyses, targetPaths: new Set(analyses.keys()) });
-
-    // Evaluate all intermediate modules
-    const elements = await evaluate({ intermediateModules: intermediateModules });
-
-    // Build artifact from all intermediate modules
-    const artifactResult = await buildArtifact({
+    const buildResult = await build({
       analyses,
-      elements,
-      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+      affectedFiles,
+      stats,
+      currentIntermediateModules: state.intermediateModules,
+      graphqlSystemPath: config.graphqlSystemPath,
     });
-
-    if (artifactResult.isErr()) {
-      return err(artifactResult.error);
+    if (buildResult.isErr()) {
+      return err(buildResult.error);
     }
 
-    // Store artifact for no-change scenarios
-    state.lastArtifact = artifactResult.value;
+    const { intermediateModules, artifact } = buildResult.value;
+
+    state.snapshots = snapshots;
+    state.moduleAdjacency = moduleAdjacency;
+    state.lastArtifact = artifact;
     state.intermediateModules = intermediateModules;
 
-    return ok(artifactResult.value);
+    return ok(artifact);
   };
 
   const update = async (changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>> => {
-    // Clear registry for clean slate (avoids import cache issues)
-    clearPseudoModuleRegistry(evaluatorId);
+    const prepareResult = prepare({ entrypoints: state.entrypoints, changeSet, lastArtifact: state.lastArtifact });
+    if (prepareResult.isErr()) {
+      return err(prepareResult.error);
+    }
 
+    if (prepareResult.value.type === "should-skip") {
+      return ok(prepareResult.value.data.artifact);
+    }
+
+    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
     const discoveryCache = ensureDiscoveryCache();
     const astAnalyzer = ensureAstAnalyzer();
-
-    // Track changed and removed files using coercePaths helper
-    const changedFiles = new Set<string>([...coercePaths(changeSet.added), ...coercePaths(changeSet.updated)]);
-    const removedFiles = coercePaths(changeSet.removed);
-
-    // Early return if no changes
-    if (changedFiles.size === 0 && removedFiles.size === 0) {
-      // No changes - return last artifact if available
-      if (state.lastArtifact) {
-        return ok(state.lastArtifact);
-      }
-
-      return err({
-        code: "RUNTIME_MODULE_LOAD_FAILED",
-        filePath: "",
-        astPath: "",
-        message: "No changes detected but no cached artifact available",
-      });
-    }
-
-    // Clear discovery cache for removed files
-    for (const filePath of removedFiles) {
-      // state.snapshots.delete(filePath);
-      discoveryCache.delete(filePath);
-      invalidateFingerprint(filePath);
-    }
-
-    // 2. Collect all affected modules (changed + dependents from removed + transitive)
-    const allChangedFiles = new Set([...changedFiles, ...removedFiles]);
-    const affectedModules = collectAffectedModules(allChangedFiles, state.moduleAdjacency);
-
-    // Resolve entry paths
-    const entryPathsResult = resolveEntryPaths(Array.from(state.entrypoints));
-    if (entryPathsResult.isErr()) {
-      return err(entryPathsResult.error);
-    }
-
-    const entryPaths = entryPathsResult.value;
-
-    // Pass changed files, removed files, AND removed dependents as invalidated paths
-    const allAffectedFiles = new Set([...changedFiles, ...removedFiles, ...affectedModules]);
-
-    // Run discovery with invalidations
-    const discoveryResult = discoverModules({
-      entryPaths,
+    const discoveryResult = discover({
+      discoveryCache,
       astAnalyzer,
-      cache: discoveryCache,
-      analyzer: config.builder.analyzer,
-      invalidatedPaths: allAffectedFiles,
+      removedFiles,
+      changedFiles,
+      entryPaths,
+      currentModuleAdjacency: state.moduleAdjacency,
     });
     if (discoveryResult.isErr()) {
       return err(discoveryResult.error);
     }
-    const { snapshots, cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
 
-    // Store discovery snapshots
-    state.snapshots.clear();
-    for (const snapshot of snapshots) {
-      state.snapshots.set(snapshot.normalizedFilePath, snapshot);
-    }
+    const { snapshots, analyses, moduleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
-    // Build analyses from snapshots
-    const analyses = new Map(snapshots.map((s) => [s.normalizedFilePath, s.analysis]));
-
-    const dependenciesValidationResult = validateModuleDependencies({ analyses });
-    if (dependenciesValidationResult.isErr()) {
-      const graphError = dependenciesValidationResult.error;
-      if (graphError.code === "MISSING_IMPORT") {
-        return err(builderErrors.graphMissingImport(graphError.chain[0], graphError.chain[1]));
-      }
-      return err(builderErrors.graphCircularDependency(graphError.chain));
-    }
-
-    // Update adjacency maps (full rebuild for now - could be optimized)
-    state.moduleAdjacency = await extractModuleAdjacency(state.snapshots);
-
-    // Create next intermediate modules map (copy current state)
-    const intermediateModules = new Map(state.intermediateModules);
-
-    // Remove deleted chunks from next map immediately
-    for (const removedFilePath of removedFiles) {
-      intermediateModules.delete(removedFilePath);
-    }
-
-    // Build and write affected chunks
-    if (affectedModules.size > 0) {
-      // Build intermediate modules for affected files
-      const incrementalIntermediateModules = buildIntermediateModules({ analyses, targetPaths: allAffectedFiles });
-
-      for (const [filePath, intermediateModule] of incrementalIntermediateModules.entries()) {
-        intermediateModules.set(filePath, intermediateModule);
-      }
-    }
-
-    const elements = await evaluate({ intermediateModules });
-
-    // Build artifact from all chunks
-    const artifactResult = await buildArtifact({
+    const buildResult = await build({
       analyses,
-      elements,
-      cache: { hits: cacheHits, misses: cacheMisses, skips: cacheSkips },
+      affectedFiles,
+      stats,
+      currentIntermediateModules: state.intermediateModules,
+      graphqlSystemPath: config.graphqlSystemPath,
     });
-
-    if (artifactResult.isErr()) {
-      return err(artifactResult.error);
+    if (buildResult.isErr()) {
+      return err(buildResult.error);
     }
 
-    // Commit the chunk module changes now that loading succeeded
+    const { intermediateModules, artifact } = buildResult.value;
+
+    state.snapshots = snapshots;
+    state.moduleAdjacency = moduleAdjacency;
+    state.lastArtifact = artifact;
     state.intermediateModules = intermediateModules;
 
-    // Store and return the artifact
-    state.lastArtifact = artifactResult.value;
-    return ok(artifactResult.value);
+    return ok(artifact);
   };
 
   const getSnapshot = (): BuilderSessionSnapshot => ({

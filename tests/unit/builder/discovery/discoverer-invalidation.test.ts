@@ -9,8 +9,6 @@ import { discoverModules } from "@soda-gql/builder/discovery/discoverer";
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 const cacheFactory = createJsonCache({ rootDir: join(fixtureRoot, ".cache") });
 
-const analyzer = "ts";
-
 describe("discoverModules - invalidatedPaths behavior", () => {
   test("cacheSkips equals invalidatedPaths.size when all invalidated files exist", () => {
     // Setup: Create temporary fixture files
@@ -37,7 +35,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
     });
     if (result1.isErr()) throw result1.error;
 
@@ -51,7 +48,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
       invalidatedPaths,
     });
     if (result2.isErr()) throw result2.error;
@@ -87,7 +83,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
     });
 
     // Second discovery: invalidate only dependency (fileB)
@@ -96,7 +91,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
       invalidatedPaths,
     });
     if (result.isErr()) throw result.error;
@@ -128,7 +122,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
     });
 
     // Second discovery: no invalidations
@@ -136,7 +129,6 @@ describe("discoverModules - invalidatedPaths behavior", () => {
       entryPaths: [fileA],
       astAnalyzer,
       cache,
-      analyzer,
       invalidatedPaths: new Set(),
     });
     if (result.isErr()) throw result.error;

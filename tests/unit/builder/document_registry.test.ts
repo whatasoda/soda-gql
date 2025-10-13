@@ -46,8 +46,14 @@ describe("artifact aggregate", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)])],
-      ["/app/src/pages/profile.query.ts", createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)])],
+      [
+        "/app/src/entities/user.ts",
+        createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)]),
+      ],
+      [
+        "/app/src/pages/profile.query.ts",
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+      ],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -117,7 +123,9 @@ describe("artifact aggregate", () => {
   it("fails when artifact is not found in intermediate module", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
-    const analyses = new Map<string, ModuleAnalysis>([["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       // Missing modelId
@@ -144,7 +152,9 @@ describe("artifact aggregate", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
     // Create analysis with single definition
-    const analyses = new Map<string, ModuleAnalysis>([["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       [modelId]: {
@@ -170,7 +180,9 @@ describe("artifact aggregate", () => {
   it("fails when artifact has unknown type", () => {
     const unknownId = createCanonicalId("/app/src/entities/unknown.ts", "unknownThing");
 
-    const analyses = new Map<string, ModuleAnalysis>([["/app/src/entities/unknown.ts", createTestAnalysis("/app/src/entities/unknown.ts", [createTestDefinition(unknownId)])]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/unknown.ts", createTestAnalysis("/app/src/entities/unknown.ts", [createTestDefinition(unknownId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       [unknownId]: {
@@ -199,7 +211,12 @@ describe("artifact aggregate", () => {
   it("preserves all prebuild data for operations", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
-    const analyses = new Map<string, ModuleAnalysis>([["/app/src/pages/profile.query.ts", createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)])]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      [
+        "/app/src/pages/profile.query.ts",
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+      ],
+    ]);
 
     const document = parse("query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }");
     const projectionPathGraph = {

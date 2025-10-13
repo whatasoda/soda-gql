@@ -48,14 +48,14 @@ export const normalizePluginOptions = (raw: Partial<SodaGqlPluginOptions>): Resu
   } else {
     // source === "builder"
     const config = raw.artifactSource.config;
-    if (!config.entry || config.entry.length === 0) {
+    if (!config.builder.entry || config.builder.entry.length === 0) {
       return err({
         type: "OptionsError",
         code: "INVALID_BUILDER_CONFIG",
         message: "builder config must include non-empty entry array",
       });
     }
-    if (!config.analyzer) {
+    if (!config.builder.analyzer) {
       return err({
         type: "OptionsError",
         code: "INVALID_BUILDER_CONFIG",
@@ -63,13 +63,10 @@ export const normalizePluginOptions = (raw: Partial<SodaGqlPluginOptions>): Resu
       });
     }
 
-    // Default mode to plugin mode if not specified
+    // Artifact source uses the resolved config directly
     artifactSource = {
       source: "builder",
-      config: {
-        ...config,
-        mode: config.mode ?? mode,
-      },
+      config,
     };
   }
 

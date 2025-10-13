@@ -31,7 +31,6 @@ const createMockSnapshot = (
   return {
     filePath,
     normalizedFilePath: filePath,
-    analyzer: "ts",
     signature: `sig-${filePath}`,
     fingerprint: { hash: `hash-${filePath}`, sizeBytes: 100, mtimeMs: Date.now() },
     createdAtMs: Date.now(),
@@ -48,14 +47,8 @@ describe("BuilderSession - Internal Helpers", () => {
       const cCanonicalId = createCanonicalId("/src/c.ts", "default");
 
       const snapshots = new Map<string, DiscoverySnapshot>([
-        [
-          "/src/a.ts",
-          createMockSnapshot("/src/a.ts", [{ canonicalId: bCanonicalId, resolvedPath: "/src/b.ts" }]),
-        ],
-        [
-          "/src/b.ts",
-          createMockSnapshot("/src/b.ts", [{ canonicalId: cCanonicalId, resolvedPath: "/src/c.ts" }]),
-        ],
+        ["/src/a.ts", createMockSnapshot("/src/a.ts", [{ canonicalId: bCanonicalId, resolvedPath: "/src/b.ts" }])],
+        ["/src/b.ts", createMockSnapshot("/src/b.ts", [{ canonicalId: cCanonicalId, resolvedPath: "/src/c.ts" }])],
         ["/src/c.ts", createMockSnapshot("/src/c.ts", [])],
       ]);
 
@@ -82,7 +75,11 @@ describe("BuilderSession - Internal Helpers", () => {
       const snapshots = new Map<string, DiscoverySnapshot>([
         [
           "/src/a.ts",
-          createMockSnapshot("/src/a.ts", [], [{ source: "./b", imported: "*", local: "b", kind: "namespace", isTypeOnly: false }]),
+          createMockSnapshot(
+            "/src/a.ts",
+            [],
+            [{ source: "./b", imported: "*", local: "b", kind: "namespace", isTypeOnly: false }],
+          ),
         ],
         ["/src/b.ts", createMockSnapshot("/src/b.ts", [])],
       ]);
@@ -134,7 +131,7 @@ describe("BuilderSession - Internal Helpers", () => {
       ]);
 
       const changed = new Set(["/src/a.ts"]);
-      const affected = __internal.collectAffectedModules(changed, adjacency);
+      const affected = __internal.collectAffectedFiles(changed, adjacency);
 
       expect(affected.has("/src/a.ts")).toBe(true);
       expect(affected.has("/src/b.ts")).toBe(true);
@@ -145,7 +142,7 @@ describe("BuilderSession - Internal Helpers", () => {
       const adjacency = new Map<string, Set<string>>([["/src/a.ts", new Set()]]);
 
       const changed = new Set(["/src/a.ts"]);
-      const affected = __internal.collectAffectedModules(changed, adjacency);
+      const affected = __internal.collectAffectedFiles(changed, adjacency);
 
       expect(affected.size).toBe(1);
       expect(affected.has("/src/a.ts")).toBe(true);
@@ -158,7 +155,7 @@ describe("BuilderSession - Internal Helpers", () => {
       ]);
 
       const changed = new Set(["/src/a.ts", "/src/c.ts"]);
-      const affected = __internal.collectAffectedModules(changed, adjacency);
+      const affected = __internal.collectAffectedFiles(changed, adjacency);
 
       expect(affected.size).toBe(4);
       expect(affected.has("/src/a.ts")).toBe(true);

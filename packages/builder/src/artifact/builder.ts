@@ -7,7 +7,7 @@ import type { BuildArtifactInput, BuilderArtifact } from "./types";
 export const buildArtifact = async ({
   elements,
   analyses,
-  cache,
+  stats: cache,
 }: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
   const issuesResult = checkIssues({ elements });
   if (issuesResult.isErr()) {
@@ -26,7 +26,7 @@ export const buildArtifact = async ({
     report: {
       durationMs: 0,
       warnings,
-      cache,
+      stats: cache,
     },
   } satisfies BuilderArtifact);
 };

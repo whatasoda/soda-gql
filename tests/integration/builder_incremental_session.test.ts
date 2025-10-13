@@ -148,5 +148,4 @@ describe("BuilderSession E2E", () => {
     // Should return cached artifact without rebuild
     expect(finalSnapshot.snapshotCount).toBe(initialSnapshot.snapshotCount);
   });
-
 });

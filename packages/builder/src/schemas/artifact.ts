@@ -53,9 +53,10 @@ export const BuilderArtifactSchema = z.object({
   report: z.object({
     durationMs: z.number(),
     warnings: z.array(z.string()),
-    cache: z.object({
+    stats: z.object({
       hits: z.number(),
       misses: z.number(),
+      skips: z.number(),
     }),
   }),
 });

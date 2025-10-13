@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { type BuilderChangeSet, type BuilderFileChange, hasFileChanged } from "@soda-gql/builder/change-set";
 
 describe("BuilderChangeSet helpers", () => {
-
   describe("hasFileChanged", () => {
     test("returns true when fingerprint differs", () => {
       expect(hasFileChanged("old-hash", "new-hash")).toBe(true);

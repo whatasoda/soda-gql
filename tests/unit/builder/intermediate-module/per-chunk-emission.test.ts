@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Script } from "node:vm";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import { buildIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
+import { generateIntermediateModules } from "@soda-gql/builder/internal/intermediate-module/per-chunk-emission";
 import { createCanonicalId } from "@soda-gql/common";
 
 const createTestAnalysis = (
@@ -34,9 +34,9 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result = buildIntermediateModules({
+    const result = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts"]),
+      targetFilePaths: new Set(["/src/a.ts"]),
     });
 
     expect(result.size).toBe(1);
@@ -57,9 +57,9 @@ describe("buildIntermediateModules", () => {
       ["/src/b.ts", createTestAnalysis("/src/b.ts", [{ localPath: "bar", expression: "gql.default({ name: 'Bar' })" }])],
     ]);
 
-    const result = buildIntermediateModules({
+    const result = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts", "/src/b.ts"]),
+      targetFilePaths: new Set(["/src/a.ts", "/src/b.ts"]),
     });
 
     expect(result.size).toBe(2);
@@ -78,9 +78,9 @@ describe("buildIntermediateModules", () => {
       ],
     ]);
 
-    const result = buildIntermediateModules({
+    const result = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts"]),
+      targetFilePaths: new Set(["/src/a.ts"]),
     });
 
     expect(result.size).toBe(1);
@@ -96,14 +96,14 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result1 = buildIntermediateModules({
+    const result1 = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts"]),
+      targetFilePaths: new Set(["/src/a.ts"]),
     });
 
-    const result2 = buildIntermediateModules({
+    const result2 = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts"]),
+      targetFilePaths: new Set(["/src/a.ts"]),
     });
 
     const module1 = result1.get("/src/a.ts");
@@ -121,9 +121,9 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result = buildIntermediateModules({
+    const result = generateIntermediateModules({
       analyses,
-      targetPaths: new Set(["/src/a.ts"]),
+      targetFilePaths: new Set(["/src/a.ts"]),
     });
 
     const module = result.get("/src/a.ts");

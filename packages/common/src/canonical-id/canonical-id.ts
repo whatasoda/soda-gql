@@ -1,11 +1,10 @@
-import { isAbsolute, normalize, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import z from "zod";
+import { normalizePath } from "../utils";
 
 export type CanonicalId = string & { readonly __brand: "CanonicalId" };
 
 const canonicalIdSeparator = "::" as const;
-
-export const normalizePath = (value: string): string => normalize(value).replace(/\\/g, "/");
 
 export const CanonicalIdSchema: z.ZodType<CanonicalId> = z.string() as unknown as z.ZodType<CanonicalId>;
 

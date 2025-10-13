@@ -80,8 +80,8 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(Object.keys(artifact.elements).length).toBeGreaterThan(0);
 
     // Should have cache stats
-    expect(artifact.report.cache.hits).toBeGreaterThanOrEqual(0);
-    expect(artifact.report.cache.misses).toBeGreaterThan(0);
+    expect(artifact.report.stats.hits).toBeGreaterThanOrEqual(0);
+    expect(artifact.report.stats.misses).toBeGreaterThan(0);
 
     // Session should have snapshot
     const snapshot = session.getSnapshot();
@@ -141,8 +141,8 @@ describe("BuilderSession incremental end-to-end", () => {
 
     // Cache stats: skips will be 0 because we clear registry for correctness
     // (see register() pattern fix for import cache issue)
-    expect(updatedArtifact.report.cache.skips).toBeGreaterThanOrEqual(0);
-    expect(updatedArtifact.report.cache.hits).toBeGreaterThan(0);
+    expect(updatedArtifact.report.stats.skips).toBeGreaterThanOrEqual(0);
+    expect(updatedArtifact.report.stats.hits).toBeGreaterThan(0);
 
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({

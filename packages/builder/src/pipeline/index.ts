@@ -7,5 +7,5 @@ export type {
   ModuleLoadStats,
 } from "../discovery";
 export { createDiscoveryPipeline } from "../discovery";
-export { buildIntermediateModules } from "../internal/intermediate-module/per-chunk-emission";
+export { generateIntermediateModules } from "../internal/intermediate-module/per-chunk-emission";
 export type { IntermediateModule } from "../internal/intermediate-module/types";

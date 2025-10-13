@@ -169,7 +169,7 @@ const parseBuilderArgs = (argv: readonly string[]) => {
   });
 };
 
-const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mode: BuilderOptions["mode"]) => {
+const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mode: BuilderMode) => {
   if (mode !== "runtime") {
     return "";
   }
@@ -181,7 +181,7 @@ const formatBuilderSuccess = (format: OutputFormat, success: BuilderSuccess, mod
   const { report, elements } = success.artifact;
   const lines = [
     `Elements: ${Object.keys(elements).length}`,
-    `Cache: hits ${report.cache.hits}, misses ${report.cache.misses}`,
+    `Cache: hits ${report.stats.hits}, misses ${report.stats.misses}`,
     ...report.warnings,
     `Artifact: ${success.outPath}`,
   ];
@@ -270,9 +270,6 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
           mtimeMs: Date.now(),
         })),
         removed: [],
-        metadata: {
-          analyzerVersion: config.builder.analyzer,
-        },
       };
 
       // Use service.update() if available, otherwise rebuild

@@ -21,14 +21,10 @@ export const createBuilderArtifact = (
     report: {
       durationMs: overrides?.durationMs ?? 0,
       warnings: overrides?.warnings ?? [],
-      cache: {
+      stats: {
         hits: overrides?.cache?.hits ?? 0,
         misses: overrides?.cache?.misses ?? 0,
         skips: overrides?.cache?.skips ?? 0,
-      },
-      chunks: {
-        written: overrides?.chunks?.written ?? 0,
-        skipped: overrides?.chunks?.skipped ?? 0,
       },
     },
   };

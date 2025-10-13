@@ -9,7 +9,7 @@ export type IntermediateElements = Record<CanonicalId, IntermediateArtifactEleme
 export type BuildArtifactInput = {
   readonly elements: IntermediateElements;
   readonly analyses: Map<string, ModuleAnalysis>;
-  readonly cache: ModuleLoadStats;
+  readonly stats: ModuleLoadStats;
 };
 
 export type BuilderArtifactOperation = {
@@ -38,7 +38,7 @@ export type BuilderArtifact = {
   readonly report: {
     readonly durationMs: number;
     readonly warnings: readonly string[];
-    readonly cache: {
+    readonly stats: {
       readonly hits: number;
       readonly misses: number;
       readonly skips: number;

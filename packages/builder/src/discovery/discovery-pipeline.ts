@@ -38,7 +38,6 @@ export const createDiscoveryPipeline = ({ analyzer, cache }: CreateDiscoveryPipe
           entryPaths: paths,
           astAnalyzer,
           cache,
-          analyzer,
         }).map(({ snapshots, cacheHits, cacheMisses, cacheSkips }) => {
           const modules = snapshots.map((snapshot) => snapshot.analysis);
 
