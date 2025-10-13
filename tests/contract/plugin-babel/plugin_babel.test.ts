@@ -188,13 +188,7 @@ describe("@soda-gql/plugin-babel", () => {
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
 
-      const service = createBuilderService({
-        mode: "zero-runtime",
-        analyzer: "ts",
-        schemaHash: "test-schema",
-        entry: [profileQueryPath],
-        config: createTestConfig(fixturesRoot),
-      });
+      const service = createBuilderService(createTestConfig(fixturesRoot));
 
       const buildResult = await service.build();
 
@@ -254,13 +248,7 @@ describe("@soda-gql/plugin-babel", () => {
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
 
-      const service = createBuilderService({
-        mode: "zero-runtime",
-        analyzer: "ts",
-        schemaHash: "test-schema",
-        entry: [profileQueryPath],
-        config: createTestConfig(fixturesRoot),
-      });
+      const service = createBuilderService(createTestConfig(fixturesRoot));
 
       const buildResult = await service.build();
 

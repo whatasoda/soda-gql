@@ -48,7 +48,6 @@ describe("module cache manager", () => {
           exportBinding: "userModel",
           loc: { start: { line: 4, column: 6 }, end: { line: 8, column: 1 } },
           expression: "gql.model('User', () => ({}), (value) => value)",
-          dependencies: [],
         },
       ],
     });
@@ -56,10 +55,7 @@ describe("module cache manager", () => {
     cache.store(analysis);
 
     const hit = cache.load("/app/src/entities/user.ts", "hash-1");
-    // Cache doesn't store dependencies field, so remove it from expected value
-    const { definitions, ...analysisWithoutDeps } = analysis;
-    const definitionsWithoutDeps = definitions.map(({ dependencies: _, ...rest }) => rest);
-    expect(hit).toEqual({ ...analysisWithoutDeps, definitions: definitionsWithoutDeps });
+    expect(hit).toEqual(analysis);
   });
 
   it("misses cache when hash differs", () => {
@@ -112,7 +108,6 @@ describe("module cache manager", () => {
           exportBinding: "profileQuery",
           loc: { start: { line: 5, column: 6 }, end: { line: 12, column: 1 } },
           expression: "gql.query('ProfilePageQuery', {}, () => ({}))",
-          dependencies: [],
         },
       ],
     });
@@ -121,9 +116,6 @@ describe("module cache manager", () => {
     cache.store(updated);
 
     const hit = cache.load("/app/src/entities/user.ts", "hash-2");
-    // Cache doesn't store dependencies field, so remove it from expected value
-    const { definitions, ...updatedWithoutDeps } = updated;
-    const definitionsWithoutDeps = definitions.map(({ dependencies: _, ...rest }) => rest);
-    expect(hit).toEqual({ ...updatedWithoutDeps, definitions: definitionsWithoutDeps });
+    expect(hit).toEqual(updated);
   });
 });

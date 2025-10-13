@@ -89,11 +89,11 @@ describe("builder cache flow integration", () => {
     expect(profileQueryOp).toBeDefined();
     expect(profileQueryOp?.type === "operation" && profileQueryOp.prebuild.document).toBeDefined();
 
-    expect(firstArtifact.report.cache?.misses ?? 0).toBeGreaterThan(0);
+    expect(firstArtifact.report.stats?.misses ?? 0).toBeGreaterThan(0);
 
     const secondResult = await executeBuilder(workspaceRoot, entryPath, artifactFile, debugDir);
     const secondArtifact = secondResult.artifact;
-    expect(secondArtifact.report.cache?.hits ?? 0).toBeGreaterThan(0);
+    expect(secondArtifact.report.stats?.hits ?? 0).toBeGreaterThan(0);
   });
 
   afterAll(() => {
