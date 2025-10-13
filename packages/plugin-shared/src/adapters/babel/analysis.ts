@@ -9,13 +9,13 @@ import type {
 } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
 
-import { resolveCanonicalId } from "../cache";
+import { resolveCanonicalId } from "../../cache";
 import type {
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
-} from "../state";
+} from "../../state";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
