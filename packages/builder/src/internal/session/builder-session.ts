@@ -1,8 +1,6 @@
-import { dirname, join, normalize, resolve } from "node:path";
-import { createContext } from "node:vm";
-import { cachedFn, resolveRelativeImportWithReferences } from "@soda-gql/common";
+import {  join,  } from "node:path";
+import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { clearPseudoModuleRegistry, createPseudoModuleRegistry, getPseudoModuleRegistry } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
@@ -19,13 +17,12 @@ import type { BuilderError } from "../../types";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
+import { extractModuleAdjacency } from "./module-adjacency";
 
 /**
  * Session state maintained across incremental builds.
  */
 type SessionState = {
-  /** Entry paths from last build */
-  entrypoints: Set<string>;
   /** Discovery snapshots keyed by normalized file path */
   snapshots: Map<string, DiscoverySnapshot>;
   /** Module-level adjacency: file -> files that import it */
@@ -49,87 +46,10 @@ export type BuilderSessionSnapshot = {
  */
 export interface BuilderSession {
   /**
-   * Update the entry points.
+   * Perform build fully or incrementally.
    */
-  updateEntrypoints(input: { toAdd: readonly string[]; toRemove: readonly string[] }): void;
-
-  /**
-   * Perform initial full build from entry points.
-   */
-  buildInitial(): Promise<Result<BuilderArtifact, BuilderError>>;
-
-  /**
-   * Perform incremental update based on file changes.
-   */
-  update(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
-
-  /**
-   * Get current session state snapshot.
-   */
-  getSnapshot(): BuilderSessionSnapshot;
+  build(input: { changeSet: BuilderChangeSet | null }): Promise<Result<BuilderArtifact, BuilderError>>;
 }
-
-/**
- * Extract module-level adjacency from dependency graph.
- * Returns Map of file path -> set of files that import it.
- *
- * @internal testing
- */
-const extractModuleAdjacency = (snapshots: Map<string, DiscoverySnapshot>): Map<string, Set<string>> => {
-  // Phase 2: Build importer -> [imported paths] map from dependencies
-  const importsByModule = new Map<string, Set<string>>();
-
-  for (const snapshot of snapshots.values()) {
-    const { filePath, dependencies, analysis } = snapshot;
-    const imports = new Set<string>();
-
-    // Extract module paths from canonical IDs in dependencies
-    for (const { resolvedPath } of dependencies) {
-      if (resolvedPath && resolvedPath !== filePath && snapshots.has(resolvedPath)) {
-        imports.add(resolvedPath);
-      }
-    }
-
-    // Phase 3: Handle runtime imports for modules with no tracked dependencies
-    if (dependencies.length === 0 && analysis.imports.length > 0) {
-      for (const imp of analysis.imports) {
-        if (imp.isTypeOnly) {
-          continue;
-        }
-
-        const resolved = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: snapshots });
-        if (resolved) {
-          imports.add(resolved);
-        }
-      }
-    }
-
-    if (imports.size > 0) {
-      importsByModule.set(filePath, imports);
-    }
-  }
-
-  // Phase 4: Invert to adjacency map (imported -> [importers])
-  const adjacency = new Map<string, Set<string>>();
-
-  for (const [importer, imports] of importsByModule) {
-    for (const imported of imports) {
-      if (!adjacency.has(imported)) {
-        adjacency.set(imported, new Set());
-      }
-      adjacency.get(imported)?.add(importer);
-    }
-  }
-
-  // Include all modules, even isolated ones with no importers
-  for (const modulePath of snapshots.keys()) {
-    if (!adjacency.has(modulePath)) {
-      adjacency.set(modulePath, new Set());
-    }
-  }
-
-  return adjacency;
-};
 
 /**
  * Collect all modules affected by changes, including transitive dependents.
@@ -255,7 +175,7 @@ const discover = ({
   return ok({ snapshots, analyses, moduleAdjacency, affectedFiles, stats });
 };
 
-const build = async ({
+const buildDiscovered = async ({
   analyses,
   affectedFiles,
   stats,
@@ -307,14 +227,15 @@ const build = async ({
  */
 export const createBuilderSession = (options: {
   readonly evaluatorId?: string;
+  readonly entrypoints: readonly string[] | ReadonlySet<string>;
   readonly config: ResolvedSodaGqlConfig;
 }): BuilderSession => {
   const config = options.config;
   const evaluatorId = options.evaluatorId ?? "default";
+  const entrypoints = new Set(options.entrypoints);
 
   // Session state stored in closure
   const state: SessionState = {
-    entrypoints: new Set(),
     snapshots: new Map(),
     moduleAdjacency: new Map(),
     intermediateModules: new Map(),
@@ -322,82 +243,20 @@ export const createBuilderSession = (options: {
   };
 
   // Reusable discovery infrastructure
-  const cacheFactory = createJsonCache({
-    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
-    prefix: ["builder"],
-  });
-
+  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
   const ensureDiscoveryCache = cachedFn(() =>
     createDiscoveryCache({
-      factory: cacheFactory,
+      factory: createJsonCache({
+        rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+        prefix: ["builder"],
+      }),
       analyzer: config.builder.analyzer,
       evaluatorId,
     }),
   );
 
-  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
-
-  const updateEntrypoints = (input: { toAdd: readonly string[]; toRemove: readonly string[] }) => {
-    for (const entry of input.toAdd) {
-      state.entrypoints.add(entry);
-    }
-    for (const entry of input.toRemove) {
-      state.entrypoints.delete(entry);
-    }
-  };
-
-  const buildInitial = async (): Promise<Result<BuilderArtifact, BuilderError>> => {
-    const prepareResult = prepare({ entrypoints: state.entrypoints, changeSet: null, lastArtifact: null });
-    if (prepareResult.isErr()) {
-      return err(prepareResult.error);
-    }
-
-    if (prepareResult.value.type === "should-skip") {
-      return ok(prepareResult.value.data.artifact);
-    }
-
-    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
-
-    const discoveryCache = ensureDiscoveryCache();
-    const astAnalyzer = ensureAstAnalyzer();
-
-    const discoveryResult = discover({
-      discoveryCache,
-      astAnalyzer,
-      removedFiles,
-      changedFiles,
-      entryPaths,
-      currentModuleAdjacency: state.moduleAdjacency,
-    });
-    if (discoveryResult.isErr()) {
-      return err(discoveryResult.error);
-    }
-
-    const { snapshots, analyses, affectedFiles, moduleAdjacency, stats } = discoveryResult.value;
-
-    const buildResult = await build({
-      analyses,
-      affectedFiles,
-      stats,
-      currentIntermediateModules: state.intermediateModules,
-      graphqlSystemPath: config.graphqlSystemPath,
-    });
-    if (buildResult.isErr()) {
-      return err(buildResult.error);
-    }
-
-    const { intermediateModules, artifact } = buildResult.value;
-
-    state.snapshots = snapshots;
-    state.moduleAdjacency = moduleAdjacency;
-    state.lastArtifact = artifact;
-    state.intermediateModules = intermediateModules;
-
-    return ok(artifact);
-  };
-
-  const update = async (changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>> => {
-    const prepareResult = prepare({ entrypoints: state.entrypoints, changeSet, lastArtifact: state.lastArtifact });
+  const build = async ({ changeSet }: { changeSet: BuilderChangeSet | null }): Promise<Result<BuilderArtifact, BuilderError>> => {
+    const prepareResult = prepare({ entrypoints, changeSet, lastArtifact: state.lastArtifact });
     if (prepareResult.isErr()) {
       return err(prepareResult.error);
     }
@@ -423,7 +282,7 @@ export const createBuilderSession = (options: {
 
     const { snapshots, analyses, moduleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
-    const buildResult = await build({
+    const buildResult = await buildDiscovered({
       analyses,
       affectedFiles,
       stats,
@@ -444,15 +303,5 @@ export const createBuilderSession = (options: {
     return ok(artifact);
   };
 
-  const getSnapshot = (): BuilderSessionSnapshot => ({
-    snapshotCount: state.snapshots.size,
-    moduleAdjacencySize: state.moduleAdjacency.size,
-  });
-
-  return {
-    updateEntrypoints,
-    buildInitial,
-    update,
-    getSnapshot,
-  };
+  return { build };
 };

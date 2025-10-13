@@ -26,7 +26,10 @@ const _makeBuilderOptions = (overrides: Partial<PluginOptions> = {}): PluginOpti
   mode: "zero-runtime",
   artifactSource: {
     source: "builder",
-    config: createTestConfig(fixturesRoot),
+    config: {
+      config: createTestConfig(fixturesRoot),
+      entrypoints: [profileQueryPath],
+    },
   },
   ...overrides,
 });
@@ -181,7 +184,7 @@ describe("@soda-gql/plugin-babel", () => {
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
 
-      const service = createBuilderService(createTestConfig(fixturesRoot));
+      const service = createBuilderService({ config: createTestConfig(fixturesRoot), entrypoints: [profileQueryPath] });
 
       const buildResult = await service.build();
 
@@ -226,11 +229,8 @@ describe("@soda-gql/plugin-babel", () => {
           artifactSource: {
             source: "builder",
             config: {
-              ...testConfig,
-              builder: {
-                ...testConfig.builder,
-                entry: [nonExistentEntry],
-              },
+              config: testConfig,
+              entrypoints: [nonExistentEntry],
             },
           },
         }),
@@ -242,7 +242,7 @@ describe("@soda-gql/plugin-babel", () => {
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
 
-      const service = createBuilderService(createTestConfig(fixturesRoot));
+      const service = createBuilderService({ config: createTestConfig(fixturesRoot), entrypoints: [profileQueryPath] });
 
       const buildResult = await service.build();
 

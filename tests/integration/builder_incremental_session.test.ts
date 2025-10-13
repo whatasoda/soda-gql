@@ -69,27 +69,23 @@ describe("BuilderSession E2E", () => {
 
   it("should perform initial build and cache state", async () => {
     const session = createBuilderSession({
+      entrypoints: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 
-    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
-    const result = await session.buildInitial();
+    const result = await session.build({ changeSet: null });
 
     expect(result.isOk()).toBe(true);
-
-    const snapshot = session.getSnapshot();
-    expect(snapshot.snapshotCount).toBeGreaterThan(0);
-    expect(snapshot.moduleAdjacencySize).toBeGreaterThan(0);
   });
 
   it("should handle file modification incrementally", async () => {
     const session = createBuilderSession({
+      entrypoints: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
-    const initialResult = await session.buildInitial();
+    const initialResult = await session.build({ changeSet: null });
 
     if (initialResult.isErr()) {
       console.error("Build failed:", initialResult.error);
@@ -114,25 +110,21 @@ describe("BuilderSession E2E", () => {
       removed: [],
     };
 
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
     expect(updateResult.isOk()).toBe(true);
 
-    const snapshot = session.getSnapshot();
-    expect(snapshot.snapshotCount).toBeGreaterThan(0);
   });
 
   it("should handle empty update (no actual changes)", async () => {
     const session = createBuilderSession({
+      entrypoints: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [join(workspace, "src/**/*.ts")], toRemove: [] });
-    const initialResult = await session.buildInitial();
+    const initialResult = await session.build({ changeSet: null });
 
     expect(initialResult.isOk()).toBe(true);
-
-    const initialSnapshot = session.getSnapshot();
 
     // Empty change set (no changes)
     const changeSet: BuilderChangeSet = {
@@ -141,11 +133,7 @@ describe("BuilderSession E2E", () => {
       removed: [],
     };
 
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
     expect(updateResult.isOk()).toBe(true);
-
-    const finalSnapshot = session.getSnapshot();
-    // Should return cached artifact without rebuild
-    expect(finalSnapshot.snapshotCount).toBe(initialSnapshot.snapshotCount);
   });
 });

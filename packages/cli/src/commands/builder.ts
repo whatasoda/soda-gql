@@ -220,7 +220,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     process.stdout.write("Watch mode enabled - building and watching for changes...\n");
 
     // Create service with session
-    const service = createBuilderService(config);
+    const service = createBuilderService({ config, entrypoints: options.entry });
 
     // Initial build
     const initialResult = await service.build();
@@ -327,7 +327,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
   }
 
   // Normal mode: Single build
-  const service = createBuilderService(config);
+  const service = createBuilderService({ config, entrypoints: options.entry });
   const result = await service.build();
 
   if (result.isErr()) {

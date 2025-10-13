@@ -1,0 +1,61 @@
+import { resolveRelativeImportWithReferences } from "@soda-gql/common";
+import type { DiscoverySnapshot } from "../../discovery";
+
+/**
+ * Extract module-level adjacency from dependency graph.
+ * Returns Map of file path -> set of files that import it.
+ */
+export const extractModuleAdjacency = (snapshots: Map<string, DiscoverySnapshot>): Map<string, Set<string>> => {
+  const importsByModule = new Map<string, Set<string>>();
+
+  for (const snapshot of snapshots.values()) {
+    const { filePath, dependencies, analysis } = snapshot;
+    const imports = new Set<string>();
+
+    // Extract module paths from canonical IDs in dependencies
+    for (const { resolvedPath } of dependencies) {
+      if (resolvedPath && resolvedPath !== filePath && snapshots.has(resolvedPath)) {
+        imports.add(resolvedPath);
+      }
+    }
+
+    // Phase 3: Handle runtime imports for modules with no tracked dependencies
+    if (dependencies.length === 0 && analysis.imports.length > 0) {
+      for (const imp of analysis.imports) {
+        if (imp.isTypeOnly) {
+          continue;
+        }
+
+        const resolved = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: snapshots });
+        if (resolved) {
+          imports.add(resolved);
+        }
+      }
+    }
+
+    if (imports.size > 0) {
+      importsByModule.set(filePath, imports);
+    }
+  }
+
+  // Phase 4: Invert to adjacency map (imported -> [importers])
+  const adjacency = new Map<string, Set<string>>();
+
+  for (const [importer, imports] of importsByModule) {
+    for (const imported of imports) {
+      if (!adjacency.has(imported)) {
+        adjacency.set(imported, new Set());
+      }
+      adjacency.get(imported)?.add(importer);
+    }
+  }
+
+  // Include all modules, even isolated ones with no importers
+  for (const modulePath of snapshots.keys()) {
+    if (!adjacency.has(modulePath)) {
+      adjacency.set(modulePath, new Set());
+    }
+  }
+
+  return adjacency;
+};

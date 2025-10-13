@@ -1,4 +1,4 @@
-import { isRelativeSpecifier, normalizePath, resolveRelativeImportWithReferences } from "@soda-gql/common";
+import { isRelativeSpecifier, resolveRelativeImportWithReferences } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 

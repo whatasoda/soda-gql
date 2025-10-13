@@ -47,15 +47,15 @@ export const normalizeOptions = (raw: Partial<SodaGqlBabelOptions>): Result<Norm
     artifactSource = raw.artifactSource;
   } else {
     // source === "builder"
-    const config = raw.artifactSource.config;
-    if (!config.builder.entry || config.builder.entry.length === 0) {
+    const builderConfig = raw.artifactSource.config;
+    if (!builderConfig.entrypoints || (Array.isArray(builderConfig.entrypoints) && builderConfig.entrypoints.length === 0)) {
       return err({
         type: "OptionsError",
         code: "INVALID_BUILDER_CONFIG",
-        message: "builder config must include non-empty entry array",
+        message: "builder config must include non-empty entrypoints array",
       });
     }
-    if (!config.builder.analyzer) {
+    if (!builderConfig.config.builder.analyzer) {
       return err({
         type: "OptionsError",
         code: "INVALID_BUILDER_CONFIG",
@@ -66,7 +66,7 @@ export const normalizeOptions = (raw: Partial<SodaGqlBabelOptions>): Result<Norm
     // Artifact source uses the resolved config directly
     artifactSource = {
       source: "builder",
-      config,
+      config: builderConfig,
     };
   }
 

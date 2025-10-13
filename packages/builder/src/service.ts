@@ -1,4 +1,3 @@
-import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
@@ -10,7 +9,10 @@ import type { BuilderError } from "./types";
  * Configuration for BuilderService.
  * Mirrors BuilderInput shape.
  */
-export type BuilderServiceConfig = ResolvedSodaGqlConfig;
+export type BuilderServiceConfig = {
+  readonly config: ResolvedSodaGqlConfig;
+  readonly entrypoints: readonly string[] | ReadonlySet<string>;
+};
 
 /**
  * Builder service interface providing artifact generation.
@@ -41,24 +43,11 @@ export interface BuilderService {
  * @param config - Builder configuration including entry patterns, analyzer, mode, and optional debugDir
  * @returns BuilderService instance
  */
-export const createBuilderService = (config: BuilderServiceConfig): BuilderService => {
-  // Lazy session initialization
-  const ensureSession = cachedFn(() => createBuilderSession({ config }));
+export const createBuilderService = ({ config, entrypoints }: BuilderServiceConfig): BuilderService => {
+  const session = createBuilderSession({ config, entrypoints });
 
   return {
-    build: async () => {
-      const session = ensureSession();
-
-      // Subsequent builds reuse session (for now, just call buildInitial again)
-      // NOTE: Change detection via update() is handled by CLI watch mode
-      // Direct service.build() calls do full rebuild for correctness
-      return session.buildInitial();
-    },
-
-    update: async (changeSet: BuilderChangeSet) => {
-      const session = ensureSession();
-
-      return session.update(changeSet);
-    },
+    build: async () => session.build({ changeSet: null }),
+    update: async (changeSet: BuilderChangeSet) => session.build({ changeSet }),
   };
 };

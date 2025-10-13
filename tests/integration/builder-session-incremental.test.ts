@@ -65,10 +65,9 @@ describe("BuilderSession incremental end-to-end", () => {
 
   test("initial build creates chunks and artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
 
-    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const result = await session.buildInitial();
+    const result = await session.build({ changeSet: null });
 
     if (result.isErr()) {
       console.error("Build failed:", result.error);
@@ -82,21 +81,17 @@ describe("BuilderSession incremental end-to-end", () => {
     // Should have cache stats
     expect(artifact.report.stats.hits).toBeGreaterThanOrEqual(0);
     expect(artifact.report.stats.misses).toBeGreaterThan(0);
-
-    // Session should have snapshot
-    const snapshot = session.getSnapshot();
-    expect(snapshot).toBeDefined();
-    expect(snapshot.snapshotCount).toBeGreaterThanOrEqual(0);
   });
 
   test("applies graph patch when a module changes", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({ evaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+       config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const initial = await session.buildInitial();
+    const initial = await session.build({ changeSet: null });
 
     if (initial.isErr()) {
       console.error("Build failed:", initial.error);
@@ -128,7 +123,7 @@ describe("BuilderSession incremental end-to-end", () => {
     };
 
     // Incremental update
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
 
     if (updateResult.isErr()) {
       console.error("Update failed:", updateResult.error);
@@ -147,10 +142,10 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const fullRebuild = await fullRebuildSession.buildInitial();
+    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -165,18 +160,16 @@ describe("BuilderSession incremental end-to-end", () => {
   test("adds new module without touching unaffected chunks", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const initial = await session.buildInitial();
+    const initial = await session.build({ changeSet: null });
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
     }
     expect(initial.isOk()).toBe(true);
     const initialArtifact = initial._unsafeUnwrap();
-    const _initialSnapshot = session.getSnapshot();
 
     // Copy new catalog file
     const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
@@ -191,7 +184,7 @@ describe("BuilderSession incremental end-to-end", () => {
     };
 
     // Incremental update
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
 
     if (updateResult.isErr()) {
       console.error("Update failed:", updateResult.error);
@@ -205,10 +198,10 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const fullRebuild = await fullRebuildSession.buildInitial();
+    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -223,11 +216,10 @@ describe("BuilderSession incremental end-to-end", () => {
   test("removes module and updates artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const initial = await session.buildInitial();
+    const initial = await session.build({ changeSet: null });
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -247,7 +239,7 @@ describe("BuilderSession incremental end-to-end", () => {
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
@@ -262,10 +254,10 @@ describe("BuilderSession incremental end-to-end", () => {
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const fullRebuild = await fullRebuildSession.buildInitial();
+    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
@@ -281,11 +273,10 @@ describe("BuilderSession incremental end-to-end", () => {
   test("handles mixed add/update/remove in one pass", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
 
     // Initial build
-    session.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const initial = await session.buildInitial();
+    const initial = await session.build({ changeSet: null });
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -322,7 +313,7 @@ describe("BuilderSession incremental end-to-end", () => {
     };
 
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
-    const updateResult = await session.update(changeSet);
+    const updateResult = await session.build({ changeSet });
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
@@ -337,10 +328,10 @@ describe("BuilderSession incremental end-to-end", () => {
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    fullRebuildSession.updateEntrypoints({ toAdd: [path.join(workspaceRoot, "src/**/*.ts")], toRemove: [] });
-    const fullRebuild = await fullRebuildSession.buildInitial();
+    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {

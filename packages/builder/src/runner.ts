@@ -1,5 +1,5 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { err, ok, type Result } from "neverthrow";
+import { err, type Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
 import { createBuilderService } from "./service";
 import type { BuilderAnalyzer, BuilderError, BuilderFormat, BuilderResult } from "./types";
@@ -35,7 +35,7 @@ export type LegacyBuilderOptions = {
  */
 export const runBuilder = async (options: LegacyBuilderOptions): Promise<BuilderResult> => {
   // Create service with config
-  const service = createBuilderService(options.config);
+  const service = createBuilderService({ config: options.config, entrypoints: options.entry });
 
   // Build artifact
   const buildResult = await service.build();
@@ -58,6 +58,6 @@ export const runBuilder = async (options: LegacyBuilderOptions): Promise<Builder
 export const generateArtifact = async (
   options: Omit<LegacyBuilderOptions, "outPath" | "format">,
 ): Promise<Result<BuilderArtifact, BuilderError>> => {
-  const service = createBuilderService(options.config);
+  const service = createBuilderService({ config: options.config, entrypoints: options.entry });
   return service.build();
 };
