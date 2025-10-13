@@ -52,9 +52,7 @@ export type OptionsError =
 /**
  * New normalize function that handles config discovery
  */
-export const normalizePluginOptions = async (
-  raw: Partial<PluginOptions>,
-): Promise<Result<NormalizedOptions, OptionsError>> => {
+export const normalizePluginOptions = async (raw: Partial<PluginOptions>): Promise<Result<NormalizedOptions, OptionsError>> => {
   // Extract basic options with defaults
   const mode = raw.mode ?? "runtime";
   const importIdentifier = raw.importIdentifier ?? "@/graphql-system";
@@ -162,7 +160,9 @@ export const normalizePluginOptions = async (
  * Legacy normalize function for backward compatibility
  * @deprecated Use normalizePluginOptions with PluginOptions instead
  */
-export const normalizePluginOptionsLegacy = (raw: Partial<SodaGqlPluginOptions>): Result<NormalizedOptionsLegacy, OptionsError> => {
+export const normalizePluginOptionsLegacy = (
+  raw: Partial<SodaGqlPluginOptions>,
+): Result<NormalizedOptionsLegacy, OptionsError> => {
   const mode = raw.mode ?? "runtime";
   const importIdentifier = raw.importIdentifier ?? "@/graphql-system";
   const diagnostics = raw.diagnostics ?? "json";

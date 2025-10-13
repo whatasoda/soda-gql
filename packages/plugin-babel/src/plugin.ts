@@ -1,14 +1,8 @@
-import type { PluginObj, PluginPass, types as t } from "@babel/core";
+import type { PluginObj, PluginPass } from "@babel/core";
+import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
-import type { ArtifactLookup } from "@soda-gql/plugin-shared/adapters/babel";
-import {
-  collectGqlDefinitionMetadata,
-  ensureGqlRuntimeImport,
-  insertRuntimeCalls,
-  maybeRemoveUnusedGqlImport,
-  transformCallExpression,
-} from "@soda-gql/plugin-shared/adapters/babel";
+import { babelTransformAdapterFactory } from "@soda-gql/plugin-shared/adapters/babel";
 import type { SodaGqlBabelOptions } from "./types";
 
 type PluginPassState = PluginPass & { _state?: PluginState };
@@ -40,37 +34,35 @@ export const createSodaGqlPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?
         return;
       }
 
-      const metadata = collectGqlDefinitionMetadata({ programPath, filename });
-      const getArtifact: ArtifactLookup = (canonicalId) => pluginState.allArtifacts[canonicalId];
-
-      const runtimeCalls: t.Expression[] = [];
-      let mutated = false;
-
-      programPath.traverse({
-        CallExpression(callPath) {
-          const result = transformCallExpression({
-            callPath,
-            filename,
-            metadata,
-            getArtifact,
-          });
-
-          if (result.transformed) {
-            ensureGqlRuntimeImport(programPath);
-            mutated = true;
-
-            if (result.runtimeCall) {
-              runtimeCalls.push(result.runtimeCall);
-            }
-          }
-        },
+      // Create Babel adapter instance
+      const adapter = babelTransformAdapterFactory.create({
+        programPath,
+        types: t,
       });
 
-      insertRuntimeCalls(programPath, runtimeCalls);
+      // Transform using adapter
+      const result = adapter.transformProgram({
+        filename,
+        artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
+      });
 
-      if (mutated) {
-        programPath.scope.crawl();
-        maybeRemoveUnusedGqlImport(programPath);
+      // Insert runtime side effects if transformed
+      if (result.transformed) {
+        adapter.insertRuntimeSideEffects(
+          {
+            filename,
+            artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
+          },
+          result.runtimeArtifacts || [],
+        );
+      }
+
+      // Handle errors
+      if (result.errors && result.errors.length > 0) {
+        const firstError = result.errors[0];
+        if (firstError) {
+          throw new Error(formatPluginError(firstError));
+        }
       }
     },
   },

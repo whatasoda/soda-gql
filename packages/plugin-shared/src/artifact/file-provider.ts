@@ -22,7 +22,7 @@ export class FileArtifactProvider implements ArtifactProvider {
     this.path = artifact.path;
   }
 
-  async load(options?: { schemaHash?: string }): Promise<Result<BuilderArtifact, PluginError>> {
+  async load(_options?: { schemaHash?: string }): Promise<Result<BuilderArtifact, PluginError>> {
     // Return cached artifact if available
     if (this.artifactCache) {
       return ok(this.artifactCache);

@@ -193,9 +193,7 @@ export const preparePluginState = async (
 /**
  * New preparePluginState that uses new PluginOptions and ArtifactProvider
  */
-export const preparePluginStateNew = async (
-  rawOptions: Partial<import("./types").PluginOptions>,
-): Promise<PluginStateResult> => {
+export const preparePluginStateNew = async (rawOptions: Partial<import("./types").PluginOptions>): Promise<PluginStateResult> => {
   // Dynamically import to avoid circular dependency
   const { normalizePluginOptions: normalizeNew } = await import("./options");
   const { createArtifactProvider } = await import("./artifact");

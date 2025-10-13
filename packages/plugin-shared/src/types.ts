@@ -1,5 +1,4 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 /**
  * Builder configuration for artifact generation.

@@ -5,7 +5,7 @@
  * and translates between Babel AST and library-neutral IR.
  */
 
-import { types as t } from "@babel/core";
+import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { resolveCanonicalId } from "../../cache";
 import type {
@@ -16,13 +16,18 @@ import type {
   RuntimeExpression,
 } from "../../core/ir";
 import { makeRuntimeExpression } from "../../core/ir";
-import type { TransformAdapter, TransformAdapterFactory, TransformPassResult, TransformProgramContext } from "../../core/transform-adapter";
+import type {
+  TransformAdapter,
+  TransformAdapterFactory,
+  TransformPassResult,
+  TransformProgramContext,
+} from "../../core/transform-adapter";
 import type { PluginError } from "../../state";
 import { extractGqlCall, findGqlBuilderCall, type GqlCall } from "./analysis";
-import { buildModelRuntimeCall, buildOperationRuntimeComponents, buildSliceRuntimeCall } from "./runtime";
-import { collectGqlDefinitionMetadata, type GqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata";
-import { transformCallExpression } from "./transformer";
 import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./imports";
+import { collectGqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata";
+import { buildOperationRuntimeComponents } from "./runtime";
+import { transformCallExpression } from "./transformer";
 
 /**
  * Babel-specific environment required for the adapter.
@@ -37,6 +42,7 @@ export type BabelEnv = {
  */
 export class BabelAdapter implements TransformAdapter {
   private readonly env: BabelEnv;
+  private runtimeCallsFromLastTransform: t.Expression[] = [];
 
   constructor(env: BabelEnv) {
     this.env = env;
@@ -50,7 +56,7 @@ export class BabelAdapter implements TransformAdapter {
 
     // Convert Babel WeakMap to library-neutral Map with canonical IDs as keys
     const neutralMetadata: DefinitionMetadataMap = new Map();
-    const program = this.env.programPath.node;
+    const _program = this.env.programPath.node;
 
     this.env.programPath.traverse({
       CallExpression: (callPath) => {
@@ -108,7 +114,7 @@ export class BabelAdapter implements TransformAdapter {
       filename: context.filename,
     });
 
-    const runtimeCalls: t.Expression[] = [];
+    this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
     this.env.programPath.traverse({
@@ -125,7 +131,7 @@ export class BabelAdapter implements TransformAdapter {
           transformed = true;
 
           if (result.runtimeCall) {
-            runtimeCalls.push(result.runtimeCall);
+            this.runtimeCallsFromLastTransform.push(result.runtimeCall);
           }
         }
       },
@@ -136,42 +142,18 @@ export class BabelAdapter implements TransformAdapter {
       maybeRemoveUnusedGqlImport(this.env.programPath);
     }
 
-    // Convert Babel runtime calls to IR
-    const runtimeArtifacts: GraphQLCallIR[] = runtimeCalls.map((expr) => {
-      // Extract canonical ID from the runtime call (this is a simplification)
-      // In practice, we'd need to track which call corresponds to which IR
-      return {
-        descriptor: {
-          type: "operation" as const,
-          canonicalId: "runtime-operation", // Placeholder
-          operationName: "unknown",
-          prebuildPayload: {},
-          getSlices: makeRuntimeExpression(expr),
-        },
-        sourceFile: context.filename,
-      };
-    });
-
     return {
       transformed,
-      runtimeArtifacts: runtimeArtifacts.length > 0 ? runtimeArtifacts : undefined,
+      runtimeArtifacts: undefined,
     };
   }
 
-  insertRuntimeSideEffects(context: TransformProgramContext, runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
-    if (runtimeIR.length === 0) {
+  insertRuntimeSideEffects(_context: TransformProgramContext, _runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
+    // Use internally tracked runtime calls from transformProgram
+    const runtimeCalls = this.runtimeCallsFromLastTransform;
+    if (runtimeCalls.length === 0) {
       return;
     }
-
-    // Extract Babel expressions from IR handles
-    const runtimeCalls: t.Expression[] = runtimeIR
-      .map((ir) => {
-        if (ir.descriptor.type === "operation" && ir.descriptor.getSlices.kind === "adapter-expression") {
-          return ir.descriptor.getSlices.handle as t.Expression;
-        }
-        return null;
-      })
-      .filter((expr): expr is t.Expression => expr !== null);
 
     // Insert after @soda-gql/runtime import
     this.env.programPath.traverse({
@@ -272,10 +254,5 @@ export const babelTransformAdapterFactory: TransformAdapterFactory = {
  * Type guard for BabelEnv.
  */
 const isBabelEnv = (env: unknown): env is BabelEnv => {
-  return (
-    typeof env === "object" &&
-    env !== null &&
-    "programPath" in env &&
-    "types" in env
-  );
+  return typeof env === "object" && env !== null && "programPath" in env && "types" in env;
 };

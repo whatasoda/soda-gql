@@ -58,9 +58,7 @@ export class BuilderArtifactProvider implements ArtifactProvider {
       return "BuilderArtifactProvider (invalid configuration)";
     }
     const entrypoints = artifact.config.entrypoints;
-    const entryCount = Array.isArray(entrypoints)
-      ? entrypoints.length
-      : (entrypoints as ReadonlySet<string>).size;
+    const entryCount = Array.isArray(entrypoints) ? entrypoints.length : (entrypoints as ReadonlySet<string>).size;
     return `BuilderArtifactProvider (${entryCount} entries)`;
   }
 
