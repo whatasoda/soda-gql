@@ -7,22 +7,19 @@
 
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { resolveCanonicalId } from "../../cache";
 import type {
   DefinitionMetadataMap,
   GraphQLCallAnalysis,
   GraphQLCallIR,
+  PluginError,
   RuntimeCallDescriptor,
   RuntimeExpression,
-} from "../../core/ir";
-import { makeRuntimeExpression } from "../../core/ir";
-import type {
   TransformAdapter,
   TransformAdapterFactory,
   TransformPassResult,
   TransformProgramContext,
-} from "../../core/transform-adapter";
-import type { PluginError } from "../../state";
+} from "@soda-gql/plugin-shared";
+import { makeRuntimeExpression, resolveCanonicalId } from "@soda-gql/plugin-shared";
 import { extractGqlCall, findGqlBuilderCall, type GqlCall } from "./analysis";
 import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./imports";
 import { collectGqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata";

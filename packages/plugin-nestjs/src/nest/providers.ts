@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, type Provider } from "@nestjs/common";
 import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "@soda-gql/builder";
-import { loadArtifact } from "@soda-gql/plugin-shared/cache";
+import { loadArtifact } from "@soda-gql/plugin-shared";
 import type { NestModuleOptions } from "../schemas/module.js";
 import {
   SODA_GQL_ARTIFACT,

@@ -1,5 +1,5 @@
 import type { BuilderArtifact } from "@soda-gql/builder";
-import type { ArtifactError } from "@soda-gql/plugin-shared/cache";
+import type { ArtifactError } from "@soda-gql/plugin-shared";
 import type { NestModuleOptions } from "../schemas/module.js";
 
 export const SODA_GQL_MODULE_OPTIONS = Symbol.for("@soda-gql/plugin-nestjs:module-options");

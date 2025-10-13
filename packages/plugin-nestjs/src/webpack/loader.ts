@@ -2,7 +2,7 @@ import { isAbsolute, resolve } from "node:path";
 
 import { type TransformOptions, transformAsync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
-import { normalizePluginOptions } from "@soda-gql/plugin-shared/options";
+import { normalizePluginOptions } from "@soda-gql/plugin-shared";
 import type { RawSourceMap } from "source-map";
 import type { LoaderDefinitionFunction } from "webpack";
 

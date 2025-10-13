@@ -7,4 +7,4 @@ export {
   formatPluginError,
   isPluginError,
   pluginErr,
-} from "@soda-gql/plugin-shared/errors";
+} from "@soda-gql/plugin-shared";

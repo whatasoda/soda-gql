@@ -3,7 +3,7 @@ export type {
   ArtifactSource,
   BuilderConfig,
   SodaGqlPluginOptions,
-} from "@soda-gql/plugin-shared/types";
+} from "@soda-gql/plugin-shared";
 export type { SodaGqlConfig } from "./schemas/config.js";
 
 export type {

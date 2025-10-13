@@ -2,7 +2,7 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
-import { babelTransformAdapterFactory } from "@soda-gql/plugin-shared/adapters/babel";
+import { babelTransformAdapterFactory } from "./adapter/babel/adapter";
 import type { SodaGqlBabelOptions } from "./types";
 
 type PluginPassState = PluginPass & { _state?: PluginState };
