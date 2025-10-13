@@ -1,6 +1,6 @@
 import { isRelativeSpecifier, resolveRelativeImportWithReferences } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
-import type { ModuleAnalysis } from "../ast";
+import type { ModuleAnalysis } from "../../ast";
 
 export type DependencyGraphError = {
   readonly code: "MISSING_IMPORT";

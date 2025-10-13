@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import type { BuilderChangeSet } from "@soda-gql/builder";
 import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
@@ -112,7 +112,6 @@ describe("BuilderSession E2E", () => {
 
     const updateResult = await session.build({ changeSet });
     expect(updateResult.isOk()).toBe(true);
-
   });
 
   it("should handle empty update (no actual changes)", async () => {

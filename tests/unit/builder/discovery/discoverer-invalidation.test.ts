@@ -34,7 +34,12 @@ describe("discoverModules - invalidatedPaths behavior", () => {
     const result1 = discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
+      incremental: {
+        cache,
+        changedFiles: new Set(),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
     if (result1.isErr()) throw result1.error;
 
@@ -43,12 +48,15 @@ describe("discoverModules - invalidatedPaths behavior", () => {
     expect(result1.value.cacheSkips).toBe(0);
 
     // Second discovery: with 2 files invalidated
-    const invalidatedPaths = new Set([fileA, fileB]);
     const result2 = discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
-      invalidatedPaths,
+      incremental: {
+        cache,
+        changedFiles: new Set([fileA, fileB]),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
     if (result2.isErr()) throw result2.error;
 
@@ -82,16 +90,24 @@ describe("discoverModules - invalidatedPaths behavior", () => {
     discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
+      incremental: {
+        cache,
+        changedFiles: new Set(),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
 
     // Second discovery: invalidate only dependency (fileB)
-    const invalidatedPaths = new Set([fileB]);
     const result = discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
-      invalidatedPaths,
+      incremental: {
+        cache,
+        changedFiles: new Set([fileB]),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
     if (result.isErr()) throw result.error;
 
@@ -121,15 +137,24 @@ describe("discoverModules - invalidatedPaths behavior", () => {
     discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
+      incremental: {
+        cache,
+        changedFiles: new Set(),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
 
     // Second discovery: no invalidations
     const result = discoverModules({
       entryPaths: [fileA],
       astAnalyzer,
-      cache,
-      invalidatedPaths: new Set(),
+      incremental: {
+        cache,
+        changedFiles: new Set(),
+        removedFiles: new Set(),
+        affectedFiles: new Set(),
+      },
     });
     if (result.isErr()) throw result.error;
 

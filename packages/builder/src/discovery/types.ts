@@ -1,5 +1,4 @@
-import type { CanonicalId } from "@soda-gql/common";
-import type { ModuleAnalysis, ModuleDefinition, SourceLocation } from "../ast";
+import type { ModuleAnalysis } from "../ast";
 import type { FileFingerprint } from "./fingerprint";
 
 /**
@@ -12,14 +11,6 @@ export type DiscoveredDependency = {
   readonly resolvedPath: string | null;
   /** True when the specifier targets an external package (i.e. no local snapshot will exist). */
   readonly isExternal: boolean;
-};
-
-/**
- * Augments ModuleDefinition with a precomputed canonical ID for downstream consumers.
- */
-export type DiscoverySnapshotDefinition = ModuleDefinition & {
-  /** Canonical identifier derived from file path and export name. */
-  readonly canonicalId: CanonicalId;
 };
 
 /**
@@ -42,99 +33,6 @@ export type DiscoverySnapshot = {
   /** Resolved graph edges for relative imports encountered in the file. */
   readonly dependencies: readonly DiscoveredDependency[];
 };
-
-/**
- * Categorization for evaluated definitions. Mirrors OperationRegistry buckets plus helper entries.
- */
-export type ModuleEvaluationKind = "model" | "slice" | "operation" | "helper";
-
-/**
- * Issue emitted while evaluating module exports (surfaced in BuilderError).
- */
-export type ModuleEvaluationIssue = {
-  /** Machine-readable issue code (e.g., DUPLICATE_OPERATION_NAME). */
-  readonly code: string;
-  /** Human-readable explanation. */
-  readonly message: string;
-  /** Severity gatekeeping whether the build can continue. */
-  readonly severity: "error" | "warning";
-  /** Definition associated with the issue, when available. */
-  readonly canonicalId?: CanonicalId;
-  /** Source location to highlight in tooling. */
-  readonly loc?: SourceLocation;
-};
-
-/**
- * Successful evaluation record for a single definition.
- */
-export type ModuleEvaluationDefinition = {
-  /** Definition's canonical identifier (file path + export). */
-  readonly canonicalId: CanonicalId;
-  /** Export name as declared in source. */
-  readonly exportName: string;
-  /** Classification used by downstream registries. */
-  readonly kind: ModuleEvaluationKind;
-  /** Location of the defining call for diagnostics. */
-  readonly loc: SourceLocation;
-};
-
-/**
- * Aggregated result returned by ModuleEvaluator after processing a snapshot.
- */
-export type ModuleEvaluationResult = {
-  /** Definitions that were successfully evaluated/categorized. */
-  readonly definitions: readonly ModuleEvaluationDefinition[];
-  /** Issues raised while evaluating this module. */
-  readonly issues: readonly ModuleEvaluationIssue[];
-};
-
-/**
- * Execution context provided to evaluators to resolve cross-module data.
- */
-export type ModuleEvaluatorContext = {
-  /**
-   * Retrieve the latest snapshot for a dependency.
-   * Returns null when the dependency is external or undiscovered.
-   */
-  readonly getSnapshot: (filePath: string) => DiscoverySnapshot | null;
-  /**
-   * Resolve a module specifier relative to a file on disk.
-   * Should mirror Node resolution semantics for local modules.
-   */
-  readonly resolve: (specifier: string, from: string) => string | null;
-  /**
-   * Dynamically import a discovered module for runtime evaluation.
-   * Implementations can stub this in tests or swap loaders in Node vs Bun.
-   */
-  readonly importModule: (absolutePath: string) => Promise<unknown>;
-};
-
-/**
- * Input payload handed to a ModuleEvaluator.
- */
-export type ModuleEvaluatorInput = {
-  /** Snapshot being evaluated. */
-  readonly snapshot: DiscoverySnapshot;
-};
-
-/**
- * Injectable evaluation contract invoked during discovery.
- * Allows different strategies (e.g., eager runtime evaluation vs. no-op in dry runs).
- */
-export interface ModuleEvaluator {
-  /**
-   * Evaluate definitions exported by a discovered module.
-   * Should never throw; errors must be captured in the returned issues array.
-   */
-  evaluateModule(
-    input: ModuleEvaluatorInput,
-    context: ModuleEvaluatorContext,
-  ): Promise<ModuleEvaluationResult> | ModuleEvaluationResult;
-  /**
-   * Optional hook for cleanup (close watchers, dispose VM, etc.).
-   */
-  dispose?(): Promise<void> | void;
-}
 
 /**
  * Cache abstraction for storing and retrieving discovery snapshots.
@@ -173,3 +71,9 @@ export interface DiscoveryCache {
    */
   size(): number;
 }
+
+export type ModuleLoadStats = {
+  readonly hits: number;
+  readonly misses: number;
+  readonly skips: number;
+};

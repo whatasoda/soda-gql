@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { type BuilderChangeSet, type BuilderFileChange, hasFileChanged } from "@soda-gql/builder/change-set";
+import { type BuilderChangeSet, type BuilderFileChange } from "@soda-gql/builder";
+import { hasFileChanged } from "@soda-gql/builder/internal/session/change-set";
 
 describe("BuilderChangeSet helpers", () => {
   describe("hasFileChanged", () => {

@@ -11,7 +11,7 @@ import type { IntermediateModule } from "./types";
 
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
-  readonly targetFilePaths: Set<string>;
+  readonly targetFiles: Set<string>;
 };
 
 /**
@@ -65,9 +65,9 @@ const transpile = ({
  */
 export const generateIntermediateModules = function* ({
   analyses,
-  targetFilePaths,
+  targetFiles,
 }: BuildIntermediateModulesInput): Generator<IntermediateModule, void, undefined> {
-  for (const filePath of targetFilePaths) {
+  for (const filePath of targetFiles) {
     const analysis = analyses.get(filePath);
     if (!analysis) {
       continue;

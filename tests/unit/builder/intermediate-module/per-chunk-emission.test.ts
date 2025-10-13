@@ -36,7 +36,7 @@ describe("buildIntermediateModules", () => {
     const result = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts"]),
+      targetFiles: new Set(["/src/a.ts"]),
     })) {
       result.set(module.filePath, module);
     }
@@ -62,7 +62,7 @@ describe("buildIntermediateModules", () => {
     const result = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts", "/src/b.ts"]),
+      targetFiles: new Set(["/src/a.ts", "/src/b.ts"]),
     })) {
       result.set(module.filePath, module);
     }
@@ -86,7 +86,7 @@ describe("buildIntermediateModules", () => {
     const result = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts"]),
+      targetFiles: new Set(["/src/a.ts"]),
     })) {
       result.set(module.filePath, module);
     }
@@ -107,7 +107,7 @@ describe("buildIntermediateModules", () => {
     const result1 = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts"]),
+      targetFiles: new Set(["/src/a.ts"]),
     })) {
       result1.set(module.filePath, module);
     }
@@ -115,7 +115,7 @@ describe("buildIntermediateModules", () => {
     const result2 = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts"]),
+      targetFiles: new Set(["/src/a.ts"]),
     })) {
       result2.set(module.filePath, module);
     }
@@ -138,7 +138,7 @@ describe("buildIntermediateModules", () => {
     const result = new Map();
     for (const module of generateIntermediateModules({
       analyses,
-      targetFilePaths: new Set(["/src/a.ts"]),
+      targetFiles: new Set(["/src/a.ts"]),
     })) {
       result.set(module.filePath, module);
     }

@@ -19,25 +19,15 @@ export type {
   BuilderArtifactOperation,
   BuilderArtifactSlice,
 } from "./artifact/types";
-export type { BuilderChangeSet, BuilderFileChange } from "./change-set";
-export { coercePaths, hasFileChanged } from "./change-set";
 export type {
   DiscoveredDependency,
   DiscoveryCache,
   DiscoverySnapshot,
-  DiscoverySnapshotDefinition,
-  ModuleEvaluationDefinition,
-  ModuleEvaluationIssue,
-  ModuleEvaluationKind,
-  ModuleEvaluationResult,
-  ModuleEvaluator,
-  ModuleEvaluatorContext,
-  ModuleEvaluatorInput,
 } from "./discovery/types";
-export type { BuilderSession, BuilderSessionSnapshot } from "./internal/session/builder-session";
-export { __internal, createBuilderSession } from "./internal/session/builder-session";
+export type { BuilderChangeSet, BuilderFileChange, BuilderSession, BuilderSessionSnapshot } from "./internal/session";
+export { createBuilderSession } from "./internal/session";
 export type { LegacyBuilderOptions } from "./runner";
-export { generateArtifact, runBuilder } from "./runner";
+export { runBuilder } from "./runner";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";

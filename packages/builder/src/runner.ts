@@ -1,8 +1,7 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { err, type Result } from "neverthrow";
-import type { BuilderArtifact } from "./artifact/types";
+import { err } from "neverthrow";
 import { createBuilderService } from "./service";
-import type { BuilderAnalyzer, BuilderError, BuilderFormat, BuilderResult } from "./types";
+import type { BuilderAnalyzer, BuilderFormat, BuilderResult } from "./types";
 import { writeArtifact } from "./writer";
 
 /**
@@ -48,16 +47,4 @@ export const runBuilder = async (options: LegacyBuilderOptions): Promise<Builder
 
   // Write artifact to disk (legacy behavior)
   return writeArtifact(options.outPath, artifact);
-};
-
-/**
- * Generate artifact without writing to disk.
- *
- * @deprecated Use createBuilderService(config).build() instead.
- */
-export const generateArtifact = async (
-  options: Omit<LegacyBuilderOptions, "outPath" | "format">,
-): Promise<Result<BuilderArtifact, BuilderError>> => {
-  const service = createBuilderService({ config: options.config, entrypoints: options.entry });
-  return service.build();
 };

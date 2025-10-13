@@ -5,7 +5,11 @@ import type { DiscoverySnapshot } from "../../discovery";
  * Extract module-level adjacency from dependency graph.
  * Returns Map of file path -> set of files that import it.
  */
-export const extractModuleAdjacency = (snapshots: Map<string, DiscoverySnapshot>): Map<string, Set<string>> => {
+export const extractModuleAdjacency = ({
+  snapshots,
+}: {
+  snapshots: Map<string, DiscoverySnapshot>;
+}): Map<string, Set<string>> => {
   const importsByModule = new Map<string, Set<string>>();
 
   for (const snapshot of snapshots.values()) {
@@ -58,4 +62,38 @@ export const extractModuleAdjacency = (snapshots: Map<string, DiscoverySnapshot>
   }
 
   return adjacency;
+};
+
+/**
+ * Collect all modules affected by changes, including transitive dependents.
+ * Uses BFS to traverse module adjacency graph.
+ */
+export const collectAffectedFiles = (input: {
+  changedFiles: Set<string>;
+  removedFiles: Set<string>;
+  previousModuleAdjacency: Map<string, Set<string>>;
+}): Set<string> => {
+  const { changedFiles, removedFiles, previousModuleAdjacency } = input;
+  const affected = new Set<string>([...changedFiles, ...removedFiles]);
+  const queue = [...changedFiles];
+  const visited = new Set<string>(changedFiles);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) break;
+
+    const dependents = previousModuleAdjacency.get(current);
+
+    if (dependents) {
+      for (const dependent of dependents) {
+        if (!visited.has(dependent)) {
+          visited.add(dependent);
+          affected.add(dependent);
+          queue.push(dependent);
+        }
+      }
+    }
+  }
+
+  return affected;
 };

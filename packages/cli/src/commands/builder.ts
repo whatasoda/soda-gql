@@ -10,7 +10,7 @@ import type {
   BuilderSuccess,
 } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import type { BuilderChangeSet } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { formatError, formatOutput, type OutputFormat } from "../utils/format";

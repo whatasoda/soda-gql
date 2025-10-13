@@ -10,9 +10,13 @@ import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
-  readonly cache?: DiscoveryCache;
   /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
-  readonly invalidatedPaths?: ReadonlySet<string>;
+  readonly incremental?: {
+    readonly cache: DiscoveryCache;
+    readonly changedFiles: Set<string>;
+    readonly removedFiles: Set<string>;
+    readonly affectedFiles: Set<string>;
+  };
 };
 
 export type DiscoverModulesResult = {
@@ -30,15 +34,24 @@ export type DiscoverModulesResult = {
 export const discoverModules = ({
   entryPaths,
   astAnalyzer,
-  cache,
-  invalidatedPaths,
+  incremental,
 }: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
-  const invalidatedSet = invalidatedPaths ?? new Set<string>();
+  const changedFiles = incremental?.changedFiles ?? new Set<string>();
+  const removedFiles = incremental?.removedFiles ?? new Set<string>();
+  const affectedFiles = incremental?.affectedFiles ?? new Set<string>();
+  const invalidatedSet = new Set<string>([...changedFiles, ...removedFiles, ...affectedFiles]);
   let cacheHits = 0;
   let cacheMisses = 0;
   let cacheSkips = 0;
+
+  if (incremental) {
+    for (const filePath of removedFiles) {
+      incremental.cache.delete(filePath);
+      invalidateFingerprint(filePath);
+    }
+  }
 
   while (stack.length > 0) {
     const filePath = stack.pop();
@@ -51,9 +64,9 @@ export const discoverModules = ({
       invalidateFingerprint(filePath);
       cacheSkips++;
       // Fall through to re-read and re-parse
-    } else if (cache) {
+    } else if (incremental) {
       // Try fingerprint-based cache check (avoid reading file)
-      const cached = cache.peek(filePath);
+      const cached = incremental.cache.peek(filePath);
 
       if (cached) {
         try {
@@ -88,7 +101,7 @@ export const discoverModules = ({
       // Handle deleted files gracefully - they may be in cache but removed from disk
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         // Delete from cache and invalidate fingerprint
-        cache?.delete(filePath);
+        incremental?.cache.delete(filePath);
         invalidateFingerprint(filePath);
         continue;
       }
@@ -132,8 +145,8 @@ export const discoverModules = ({
     snapshots.set(filePath, snapshot);
 
     // Store in cache
-    if (cache) {
-      cache.store(snapshot);
+    if (incremental) {
+      incremental.cache.store(snapshot);
     }
   }
 

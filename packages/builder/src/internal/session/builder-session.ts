@@ -1,4 +1,4 @@
-import {  join,  } from "node:path";
+import { join } from "node:path";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
@@ -6,18 +6,21 @@ import { buildArtifact } from "../../artifact";
 import type { BuilderArtifact } from "../../artifact/types";
 import { getAstAnalyzer, type ModuleAnalysis } from "../../ast";
 import { createJsonCache } from "../../cache/json-cache";
-import { validateModuleDependencies } from "../../dependency-graph/builder";
-import { createDiscoveryCache, type ModuleLoadStats } from "../../discovery";
-import { discoverModules } from "../../discovery/discoverer";
-import { resolveEntryPaths } from "../../discovery/entry-paths";
-import { invalidateFingerprint } from "../../discovery/fingerprint";
-import type { DiscoveryCache, DiscoverySnapshot } from "../../discovery/types";
+import { validateModuleDependencies } from "./dependency-validation";
+import {
+  createDiscoveryCache,
+  type DiscoveryCache,
+  type DiscoverySnapshot,
+  discoverModules,
+  type ModuleLoadStats,
+  resolveEntryPaths,
+} from "../../discovery";
 import { builderErrors } from "../../errors";
 import type { BuilderError } from "../../types";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
 import type { BuilderChangeSet } from "./change-set";
 import { coercePaths } from "./change-set";
-import { extractModuleAdjacency } from "./module-adjacency";
+import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
 
 /**
  * Session state maintained across incremental builds.
@@ -51,45 +54,6 @@ export interface BuilderSession {
   build(input: { changeSet: BuilderChangeSet | null }): Promise<Result<BuilderArtifact, BuilderError>>;
 }
 
-/**
- * Collect all modules affected by changes, including transitive dependents.
- * Uses BFS to traverse module adjacency graph.
- */
-const collectAffectedFiles = (changedFiles: Set<string>, moduleAdjacency: Map<string, Set<string>>): Set<string> => {
-  const affected = new Set<string>(changedFiles);
-  const queue = [...changedFiles];
-  const visited = new Set<string>(changedFiles);
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) break;
-
-    const dependents = moduleAdjacency.get(current);
-
-    if (dependents) {
-      for (const dependent of dependents) {
-        if (!visited.has(dependent)) {
-          visited.add(dependent);
-          affected.add(dependent);
-          queue.push(dependent);
-        }
-      }
-    }
-  }
-
-  return affected;
-};
-
-/**
- * Exported internal helpers for testing purposes.
- *
- * @internal testing
- */
-export const __internal = {
-  extractModuleAdjacency,
-  collectAffectedFiles,
-};
-
 const prepare = (input: {
   entrypoints: Set<string>;
   readonly changeSet: BuilderChangeSet | null;
@@ -121,33 +85,32 @@ const discover = ({
   removedFiles,
   changedFiles,
   entryPaths,
-  currentModuleAdjacency,
+  previousModuleAdjacency,
 }: {
   discoveryCache: DiscoveryCache;
   astAnalyzer: ReturnType<typeof getAstAnalyzer>;
   removedFiles: Set<string>;
   changedFiles: Set<string>;
   entryPaths: readonly string[];
-  currentModuleAdjacency: Map<string, Set<string>>;
+  previousModuleAdjacency: Map<string, Set<string>>;
 }) => {
-  for (const filePath of removedFiles) {
-    discoveryCache.delete(filePath);
-    invalidateFingerprint(filePath);
-  }
-
   // Collect all affected modules (changed + dependents from removed + transitive)
-  const allChangedFiles = new Set([...changedFiles, ...removedFiles]);
-  const affectedFiles = collectAffectedFiles(allChangedFiles, currentModuleAdjacency);
-
-  // Pass changed files, removed files, AND removed dependents as invalidated paths
-  const allAffectedFiles = new Set([...changedFiles, ...removedFiles, ...affectedFiles]);
+  const affectedFiles = collectAffectedFiles({
+    changedFiles,
+    removedFiles,
+    previousModuleAdjacency,
+  });
 
   // Run discovery with invalidations
   const discoveryResult = discoverModules({
     entryPaths,
     astAnalyzer,
-    cache: discoveryCache,
-    invalidatedPaths: allAffectedFiles,
+    incremental: {
+      cache: discoveryCache,
+      changedFiles,
+      removedFiles,
+      affectedFiles,
+    },
   });
   if (discoveryResult.isErr()) {
     return err(discoveryResult.error);
@@ -164,7 +127,7 @@ const discover = ({
     return err(builderErrors.graphMissingImport(error.chain[0], error.chain[1]));
   }
 
-  const moduleAdjacency = extractModuleAdjacency(snapshots);
+  const currentModuleAdjacency = extractModuleAdjacency({ snapshots });
 
   const stats: ModuleLoadStats = {
     hits: cacheHits,
@@ -172,40 +135,40 @@ const discover = ({
     skips: cacheSkips,
   };
 
-  return ok({ snapshots, analyses, moduleAdjacency, affectedFiles, stats });
+  return ok({ snapshots, analyses, currentModuleAdjacency, affectedFiles, stats });
 };
 
 const buildDiscovered = async ({
   analyses,
   affectedFiles,
   stats,
-  currentIntermediateModules,
+  previousIntermediateModules,
   graphqlSystemPath,
 }: {
   analyses: Map<string, ModuleAnalysis>;
   affectedFiles: Set<string>;
   stats: ModuleLoadStats;
-  currentIntermediateModules: Map<string, IntermediateModule>;
+  previousIntermediateModules: Map<string, IntermediateModule>;
   graphqlSystemPath: string;
 }) => {
   // Create next intermediate modules map (copy current state)
-  const intermediateModules = new Map(currentIntermediateModules);
+  const intermediateModules = new Map(previousIntermediateModules);
 
-  const targetFilePaths = affectedFiles.size > 0 ? affectedFiles : new Set(analyses.keys());
+  const targetFiles = affectedFiles.size > 0 ? affectedFiles : new Set(analyses.keys());
 
-  // Remove deleted chunks from next map immediately
-  for (const targetFilePath of targetFilePaths) {
+  // Remove deleted intermediate modules from next map immediately
+  for (const targetFilePath of targetFiles) {
     intermediateModules.delete(targetFilePath);
   }
 
-  // Build and write affected chunks
-  for (const intermediateModule of generateIntermediateModules({ analyses, targetFilePaths })) {
+  // Build and write affected intermediate modules
+  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles })) {
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
   const elements = await evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
 
-  // Build artifact from all chunks
+  // Build artifact from all intermediate modules
   const artifactResult = await buildArtifact({
     analyses,
     elements,
@@ -223,7 +186,6 @@ const buildDiscovered = async ({
  * Create a new builder session.
  *
  * The session maintains in-memory state across builds to enable incremental processing.
- * Call buildInitial() first, then use update() for subsequent changes.
  */
 export const createBuilderSession = (options: {
   readonly evaluatorId?: string;
@@ -274,19 +236,19 @@ export const createBuilderSession = (options: {
       removedFiles,
       changedFiles,
       entryPaths,
-      currentModuleAdjacency: state.moduleAdjacency,
+      previousModuleAdjacency: state.moduleAdjacency,
     });
     if (discoveryResult.isErr()) {
       return err(discoveryResult.error);
     }
 
-    const { snapshots, analyses, moduleAdjacency, affectedFiles, stats } = discoveryResult.value;
+    const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
     const buildResult = await buildDiscovered({
       analyses,
       affectedFiles,
       stats,
-      currentIntermediateModules: state.intermediateModules,
+      previousIntermediateModules: state.intermediateModules,
       graphqlSystemPath: config.graphqlSystemPath,
     });
     if (buildResult.isErr()) {
@@ -296,7 +258,7 @@ export const createBuilderSession = (options: {
     const { intermediateModules, artifact } = buildResult.value;
 
     state.snapshots = snapshots;
-    state.moduleAdjacency = moduleAdjacency;
+    state.moduleAdjacency = currentModuleAdjacency;
     state.lastArtifact = artifact;
     state.intermediateModules = intermediateModules;
 

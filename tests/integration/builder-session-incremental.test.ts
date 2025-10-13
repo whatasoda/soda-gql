@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import type { BuilderChangeSet } from "@soda-gql/builder";
 import { createBuilderSession } from "@soda-gql/builder/internal/session/builder-session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
@@ -65,7 +65,11 @@ describe("BuilderSession incremental end-to-end", () => {
 
   test("initial build creates chunks and artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({
+      evaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      config: createTestConfig(workspaceRoot),
+    });
 
     const result = await session.build({ changeSet: null });
 
@@ -86,9 +90,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("applies graph patch when a module changes", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId,
+    const session = createBuilderSession({
+      evaluatorId,
       entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
-       config: createTestConfig(workspaceRoot) });
+      config: createTestConfig(workspaceRoot),
+    });
 
     // Initial build
     const initial = await session.build({ changeSet: null });
@@ -160,7 +166,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("adds new module without touching unaffected chunks", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({
+      evaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      config: createTestConfig(workspaceRoot),
+    });
 
     // Initial build
     const initial = await session.build({ changeSet: null });
@@ -216,7 +226,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("removes module and updates artifact", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({
+      evaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      config: createTestConfig(workspaceRoot),
+    });
 
     // Initial build
     const initial = await session.build({ changeSet: null });
@@ -273,7 +287,11 @@ describe("BuilderSession incremental end-to-end", () => {
   test("handles mixed add/update/remove in one pass", async () => {
     const evaluatorId = Bun.randomUUIDv7();
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
-    const session = createBuilderSession({ evaluatorId, entrypoints: [path.join(workspaceRoot, "src/**/*.ts")], config: createTestConfig(workspaceRoot) });
+    const session = createBuilderSession({
+      evaluatorId,
+      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      config: createTestConfig(workspaceRoot),
+    });
 
     // Initial build
     const initial = await session.build({ changeSet: null });
