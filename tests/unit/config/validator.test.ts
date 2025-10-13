@@ -13,6 +13,7 @@ describe("validator.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
+          analyzer: "ts",
         },
       };
 
@@ -81,6 +82,7 @@ describe("validator.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
+          analyzer: "ts",
         },
       };
 
@@ -131,6 +133,7 @@ describe("validator.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
+          analyzer: "ts",
         },
       };
 

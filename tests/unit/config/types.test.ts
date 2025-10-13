@@ -27,9 +27,10 @@ describe("types.ts", () => {
     const config: BuilderConfig = {
       entry: ["./src/**/*.ts"],
       outDir: "./.cache",
+      analyzer: "ts",
     };
 
-    expect(config.analyzer).toBeUndefined();
+    expect(config.analyzer).toBe("ts");
     expect(config.mode).toBeUndefined();
   });
 
@@ -60,6 +61,7 @@ describe("types.ts", () => {
       builder: {
         entry: ["./src/**/*.ts"],
         outDir: "./.cache",
+        analyzer: "ts",
       },
       codegen: {
         schema: "./schema.graphql",
@@ -78,6 +80,7 @@ describe("types.ts", () => {
       builder: {
         entry: ["./src/**/*.ts"],
         outDir: "./.cache",
+        analyzer: "ts",
       },
     };
 
