@@ -8,23 +8,22 @@ const createTestAnalysis = (
   filePath: string,
   definitions: Array<{ localPath: string; expression: string; dependencies?: string[] }>,
 ): ModuleAnalysis => {
-  const defs: ModuleDefinition[] = definitions.map(({ localPath, expression, dependencies = [] }) => ({
+  const defs: ModuleDefinition[] = definitions.map(({ localPath, expression }) => ({
     canonicalId: createCanonicalId(filePath, localPath),
     astPath: localPath,
     isTopLevel: true,
     isExported: true,
     expression,
     loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
-    dependencies: dependencies.map((dep) => ({
-      canonicalId: dep.includes("::") ? dep : createCanonicalId(dep, "default"),
-      source: dep.split("::")[0] || dep,
-    })),
   }));
 
   return {
     filePath,
+    signature: "test-sig",
     definitions: defs,
+    diagnostics: [],
     imports: [],
+    exports: [],
   };
 };
 
@@ -34,10 +33,13 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result = generateIntermediateModules({
+    const result = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts"]),
-    });
+    })) {
+      result.set(module.filePath, module);
+    }
 
     expect(result.size).toBe(1);
     expect(result.has("/src/a.ts")).toBe(true);
@@ -57,10 +59,13 @@ describe("buildIntermediateModules", () => {
       ["/src/b.ts", createTestAnalysis("/src/b.ts", [{ localPath: "bar", expression: "gql.default({ name: 'Bar' })" }])],
     ]);
 
-    const result = generateIntermediateModules({
+    const result = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts", "/src/b.ts"]),
-    });
+    })) {
+      result.set(module.filePath, module);
+    }
 
     expect(result.size).toBe(2);
     expect(result.has("/src/a.ts")).toBe(true);
@@ -78,10 +83,13 @@ describe("buildIntermediateModules", () => {
       ],
     ]);
 
-    const result = generateIntermediateModules({
+    const result = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts"]),
-    });
+    })) {
+      result.set(module.filePath, module);
+    }
 
     expect(result.size).toBe(1);
 
@@ -96,15 +104,21 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result1 = generateIntermediateModules({
+    const result1 = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts"]),
-    });
+    })) {
+      result1.set(module.filePath, module);
+    }
 
-    const result2 = generateIntermediateModules({
+    const result2 = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts"]),
-    });
+    })) {
+      result2.set(module.filePath, module);
+    }
 
     const module1 = result1.get("/src/a.ts");
     const module2 = result2.get("/src/a.ts");

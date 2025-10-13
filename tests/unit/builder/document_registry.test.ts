@@ -21,8 +21,11 @@ describe("canonical identifier helpers", () => {
 // Test helpers
 const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): ModuleAnalysis => ({
   filePath,
+  signature: "test-sig",
   definitions,
+  diagnostics: [],
   imports: [],
+  exports: [],
 });
 
 const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
@@ -32,7 +35,6 @@ const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
   isExported: true,
   expression: "stub",
   loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-  dependencies: [],
 });
 
 const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
