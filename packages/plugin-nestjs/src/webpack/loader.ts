@@ -4,7 +4,7 @@ import { type TransformOptions, type types as t, transformAsync } from "@babel/c
 import type { NodePath } from "@babel/traverse";
 import { type BabelEnv, babelTransformAdapterFactory } from "@soda-gql/plugin-babel/adapter";
 import type { TransformAdapterFactory } from "@soda-gql/plugin-shared";
-import { normalizePluginOptions, preparePluginStateNew } from "@soda-gql/plugin-shared";
+import { normalizePluginOptions, type PluginRuntime, createPluginRuntimeFromNormalized } from "@soda-gql/plugin-shared";
 import type { RawSourceMap } from "source-map";
 import type { LoaderDefinitionFunction } from "webpack";
 
@@ -13,6 +13,9 @@ import { type WebpackLoaderOptions, webpackLoaderOptionsSchema } from "../schema
 
 const LOADER_NAME = "SodaGqlWebpackLoader";
 const TS_DECLARATION_REGEX = /\.d\.tsx?$/;
+
+// Module-level runtime cache
+const runtimeCache = new Map<string, Promise<PluginRuntime>>();
 
 type BabelParserPlugin = string | [string, Record<string, unknown>];
 
@@ -60,7 +63,7 @@ const toLoaderError = (error: unknown): Error => {
 };
 
 /**
- * Transform source code using the TransformAdapter architecture.
+ * Transform source code using the TransformAdapter architecture with runtime caching.
  * This allows future support for SWC/esbuild adapters while defaulting to Babel.
  */
 const transformWithAdapter = async (
@@ -88,13 +91,30 @@ const transformWithAdapter = async (
 
   const normalizedOptions = normalizedResult.value;
 
-  // Prepare plugin state using the new API
-  const stateResult = await preparePluginStateNew(normalizedOptions);
-  if (stateResult.isErr()) {
-    throw new Error(formatPluginError(stateResult.error));
+  // Short-circuit for runtime mode - no transformation needed
+  if (normalizedOptions.mode === "runtime") {
+    return { code: sourceCode, map: inputSourceMap as RawSourceMap | undefined };
   }
 
-  const pluginState = stateResult.value;
+  // Create runtime key for caching
+  const runtimeKey = JSON.stringify({
+    artifactPath,
+    mode: normalizedOptions.mode,
+    importIdentifier: normalizedOptions.importIdentifier,
+  });
+
+  // Get or create cached runtime
+  const getRuntime = async (): Promise<PluginRuntime> => {
+    let entry = runtimeCache.get(runtimeKey);
+    if (!entry) {
+      entry = createPluginRuntimeFromNormalized(normalizedOptions);
+      runtimeCache.set(runtimeKey, entry);
+    }
+    return entry;
+  };
+
+  const runtime = await getRuntime();
+  const pluginState = runtime.getState();
 
   // For now, default to Babel adapter
   // In the future, this could be configurable via loader options
@@ -131,25 +151,21 @@ const transformWithAdapter = async (
             // Create adapter instance
             const adapter = adapterFactory.create(adapterEnv);
 
-            // Transform the program
-            const transformResult = adapter.transformProgram({
+            // Create transform context
+            const context = {
               filename: resourcePath,
-              artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
-            });
+              artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) =>
+                pluginState.allArtifacts[canonicalId],
+            };
+
+            // Transform the program
+            const transformResult = adapter.transformProgram(context);
 
             if (transformResult.transformed) {
               transformed = true;
 
-              // Insert runtime side effects if needed
-              if (transformResult.runtimeArtifacts) {
-                adapter.insertRuntimeSideEffects(
-                  {
-                    filename: resourcePath,
-                    artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
-                  },
-                  transformResult.runtimeArtifacts,
-                );
-              }
+              // Always insert runtime side effects (even if runtimeArtifacts is empty)
+              adapter.insertRuntimeSideEffects(context, transformResult.runtimeArtifacts ?? []);
             }
           },
         },
