@@ -135,10 +135,13 @@ describe("buildIntermediateModules", () => {
       ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
     ]);
 
-    const result = generateIntermediateModules({
+    const result = new Map();
+    for (const module of generateIntermediateModules({
       analyses,
       targetFilePaths: new Set(["/src/a.ts"]),
-    });
+    })) {
+      result.set(module.filePath, module);
+    }
 
     const module = result.get("/src/a.ts");
     expect(module?.transpiledCode).toBeDefined();

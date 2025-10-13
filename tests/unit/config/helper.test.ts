@@ -10,7 +10,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       };
 
@@ -22,7 +22,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       });
     });
@@ -33,7 +33,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       });
 
@@ -49,7 +49,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       });
 
@@ -65,7 +65,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       };
 
@@ -81,7 +81,7 @@ describe("helper.ts", () => {
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
-          analyzer: "ts",
+          analyzer: "ts" as const,
         },
       });
 
