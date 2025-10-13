@@ -1,17 +1,7 @@
-// Re-export shared plugin types
-// TODO: Re-enable after plugin-shared exports are updated
-// export type {
-//   ArtifactSource,
-//   BuilderConfig,
-//   SodaGqlPluginOptions,
-// } from "@soda-gql/plugin-shared";
+// Re-export config types
 export type { SodaGqlConfig } from "./schemas/config.js";
 
-export type {
-  DiagnosticsMode as NestDiagnosticsMode,
-  NestModuleOptions,
-} from "./schemas/module.js";
-// Re-export schema-derived types
+// Re-export webpack schema-derived types
 export type {
   DiagnosticsMode as WebpackDiagnosticsMode,
   WebpackLoaderOptions,

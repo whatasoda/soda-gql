@@ -41,11 +41,6 @@
       "import": "./src/config/index.ts",
       "default": "./src/config/index.ts"
     },
-    "./module": {
-      "types": "./src/nest/index.ts",
-      "import": "./src/nest/index.ts",
-      "default": "./src/nest/index.ts"
-    },
     "./package.json": "./package.json",
     "./internal/*": null
   },
@@ -61,8 +56,6 @@
   },
   "peerDependencies": {
     "@babel/core": "^7.24.0",
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
     "webpack": "^5.0.0"
   },
   "devDependencies": {
