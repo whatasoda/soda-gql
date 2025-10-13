@@ -1,19 +1,19 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
+import { formatPluginError, type PluginState, preparePluginStateNew } from "@soda-gql/plugin-shared";
 import { babelTransformAdapterFactory } from "./adapter/babel/adapter";
-import type { SodaGqlBabelOptions } from "./types";
+import type { PluginOptions } from "@soda-gql/plugin-shared";
 
 type PluginPassState = PluginPass & { _state?: PluginState };
 
-export const createSodaGqlPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
+export const createSodaGqlPlugin = (): PluginObj<PluginOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
   // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
   // Sync transforms are unsupported for builder artifact source mode
   async pre() {
-    const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
-    const stateResult = await preparePluginState(rawOptions);
+    const rawOptions = (this as unknown as { opts?: Partial<PluginOptions> }).opts ?? {};
+    const stateResult = await preparePluginStateNew(rawOptions);
 
     if (stateResult.isErr()) {
       throw new Error(formatPluginError(stateResult.error));
