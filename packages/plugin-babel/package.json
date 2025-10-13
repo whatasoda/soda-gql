@@ -26,6 +26,11 @@
       "import": "./src/errors.ts",
       "default": "./src/errors.ts"
     },
+    "./dev": {
+      "types": "./src/dev/index.ts",
+      "import": "./src/dev/index.ts",
+      "default": "./src/dev/index.ts"
+    },
     "./package.json": "./package.json",
     "./internal/*": null
   },
