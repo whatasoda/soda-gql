@@ -135,6 +135,7 @@ type AllArtifacts = Record<CanonicalId, BuilderArtifactElement>;
 export type PluginState = {
   readonly options: NormalizedOptions;
   readonly allArtifacts: AllArtifacts;
+  readonly artifactProvider?: import("./artifact").ArtifactProvider;
 };
 
 type PreparePluginStateDeps = {
@@ -190,13 +191,14 @@ export const preparePluginState = async (
 };
 
 /**
- * New preparePluginState that uses new PluginOptions
+ * New preparePluginState that uses new PluginOptions and ArtifactProvider
  */
 export const preparePluginStateNew = async (
   rawOptions: Partial<import("./types").PluginOptions>,
 ): Promise<PluginStateResult> => {
   // Dynamically import to avoid circular dependency
   const { normalizePluginOptions: normalizeNew } = await import("./options");
+  const { createArtifactProvider } = await import("./artifact");
 
   const optionsResult = await normalizeNew(rawOptions);
 
@@ -206,30 +208,15 @@ export const preparePluginStateNew = async (
 
   const options = optionsResult.value;
 
-  if (options.artifact.type === "artifact-file") {
-    const artifactResult = await loadArtifact(options.artifact.path);
+  // Use artifact provider abstraction
+  const provider = createArtifactProvider(options);
+  const artifactResult = await provider.load();
 
-    if (artifactResult.isErr()) {
-      return err(mapArtifactError(artifactResult.error));
-    }
-
-    return ok(createPluginState(options, artifactResult.value));
+  if (artifactResult.isErr()) {
+    return err(artifactResult.error);
   }
 
-  // Builder mode
-  const service = createBuilderService(options.artifact.config);
-
-  try {
-    const buildResult = await service.build();
-
-    if (buildResult.isErr()) {
-      return err(mapBuilderError(buildResult.error));
-    }
-
-    return ok(createPluginState(options, buildResult.value));
-  } catch (cause) {
-    return err(mapUnexpectedBuilderError(cause));
-  }
+  return ok(createPluginStateWithProvider(options, artifactResult.value, provider));
 };
 
 const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
@@ -237,6 +224,16 @@ const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact
 const createPluginState = (options: NormalizedOptions | NormalizedOptionsLegacy, artifact: BuilderArtifact): PluginState => ({
   options: options as NormalizedOptions, // Legacy options are compatible
   allArtifacts: createAllArtifacts(artifact),
+});
+
+const createPluginStateWithProvider = (
+  options: NormalizedOptions,
+  artifact: BuilderArtifact,
+  provider: import("./artifact").ArtifactProvider,
+): PluginState => ({
+  options,
+  allArtifacts: createAllArtifacts(artifact),
+  artifactProvider: provider,
 });
 
 const mapOptionsError = (error: OptionsError): PluginError => {

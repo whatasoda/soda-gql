@@ -1,5 +1,6 @@
 // Re-export public APIs
 
+export * from "./artifact";
 export * from "./cache";
 export * from "./errors";
 export * from "./options";
