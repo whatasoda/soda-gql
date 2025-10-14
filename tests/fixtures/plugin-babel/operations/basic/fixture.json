@@ -1,0 +1,71 @@
+{
+  "source": "source.ts",
+  "elements": [
+    {
+      "export": "profileQuery",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "ProfileQuery",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": ["userId"],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    },
+    {
+      "export": "updateProfileMutation",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "mutation",
+        "operationName": "UpdateProfile",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": ["userId", "name"],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    },
+    {
+      "export": "query1",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "Query1",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": [],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    },
+    {
+      "export": "query2",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "Query2",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": [],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    },
+    {
+      "export": "queryWith2Args",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "Query2Args",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": [],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    },
+    {
+      "export": "complexQuery",
+      "type": "operation",
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "ComplexQuery",
+        "document": { "kind": "Document", "definitions": [] },
+        "variableNames": [],
+        "projectionPathGraph": { "matches": [], "children": {} }
+      }
+    }
+  ]
+}

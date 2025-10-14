@@ -1,0 +1,6 @@
+{
+  "source": "source.ts",
+  "elements": [
+    { "export": "userModel", "type": "model", "prebuild": { "typename": "User" } }
+  ]
+}
