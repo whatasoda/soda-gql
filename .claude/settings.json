@@ -13,6 +13,7 @@
       "Bash(bun validate:tests:*)",
       "Bash(bun examples:codegen:*)",
       "Bash(bun codex:conversation:*)",
+      "Bash(bun run build:*)",
       "Bash(bun run quality:*)",
       "Bash(bun run typecheck:*)",
       "Bash(bun run typecheck:tests:*)",

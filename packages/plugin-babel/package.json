@@ -16,16 +16,6 @@
       "import": "./src/adapter/index.ts",
       "default": "./src/adapter/index.ts"
     },
-    "./types": {
-      "types": "./src/types.ts",
-      "import": "./src/types.ts",
-      "default": "./src/types.ts"
-    },
-    "./errors": {
-      "types": "./src/errors.ts",
-      "import": "./src/errors.ts",
-      "default": "./src/errors.ts"
-    },
     "./dev": {
       "types": "./src/dev/index.ts",
       "import": "./src/dev/index.ts",

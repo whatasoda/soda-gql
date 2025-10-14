@@ -30,7 +30,7 @@ export default defineConfig([
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
     },
-    external: ["@soda-gql/core"],
+    external: [],
     clean: true,
   },
 
@@ -44,6 +44,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
+    treeshake: false,
     dts: {
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
@@ -60,6 +61,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
+    treeshake: false,
     dts: {
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
@@ -94,6 +96,7 @@ export default defineConfig([
       "@soda-gql/core",
       "@swc/core",
       "@swc/types",
+      "bun",
       "neverthrow",
       "typescript",
       "zod",
@@ -171,8 +174,6 @@ export default defineConfig([
     entry: {
       index: "packages/plugin-babel/src/index.ts",
       "adapter/index": "packages/plugin-babel/src/adapter/index.ts",
-      types: "packages/plugin-babel/src/types.ts",
-      errors: "packages/plugin-babel/src/errors.ts",
       "dev/index": "packages/plugin-babel/src/dev/index.ts",
     },
     outDir: "packages/plugin-babel/dist",
