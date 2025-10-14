@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import webpack from "webpack";
 import type { Compiler, Stats } from "webpack";
-import { SodaGqlWebpackPlugin } from "../../src/webpack/plugin.js";
+import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-nestjs/webpack/plugin";
 
 describe("SodaGqlWebpackPlugin", () => {
 	let tmpDir: string;

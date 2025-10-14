@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import loader from "../../src/webpack/loader.js";
-import { createTempArtifact, createTempSource } from "../helpers/fixtures.js";
-import { runLoader } from "../helpers/loader.js";
+import loader from "@soda-gql/plugin-nestjs/webpack/loader";
+import { createTempArtifact, createTempSource } from "./helpers/fixtures.js";
+import { runLoader } from "./helpers/loader.js";
 
 describe("SodaGqlWebpackLoader", () => {
 	describe("Runtime mode", () => {
