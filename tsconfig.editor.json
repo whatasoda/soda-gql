@@ -22,7 +22,14 @@
     }
   },
   "include": ["tests/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", ".typecheck", "tests/.tmp/**/*", ".tmp/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".typecheck",
+    "tests/.tmp/**/*",
+    ".tmp/**/*",
+    "tests/fixtures/plugin-babel/**/source.ts"
+  ],
   "references": [
     { "path": "./packages/builder/tsconfig.editor.json" },
     { "path": "./packages/cli/tsconfig.editor.json" },

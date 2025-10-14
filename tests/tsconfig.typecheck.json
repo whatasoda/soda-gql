@@ -23,5 +23,11 @@
     }
   },
   "include": ["fixtures/**/*.ts", "fixtures/**/*.tsx"],
-  "exclude": ["node_modules", "dist", "build", "../packages/**/*"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "../packages/**/*",
+    "fixtures/plugin-babel/**/source.ts"
+  ]
 }

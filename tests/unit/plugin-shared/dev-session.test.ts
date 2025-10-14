@@ -6,17 +6,29 @@ import { createCanonicalId } from "@soda-gql/builder";
 import { ok, err } from "neverthrow";
 
 describe("DevBuilderSession", () => {
-	const createMockController = (): BuilderServiceController => {
+	interface MockController extends BuilderServiceController {
+		setArtifact: (artifact: any) => void;
+	}
+
+	const createMockController = (): MockController => {
 		let artifact = createBuilderArtifact([]);
+		let generation = 0;
 
 		return {
+			initialized: true,
 			build: async () => ok(artifact),
 			update: async () => ok(artifact),
-			reset: () => {},
+			reset: () => {
+				// Controller reset should only increment generation
+				// It doesn't clear the artifact itself
+				generation++;
+			},
+			getGeneration: () => generation,
+			getCurrentArtifact: () => artifact,
 			setArtifact: (newArtifact: any) => {
 				artifact = newArtifact;
 			},
-		} as any;
+		};
 	};
 
 	describe("ensureInitialBuild", () => {
@@ -253,14 +265,17 @@ describe("DevBuilderSession", () => {
 
 			expect(session.getLatestArtifact()).not.toBeNull();
 
+			// Reset session (clears previous hashes)
 			session.reset();
 
-			// After reset, next build should show all elements as "added"
+			// Controller still has artifact, so after reset + rebuild
+			// all elements should be detected as "added" (not "unchanged")
 			const events: any[] = [];
 			session.subscribe((event) => events.push(event));
 
 			await session.rebuild();
 
+			// After reset, session forgot previous state, so element appears as "added"
 			expect(events[0].diff.added.length).toBe(1);
 			expect(events[0].diff.unchanged.length).toBe(0);
 		});
