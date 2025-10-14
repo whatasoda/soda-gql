@@ -25,8 +25,10 @@ type ResultSelector<
   TFields extends AnyFields,
 > = <TPaths extends Tuple<AvailableFieldPathOf<TSchema, TFields>>, TProjected>(
   paths: TPaths,
-  projector: (result: SlicedExecutionResult<InferByResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>) => TProjected,
-) => Projection<TProjected>;
+  projector: (
+    result: NoInfer<SlicedExecutionResult<InferByResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>>,
+  ) => TProjected,
+) => NoInfer<Projection<TProjected>>;
 
 type InferByResultSelectorPaths<
   TSchema extends AnyGraphqlSchema,
