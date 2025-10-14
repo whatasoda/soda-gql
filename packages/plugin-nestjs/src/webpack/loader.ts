@@ -71,6 +71,7 @@ const transformWithAdapter = async (
   artifactPath: string,
   mode: "runtime" | "zero-runtime",
   importIdentifier: string | undefined,
+  configPath: string | undefined,
   inputSourceMap: unknown,
   generateSourceMaps: boolean,
   // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
@@ -79,6 +80,7 @@ const transformWithAdapter = async (
   const normalizedResult = await normalizePluginOptions({
     mode,
     importIdentifier,
+    configPath,
     artifact: {
       useBuilder: false,
       path: artifactPath,
@@ -234,6 +236,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
     resolvedArtifactPath,
     loaderOptions.mode,
     loaderOptions.importIdentifier,
+    loaderOptions.configPath,
     inputSourceMap,
     this.sourceMap ?? false,
   )

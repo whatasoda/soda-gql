@@ -36,6 +36,7 @@ export const webpackPluginOptionsSchema = z.object({
   mode: z.enum(["runtime", "zero-runtime"]),
   artifactSource: artifactSourceSchema.optional(),
   importIdentifier: z.string().optional(),
+  configPath: z.string().optional(),
   diagnostics: diagnosticsModeSchema.optional().default("console"),
 
   // Webpack-specific options
@@ -53,6 +54,7 @@ export const webpackLoaderOptionsSchema = z.object({
   mode: z.enum(["runtime", "zero-runtime"]),
   artifactSource: artifactSourceSchema.optional(),
   importIdentifier: z.string().optional(),
+  configPath: z.string().optional(),
   artifactPath: z.string().optional(),
 });
 

@@ -33,6 +33,7 @@ type NormalizedOptions = {
   readonly diagnostics: DiagnosticsMode;
   readonly bailOnError: boolean;
   readonly mode: WebpackPluginOptions["mode"];
+  readonly configPath?: string;
 };
 
 const ensureAbsolutePath = (contextDir: string, value: string): string => {
@@ -73,8 +74,12 @@ const toWebpackError = (failure: import("@soda-gql/plugin-shared/dev").BuilderSe
   return error;
 };
 
-const getOrCreateRuntime = async (artifactPath: string, mode: "runtime" | "zero-runtime"): Promise<PluginRuntime> => {
-  const key = JSON.stringify({ artifactPath, mode });
+const getOrCreateRuntime = async (
+  artifactPath: string,
+  mode: "runtime" | "zero-runtime",
+  configPath?: string,
+): Promise<PluginRuntime> => {
+  const key = JSON.stringify({ artifactPath, mode, configPath });
 
   let promise = runtimeCache.get(key);
   if (!promise) {
@@ -82,6 +87,7 @@ const getOrCreateRuntime = async (artifactPath: string, mode: "runtime" | "zero-
       const { normalizePluginOptions } = await import("@soda-gql/plugin-shared");
       const optionsResult = await normalizePluginOptions({
         mode,
+        configPath,
         artifact: { useBuilder: false, path: artifactPath },
       });
 
@@ -141,6 +147,7 @@ const normalizeOptions = (compiler: Compiler, raw: Partial<WebpackPluginOptions>
     diagnostics: parsed.diagnostics,
     bailOnError: parsed.bailOnError ?? false,
     mode: parsed.mode,
+    configPath: parsed.configPath,
   };
 };
 
@@ -156,7 +163,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME);
     const diagnostics = new DiagnosticsReporter(options.diagnostics, logger);
 
-    const runtimePromise = getOrCreateRuntime(options.artifactPath, options.mode);
+    const runtimePromise = getOrCreateRuntime(options.artifactPath, options.mode, options.configPath);
 
     const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
     const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
