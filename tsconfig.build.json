@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": false,
+    "noEmit": false,
+    "emitDeclarationOnly": false,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": ["packages/*/src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "tests",
+    "examples"
+  ]
+}
