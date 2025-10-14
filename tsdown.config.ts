@@ -96,7 +96,6 @@ export default defineConfig([
       "@soda-gql/core",
       "@swc/core",
       "@swc/types",
-      "bun",
       "neverthrow",
       "typescript",
       "zod",
