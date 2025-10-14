@@ -11,7 +11,7 @@
         "@types/bun": "latest",
         "@types/node": "^24.7.2",
         "typescript": "^5.9.2",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
     },
     "examples/babel-app": {
@@ -59,7 +59,7 @@
         "@swc/types": "^0.1.6",
         "neverthrow": "^8.1.1",
         "typescript": "^5.0.0",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
     },
     "packages/cli": {
@@ -72,7 +72,7 @@
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
     },
     "packages/codegen": {
@@ -83,7 +83,7 @@
         "@soda-gql/runtime": "workspace:*",
         "graphql": "^16.8.1",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
     },
     "packages/common": {
@@ -124,7 +124,7 @@
         "@soda-gql/common": "workspace:*",
         "@soda-gql/plugin-shared": "workspace:*",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
       "devDependencies": {
         "@types/babel__core": "^7.20.5",
@@ -141,7 +141,7 @@
         "@soda-gql/plugin-shared": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
       "devDependencies": {
         "@types/webpack": "^5.28.5",
@@ -163,7 +163,7 @@
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.5",
+        "zod": "^4.1.11",
       },
       "devDependencies": {
         "@types/babel__core": "^7.20.5",
@@ -1042,7 +1042,7 @@
 
     "yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
 
-    "zod": ["zod@4.1.5", "", {}, "sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg=="],
+    "zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
     "@angular-devkit/core/ajv": ["ajv@8.12.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2", "uri-js": "^4.2.2" } }, "sha512-sRu1kpcO9yLtYxBKvqfTeh9KzZEwO3STyX1HT+4CaDzC6HpTGYhIhPIzj9XuKU7KYDwnaeh5hcOwjy1QuJzBPA=="],
 
@@ -1067,20 +1067,6 @@
     "@nestjs/cli/webpack": ["webpack@5.97.1", "", { "dependencies": { "@types/eslint-scope": "^3.7.7", "@types/estree": "^1.0.6", "@webassemblyjs/ast": "^1.14.1", "@webassemblyjs/wasm-edit": "^1.14.1", "@webassemblyjs/wasm-parser": "^1.14.1", "acorn": "^8.14.0", "browserslist": "^4.24.0", "chrome-trace-event": "^1.0.2", "enhanced-resolve": "^5.17.1", "es-module-lexer": "^1.2.1", "eslint-scope": "5.1.1", "events": "^3.2.0", "glob-to-regexp": "^0.4.1", "graceful-fs": "^4.2.11", "json-parse-even-better-errors": "^2.3.1", "loader-runner": "^4.2.0", "mime-types": "^2.1.27", "neo-async": "^2.6.2", "schema-utils": "^3.2.0", "tapable": "^2.1.1", "terser-webpack-plugin": "^5.3.10", "watchpack": "^2.4.1", "webpack-sources": "^3.2.3" }, "bin": { "webpack": "bin/webpack.js" } }, "sha512-EksG6gFY3L1eFMROS/7Wzgrii5mBAFe4rIr3r2BTfo7bcc+DWwFZ4OJ/miOuHJO/A85HwyI4eQ0F6IKXesO7Fg=="],
 
     "@nestjs/schematics/jsonc-parser": ["jsonc-parser@3.3.1", "", {}, "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ=="],
-
-    "@soda-gql/builder/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/codegen/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/common/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/config/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/plugin-babel/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/plugin-nestjs/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
-
-    "@soda-gql/plugin-shared/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
     "@types/webpack/@types/node": ["@types/node@24.3.1", "", { "dependencies": { "undici-types": "~7.10.0" } }, "sha512-3vXmQDXy+woz+gnrTvuvNrPzekOi+Ds0ReMxw0LzBiK3a+1k0kQn9f2NWk+lgD4rJehFUmYy2gMhJ2ZI+7YP9g=="],
 

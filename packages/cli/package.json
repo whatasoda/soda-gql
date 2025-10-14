@@ -25,6 +25,6 @@
     "@soda-gql/codegen": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "neverthrow": "^8.1.1",
-    "zod": "^4.1.5"
+    "zod": "^4.1.11"
   }
 }
