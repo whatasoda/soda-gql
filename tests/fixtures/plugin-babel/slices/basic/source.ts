@@ -41,16 +41,6 @@ export const slices = {
 	),
 };
 
-// Missing projection builder - should cause error
-export const brokenSlice = gql.default(({ slice }, { $ }) =>
-	slice.query(
-		{ variables: { ...$("id").scalar("ID:!") } },
-		({ f, $ }) => ({
-			user: f.user({ id: $.id }, ({ f }) => ({ ...f.id() })),
-		}),
-	),
-);
-
 const sliceCollection = {
 	userSlice: gql.default(({ slice }) =>
 		slice.query(

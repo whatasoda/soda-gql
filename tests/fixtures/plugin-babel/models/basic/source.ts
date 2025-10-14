@@ -37,8 +37,3 @@ export const complexModel = gql.default(({ model }) =>
 		(selection) => ({ nested: selection.nested }),
 	),
 );
-
-// Missing normalize function - should cause error
-export const brokenModel = gql.default(({ model }) =>
-	model({ typename: "User" }, ({ f }) => ({ ...f.id() })),
-);

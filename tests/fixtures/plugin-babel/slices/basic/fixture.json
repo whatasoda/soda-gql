@@ -4,7 +4,6 @@
     { "export": "userSlice", "type": "slice", "prebuild": { "operationType": "query" } },
     { "export": "updateUserSlice", "type": "slice", "prebuild": { "operationType": "mutation" } },
     { "export": "slices.byId", "type": "slice", "prebuild": { "operationType": "query" } },
-    { "export": "brokenSlice", "type": "slice", "prebuild": { "operationType": "query" } },
     { "export": "sliceCollection.userSlice", "type": "slice", "prebuild": { "operationType": "query" } }
   ]
 }

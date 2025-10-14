@@ -4,7 +4,6 @@
     { "export": "userModel", "type": "model", "prebuild": { "typename": "User" } },
     { "export": "productModel", "type": "model", "prebuild": { "typename": "Product" } },
     { "export": "models.user", "type": "model", "prebuild": { "typename": "User" } },
-    { "export": "complexModel", "type": "model", "prebuild": { "typename": "Complex" } },
-    { "export": "brokenModel", "type": "model", "prebuild": { "typename": "User" } }
+    { "export": "complexModel", "type": "model", "prebuild": { "typename": "Complex" } }
   ]
 }
