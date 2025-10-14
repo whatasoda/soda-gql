@@ -68,7 +68,13 @@ export const createSodaGqlPlugin = (): PluginObj<
 
         // Get state store and snapshot
         const stateStore = manager.getStateStore();
-        this._state = stateStore.getSnapshot();
+        const snapshot = stateStore.getSnapshot();
+
+        if (snapshot.status === "error") {
+          throw new Error(`Dev mode initialization failed: ${snapshot.error.message}`);
+        }
+
+        this._state = snapshot.state;
         this._dev = { manager, stateStore };
       } catch (error) {
         // Try to format as PluginError if possible, otherwise use error message

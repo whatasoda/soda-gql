@@ -1,2 +1,2 @@
-export { createDevManager, type DevManager, getDevManager } from "./manager";
-export { createStateStore, type StateStore } from "./state-store";
+export { createDevManager, type DevManager, type DevManagerDependencies, getDevManager } from "./manager";
+export { createStateStore, type StateStore, type StateSnapshot } from "./state-store";

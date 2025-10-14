@@ -77,11 +77,12 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
             }
 
             try {
-              // Initialize if not yet initialized, otherwise update
               const snapshot = stateStore.getSnapshot();
-              if (!snapshot) {
+              if (snapshot.status === "error" || !snapshot.state) {
+                // Error recovery or initial initialization
                 stateStore.initialize(cachedOptions, event.artifact);
               } else {
+                // Normal update
                 stateStore.updateArtifact(event.artifact);
               }
             } catch (err) {

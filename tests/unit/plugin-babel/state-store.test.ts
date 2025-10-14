@@ -69,8 +69,11 @@ describe("StateStore", () => {
     store.initialize(options, artifact);
 
     const snapshot = store.getSnapshot();
-    expect(snapshot.options).toBe(options);
-    expect(snapshot.allArtifacts).toBe(artifact.elements);
+    expect(snapshot.status).toBe("ready");
+    if (snapshot.status === "ready") {
+      expect(snapshot.state.options).toBe(options);
+      expect(snapshot.state.allArtifacts).toBe(artifact.elements);
+    }
     expect(store.getGeneration()).toBe(0);
   });
 
@@ -103,14 +106,18 @@ describe("StateStore", () => {
 
     const snapshot1 = store.getSnapshot();
     expect(store.getGeneration()).toBe(0);
-    expect(Object.keys(snapshot1.allArtifacts)).toHaveLength(0);
+    if (snapshot1.status === "ready") {
+      expect(Object.keys(snapshot1.state.allArtifacts)).toHaveLength(0);
+    }
 
     store.updateArtifact(artifact2);
 
     const snapshot2 = store.getSnapshot();
     expect(store.getGeneration()).toBe(1);
-    expect(Object.keys(snapshot2.allArtifacts)).toHaveLength(1);
-    expect(snapshot2.options).toBe(options); // Options preserved
+    if (snapshot2.status === "ready") {
+      expect(Object.keys(snapshot2.state.allArtifacts)).toHaveLength(1);
+      expect(snapshot2.state.options).toBe(options); // Options preserved
+    }
   });
 
   it("throws when updating before initialization", () => {
@@ -146,12 +153,14 @@ describe("StateStore", () => {
     store.subscribe(() => {
       notificationCount++;
     });
-
-    store.updateArtifact(artifact);
+    // subscribe() immediately notifies with current state
     expect(notificationCount).toBe(1);
 
     store.updateArtifact(artifact);
     expect(notificationCount).toBe(2);
+
+    store.updateArtifact(artifact);
+    expect(notificationCount).toBe(3);
   });
 
   it("unsubscribes correctly", () => {
@@ -165,13 +174,15 @@ describe("StateStore", () => {
     const unsubscribe = store.subscribe(() => {
       count++;
     });
+    // subscribe() immediately notifies with current state
+    expect(count).toBe(1);
 
     store.updateArtifact(artifact);
-    expect(count).toBe(1);
+    expect(count).toBe(2);
 
     unsubscribe();
     store.updateArtifact(artifact);
-    expect(count).toBe(1); // Still 1, not incremented
+    expect(count).toBe(2); // Still 2, not incremented
   });
 
   it("notifies error subscribers", () => {
@@ -201,6 +212,106 @@ describe("StateStore", () => {
     store.updateArtifact(artifact2);
 
     const snapshot = store.getSnapshot();
-    expect(snapshot.options).toBe(options);
+    if (snapshot.status === "ready") {
+      expect(snapshot.state.options).toBe(options);
+    }
+  });
+
+  it("returns error snapshot when error is set", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact = createMockArtifact();
+    const error = new Error("Test error");
+
+    store.initialize(options, artifact);
+    store.setError(error);
+
+    const snapshot = store.getSnapshot();
+    expect(snapshot.status).toBe("error");
+    if (snapshot.status === "error") {
+      expect(snapshot.error).toBe(error);
+      expect(snapshot.lastValidState).not.toBeNull();
+      expect(snapshot.lastValidState?.options).toBe(options);
+    }
+  });
+
+  it("getState() throws when error is set", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact = createMockArtifact();
+    const error = new Error("Test error");
+
+    store.initialize(options, artifact);
+    store.setError(error);
+
+    expect(() => store.getState()).toThrow(error);
+  });
+
+  it("hasError() returns true when error is set", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact = createMockArtifact();
+
+    store.initialize(options, artifact);
+    expect(store.hasError()).toBe(false);
+
+    store.setError(new Error("Test error"));
+    expect(store.hasError()).toBe(true);
+  });
+
+  it("clears error and returns ready snapshot after updateArtifact", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact1 = createMockArtifact();
+    const artifact2 = createMockArtifact();
+
+    store.initialize(options, artifact1);
+    store.setError(new Error("Test error"));
+    expect(store.hasError()).toBe(true);
+
+    store.updateArtifact(artifact2);
+    expect(store.hasError()).toBe(false);
+
+    const snapshot = store.getSnapshot();
+    expect(snapshot.status).toBe("ready");
+  });
+
+  it("clearError() clears error state", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact = createMockArtifact();
+
+    store.initialize(options, artifact);
+    store.setError(new Error("Test error"));
+    expect(store.hasError()).toBe(true);
+
+    store.clearError();
+    expect(store.hasError()).toBe(false);
+
+    const snapshot = store.getSnapshot();
+    expect(snapshot.status).toBe("ready");
+  });
+
+  it("notifies subscribers with snapshot", () => {
+    const store = createStateStore();
+    const options = createMockOptions();
+    const artifact = createMockArtifact();
+    const snapshots: any[] = [];
+
+    const unsubscribe = store.subscribe((snapshot) => {
+      snapshots.push(snapshot);
+    });
+    // subscribe() immediately notifies, but store is not initialized yet (throws)
+    // so initial notification is skipped
+    expect(snapshots).toHaveLength(0);
+
+    store.initialize(options, artifact);
+    expect(snapshots).toHaveLength(1);
+
+    store.setError(new Error("Test"));
+    expect(snapshots).toHaveLength(2);
+    expect(snapshots[1].status).toBe("error");
+
+    unsubscribe();
   });
 });
