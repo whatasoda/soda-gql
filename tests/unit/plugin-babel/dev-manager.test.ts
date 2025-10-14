@@ -177,7 +177,10 @@ const createTestHarness = (): TestHarness => {
     snapshotValue: null,
     initialize: () => {
       stateStore.initializeCalls++;
-      stateStore.snapshotValue = { options: createMockOptions(), allArtifacts: {} };
+      stateStore.snapshotValue = {
+        status: "ready",
+        state: { options: createMockOptions(), allArtifacts: {} },
+      };
     },
     getSnapshot: () => {
       if (!stateStore.snapshotValue) {

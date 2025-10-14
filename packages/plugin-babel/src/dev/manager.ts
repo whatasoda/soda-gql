@@ -142,11 +142,56 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
   };
 };
 
-let globalManager: DevManager | null = null;
+/**
+ * Context key for identifying unique DevManager instances.
+ * Each unique project should have its own manager to avoid state conflicts.
+ */
+export type DevManagerContext = {
+  readonly configPath: string;
+  readonly projectRoot: string;
+  readonly schemaHash?: string;
+};
 
-export const getDevManager = (): DevManager => {
-  if (!globalManager) {
-    globalManager = createDevManager();
+const createContextKey = (context: DevManagerContext): string => {
+  return JSON.stringify({
+    config: context.configPath,
+    root: context.projectRoot,
+    schema: context.schemaHash,
+  });
+};
+
+// Registry for multiple managers (one per project/context)
+const managerRegistry = new Map<string, DevManager>();
+
+export const getDevManager = (context: DevManagerContext): DevManager => {
+  const key = createContextKey(context);
+
+  let manager = managerRegistry.get(key);
+  if (!manager) {
+    manager = createDevManager();
+    managerRegistry.set(key, manager);
   }
-  return globalManager;
+
+  return manager;
+};
+
+/**
+ * Clear DevManager for a specific context or all contexts.
+ * Useful for testing and cleanup.
+ */
+export const clearDevManager = (context?: DevManagerContext): void => {
+  if (context) {
+    const key = createContextKey(context);
+    const manager = managerRegistry.get(key);
+    if (manager) {
+      manager.dispose();
+      managerRegistry.delete(key);
+    }
+  } else {
+    // Clear all managers
+    for (const manager of managerRegistry.values()) {
+      manager.dispose();
+    }
+    managerRegistry.clear();
+  }
 };

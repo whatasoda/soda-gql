@@ -4,7 +4,7 @@ import type { NodePath } from "@babel/traverse";
 import type { PluginOptions } from "@soda-gql/plugin-shared";
 import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
 import { babelTransformAdapterFactory } from "./adapter";
-import { type DevManager, getDevManager, type StateStore } from "./dev";
+import { type DevManager, type DevManagerContext, getDevManager, type StateStore } from "./dev";
 
 type PluginPassState = PluginPass & {
   _state?: PluginState;
@@ -35,9 +35,17 @@ export const createSodaGqlPlugin = (): PluginObj<
     if (isDevMode) {
       // Dev mode: use DevManager for HMR support
       try {
-        const manager = getDevManager();
         const config = normalizedState.options.artifact.config;
         const options = normalizedState.options;
+
+        // Create context for this project
+        const managerContext: DevManagerContext = {
+          configPath: options.resolvedConfig.configPath,
+          projectRoot: options.resolvedConfig.configDir,
+          schemaHash: options.resolvedConfig.configHash,
+        };
+
+        const manager = getDevManager(managerContext);
 
         // Get initial artifact from provider
         if (!normalizedState.artifactProvider) {
