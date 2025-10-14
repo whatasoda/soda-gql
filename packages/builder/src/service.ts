@@ -29,6 +29,19 @@ export interface BuilderService {
    * Optional method for incremental builds. Falls back to full rebuild if not supported.
    */
   update(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
+
+  /**
+   * Get the current generation number of the artifact.
+   * Increments on each successful build or update.
+   * Returns 0 if no artifact has been built yet.
+   */
+  getGeneration?(): number;
+
+  /**
+   * Get the most recent artifact without triggering a new build.
+   * Returns null if no artifact has been built yet.
+   */
+  getCurrentArtifact?(): BuilderArtifact | null;
 }
 
 /**
@@ -45,9 +58,22 @@ export interface BuilderService {
  */
 export const createBuilderService = ({ config, entrypoints }: BuilderServiceConfig): BuilderService => {
   const session = createBuilderSession({ config, entrypoints });
+  let generation = 0;
+  let currentArtifact: BuilderArtifact | null = null;
+
+  const wrapBuild = async (buildFn: () => Promise<Result<BuilderArtifact, BuilderError>>) => {
+    const result = await buildFn();
+    if (result.isOk()) {
+      generation++;
+      currentArtifact = result.value;
+    }
+    return result;
+  };
 
   return {
-    build: async () => session.build({ changeSet: null }),
-    update: async (changeSet: BuilderChangeSet) => session.build({ changeSet }),
+    build: async () => wrapBuild(() => session.build({ changeSet: null })),
+    update: async (changeSet: BuilderChangeSet) => wrapBuild(() => session.build({ changeSet })),
+    getGeneration: () => generation,
+    getCurrentArtifact: () => currentArtifact,
   };
 };

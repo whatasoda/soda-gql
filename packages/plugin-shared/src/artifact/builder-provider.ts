@@ -12,6 +12,7 @@ export class BuilderArtifactProvider implements ArtifactProvider {
   readonly mode = "builder" as const;
   private service: BuilderService;
   private artifactCache: BuilderArtifact | null = null;
+  private lastBuildGeneration = -1;
 
   constructor(private context: ProviderContext) {
     const { artifact } = context.normalizedOptions;
@@ -22,11 +23,25 @@ export class BuilderArtifactProvider implements ArtifactProvider {
   }
 
   async load(): Promise<Result<BuilderArtifact, PluginError>> {
-    // Return cached artifact if available
-    if (this.artifactCache) {
+    // Check if service has a newer artifact
+    const serviceGeneration = this.service.getGeneration?.() ?? 0;
+
+    // Use cached artifact only if service hasn't produced a newer one
+    if (this.artifactCache && serviceGeneration === this.lastBuildGeneration) {
       return ok(this.artifactCache);
     }
 
+    // Check if service already has a current artifact (avoid unnecessary build)
+    if (serviceGeneration > this.lastBuildGeneration) {
+      const currentArtifact = this.service.getCurrentArtifact?.();
+      if (currentArtifact) {
+        this.artifactCache = currentArtifact;
+        this.lastBuildGeneration = serviceGeneration;
+        return ok(currentArtifact);
+      }
+    }
+
+    // Need to build
     try {
       const buildResult = await this.service.build();
 
@@ -35,6 +50,7 @@ export class BuilderArtifactProvider implements ArtifactProvider {
       }
 
       this.artifactCache = buildResult.value;
+      this.lastBuildGeneration = this.service.getGeneration?.() ?? 0;
       return ok(buildResult.value);
     } catch (cause) {
       return err(this.mapUnexpectedError(cause));
@@ -43,6 +59,7 @@ export class BuilderArtifactProvider implements ArtifactProvider {
 
   invalidate(): void {
     this.artifactCache = null;
+    this.lastBuildGeneration = -1;
   }
 
   getArtifactById(canonicalId: CanonicalId): BuilderArtifactElement | undefined {

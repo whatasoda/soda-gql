@@ -19,12 +19,16 @@ export interface BuilderServiceController {
   build(): Promise<BuilderServiceResult>;
   update(changeSet: BuilderChangeSet): Promise<BuilderServiceResult>;
   reset(): void;
+  getGeneration(): number;
+  getCurrentArtifact(): BuilderArtifact | null;
 }
 
 export const createBuilderServiceController = (config: BuilderServiceConfig): BuilderServiceController => {
   let service: BuilderService | null = null;
   let initialized = false;
   let queue: Promise<void> = Promise.resolve();
+  let generation = 0;
+  let currentArtifact: BuilderArtifact | null = null;
 
   const ensureService = (): BuilderService => {
     if (!service) {
@@ -51,6 +55,8 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
         return err({ type: "builder-error", error: result.error });
       }
       initialized = true;
+      generation++;
+      currentArtifact = result.value;
       return ok(result.value);
     } catch (error) {
       return err({ type: "unexpected-error", error });
@@ -79,6 +85,10 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
       service = null;
       initialized = false;
       queue = Promise.resolve();
+      generation = 0;
+      currentArtifact = null;
     },
+    getGeneration: () => generation,
+    getCurrentArtifact: () => currentArtifact,
   };
 };
