@@ -1,0 +1,28 @@
+{
+  "name": "example-nestjs-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "codegen": "bun run ../../packages/cli/src/index.ts codegen --schema:default ./schema.graphql --out ./graphql-system/index.ts --scalar:default ./inject-module/runtime-adapter.ts --runtime-adapter:default ./inject-module/runtime-adapter.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/runtime": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@soda-gql/plugin-nestjs": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@babel/core": "^7.24.0",
+    "webpack": "^5.0.0"
+  }
+}

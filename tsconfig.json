@@ -49,6 +49,8 @@
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-nestjs/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },
-    { "path": "./packages/runtime/tsconfig.editor.json" }
+    { "path": "./packages/runtime/tsconfig.editor.json" },
+    { "path": "./examples/babel-app/tsconfig.json" },
+    { "path": "./examples/nestjs-app/tsconfig.json" }
   ]
 }
