@@ -1,7 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
 import type { BuilderArtifact, BuilderChangeSet, BuilderServiceConfig } from "@soda-gql/builder";
-import { createPluginRuntimeFromNormalized, invalidateArtifactCache, type PluginRuntime } from "@soda-gql/plugin-shared";
+import {
+  createPluginRuntimeFromNormalized,
+  formatPluginError,
+  invalidateArtifactCache,
+  loadArtifact,
+  type PluginRuntime,
+} from "@soda-gql/plugin-shared";
 import { createBuilderServiceController, createBuilderWatch } from "@soda-gql/plugin-shared/dev";
 import type { Compiler, WebpackPluginInstance } from "webpack";
 import { DiagnosticsReporter } from "../internal/diagnostics.js";
@@ -192,7 +198,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
         await persistArtifact(options.artifactPath, artifact);
         invalidateArtifactCache(options.artifactPath);
         const runtime = await runtimePromise;
-        await runtime.refresh();
+        await refreshRuntimeOrReport(runtime);
       }
     };
 
@@ -210,41 +216,104 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       await handleResult(await builderController.update(changeSet));
     };
 
+    // Helper to load and report artifact-file diagnostics
+    const reportArtifactFromFile = async (): Promise<void> => {
+      const result = await loadArtifact(options.artifactPath);
+
+      if (result.isErr()) {
+        // Convert ArtifactError to BuilderServiceFailure
+        const artifactError = result.error;
+        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+          type: "unexpected-error",
+          error: new Error(`Failed to load artifact: ${artifactError.message}`),
+        };
+
+        diagnostics.recordError(failure);
+
+        if (options.bailOnError) {
+          throw toWebpackError(failure);
+        }
+        return;
+      }
+
+      const artifact = result.value;
+      diagnostics.recordSuccess(artifact);
+
+      const nextManifest = createArtifactManifest(artifact);
+      manifest = nextManifest;
+    };
+
+    // Helper to handle runtime.refresh() errors
+    const refreshRuntimeOrReport = async (runtime: PluginRuntime): Promise<void> => {
+      const refreshResult = await runtime.refresh();
+
+      if (refreshResult.isErr()) {
+        const pluginError = refreshResult.error;
+        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+          type: "unexpected-error",
+          error: new Error(formatPluginError(pluginError)),
+        };
+
+        diagnostics.recordError(failure);
+
+        if (options.bailOnError) {
+          throw toWebpackError(failure);
+        }
+      }
+    };
+
     const handleArtifactFileChange = async (changed: Set<string>): Promise<void> => {
       if (!changed.has(options.artifactPath)) {
         return;
       }
       invalidateArtifactCache(options.artifactPath);
+      await reportArtifactFromFile();
       const runtime = await runtimePromise;
-      await runtime.refresh();
+      await refreshRuntimeOrReport(runtime);
     };
 
     registerCompilerHooks(compiler, {
       pluginName: PLUGIN_NAME,
       run: async () => {
-        await runtimePromise; // Ensure runtime is ready
-        if (builderController) {
-          await runInitialBuild();
-        } else {
-          invalidateArtifactCache(options.artifactPath);
-          const runtime = await runtimePromise;
-          await runtime.refresh();
+        try {
+          const runtime = await runtimePromise; // Ensure runtime is ready
+          if (builderController) {
+            await runInitialBuild();
+          } else {
+            // Artifact-file mode
+            invalidateArtifactCache(options.artifactPath);
+            await reportArtifactFromFile();
+            await refreshRuntimeOrReport(runtime);
+          }
+        } catch (error) {
+          // Errors are already recorded in diagnostics
+          // Just log for webpack infrastructure
+          if (error instanceof Error) {
+            logger.error(error.message);
+          }
         }
       },
       watchRun: async ({ modifiedFiles, removedFiles }) => {
-        await runtimePromise; // Ensure runtime is ready
-        if (builderController && builderWatch) {
-          if (!builderController.initialized) {
-            await runInitialBuild();
+        try {
+          await runtimePromise; // Ensure runtime is ready
+          if (builderController && builderWatch) {
+            if (!builderController.initialized) {
+              await runInitialBuild();
+            }
+            builderWatch.trackChanges(modifiedFiles, removedFiles);
+            const changeSet = await builderWatch.flush();
+            if (changeSet) {
+              await runIncrementalBuild(changeSet);
+            }
+          } else {
+            const changed = collectChangedFiles(options.contextDir, [modifiedFiles, removedFiles]);
+            await handleArtifactFileChange(changed);
           }
-          builderWatch.trackChanges(modifiedFiles, removedFiles);
-          const changeSet = await builderWatch.flush();
-          if (changeSet) {
-            await runIncrementalBuild(changeSet);
+        } catch (error) {
+          // Errors are already recorded in diagnostics
+          if (error instanceof Error) {
+            logger.error(error.message);
           }
-        } else {
-          const changed = collectChangedFiles(options.contextDir, [modifiedFiles, removedFiles]);
-          await handleArtifactFileChange(changed);
         }
       },
       onInvalid: () => {
