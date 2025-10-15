@@ -225,7 +225,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
         const artifactError = result.error;
         const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
           type: "unexpected-error",
-          error: new Error(`Failed to load artifact: ${artifactError.message}`);
+          error: new Error(`Failed to load artifact: ${artifactError.message}`),
         };
 
         diagnostics.recordError(failure);
