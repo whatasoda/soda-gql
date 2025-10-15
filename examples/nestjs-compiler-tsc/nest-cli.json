@@ -1,0 +1,18 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "builder": "tsc",
+    "deleteOutDir": true,
+    "plugins": [
+      {
+        "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+        "options": {
+          "artifactPath": "./.cache/soda-gql-artifact.json",
+          "mode": "zero-runtime",
+          "importIdentifier": "@/graphql-system"
+        }
+      }
+    ]
+  }
+}

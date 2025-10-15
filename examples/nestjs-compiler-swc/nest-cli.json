@@ -1,0 +1,18 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "builder": "swc",
+    "deleteOutDir": true,
+    "swcPlugins": [
+      [
+        "@soda-gql/plugin-nestjs/compiler/swc",
+        {
+          "artifactPath": "./.cache/soda-gql-artifact.json",
+          "mode": "zero-runtime",
+          "importIdentifier": "@/graphql-system"
+        }
+      ]
+    ]
+  }
+}

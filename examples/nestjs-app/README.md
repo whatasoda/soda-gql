@@ -1,6 +1,10 @@
-# NestJS Plugin Example
+# NestJS with Webpack Plugin Example
 
 This example demonstrates the usage of `@soda-gql/plugin-nestjs` in a NestJS application with webpack integration.
+
+> **Note**: This example uses webpack. For webpack-free alternatives, see:
+> - [TypeScript Compiler Plugin Example](../nestjs-compiler-tsc) - No webpack, uses `nest build`
+> - [SWC Compiler Plugin Example](../nestjs-compiler-swc) - Ultra-fast builds with SWC
 
 ## Features
 
@@ -8,6 +12,7 @@ This example demonstrates the usage of `@soda-gql/plugin-nestjs` in a NestJS app
 - ✅ Webpack plugin for build-time transformation
 - ✅ Artifact file mode for production builds
 - ✅ Development mode with error reporting
+- ✅ Integrated watch mode
 - ✅ Dependency Injection pattern
 - ✅ Type-safe GraphQL operations
 
