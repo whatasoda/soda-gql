@@ -21,11 +21,6 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "scripts": {
-    "clean": "rm -rf dist",
-    "build": "bunx tsc -p tsconfig.json",
-    "test": "bun test"
-  },
   "dependencies": {
     "esbuild": "^0.25.10",
     "neverthrow": "^8.2.0",

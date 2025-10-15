@@ -112,7 +112,7 @@ Repeat until complete → User receives result
 - Code reviews
 
 **⚪ DOES NOT REQUIRE CODEX (Claude handles alone)**:
-- Running existing commands (`bun test`, `bun install`)
+- Running existing commands (`bun run test`, `bun install`)
 - Reading files for information only
 - Git operations (`git status`, `git log`, `git diff`)
 - File system operations (`ls`, `mkdir`, `mv`)
@@ -136,7 +136,7 @@ Repeat until complete → User receives result
 **Use Bun for all operations**:
 - `bun install` (not npm/yarn/pnpm)
 - `bun run <script>` (not npm run)
-- `bun test` (not jest/vitest)
+- `bun run test` (not jest/vitest, not `bun test`)
 
 **Use Node.js APIs for implementation**:
 - Node.js `fs/promises` for file operations
@@ -182,7 +182,7 @@ bun run soda-gql codegen --schema ./schema.graphql --out packages/graphql-system
 bun run soda-gql builder --mode runtime --entry ./src/pages/**/*.ts --out ./.cache/soda-gql/runtime.json
 
 # Run tests
-bun test
+bun run test
 
 # Quality checks (linting + type check)
 bun quality

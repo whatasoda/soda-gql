@@ -5,7 +5,6 @@
       "mcp__codex__codex-reply",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(bun test:*)",
       "Bash(bun quality:*)",
       "Bash(bun typecheck:*)",
       "Bash(bun typecheck:tests:*)",
@@ -13,6 +12,7 @@
       "Bash(bun validate:tests:*)",
       "Bash(bun examples:codegen:*)",
       "Bash(bun codex:conversation:*)",
+      "Bash(bun run test:*)",
       "Bash(bun run build:*)",
       "Bash(bun run quality:*)",
       "Bash(bun run typecheck:*)",
@@ -59,7 +59,10 @@
       "mcp__serena__summarize_changes",
       "mcp__serena__switch_modes"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(bun test:*)",
+      "Bash(bun build:*)"
+    ],
     "ask": []
   }
 }

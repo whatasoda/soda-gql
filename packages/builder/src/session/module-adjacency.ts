@@ -4,6 +4,7 @@ import type { DiscoverySnapshot } from "../discovery";
 /**
  * Extract module-level adjacency from dependency graph.
  * Returns Map of file path -> set of files that import it.
+ * All paths are normalized to POSIX format for consistent cache key matching.
  */
 export const extractModuleAdjacency = ({
   snapshots,
@@ -13,12 +14,12 @@ export const extractModuleAdjacency = ({
   const importsByModule = new Map<string, Set<string>>();
 
   for (const snapshot of snapshots.values()) {
-    const { filePath, dependencies, analysis } = snapshot;
+    const { normalizedFilePath, dependencies, analysis } = snapshot;
     const imports = new Set<string>();
 
     // Extract module paths from canonical IDs in dependencies
     for (const { resolvedPath } of dependencies) {
-      if (resolvedPath && resolvedPath !== filePath && snapshots.has(resolvedPath)) {
+      if (resolvedPath && resolvedPath !== normalizedFilePath && snapshots.has(resolvedPath)) {
         imports.add(resolvedPath);
       }
     }
@@ -30,7 +31,7 @@ export const extractModuleAdjacency = ({
           continue;
         }
 
-        const resolved = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: snapshots });
+        const resolved = resolveRelativeImportWithReferences({ filePath: normalizedFilePath, specifier: imp.source, references: snapshots });
         if (resolved) {
           imports.add(resolved);
         }
@@ -38,7 +39,7 @@ export const extractModuleAdjacency = ({
     }
 
     if (imports.size > 0) {
-      importsByModule.set(filePath, imports);
+      importsByModule.set(normalizedFilePath, imports);
     }
   }
 
@@ -67,6 +68,7 @@ export const extractModuleAdjacency = ({
 /**
  * Collect all modules affected by changes, including transitive dependents.
  * Uses BFS to traverse module adjacency graph.
+ * All paths are already normalized from extractModuleAdjacency.
  */
 export const collectAffectedFiles = (input: {
   changedFiles: Set<string>;

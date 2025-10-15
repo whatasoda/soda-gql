@@ -46,6 +46,18 @@ export const discoverModules = ({
   let cacheMisses = 0;
   let cacheSkips = 0;
 
+  // DEBUG: Log invalidatedSet
+  if (process.env.DEBUG_CACHE && incremental) {
+    console.log("[discoverModules] Invalidated files:", {
+      changedCount: changedFiles.size,
+      removedCount: removedFiles.size,
+      affectedCount: affectedFiles.size,
+      totalInvalidated: invalidatedSet.size,
+      changedFiles: Array.from(changedFiles),
+      affectedFiles: Array.from(affectedFiles).slice(0, 5),
+    });
+  }
+
   if (incremental) {
     for (const filePath of removedFiles) {
       incremental.cache.delete(filePath);
@@ -54,8 +66,15 @@ export const discoverModules = ({
   }
 
   while (stack.length > 0) {
-    const filePath = stack.pop();
-    if (!filePath || snapshots.has(filePath)) {
+    const rawFilePath = stack.pop();
+    if (!rawFilePath) {
+      continue;
+    }
+
+    // Normalize path for consistent cache key matching
+    const filePath = normalizePath(rawFilePath);
+
+    if (snapshots.has(filePath)) {
       continue;
     }
 
@@ -67,6 +86,16 @@ export const discoverModules = ({
     } else if (incremental) {
       // Try fingerprint-based cache check (avoid reading file)
       const cached = incremental.cache.peek(filePath);
+
+      // DEBUG: Log cache check
+      if (process.env.DEBUG_CACHE) {
+        console.log("[discoverModules] Cache check:", {
+          filePath,
+          hasCached: !!cached,
+          invalidatedSetSize: invalidatedSet.size,
+          isInvalidated: invalidatedSet.has(filePath),
+        });
+      }
 
       if (cached) {
         try {

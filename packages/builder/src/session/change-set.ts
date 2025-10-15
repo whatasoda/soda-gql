@@ -28,23 +28,29 @@ export const hasFileChanged = (currentFingerprint: string | undefined, incomingF
 };
 
 /**
- * Normalize BuilderChangeSet paths to absolute strings.
+ * Normalize BuilderChangeSet paths to absolute strings with consistent path format.
  * Handles both BuilderFileChange objects and raw string paths.
+ * All paths are normalized to POSIX format for consistent cache key matching.
+ * Uses Node.js normalize() + backslash replacement to match normalizePath from @soda-gql/common.
  */
 export const coercePaths = (
   changes: readonly BuilderFileChange[] | readonly string[] | ReadonlySet<string | BuilderFileChange>,
 ): Set<string> => {
+  const { normalize } = require("node:path");
+
   if (Array.isArray(changes)) {
-    return new Set(changes.map((c) => (typeof c === "string" ? c : c.filePath)));
+    return new Set(changes.map((c) => {
+      const path = typeof c === "string" ? c : c.filePath;
+      // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
+      return normalize(path).replace(/\\/g, "/");
+    }));
   }
 
   const result = new Set<string>();
   for (const item of changes) {
-    if (typeof item === "string") {
-      result.add(item);
-    } else {
-      result.add(item.filePath);
-    }
+    const path = typeof item === "string" ? item : item.filePath;
+    // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
+    result.add(normalize(path).replace(/\\/g, "/"));
   }
   return result;
 };

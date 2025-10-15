@@ -14,10 +14,10 @@ bun run soda-gql builder --mode runtime --entry ./src/pages/**/*.ts --out ./.cac
 ### Testing
 ```bash
 # Run tests
-bun test
+bun run test
 
 # Run specific test file
-bun test <path/to/test.ts>
+bun run test <path/to/test.ts>s
 ```
 
 ### Quality Checks
@@ -49,6 +49,6 @@ bun add -d <package>
 
 ## Task Completion Checklist
 When completing a task:
-1. Run `bun test` - ensure all tests pass
+1. Run `bun run test` - ensure all tests pass
 2. Run `bun quality` - ensure linting and type checks pass
 3. Commit changes with descriptive message

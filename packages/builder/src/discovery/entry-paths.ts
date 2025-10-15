@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { normalize, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 
 import type { BuilderError } from "../types";
@@ -12,15 +12,21 @@ const scanEntries = (pattern: string): readonly string[] => {
 /**
  * Resolve entry file paths from glob patterns or direct paths.
  * Used by the discovery system to find entry points for module traversal.
+ * All paths are normalized to POSIX format for consistent cache key matching.
+ * Uses Node.js normalize() + backslash replacement to match normalizePath from @soda-gql/common.
  */
 export const resolveEntryPaths = (entries: readonly string[]) => {
   const resolvedPaths = entries.flatMap((entry) => {
     const absolute = resolve(entry);
     if (existsSync(absolute)) {
-      return [absolute];
+      // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
+      return [normalize(absolute).replace(/\\/g, "/")];
     }
 
-    const matches = scanEntries(entry).map((match) => resolve(match));
+    const matches = scanEntries(entry).map((match) => {
+      // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
+      return normalize(resolve(match)).replace(/\\/g, "/");
+    });
     return matches;
   });
 
