@@ -8,7 +8,7 @@ module.exports = (options, _webpack) => ({
       ...(options.module?.rules ?? []),
       {
         test: /\.[jt]sx?$/,
-        enforce: "post",
+        enforce: "pre", // Run before ts-loader to transform TypeScript directly
         exclude: /node_modules/,
         use: [
           {
