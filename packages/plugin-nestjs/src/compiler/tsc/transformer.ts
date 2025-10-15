@@ -7,11 +7,10 @@
 
 import type * as ts from "typescript";
 import {
-  prepareTransform,
   typescriptTransformAdapterFactory,
   type TypeScriptAdapter,
 } from "@soda-gql/plugin-shared";
-import { waitForPromise } from "../core/wait-for-promise.js";
+import { prepareTransformSync } from "../core/prepare-transform-sync.js";
 
 /**
  * Configuration for the soda-gql TypeScript transformer.
@@ -85,30 +84,25 @@ export function createSodaGqlTransformer(
     return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
-  // Prepare transform state synchronously (blocks until ready)
-  // This is cached per artifact path by prepareTransform
-  const prepareResult = waitForPromise(
-    prepareTransform({
-      filename: program.getCompilerOptions().configFilePath?.toString() ?? "unknown",
-      artifactPath: config.artifactPath,
-      mode: config.mode as "runtime" | "zero-runtime",
-      importIdentifier: config.importIdentifier,
-      configPath: config.configPath,
-    }),
-  );
+  // Prepare transform state synchronously
+  // This reads the artifact from disk and caches it
+  const prepareResult = prepareTransformSync({
+    artifactPath: config.artifactPath,
+    importIdentifier: config.importIdentifier,
+  });
 
   // Handle preparation errors
   if (prepareResult.isErr()) {
     const error = prepareResult.error;
     console.error(
-      "[@soda-gql/plugin-nestjs] Transform preparation failed:",
-      error.message,
+      `[@soda-gql/plugin-nestjs] Transform preparation failed (${error.type}):`,
+      error.type === "ARTIFACT_NOT_FOUND" ? `Artifact not found at ${error.path}` : error.type,
     );
     // Return no-op transformer
     return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
-  const { state } = prepareResult.value;
+  const prepared = prepareResult.value;
 
   return (context: ts.TransformationContext) => {
     return (sourceFile: ts.SourceFile) => {
@@ -128,7 +122,7 @@ export function createSodaGqlTransformer(
       const transformContext = {
         filename: sourceFile.fileName,
         artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) =>
-          state.allArtifacts[canonicalId],
+          prepared.allArtifacts[canonicalId],
       };
 
       const transformResult = adapter.transformProgram(transformContext);
