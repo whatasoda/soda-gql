@@ -1,2 +1,1 @@
-export type { WebpackLoaderOptions, WebpackPluginOptions } from "../schemas/webpack.js";
-export { SodaGqlWebpackPlugin } from "./plugin.js";
+export * from "@soda-gql/plugin-webpack";

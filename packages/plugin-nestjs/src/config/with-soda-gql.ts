@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
 import { join } from "node:path";
 
+import type { WebpackLoaderOptions } from "@soda-gql/plugin-webpack";
+import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-webpack";
 import type { Configuration, RuleSetRule } from "webpack";
 import { type SodaGqlConfig, sodaGqlConfigSchema } from "../schemas/config.js";
-import type { WebpackLoaderOptions } from "../schemas/webpack.js";
-import { SodaGqlWebpackPlugin } from "../webpack/plugin.js";
 
 const require = createRequire(import.meta.url);
-const loaderModulePath = require.resolve("@soda-gql/plugin-nestjs/webpack/loader");
+const loaderModulePath = require.resolve("@soda-gql/plugin-webpack/loader");
 
 const DEFAULT_ARTIFACT_PATH = join(".soda-gql", "artifacts", "artifact.json");
 

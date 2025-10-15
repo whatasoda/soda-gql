@@ -6,4 +6,4 @@ export type {
   DiagnosticsMode as WebpackDiagnosticsMode,
   WebpackLoaderOptions,
   WebpackPluginOptions,
-} from "./schemas/webpack.js";
+} from "@soda-gql/plugin-webpack";

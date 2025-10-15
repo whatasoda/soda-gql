@@ -40,8 +40,8 @@
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "@soda-gql/plugin-babel": "workspace:*",
     "@soda-gql/plugin-shared": "workspace:*",
+    "@soda-gql/plugin-webpack": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
     "neverthrow": "^8.1.1",
     "zod": "^4.1.11"
