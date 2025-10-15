@@ -34,6 +34,13 @@
       "require": "./dist/webpack/loader.cjs",
       "default": "./dist/webpack/loader.js"
     },
+    "./compiler/tsc": {
+      "development": "./src/compiler/tsc/index.ts",
+      "types": "./dist/compiler/tsc/index.d.ts",
+      "import": "./dist/compiler/tsc/index.js",
+      "require": "./dist/compiler/tsc/index.cjs",
+      "default": "./dist/compiler/tsc/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -48,7 +55,19 @@
   },
   "peerDependencies": {
     "@babel/core": "^7.24.0",
+    "typescript": "^5.0.0",
     "webpack": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@babel/core": {
+      "optional": true
+    },
+    "typescript": {
+      "optional": true
+    },
+    "webpack": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/webpack": "^5.28.5"

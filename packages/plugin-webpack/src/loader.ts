@@ -4,16 +4,13 @@ import { type TransformOptions, type types as t, transformAsync } from "@babel/c
 import type { NodePath } from "@babel/traverse";
 import { type BabelEnv, babelTransformAdapterFactory } from "@soda-gql/plugin-babel/adapter";
 import type { TransformAdapterFactory } from "@soda-gql/plugin-shared";
-import { createPluginRuntimeFromNormalized, formatPluginError, isPluginError, normalizePluginOptions, type PluginRuntime } from "@soda-gql/plugin-shared";
+import { formatPluginError, isPluginError, prepareTransform } from "@soda-gql/plugin-shared";
 import type { LoaderDefinitionFunction } from "webpack";
 
 import { type WebpackLoaderOptions, webpackLoaderOptionsSchema } from "./schemas/options.js";
 
 const LOADER_NAME = "SodaGqlWebpackLoader";
 const TS_DECLARATION_REGEX = /\.d\.tsx?$/;
-
-// Module-level runtime cache
-const runtimeCache = new Map<string, Promise<PluginRuntime>>();
 
 type BabelParserPlugin = string | [string, Record<string, unknown>];
 
@@ -75,48 +72,26 @@ const transformWithAdapter = async (
   generateSourceMaps: boolean,
   // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
 ): Promise<{ code: string; map?: any }> => {
-  // Normalize plugin options using the new API
-  const normalizedResult = await normalizePluginOptions({
-    mode,
-    importIdentifier,
-    configPath,
-    artifact: {
-      useBuilder: false,
-      path: artifactPath,
-    },
-  });
-
-  if (normalizedResult.isErr()) {
-    throw new Error(`Failed to normalize options: ${normalizedResult.error.message}`);
-  }
-
-  const normalizedOptions = normalizedResult.value;
-
   // Short-circuit for runtime mode - no transformation needed
-  if (normalizedOptions.mode === "runtime") {
+  if (mode === "runtime") {
     // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
     return { code: sourceCode, map: inputSourceMap as any };
   }
 
-  // Create runtime key for caching
-  const runtimeKey = JSON.stringify({
+  // Prepare transform using shared helper
+  const prepareResult = await prepareTransform({
+    filename: resourcePath,
     artifactPath,
-    mode: normalizedOptions.mode,
-    importIdentifier: normalizedOptions.importIdentifier,
+    mode,
+    importIdentifier,
+    configPath,
   });
 
-  // Get or create cached runtime
-  const getRuntime = async (): Promise<PluginRuntime> => {
-    let entry = runtimeCache.get(runtimeKey);
-    if (!entry) {
-      entry = createPluginRuntimeFromNormalized(normalizedOptions);
-      runtimeCache.set(runtimeKey, entry);
-    }
-    return entry;
-  };
+  if (prepareResult.isErr()) {
+    throw prepareResult.error;
+  }
 
-  const runtime = await getRuntime();
-  const pluginState = runtime.getState();
+  const { state: pluginState } = prepareResult.value;
 
   // For now, default to Babel adapter
   // In the future, this could be configurable via loader options

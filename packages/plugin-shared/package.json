@@ -29,5 +29,13 @@
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }
