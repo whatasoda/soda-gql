@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { builderCommand } from "./commands/builder";
 import { codegenCommand } from "./commands/codegen";
+import { formatError } from "./utils/format";
 
 const dispatch = async (argv: readonly string[]): Promise<number> => {
   const [command, ...rest] = argv;
@@ -32,7 +33,11 @@ if (import.meta.main) {
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error);
-      process.stderr.write(`${message}\n`);
+      const unexpectedError = {
+        code: "UNEXPECTED_ERROR",
+        message,
+      };
+      process.stderr.write(`${formatError(unexpectedError, "json")}\n`);
       process.exitCode = 1;
     });
 }

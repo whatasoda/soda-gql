@@ -77,8 +77,8 @@ describe("soda-gql codegen CLI", () => {
     ]);
 
     expect(result.exitCode).toBe(1);
-    expect(result.stdout).toContain("SchemaValidationError");
-    expect(result.stdout).toContain(invalidSchemaPath);
+    expect(result.stderr).toContain("SchemaValidationError");
+    expect(result.stderr).toContain(invalidSchemaPath);
   });
 
   it("emits graphql-system bundle for valid schema", async () => {

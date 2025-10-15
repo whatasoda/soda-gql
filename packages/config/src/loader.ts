@@ -34,14 +34,20 @@ async function executeConfigFile(configPath: string): Promise<unknown> {
   // Bundle config file to temp location (use .cjs so require() is available)
   const outfile = join(tmpdir(), `soda-gql-config-${Date.now()}.cjs`);
 
-  await build({
-    entryPoints: [configPath],
-    outfile,
-    bundle: true,
-    platform: "node",
-    format: "cjs",
-    target: "node18",
-  });
+  try {
+    await build({
+      entryPoints: [configPath],
+      outfile,
+      bundle: true,
+      platform: "node",
+      format: "cjs",
+      target: "node18",
+      logLevel: "silent",
+      conditions: ["development", "node", "import", "default"],
+    });
+  } catch (error) {
+    throw configError("CONFIG_LOAD_FAILED", `Failed to bundle config: ${error instanceof Error ? error.message : String(error)}`, configPath, error);
+  }
 
   // Dynamic import the bundled file (import() can load .cjs files)
   const configModule = await import(`file://${outfile}?t=${Date.now()}`);

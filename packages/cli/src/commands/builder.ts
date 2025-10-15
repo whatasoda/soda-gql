@@ -130,7 +130,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     const configResult = await loadConfig();
     if (configResult.isErr()) {
       const error = configResult.error;
-      process.stderr.write(`Config error: ${error.code} - ${error.message}\n`);
+      process.stderr.write(`${formatBuilderError("json", error as BuilderError)}\n`);
       return 1;
     }
     const config = configResult.value;

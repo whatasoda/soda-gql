@@ -158,8 +158,8 @@ export const cyclePageQuery = gql.default(({ query, scalar }) =>
     ]);
 
     expect(result.exitCode).toBe(1);
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const payload = JSON.parse(result.stdout);
+    expect(() => JSON.parse(result.stderr)).not.toThrow();
+    const payload = JSON.parse(result.stderr);
     // Module-level dependency analysis doesn't detect same-file cycles
     // Instead, evaluation fails at runtime
     expect(payload.error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
@@ -207,11 +207,10 @@ export const duplicated = gql.default(({ operation }, { $ }) =>
     ]);
 
     expect(result.exitCode).toBe(1);
-    // Check if we have output to parse
-    const output = result.stdout || result.stderr;
-    expect(output).toBeTruthy();
-    expect(() => JSON.parse(output)).not.toThrow();
-    const payload = JSON.parse(output);
+    // Errors should be in stderr
+    expect(result.stderr).toBeTruthy();
+    expect(() => JSON.parse(result.stderr)).not.toThrow();
+    const payload = JSON.parse(result.stderr);
     expect(payload.error.code).toBe("DOC_DUPLICATE");
     expect(payload.error.name).toBe("DuplicatedName");
   });
