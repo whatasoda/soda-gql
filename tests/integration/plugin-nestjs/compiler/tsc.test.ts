@@ -1,7 +1,7 @@
-import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import ts from "typescript";
+import { join } from "node:path";
 import { createSodaGqlTransformer } from "@soda-gql/plugin-nestjs/compiler/tsc";
+import ts from "typescript";
 
 describe("TypeScript Compiler Plugin Integration", () => {
   const fixturesDir = join(import.meta.dir, "../../../fixtures/plugin-nestjs/compiler/tsc");
@@ -33,15 +33,9 @@ describe("TypeScript Compiler Plugin Integration", () => {
     };
 
     // Emit with transformer
-    const emitResult = program.emit(
-      undefined,
-      writeFile,
-      undefined,
-      false,
-      {
-        before: [transformer],
-      },
-    );
+    const emitResult = program.emit(undefined, writeFile, undefined, false, {
+      before: [transformer],
+    });
 
     // Check compilation succeeded
     expect(emitResult.emitSkipped).toBe(false);
@@ -82,15 +76,9 @@ describe("TypeScript Compiler Plugin Integration", () => {
       emittedCode = text;
     };
 
-    const emitResult = program.emit(
-      undefined,
-      writeFile,
-      undefined,
-      false,
-      {
-        before: [transformer],
-      },
-    );
+    const emitResult = program.emit(undefined, writeFile, undefined, false, {
+      before: [transformer],
+    });
 
     expect(emitResult.emitSkipped).toBe(false);
 
@@ -121,15 +109,9 @@ describe("TypeScript Compiler Plugin Integration", () => {
     };
 
     // Should not throw, should emit original code
-    const emitResult = program.emit(
-      undefined,
-      writeFile,
-      undefined,
-      false,
-      {
-        before: [transformer],
-      },
-    );
+    const emitResult = program.emit(undefined, writeFile, undefined, false, {
+      before: [transformer],
+    });
 
     expect(emitResult.emitSkipped).toBe(false);
     expect(emittedCode).toBeTruthy();

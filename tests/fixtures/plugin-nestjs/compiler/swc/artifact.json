@@ -1,0 +1,39 @@
+{
+  "version": "0.1.0",
+  "elements": {
+    "/fixtures/sample.ts:userQuery": {
+      "type": "operation",
+      "metadata": {
+        "sourcePath": "/fixtures/sample.ts",
+        "sourceHash": "mock-hash-1",
+        "contentHash": "mock-content-hash-1"
+      },
+      "prebuild": {
+        "operationType": "query",
+        "operationName": "UserQuery",
+        "document": "query UserQuery { user { id name } }",
+        "variables": []
+      }
+    },
+    "/fixtures/sample.ts:createUserMutation": {
+      "type": "operation",
+      "metadata": {
+        "sourcePath": "/fixtures/sample.ts",
+        "sourceHash": "mock-hash-2",
+        "contentHash": "mock-content-hash-2"
+      },
+      "prebuild": {
+        "operationType": "mutation",
+        "operationName": "CreateUser",
+        "document": "mutation CreateUser($input: CreateUserInput!) { createUser(input: $input) { id name } }",
+        "variables": [
+          {
+            "name": "input",
+            "type": "CreateUserInput!",
+            "defaultValue": null
+          }
+        ]
+      }
+    }
+  }
+}

@@ -51,9 +51,7 @@ const preparedStateCache = new Map<string, PreparedTransformSync>();
  * @param args - Configuration for preparation
  * @returns Result containing prepared state or error
  */
-export function prepareTransformSync(
-  args: PrepareTransformSyncArgs,
-): Result<PreparedTransformSync, PrepareTransformSyncError> {
+export function prepareTransformSync(args: PrepareTransformSyncArgs): Result<PreparedTransformSync, PrepareTransformSyncError> {
   const artifactPath = resolve(args.artifactPath);
   const importIdentifier = args.importIdentifier ?? "@/graphql-system";
 

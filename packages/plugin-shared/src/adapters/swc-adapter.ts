@@ -1,0 +1,264 @@
+/**
+ * SWC implementation of the TransformAdapter interface.
+ *
+ * This is a minimal initial implementation that handles the core zero-runtime transformation.
+ * Future iterations can add richer metadata collection and analysis parity with other adapters.
+ */
+
+import type { CallExpression, ExpressionStatement, ImportDeclaration, Module, Span } from "@swc/types";
+import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir.js";
+import type {
+  TransformAdapter,
+  TransformAdapterFactory,
+  TransformPassResult,
+  TransformProgramContext,
+} from "../core/transform-adapter.js";
+import type { PluginError } from "../state.js";
+
+/**
+ * SWC-specific environment required for the adapter.
+ */
+export type SwcEnv = {
+  readonly module: Module;
+  readonly swc: typeof import("@swc/core");
+  readonly filename: string;
+};
+
+/**
+ * SWC implementation of TransformAdapter.
+ */
+export class SwcAdapter implements TransformAdapter {
+  private env: SwcEnv;
+  private readonly swc: typeof import("@swc/core");
+  private runtimeCallsFromLastTransform: CallExpression[] = [];
+
+  constructor(env: SwcEnv) {
+    this.env = env;
+    this.swc = env.swc;
+  }
+
+  /**
+   * Collect metadata about GraphQL definitions.
+   * TODO: Implement full metadata collection in future iteration.
+   */
+  collectDefinitionMetadata(_context: TransformProgramContext): DefinitionMetadataMap {
+    // Minimal implementation - return empty map for now
+    return new Map();
+  }
+
+  /**
+   * Analyze a candidate call expression.
+   * TODO: Implement full call analysis in future iteration.
+   */
+  analyzeCall(_context: TransformProgramContext, _candidate: unknown): GraphQLCallAnalysis | PluginError {
+    throw new Error("[SwcAdapter] analyzeCall not yet implemented");
+  }
+
+  /**
+   * Transform the entire program, replacing GraphQL calls with runtime equivalents.
+   */
+  transformProgram(context: TransformProgramContext): TransformPassResult {
+    this.runtimeCallsFromLastTransform = [];
+    let transformed = false;
+
+    // Helper to recursively visit nodes
+    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+    const visit = (node: any): any => {
+      if (!node || typeof node !== "object") {
+        return node;
+      }
+
+      // Handle CallExpression nodes
+      if (node.type === "CallExpression") {
+        const gqlCall = this.detectGqlOperationCall(node as CallExpression);
+        if (gqlCall) {
+          transformed = true;
+          // For now, just track that we found a call
+          // Actual transformation will be added in next iteration
+          return node;
+        }
+      }
+
+      // Recursively visit children
+      if (Array.isArray(node)) {
+        return node.map(visit);
+      }
+
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(node)) {
+        if (Array.isArray(value)) {
+          result[key] = value.map(visit);
+        } else if (value && typeof value === "object") {
+          result[key] = visit(value);
+        } else {
+          result[key] = value;
+        }
+      }
+      return result;
+    };
+
+    const transformedModule = visit(this.env.module) as Module;
+    this.env = { ...this.env, module: transformedModule };
+
+    return {
+      transformed,
+      runtimeArtifacts: undefined,
+    };
+  }
+
+  /**
+   * Insert runtime side effects (operation registrations) into the program.
+   */
+  insertRuntimeSideEffects(context: TransformProgramContext, _runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
+    const runtimeCalls = this.runtimeCallsFromLastTransform;
+    if (runtimeCalls.length === 0) {
+      return;
+    }
+
+    // Create runtime import declaration
+    const importIdentifier = context.filename; // TODO: Get from state.options.importIdentifier
+    const runtimeImport: ImportDeclaration = {
+      type: "ImportDeclaration",
+      span: makeSpan(),
+      specifiers: [
+        {
+          type: "ImportSpecifier",
+          span: makeSpan(),
+          local: {
+            type: "Identifier",
+            span: makeSpan(),
+            value: "gqlRuntime",
+            optional: false,
+          },
+          imported: undefined,
+          isTypeOnly: false,
+        },
+      ],
+      source: {
+        type: "StringLiteral",
+        span: makeSpan(),
+        value: importIdentifier,
+      },
+      typeOnly: false,
+    };
+
+    // Wrap runtime calls in expression statements
+    const statements: ExpressionStatement[] = runtimeCalls.map((expr) => ({
+      type: "ExpressionStatement",
+      span: makeSpan(),
+      expression: expr,
+    }));
+
+    // Find insertion point after imports
+    const existingBody = this.env.module.body;
+    let insertIndex = 0;
+    for (let i = 0; i < existingBody.length; i++) {
+      const stmt = existingBody[i];
+      if (stmt && stmt.type === "ImportDeclaration") {
+        insertIndex = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    // Insert runtime import and calls
+    const newBody = [...existingBody.slice(0, insertIndex), runtimeImport, ...statements, ...existingBody.slice(insertIndex)];
+
+    // Update module with new body
+    this.env = {
+      ...this.env,
+      module: {
+        ...this.env.module,
+        body: newBody,
+      },
+    };
+
+    // Clear to prevent repeated insertions
+    this.runtimeCallsFromLastTransform = [];
+  }
+
+  /**
+   * Detect if a call expression is a gql.operation.* call.
+   * Returns the operation kind if detected, null otherwise.
+   */
+  private detectGqlOperationCall(node: CallExpression): string | null {
+    // Match pattern: gql.operation.<kind>(...)
+    // node.callee should be MemberExpression: operation.<kind>
+    if (node.callee.type !== "MemberExpression") {
+      return null;
+    }
+
+    const kindAccess = node.callee;
+
+    // Get the kind (query, mutation, subscription, fragment)
+    // property should be Identifier (not ComputedPropName)
+    if (kindAccess.property.type !== "Identifier") {
+      return null;
+    }
+
+    const kind = kindAccess.property.value;
+
+    // Check if supported kind
+    const supportedKinds = ["query", "mutation", "subscription", "fragment"];
+    if (!supportedKinds.includes(kind)) {
+      return null;
+    }
+
+    // kindAccess.object should be MemberExpression: gql.operation
+    if (kindAccess.object.type !== "MemberExpression") {
+      return null;
+    }
+
+    const operationAccess = kindAccess.object;
+
+    // Check that property is "operation" (and not computed)
+    if (operationAccess.property.type !== "Identifier") {
+      return null;
+    }
+
+    if (operationAccess.property.value !== "operation") {
+      return null;
+    }
+
+    // operationAccess.object should be Identifier: gql
+    if (operationAccess.object.type !== "Identifier") {
+      return null;
+    }
+
+    if (operationAccess.object.value !== "gql") {
+      return null;
+    }
+
+    return kind;
+  }
+}
+
+/**
+ * Factory for creating SwcAdapter instances.
+ */
+export const swcTransformAdapterFactory: TransformAdapterFactory = {
+  id: "swc",
+  create(env: unknown): SwcAdapter {
+    if (!isSwcEnv(env)) {
+      throw new Error("[INTERNAL] SwcAdapter requires SwcEnv");
+    }
+    return new SwcAdapter(env);
+  },
+};
+
+/**
+ * Type guard for SwcEnv.
+ */
+const isSwcEnv = (env: unknown): env is SwcEnv => {
+  return typeof env === "object" && env !== null && "module" in env && "swc" in env && "filename" in env;
+};
+
+/**
+ * Helper to create placeholder span.
+ * Uses zero offsets since exact positions aren't crucial for emitted code.
+ */
+const makeSpan = (): Span => ({
+  start: 0,
+  end: 0,
+  ctxt: 0,
+});

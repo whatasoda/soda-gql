@@ -1,5 +1,6 @@
 // Re-export public APIs
 
+export * from "./adapters/swc-adapter";
 export * from "./adapters/typescript-adapter";
 export * from "./artifact";
 export {

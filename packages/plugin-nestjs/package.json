@@ -41,6 +41,13 @@
       "require": "./dist/compiler/tsc/index.cjs",
       "default": "./dist/compiler/tsc/index.js"
     },
+    "./compiler/swc": {
+      "development": "./src/compiler/swc/index.ts",
+      "types": "./dist/compiler/swc/index.d.ts",
+      "import": "./dist/compiler/swc/index.js",
+      "require": "./dist/compiler/swc/index.cjs",
+      "default": "./dist/compiler/swc/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -55,11 +62,19 @@
   },
   "peerDependencies": {
     "@babel/core": "^7.24.0",
+    "@swc/core": "^1.0.0",
+    "@swc/types": "^0.1.0",
     "typescript": "^5.0.0",
     "webpack": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "@babel/core": {
+      "optional": true
+    },
+    "@swc/core": {
+      "optional": true
+    },
+    "@swc/types": {
       "optional": true
     },
     "typescript": {

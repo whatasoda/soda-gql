@@ -6,11 +6,7 @@
  */
 
 import type * as ts from "typescript";
-import type {
-  DefinitionMetadataMap,
-  GraphQLCallAnalysis,
-  GraphQLCallIR,
-} from "../core/ir.js";
+import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir.js";
 import type {
   TransformAdapter,
   TransformAdapterFactory,
@@ -210,11 +206,5 @@ export const typescriptTransformAdapterFactory: TransformAdapterFactory = {
  * Type guard for TypeScriptEnv.
  */
 const isTypeScriptEnv = (env: unknown): env is TypeScriptEnv => {
-  return (
-    typeof env === "object" &&
-    env !== null &&
-    "sourceFile" in env &&
-    "context" in env &&
-    "typescript" in env
-  );
+  return typeof env === "object" && env !== null && "sourceFile" in env && "context" in env && "typescript" in env;
 };

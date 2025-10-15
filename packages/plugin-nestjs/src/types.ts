@@ -1,5 +1,4 @@
 // Re-export config types
-export type { SodaGqlConfig } from "./schemas/config.js";
 
 // Re-export webpack schema-derived types
 export type {
@@ -7,3 +6,4 @@ export type {
   WebpackLoaderOptions,
   WebpackPluginOptions,
 } from "@soda-gql/plugin-webpack";
+export type { SodaGqlConfig } from "./schemas/config.js";

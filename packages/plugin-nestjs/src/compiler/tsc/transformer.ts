@@ -5,11 +5,8 @@
  * into the Nest CLI build process when using `builder: "tsc"`.
  */
 
+import { type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
 import type * as ts from "typescript";
-import {
-  typescriptTransformAdapterFactory,
-  type TypeScriptAdapter,
-} from "@soda-gql/plugin-shared";
 import { prepareTransformSync } from "../core/prepare-transform-sync.js";
 
 /**
@@ -74,9 +71,7 @@ export function createSodaGqlTransformer(
 
   // Validate required config
   if (!config.artifactPath) {
-    throw new Error(
-      "[@soda-gql/plugin-nestjs] artifactPath is required in transformer config",
-    );
+    throw new Error("[@soda-gql/plugin-nestjs] artifactPath is required in transformer config");
   }
 
   // Short-circuit for runtime mode - no transformation needed
@@ -121,8 +116,7 @@ export function createSodaGqlTransformer(
       // Transform the program
       const transformContext = {
         filename: sourceFile.fileName,
-        artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) =>
-          prepared.allArtifacts[canonicalId],
+        artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => prepared.allArtifacts[canonicalId],
       };
 
       const transformResult = adapter.transformProgram(transformContext);

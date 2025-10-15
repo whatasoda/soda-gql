@@ -1,8 +1,8 @@
 import { err, ok, type Result } from "neverthrow";
-import type { PluginOptions } from "../types.js";
-import { createPluginRuntimeFromNormalized, type PluginRuntime } from "../runtime.js";
 import { normalizePluginOptions, type OptionsError } from "../options.js";
+import { createPluginRuntimeFromNormalized, type PluginRuntime } from "../runtime.js";
 import type { PluginError, PluginState } from "../state.js";
+import type { PluginOptions } from "../types.js";
 
 /**
  * Arguments for preparing a transform operation
@@ -143,7 +143,7 @@ const mapOptionsError = (error: OptionsError): PluginError => {
         cause: error,
       };
   }
-}
+};
 
 /**
  * Clear the module-level runtime cache.
