@@ -37,8 +37,9 @@ export const collectGqlDefinitionMetadata = ({ programPath, filename, createTrac
   programPath.traverse({
     enter(path) {
       if (path.isCallExpression() && isGqlDefinitionCall(path.node)) {
+        const depthBeforeRegister = tracker.currentDepth();
         const { astPath } = tracker.registerDefinition();
-        const isTopLevel = tracker.currentDepth() === 0;
+        const isTopLevel = depthBeforeRegister <= 1;
         const exportInfo = isTopLevel ? resolveTopLevelExport(path, exportBindings) : null;
 
         metadata.set(path.node, {
@@ -195,6 +196,14 @@ const maybeEnterScope = (
   tracker: CanonicalPathTracker,
   getAnonymousName: (kind: string) => string,
 ): ScopeHandle | null => {
+  // CommonJS exports: exports.foo = ... or module.exports.foo = ...
+  if (path.isAssignmentExpression()) {
+    const exportName = getCommonJsExportName(path.node.left);
+    if (exportName) {
+      return tracker.enterScope({ segment: exportName, kind: "variable", stableKey: `var:${exportName}` });
+    }
+  }
+
   if (path.isVariableDeclarator() && t.isIdentifier(path.node.id)) {
     const name = path.node.id.name;
     return tracker.enterScope({ segment: name, kind: "variable", stableKey: `var:${name}` });

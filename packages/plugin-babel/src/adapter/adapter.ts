@@ -152,11 +152,14 @@ export class BabelAdapter implements TransformAdapter {
       return;
     }
 
+    // Wrap expressions in ExpressionStatements before insertion
+    const statements = runtimeCalls.map((expr) => this.env.types.expressionStatement(expr));
+
     // Insert after @soda-gql/runtime import
     this.env.programPath.traverse({
       ImportDeclaration(importDeclPath) {
         if (importDeclPath.node.source.value === "@soda-gql/runtime") {
-          importDeclPath.insertAfter(runtimeCalls);
+          importDeclPath.insertAfter(statements);
         }
       },
     });
