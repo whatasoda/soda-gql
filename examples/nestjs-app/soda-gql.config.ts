@@ -1,5 +1,5 @@
-import { defineConfig } from '@soda-gql/config';
+import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
-  graphqlSystemPath: './graphql-system/index.ts',
+  graphqlSystemPath: "./graphql-system/index.ts",
 });

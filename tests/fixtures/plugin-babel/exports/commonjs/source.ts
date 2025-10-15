@@ -1,4 +1,3 @@
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserQuery = exports.updateUserMutation = void 0;
 
@@ -26,11 +25,7 @@ exports.updateUserMutation = graphql_system_1.gql.default(({ mutation }, { $ }) 
 );
 
 exports.getUserQuery = graphql_system_1.gql.default(({ query }, { $ }) =>
-  query(
-    "GetUser",
-    { variables: { ...$("userId").scalar("ID:!") } },
-    ({ $, getSlice }) => ({
-      ...getSlice(userSlice, { id: $.userId }),
-    }),
-  ),
+  query("GetUser", { variables: { ...$("userId").scalar("ID:!") } }, ({ $, getSlice }) => ({
+    ...getSlice(userSlice, { id: $.userId }),
+  })),
 );

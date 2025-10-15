@@ -1,4 +1,4 @@
-import { getUserQuery, listUsersQuery, updateUserMutation } from './operations';
+import { getUserQuery, listUsersQuery, updateUserMutation } from "./operations";
 
 /**
  * Example usage of soda-gql with Babel plugin
@@ -10,15 +10,15 @@ import { getUserQuery, listUsersQuery, updateUserMutation } from './operations';
  * - Runtime execution (mocked for demonstration)
  */
 
-console.log('=== Babel App Example ===\n');
+console.log("=== Babel App Example ===\n");
 
 // Type information is preserved
-console.log('Available operations:');
-console.log('- getUserQuery:', typeof getUserQuery);
-console.log('- listUsersQuery:', typeof listUsersQuery);
-console.log('- updateUserMutation:', typeof updateUserMutation);
+console.log("Available operations:");
+console.log("- getUserQuery:", typeof getUserQuery);
+console.log("- listUsersQuery:", typeof listUsersQuery);
+console.log("- updateUserMutation:", typeof updateUserMutation);
 
 // In a real application, you would execute these operations with a GraphQL client
 // Example:
 // const result = await client.query(getUserQuery, { userId: '1', categoryId: '10' });
-console.log('\n✅ Operations are registered and ready to use');
+console.log("\n✅ Operations are registered and ready to use");

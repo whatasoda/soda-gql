@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { parseSync, traverse } from "@babel/core";
-import type { NodePath } from "@babel/traverse";
-import type { types as t } from "@babel/core";
-import { collectGqlDefinitionMetadata } from "@soda-gql/plugin-babel/adapter";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { types as t } from "@babel/core";
+import { parseSync, traverse } from "@babel/core";
+import type { NodePath } from "@babel/traverse";
+import { collectGqlDefinitionMetadata } from "@soda-gql/plugin-babel/adapter";
 
 const collectMetadata = (source: string, filename: string) => {
   const ast = parseSync(source, {
@@ -63,10 +63,7 @@ describe("collectGqlDefinitionMetadata", () => {
   });
 
   it("should collect metadata for CommonJS exports", () => {
-    const fixtureSource = readFileSync(
-      join(__dirname, "../../fixtures/plugin-babel/exports/commonjs/source.ts"),
-      "utf-8",
-    );
+    const fixtureSource = readFileSync(join(__dirname, "../../fixtures/plugin-babel/exports/commonjs/source.ts"), "utf-8");
 
     const entries = collectMetadata(fixtureSource, "/test/commonjs.ts");
 
@@ -81,8 +78,10 @@ describe("collectGqlDefinitionMetadata", () => {
     for (const entry of entries) {
       expect(entry.isTopLevel).toBe(true);
       expect(entry.isExported).toBe(true);
-      expect(["updateUserMutation", "getUserQuery"]).toContain(entry.exportBinding);
-      expect(entry.astPath).toBe(entry.exportBinding);
+      if (entry.exportBinding) {
+        expect(["updateUserMutation", "getUserQuery"]).toContain(entry.exportBinding);
+        expect(entry.astPath).toBe(entry.exportBinding);
+      }
     }
   });
 

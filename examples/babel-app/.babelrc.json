@@ -1,11 +1,12 @@
 {
-  "presets": [
-    ["@babel/preset-typescript", { "onlyRemoveTypeImports": true }]
-  ],
+  "presets": [["@babel/preset-typescript", { "onlyRemoveTypeImports": true }]],
   "plugins": [
-    ["@soda-gql/plugin-babel", {
-      "mode": "runtime",
-      "runtimeImportPath": "@soda-gql/runtime"
-    }]
+    [
+      "@soda-gql/plugin-babel",
+      {
+        "mode": "runtime",
+        "runtimeImportPath": "@soda-gql/runtime"
+      }
+    ]
   ]
 }

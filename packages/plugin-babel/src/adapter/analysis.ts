@@ -149,15 +149,11 @@ const resolveBuilderCall = (call: t.CallExpression): t.CallExpression | null => 
 };
 
 const isGqlMemberExpression = (callee: t.Expression | t.V8IntrinsicIdentifier): callee is t.MemberExpression => {
-  return (
-    t.isMemberExpression(callee) &&
-    isSimpleProperty(callee.property) &&
-    isGqlReference(callee.object)
-  );
+  return t.isMemberExpression(callee) && isSimpleProperty(callee.property) && isGqlReference(callee.object);
 };
 
 const isSimpleProperty = (property: t.Expression | t.PrivateName): property is t.Identifier | t.StringLiteral =>
-  (t.isIdentifier(property) || (t.isStringLiteral(property) && property.value.length > 0));
+  t.isIdentifier(property) || (t.isStringLiteral(property) && property.value.length > 0);
 
 const isGqlReference = (expr: t.Expression | t.Super): boolean => {
   if (t.isIdentifier(expr, { name: "gql" })) {

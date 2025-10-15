@@ -104,7 +104,7 @@ const collectExportBindings = (program: t.Program): ExportBindingMap => {
   return bindings;
 };
 
-const getCommonJsExportName = (node: t.Expression | t.PatternLike): string | null => {
+const getCommonJsExportName = (node: t.LVal | t.OptionalMemberExpression): string | null => {
   if (!t.isMemberExpression(node) || node.computed) {
     return null;
   }

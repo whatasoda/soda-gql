@@ -1,28 +1,28 @@
-import { defineScalar } from '@soda-gql/core';
-import { createRuntimeAdapter } from '@soda-gql/runtime';
+import { defineScalar } from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/runtime";
 
 export const scalar = {
-  ...defineScalar('ID', ({ type }) => ({
+  ...defineScalar("ID", ({ type }) => ({
     input: type<string>(),
     output: type<string>(),
     directives: {},
   })),
-  ...defineScalar('String', ({ type }) => ({
+  ...defineScalar("String", ({ type }) => ({
     input: type<string>(),
     output: type<string>(),
     directives: {},
   })),
-  ...defineScalar('Int', ({ type }) => ({
+  ...defineScalar("Int", ({ type }) => ({
     input: type<number>(),
     output: type<number>(),
     directives: {},
   })),
-  ...defineScalar('Float', ({ type }) => ({
+  ...defineScalar("Float", ({ type }) => ({
     input: type<number>(),
     output: type<number>(),
     directives: {},
   })),
-  ...defineScalar('Boolean', ({ type }) => ({
+  ...defineScalar("Boolean", ({ type }) => ({
     input: type<boolean>(),
     output: type<boolean>(),
     directives: {},
@@ -30,5 +30,5 @@ export const scalar = {
 } as const;
 
 export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: 'non-graphql-error'; cause: unknown }>(),
+  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
 }));

@@ -1,4 +1,4 @@
-import { gql } from '@/graphql-system';
+import { gql } from "@/graphql-system";
 
 /**
  * User model definition
@@ -6,15 +6,7 @@ import { gql } from '@/graphql-system';
 export const userModel = gql.default(({ model }) =>
   model.User(
     {},
-    ({ f }) => [
-      f.id(),
-      f.name(),
-      f.email(),
-      f.posts()(({ f }) => [
-        f.id(),
-        f.title(),
-      ]),
-    ],
+    ({ f }) => [f.id(), f.name(), f.email(), f.posts()(({ f }) => [f.id(), f.title()])],
     (selection) => ({
       id: selection.id,
       name: selection.name,
@@ -33,11 +25,7 @@ export const userModel = gql.default(({ model }) =>
 export const userListModel = gql.default(({ model }) =>
   model.User(
     {},
-    ({ f }) => [
-      f.id(),
-      f.name(),
-      f.email(),
-    ],
+    ({ f }) => [f.id(), f.name(), f.email()],
     (selection) => ({
       id: selection.id,
       name: selection.name,

@@ -155,14 +155,67 @@ export class BabelAdapter implements TransformAdapter {
     // Wrap expressions in ExpressionStatements before insertion
     const statements = runtimeCalls.map((expr) => this.env.types.expressionStatement(expr));
 
-    // Insert after @soda-gql/runtime import
-    this.env.programPath.traverse({
-      ImportDeclaration(importDeclPath) {
-        if (importDeclPath.node.source.value === "@soda-gql/runtime") {
-          importDeclPath.insertAfter(statements);
+    // Find the last import/require statement to insert after all dependencies
+    const lastLoaderPath = this.findLastModuleLoader();
+
+    if (lastLoaderPath) {
+      lastLoaderPath.insertAfter(statements);
+    } else {
+      // Fallback: insert at the beginning if no loaders found
+      this.env.programPath.unshiftContainer("body", statements);
+    }
+
+    // Clear to prevent repeated insertions
+    this.runtimeCallsFromLastTransform = [];
+  }
+
+  /**
+   * Find the last statement that loads a module (import or require).
+   * Handles both ESM imports and CommonJS require() calls.
+   */
+  private findLastModuleLoader(): NodePath<t.Statement> | null {
+    const bodyPaths = this.env.programPath.get("body");
+    let lastLoader: NodePath<t.Statement> | null = null;
+
+    for (const path of bodyPaths) {
+      // ESM: import declaration
+      if (path.isImportDeclaration()) {
+        lastLoader = path;
+        continue;
+      }
+
+      // CommonJS: const foo = require("bar") or const foo = __webpack_require__(123)
+      if (path.isVariableDeclaration()) {
+        for (const declarator of path.node.declarations) {
+          if (declarator.init && this.isRequireCall(declarator.init)) {
+            lastLoader = path;
+            break;
+          }
         }
-      },
-    });
+        continue;
+      }
+
+      // CommonJS: require("bar") or __webpack_require__(123) as standalone expression
+      if (path.isExpressionStatement()) {
+        if (this.isRequireCall(path.node.expression)) {
+          lastLoader = path;
+        }
+      }
+    }
+
+    return lastLoader;
+  }
+
+  /**
+   * Check if a node is a require() or __webpack_require__() call.
+   */
+  private isRequireCall(node: t.Node): boolean {
+    if (!this.env.types.isCallExpression(node)) {
+      return false;
+    }
+
+    const callee = node.callee;
+    return this.env.types.isIdentifier(callee) && (callee.name === "require" || callee.name === "__webpack_require__");
   }
 
   /**

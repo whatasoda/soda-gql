@@ -1,12 +1,19 @@
+import { resolve } from "node:path";
 import { defineConfig, type UserConfig } from "tsdown";
 import { packageEntries } from "./scripts/generated/exports-manifest.js";
-import { resolve } from "node:path";
 
-const aliases = Object.fromEntries(Object.entries(packageEntries).flatMap(([pkg, exports]) => Object.entries(exports).map(([name, path]) => [resolve(`/${pkg}`, name.replace(/(?<=^|\/)index$/, ".")).slice(1), [`./${path}`]])));
+const aliases = Object.fromEntries(
+  Object.entries(packageEntries).flatMap(([pkg, exports]) =>
+    Object.entries(exports).map(([name, path]) => [
+      resolve(`/${pkg}`, name.replace(/(?<=^|\/)index$/, ".")).slice(1),
+      [`./${path}`],
+    ]),
+  ),
+);
 
 const common = <T extends keyof typeof packageEntries>(name: T) => {
   const shortName = name.replace(/^@soda-gql\//, "");
-  return ({
+  return {
     name,
     outDir: `packages/${shortName}/dist`,
     entry: packageEntries[name],
@@ -15,15 +22,14 @@ const common = <T extends keyof typeof packageEntries>(name: T) => {
       sourcemap: true,
       compilerOptions: {
         paths: aliases,
-      }
+      },
     },
-  } satisfies UserConfig);
-}
+  } satisfies UserConfig;
+};
 
-export default defineConfig(
-  [
-    // Core runtime packages
-    {
+export default defineConfig([
+  // Core runtime packages
+  {
     ...common("@soda-gql/core"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
@@ -95,12 +101,7 @@ export default defineConfig(
     banner: {
       js: "#!/usr/bin/env bun",
     },
-    external: [
-      "@soda-gql/codegen",
-      "@soda-gql/builder",
-      "neverthrow",
-      "zod",
-    ],
+    external: ["@soda-gql/codegen", "@soda-gql/builder", "neverthrow", "zod"],
     clean: true,
   },
 
@@ -110,12 +111,7 @@ export default defineConfig(
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: [
-      "@soda-gql/builder",
-      "@soda-gql/common",
-      "neverthrow",
-      "zod",
-    ],
+    external: ["@soda-gql/builder", "@soda-gql/common", "neverthrow", "zod"],
     clean: true,
   },
   {
