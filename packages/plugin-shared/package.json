@@ -18,6 +18,7 @@
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/parser": "^7.24.0",

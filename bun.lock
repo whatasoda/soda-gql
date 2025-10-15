@@ -137,8 +137,8 @@
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/plugin-babel": "workspace:*",
         "@soda-gql/plugin-shared": "workspace:*",
+        "@soda-gql/plugin-webpack": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
@@ -161,12 +161,30 @@
         "@babel/types": "^7.24.0",
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
+        "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
       },
       "devDependencies": {
         "@types/babel__core": "^7.20.5",
+      },
+    },
+    "packages/plugin-webpack": {
+      "name": "@soda-gql/plugin-webpack",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/plugin-babel": "workspace:*",
+        "@soda-gql/plugin-shared": "workspace:*",
+        "zod": "^4.1.11",
+      },
+      "devDependencies": {
+        "@types/webpack": "^5.28.5",
+      },
+      "peerDependencies": {
+        "@babel/core": "^7.24.0",
+        "webpack": "^5.0.0",
       },
     },
     "packages/runtime": {
@@ -414,6 +432,8 @@
     "@soda-gql/plugin-nestjs": ["@soda-gql/plugin-nestjs@workspace:packages/plugin-nestjs"],
 
     "@soda-gql/plugin-shared": ["@soda-gql/plugin-shared@workspace:packages/plugin-shared"],
+
+    "@soda-gql/plugin-webpack": ["@soda-gql/plugin-webpack@workspace:packages/plugin-webpack"],
 
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
 

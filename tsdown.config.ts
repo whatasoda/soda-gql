@@ -11,6 +11,15 @@ const aliases = Object.fromEntries(
   ),
 );
 
+const workspaceExternal = (self: string, extra: readonly string[] = []) => {
+  const extras = new Set(extra);
+  return (id: string) => {
+    if (id === self || id.startsWith(`${self}/`)) return false;
+    if (id.startsWith("@soda-gql/")) return true;
+    return extras.has(id);
+  };
+};
+
 const common = <T extends keyof typeof packageEntries>(name: T) => {
   const shortName = name.replace(/^@soda-gql\//, "");
   return {
@@ -33,13 +42,13 @@ export default defineConfig([
     ...common("@soda-gql/core"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: ["graphql"],
+    external: workspaceExternal("@soda-gql/core", ["graphql"]),
   },
   {
     ...common("@soda-gql/runtime"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: [],
+    external: workspaceExternal("@soda-gql/runtime"),
   },
 
   // Shared/Common packages
@@ -49,7 +58,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: ["@soda-gql/core", "@soda-gql/codegen"],
+    external: workspaceExternal("@soda-gql/common"),
     clean: true,
   },
   {
@@ -58,7 +67,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: ["@soda-gql/core", "zod", "esbuild"],
+    external: workspaceExternal("@soda-gql/config", ["zod", "esbuild"]),
     clean: true,
   },
 
@@ -70,16 +79,13 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: [
-      "@soda-gql/codegen",
-      "@soda-gql/common",
-      "@soda-gql/core",
+    external: workspaceExternal("@soda-gql/builder", [
       "@swc/core",
       "@swc/types",
       "neverthrow",
       "typescript",
       "zod",
-    ],
+    ]),
     clean: true,
   },
   {
@@ -88,7 +94,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: ["@soda-gql/core", "@soda-gql/common", "graphql", "zod"],
+    external: workspaceExternal("@soda-gql/codegen", ["graphql", "zod"]),
     clean: true,
   },
 
@@ -101,7 +107,7 @@ export default defineConfig([
     banner: {
       js: "#!/usr/bin/env bun",
     },
-    external: ["@soda-gql/codegen", "@soda-gql/builder", "neverthrow", "zod"],
+    external: workspaceExternal("@soda-gql/cli", ["neverthrow", "zod"]),
     clean: true,
   },
 
@@ -111,7 +117,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: ["@soda-gql/builder", "@soda-gql/common", "neverthrow", "zod"],
+    external: workspaceExternal("@soda-gql/plugin-shared", ["neverthrow", "zod"]),
     clean: true,
   },
   {
@@ -119,17 +125,14 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: [
-      "@soda-gql/builder",
-      "@soda-gql/common",
-      "@soda-gql/plugin-shared",
+    external: workspaceExternal("@soda-gql/plugin-babel", [
       "@babel/core",
       "@babel/parser",
       "@babel/traverse",
       "@babel/types",
       "neverthrow",
       "zod",
-    ],
+    ]),
     clean: true,
   },
   {
@@ -137,17 +140,14 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: [
-      "@soda-gql/builder",
-      "@soda-gql/plugin-shared",
-      "@soda-gql/plugin-babel",
+    external: workspaceExternal("@soda-gql/plugin-webpack", [
       "@babel/core",
       "@babel/parser",
       "@babel/traverse",
       "@babel/types",
       "webpack",
       "zod",
-    ],
+    ]),
     clean: true,
   },
   {
@@ -155,13 +155,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: [
-      "@soda-gql/plugin-webpack",
-      "@soda-gql/builder",
-      "@soda-gql/plugin-shared",
-      "neverthrow",
-      "zod",
-    ],
+    external: workspaceExternal("@soda-gql/plugin-nestjs", ["neverthrow", "zod"]),
     clean: true,
   },
 ]);
