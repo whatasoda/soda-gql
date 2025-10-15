@@ -87,8 +87,10 @@ export const assertCliSuccess = (result: CliResult): void => {
 export const assertCliError = (result: CliResult, expectedErrorCode?: string): void => {
   expect(result.exitCode).toBe(1);
   if (expectedErrorCode) {
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const payload = JSON.parse(result.stdout);
+    // Check stderr first (where errors are now written), fallback to stdout for backwards compatibility
+    const errorOutput = result.stderr || result.stdout;
+    expect(() => JSON.parse(errorOutput)).not.toThrow();
+    const payload = JSON.parse(errorOutput);
     expect(payload.error).toBeDefined();
     expect(payload.error.code).toBe(expectedErrorCode);
   }

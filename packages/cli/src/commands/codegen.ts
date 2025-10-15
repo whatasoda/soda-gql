@@ -231,39 +231,50 @@ const formatCodegenError = (format: OutputFormat, error: CodegenError) => {
 };
 
 export const codegenCommand = async (argv: readonly string[]): Promise<number> => {
-  const parsed = parseCodegenArgs(argv);
+  try {
+    const parsed = parseCodegenArgs(argv);
 
-  if (parsed.isErr()) {
-    process.stdout.write(`${formatCodegenError("json", parsed.error)}\n`);
-    return 1;
-  }
-
-  const command = parsed.value;
-
-  if (command.kind === "emitInjectTemplate") {
-    const outPath = resolve(command.outPath);
-    const result = writeInjectTemplate(outPath);
-    if (result.isErr()) {
-      process.stdout.write(`${formatCodegenError(command.format, result.error)}\n`);
+    if (parsed.isErr()) {
+      process.stderr.write(`${formatCodegenError("json", parsed.error)}\n`);
       return 1;
     }
-    process.stdout.write(`${formatTemplateSuccess(command.format, outPath)}\n`);
+
+    const command = parsed.value;
+
+    if (command.kind === "emitInjectTemplate") {
+      const outPath = resolve(command.outPath);
+      const result = writeInjectTemplate(outPath);
+      if (result.isErr()) {
+        process.stderr.write(`${formatCodegenError(command.format, result.error)}\n`);
+        return 1;
+      }
+      process.stdout.write(`${formatTemplateSuccess(command.format, outPath)}\n`);
+      return 0;
+    }
+
+    const result = await runMultiSchemaCodegen({
+      schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
+      outPath: resolve(command.outPath),
+      format: command.format,
+      runtimeAdapters: Object.fromEntries(Object.entries(command.runtimeAdapters).map(([name, path]) => [name, resolve(path)])),
+      scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
+    });
+
+    if (result.isErr()) {
+      process.stderr.write(`${formatCodegenError(command.format, result.error)}\n`);
+      return 1;
+    }
+
+    process.stdout.write(`${formatMultiSchemaSuccess(command.format, result.value)}\n`);
     return 0;
-  }
-
-  const result = await runMultiSchemaCodegen({
-    schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
-    outPath: resolve(command.outPath),
-    format: command.format,
-    runtimeAdapters: Object.fromEntries(Object.entries(command.runtimeAdapters).map(([name, path]) => [name, resolve(path)])),
-    scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
-  });
-
-  if (result.isErr()) {
-    process.stdout.write(`${formatCodegenError(command.format, result.error)}\n`);
+  } catch (error) {
+    // Catch unexpected errors and convert to structured format
+    const unexpectedError: CodegenError = {
+      code: "EMIT_FAILED",
+      message: error instanceof Error ? error.message : String(error),
+      outPath: "",
+    };
+    process.stderr.write(`${formatCodegenError("json", unexpectedError)}\n`);
     return 1;
   }
-
-  process.stdout.write(`${formatMultiSchemaSuccess(command.format, result.value)}\n`);
-  return 0;
 };

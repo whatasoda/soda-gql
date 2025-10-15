@@ -125,67 +125,80 @@ const writeArtifact = async (artifact: BuilderArtifact, outPath: string): Promis
 };
 
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
-  // Load config first
-  const configResult = await loadConfig();
-  if (configResult.isErr()) {
-    const error = configResult.error;
-    process.stdout.write(`Config error: ${error.code} - ${error.message}\n`);
-    return 1;
-  }
-  const config = configResult.value;
-
-  const parsed = parseBuilderArgs(argv);
-
-  if (parsed.isErr()) {
-    process.stdout.write(`${formatBuilderError("json", parsed.error)}\n`);
-    return 1;
-  }
-
-  const options = parsed.value;
-
-  // Single build
-  const service = createBuilderService({ config, entrypoints: options.entry });
-
-  let result: Result<BuilderArtifact, BuilderError>;
   try {
-    result = await service.build();
-  } catch (cause) {
-    const error: BuilderError =
-      cause && typeof cause === "object" && "code" in cause
-        ? (cause as BuilderError)
-        : {
-            code: "RUNTIME_MODULE_LOAD_FAILED",
-            message: cause instanceof Error ? cause.message : String(cause),
-            filePath: "",
-            astPath: "",
-            cause,
-          };
-    process.stdout.write(`${formatBuilderError(options.format, error)}\n`);
-    return 1;
-  }
+    // Load config first
+    const configResult = await loadConfig();
+    if (configResult.isErr()) {
+      const error = configResult.error;
+      process.stderr.write(`Config error: ${error.code} - ${error.message}\n`);
+      return 1;
+    }
+    const config = configResult.value;
 
-  if (result.isErr()) {
-    process.stdout.write(`${formatBuilderError(options.format, result.error)}\n`);
-    return 1;
-  }
+    const parsed = parseBuilderArgs(argv);
 
-  // Write artifact to disk
-  try {
-    await writeArtifact(result.value, options.outPath);
+    if (parsed.isErr()) {
+      process.stderr.write(`${formatBuilderError("json", parsed.error)}\n`);
+      return 1;
+    }
+
+    const options = parsed.value;
+
+    // Single build
+    const service = createBuilderService({ config, entrypoints: options.entry });
+
+    let result: Result<BuilderArtifact, BuilderError>;
+    try {
+      result = await service.build();
+    } catch (cause) {
+      const error: BuilderError =
+        cause && typeof cause === "object" && "code" in cause
+          ? (cause as BuilderError)
+          : {
+              code: "RUNTIME_MODULE_LOAD_FAILED",
+              message: cause instanceof Error ? cause.message : String(cause),
+              filePath: "",
+              astPath: "",
+              cause,
+            };
+      process.stderr.write(`${formatBuilderError(options.format, error)}\n`);
+      return 1;
+    }
+
+    if (result.isErr()) {
+      process.stderr.write(`${formatBuilderError(options.format, result.error)}\n`);
+      return 1;
+    }
+
+    // Write artifact to disk
+    try {
+      await writeArtifact(result.value, options.outPath);
+    } catch (error) {
+      const writeError: BuilderError = {
+        code: "WRITE_FAILED",
+        message: error instanceof Error ? error.message : "Failed to write artifact",
+        outPath: options.outPath,
+      };
+      process.stderr.write(`${formatBuilderError(options.format, writeError)}\n`);
+      return 1;
+    }
+
+    const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath });
+    if (output) {
+      process.stdout.write(`${output}\n`);
+    }
+
+    return 0;
   } catch (error) {
-    const writeError: BuilderError = {
-      code: "WRITE_FAILED",
-      message: error instanceof Error ? error.message : "Failed to write artifact",
-      outPath: options.outPath,
+    // Catch unexpected errors and convert to structured format
+    const unexpectedError: BuilderError = {
+      code: "RUNTIME_MODULE_LOAD_FAILED",
+      message: error instanceof Error ? error.message : String(error),
+      filePath: "",
+      astPath: "",
+      cause: error,
     };
-    process.stdout.write(`${formatBuilderError(options.format, writeError)}\n`);
+    process.stderr.write(`${formatBuilderError("json", unexpectedError)}\n`);
     return 1;
   }
-
-  const output = formatBuilderSuccess(options.format, { artifact: result.value, outPath: options.outPath });
-  if (output) {
-    process.stdout.write(`${output}\n`);
-  }
-
-  return 0;
 };
