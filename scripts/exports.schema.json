@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Package Exports Manifest",
+  "description": "Defines source file exports for @soda-gql packages",
+  "type": "object",
+  "patternProperties": {
+    "^\\.": {
+      "type": "string",
+      "description": "Source file path relative to package root",
+      "pattern": "^\\./src/"
+    }
+  },
+  "additionalProperties": false
+}

@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "customConditions": ["development"],
     "outDir": "../../.typecheck/plugin-shared",
     "tsBuildInfoFile": "../../.typecheck/plugin-shared/tsconfig.tsbuildinfo",
     "rootDir": "./src",

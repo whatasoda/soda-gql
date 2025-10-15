@@ -1,0 +1,4 @@
+{
+  ".": "./src/index.ts",
+  "./runtime": "./src/runtime/index.ts"
+}

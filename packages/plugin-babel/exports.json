@@ -1,0 +1,5 @@
+{
+  ".": "./src/index.ts",
+  "./adapter": "./src/adapter/index.ts",
+  "./dev": "./src/dev/index.ts"
+}

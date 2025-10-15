@@ -1,11 +1,12 @@
 {
-  "extends": ["./tsconfig.base.json", "./tsconfig.paths.json"],
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "customConditions": ["development"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "composite": false,
-    "noEmit": false,
+    "noEmit": true,
     "emitDeclarationOnly": false,
     "isolatedModules": true,
     "skipLibCheck": true

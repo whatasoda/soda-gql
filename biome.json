@@ -45,6 +45,7 @@
   },
   "files": {
     "includes": [
+      "./tsdown.config.ts",
       "packages/**/*",
       "examples/**/*",
       "**/tests/**/*",

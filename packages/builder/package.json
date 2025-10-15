@@ -2,42 +2,53 @@
   "name": "@soda-gql/builder",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./types": {
-      "types": "./src/types.ts",
-      "import": "./src/types.ts",
-      "default": "./src/types.ts"
+      "development": "./src/types.ts",
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "require": "./dist/types.cjs",
+      "default": "./dist/types.js"
     },
     "./change-set": {
-      "types": "./src/change-set.ts",
-      "import": "./src/change-set.ts",
-      "default": "./src/change-set.ts"
+      "development": "./src/change-set.ts",
+      "types": "./dist/change-set.d.ts",
+      "import": "./dist/change-set.js",
+      "require": "./dist/change-set.cjs",
+      "default": "./dist/change-set.js"
     },
     "./artifact": {
-      "types": "./src/artifact/index.ts",
-      "import": "./src/artifact/index.ts",
-      "default": "./src/artifact/index.ts"
+      "development": "./src/artifact/index.ts",
+      "types": "./dist/artifact/index.d.ts",
+      "import": "./dist/artifact/index.js",
+      "require": "./dist/artifact/index.cjs",
+      "default": "./dist/artifact/index.js"
     },
     "./schemas/artifact": {
-      "types": "./src/schemas/artifact.ts",
-      "import": "./src/schemas/artifact.ts",
-      "default": "./src/schemas/artifact.ts"
+      "development": "./src/schemas/artifact.ts",
+      "types": "./dist/schemas/artifact.d.ts",
+      "import": "./dist/schemas/artifact.js",
+      "require": "./dist/schemas/artifact.cjs",
+      "default": "./dist/schemas/artifact.js"
     },
     "./service": {
-      "types": "./src/service.ts",
-      "import": "./src/service.ts",
-      "default": "./src/service.ts"
+      "development": "./src/service.ts",
+      "types": "./dist/service.d.ts",
+      "import": "./dist/service.js",
+      "require": "./dist/service.cjs",
+      "default": "./dist/service.js"
     },
-    "./package.json": "./package.json",
-    "./internal/*": null
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/codegen": "workspace:*",
@@ -47,6 +58,7 @@
     "@swc/types": "^0.1.6",
     "neverthrow": "^8.1.1",
     "typescript": "^5.0.0",
+    "xxhash-wasm": "^1.1.0",
     "zod": "^4.1.11"
   }
 }

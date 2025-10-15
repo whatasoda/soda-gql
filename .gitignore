@@ -161,6 +161,9 @@ bun.lockb
 
 .prompts
 
+# Generated files
+scripts/generated/
+
 # Test fixture stubs
 tests/fixtures/runtime-app/graphql-system/
 

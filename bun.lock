@@ -3,9 +3,6 @@
   "workspaces": {
     "": {
       "name": "soda-gql",
-      "dependencies": {
-        "xxhash-wasm": "^1.1.0",
-      },
       "devDependencies": {
         "@biomejs/biome": "2.2.3",
         "@types/bun": "latest",
@@ -60,6 +57,7 @@
         "@swc/types": "^0.1.6",
         "neverthrow": "^8.1.1",
         "typescript": "^5.0.0",
+        "xxhash-wasm": "^1.1.0",
         "zod": "^4.1.11",
       },
     },

@@ -1,5 +1,5 @@
 {
-  "extends": ["./tsconfig.base.json", "./tsconfig.paths.json"],
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
     "noEmit": true
@@ -17,7 +17,7 @@
     { "path": "./packages/plugin-nestjs/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
-    { "path": "./examples/babel-app/tsconfig.json" },
-    { "path": "./examples/nestjs-app/tsconfig.json" }
+    { "path": "./examples/babel-app/tsconfig.editor.json" },
+    { "path": "./examples/nestjs-app/tsconfig.editor.json" }
   ]
 }

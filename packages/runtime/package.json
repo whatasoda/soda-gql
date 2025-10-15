@@ -2,17 +2,18 @@
   "name": "@soda-gql/runtime",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
-    "./package.json": "./package.json",
-    "./tsconfig.json": "./tsconfig.json"
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/core": "workspace:*"

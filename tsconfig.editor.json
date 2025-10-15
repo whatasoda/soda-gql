@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "customConditions": ["development"],
     "outDir": ".typecheck/root",
     "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": ".",
@@ -11,7 +12,6 @@
       "@soda-gql/builder/*": ["./packages/builder/src/*"],
       "@soda-gql/cli/*": ["./packages/cli/src/*"],
       "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
-      "@soda-gql/common/portable": ["./packages/common/src/portable/index.ts"],
       "@soda-gql/common/*": ["./packages/common/src/*"],
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],
@@ -21,7 +21,7 @@
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
     }
   },
-  "include": ["tests/**/*", "scripts/**/*"],
+  "include": ["tests/**/*", "scripts/**/*", "tsdown.config.ts"],
   "exclude": [
     "node_modules",
     "dist",

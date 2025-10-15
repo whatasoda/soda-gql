@@ -2,29 +2,27 @@
   "name": "@soda-gql/common",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./portable": {
-      "types": "./src/portable/index.ts",
-      "import": "./src/portable/index.ts",
-      "default": "./src/portable/index.ts"
+      "development": "./src/portable/index.ts",
+      "types": "./dist/portable/index.d.ts",
+      "import": "./dist/portable/index.js",
+      "require": "./dist/portable/index.cjs",
+      "default": "./dist/portable/index.js"
     },
-    "./canonical-id": {
-      "types": "./src/canonical-id/index.ts",
-      "import": "./src/canonical-id/index.ts",
-      "default": "./src/canonical-id/index.ts"
-    },
-    "./package.json": "./package.json",
-    "./tsconfig.json": "./tsconfig.json"
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "zod": "^4.1.11"
-  }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

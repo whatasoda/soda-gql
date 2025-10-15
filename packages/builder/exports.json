@@ -1,0 +1,8 @@
+{
+  ".": "./src/index.ts",
+  "./types": "./src/types.ts",
+  "./change-set": "./src/change-set.ts",
+  "./artifact": "./src/artifact/index.ts",
+  "./schemas/artifact": "./src/schemas/artifact.ts",
+  "./service": "./src/service.ts"
+}

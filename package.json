@@ -1,6 +1,5 @@
 {
   "name": "soda-gql",
-  "module": "index.ts",
   "type": "module",
   "private": true,
   "workspaces": [
@@ -12,7 +11,8 @@
     "biome:check": "biome check --write .",
     "validate:tests": "bun run scripts/validate-tests.ts",
     "quality": "bun run validate:tests && bun run typecheck && bun run biome:check",
-    "build": "bunx tsdown",
+    "exports:sync": "bun scripts/sync-exports.ts",
+    "build": "bun run exports:sync && bunx tsdown",
     "build:watch": "bunx tsdown --watch",
     "clean:dist": "find packages -name dist -type d -prune -exec rm -rf {} +",
     "soda-gql": "bun run packages/cli/src/index.ts",
@@ -29,9 +29,6 @@
     "tsdown": "^0.15.7",
     "typescript": "^5.9.2",
     "zod": "^4.1.11"
-  },
-  "dependencies": {
-    "xxhash-wasm": "^1.1.0"
   },
   "patchedDependencies": {
     "@swc/core@1.13.5": "patches/@swc%2Fcore@1.13.5.patch"

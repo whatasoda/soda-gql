@@ -2,47 +2,18 @@
   "name": "@soda-gql/plugin-nestjs",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
-    "./types": {
-      "types": "./src/types.ts",
-      "import": "./src/types.ts",
-      "default": "./src/types.ts"
-    },
-    "./errors": {
-      "types": "./src/errors.ts",
-      "import": "./src/errors.ts",
-      "default": "./src/errors.ts"
-    },
-    "./webpack": {
-      "types": "./src/webpack/index.ts",
-      "import": "./src/webpack/index.ts",
-      "default": "./src/webpack/index.ts"
-    },
-    "./webpack/plugin": {
-      "types": "./src/webpack/plugin.ts",
-      "import": "./src/webpack/plugin.ts",
-      "default": "./src/webpack/plugin.ts"
-    },
-    "./webpack/loader": {
-      "types": "./src/webpack/loader.ts",
-      "import": "./src/webpack/loader.ts",
-      "default": "./src/webpack/loader.ts"
-    },
-    "./config": {
-      "types": "./src/config/index.ts",
-      "import": "./src/config/index.ts",
-      "default": "./src/config/index.ts"
-    },
-    "./package.json": "./package.json",
-    "./internal/*": null
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",

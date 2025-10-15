@@ -2,27 +2,32 @@
   "name": "@soda-gql/plugin-babel",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./adapter": {
-      "types": "./src/adapter/index.ts",
-      "import": "./src/adapter/index.ts",
-      "default": "./src/adapter/index.ts"
+      "development": "./src/adapter/index.ts",
+      "types": "./dist/adapter/index.d.ts",
+      "import": "./dist/adapter/index.js",
+      "require": "./dist/adapter/index.cjs",
+      "default": "./dist/adapter/index.js"
     },
     "./dev": {
-      "types": "./src/dev/index.ts",
-      "import": "./src/dev/index.ts",
-      "default": "./src/dev/index.ts"
+      "development": "./src/dev/index.ts",
+      "types": "./dist/dev/index.d.ts",
+      "import": "./dist/dev/index.js",
+      "require": "./dist/dev/index.cjs",
+      "default": "./dist/dev/index.js"
     },
-    "./package.json": "./package.json",
-    "./internal/*": null
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
