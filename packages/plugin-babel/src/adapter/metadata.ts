@@ -73,26 +73,61 @@ const collectExportBindings = (program: t.Program): ExportBindingMap => {
   const bindings: ExportBindingMap = new Map();
 
   for (const statement of program.body) {
-    if (!t.isExportNamedDeclaration(statement) || !statement.declaration) {
-      continue;
-    }
-
-    const { declaration } = statement;
-    if (t.isVariableDeclaration(declaration)) {
-      for (const declarator of declaration.declarations) {
-        if (t.isIdentifier(declarator.id)) {
-          bindings.set(declarator.id.name, declarator.id.name);
+    // ESM exports: export const foo = ...
+    if (t.isExportNamedDeclaration(statement) && statement.declaration) {
+      const { declaration } = statement;
+      if (t.isVariableDeclaration(declaration)) {
+        for (const declarator of declaration.declarations) {
+          if (t.isIdentifier(declarator.id)) {
+            bindings.set(declarator.id.name, declarator.id.name);
+          }
         }
+        continue;
+      }
+
+      if ((t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) && declaration.id) {
+        bindings.set(declaration.id.name, declaration.id.name);
       }
       continue;
     }
 
-    if ((t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) && declaration.id) {
-      bindings.set(declaration.id.name, declaration.id.name);
+    // CommonJS exports: exports.foo = ... or module.exports.foo = ...
+    if (t.isExpressionStatement(statement) && t.isAssignmentExpression(statement.expression)) {
+      const exportName = getCommonJsExportName(statement.expression.left);
+      if (exportName) {
+        bindings.set(exportName, exportName);
+      }
     }
   }
 
   return bindings;
+};
+
+const getCommonJsExportName = (node: t.Expression | t.PatternLike): string | null => {
+  if (!t.isMemberExpression(node) || node.computed) {
+    return null;
+  }
+
+  // Check if it's exports.foo or module.exports.foo
+  const isExports = t.isIdentifier(node.object, { name: "exports" });
+  const isModuleExports =
+    t.isMemberExpression(node.object) &&
+    t.isIdentifier(node.object.object, { name: "module" }) &&
+    t.isIdentifier(node.object.property, { name: "exports" });
+
+  if (!isExports && !isModuleExports) {
+    return null;
+  }
+
+  // Extract property name
+  if (t.isIdentifier(node.property)) {
+    return node.property.name;
+  }
+  if (t.isStringLiteral(node.property)) {
+    return node.property.value;
+  }
+
+  return null;
 };
 
 const createAnonymousNameFactory = (): ((kind: string) => string) => {
@@ -131,18 +166,28 @@ const resolveTopLevelExport = (
   callPath: NodePath<t.CallExpression>,
   exportBindings: ExportBindingMap,
 ): { readonly isExported: true; readonly exportBinding: string } | null => {
+  // ESM: const foo = gql.default(...); export { foo };
   const declarator = callPath.parentPath;
-  if (!declarator?.isVariableDeclarator()) {
-    return null;
+  if (declarator?.isVariableDeclarator()) {
+    const { id } = declarator.node;
+    if (t.isIdentifier(id)) {
+      const exportBinding = exportBindings.get(id.name);
+      if (exportBinding) {
+        return { isExported: true, exportBinding };
+      }
+    }
   }
 
-  const { id } = declarator.node;
-  if (!t.isIdentifier(id)) {
-    return null;
+  // CommonJS: exports.foo = gql.default(...);
+  const assignment = callPath.parentPath;
+  if (assignment?.isAssignmentExpression()) {
+    const exportName = getCommonJsExportName(assignment.node.left);
+    if (exportName && exportBindings.has(exportName)) {
+      return { isExported: true, exportBinding: exportName };
+    }
   }
 
-  const exportBinding = exportBindings.get(id.name);
-  return exportBinding ? { isExported: true, exportBinding } : null;
+  return null;
 };
 
 const maybeEnterScope = (
