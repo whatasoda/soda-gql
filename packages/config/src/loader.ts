@@ -46,7 +46,12 @@ async function executeConfigFile(configPath: string): Promise<unknown> {
       conditions: ["development", "node", "import", "default"],
     });
   } catch (error) {
-    throw configError("CONFIG_LOAD_FAILED", `Failed to bundle config: ${error instanceof Error ? error.message : String(error)}`, configPath, error);
+    throw configError(
+      "CONFIG_LOAD_FAILED",
+      `Failed to bundle config: ${error instanceof Error ? error.message : String(error)}`,
+      configPath,
+      error,
+    );
   }
 
   // Dynamic import the bundled file (import() can load .cjs files)

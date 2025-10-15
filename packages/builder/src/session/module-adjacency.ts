@@ -31,7 +31,11 @@ export const extractModuleAdjacency = ({
           continue;
         }
 
-        const resolved = resolveRelativeImportWithReferences({ filePath: normalizedFilePath, specifier: imp.source, references: snapshots });
+        const resolved = resolveRelativeImportWithReferences({
+          filePath: normalizedFilePath,
+          specifier: imp.source,
+          references: snapshots,
+        });
         if (resolved) {
           imports.add(resolved);
         }

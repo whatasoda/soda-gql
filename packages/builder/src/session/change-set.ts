@@ -39,11 +39,13 @@ export const coercePaths = (
   const { normalize } = require("node:path");
 
   if (Array.isArray(changes)) {
-    return new Set(changes.map((c) => {
-      const path = typeof c === "string" ? c : c.filePath;
-      // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
-      return normalize(path).replace(/\\/g, "/");
-    }));
+    return new Set(
+      changes.map((c) => {
+        const path = typeof c === "string" ? c : c.filePath;
+        // Normalize to POSIX format to match discovery cache keys (normalize() + replace backslashes)
+        return normalize(path).replace(/\\/g, "/");
+      }),
+    );
   }
 
   const result = new Set<string>();
