@@ -18,5 +18,57 @@
   },
   "devDependencies": {
     "@types/webpack": "^5.28.5"
+  },
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "development": "./src/plugin.ts",
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.js"
+    },
+    "./loader": {
+      "development": "./src/loader.ts",
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js",
+      "require": "./dist/loader.cjs",
+      "default": "./dist/loader.js"
+    },
+    "./hooks": {
+      "development": "./src/hooks.ts",
+      "types": "./dist/hooks.d.ts",
+      "import": "./dist/hooks.js",
+      "require": "./dist/hooks.cjs",
+      "default": "./dist/hooks.js"
+    },
+    "./internal/diagnostics": {
+      "development": "./src/internal/diagnostics.ts",
+      "types": "./dist/internal/diagnostics.d.ts",
+      "import": "./dist/internal/diagnostics.js",
+      "require": "./dist/internal/diagnostics.cjs",
+      "default": "./dist/internal/diagnostics.js"
+    },
+    "./internal/manifest": {
+      "development": "./src/internal/manifest.ts",
+      "types": "./dist/internal/manifest.d.ts",
+      "import": "./dist/internal/manifest.js",
+      "require": "./dist/internal/manifest.cjs",
+      "default": "./dist/internal/manifest.js"
+    },
+    "./schemas": {
+      "development": "./src/schemas/index.ts",
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js",
+      "require": "./dist/schemas/index.cjs",
+      "default": "./dist/schemas/index.js"
+    },
+    "./package.json": "./package.json"
   }
 }

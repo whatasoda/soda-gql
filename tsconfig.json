@@ -19,6 +19,7 @@
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
       "@soda-gql/plugin-nestjs/*": ["./packages/plugin-nestjs/src/*"],
       "@soda-gql/plugin-shared/*": ["./packages/plugin-shared/src/*"],
+      "@soda-gql/plugin-webpack/*": ["./packages/plugin-webpack/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
     }
   },
@@ -34,6 +35,7 @@
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-nestjs/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },
+    { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./examples/babel-app/tsconfig.editor.json" },
     { "path": "./examples/nestjs-app/tsconfig.editor.json" }
