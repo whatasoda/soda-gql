@@ -5,7 +5,7 @@
     "customConditions": ["development"],
     "outDir": "../../.typecheck/packages/plugin-webpack",
     "tsBuildInfoFile": "../../.typecheck/packages/plugin-webpack/tsconfig.tsbuildinfo",
-    "rootDir": ".",
+    "rootDir": "src",
     "paths": {
       "@soda-gql/plugin-shared": ["../plugin-shared/src/index.ts"],
       "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"],

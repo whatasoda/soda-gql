@@ -8,7 +8,9 @@
     "rootDir": "./src",
     "paths": {
       "@soda-gql/plugin-shared": ["../plugin-shared/src/index.ts"],
-      "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"]
+      "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"],
+      "@soda-gql/plugin-webpack": ["../plugin-webpack/src/index.ts"],
+      "@soda-gql/plugin-webpack/*": ["../plugin-webpack/src/*"]
     }
   },
   "include": ["src/**/*"],
@@ -18,6 +20,7 @@
     { "path": "../common/tsconfig.editor.json" },
     { "path": "../core/tsconfig.editor.json" },
     { "path": "../plugin-shared/tsconfig.editor.json" },
+    { "path": "../plugin-webpack/tsconfig.editor.json" },
     { "path": "../runtime/tsconfig.editor.json" }
   ]
 }
