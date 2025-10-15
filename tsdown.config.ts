@@ -52,7 +52,7 @@ export default defineConfig(
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: ["@soda-gql/core", "zod"],
+    external: ["@soda-gql/core", "zod", "esbuild"],
     clean: true,
   },
 
@@ -144,6 +144,10 @@ export default defineConfig(
     external: [
       "@soda-gql/builder",
       "@soda-gql/plugin-shared",
+      "@babel/core",
+      "@babel/parser",
+      "@babel/traverse",
+      "@babel/types",
       "webpack",
       "neverthrow",
       "zod",

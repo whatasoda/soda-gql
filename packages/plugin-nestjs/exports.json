@@ -1,3 +1,6 @@
 {
-  ".": "./src/index.ts"
+  ".": "./src/index.ts",
+  "./webpack": "./src/webpack/index.ts",
+  "./webpack/plugin": "./src/webpack/plugin.ts",
+  "./webpack/loader": "./src/webpack/loader.ts"
 }

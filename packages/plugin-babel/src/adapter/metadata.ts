@@ -107,9 +107,25 @@ const createAnonymousNameFactory = (): ((kind: string) => string) => {
 const isGqlDefinitionCall = (node: t.Node): node is t.CallExpression =>
   t.isCallExpression(node) &&
   t.isMemberExpression(node.callee) &&
-  t.isIdentifier(node.callee.object, { name: "gql" }) &&
+  isGqlReference(node.callee.object) &&
   node.arguments.length > 0 &&
   t.isArrowFunctionExpression(node.arguments[0]);
+
+const isGqlReference = (expr: t.Expression | t.Super): boolean => {
+  if (t.isIdentifier(expr, { name: "gql" })) {
+    return true;
+  }
+  if (!t.isMemberExpression(expr) || expr.computed) {
+    return false;
+  }
+  if (
+    (t.isIdentifier(expr.property) && expr.property.name === "gql") ||
+    (t.isStringLiteral(expr.property) && expr.property.value === "gql")
+  ) {
+    return true;
+  }
+  return isGqlReference(expr.object);
+};
 
 const resolveTopLevelExport = (
   callPath: NodePath<t.CallExpression>,

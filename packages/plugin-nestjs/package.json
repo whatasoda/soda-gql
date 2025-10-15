@@ -13,6 +13,27 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./webpack": {
+      "development": "./src/webpack/index.ts",
+      "types": "./dist/webpack/index.d.ts",
+      "import": "./dist/webpack/index.js",
+      "require": "./dist/webpack/index.cjs",
+      "default": "./dist/webpack/index.js"
+    },
+    "./webpack/plugin": {
+      "development": "./src/webpack/plugin.ts",
+      "types": "./dist/webpack/plugin.d.ts",
+      "import": "./dist/webpack/plugin.js",
+      "require": "./dist/webpack/plugin.cjs",
+      "default": "./dist/webpack/plugin.js"
+    },
+    "./webpack/loader": {
+      "development": "./src/webpack/loader.ts",
+      "types": "./dist/webpack/loader.d.ts",
+      "import": "./dist/webpack/loader.js",
+      "require": "./dist/webpack/loader.cjs",
+      "default": "./dist/webpack/loader.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

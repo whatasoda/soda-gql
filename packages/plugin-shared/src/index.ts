@@ -1,7 +1,15 @@
 // Re-export public APIs
 
 export * from "./artifact";
-export * from "./cache";
+export {
+  type ArtifactError,
+  getArtifactCacheStats,
+  invalidateArtifactCache,
+  type LoadArtifactOptions,
+  loadArtifact,
+  lookupArtifact,
+  resolveCanonicalId,
+} from "./cache";
 export * from "./core/ir";
 export * from "./core/transform-adapter";
 export * from "./errors";

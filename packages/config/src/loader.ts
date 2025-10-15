@@ -31,25 +31,28 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
  * Load and execute TypeScript config file using esbuild.
  */
 async function executeConfigFile(configPath: string): Promise<unknown> {
-  // Bundle config file to temp location
-  const outfile = join(tmpdir(), `soda-gql-config-${Date.now()}.mjs`);
+  // Bundle config file to temp location (use .cjs so require() is available)
+  const outfile = join(tmpdir(), `soda-gql-config-${Date.now()}.cjs`);
 
   await build({
     entryPoints: [configPath],
     outfile,
     bundle: true,
     platform: "node",
-    format: "esm",
+    format: "cjs",
     target: "node18",
   });
 
-  // Dynamic import the bundled file
+  // Dynamic import the bundled file (import() can load .cjs files)
   const configModule = await import(`file://${outfile}?t=${Date.now()}`);
 
   // Clean up temp file
   unlinkSync(outfile);
 
-  let config = configModule.default ?? configModule;
+  // When importing CJS with import(), the exports are wrapped in { default: ... }
+  // Since the source uses 'export default', esbuild wraps it again as { default: ... }
+  // So we need to unwrap twice: configModule.default.default
+  let config = configModule.default?.default ?? configModule.default ?? configModule;
 
   // Handle async config functions
   if (typeof config === "function") {

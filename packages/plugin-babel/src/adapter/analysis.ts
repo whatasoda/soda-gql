@@ -148,11 +148,32 @@ const resolveBuilderCall = (call: t.CallExpression): t.CallExpression | null => 
   return extractBuilderCall(factoryArg);
 };
 
-const isGqlMemberExpression = (callee: t.Expression | t.V8IntrinsicIdentifier): callee is t.MemberExpression =>
-  t.isMemberExpression(callee) &&
-  t.isIdentifier(callee.object, { name: "gql" }) &&
-  t.isIdentifier(callee.property) &&
-  !callee.computed;
+const isGqlMemberExpression = (callee: t.Expression | t.V8IntrinsicIdentifier): callee is t.MemberExpression => {
+  return (
+    t.isMemberExpression(callee) &&
+    isSimpleProperty(callee.property) &&
+    isGqlReference(callee.object)
+  );
+};
+
+const isSimpleProperty = (property: t.Expression | t.PrivateName): property is t.Identifier | t.StringLiteral =>
+  (t.isIdentifier(property) || (t.isStringLiteral(property) && property.value.length > 0));
+
+const isGqlReference = (expr: t.Expression | t.Super): boolean => {
+  if (t.isIdentifier(expr, { name: "gql" })) {
+    return true;
+  }
+  if (!t.isMemberExpression(expr) || expr.computed) {
+    return false;
+  }
+  if (
+    (t.isIdentifier(expr.property) && expr.property.name === "gql") ||
+    (t.isStringLiteral(expr.property) && expr.property.value === "gql")
+  ) {
+    return true;
+  }
+  return isGqlReference(expr.object);
+};
 
 const extractBuilderCall = (factory: t.ArrowFunctionExpression): t.CallExpression | null => {
   if (t.isCallExpression(factory.body)) {
