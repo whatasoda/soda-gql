@@ -41,6 +41,7 @@ const createMockSnapshot = (
     normalizedFilePath: filePath,
     signature: `sig-${filePath}`,
     fingerprint: { hash: `hash-${filePath}`, sizeBytes: 100, mtimeMs: Date.now() },
+    analyzer: "ts",
     createdAtMs: Date.now(),
     analysis,
     dependencies: dependencies.map((d) => ({

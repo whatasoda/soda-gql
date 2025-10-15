@@ -569,7 +569,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     }
   }
 
-  const extraImports = imports.join("\n");
+  const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
 
   // Generate per-schema definitions
   const schemaBlocks: string[] = [];
@@ -606,6 +606,9 @@ export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
   }
 
+  // Include createRuntimeAdapter import only in inline mode
+  const runtimeImport = $$.injection.mode === "inline" ? '\nimport { createRuntimeAdapter } from "@soda-gql/runtime";' : "";
+
   return `\
 import {
   type AnyGraphqlSchema,
@@ -614,10 +617,8 @@ import {
   defineOperationRoots,
   unsafeInputRef,
   unsafeOutputRef,
-} from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
+} from "@soda-gql/core";${runtimeImport}
 ${extraImports}
-
 ${schemaBlocks.join("\n")}
 
 export const gql = {

@@ -43,18 +43,11 @@ export class JsonDiscoveryCache extends JsonEntityCache<string, DiscoverySnapsho
 
   peek(filePath: string): DiscoverySnapshot | null {
     const key = this.normalizeKey(filePath);
-    const result = this.loadRaw(key);
-    if (process.env.DEBUG_CACHE) {
-      console.error(`[DiscoveryCache.peek] filePath=${filePath}, key=${key}, found=${!!result}`);
-    }
-    return result;
+    return this.loadRaw(key);
   }
 
   store(snapshot: DiscoverySnapshot): void {
     const key = this.normalizeKey(snapshot.filePath);
-    if (process.env.DEBUG_CACHE) {
-      console.error(`[DiscoveryCache.store] filePath=${snapshot.filePath}, key=${key}`);
-    }
     this.storeRaw(key, snapshot);
   }
 

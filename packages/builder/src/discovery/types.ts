@@ -26,6 +26,8 @@ export type DiscoverySnapshot = {
   readonly signature: string;
   /** File fingerprint for fast cache invalidation. */
   readonly fingerprint: FileFingerprint;
+  /** Analyzer type identifier for cache versioning. */
+  readonly analyzer: string;
   /** Milliseconds since epoch when this snapshot was created. */
   readonly createdAtMs: number;
   /** Raw analyzer output (imports, exports, definitions, diagnostics). */
