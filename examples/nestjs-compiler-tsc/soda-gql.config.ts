@@ -1,6 +1,6 @@
-import { defineConfig } from '@soda-gql/config';
+import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
-  schema: './schema.graphql',
-  output: './graphql-system/index.ts',
+  schema: "./schema.graphql",
+  output: "./graphql-system/index.ts",
 });

@@ -45,7 +45,7 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 - ✅ Synchronous artifact file loading
 - ✅ Module-level artifact caching across transformations
 - ✅ Error handling for missing/invalid artifacts
-- ✅ Validates artifact structure with Zod schema
+- ✅ Basic artifact structure validation (checks for `elements` field)
 
 **Nest CLI Integration**:
 - ✅ TypeScript transformer entry point (`packages/plugin-nestjs/src/compiler/tsc/transformer.ts:61`)

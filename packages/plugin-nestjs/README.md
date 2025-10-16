@@ -25,10 +25,10 @@ NestJS integration for soda-gql, enabling zero-runtime GraphQL query generation 
 
 This package provides two integration paths for using soda-gql with NestJS:
 
-1. **Compiler Plugins** (TypeScript/SWC) - Zero-runtime transformation during Nest CLI build
-2. **Webpack Integration** - Zero-runtime transformation via webpack loader (when using `builder: "webpack"`)
+1. **Compiler Plugins** (TypeScript/SWC) - Infrastructure for zero-runtime transformation during Nest CLI build *(detection-only in v0.1.0)*
+2. **Webpack Integration** - Full zero-runtime transformation via webpack loader (when using `builder: "webpack"`)
 
-The compiler plugin approach is recommended for most use cases as it works directly with Nest CLI's built-in builders (`tsc` or `swc`) without requiring webpack configuration.
+> **Note**: The compiler plugin approach (TSC/SWC) currently establishes transformation infrastructure but does not yet perform AST replacement. For working zero-runtime transformation today, use the webpack integration.
 
 ## Prerequisites
 
@@ -189,7 +189,9 @@ module.exports = {
 
 ### Zero-Runtime Mode
 
-When `mode: "zero-runtime"` is configured, the plugin transforms your GraphQL operations at build time:
+When `mode: "zero-runtime"` is configured, the plugin is set up for build-time transformation of your GraphQL operations.
+
+> **Current Status (v0.1.0)**: The webpack integration performs full transformation as shown below. The compiler plugins (TSC/SWC) currently detect operations but do not yet perform AST replacement. Transformation will be added in the final v0.1.0 release.
 
 **Before transformation**:
 ```typescript
@@ -203,7 +205,7 @@ export const userQuery = gql.operation.query('UserQuery', ({ f }) => ({
 }));
 ```
 
-**After transformation**:
+**After transformation** *(webpack integration only)*:
 ```typescript
 import { gqlRuntime } from '@/graphql-system';
 
@@ -266,9 +268,11 @@ See the integration tests for working examples:
 bun run soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out ./dist/soda-gql-artifact.json
 ```
 
-### Plugin not applying transformations
+### Plugin not applying transformations (Compiler Plugins)
 
-**Possible causes**:
+> **Note**: In v0.1.0 pre-release, compiler plugins (TSC/SWC) do not yet perform transformation - this is expected behavior. They currently detect operations and load artifacts but do not modify code. For working zero-runtime transformation, use the webpack integration.
+
+**For webpack integration**, possible causes:
 
 1. **Wrong mode**: Ensure `mode: "zero-runtime"` is set in plugin options
 2. **Artifact stale**: Regenerate the artifact after code changes
@@ -279,7 +283,7 @@ bun run soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out ./dist/
 # Verify artifact exists and is valid JSON
 cat ./dist/soda-gql-artifact.json | jq
 
-# Check Nest CLI recognizes the plugin
+# Check webpack build output
 nest build --webpack --webpackPath webpack.config.js
 ```
 
@@ -305,7 +309,8 @@ bun test tests/integration/plugin-nestjs/compiler/swc.test.ts
 
 ## Performance Considerations
 
-- **Zero-runtime mode**: Significantly reduces bundle size by eliminating builder code at runtime
+- **Zero-runtime mode** *(webpack integration)*: Significantly reduces bundle size by eliminating builder code at runtime
+- **Compiler plugins** *(v0.1.0)*: Currently establish infrastructure; performance benefits will come with AST replacement implementation
 - **Caching**: The plugin caches artifact parsing, so repeated compilations are fast
 - **Watch mode**: Artifact regeneration is incremental, only processing changed files
 

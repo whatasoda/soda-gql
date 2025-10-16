@@ -10,11 +10,11 @@ import {
 } from "@soda-gql/plugin-shared";
 import { createBuilderServiceController, createBuilderWatch } from "@soda-gql/plugin-shared/dev";
 import type { Compiler, WebpackPluginInstance } from "webpack";
+import { registerCompilerHooks } from "./hooks.js";
 import { DiagnosticsReporter } from "./internal/diagnostics.js";
 import { type ArtifactManifest, createArtifactManifest, manifestChanged } from "./internal/manifest.js";
 import type { DiagnosticsMode, WebpackPluginOptions } from "./schemas/options.js";
 import { webpackPluginOptionsSchema } from "./schemas/options.js";
-import { registerCompilerHooks } from "./hooks.js";
 
 const PLUGIN_NAME = "SodaGqlWebpackPlugin";
 const DIAGNOSTICS_ASSET_NAME = "soda-gql.diagnostics.json";

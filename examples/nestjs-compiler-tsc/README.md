@@ -6,12 +6,15 @@ This example demonstrates using `@soda-gql/plugin-nestjs` with the TypeScript co
 
 ## Features
 
+**Current Implementation (v0.1.0 pre-release)**:
 - ✅ NestJS framework integration
-- ✅ TypeScript compiler plugin for build-time transformation
-- ✅ Zero-runtime mode for optimized production builds
+- ✅ TypeScript compiler plugin infrastructure
+- ✅ Detection of `gql.operation.*` calls
+- ✅ Artifact loading and caching
 - ✅ No webpack dependency required
 - ✅ Works with `nest build` command
 - ✅ Type-safe GraphQL operations
+- ⏳ **Planned**: Zero-runtime transformation (AST replacement)
 
 ## Setup
 
@@ -36,9 +39,9 @@ bun run dev
 ```
 
 This starts the NestJS development server. The TypeScript compiler plugin will:
-- Transform `gql.operation.*` calls at compile time
-- Generate zero-runtime code for production
-- Use the pre-generated artifact file
+- Detect `gql.operation.*` calls
+- Load the pre-generated artifact file
+- *(Planned for v0.1.0 final)* Transform calls to zero-runtime code
 
 ### Production Build
 
@@ -176,7 +179,7 @@ This analyzes your code and generates the artifact file needed for transformatio
 bun run build
 ```
 
-The TypeScript compiler plugin transforms operations to zero-runtime code.
+The TypeScript compiler plugin detects operations and prepares for transformation (full AST replacement planned for v0.1.0 final).
 
 ### 5. Run Application
 
@@ -188,27 +191,29 @@ bun run start
 
 ### TypeScript Compiler Plugin (This Example)
 
-**Pros:**
+**Current Status (v0.1.0 pre-release)**:
 - ✅ No webpack dependency
 - ✅ Works with standard `nest build` command
 - ✅ Simpler configuration
-- ✅ Faster build times for small projects
+- ✅ Detection and infrastructure in place
+- ⏳ Zero-runtime transformation planned
 
-**Cons:**
+**Limitations**:
 - ⚠️ Requires pre-generating artifact file
 - ⚠️ No built-in watch mode for artifact regeneration
+- ⚠️ No AST transformation yet (detection-only)
 
 ### Webpack Plugin
 
-**Pros:**
+**Current Status** *(fully functional)*:
+- ✅ Complete zero-runtime transformation
 - ✅ Integrated watch mode
 - ✅ Automatic artifact generation
 - ✅ Error reporting in development
 
-**Cons:**
+**Considerations**:
 - ⚠️ Requires webpack
 - ⚠️ More complex configuration
-- ⚠️ Slower builds for large projects
 
 ## Scripts
 

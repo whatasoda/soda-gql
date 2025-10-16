@@ -6,21 +6,25 @@ This example demonstrates using `@soda-gql/plugin-nestjs` with the SWC compiler 
 
 ## Features
 
+**Current Implementation (v0.1.0 pre-release)**:
 - ✅ NestJS framework integration
-- ✅ SWC compiler plugin for blazing-fast builds
-- ✅ Zero-runtime mode for optimized production builds
+- ✅ SWC compiler plugin infrastructure
+- ✅ Detection of `gql.operation.*` calls
+- ✅ Artifact loading and caching
+- ✅ Fast builds with SWC
 - ✅ No webpack dependency required
 - ✅ Works with `nest build` command
 - ✅ Type-safe GraphQL operations
+- ⏳ **Planned**: Zero-runtime transformation (AST replacement)
 
 ## Why SWC?
 
 SWC (Speedy Web Compiler) is a Rust-based compiler that's **20x faster** than TypeScript's compiler. Benefits:
 
 - ⚡ **Extremely fast builds** - Ideal for large projects
-- 📦 **Small bundle size** - Zero-runtime transformation
 - 🔄 **Fast rebuilds** - Great for development
 - 🚀 **Production ready** - Used by Vercel, Next.js, and more
+- ⏳ **Zero-runtime transformation** - Coming in v0.1.0 final release
 
 ## Setup
 
@@ -96,15 +100,17 @@ Same as the TypeScript compiler plugin:
 
 ## Build Performance Comparison
 
+> **Note**: These benchmarks reflect compilation speed only. Zero-runtime transformation performance benefits will be available once AST replacement is implemented.
+
 Typical build times for a medium-sized NestJS project:
 
-| Compiler | Initial Build | Rebuild | Production Build |
-|----------|--------------|---------|------------------|
-| **SWC** (this example) | ~2s | ~0.5s | ~3s |
-| **TSC** (TypeScript) | ~15s | ~5s | ~20s |
-| **Webpack** | ~25s | ~8s | ~35s |
+| Compiler | Initial Build | Rebuild |
+|----------|--------------|---------|
+| **SWC** (this example) | ~2s | ~0.5s |
+| **TSC** (TypeScript) | ~15s | ~5s |
+| **Webpack** | ~25s | ~8s |
 
-*Results may vary based on project size and hardware*
+*Results may vary based on project size and hardware. Currently measures compilation speed only.*
 
 ## Project Structure
 
@@ -139,14 +145,16 @@ nestjs-compiler-swc/
 
 ## Comparison: TSC vs SWC
 
+> **Current Status**: Both compiler plugins provide detection infrastructure. The comparison below focuses on compilation speed and tooling differences.
+
 ### TypeScript Compiler (TSC)
 
 **Use when:**
 - ✅ You need maximum compatibility
 - ✅ You're using advanced TypeScript features
-- ✅ Build time isn't critical
+- ✅ You prefer official TypeScript tooling
 
-### SWC Compiler
+### SWC Compiler (This Example)
 
 **Use when:**
 - ✅ You want fastest possible builds
@@ -154,7 +162,7 @@ nestjs-compiler-swc/
 - ✅ Fast iteration is important
 - ✅ You're comfortable with Rust-based tooling
 
-**Note**: SWC has excellent TypeScript support but may lag behind TSC for cutting-edge TS features.
+**Note**: Both plugins currently provide detection-only implementation. SWC offers faster compilation but may lag behind TSC for cutting-edge TypeScript features.
 
 ## Scripts
 
