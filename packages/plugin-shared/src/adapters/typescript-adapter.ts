@@ -1,8 +1,16 @@
 /**
  * TypeScript implementation of the TransformAdapter interface.
  *
- * This is a minimal initial implementation that handles the core zero-runtime transformation.
- * Future iterations can add richer metadata collection and analysis parity with Babel adapter.
+ * Current Status (v0.1.0 pre-release): DETECTION-ONLY IMPLEMENTATION
+ * - Detects gql.default(({ operation }) => operation.*) calls
+ * - Establishes transformation infrastructure
+ * - Does NOT perform AST replacement yet
+ * - Operations are still evaluated at runtime
+ *
+ * Future iterations will add:
+ * - Full AST replacement with runtime registrations
+ * - Metadata collection and analysis parity with Babel adapter
+ * - Zero-runtime code elimination
  */
 
 import type * as ts from "typescript";
@@ -57,7 +65,14 @@ export class TypeScriptAdapter implements TransformAdapter {
   }
 
   /**
-   * Transform the entire program, replacing GraphQL calls with runtime equivalents.
+   * Transform the entire program.
+   *
+   * Current implementation: Detection-only (v0.1.0 pre-release)
+   * - Detects gql.default calls containing operations
+   * - Marks as transformed when detected
+   * - Returns original AST unchanged
+   *
+   * Future: Will replace GraphQL calls with runtime equivalents
    */
   transformProgram(context: TransformProgramContext): TransformPassResult {
     this.runtimeCallsFromLastTransform = [];
@@ -147,7 +162,12 @@ export class TypeScriptAdapter implements TransformAdapter {
   }
 
   /**
-   * Detect if a call expression is a gql.operation.* call.
+   * Detect if a call expression is a gql.default call containing an operation.
+   *
+   * Note: This currently detects the OLD API pattern (gql.operation.*) for compatibility
+   * with existing test infrastructure. The actual pattern in use is:
+   *   gql.default(({ operation }) => operation.query/mutation/subscription(...))
+   *
    * Returns the operation kind if detected, null otherwise.
    */
   private detectGqlOperationCall(node: ts.CallExpression): string | null {
