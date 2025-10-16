@@ -74,12 +74,7 @@ describe("@soda-gql/plugin-babel", () => {
 
     await expect(
       transformWithPlugin(code, profileQueryPath, {
-        mode: "zero-runtime",
         configPath,
-        artifact: {
-          useBuilder: false,
-          path: missingArtifact,
-        },
       }),
     ).rejects.toThrow("SODA_GQL_ARTIFACT_NOT_FOUND");
   });
@@ -114,12 +109,7 @@ describe("@soda-gql/plugin-babel", () => {
 
     await expect(
       transformWithPlugin(code, profileQueryPath, {
-        mode: "zero-runtime",
         configPath,
-        artifact: {
-          useBuilder: false,
-          path: artifactPath,
-        },
       }),
     ).rejects.toThrow("No builder artifact found for canonical ID");
   });
@@ -177,12 +167,7 @@ describe("@soda-gql/plugin-babel", () => {
     const code = await Bun.file(profileQueryPath).text();
 
     const result = await transformWithPlugin(code, profileQueryPath, {
-      mode: "zero-runtime",
       configPath,
-      artifact: {
-        useBuilder: false,
-        path: artifactPath,
-      },
     });
 
     expect(result).not.toBeNull();
@@ -233,12 +218,7 @@ describe("@soda-gql/plugin-babel", () => {
       const configPath = createTestTempConfig(builderArtifactsDir, artifactPath);
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
-        mode: "zero-runtime",
         configPath,
-        artifact: {
-          useBuilder: false,
-          path: artifactPath,
-        },
       });
 
       expect(result).not.toBeNull();
@@ -277,12 +257,7 @@ describe("@soda-gql/plugin-babel", () => {
       const configPath = createTestTempConfig(builderArtifactsDir, artifactPath);
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
-        mode: "zero-runtime",
         configPath,
-        artifact: {
-          useBuilder: false,
-          path: artifactPath,
-        },
       });
 
       expect(result).not.toBeNull();

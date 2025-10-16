@@ -25,7 +25,6 @@ const deferred = <T>() => {
 };
 
 const createMockOptions = (): NormalizedOptions => ({
-  mode: "zero-runtime",
   importIdentifier: "@soda-gql/runtime",
   diagnostics: "json",
   resolvedConfig: {
@@ -44,28 +43,26 @@ const createMockOptions = (): NormalizedOptions => ({
     codegen: undefined,
     plugins: {},
   },
-  artifact: {
-    type: "builder",
+  builderConfig: {
     config: {
-      config: {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        corePath: "@soda-gql/core",
-        configDir: "/test",
-        configPath: "/test/soda-gql.config.ts",
-        configHash: "test-hash",
-        configMtime: Date.now(),
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-          mode: "zero-runtime",
-        },
-        codegen: undefined,
-        plugins: {},
+      graphqlSystemPath: "./src/graphql-system/index.ts",
+      corePath: "@soda-gql/core",
+      configDir: "/test",
+      configPath: "/test/soda-gql.config.ts",
+      configHash: "test-hash",
+      configMtime: Date.now(),
+      builder: {
+        entry: ["**/*.ts"],
+        analyzer: "ts",
+        outDir: "./.cache",
+        mode: "zero-runtime",
       },
-      entrypoints: ["**/*.ts"],
+      codegen: undefined,
+      plugins: {},
     },
+    entrypoints: ["**/*.ts"],
   },
+  project: undefined,
 });
 
 const createMockArtifact = (): BuilderArtifact => ({
