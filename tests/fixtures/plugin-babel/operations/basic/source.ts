@@ -21,10 +21,7 @@ export const updateProfileMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
       operationName: "UpdateProfile",
-      variables: [
-        $("userId").scalar("ID:!"),
-        $("name").scalar("String:!"),
-      ],
+      variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
       result: updateUserSlice.build({ id: $.userId, name: $.name }),

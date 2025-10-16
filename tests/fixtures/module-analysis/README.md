@@ -49,8 +49,9 @@ module-analysis/
 
 3. **Use @ts-expect-error for intentional errors**:
    ```typescript
-   // @ts-expect-error - Testing invalid field access
-   ...f.nonExistentField()
+   // For testing invalid type scenarios, use:
+   const fakeSlice: any = undefined;
+   return { field: fakeSlice.build({}) };
    ```
 
 4. **Update tests**:

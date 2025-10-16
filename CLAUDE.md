@@ -169,8 +169,26 @@ Repeat until complete → User receives result
   - DO NOT build fields directly (no `f` access)
   - Use `slice.build()` to compose multiple slices
   - Act as integration layer for slices
-- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ ...f.createProduct(...) }))`
+- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ result: f.createProduct(...)(({ f }) => [f.id()]) }))`
 - **Correct pattern**: Create slice with field selection, then compose in operation with `slice.build()`
+  ```typescript
+  // Slice with field access
+  const createProductSlice = gql.default(({ slice }, { $ }) =>
+    slice.mutation(
+      { variables: [$("name").scalar("String:!")] },
+      ({ f, $ }) => [f.createProduct({ name: $.name })(({ f }) => [f.id(), f.name()])],
+      ({ select }) => select(["$.createProduct"], (result) => result),
+    ),
+  );
+
+  // Operation composing slice
+  const createProductMutation = gql.default(({ operation }, { $ }) =>
+    operation.mutation(
+      { operationName: "CreateProduct", variables: [$("productName").scalar("String:!")] },
+      ({ $ }) => ({ result: createProductSlice.build({ name: $.productName }) }),
+    ),
+  );
+  ```
 
 ### Commands
 

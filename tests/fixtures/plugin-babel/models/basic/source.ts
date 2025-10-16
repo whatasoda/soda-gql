@@ -29,11 +29,7 @@ export const models = {
 export const complexModel = gql.default(({ model }) =>
   model(
     { typename: "Complex" },
-    ({ f }) => [
-      f.nested(({ f }) => [
-        f.field(),
-      ]),
-    ],
+    ({ f }) => [f.nested(({ f }) => [f.field()])],
     (selection) => ({ nested: selection.nested }),
   ),
 );

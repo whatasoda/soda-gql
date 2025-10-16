@@ -6,12 +6,7 @@ const userSlice = gql.default(({ slice }, { $ }) =>
     {
       variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [
-        f.id(),
-        f.name(),
-      ]),
-    ],
+    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
     ({ select }) => select(["$.user"], (result) => result),
   ),
 );
@@ -19,17 +14,9 @@ const userSlice = gql.default(({ slice }, { $ }) =>
 const updateUserSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: [
-        $("id").scalar("ID:!"),
-        $("name").scalar("String:!"),
-      ],
+      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
     },
-    ({ f, $ }) => [
-      f.updateUser({ id: $.id, name: $.name })(({ f }) => [
-        f.id(),
-        f.name(),
-      ]),
-    ],
+    ({ f, $ }) => [f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id(), f.name()])],
     ({ select }) => select(["$.updateUser"], (result) => result),
   ),
 );
@@ -51,10 +38,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
       operationName: "UpdateUser",
-      variables: [
-        $("userId").scalar("ID:!"),
-        $("name").scalar("String:!"),
-      ],
+      variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
       result: updateUserSlice.build({ id: $.userId, name: $.name }),

@@ -39,10 +39,10 @@ describe("Plugin-Babel HMR Integration", () => {
       };
       writeFileSync(artifactPath, JSON.stringify(artifact));
 
-      // Create source file to transform
+      // Create source file to transform (no gql code - testing HMR option acceptance)
       const sourceCode = `
-        import { gql } from "@/graphql-system";
-        const query = gql.operation.query({}, ({ f }) => ({}));
+        const x = 1;
+        export { x };
       `;
 
       // Transform with dev mode disabled (production mode)
@@ -69,10 +69,10 @@ describe("Plugin-Babel HMR Integration", () => {
 
       expect(prodResult).toBeDefined();
       expect(prodResult?.code).toBeDefined();
+      expect(prodResult?.code).toContain("const x = 1");
 
-      // Note: Dev mode with real builder would require full builder setup
-      // This test verifies the plugin accepts the dev.hmr option
-      // Full HMR testing requires builder session infrastructure
+      // Note: This test verifies the plugin accepts the dev.hmr option
+      // Full HMR testing with actual gql code requires builder session infrastructure
     } finally {
       // Cleanup
       rmSync(tempDir, { recursive: true, force: true });

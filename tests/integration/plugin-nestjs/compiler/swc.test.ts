@@ -9,7 +9,7 @@ describe("SWC Compiler Plugin Integration", () => {
   const sourceFile = join(fixturesDir, "sample.ts");
   const artifactPath = join(fixturesDir, "artifact.json");
 
-  test("should transform gql.operation calls to zero-runtime", async () => {
+  test("should detect gql.default calls with operations (transformation pending)", async () => {
     // Read source file
     const sourceCode = await Bun.file(sourceFile).text();
 

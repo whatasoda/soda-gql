@@ -13,10 +13,7 @@ exports.updateUserMutation = graphql_system_1.gql.default(({ operation }, { $ })
   operation.mutation(
     {
       operationName: "UpdateUser",
-      variables: [
-        $("userId").scalar("ID:!"),
-        $("name").scalar("String:!"),
-      ],
+      variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
       result: updateUserSlice.build({ id: $.userId, name: $.name }),

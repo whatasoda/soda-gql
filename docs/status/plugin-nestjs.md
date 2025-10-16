@@ -21,7 +21,7 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 2. **SWC Compiler Plugin** - Ultra-fast builds with SWC compiler
 3. **Webpack Plugin** - Mature implementation with integrated watch mode
 
-**Current State**: TypeScript and SWC adapters are **minimal implementations** - they successfully detect `gql.operation.*` calls and establish transformation infrastructure, but do not yet perform full AST replacement or runtime code elimination.
+**Current State**: TypeScript and SWC adapters are **minimal implementations** - they successfully detect `gql.default` calls with operations and establish transformation infrastructure, but do not yet perform full AST replacement or runtime code elimination.
 
 ---
 
@@ -30,7 +30,7 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 ### ✅ Infrastructure & Detection
 
 **TypeScript Adapter** (`packages/plugin-shared/src/adapters/typescript-adapter.ts:66`):
-- ✅ Detects `gql.operation.query()`, `gql.operation.mutation()`, `gql.operation.subscription()`, `gql.operation.fragment()`
+- ✅ Detects `gql.default(({ operation }) => operation.query(...))` and similar patterns
 - ✅ Mode gating (`runtime` vs `zero-runtime`)
 - ✅ AST traversal and node identification
 - ✅ Transformer factory integration with Nest CLI
@@ -75,8 +75,8 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 
 **Operation Types**:
 - ❌ `gql.model()` - Not detected or transformed
-- ❌ `gql.slice.query()` / `gql.slice.mutation()` / `gql.slice.subscription()` - Not supported
-- ✅ Only `gql.operation.*` calls are detected (supported kinds: `["query", "mutation", "subscription", "fragment"]`)
+- ❌ Slice definitions within `gql.default(({ slice }) => ...)` - Not detected separately
+- ✅ Only `gql.default(({ operation }) => operation.*)` calls are detected (supported kinds: `["query", "mutation", "subscription", "fragment"]`)
   - See: `packages/plugin-shared/src/adapters/typescript-adapter.ts:164`
 
 ---
@@ -116,8 +116,9 @@ bun run dev
 ```typescript
 // tests/integration/plugin-nestjs/compiler/tsc.test.ts:48
 // Note: Current TypeScript adapter is minimal implementation
-// It detects gql.operation calls but doesn't perform actual transformation yet
-expect(emittedCode).toContain("gql.operation");
+// It detects gql.default calls but doesn't perform actual transformation yet
+expect(emittedCode).toContain("gql.default");
+expect(emittedCode).toContain("operation.query");
 ```
 
 **Next Milestone**: v0.1.0 will add full AST replacement + runtime IR emission
@@ -156,7 +157,7 @@ TypeScriptTransformAdapterFactory.create({ program, config })
     ↓
 adapter.transformProgram(context)
     ├─ Traverse AST with ts.visitEachChild
-    ├─ detectGqlOperationCall() → Identify gql.operation.*
+    ├─ detectGqlOperationCall() → Identify gql.default with operation composition
     ├─ TODO: analyzeCallExpression() → Extract operation metadata
     └─ TODO: transformCallExpression() → Replace with runtime registration
     ↓
@@ -183,7 +184,7 @@ SwcTransformAdapterFactory.create({ module, swc, filename })
     ↓
 adapter.transformProgram(context)
     ├─ Traverse AST with swc visitor pattern
-    ├─ detectGqlOperationCall() → Identify gql.operation.*
+    ├─ detectGqlOperationCall() → Identify gql.default with operation composition
     ├─ Handle SWC-specific types (MemberExpression.property, ImportDeclaration.imported)
     ├─ TODO: analyzeCallExpression() → Extract operation metadata
     └─ TODO: transformCallExpression() → Replace with runtime registration
@@ -253,11 +254,12 @@ bun run artifact
 # Build (plugin detects operations, no transformation yet)
 bun run build
 
-# Check output - original gql.operation calls remain
-grep -r "gql.operation" dist/
+# Check output - original gql.default calls remain
+grep -r "gql.default" dist/
+grep -r "operation.query" dist/
 ```
 
-**Expected**: Build completes without errors, but `dist/` contains original `gql.operation` calls.
+**Expected**: Build completes without errors, but `dist/` contains original `gql.default` and `operation.query/mutation` calls.
 
 ---
 
@@ -301,7 +303,7 @@ From `packages/plugin-shared/src/adapters/typescript-adapter.ts:45`:
 ### Immediate (v0.1.0)
 
 1. **Implement AST Replacement**
-   - Replace `gql.operation.*` calls with runtime registrations
+   - Replace `gql.default(({ operation }) => ...)` calls with runtime registrations
    - Generate `import { gqlRuntime } from '@soda-gql/core/runtime'`
    - Emit operation metadata from artifact
 
@@ -318,7 +320,7 @@ From `packages/plugin-shared/src/adapters/typescript-adapter.ts:45`:
 ### Future Enhancements
 
 - Support `gql.model()` transformations
-- Support `gql.slice.*` operations
+- Support slice definitions within `gql.default(({ slice }) => ...)`
 - Async artifact loading (investigate transformer API limitations)
 - Performance benchmarks (TypeScript vs SWC vs Webpack)
 - Watch mode integration for compiler plugins

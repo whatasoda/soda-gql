@@ -8,13 +8,7 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
     {
       variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.email()])],
     ({ select }) => select(["$.user"], (result) => result),
   ),
 );
@@ -25,13 +19,7 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 export const usersSlice = gql.default(({ slice }) =>
   slice.query(
     {},
-    ({ f }) => [
-      f.users(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f }) => [f.users(({ f }) => [f.id(), f.name(), f.email()])],
     ({ select }) => select(["$.users"], (result) => result),
   ),
 );

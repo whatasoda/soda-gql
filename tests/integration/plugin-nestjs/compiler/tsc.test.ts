@@ -8,7 +8,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
   const sourceFile = join(fixturesDir, "sample.ts");
   const artifactPath = join(fixturesDir, "artifact.json");
 
-  test("should transform gql.operation calls to zero-runtime", () => {
+  test("should detect gql.default calls with operations (transformation pending)", () => {
     // Create TypeScript program
     const compilerOptions: ts.CompilerOptions = {
       target: ts.ScriptTarget.ES2020,
