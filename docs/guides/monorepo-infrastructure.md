@@ -484,9 +484,36 @@ const result = transform(source);
 
 **Recommended** (fixture files):
 ```typescript
+// tests/fixtures/my-test/slices.ts
+import { gql } from "@/graphql-system";
+
+export const userSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: [$("id").scalar("ID:!")],
+    },
+    ({ f, $ }) => [
+      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
+    ],
+    ({ select }) => select(["$.user"], (result) => result),
+  ),
+);
+
 // tests/fixtures/my-test/source.ts
 import { gql } from "@/graphql-system";
-export const query = gql.operation.query(...);
+import { userSlice } from "./slices";
+
+export const query = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "MyTestQuery",
+      variables: [$("userId").scalar("ID:!")],
+    },
+    ({ $ }) => ({
+      user: userSlice.build({ id: $.userId }),
+    }),
+  ),
+);
 
 // tests/unit/my-test.test.ts
 const fixturePath = "./fixtures/my-test/source.ts";
