@@ -196,13 +196,18 @@ When `mode: "zero-runtime"` is configured, the plugin is set up for build-time t
 **Before transformation**:
 ```typescript
 import { gql } from '@/graphql-system';
+import { userSlice } from './slices';
 
-export const userQuery = gql.operation.query('UserQuery', ({ f }) => ({
-  user: f.user({}, ({ f }) => ({
-    id: f.id,
-    name: f.name,
-  })),
-}));
+export const userQuery = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: 'UserQuery',
+    },
+    () => ({
+      user: userSlice.build(),
+    }),
+  ),
+);
 ```
 
 **After transformation** *(webpack integration only)*:

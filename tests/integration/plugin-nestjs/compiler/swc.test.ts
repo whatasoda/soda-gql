@@ -46,7 +46,7 @@ describe("SWC Compiler Plugin Integration", () => {
     });
 
     // Note: Current SWC adapter is minimal implementation
-    // It detects gql.operation calls but doesn't perform actual transformation yet
+    // It detects gql.default calls but doesn't perform actual transformation yet
     // For now, we verify that:
     // 1. The plugin runs without errors
     // 2. Code is emitted successfully
@@ -54,6 +54,8 @@ describe("SWC Compiler Plugin Integration", () => {
 
     // Original code should be present (not transformed yet in minimal impl)
     expect(result.code).toContain("gql");
+    expect(result.code).toContain("operation.query");
+    expect(result.code).toContain("operation.mutation");
   });
 
   test("should skip transformation in runtime mode", async () => {

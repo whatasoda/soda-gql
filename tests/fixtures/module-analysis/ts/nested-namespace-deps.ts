@@ -9,7 +9,7 @@ export const pageQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      profile: user.slice.findById({ id: $.userId }),
+      profile: user.slice.findById.build({ id: $.userId }),
     }),
   ),
 );

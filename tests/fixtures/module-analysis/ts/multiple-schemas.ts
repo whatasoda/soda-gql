@@ -21,10 +21,12 @@ export const defaultQuery = gql.default(({ operation }) =>
       operationName: "DefaultData",
       variables: [],
     },
-    // @ts-expect-error - Test fixture: f doesn't exist when no variables
-    ({ f }) => ({
-      // @ts-expect-error - Test fixture: nested f also doesn't exist
-      ...f.users({}, ({ f }) => ({ ...f.id() })),
-    }),
+    () => {
+      // Test fixture: using any to create a mock slice
+      const fakeSlice: any = undefined;
+      return {
+        users: fakeSlice.build({}),
+      };
+    },
   ),
 );

@@ -98,13 +98,18 @@ When `mode: "zero-runtime"` is set, the plugin is configured for build-time tran
 **Before transformation:**
 ```typescript
 import { gql } from '@/graphql-system';
+import { userSlice } from './slices';
 
-export const userQuery = gql.operation.query('UserQuery', ({ f }) => ({
-  user: f.user({}, ({ f }) => ({
-    id: f.id,
-    name: f.name,
-  })),
-}));
+export const userQuery = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: 'UserQuery',
+    },
+    () => ({
+      user: userSlice.build(),
+    }),
+  ),
+);
 ```
 
 **After transformation (planned for v0.1.0 final):**
@@ -155,14 +160,19 @@ Create GraphQL operations in `src/graphql/operations.ts`:
 
 ```typescript
 import { gql } from '@/graphql-system';
+import { userSlice } from './slices';
 
-export const getUserQuery = gql.operation.query('GetUser', ({ f, $ }) => ({
-  user: f.user({ id: $.userId }, ({ f }) => ({
-    id: f.id,
-    name: f.name,
-    email: f.email,
-  })),
-}));
+export const getUserQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: 'GetUser',
+      variables: [$('userId').scalar('ID:!')],
+    },
+    ({ $ }) => ({
+      user: userSlice.build({ id: $.userId }),
+    }),
+  ),
+);
 ```
 
 ### 3. Generate Artifact

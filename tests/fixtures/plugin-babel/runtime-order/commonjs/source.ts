@@ -5,8 +5,14 @@ exports.getUserQuery = void 0;
 const graphql_system_1 = require("@soda-gql/core");
 const slices_1 = require("./slices");
 
-exports.getUserQuery = graphql_system_1.gql.default(({ query }, { $ }) =>
-  query("GetUser", { variables: { ...$(": userId").scalar("ID:!") } }, ({ getSlice }) => ({
-    ...getSlice(slices_1.userSlice, {}),
-  })),
+exports.getUserQuery = graphql_system_1.gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "GetUser",
+      variables: [$("userId").scalar("ID:!")],
+    },
+    () => ({
+      user: slices_1.userSlice.build({}),
+    }),
+  ),
 );

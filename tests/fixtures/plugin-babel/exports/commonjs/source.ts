@@ -6,26 +6,32 @@ exports.getUserQuery = exports.updateUserMutation = void 0;
 const graphql_system_1 = { gql: { default: () => {} } };
 
 // Stub dependencies for runtime execution
-const userSlice = {};
-const updateUserSlice = {};
+const userSlice = { build: {} };
+const updateUserSlice = { build: {} };
 
-exports.updateUserMutation = graphql_system_1.gql.default(({ mutation }, { $ }) =>
-  mutation(
-    "UpdateUser",
+exports.updateUserMutation = graphql_system_1.gql.default(({ operation }, { $ }) =>
+  operation.mutation(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("name").scalar("String:!"),
-      },
+      operationName: "UpdateUser",
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("name").scalar("String:!"),
+      ],
     },
-    ({ $, getSlice }) => ({
-      ...getSlice(updateUserSlice, { id: $.userId, name: $.name }),
+    ({ $ }) => ({
+      result: updateUserSlice.build({ id: $.userId, name: $.name }),
     }),
   ),
 );
 
-exports.getUserQuery = graphql_system_1.gql.default(({ query }, { $ }) =>
-  query("GetUser", { variables: { ...$("userId").scalar("ID:!") } }, ({ $, getSlice }) => ({
-    ...getSlice(userSlice, { id: $.userId }),
-  })),
+exports.getUserQuery = graphql_system_1.gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "GetUser",
+      variables: [$("userId").scalar("ID:!")],
+    },
+    ({ $ }) => ({
+      user: userSlice.build({ id: $.userId }),
+    }),
+  ),
 );

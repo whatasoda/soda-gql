@@ -1,39 +1,71 @@
 import { gql } from "@soda-gql/core";
 
 // Stub dependencies for runtime execution
-const userSlice = {} as any;
-const nestedSlice = {} as any;
-const updateUserSlice = {} as any;
+const userSlice = { build: {} as any } as any;
+const nestedSlice = { build: {} as any } as any;
+const updateUserSlice = { build: {} as any } as any;
 
-export const profileQuery = gql.default(({ query }, { $ }) =>
-  query("ProfileQuery", { variables: { ...$("userId").scalar("ID:!") } }, ({ $, getSlice }) => ({
-    ...getSlice(userSlice, { id: $.userId }),
-  })),
-);
-
-export const updateProfileMutation = gql.default(({ query }, { $ }) =>
-  query(
-    "UpdateProfile",
+export const profileQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
     {
-      variables: {
-        ...$("userId").scalar("ID:!"),
-        ...$("name").scalar("String:!"),
-      },
+      operationName: "ProfileQuery",
+      variables: [$("userId").scalar("ID:!")],
     },
-    ({ $, getSlice }) => ({
-      ...getSlice(updateUserSlice, { id: $.userId, name: $.name }),
+    ({ $ }) => ({
+      user: userSlice.build({ id: $.userId }),
     }),
   ),
 );
 
-export const query1 = gql.default(({ query }) => query("Query1", {}, ({ getSlice }) => ({})));
+export const updateProfileMutation = gql.default(({ operation }, { $ }) =>
+  operation.mutation(
+    {
+      operationName: "UpdateProfile",
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("name").scalar("String:!"),
+      ],
+    },
+    ({ $ }) => ({
+      result: updateUserSlice.build({ id: $.userId, name: $.name }),
+    }),
+  ),
+);
 
-export const query2 = gql.default(({ query }) => query("Query2", {}, ({ getSlice }) => ({})));
+export const query1 = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: "Query1",
+    },
+    () => ({}),
+  ),
+);
 
-export const queryWith2Args = gql.default(({ query }) => query("Query2Args", {}));
+export const query2 = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: "Query2",
+    },
+    () => ({}),
+  ),
+);
 
-export const complexQuery = gql.default(({ query }) =>
-  query("ComplexQuery", {}, ({ getSlice }) => ({
-    ...getSlice(nestedSlice, {}),
-  })),
+export const queryWith2Args = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: "Query2Args",
+    },
+    () => ({}),
+  ),
+);
+
+export const complexQuery = gql.default(({ operation }) =>
+  operation.query(
+    {
+      operationName: "ComplexQuery",
+    },
+    () => ({
+      nested: nestedSlice.build({}),
+    }),
+  ),
 );

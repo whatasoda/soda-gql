@@ -97,9 +97,7 @@ export const createPostMutation = gql.default(({ operation }, { $ }) =>
   operation.mutation(
     {
       operationName: "CreatePost",
-      variables: {
-        ...$("title").scalar("String:!"),
-      },
+      variables: [$("title").scalar("String:!")],
     },
     ({ $ }) => ({
       post: createPostSlice.build({ title: $.title }),
@@ -110,22 +108,20 @@ export const createPostMutation = gql.default(({ operation }, { $ }) =>
 
 ### Slices
 
-Slices provide field access and must use spread syntax for field factories:
+Slices provide field access and return arrays of field selections:
 
 ```typescript
 const createPostSlice = gql.default(({ slice }, { $ }) =>
   slice.mutation(
     {
-      variables: {
-        ...$("title").scalar("String:!"),
-      },
+      variables: [$("title").scalar("String:!")],
     },
-    ({ $, f }) => ({
-      ...f.createPost({ title: $.title }, ({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
+    ({ f, $ }) => [
+      f.createPost({ title: $.title })(({ f }) => [
+        f.id(),
+        f.title(),
+      ]),
+    ],
     ({ select }) =>
       select(["$.createPost"], (result) => result.safeUnwrap(([post]) => post)),
   ),
@@ -134,6 +130,7 @@ const createPostSlice = gql.default(({ slice }, { $ }) =>
 
 ### Field Selection Notes
 
-- Always spread field factory results: `...f.fieldName(...)`
-- For fields without arguments, pass `undefined`: `f.postCreated(undefined, ...)`
+- Use array syntax for field selections: `[f.id(), f.name()]`
+- Field factories are curried: `f.user({ id: 1 })(({ f }) => [...])`
+- Variables defined as arrays: `variables: [$("id").scalar("ID:!")]`
 - Use array for select paths: `select(["$.field"], ...)`

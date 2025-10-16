@@ -1,17 +1,63 @@
 import { gql } from "@/graphql-system";
 
-// @ts-expect-error - This is a test fixture, intentionally using invalid types
-export const userQuery = gql.operation.query("UserQuery", ({ f }: any) => ({
-  user: f.user({}, ({ f }: any) => ({
-    id: f.id,
-    name: f.name,
-  })),
-}));
+// Define slices
+const userSlice = gql.default(({ slice }, { $ }) =>
+  slice.query(
+    {
+      variables: [$("id").scalar("ID:!")],
+    },
+    ({ f, $ }) => [
+      f.user({ id: $.id })(({ f }) => [
+        f.id(),
+        f.name(),
+      ]),
+    ],
+    ({ select }) => select(["$.user"], (result) => result),
+  ),
+);
 
-// @ts-expect-error - This is a test fixture, intentionally using invalid types
-export const createUserMutation = gql.operation.mutation("CreateUser", ({ f, $ }: any) => ({
-  createUser: f.createUser({ input: $.input }, ({ f }: any) => ({
-    id: f.id,
-    name: f.name,
-  })),
-}));
+const updateUserSlice = gql.default(({ slice }, { $ }) =>
+  slice.mutation(
+    {
+      variables: [
+        $("id").scalar("ID:!"),
+        $("name").scalar("String:!"),
+      ],
+    },
+    ({ f, $ }) => [
+      f.updateUser({ id: $.id, name: $.name })(({ f }) => [
+        f.id(),
+        f.name(),
+      ]),
+    ],
+    ({ select }) => select(["$.updateUser"], (result) => result),
+  ),
+);
+
+// Define operations
+export const userQuery = gql.default(({ operation }, { $ }) =>
+  operation.query(
+    {
+      operationName: "UserQuery",
+      variables: [$("userId").scalar("ID:!")],
+    },
+    ({ $ }) => ({
+      user: userSlice.build({ id: $.userId }),
+    }),
+  ),
+);
+
+export const updateUserMutation = gql.default(({ operation }, { $ }) =>
+  operation.mutation(
+    {
+      operationName: "UpdateUser",
+      variables: [
+        $("userId").scalar("ID:!"),
+        $("name").scalar("String:!"),
+      ],
+    },
+    ({ $ }) => ({
+      result: updateUserSlice.build({ id: $.userId, name: $.name }),
+    }),
+  ),
+);

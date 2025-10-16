@@ -46,14 +46,16 @@ describe("TypeScript Compiler Plugin Integration", () => {
     expect(emittedCode.length).toBeGreaterThan(0);
 
     // Note: Current TypeScript adapter is minimal implementation
-    // It detects gql.operation calls but doesn't perform actual transformation yet
+    // It detects gql.default calls but doesn't perform actual transformation yet
     // For now, we verify that:
     // 1. The transformer runs without errors
     // 2. Code is emitted successfully
     // 3. No crashes occur during compilation
 
     // Original code should be present (not transformed yet in minimal impl)
-    expect(emittedCode).toContain("gql.operation");
+    expect(emittedCode).toContain("gql.default");
+    expect(emittedCode).toContain("operation.query");
+    expect(emittedCode).toContain("operation.mutation");
   });
 
   test("should skip transformation in runtime mode", () => {

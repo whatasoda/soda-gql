@@ -48,8 +48,8 @@ describe("collectGqlDefinitionMetadata", () => {
     const source = `
       import { gql } from "@soda-gql/core";
 
-      export const getUserQuery = gql.default(({ query }, { $ }) =>
-        query("GetUser", {}, () => ({}))
+      export const getUserQuery = gql.default(({ operation }) =>
+        operation.query({ operationName: "GetUser" }, () => ({}))
       );
     `;
 
@@ -90,7 +90,7 @@ describe("collectGqlDefinitionMetadata", () => {
       import { gql } from "@soda-gql/core";
 
       const wrapper = () => {
-        const nested = gql.default(({ query }) => query("Nested", {}, () => ({})));
+        const nested = gql.default(({ operation }) => operation.query({ operationName: "Nested" }, () => ({})));
         return nested;
       };
     `;
@@ -108,8 +108,8 @@ describe("collectGqlDefinitionMetadata", () => {
     const source = `
       const graphql_system_1 = { gql: { default: (() => {}) } };
 
-      module.exports.myQuery = graphql_system_1.gql.default(({ query }) =>
-        query("MyQuery", {}, () => ({}))
+      module.exports.myQuery = graphql_system_1.gql.default(({ operation }) =>
+        operation.query({ operationName: "MyQuery" }, () => ({}))
       );
     `;
 
