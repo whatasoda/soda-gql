@@ -1,19 +1,20 @@
 import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
-import type { NormalizedOptions } from "@soda-gql/plugin-shared";
+import type { CoordinatorKey, CoordinatorSnapshot, NormalizedOptions } from "@soda-gql/plugin-shared";
 import {
   createBuilderServiceController,
   createBuilderWatch,
   DevBuilderSession,
   type DevBuilderSessionLike,
 } from "@soda-gql/plugin-shared/dev";
-import { createStateStore, type StateStore } from "./state-store";
+import { createStateStore, type StateStore } from "./state-store.js";
 
 export interface DevManager {
   ensureInitialized(params: {
     config: BuilderServiceConfig;
     options: NormalizedOptions;
     watchOptions?: { rootDir: string; schemaHash: string; analyzerVersion: string } | null;
-    initialArtifact?: BuilderArtifact;
+    coordinatorKey: CoordinatorKey;
+    initialSnapshot: CoordinatorSnapshot;
   }): Promise<void>;
   getStateStore(): StateStore;
   dispose(): void;
@@ -46,7 +47,7 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
         return;
       }
 
-      const { config, options, watchOptions, initialArtifact } = params;
+      const { config, options, watchOptions, coordinatorKey, initialSnapshot } = params;
       cachedOptions = options;
 
       try {
@@ -54,18 +55,16 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
         const controller = createController(config);
         const watch = watchOptions ? createWatch(watchOptions) : undefined;
 
-        // Create session
+        // Create session with initial artifact from coordinator snapshot
         session = new createSession({
           controller,
           watch,
-          initialArtifact,
+          initialArtifact: initialSnapshot.artifact,
         });
 
-        // Create and initialize state store
+        // Create and initialize state store with coordinator snapshot
         stateStore = createStore();
-        if (initialArtifact) {
-          stateStore.initialize(options, initialArtifact);
-        }
+        stateStore.initialize(options, initialSnapshot.artifact);
 
         // Subscribe to session events
         unsubscribe = session.subscribe((event) => {

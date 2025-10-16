@@ -3,8 +3,8 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { PluginOptions } from "@soda-gql/plugin-shared";
 import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
-import { babelTransformAdapterFactory } from "./adapter";
-import { type DevManager, type DevManagerContext, getDevManager, type StateStore } from "./dev";
+import { babelTransformAdapterFactory } from "./adapter.js";
+import { type DevManager, type DevManagerContext, getDevManager, type StateStore } from "./dev/index.js";
 
 type PluginPassState = PluginPass & {
   _state?: PluginState;
@@ -16,7 +16,6 @@ export const createSodaGqlPlugin = (): PluginObj<
 > => ({
   name: "@soda-gql/plugin-babel",
   // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
-  // Sync transforms are unsupported for builder artifact source mode
   async pre() {
     const rawOptions = (this as unknown as { opts?: Partial<PluginOptions> }).opts ?? {};
     const stateResult = await preparePluginState(rawOptions);
@@ -28,14 +27,11 @@ export const createSodaGqlPlugin = (): PluginObj<
     const normalizedState = stateResult.value;
 
     // Detect dev mode: explicit option or environment variable
-    const isDevMode =
-      (rawOptions.dev?.hmr === true || process.env.SODA_GQL_DEV?.toLowerCase() === "true") &&
-      normalizedState.options.artifact.type === "builder";
+    const isDevMode = rawOptions.dev?.hmr === true || process.env.SODA_GQL_DEV?.toLowerCase() === "true";
 
     if (isDevMode) {
-      // Dev mode: use DevManager for HMR support
+      // Dev mode: use DevManager for HMR support with coordinator
       try {
-        const config = normalizedState.options.artifact.config;
         const options = normalizedState.options;
 
         // Create context for this project
@@ -47,31 +43,22 @@ export const createSodaGqlPlugin = (): PluginObj<
 
         const manager = getDevManager(managerContext);
 
-        // Get initial artifact from provider
-        if (!normalizedState.artifactProvider) {
-          throw new Error("Artifact provider not available in dev mode");
-        }
-        const initialArtifactResult = await normalizedState.artifactProvider.load();
-        if (initialArtifactResult.isErr()) {
-          throw new Error(formatPluginError(initialArtifactResult.error));
-        }
-        const initialArtifact = initialArtifactResult.value;
-
         // Construct watch options from resolved config
-        const watchOptions = config.config.builder.analyzer
+        const watchOptions = options.builderConfig.config.builder.analyzer
           ? {
-              rootDir: config.config.configDir,
-              schemaHash: config.config.configHash,
-              analyzerVersion: config.config.builder.analyzer,
+              rootDir: options.builderConfig.config.configDir,
+              schemaHash: options.builderConfig.config.configHash,
+              analyzerVersion: options.builderConfig.config.builder.analyzer,
             }
           : null;
 
-        // Initialize manager if not already initialized
+        // Initialize manager with coordinator
         await manager.ensureInitialized({
-          config,
+          config: options.builderConfig,
           options,
           watchOptions,
-          initialArtifact,
+          coordinatorKey: normalizedState.coordinatorKey,
+          initialSnapshot: normalizedState.snapshot,
         });
 
         // Get state store and snapshot
@@ -90,7 +77,7 @@ export const createSodaGqlPlugin = (): PluginObj<
         throw new Error(errorMessage);
       }
     } else {
-      // Production mode: use static state
+      // Production mode: use static state from coordinator
       this._state = normalizedState;
     }
   },
@@ -98,7 +85,7 @@ export const createSodaGqlPlugin = (): PluginObj<
     Program(programPath: NodePath<t.Program>, state) {
       const pass = state as unknown as PluginPassState;
       const pluginState = pass._state;
-      if (!pluginState || pluginState.options.mode === "runtime") {
+      if (!pluginState) {
         return;
       }
 
