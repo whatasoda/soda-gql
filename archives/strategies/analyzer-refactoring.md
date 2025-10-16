@@ -27,7 +27,7 @@ We are rewriting the analyzer stack to serve the new IR-first architecture descr
 3. Validate IR with Zod before returning to ensure downstream consumers receive verified data.
 
 ### 4. Delete TypeScript-only Path
-1. If the SWC pass covers required behaviours, remove `packages/builder/src/ast/analyze-module.ts` outright.
+1. If the SWC pass covers required behaviors, remove `packages/builder/src/ast/analyze-module.ts` outright.
 2. Update any imports to use the new SWC analyzer. Do not maintain alias layers or deprecated entry points.
 
 ### 5. Wire Tests to the New World

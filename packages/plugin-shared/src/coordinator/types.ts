@@ -7,8 +7,8 @@ import type { NormalizedOptions } from "../options.js";
 export interface CoordinatorSnapshot {
   /** The complete builder artifact */
   readonly artifact: BuilderArtifact;
-  /** All artifacts indexed by canonical ID for quick lookup */
-  readonly allArtifacts: Record<CanonicalId, BuilderArtifactElement>;
+  /** All artifact elements indexed by canonical ID for quick lookup */
+  readonly elements: Record<CanonicalId, BuilderArtifactElement>;
   /** Generation number - increments with each build/update */
   readonly generation: number;
   /** Timestamp when this snapshot was created */

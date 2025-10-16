@@ -116,7 +116,7 @@ export class PluginCoordinator {
 
     // If we don't have the previous snapshot, return a full diff
     return {
-      added: Object.keys(this.currentSnapshot.allArtifacts) as Array<string>,
+      added: Object.keys(this.currentSnapshot.elements) as Array<import("@soda-gql/builder").CanonicalId>,
       updated: [],
       removed: [],
     };

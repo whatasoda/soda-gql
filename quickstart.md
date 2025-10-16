@@ -93,7 +93,7 @@ export const adapter = createRuntimeAdapter(({ type }) => ({
 }));
 ```
 
-Replace or extend the examples to match the scalars and runtime behaviour in your own schema.
+Replace or extend the examples to match the scalars and runtime behavior in your own schema.
 
 ### 3. Generate GraphQL System
 

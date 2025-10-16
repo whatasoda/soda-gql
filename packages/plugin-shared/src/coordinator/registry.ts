@@ -159,19 +159,19 @@ export const registerConsumer = (key: CoordinatorKey): CoordinatorConsumer => {
  * Create coordinator from config and register it.
  */
 export const createAndRegisterCoordinator = async (
-  config: ResolvedSodaGqlConfig,
-  builderConfig: BuilderServiceConfig,
   normalizedOptions: NormalizedOptions,
 ): Promise<{ key: CoordinatorKey; coordinator: PluginCoordinator }> => {
+  const config = normalizedOptions.resolvedConfig;
+
   const key = createCoordinatorKey({
-    configPath: config.configFilePath,
-    projectRoot: config.project.projectRoot,
-    project: config.projectName,
+    configPath: config.configPath,
+    projectRoot: config.configDir,
+    project: normalizedOptions.project,
   });
 
   const coordinator = await getOrCreateCoordinator(key, () =>
     createCoordinator({
-      builderConfig,
+      builderConfig: normalizedOptions.builderConfig,
       normalizedOptions,
     }),
   );

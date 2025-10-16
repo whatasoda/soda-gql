@@ -1,4 +1,4 @@
-import type { BuilderArtifact, BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
 import type { NormalizedOptions } from "../options.js";
 import type { CoordinatorDiff, CoordinatorSnapshot } from "./types.js";
 
@@ -10,15 +10,9 @@ export const createSnapshot = (
   options: NormalizedOptions,
   generation: number,
 ): CoordinatorSnapshot => {
-  // Index all artifacts by canonical ID for quick lookup
-  const allArtifacts: Record<CanonicalId, BuilderArtifactElement> = {};
-  for (const element of artifact.allArtifacts) {
-    allArtifacts[element.canonicalId] = element;
-  }
-
   return {
     artifact,
-    allArtifacts,
+    elements: artifact.elements,
     generation,
     createdAt: Date.now(),
     options,
@@ -35,7 +29,7 @@ export const computeDiff = (
   if (!prevSnapshot) {
     // First snapshot - everything is "added"
     return {
-      added: Object.keys(nextSnapshot.allArtifacts) as CanonicalId[],
+      added: Object.keys(nextSnapshot.elements) as CanonicalId[],
       updated: [],
       removed: [],
     };
@@ -45,8 +39,8 @@ export const computeDiff = (
   const updated: CanonicalId[] = [];
   const removed: CanonicalId[] = [];
 
-  const prevIds = new Set(Object.keys(prevSnapshot.allArtifacts));
-  const nextIds = new Set(Object.keys(nextSnapshot.allArtifacts));
+  const prevIds = new Set(Object.keys(prevSnapshot.elements));
+  const nextIds = new Set(Object.keys(nextSnapshot.elements));
 
   // Find added and updated
   for (const id of nextIds) {
@@ -54,8 +48,8 @@ export const computeDiff = (
       added.push(id as CanonicalId);
     } else {
       // Check if content changed
-      const prevElement = prevSnapshot.allArtifacts[id as CanonicalId];
-      const nextElement = nextSnapshot.allArtifacts[id as CanonicalId];
+      const prevElement = prevSnapshot.elements[id as CanonicalId];
+      const nextElement = nextSnapshot.elements[id as CanonicalId];
       if (prevElement !== nextElement) {
         updated.push(id as CanonicalId);
       }

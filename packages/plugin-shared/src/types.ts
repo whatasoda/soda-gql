@@ -1,10 +1,8 @@
 /**
- * New plugin options with simplified config discovery.
+ * Plugin options for soda-gql plugins.
+ * Simplified to always use builder for artifact generation.
  */
 export type PluginOptions = {
-  /** Plugin operation mode (default: 'runtime') */
-  readonly mode?: "runtime" | "zero-runtime";
-
   /** Import identifier for graphql system (default: '@/graphql-system') */
   readonly importIdentifier?: string;
 
@@ -16,14 +14,6 @@ export type PluginOptions = {
 
   /** Project name for multi-project configs (default: defaultProject or single project) */
   readonly project?: string;
-
-  /** Artifact override for testing/CI */
-  readonly artifact?: {
-    /** Use builder for artifact generation (default: true) */
-    readonly useBuilder?: boolean;
-    /** Custom artifact file path (required when useBuilder is false) */
-    readonly path?: string;
-  };
 
   /** Development mode options */
   readonly dev?: {
