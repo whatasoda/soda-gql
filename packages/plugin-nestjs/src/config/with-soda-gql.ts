@@ -1,5 +1,4 @@
 import { createRequire } from "node:module";
-import { join } from "node:path";
 
 import type { WebpackLoaderOptions } from "@soda-gql/plugin-webpack";
 import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-webpack";
@@ -9,25 +8,11 @@ import { type SodaGqlConfig, sodaGqlConfigSchema } from "../schemas/config.js";
 const require = createRequire(import.meta.url);
 const loaderModulePath = require.resolve("@soda-gql/plugin-webpack/loader");
 
-const DEFAULT_ARTIFACT_PATH = join(".soda-gql", "artifacts", "artifact.json");
-
 export type NestWebpackConfigFactory = (
   options: Configuration,
   webpack: typeof import("webpack"),
   ...rest: unknown[]
 ) => Configuration | Promise<Configuration>;
-
-const resolveArtifactPath = (pluginOptions: SodaGqlConfig["plugin"]): string => {
-  if (pluginOptions.artifactPath) {
-    return pluginOptions.artifactPath;
-  }
-
-  if (pluginOptions.artifactSource?.source === "artifact-file") {
-    return pluginOptions.artifactSource.path;
-  }
-
-  return DEFAULT_ARTIFACT_PATH;
-};
 
 const createLoaderRule = (loaderOptions: WebpackLoaderOptions): RuleSetRule => ({
   test: /\.tsx?$/,
@@ -42,19 +27,11 @@ const createLoaderRule = (loaderOptions: WebpackLoaderOptions): RuleSetRule => (
 });
 
 const createLoaderOptions = (pluginOptions: SodaGqlConfig["plugin"]): WebpackLoaderOptions => {
-  const artifactPath = pluginOptions.artifactPath ?? DEFAULT_ARTIFACT_PATH;
   const options: WebpackLoaderOptions = {
-    mode: pluginOptions.mode,
-    artifactPath,
-    artifactSource: {
-      source: "artifact-file",
-      path: artifactPath,
-    },
+    configPath: pluginOptions.configPath,
+    project: pluginOptions.project,
+    importIdentifier: pluginOptions.importIdentifier,
   };
-
-  if (pluginOptions.importIdentifier) {
-    options.importIdentifier = pluginOptions.importIdentifier;
-  }
 
   return options;
 };
@@ -86,8 +63,7 @@ export function withSodaGql(
   baseFactory: NestWebpackConfigFactory = async (options) => options,
 ): NestWebpackConfigFactory {
   const parsedConfig = sodaGqlConfigSchema.parse(rawConfig);
-  const artifactPath = resolveArtifactPath(parsedConfig.plugin);
-  const pluginOptions = { ...parsedConfig.plugin, artifactPath };
+  const pluginOptions = parsedConfig.plugin;
   const loaderOptions = parsedConfig.enableLoader ? createLoaderOptions(pluginOptions) : null;
 
   return async (options, webpack, ...rest) => {
