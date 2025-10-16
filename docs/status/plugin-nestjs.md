@@ -41,11 +41,12 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 - ✅ Handles SWC-specific type differences (`ImportDeclaration.imported`, `MemberExpression.property`)
 - ✅ Transformer factory integration with Nest CLI
 
-**Artifact Loading** (`packages/plugin-nestjs/src/compiler/core/prepare-transform-sync.ts:54`):
-- ✅ Synchronous artifact file loading
-- ✅ Module-level artifact caching across transformations
-- ✅ Error handling for missing/invalid artifacts
-- ✅ Basic artifact structure validation (checks for `elements` field)
+**Coordinator Integration** (`packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts:54`):
+- ✅ Coordinator-based artifact management (no file I/O)
+- ✅ Synchronous bridge for async coordinator operations via `blocking.ts`
+- ✅ Module-level consumer caching with automatic subscriptions
+- ✅ Error handling for missing/invalid configs
+- ✅ Structured error reporting via `PluginError`
 
 **Nest CLI Integration**:
 - ✅ TypeScript transformer entry point (`packages/plugin-nestjs/src/compiler/tsc/transformer.ts:61`)
@@ -83,25 +84,24 @@ The `@soda-gql/plugin-nestjs` package provides three integration methods for Nes
 
 ## Known Limitations & Workarounds
 
-### 1. Synchronous Artifact Loading
+### 1. Synchronous Coordinator Access
 
-**Limitation**: Transformer APIs require synchronous execution, forcing `fs.readFileSync` usage.
+**Limitation**: Transformer APIs require synchronous execution, but coordinator operations are async.
+
+**Solution**: Blocking bridge using `SharedArrayBuffer` + `Atomics.wait()`.
+
+**Requirements**:
+- Node.js >= 16 (for SharedArrayBuffer support)
+- Main thread only (blocking operations not suitable for workers)
 
 **Impact**:
-- Artifact file must exist before build starts
-- No async artifact generation during transformation
-- Module-level caching mitigates repeated I/O
+- Initial coordinator setup blocks main thread during transformation
+- Subsequent calls use cached coordinator consumer
+- Automatic subscription keeps cache synchronized with artifact updates
 
-**Workaround**: Generate artifact before build:
-```bash
-# Terminal 1: Watch artifact generation
-bun run artifact --watch
-
-# Terminal 2: Watch NestJS app
-bun run dev
-```
-
-**Code Reference**: `packages/plugin-nestjs/src/compiler/core/prepare-transform-sync.ts:65`
+**Code Reference**:
+- `packages/plugin-nestjs/src/compiler/core/blocking.ts:35` - Synchronous bridge
+- `packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts:54` - Coordinator integration
 
 ### 2. Minimal Adapter Implementation
 
@@ -144,16 +144,20 @@ expect(emittedCode).toContain("operation.query");
 
 ### TypeScript Adapter Flow
 
-**Entry Point**: `packages/plugin-nestjs/src/compiler/tsc/transformer.ts:102`
+**Entry Point**: `packages/plugin-nestjs/src/compiler/tsc/transformer.ts:62`
 
 ```
 nest build (tsc mode)
     ↓
-createSodaGqlTscPlugin(config)
+createSodaGqlTransformer(program, config)
     ↓
-prepareTransformSync(artifactPath) → Load + cache artifact
+prepareTransformState({ configPath, project, importIdentifier })
+    ├─ runPromiseSync(() => preparePluginState(...)) → Block on async coordinator
+    ├─ registerConsumer(coordinatorKey) → Create consumer with ref counting
+    ├─ consumer.ensureLatest() → Get latest artifact snapshot
+    └─ Subscribe to coordinator events for cache updates
     ↓
-TypeScriptTransformAdapterFactory.create({ program, config })
+TypeScriptTransformAdapterFactory.create({ sourceFile, context, typescript })
     ↓
 adapter.transformProgram(context)
     ├─ Traverse AST with ts.visitEachChild
@@ -167,18 +171,23 @@ Return original SourceFile (no changes yet)
 **Key Files**:
 - `packages/plugin-nestjs/src/compiler/tsc/transformer.ts` - Plugin factory
 - `packages/plugin-shared/src/adapters/typescript-adapter.ts` - AST transformation logic
-- `packages/plugin-nestjs/src/compiler/core/prepare-transform-sync.ts` - Artifact loading
+- `packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts` - Coordinator integration
+- `packages/plugin-nestjs/src/compiler/core/blocking.ts` - Synchronous bridge
 
 ### SWC Adapter Flow
 
-**Entry Point**: `packages/plugin-nestjs/src/compiler/swc/transformer.ts:101`
+**Entry Point**: `packages/plugin-nestjs/src/compiler/swc/transformer.ts:64`
 
 ```
 nest build (swc mode)
     ↓
 createSodaGqlSwcPlugin(config)
     ↓
-prepareTransformSync(artifactPath) → Load + cache artifact
+prepareTransformState({ configPath, project, importIdentifier })
+    ├─ runPromiseSync(() => preparePluginState(...)) → Block on async coordinator
+    ├─ registerConsumer(coordinatorKey) → Create consumer with ref counting
+    ├─ consumer.ensureLatest() → Get latest artifact snapshot
+    └─ Subscribe to coordinator events for cache updates
     ↓
 SwcTransformAdapterFactory.create({ module, swc, filename })
     ↓
@@ -200,7 +209,7 @@ Return original Module (no changes yet)
 **Key Files**:
 - `packages/plugin-nestjs/src/compiler/swc/transformer.ts` - Plugin factory
 - `packages/plugin-shared/src/adapters/swc-adapter.ts` - AST transformation logic
-- Same artifact loading as TypeScript
+- Same coordinator integration as TypeScript
 
 ### Webpack Plugin (Mature Implementation)
 
@@ -248,10 +257,7 @@ cd examples/nestjs-compiler-tsc
 # Generate GraphQL system
 bun run codegen
 
-# Generate artifact
-bun run artifact
-
-# Build (plugin detects operations, no transformation yet)
+# Build (plugin uses coordinator for in-memory artifacts)
 bun run build
 
 # Check output - original gql.default calls remain
@@ -260,6 +266,8 @@ grep -r "operation.query" dist/
 ```
 
 **Expected**: Build completes without errors, but `dist/` contains original `gql.default` and `operation.query/mutation` calls.
+
+**Note**: No separate artifact generation step needed - coordinator manages artifacts in-memory.
 
 ---
 
