@@ -8,8 +8,7 @@
       {
         "name": "@soda-gql/plugin-nestjs/compiler/tsc",
         "options": {
-          "artifactPath": "./.cache/soda-gql-artifact.json",
-          "mode": "zero-runtime",
+          "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"
         }
       }

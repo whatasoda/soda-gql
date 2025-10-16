@@ -1,6 +1,12 @@
+const path = require("path");
 const { SodaGqlWebpackPlugin } = require("@soda-gql/plugin-nestjs/webpack/plugin");
 
 module.exports = (options, _webpack) => {
+  const sodaOptions = {
+    configPath: path.resolve(__dirname, "soda-gql.config.ts"),
+    importIdentifier: "@/graphql-system",
+  };
+
   return {
     ...options,
     ignoreWarnings: [
@@ -28,13 +34,7 @@ module.exports = (options, _webpack) => {
           use: [
             {
               loader: "@soda-gql/plugin-nestjs/webpack/loader",
-              options: {
-                mode: "zero-runtime",
-                artifactSource: {
-                  source: "artifact-file",
-                  path: ".cache/soda-gql-artifact.json",
-                },
-              },
+              options: sodaOptions,
             },
           ],
         },
@@ -43,11 +43,8 @@ module.exports = (options, _webpack) => {
     plugins: [
       ...options.plugins,
       new SodaGqlWebpackPlugin({
-        mode: "zero-runtime",
-        artifactSource: {
-          source: "artifact-file",
-          path: ".cache/soda-gql-artifact.json",
-        },
+        ...sodaOptions,
+        diagnostics: process.env.NODE_ENV === "production" ? "json" : "console",
       }),
     ],
   };

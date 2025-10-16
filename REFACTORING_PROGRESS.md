@@ -1,9 +1,9 @@
 # Plugin Architecture Refactoring Progress
 
-**Date**: 2025-10-16
-**Status**: Compiler Migration Complete - Test Cleanup Remaining
-**Codex ConversationId**: `0199ed5f-62fe-7622-b6fd-ffaa812050a8` (compiler), `0199ed4b-dc53-7493-91a3-3291b7f9c678` (core), `0199ecf2-b283-7982-ae4c-654047cd9a50` (initial)
-**Current Commits**: 11 total
+**Date**: 2025-10-17
+**Status**: Examples Migration Complete - Codegen ESM Issue Discovered
+**Codex ConversationId**: `0199ed8c-ed83-7f93-8349-e5d174d85603` (examples), `0199ed5f-62fe-7622-b6fd-ffaa812050a8` (compiler), `0199ed4b-dc53-7493-91a3-3291b7f9c678` (core), `0199ecf2-b283-7982-ae4c-654047cd9a50` (initial)
+**Current Commits**: 12 total
 
 ## Executive Summary
 
@@ -13,7 +13,7 @@ Successfully implemented the **PluginCoordinator architecture** to achieve the i
 - Transform operations use coordinator snapshots
 - Zero file-based artifact loading in development
 
-## ✅ Completed Work (11 Commits)
+## ✅ Completed Work (12 Commits)
 
 ### Commit 1: feat(plugin-shared): introduce PluginCoordinator for in-memory artifact management
 
@@ -320,6 +320,126 @@ Updated documentation to reflect coordinator-based architecture:
 
 **Files Modified**:
 - `docs/status/plugin-nestjs.md` (+39/-31 lines)
+
+### Commit 12: refactor(examples): migrate examples to coordinator API and fix compatibility issues
+
+**Status**: In Progress
+**Codex ConversationId**: `0199ed8c-ed83-7f93-8349-e5d174d85603`
+
+Migrated example applications to use the new coordinator-based plugin architecture and resolved multiple compatibility issues.
+
+**Example Updates**:
+
+**babel-app**:
+- Created `examples/babel-app/soda-gql.config.ts` with builder configuration
+  - Added builder entry patterns: `["./src/**/*.ts"]`
+  - Configured analyzer: `"ts"`
+  - Set outDir: `.cache/soda-gql`
+- Renamed `.babelrc.json` → `.babelrc.cjs` to enable `require.resolve()`
+  - Fixed Babel's automatic `babel-plugin-` prefix issue
+  - Used `require.resolve("@soda-gql/plugin-babel")` for absolute path
+- Updated plugin options to coordinator API:
+  - Removed: `mode`, `artifact` options
+  - Added: `configPath: "./soda-gql.config.ts"`, `importIdentifier: "@/graphql-system"`
+
+**nestjs-app**:
+- Updated `examples/nestjs-app/soda-gql.config.ts` with builder config
+  - Same builder configuration as babel-app
+- Updated `examples/nestjs-app/webpack.config.cjs`:
+  - Removed `mode` and `artifactSource` options
+  - Updated to use `configPath` and `importIdentifier` only
+  - Loader options: `{ configPath, importIdentifier }`
+  - Plugin options: `{ configPath, importIdentifier, diagnostics }`
+- Updated `examples/nestjs-app/README.md`:
+  - Replaced "Artifact-based" with "Coordinator-based" architecture
+  - Removed artifact file generation steps
+  - Updated troubleshooting guide to reflect in-memory approach
+
+**nestjs-compiler-tsc**:
+- Updated `examples/nestjs-compiler-tsc/soda-gql.config.ts`:
+  - Changed `output` → `graphqlSystemPath`
+  - Added `builder` config with entry patterns, outDir, and analyzer
+- Updated `examples/nestjs-compiler-tsc/nest-cli.json`:
+  - Removed `artifactPath` and `mode` options
+  - Added `configPath: "./soda-gql.config.ts"`
+  - Plugin options now: `{ configPath, importIdentifier }`
+- Removed `artifact` script from package.json (no longer needed)
+
+**nestjs-compiler-swc**:
+- Updated `examples/nestjs-compiler-swc/soda-gql.config.ts`:
+  - Changed `output` → `graphqlSystemPath`
+  - Added `builder` config with entry patterns, outDir, and analyzer
+- Updated `examples/nestjs-compiler-swc/nest-cli.json`:
+  - Removed `artifactPath` and `mode` options from swcPlugins
+  - Added `configPath: "./soda-gql.config.ts"`
+  - Plugin options now: `{ configPath, importIdentifier }`
+- Removed `artifact` script from package.json (no longer needed)
+
+**Package Fixes**:
+
+**plugin-shared exports** (`packages/plugin-shared/exports.json`):
+- Added missing subpath exports required by examples:
+  - `"./dev": "./src/dev/index.ts"` - For dev mode functionality
+  - `"./errors": "./src/errors.ts"` - For error types
+- Ran `bun run exports:sync` to update package.json
+
+**builder Node.js compatibility** (`packages/builder/src/utils/glob.ts`):
+- Added `fast-glob` fallback for Node.js environments
+- Runtime detection: Uses `Bun.Glob` when available, falls back to `fast-glob`
+- Enables glob scanning in Node.js-based bundlers (Babel CLI, webpack)
+- Added dependency: `"fast-glob": "^3.3.3"` to builder package.json
+
+**Errors Encountered and Resolved**:
+
+1. **Babel Plugin Name Resolution**:
+   - Error: `Cannot find package '@soda-gql/babel-plugin-plugin-babel'`
+   - Root Cause: Babel automatically prepends `babel-plugin-` to scoped packages
+   - Fix: Use CommonJS config with `require.resolve()` to pass absolute path
+
+2. **Missing Package Exports**:
+   - Error: `Package subpath './dev' is not defined by "exports"`
+   - Error: `Package subpath './errors' is not defined by "exports"`
+   - Fix: Added both exports to plugin-shared/exports.json
+
+3. **Glob Scanning Node.js Incompatibility**:
+   - Error: `Glob scanning is only supported in Bun runtime`
+   - Root Cause: Builder only supported Bun.Glob, but bundlers run on Node.js
+   - Fix: Implemented fast-glob fallback for cross-runtime support
+
+4. **Codegen ESM Extension Missing** (DISCOVERED, NOT FIXED):
+   - Error: `Cannot find module '.../runtime-adapter'` (missing `.js` extension)
+   - Root Cause: Codegen generates ESM imports without `.js` extensions
+   - Node.js ESM requires: `import { adapter } from "../inject-module/runtime-adapter.js"`
+   - Status: Identified as separate codegen bug, out of scope for coordinator migration
+   - Impact: Blocks babel-app from building, but NOT a coordinator architecture issue
+
+**Files Created**:
+- `examples/babel-app/soda-gql.config.ts`
+- `examples/babel-app/.babelrc.cjs` (renamed from .babelrc.json)
+
+**Files Modified**:
+- `examples/nestjs-app/soda-gql.config.ts` - Added builder config
+- `examples/nestjs-app/webpack.config.cjs` - Migrated to coordinator API
+- `examples/nestjs-app/README.md` - Updated architecture documentation
+- `examples/nestjs-compiler-tsc/soda-gql.config.ts` - Updated to coordinator API
+- `examples/nestjs-compiler-tsc/nest-cli.json` - Removed artifactPath/mode, added configPath
+- `examples/nestjs-compiler-tsc/package.json` - Removed artifact script
+- `examples/nestjs-compiler-swc/soda-gql.config.ts` - Updated to coordinator API
+- `examples/nestjs-compiler-swc/nest-cli.json` - Removed artifactPath/mode, added configPath
+- `examples/nestjs-compiler-swc/package.json` - Removed artifact script
+- `packages/plugin-shared/exports.json` - Added ./dev and ./errors exports
+- `packages/builder/src/utils/glob.ts` - Added Node.js fallback
+- `packages/builder/package.json` - Added fast-glob dependency
+
+**Files Deleted**:
+- `examples/babel-app/.babelrc.json` (replaced by .babelrc.cjs)
+
+**Verification Status**:
+- ❌ babel-app build: Blocked by codegen ESM issue (missing `.js` extensions)
+- ❌ nestjs-app build: Blocked by codegen ESM issue (missing `.js` extensions)
+- ✅ nestjs-compiler-tsc: Configuration updated to coordinator API
+- ✅ nestjs-compiler-swc: Configuration updated to coordinator API
+- ⏸️  Compiler example builds: Not tested (pending codegen ESM fix)
 
 ## 🚧 Remaining Work (52 Type Errors)
 

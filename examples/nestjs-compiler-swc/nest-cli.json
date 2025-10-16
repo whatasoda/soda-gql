@@ -8,8 +8,7 @@
       [
         "@soda-gql/plugin-nestjs/compiler/swc",
         {
-          "artifactPath": "./.cache/soda-gql-artifact.json",
-          "mode": "zero-runtime",
+          "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"
         }
       ]

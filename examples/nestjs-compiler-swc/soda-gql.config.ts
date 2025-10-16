@@ -1,6 +1,10 @@
 import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
-  schema: "./schema.graphql",
-  output: "./graphql-system/index.ts",
+  graphqlSystemPath: "./graphql-system/index.ts",
+  builder: {
+    entry: ["./src/**/*.ts"],
+    outDir: ".cache/soda-gql",
+    analyzer: "ts",
+  },
 });

@@ -13,6 +13,20 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./dev": {
+      "development": "./src/dev/index.ts",
+      "types": "./dist/dev/index.d.ts",
+      "import": "./dist/dev/index.js",
+      "require": "./dist/dev/index.cjs",
+      "default": "./dist/dev/index.js"
+    },
+    "./errors": {
+      "development": "./src/errors.ts",
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js",
+      "require": "./dist/errors.cjs",
+      "default": "./dist/errors.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

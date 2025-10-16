@@ -10,7 +10,7 @@ This example demonstrates the usage of `@soda-gql/plugin-nestjs` in a NestJS app
 
 - ✅ NestJS framework integration
 - ✅ Webpack plugin for build-time transformation
-- ✅ Artifact file mode for production builds
+- ✅ In-memory coordinator-based artifacts (zero file I/O)
 - ✅ Development mode with error reporting
 - ✅ Integrated watch mode
 - ✅ Dependency Injection pattern
@@ -38,7 +38,7 @@ bun run dev
 This starts the NestJS development server with hot reload. The soda-gql webpack plugin will:
 - Transform `gql.default()` calls at build time
 - Report errors in development mode
-- Generate artifact file for operation registry
+- Use in-memory coordinator for operation registry (no file I/O)
 
 ### Production Build
 
@@ -84,29 +84,53 @@ nestjs-app/
 
 ## Webpack Configuration
 
-The `webpack.config.js` integrates the soda-gql plugin:
+The `webpack.config.js` integrates the soda-gql plugin with coordinator-based architecture:
 
 ```javascript
-import { SodaGqlWebpackPlugin } from '@soda-gql/plugin-nestjs/webpack/plugin';
+const path = require('path');
+const { SodaGqlWebpackPlugin } = require('@soda-gql/plugin-nestjs/webpack/plugin');
 
-export default function (options, webpack) {
+module.exports = (options, _webpack) => {
+  const sodaOptions = {
+    configPath: path.resolve(__dirname, 'soda-gql.config.ts'),
+    importIdentifier: '@/graphql-system',
+  };
+
   return {
     ...options,
+    module: {
+      ...options.module,
+      rules: [
+        ...(options.module?.rules ?? []),
+        {
+          test: /\.[jt]sx?$/,
+          enforce: 'pre',
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: '@soda-gql/plugin-nestjs/webpack/loader',
+              options: sodaOptions,
+            },
+          ],
+        },
+      ],
+    },
     plugins: [
       ...options.plugins,
       new SodaGqlWebpackPlugin({
-        mode: 'artifact-file',
-        artifactPath: '.cache/soda-gql-artifact.json',
+        ...sodaOptions,
+        diagnostics: process.env.NODE_ENV === 'production' ? 'json' : 'console',
       }),
     ],
   };
-}
+};
 ```
 
-### Plugin Modes
+### Configuration Options
 
-1. **artifact-file**: Generates a JSON artifact file with all operations (recommended for production)
-2. **runtime**: Registers operations at runtime (suitable for development)
+- **configPath**: Path to `soda-gql.config.ts` with builder configuration
+- **importIdentifier**: Import path to your GraphQL system (e.g., `@/graphql-system`)
+- **diagnostics**: Error reporting mode (`'console'` for development, `'json'` for production)
 
 ## Key Concepts
 
@@ -189,14 +213,19 @@ bun run codegen
 
 ### Build Errors
 
-Check webpack.config.js and ensure the plugin is properly configured:
+Check webpack.config.js and soda-gql.config.ts are properly configured:
 ```bash
 bun run build
 ```
 
-### Runtime Errors
-
-Verify artifact file is generated:
-```bash
-ls -la .cache/soda-gql-artifact.json
+Ensure `soda-gql.config.ts` includes builder configuration:
+```typescript
+export default defineConfig({
+  graphqlSystemPath: './graphql-system/index.ts',
+  builder: {
+    entry: ['./src/**/*.ts'],
+    outDir: '.cache/soda-gql',
+    analyzer: 'ts',
+  },
+});
 ```
