@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { getUserQuery, getUsersQuery } from '../graphql/operations';
+import { Injectable } from "@nestjs/common";
+import { getUserQuery, getUsersQuery } from "../graphql/operations";
 
 /**
  * User service demonstrating soda-gql integration with NestJS.
@@ -19,15 +19,15 @@ export class UserService {
     // In a real app, execute with your GraphQL client:
     // return await graphqlClient.query(getUserQuery, { userId });
 
-    console.log('Query operation:', getUserQuery);
-    console.log('Variables:', { userId });
+    console.log("Query operation:", getUserQuery);
+    console.log("Variables:", { userId });
 
     // Mock response for demonstration
     return {
       user: {
         id: userId,
-        name: 'John Doe',
-        email: 'john@example.com',
+        name: "John Doe",
+        email: "john@example.com",
       },
     };
   }
@@ -39,13 +39,13 @@ export class UserService {
     // In a real app, execute with your GraphQL client:
     // return await graphqlClient.query(getUsersQuery);
 
-    console.log('Query operation:', getUsersQuery);
+    console.log("Query operation:", getUsersQuery);
 
     // Mock response for demonstration
     return {
       users: [
-        { id: '1', name: 'John Doe', email: 'john@example.com' },
-        { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
+        { id: "1", name: "John Doe", email: "john@example.com" },
+        { id: "2", name: "Jane Smith", email: "jane@example.com" },
       ],
     };
   }

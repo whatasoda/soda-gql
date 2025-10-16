@@ -2,6 +2,25 @@
 
 NestJS integration for soda-gql, enabling zero-runtime GraphQL query generation in your NestJS applications.
 
+## Current Status
+
+**Implementation Level**: 🔶 **Minimal (Detection-only)**
+
+> ⚠️ **Pre-release v0.1.0**: The compiler plugins (TypeScript/SWC) currently provide infrastructure and detection but **do not perform full AST transformation yet**. Operations are still evaluated at runtime. The webpack integration is fully functional.
+>
+> **What works today**:
+> - ✅ Plugin infrastructure and Nest CLI integration
+> - ✅ Detection of `gql.operation.*` calls
+> - ✅ Artifact loading and caching
+> - ✅ Full webpack integration (zero-runtime working)
+>
+> **Not yet implemented**:
+> - ❌ AST replacement for compiler plugins (TSC/SWC)
+> - ❌ Runtime code elimination in compiler plugins
+> - ❌ Zero-runtime transformation in compiler plugins
+>
+> For detailed status and architecture, see [docs/status/plugin-nestjs.md](../../docs/status/plugin-nestjs.md).
+
 ## Overview
 
 This package provides two integration paths for using soda-gql with NestJS:

@@ -2,6 +2,8 @@
 
 This example demonstrates using `@soda-gql/plugin-nestjs` with the TypeScript compiler plugin (without webpack) for zero-runtime GraphQL transformations.
 
+> **⚠️ Current Status (v0.1.0 Pre-release)**: The TypeScript compiler plugin is in minimal implementation state. It successfully detects `gql.operation.*` calls and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime. See [plugin status documentation](../../docs/status/plugin-nestjs.md) for details.
+
 ## Features
 
 - ✅ NestJS framework integration
@@ -86,7 +88,9 @@ The TypeScript compiler plugin is configured in `nest-cli.json`:
 
 ### Zero-Runtime Mode
 
-When `mode: "zero-runtime"` is set, the plugin transforms your code at build time:
+When `mode: "zero-runtime"` is set, the plugin is configured for build-time transformation.
+
+> **Note**: In the current v0.1.0 pre-release, transformation is not yet fully implemented. The code below shows the intended behavior once transformation is complete.
 
 **Before transformation:**
 ```typescript
@@ -100,7 +104,7 @@ export const userQuery = gql.operation.query('UserQuery', ({ f }) => ({
 }));
 ```
 
-**After transformation:**
+**After transformation (planned for v0.1.0 final):**
 ```typescript
 import { gqlRuntime } from '@/graphql-system';
 

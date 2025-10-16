@@ -2,6 +2,8 @@
 
 This example demonstrates using `@soda-gql/plugin-nestjs` with the SWC compiler plugin for ultra-fast zero-runtime GraphQL transformations.
 
+> **⚠️ Current Status (v0.1.0 Pre-release)**: The SWC compiler plugin is in minimal implementation state. It successfully detects `gql.operation.*` calls and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime. See [plugin status documentation](../../docs/status/plugin-nestjs.md) for details.
+
 ## Features
 
 - ✅ NestJS framework integration

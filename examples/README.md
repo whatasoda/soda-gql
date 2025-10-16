@@ -2,6 +2,8 @@
 
 This directory contains practical examples demonstrating different integration methods for soda-gql.
 
+> **⚠️ Status Note (v0.1.0 Pre-release)**: The compiler plugin examples (TypeScript/SWC) demonstrate infrastructure and configuration. These plugins currently provide detection-only implementation and do not yet perform full zero-runtime transformation. The webpack example is fully functional. See [plugin status documentation](../docs/status/plugin-nestjs.md) for details.
+
 ## Available Examples
 
 ### NestJS Integration

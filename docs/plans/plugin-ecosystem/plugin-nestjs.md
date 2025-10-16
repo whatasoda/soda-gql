@@ -1,15 +1,19 @@
 # PE-NestJS: NestJS Plugin
 
 **Task ID**: PE-NestJS
-**Status**: Planned
-**Duration**: 4-5 days
+**Status**: In Progress (Detection-only implementation complete)
+**Duration**: 4-5 days (Estimated 2-3 days remaining for full transformation)
 **Dependencies**: [PE-Shared: Shared Layer](./shared-layer.md)
+
+> **Current Status**: See [docs/status/plugin-nestjs.md](../../status/plugin-nestjs.md) for detailed implementation status, capabilities, and limitations.
 
 ---
 
 ## Overview
 
 Implement NestJS plugin for webpack integration and CLI prebuild support.
+
+**Current Implementation**: Infrastructure complete with TypeScript and SWC compiler plugins providing detection-only transformation. Webpack integration is fully functional with zero-runtime transformation.
 
 ## Key Features
 
@@ -24,10 +28,21 @@ See original `plugin-implementation-plan.md` Phase 4 for detailed implementation
 
 ## Success Criteria
 
-- [ ] NestJS app compiles with webpack
-- [ ] CLI prebuild generates artifacts
-- [ ] Watch mode updates artifacts
-- [ ] Integration tests with NestJS fixture pass
+**Phase 1: Infrastructure (Complete)**
+- [x] NestJS app compiles with webpack
+- [x] TypeScript compiler plugin infrastructure
+- [x] SWC compiler plugin infrastructure
+- [x] Artifact loading and caching
+- [x] Integration tests with NestJS fixtures pass
+- [x] Detection of `gql.operation.*` calls
+- [x] Working examples (nestjs-compiler-tsc, nestjs-compiler-swc)
+
+**Phase 2: Transformation (In Progress)**
+- [ ] AST replacement for compiler plugins
+- [ ] Runtime import generation
+- [ ] Runtime code elimination
+- [ ] Full zero-runtime transformation
+- [ ] Transformation correctness tests
 
 ---
 
