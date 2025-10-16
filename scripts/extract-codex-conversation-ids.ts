@@ -20,19 +20,28 @@ concurrently and you want to find the right conversationId to use for a manual M
   - Skips old files if --since is specified.
   - Aggregates results across all matching files (JSON, log, ndjson, etc.).
 
-🧩 Output fields:
-  - created:   File creation time (when the session first appeared)
-  - lastSeen:  Most recent modification time of any file containing this ID
-  - id:        The conversationId itself
-  - firstPrompt:  The first user message found in that session (truncated to 80 chars)
+  🧩 Output fields:
+  - conversationId: The conversationId itself
+  - created:        The creation time of the session
+  - updated:        The most recent modification time of any file containing this ID
+  - workDir:        The working directory of the session
+  - prompt:         The first user message found in that session (truncated to 160 chars)
 
 🧱 Example (human output):
-  $ bun extract-codex-conversation-ids.ts
-  #  created              lastSeen              id                                      firstPrompt
-  1  2025-10-12T18:05:11+09:00  2025-10-12T19:30:02+09:00  3e63c3fb-91b3-4a03-b7d3-af07b4c8e8bb  "codex の ~/.codex/sessions から mcp..."
+  \`\`\`
+  $ bun ${SCRIPT_PATH}
+  | conversationId | created | updated | workDir | prompt |
+  | --- | --- | --- | --- | --- |
+  | 0199eb6c-c4eb-7fb3-8247-c6099d694b16 | 2025-10-16T05:09:58.123Z | 2025-10-16T05:11:04.712Z | /Users/username/path/to/work-dir | "User prompt sent to Codex" |
+  | 0199eb69-0779-7e02-99fa-0ec64fd3eaaa | 2025-10-16T05:05:53.018Z | 2025-10-16T05:08:33.324Z | /Users/username/path/to/work-dir | "Claude Code is asking something to Codex via Codex MCP" |
+  | 0199eb61-90fd-73f0-a45c-be88a37107a6 | 2025-10-16T04:57:43.933Z | 2025-10-16T04:59:05.925Z | /Users/username/path/to/work-dir | "User is asking something via Codex CLI" |
+
+  (3 rows)
+  \`\`\`
 
 🧰 Options:
-  --help           Show this help message
+  --help             Show this help message
+  --ping             Ping the script to check if it is available
   --dir <path>       Override sessions root (default: ~/.codex/sessions)
   --work-dir <path>  Limit sessions to those in the specified working directory or its ancestors (default: current working directory)
   --limit <count>    Limit the number of sessions to extract (default: 10)
@@ -65,7 +74,8 @@ type Session = {
   id: string;
   birthtimeMs: number;
   mtimeMs: number;
-  prompt?: string;
+  prompt: string;
+  workDir: string;
 };
 
 function parseArgs() {
@@ -81,6 +91,11 @@ function parseArgs() {
         i++;
       }
     }
+  }
+
+  if (args.get("ping")) {
+    console.log("Script is available");
+    process.exit(0);
   }
 
   if (args.get("help")) {
@@ -130,25 +145,27 @@ const main = async () => {
 
     if (jsonOut) {
       const json = sessions.map((o) => ({
-        id: o.id,
+        conversationId: o.id,
         created: new Date(o.birthtimeMs).toISOString(),
-        lastSeen: new Date(o.mtimeMs).toISOString(),
+        updated: new Date(o.mtimeMs).toISOString(),
+        workDir: o.workDir,
         prompt: o.prompt,
       }));
       console.log(JSON.stringify(json, null, 2));
     } else {
       if (sessions.length > 0) {
         const rows = sessions.map((session) => ({
-          id: session.id,
+          conversationId: session.id,
           created: new Date(session.birthtimeMs).toISOString(),
           updated: new Date(session.mtimeMs).toISOString(),
-          prompt: JSON.stringify(session.prompt?.slice(0, 80) ?? ""),
+          workDir: session.workDir,
+          prompt: JSON.stringify(session.prompt?.slice(0, 160) ?? ""),
         }));
-        const cols = Object.keys(rows[0] ?? {});
-        const header = "| " + cols.join(" | ") + " |";
-        const divider = "| " + cols.map(() => "---").join(" | ") + " |";
+        const cols = Object.keys(rows[0] ?? {}) as (keyof (typeof rows)[0])[];
+        const header = `| ${cols.join(" | ")} |`;
+        const divider = `| ${cols.map(() => "---").join(" | ")} |`;
         const body = rows
-          .map((row) => "| " + cols.map((col) => (row as Record<string, string>)[col] ?? "").join(" | ") + " |")
+          .map((row) => `| ${cols.map((col) => row[col] ?? "").join(" | ")} |`)
           .join("\n");
 
         console.log(header);
@@ -317,6 +334,7 @@ async function parseSessionFile({
           birthtimeMs: stat.birthtimeMs,
           mtimeMs: stat.mtimeMs,
           prompt: firstPrompt,
+          workDir: sessionCwd,
         };
       }
     }
@@ -344,9 +362,11 @@ function extractFirstPrompt(json: any): string | undefined {
     for (const item of json.payload.content) {
       if (item.type === "input_text" && item.text) {
         // Skip environment context
-        if (!item.text.includes("<environment_context>")) {
-          return item.text.trim();
+        if (/^<[_-\w]+>/.test(item.text)) {
+          continue;
         }
+
+        return item.text.trim();
       }
     }
   }

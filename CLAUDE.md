@@ -71,7 +71,7 @@ IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
     ↓
 Codex analyzes (READ-ONLY)
     ↓
-Find Codex's conversationId by `bun codex:conversation` (NOTE: The output includes multiple conversationIds. The latest one may not be the correct one.)
+Get Codex's conversationId corresponding to the current session.
     ↓
 Claude saves conversationId (UUID) for follow-ups
     ↓
@@ -83,6 +83,11 @@ Codex refines plan (READ-ONLY) ← Claude reports execution results
     ↓
 Repeat until complete → User receives result
 ```
+
+### How to get Codex's conversationId
+1. Run `bun codex:conversation`
+2. The output is formatted like markdown table. The columns are `conversationId`, `created`, `updated`, `workDir`, and `prompt`.
+3. Check the prompt column and the workDir column to find the conversationId corresponding to the prompt sent to Codex.
 
 ### Communication Requirements
 
