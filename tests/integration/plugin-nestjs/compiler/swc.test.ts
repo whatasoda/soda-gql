@@ -7,9 +7,8 @@ import type { Module } from "@swc/types";
 describe("SWC Compiler Plugin Integration", () => {
   const fixturesDir = join(import.meta.dir, "../../../fixtures/plugin-nestjs/compiler/swc");
   const sourceFile = join(fixturesDir, "sample.ts");
-  const artifactPath = join(fixturesDir, "artifact.json");
 
-  test("should detect gql.default calls with operations (transformation pending)", async () => {
+  test("should accept new configuration options", async () => {
     // Read source file
     const sourceCode = await Bun.file(sourceFile).text();
 
@@ -19,11 +18,12 @@ describe("SWC Compiler Plugin Integration", () => {
       target: "es2020",
     }) as Module;
 
-    // Create our plugin
+    // Create our plugin with new options (disabled to avoid coordinator initialization)
     const plugin = createSodaGqlSwcPlugin({
-      artifactPath,
-      mode: "zero-runtime",
+      configPath: "./soda-gql.config.ts",
+      project: "default",
       importIdentifier: "@/graphql-system",
+      enabled: false, // Disable to test option parsing without coordinator
     });
 
     // Apply transformation
@@ -45,20 +45,13 @@ describe("SWC Compiler Plugin Integration", () => {
       },
     });
 
-    // Note: Current SWC adapter is minimal implementation
-    // It detects gql.default calls but doesn't perform actual transformation yet
-    // For now, we verify that:
-    // 1. The plugin runs without errors
-    // 2. Code is emitted successfully
-    // 3. No crashes occur during compilation
-
-    // Original code should be present (not transformed yet in minimal impl)
+    // Original code should be present (not transformed since disabled)
     expect(result.code).toContain("gql");
     expect(result.code).toContain("operation.query");
     expect(result.code).toContain("operation.mutation");
   });
 
-  test("should skip transformation in runtime mode", async () => {
+  test("should skip transformation when disabled", async () => {
     const sourceCode = await Bun.file(sourceFile).text();
 
     const module = parseSync(sourceCode, {
@@ -67,9 +60,9 @@ describe("SWC Compiler Plugin Integration", () => {
     }) as Module;
 
     const plugin = createSodaGqlSwcPlugin({
-      artifactPath,
-      mode: "runtime",
+      configPath: "./soda-gql.config.ts",
       importIdentifier: "@/graphql-system",
+      enabled: false,
     });
 
     const transformedModule = plugin(module, {
@@ -77,7 +70,7 @@ describe("SWC Compiler Plugin Integration", () => {
       swc: await import("@swc/core"),
     });
 
-    // In runtime mode, should not modify the module
+    // When disabled, should not modify the module
     expect(transformedModule).toBe(module);
 
     // Use transformSync to verify output
@@ -91,14 +84,14 @@ describe("SWC Compiler Plugin Integration", () => {
       },
     });
 
-    // In runtime mode, should not inject gqlRuntime import
+    // When disabled, should not inject gqlRuntime import
     expect(result.code).not.toContain("gqlRuntime");
 
     // Original gql import should remain
     expect(result.code).toContain("@/graphql-system");
   });
 
-  test("should handle missing artifact gracefully", async () => {
+  test("should handle missing config gracefully", async () => {
     const sourceCode = await Bun.file(sourceFile).text();
 
     const module = parseSync(sourceCode, {
@@ -107,8 +100,7 @@ describe("SWC Compiler Plugin Integration", () => {
     }) as Module;
 
     const plugin = createSodaGqlSwcPlugin({
-      artifactPath: "/nonexistent/artifact.json",
-      mode: "zero-runtime",
+      configPath: "/nonexistent/soda-gql.config.ts",
       importIdentifier: "@/graphql-system",
     });
 
