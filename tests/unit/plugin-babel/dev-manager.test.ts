@@ -83,6 +83,16 @@ const createMockConfig = (): BuilderServiceConfig => ({
   entrypoints: ["**/*.ts"],
 });
 
+const createMockCoordinatorKey = (): string => "mock-coordinator-key";
+
+const createMockSnapshot = () => ({
+  artifact: createMockArtifact(),
+  elements: {},
+  generation: 0,
+  createdAt: Date.now(),
+  options: createMockOptions(),
+});
+
 // Test Harness
 type TestHarness = {
   controller: BuilderServiceController & { buildCalls: number; updateCalls: number };
@@ -237,7 +247,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -250,9 +265,13 @@ describe("createDevManager", () => {
       const harness = createTestHarness();
       const config = createMockConfig();
       const options = createMockOptions();
-      const artifact = createMockArtifact();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options, initialArtifact: artifact });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -265,7 +284,13 @@ describe("createDevManager", () => {
       const options = createMockOptions();
       const watchOptions = { rootDir: "/test", schemaHash: "hash", analyzerVersion: "1.0.0" };
 
-      const initPromise = harness.manager.ensureInitialized({ config, options, watchOptions });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        watchOptions,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -277,7 +302,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -289,13 +319,23 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
       const beforeListenerCount = harness.session.listeners.size;
 
-      await harness.manager.ensureInitialized({ config, options });
+      await harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
 
       expect(harness.session.listeners.size).toBe(beforeListenerCount);
     });
@@ -306,9 +346,16 @@ describe("createDevManager", () => {
       const options = createMockOptions();
 
       let resolved = false;
-      const initPromise = harness.manager.ensureInitialized({ config, options }).then(() => {
-        resolved = true;
-      });
+      const initPromise = harness.manager
+        .ensureInitialized({
+          config,
+          options,
+          coordinatorKey: createMockCoordinatorKey(),
+          initialSnapshot: createMockSnapshot(),
+        })
+        .then(() => {
+          resolved = true;
+        });
 
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(resolved).toBe(false);
@@ -323,7 +370,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.rejectInitialBuild(new Error("Build failed"));
 
       await expect(initPromise).rejects.toThrow("Build failed");
@@ -336,9 +388,13 @@ describe("createDevManager", () => {
       const harness = createTestHarness();
       const config = createMockConfig();
       const options = createMockOptions();
-      const artifact = createMockArtifact();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options, initialArtifact: artifact });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -358,7 +414,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -378,7 +439,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -403,7 +469,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -423,9 +494,13 @@ describe("createDevManager", () => {
       const harness = createTestHarness();
       const config = createMockConfig();
       const options = createMockOptions();
-      const artifact = createMockArtifact();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options, initialArtifact: artifact });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -449,7 +524,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -470,7 +550,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -486,7 +571,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 
@@ -500,7 +590,12 @@ describe("createDevManager", () => {
       const config = createMockConfig();
       const options = createMockOptions();
 
-      const initPromise = harness.manager.ensureInitialized({ config, options });
+      const initPromise = harness.manager.ensureInitialized({
+        config,
+        options,
+        coordinatorKey: createMockCoordinatorKey(),
+        initialSnapshot: createMockSnapshot(),
+      });
       harness.session.resolveInitialBuild();
       await initPromise;
 

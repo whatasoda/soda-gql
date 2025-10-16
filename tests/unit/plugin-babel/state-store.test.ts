@@ -4,7 +4,6 @@ import { createStateStore } from "@soda-gql/plugin-babel/dev";
 import type { NormalizedOptions } from "@soda-gql/plugin-shared";
 
 const createMockOptions = (): NormalizedOptions => ({
-  mode: "zero-runtime",
   importIdentifier: "@soda-gql/runtime",
   diagnostics: "json",
   resolvedConfig: {
@@ -23,28 +22,26 @@ const createMockOptions = (): NormalizedOptions => ({
     codegen: undefined,
     plugins: {},
   },
-  artifact: {
-    type: "builder",
+  builderConfig: {
     config: {
-      config: {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        corePath: "@soda-gql/core",
-        configDir: "/test",
-        configPath: "/test/soda-gql.config.ts",
-        configHash: "test-hash",
-        configMtime: Date.now(),
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-          mode: "zero-runtime",
-        },
-        codegen: undefined,
-        plugins: {},
+      graphqlSystemPath: "./src/graphql-system/index.ts",
+      corePath: "@soda-gql/core",
+      configDir: "/test",
+      configPath: "/test/soda-gql.config.ts",
+      configHash: "test-hash",
+      configMtime: Date.now(),
+      builder: {
+        entry: ["**/*.ts"],
+        analyzer: "ts",
+        outDir: "./.cache",
+        mode: "zero-runtime",
       },
-      entrypoints: ["**/*.ts"],
+      codegen: undefined,
+      plugins: {},
     },
+    entrypoints: ["**/*.ts"],
   },
+  project: undefined,
 });
 
 const createMockArtifact = (): BuilderArtifact => ({
@@ -60,13 +57,23 @@ const createMockArtifact = (): BuilderArtifact => ({
   },
 });
 
+const createMockCoordinatorKey = (): string => "mock-coordinator-key";
+
+const createMockSnapshot = () => ({
+  artifact: createMockArtifact(),
+  elements: {},
+  generation: 0,
+  createdAt: Date.now(),
+  options: createMockOptions(),
+});
+
 describe("StateStore", () => {
   it("initializes with options and artifact", () => {
     const store = createStateStore();
     const options = createMockOptions();
     const artifact = createMockArtifact();
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
     const snapshot = store.getSnapshot();
     expect(snapshot.status).toBe("ready");
@@ -88,9 +95,11 @@ describe("StateStore", () => {
     const options = createMockOptions();
     const artifact = createMockArtifact();
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
-    expect(() => store.initialize(options, artifact)).toThrow("StateStore already initialized");
+    expect(() => store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot())).toThrow(
+      "StateStore already initialized",
+    );
   });
 
   it("updates artifact and increments generation", () => {
@@ -102,7 +111,7 @@ describe("StateStore", () => {
       elements: { "test-id": {} as any },
     };
 
-    store.initialize(options, artifact1);
+    store.initialize(options, artifact1, createMockCoordinatorKey(), createMockSnapshot());
 
     const snapshot1 = store.getSnapshot();
     expect(store.getGeneration()).toBe(0);
@@ -110,7 +119,7 @@ describe("StateStore", () => {
       expect(Object.keys(snapshot1.state.allArtifacts)).toHaveLength(0);
     }
 
-    store.updateArtifact(artifact2);
+    store.updateArtifact(artifact2, createMockSnapshot());
 
     const snapshot2 = store.getSnapshot();
     expect(store.getGeneration()).toBe(1);
@@ -124,7 +133,7 @@ describe("StateStore", () => {
     const store = createStateStore();
     const artifact = createMockArtifact();
 
-    expect(() => store.updateArtifact(artifact)).toThrow("StateStore not initialized");
+    expect(() => store.updateArtifact(artifact, createMockSnapshot())).toThrow("StateStore not initialized");
   });
 
   it("notifies subscribers on initialization", () => {
@@ -137,7 +146,7 @@ describe("StateStore", () => {
       notified = true;
     });
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
     expect(notified).toBe(true);
   });
@@ -148,7 +157,7 @@ describe("StateStore", () => {
     const artifact = createMockArtifact();
     let notificationCount = 0;
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
     store.subscribe(() => {
       notificationCount++;
@@ -156,10 +165,10 @@ describe("StateStore", () => {
     // subscribe() immediately notifies with current state
     expect(notificationCount).toBe(1);
 
-    store.updateArtifact(artifact);
+    store.updateArtifact(artifact, createMockSnapshot());
     expect(notificationCount).toBe(2);
 
-    store.updateArtifact(artifact);
+    store.updateArtifact(artifact, createMockSnapshot());
     expect(notificationCount).toBe(3);
   });
 
@@ -169,7 +178,7 @@ describe("StateStore", () => {
     const artifact = createMockArtifact();
     let count = 0;
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
     const unsubscribe = store.subscribe(() => {
       count++;
@@ -177,11 +186,11 @@ describe("StateStore", () => {
     // subscribe() immediately notifies with current state
     expect(count).toBe(1);
 
-    store.updateArtifact(artifact);
+    store.updateArtifact(artifact, createMockSnapshot());
     expect(count).toBe(2);
 
     unsubscribe();
-    store.updateArtifact(artifact);
+    store.updateArtifact(artifact, createMockSnapshot());
     expect(count).toBe(2); // Still 2, not incremented
   });
 
@@ -191,7 +200,7 @@ describe("StateStore", () => {
     const artifact = createMockArtifact();
     let notified = false;
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
 
     store.subscribe(() => {
       notified = true;
@@ -208,8 +217,8 @@ describe("StateStore", () => {
     const artifact1 = createMockArtifact();
     const artifact2 = createMockArtifact();
 
-    store.initialize(options, artifact1);
-    store.updateArtifact(artifact2);
+    store.initialize(options, artifact1, createMockCoordinatorKey(), createMockSnapshot());
+    store.updateArtifact(artifact2, createMockSnapshot());
 
     const snapshot = store.getSnapshot();
     if (snapshot.status === "ready") {
@@ -223,7 +232,7 @@ describe("StateStore", () => {
     const artifact = createMockArtifact();
     const error = new Error("Test error");
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
     store.setError(error);
 
     const snapshot = store.getSnapshot();
@@ -241,7 +250,7 @@ describe("StateStore", () => {
     const artifact = createMockArtifact();
     const error = new Error("Test error");
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
     store.setError(error);
 
     expect(() => store.getState()).toThrow(error);
@@ -252,7 +261,7 @@ describe("StateStore", () => {
     const options = createMockOptions();
     const artifact = createMockArtifact();
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
     expect(store.hasError()).toBe(false);
 
     store.setError(new Error("Test error"));
@@ -265,11 +274,11 @@ describe("StateStore", () => {
     const artifact1 = createMockArtifact();
     const artifact2 = createMockArtifact();
 
-    store.initialize(options, artifact1);
+    store.initialize(options, artifact1, createMockCoordinatorKey(), createMockSnapshot());
     store.setError(new Error("Test error"));
     expect(store.hasError()).toBe(true);
 
-    store.updateArtifact(artifact2);
+    store.updateArtifact(artifact2, createMockSnapshot());
     expect(store.hasError()).toBe(false);
 
     const snapshot = store.getSnapshot();
@@ -281,7 +290,7 @@ describe("StateStore", () => {
     const options = createMockOptions();
     const artifact = createMockArtifact();
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
     store.setError(new Error("Test error"));
     expect(store.hasError()).toBe(true);
 
@@ -305,7 +314,7 @@ describe("StateStore", () => {
     // so initial notification is skipped
     expect(snapshots).toHaveLength(0);
 
-    store.initialize(options, artifact);
+    store.initialize(options, artifact, createMockCoordinatorKey(), createMockSnapshot());
     expect(snapshots).toHaveLength(1);
 
     store.setError(new Error("Test"));

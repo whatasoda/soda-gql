@@ -71,10 +71,7 @@ describe("SodaGqlWebpackPlugin", () => {
         },
         plugins: [
           new SodaGqlWebpackPlugin({
-            mode: "runtime",
-            artifactPath,
             configPath,
-            artifactSource: { source: "artifact-file", path: artifactPath },
           }),
         ],
       });
@@ -121,11 +118,8 @@ describe("SodaGqlWebpackPlugin", () => {
         },
         plugins: [
           new SodaGqlWebpackPlugin({
-            mode: "runtime",
             diagnostics: "json",
-            artifactPath,
             configPath,
-            artifactSource: { source: "artifact-file", path: artifactPath },
           }),
         ],
       });
@@ -165,11 +159,8 @@ describe("SodaGqlWebpackPlugin", () => {
         },
         plugins: [
           new SodaGqlWebpackPlugin({
-            mode: "zero-runtime",
             bailOnError: true,
-            artifactPath,
             configPath,
-            artifactSource: { source: "artifact-file", path: artifactPath },
           }),
         ],
       });
@@ -184,20 +175,16 @@ describe("SodaGqlWebpackPlugin", () => {
 
   describe("Plugin instantiation", () => {
     test("can be instantiated with minimal options", () => {
-      const plugin = new SodaGqlWebpackPlugin({
-        mode: "runtime",
-      });
+      const plugin = new SodaGqlWebpackPlugin({});
 
       expect(plugin).toBeDefined();
     });
 
     test("can be instantiated with full options", () => {
       const plugin = new SodaGqlWebpackPlugin({
-        mode: "zero-runtime",
-        artifactPath: "/tmp/artifact.json",
-        artifactSource: { source: "artifact-file", path: "/tmp/artifact.json" },
         diagnostics: "json",
         bailOnError: true,
+        configPath: "/tmp/soda-gql.config.ts",
       });
 
       expect(plugin).toBeDefined();
