@@ -40,6 +40,8 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
   let unsubscribe: (() => void) | null = null;
   let initialized = false;
   let cachedOptions: NormalizedOptions | null = null;
+  let cachedCoordinatorKey: CoordinatorKey | null = null;
+  let cachedSnapshot: CoordinatorSnapshot | null = null;
 
   return {
     async ensureInitialized(params) {
@@ -49,6 +51,8 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
 
       const { config, options, watchOptions, coordinatorKey, initialSnapshot } = params;
       cachedOptions = options;
+      cachedCoordinatorKey = coordinatorKey;
+      cachedSnapshot = initialSnapshot;
 
       try {
         // Create controller and optional watch
@@ -64,30 +68,40 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
 
         // Create and initialize state store with coordinator snapshot
         stateStore = createStore();
-        stateStore.initialize(options, initialSnapshot.artifact);
+        stateStore.initialize(options, initialSnapshot.artifact, coordinatorKey, initialSnapshot);
 
         // Subscribe to session events
         unsubscribe = session.subscribe((event) => {
           if (!stateStore) return;
 
           if (event.type === "artifact") {
-            if (!cachedOptions) {
-              throw new Error("[INTERNAL] cachedOptions is not set");
+            if (!cachedOptions || !cachedCoordinatorKey || !cachedSnapshot) {
+              throw new Error("[INTERNAL] cached values not set");
             }
+
+            // Create updated snapshot for state store
+            const updatedSnapshot: CoordinatorSnapshot = {
+              artifact: event.artifact,
+              elements: event.artifact.elements,
+              generation: cachedSnapshot.generation + 1,
+              createdAt: Date.now(),
+              options: cachedOptions,
+            };
+            cachedSnapshot = updatedSnapshot;
 
             try {
               const snapshot = stateStore.getSnapshot();
               if (snapshot.status === "error" || !snapshot.state) {
                 // Error recovery or initial initialization
-                stateStore.initialize(cachedOptions, event.artifact);
+                stateStore.initialize(cachedOptions, event.artifact, cachedCoordinatorKey, updatedSnapshot);
               } else {
                 // Normal update
-                stateStore.updateArtifact(event.artifact);
+                stateStore.updateArtifact(event.artifact, updatedSnapshot);
               }
             } catch (err) {
               // If getSnapshot throws (not initialized), initialize now
               if (err instanceof Error && err.message.includes("not initialized")) {
-                stateStore.initialize(cachedOptions, event.artifact);
+                stateStore.initialize(cachedOptions, event.artifact, cachedCoordinatorKey, updatedSnapshot);
               } else {
                 throw err;
               }
@@ -114,6 +128,8 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
         stateStore = null;
         session = null;
         cachedOptions = null;
+        cachedCoordinatorKey = null;
+        cachedSnapshot = null;
         throw error;
       }
     },
@@ -136,6 +152,8 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
       stateStore = null;
       session = null;
       cachedOptions = null;
+      cachedCoordinatorKey = null;
+      cachedSnapshot = null;
       initialized = false;
     },
   };

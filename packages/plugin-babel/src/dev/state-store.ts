@@ -1,18 +1,23 @@
 import type { BuilderArtifact } from "@soda-gql/builder";
-import type { NormalizedOptions, PluginState } from "@soda-gql/plugin-shared";
+import type { CoordinatorKey, CoordinatorSnapshot, NormalizedOptions, PluginState } from "@soda-gql/plugin-shared";
 
 export type StateSnapshot =
   | { readonly status: "ready"; readonly state: PluginState }
   | { readonly status: "error"; readonly error: Error; readonly lastValidState: PluginState | null };
 
 export type StateStore = {
-  initialize(options: NormalizedOptions, artifact: BuilderArtifact): void;
+  initialize(
+    options: NormalizedOptions,
+    artifact: BuilderArtifact,
+    coordinatorKey: CoordinatorKey,
+    snapshot: CoordinatorSnapshot,
+  ): void;
   getSnapshot(): StateSnapshot;
   getState(): PluginState;
   getError(): Error | null;
   hasError(): boolean;
   getGeneration(): number;
-  updateArtifact(artifact: BuilderArtifact): void;
+  updateArtifact(artifact: BuilderArtifact, snapshot: CoordinatorSnapshot): void;
   setError(error: Error): void;
   clearError(): void;
   subscribe(listener: (snapshot: StateSnapshot) => void): () => void;
@@ -52,7 +57,7 @@ export const createStateStore = (): StateStore => {
   };
 
   return {
-    initialize(options, artifact) {
+    initialize(options, artifact, coordinatorKey, snapshot) {
       if (currentState && !currentError) {
         throw new Error("StateStore already initialized");
       }
@@ -60,6 +65,8 @@ export const createStateStore = (): StateStore => {
       currentState = {
         options,
         allArtifacts: artifact.elements,
+        coordinatorKey,
+        snapshot,
       };
       lastValidState = currentState;
       currentError = null;
@@ -92,7 +99,7 @@ export const createStateStore = (): StateStore => {
       return generation;
     },
 
-    updateArtifact(artifact) {
+    updateArtifact(artifact, snapshot) {
       if (!currentState) {
         throw new Error("StateStore not initialized - call initialize() first");
       }
@@ -101,6 +108,8 @@ export const createStateStore = (): StateStore => {
       currentState = {
         options: currentState.options,
         allArtifacts: artifact.elements,
+        coordinatorKey: currentState.coordinatorKey,
+        snapshot,
       };
       lastValidState = currentState;
       currentError = null;

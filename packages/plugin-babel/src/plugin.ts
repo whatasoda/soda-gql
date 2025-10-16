@@ -1,9 +1,10 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
+import type { CanonicalId } from "@soda-gql/builder";
 import type { PluginOptions } from "@soda-gql/plugin-shared";
 import { formatPluginError, type PluginState, preparePluginState } from "@soda-gql/plugin-shared";
-import { babelTransformAdapterFactory } from "./adapter.js";
+import { babelTransformAdapterFactory } from "./adapter/index.js";
 import { type DevManager, type DevManagerContext, getDevManager, type StateStore } from "./dev/index.js";
 
 type PluginPassState = PluginPass & {
@@ -103,7 +104,7 @@ export const createSodaGqlPlugin = (): PluginObj<
       // Transform using adapter
       const result = adapter.transformProgram({
         filename,
-        artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
+        artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
       });
 
       // Insert runtime side effects if transformed
@@ -111,7 +112,7 @@ export const createSodaGqlPlugin = (): PluginObj<
         adapter.insertRuntimeSideEffects(
           {
             filename,
-            artifactLookup: (canonicalId) => pluginState.allArtifacts[canonicalId],
+            artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
           },
           result.runtimeArtifacts || [],
         );
