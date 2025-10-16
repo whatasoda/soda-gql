@@ -1,8 +1,8 @@
 # Plugin Architecture Refactoring Progress
 
 **Date**: 2025-10-16
-**Status**: Foundation Complete - Migration In Progress
-**Codex ConversationId**: `0199ecf2-b283-7982-ae4c-654047cd9a50`
+**Status**: Plugin Migrations Complete - Test Updates Remaining
+**Codex ConversationId**: `0199ed4b-dc53-7493-91a3-3291b7f9c678` (latest), `0199ecf2-b283-7982-ae4c-654047cd9a50` (initial)
 
 ## Executive Summary
 
@@ -12,7 +12,7 @@ Successfully implemented the **PluginCoordinator architecture** to achieve the i
 - Transform operations use coordinator snapshots
 - Zero file-based artifact loading in development
 
-## ✅ Completed Work (4 Commits)
+## ✅ Completed Work (7 Commits)
 
 ### Commit 1: feat(plugin-shared): introduce PluginCoordinator for in-memory artifact management
 
@@ -124,68 +124,83 @@ Updated plugin-babel to use coordinator:
 - `packages/plugin-babel/src/plugin.ts`
 - `packages/plugin-babel/src/dev/manager.ts`
 
+### Commit 5: refactor(plugin-webpack): migrate to coordinator API
+
+**SHA**: `f8f4b9e`
+
+Complete overhaul of plugin-webpack to use coordinator:
+
+**BREAKING CHANGES**:
+- Removed `mode` option (always uses coordinator-based approach)
+- Removed `artifactSource` option (no file-based artifacts)
+- Removed `artifactPath` option from both plugin and loader
+- Removed `entry` and `tsconfigPath` options
+
+**Architecture changes**:
+- Plugin uses `preparePluginState` and `registerConsumer` for coordinator access
+- Subscribe to coordinator events for artifact updates
+- Runtime refreshes triggered by coordinator snapshots
+- BuilderWatch integrated with coordinator.update()
+- Automatic cleanup via consumer.release()
+
+**Loader changes**:
+- Updated to use `prepareTransform` with coordinator
+- Removed file-based artifact dependency tracking
+- Simplified options (configPath, project, importIdentifier only)
+
+**Plugin changes**:
+- Async initialization with coordinator
+- Event-driven artifact updates
+- Proper resource cleanup (unsubscribe, release, dispose)
+- Simplified options handling (exclude webpack-specific from state)
+
+**Files Modified**:
+- `packages/plugin-webpack/src/schemas/options.ts` (-44 lines)
+- `packages/plugin-webpack/src/loader.ts` (-27 lines)
+- `packages/plugin-webpack/src/plugin.ts` (complete rewrite, -142 lines)
+
+### Commit 6: refactor(plugin-nestjs): update config to use coordinator API
+
+**SHA**: `05620f4`
+
+Simplified plugin-nestjs config to use new plugin-webpack API:
+
+**BREAKING CHANGES**:
+- Removed artifactPath resolution logic
+- Removed artifactSource handling
+- Removed mode parameter from loader options
+
+**Changes**:
+- Simplified createLoaderOptions to use new WebpackLoaderOptions format
+- Removed resolveArtifactPath helper function
+- Updated withSodaGql to pass through plugin options directly
+- Loader options now only include: configPath, project, importIdentifier
+
+**Files Modified**:
+- `packages/plugin-nestjs/src/config/with-soda-gql.ts` (-24 lines)
+
+### Commit 7: refactor(plugin-shared): remove legacy artifact provider modules
+
+**SHA**: `8177d02`
+
+Deleted legacy artifact provider system:
+
+**Deleted**:
+- `packages/plugin-shared/src/artifact/artifact-provider.ts`
+- `packages/plugin-shared/src/artifact/builder-provider.ts`
+- `packages/plugin-shared/src/artifact/file-provider.ts`
+- `packages/plugin-shared/src/artifact/index.ts`
+
+**Removed export from**:
+- `packages/plugin-shared/src/index.ts`
+
+The artifact provider abstraction is no longer needed as all plugins now use the coordinator API for artifact management.
+
 ## 🚧 Remaining Work
 
 ### High Priority
 
-#### 1. plugin-webpack Migration (Complex)
-
-**Current State**:
-- Uses `BuilderServiceController` directly
-- Persists artifacts to disk during development
-- Supports both builder and artifact-file sources
-- Has complex `NormalizedOptions` with `artifactSource`
-
-**Required Changes**:
-- Remove `mode` option from `WebpackPluginOptions`
-- Remove `artifactSource` option (always use coordinator)
-- Replace `persistArtifact()` with coordinator subscription
-- Update loader to use coordinator registry instead of file paths
-- Simplify `normalizeOptions()` to coordinator-only
-- Replace `getOrCreateRuntime()` with coordinator consumer
-
-**Affected Files**:
-- `packages/plugin-webpack/src/plugin.ts` (major refactor)
-- `packages/plugin-webpack/src/loader.ts` (update to use registry key)
-- `packages/plugin-webpack/src/schemas/options.ts` (remove options)
-
-#### 2. plugin-nestjs Updates
-
-**Current State**:
-- Re-exports plugin-webpack (unnecessary)
-- TypeScript/SWC transformers use `prepareTransformSync`
-- Reads artifact files synchronously
-
-**Required Changes**:
-- Remove webpack re-exports from `src/webpack/`
-- Update compiler plugins to use coordinator snapshots
-- Replace `prepareTransformSync` with coordinator consumer
-- Update `withSodaGql` to ensure coordinator is ready
-
-**Affected Files**:
-- `packages/plugin-nestjs/src/webpack/index.ts` (delete)
-- `packages/plugin-nestjs/src/webpack/plugin.ts` (delete)
-- `packages/plugin-nestjs/src/compiler/*/` (update transformers)
-
-### Medium Priority
-
-#### 3. Remove Legacy Modules
-
-**To Delete**:
-- `packages/plugin-shared/src/artifact/` (entire directory)
-  - `artifact-provider.ts`
-  - `builder-provider.ts`
-  - `file-provider.ts`
-  - `index.ts`
-
-**To Clean Up**:
-- Remove deprecated error types from `state.ts`:
-  - `PluginOptionsMissingArtifactPathError`
-  - `PluginArtifactNotFoundError`
-  - `PluginArtifactParseFailedError`
-  - `PluginArtifactValidationFailedError`
-
-#### 4. Update Tests
+#### 1. Update Tests
 
 **Current Issues** (~40 type errors):
 - Tests reference removed `mode` option
@@ -332,24 +347,12 @@ Plugin
 
 ## Next Steps
 
-1. **Complete plugin-webpack migration** (est. 2-3 hours)
-   - Simplify options schema
-   - Replace file persistence with subscription
-   - Update loader for registry-based access
-
-2. **Update plugin-nestjs** (est. 1-2 hours)
-   - Remove webpack re-exports
-   - Update compiler plugins for coordinator
-
-3. **Remove legacy code** (est. 30 min)
-   - Delete artifact provider directory
-   - Clean up deprecated error types
-
-4. **Fix tests** (est. 1-2 hours)
-   - Update test fixtures
+1. **Fix tests** (est. 1-2 hours) - IN PROGRESS
+   - Update test fixtures to remove `mode` option
+   - Fix DevManager test calls with coordinatorKey and initialSnapshot
    - Add coordinator integration tests
 
-5. **Update documentation** (est. 1-2 hours)
+2. **Update documentation** (est. 1-2 hours)
    - Write migration guide
    - Update API documentation
    - Add examples
