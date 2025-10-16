@@ -5,14 +5,13 @@ import type { PluginError, PluginState } from "../state.js";
 import type { PluginOptions } from "../types.js";
 
 /**
- * Arguments for preparing a transform operation
+ * Arguments for preparing a transform operation (simplified for coordinator-based architecture)
  */
 export type PrepareTransformArgs = {
   readonly filename: string;
-  readonly artifactPath: string;
-  readonly mode: "runtime" | "zero-runtime";
   readonly importIdentifier?: string;
   readonly configPath?: string;
+  readonly project?: string;
 };
 
 /**
@@ -24,11 +23,11 @@ export type PreparedTransform = {
   readonly dispose: () => void;
 };
 
-// Module-level runtime cache shared across all hosts
+// Module-level runtime cache keyed by coordinator key
 const runtimeCache = new Map<string, Promise<PluginRuntime>>();
 
 /**
- * Prepare transform by normalizing options and loading plugin state.
+ * Prepare transform by normalizing options and loading plugin state via coordinator.
  * Returns the plugin state and runtime for use by adapter-specific transform logic.
  *
  * This is the host-agnostic core that can be reused by webpack, TypeScript, SWC, etc.
@@ -36,13 +35,9 @@ const runtimeCache = new Map<string, Promise<PluginRuntime>>();
 export async function prepareTransform(args: PrepareTransformArgs): Promise<Result<PreparedTransform, PluginError>> {
   // Normalize plugin options
   const normalizedResult = await normalizePluginOptions({
-    mode: args.mode,
     importIdentifier: args.importIdentifier,
     configPath: args.configPath,
-    artifact: {
-      useBuilder: false,
-      path: args.artifactPath,
-    },
+    project: args.project,
   } satisfies Partial<PluginOptions>);
 
   if (normalizedResult.isErr()) {
@@ -51,16 +46,11 @@ export async function prepareTransform(args: PrepareTransformArgs): Promise<Resu
 
   const normalizedOptions = normalizedResult.value;
 
-  // Short-circuit for runtime mode - no transformation needed
-  // Return early - caller should check mode before calling prepareTransform
-  if (normalizedOptions.mode === "runtime") {
-    throw new Error("prepareTransform should not be called in runtime mode");
-  }
-
-  // Create runtime key for caching
+  // Create runtime key for caching based on config
   const runtimeKey = JSON.stringify({
-    artifactPath: args.artifactPath,
-    mode: normalizedOptions.mode,
+    configPath: normalizedOptions.resolvedConfig.configPath,
+    configHash: normalizedOptions.resolvedConfig.configHash,
+    project: normalizedOptions.project,
     importIdentifier: normalizedOptions.importIdentifier,
   });
 
@@ -101,14 +91,6 @@ export async function prepareTransform(args: PrepareTransformArgs): Promise<Resu
  */
 const mapOptionsError = (error: OptionsError): PluginError => {
   switch (error.code) {
-    case "MISSING_ARTIFACT_PATH":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
-        cause: error,
-      };
     case "INVALID_BUILDER_CONFIG":
     case "MISSING_BUILDER_CONFIG":
       return {
@@ -126,28 +108,12 @@ const mapOptionsError = (error: OptionsError): PluginError => {
         message: `Config load failed: ${error.message}`,
         cause: error,
       };
-    case "PROJECT_NOT_FOUND":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_INVALID_BUILDER_CONFIG",
-        message: `Project not found: ${error.project}`,
-        cause: error,
-      };
-    case "INVALID_ARTIFACT_OVERRIDE":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
-        cause: error,
-      };
   }
 };
 
 /**
  * Clear the module-level runtime cache.
- * Useful for testing or when artifact files change.
+ * Useful for testing or when you want to force a rebuild.
  */
 export function clearRuntimeCache(): void {
   runtimeCache.clear();

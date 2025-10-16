@@ -1,15 +1,14 @@
-import type { BuilderArtifact } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
 
-import type { ArtifactProvider } from "./artifact";
-import { createArtifactProvider } from "./artifact";
-import type { NormalizedOptions } from "./options";
-import { normalizePluginOptions } from "./options";
-import type { PluginError, PluginState } from "./state";
-import type { PluginOptions } from "./types";
+import type { CoordinatorConsumer, CoordinatorKey } from "./coordinator/index.js";
+import { registerConsumer } from "./coordinator/index.js";
+import type { NormalizedOptions } from "./options.js";
+import { normalizePluginOptions } from "./options.js";
+import type { PluginError, PluginState } from "./state.js";
+import type { PluginOptions } from "./types.js";
 
 /**
- * Plugin runtime instance that manages plugin state lifecycle
+ * Plugin runtime instance that manages plugin state lifecycle with coordinator.
  */
 export interface PluginRuntime {
   /**
@@ -18,7 +17,7 @@ export interface PluginRuntime {
   getState(): PluginState;
 
   /**
-   * Force reload via current artifact provider
+   * Force reload via coordinator
    */
   refresh(): Promise<Result<PluginState, PluginError>>;
 
@@ -35,7 +34,8 @@ export interface PluginRuntime {
 
 type RuntimeCache = {
   options: NormalizedOptions;
-  provider: ArtifactProvider;
+  coordinatorKey: CoordinatorKey;
+  consumer: CoordinatorConsumer;
   state: PluginState | null;
   initError: PluginError | null;
 };
@@ -44,11 +44,16 @@ type RuntimeCache = {
  * Create a plugin runtime from normalized options
  */
 export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOptions): Promise<PluginRuntime> => {
-  const provider = createArtifactProvider(normalized);
+  // Create and register coordinator
+  const { createAndRegisterCoordinator } = await import("./coordinator/index.js");
+  const { key, coordinator } = await createAndRegisterCoordinator(normalized);
+
+  const consumer = registerConsumer(key);
 
   const cache: RuntimeCache = {
     options: normalized,
-    provider,
+    coordinatorKey: key,
+    consumer,
     state: null,
     initError: null,
   };
@@ -86,6 +91,7 @@ export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOp
     getOptions: () => cache.options,
 
     dispose: () => {
+      cache.consumer.release();
       cache.state = null;
       cache.initError = null;
     },
@@ -117,37 +123,30 @@ export const createPluginRuntime = async (opts: Partial<PluginOptions> = {}): Pr
 };
 
 const loadState = async (cache: RuntimeCache): Promise<Result<PluginState, PluginError>> => {
-  const artifactResult = await cache.provider.load();
+  try {
+    const snapshot = await cache.consumer.ensureLatest();
 
-  if (artifactResult.isErr()) {
-    return err(artifactResult.error);
+    const state: PluginState = {
+      options: cache.options,
+      allArtifacts: snapshot.elements,
+      coordinatorKey: cache.coordinatorKey,
+      snapshot,
+    };
+
+    return ok(state);
+  } catch (error) {
+    return err({
+      type: "PluginError",
+      stage: "builder",
+      code: "SODA_GQL_BUILDER_UNEXPECTED",
+      message: error instanceof Error ? error.message : String(error),
+      cause: error,
+    });
   }
-
-  const state = createPluginStateWithProvider(cache.options, artifactResult.value, cache.provider);
-
-  return ok(state);
 };
 
-const createPluginStateWithProvider = (
-  options: NormalizedOptions,
-  artifact: BuilderArtifact,
-  provider: ArtifactProvider,
-): PluginState => ({
-  options,
-  allArtifacts: artifact.elements,
-  artifactProvider: provider,
-});
-
-const mapOptionsError = (error: import("./options").OptionsError): PluginError => {
+const mapOptionsError = (error: import("./options.js").OptionsError): PluginError => {
   switch (error.code) {
-    case "MISSING_ARTIFACT_PATH":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
-        cause: error,
-      };
     case "INVALID_BUILDER_CONFIG":
     case "MISSING_BUILDER_CONFIG":
       return {
@@ -163,22 +162,6 @@ const mapOptionsError = (error: import("./options").OptionsError): PluginError =
         stage: "normalize-options",
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: `Config load failed: ${error.message}`,
-        cause: error,
-      };
-    case "PROJECT_NOT_FOUND":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_INVALID_BUILDER_CONFIG",
-        message: `Project not found: ${error.project}`,
-        cause: error,
-      };
-    case "INVALID_ARTIFACT_OVERRIDE":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
         cause: error,
       };
   }

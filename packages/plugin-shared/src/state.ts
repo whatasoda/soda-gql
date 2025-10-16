@@ -1,15 +1,10 @@
-import type { BuilderArtifact, BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
 
-import type { ArtifactError } from "./cache";
-import type { NormalizedOptions, OptionsError } from "./options";
+import type { NormalizedOptions, OptionsError } from "./options.js";
+import type { CoordinatorKey, CoordinatorSnapshot } from "./coordinator/index.js";
 
-type OptionsMissingArtifactPath = Extract<OptionsError, { code: "MISSING_ARTIFACT_PATH" }>;
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
-
-type ArtifactNotFound = Extract<ArtifactError, { code: "NOT_FOUND" }>;
-type ArtifactParseFailed = Extract<ArtifactError, { code: "PARSE_FAILED" }>;
-type ArtifactValidationFailed = Extract<ArtifactError, { code: "VALIDATION_FAILED" }>;
 
 type BuilderEntryNotFound = Extract<BuilderError, { code: "ENTRY_NOT_FOUND" }>;
 type BuilderDocDuplicate = Extract<BuilderError, { code: "DOC_DUPLICATE" }>;
@@ -32,33 +27,15 @@ type PluginErrorBase<Code extends string, Cause> = {
   readonly cause: Cause;
 };
 
-export type PluginOptionsMissingArtifactPathError = PluginErrorBase<
-  "OPTIONS_MISSING_ARTIFACT_PATH",
-  OptionsMissingArtifactPath | Extract<OptionsError, { code: "INVALID_ARTIFACT_OVERRIDE" }>
-> & { readonly stage: "normalize-options" };
-
 export type PluginOptionsInvalidBuilderConfigError = PluginErrorBase<
   "OPTIONS_INVALID_BUILDER_CONFIG",
-  | OptionsInvalidBuilderConfig
-  | Extract<OptionsError, { code: "MISSING_BUILDER_CONFIG" | "CONFIG_LOAD_FAILED" | "PROJECT_NOT_FOUND" }>
+  OptionsInvalidBuilderConfig | Extract<OptionsError, { code: "MISSING_BUILDER_CONFIG" | "CONFIG_LOAD_FAILED" }>
 > & { readonly stage: "normalize-options" };
 
-export type PluginArtifactNotFoundError = PluginErrorBase<"SODA_GQL_ARTIFACT_NOT_FOUND", ArtifactNotFound> & {
-  readonly stage: "artifact";
-  readonly path: string;
-};
-
-export type PluginArtifactParseFailedError = PluginErrorBase<"SODA_GQL_ARTIFACT_PARSE_FAILED", ArtifactParseFailed> & {
-  readonly stage: "artifact";
-  readonly path: string;
-};
-
-export type PluginArtifactValidationFailedError = PluginErrorBase<
-  "SODA_GQL_ARTIFACT_VALIDATION_FAILED",
-  ArtifactValidationFailed
-> & { readonly stage: "artifact"; readonly path: string };
-
-export type PluginBuilderEntryNotFoundError = PluginErrorBase<"SODA_GQL_BUILDER_ENTRY_NOT_FOUND", BuilderEntryNotFound> & {
+export type PluginBuilderEntryNotFoundError = PluginErrorBase<
+  "SODA_GQL_BUILDER_ENTRY_NOT_FOUND",
+  BuilderEntryNotFound
+> & {
   readonly stage: "builder";
   readonly entry: string;
 };
@@ -88,7 +65,10 @@ export type PluginBuilderUnexpectedError = PluginErrorBase<"SODA_GQL_BUILDER_UNE
   readonly stage: "builder";
 };
 
-export type PluginAnalysisMetadataMissingError = PluginErrorBase<"SODA_GQL_METADATA_NOT_FOUND", AnalysisMetadataMissingCause> & {
+export type PluginAnalysisMetadataMissingError = PluginErrorBase<
+  "SODA_GQL_METADATA_NOT_FOUND",
+  AnalysisMetadataMissingCause
+> & {
   readonly stage: "analysis";
   readonly filename: string;
 };
@@ -109,11 +89,7 @@ export type PluginAnalysisUnsupportedArtifactTypeError = PluginErrorBase<
 };
 
 export type PluginError =
-  | PluginOptionsMissingArtifactPathError
   | PluginOptionsInvalidBuilderConfigError
-  | PluginArtifactNotFoundError
-  | PluginArtifactParseFailedError
-  | PluginArtifactValidationFailedError
   | PluginBuilderEntryNotFoundError
   | PluginBuilderDocDuplicateError
   | PluginBuilderCircularDependencyError
@@ -126,23 +102,30 @@ export type PluginError =
 
 type AllArtifacts = Record<CanonicalId, BuilderArtifactElement>;
 
+/**
+ * Plugin state with coordinator-based artifact management.
+ */
 export type PluginState = {
   readonly options: NormalizedOptions;
   readonly allArtifacts: AllArtifacts;
-  readonly artifactProvider?: import("./artifact").ArtifactProvider;
+  readonly coordinatorKey: CoordinatorKey;
+  readonly snapshot: CoordinatorSnapshot;
 };
 
 export type PluginStateResult = Result<PluginState, PluginError>;
 
 /**
- * New preparePluginState that uses new PluginOptions and ArtifactProvider
+ * Prepare plugin state using coordinator.
+ * Creates and registers a coordinator, then returns the initial snapshot.
  */
-export const preparePluginState = async (rawOptions: Partial<import("./types").PluginOptions>): Promise<PluginStateResult> => {
+export const preparePluginState = async (
+  rawOptions: Partial<import("./types.js").PluginOptions>,
+): Promise<PluginStateResult> => {
   // Dynamically import to avoid circular dependency
-  const { normalizePluginOptions: normalizeNew } = await import("./options");
-  const { createArtifactProvider } = await import("./artifact");
+  const { normalizePluginOptions } = await import("./options.js");
+  const { createAndRegisterCoordinator } = await import("./coordinator/index.js");
 
-  const optionsResult = await normalizeNew(rawOptions);
+  const optionsResult = await normalizePluginOptions(rawOptions);
 
   if (optionsResult.isErr()) {
     return err(mapOptionsError(optionsResult.error));
@@ -150,39 +133,33 @@ export const preparePluginState = async (rawOptions: Partial<import("./types").P
 
   const options = optionsResult.value;
 
-  // Use artifact provider abstraction
-  const provider = createArtifactProvider(options);
-  const artifactResult = await provider.load();
+  // Create and register coordinator
+  const { key, coordinator } = await createAndRegisterCoordinator(options);
 
-  if (artifactResult.isErr()) {
-    return err(artifactResult.error);
+  // Ensure latest artifact is built
+  try {
+    const snapshot = await coordinator.ensureLatest();
+
+    return ok({
+      options,
+      allArtifacts: snapshot.elements,
+      coordinatorKey: key,
+      snapshot,
+    });
+  } catch (error) {
+    // Coordinator throws on builder errors
+    return err({
+      type: "PluginError",
+      stage: "builder",
+      code: "SODA_GQL_BUILDER_UNEXPECTED",
+      message: error instanceof Error ? error.message : String(error),
+      cause: error,
+    });
   }
-
-  return ok(createPluginStateWithProvider(options, artifactResult.value, provider));
 };
-
-const createAllArtifacts = (artifact: BuilderArtifact): AllArtifacts => artifact.elements;
-
-const createPluginStateWithProvider = (
-  options: NormalizedOptions,
-  artifact: BuilderArtifact,
-  provider: import("./artifact").ArtifactProvider,
-): PluginState => ({
-  options,
-  allArtifacts: createAllArtifacts(artifact),
-  artifactProvider: provider,
-});
 
 const mapOptionsError = (error: OptionsError): PluginError => {
   switch (error.code) {
-    case "MISSING_ARTIFACT_PATH":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
-        cause: error,
-      };
     case "INVALID_BUILDER_CONFIG":
     case "MISSING_BUILDER_CONFIG":
       return {
@@ -198,22 +175,6 @@ const mapOptionsError = (error: OptionsError): PluginError => {
         stage: "normalize-options",
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: `Config load failed: ${error.message}`,
-        cause: error,
-      };
-    case "PROJECT_NOT_FOUND":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_INVALID_BUILDER_CONFIG",
-        message: `Project not found: ${error.project}`,
-        cause: error,
-      };
-    case "INVALID_ARTIFACT_OVERRIDE":
-      return {
-        type: "PluginError",
-        stage: "normalize-options",
-        code: "OPTIONS_MISSING_ARTIFACT_PATH",
-        message: error.message,
         cause: error,
       };
   }
