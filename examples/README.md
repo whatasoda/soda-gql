@@ -14,14 +14,15 @@ Choose the integration method that best fits your project:
 
 **Best for:** Most projects, especially those preferring standard TypeScript tooling
 
+**Current Status (v0.1.0)**:
 - ✅ No webpack dependency
 - ✅ Works with standard `nest build` command
 - ✅ Simple configuration
-- ✅ Zero-runtime transformation
-- ✅ Good build performance
+- ✅ Detection infrastructure in place
+- ⏳ Zero-runtime transformation planned
 
 **When to use:**
-- You want a webpack-free setup
+- You want to prepare for webpack-free zero-runtime setup
 - You prefer TypeScript's official compiler
 - You need maximum compatibility
 
@@ -29,30 +30,34 @@ Choose the integration method that best fits your project:
 
 **Best for:** Large projects requiring fastest possible builds
 
-- ✅ 20x faster than TypeScript compiler
+**Current Status (v0.1.0)**:
+- ✅ 20x faster compilation than TypeScript
 - ✅ No webpack dependency
-- ✅ Zero-runtime transformation
+- ✅ Detection infrastructure in place
 - ✅ Excellent for large codebases
-- ✅ Production-ready (used by Vercel, Next.js)
+- ✅ Production-ready compiler (used by Vercel, Next.js)
+- ⏳ Zero-runtime transformation planned
 
 **When to use:**
 - You have a large codebase (>100 files)
 - Build speed is critical
 - You're comfortable with Rust-based tooling
 
-#### 3. [nestjs-app](./nestjs-app) - Webpack Plugin
+#### 3. [nestjs-app](./nestjs-app) - Webpack Plugin ✨ **Fully Functional**
 
-**Best for:** Projects already using webpack or needing advanced features
+**Best for:** Projects needing working zero-runtime transformation today
 
+**Current Status** *(production-ready)*:
+- ✅ Full zero-runtime transformation
 - ✅ Integrated watch mode
 - ✅ Automatic artifact generation
 - ✅ Development error reporting
 - ✅ Hot module replacement support
 
 **When to use:**
+- You need zero-runtime transformation working today
 - You're already using webpack
-- You need integrated development workflow
-- You want automatic artifact regeneration
+- You want integrated development workflow
 
 ### Babel Integration
 
@@ -75,7 +80,7 @@ Choose the integration method that best fits your project:
 |---------|-----------|-----------|----------------|--------------|
 | Build Speed | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ |
 | Setup Complexity | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
-| Zero-Runtime | ✅ | ✅ | ✅ | ✅ |
+| Zero-Runtime | ⏳ Planned | ⏳ Planned | ✅ Working | ✅ Working |
 | Nest Integration | ✅ | ✅ | ✅ | ❌ |
 | Watch Mode | Manual | Manual | Integrated | Manual |
 | Webpack Required | ❌ | ❌ | ✅ | ❌ |
@@ -228,10 +233,10 @@ See individual example READMEs for specific troubleshooting guides.
    - Run `bun run codegen` to regenerate GraphQL system
    - Ensure schema is up to date
 
-3. **Plugin not transforming**
-   - Verify `mode: "zero-runtime"` is set
-   - Check import identifier matches your setup
-   - Ensure artifact is not stale
+3. **Plugin not transforming (compiler plugins)**
+   - Note: TSC/SWC plugins don't transform yet (detection-only in v0.1.0)
+   - For working transformation, use webpack or babel plugins
+   - Check [plugin status documentation](../docs/status/plugin-nestjs.md)
 
 ## Contributing
 
