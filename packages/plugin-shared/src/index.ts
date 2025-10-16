@@ -7,9 +7,6 @@ export * from "./coordinator/index.js";
 export * from "./adapters/swc-adapter.js";
 export * from "./adapters/typescript-adapter.js";
 
-// Legacy artifact providers (will be removed)
-export * from "./artifact/index.js";
-
 // Cache utilities
 export {
   type ArtifactError,
