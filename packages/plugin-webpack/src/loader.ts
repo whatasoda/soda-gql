@@ -1,5 +1,3 @@
-import { isAbsolute, resolve } from "node:path";
-
 import { type TransformOptions, type types as t, transformAsync } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { type BabelEnv, babelTransformAdapterFactory } from "@soda-gql/plugin-babel/adapter";
@@ -13,10 +11,6 @@ const LOADER_NAME = "SodaGqlWebpackLoader";
 const TS_DECLARATION_REGEX = /\.d\.tsx?$/;
 
 type BabelParserPlugin = string | [string, Record<string, unknown>];
-
-const ensureAbsolutePath = (root: string, value: string): string => {
-  return isAbsolute(value) ? value : resolve(root, value);
-};
 
 const createParserPlugins = (resourcePath: string): BabelParserPlugin[] => {
   const plugins: BabelParserPlugin[] = [
@@ -64,34 +58,26 @@ const toLoaderError = (error: unknown): Error => {
 const transformWithAdapter = async (
   sourceCode: string,
   resourcePath: string,
-  artifactPath: string,
-  mode: "runtime" | "zero-runtime",
-  importIdentifier: string | undefined,
   configPath: string | undefined,
+  project: string | undefined,
+  importIdentifier: string | undefined,
   inputSourceMap: unknown,
   generateSourceMaps: boolean,
   // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
 ): Promise<{ code: string; map?: any }> => {
-  // Short-circuit for runtime mode - no transformation needed
-  if (mode === "runtime") {
-    // biome-ignore lint/suspicious/noExplicitAny: source-map type compatibility
-    return { code: sourceCode, map: inputSourceMap as any };
-  }
-
-  // Prepare transform using shared helper
+  // Prepare transform using shared helper with coordinator
   const prepareResult = await prepareTransform({
     filename: resourcePath,
-    artifactPath,
-    mode,
-    importIdentifier,
     configPath,
+    project,
+    importIdentifier,
   });
 
   if (prepareResult.isErr()) {
     throw prepareResult.error;
   }
 
-  const { state: pluginState } = prepareResult.value;
+  const { state: pluginState, dispose } = prepareResult.value;
 
   // For now, default to Babel adapter
   // In the future, this could be configurable via loader options
@@ -163,6 +149,9 @@ const transformWithAdapter = async (
     resultMap = typeof mapValue === "string" ? JSON.parse(mapValue) : mapValue;
   }
 
+  // Clean up the prepared transform
+  dispose();
+
   return { code: resultCode, map: resultMap };
 };
 
@@ -190,27 +179,13 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
 
   const loaderOptions = optionsResult.data;
 
-  // Determine artifact path from new or legacy options
-  const artifactPath =
-    loaderOptions.artifactPath ??
-    (loaderOptions.artifactSource?.source === "artifact-file" ? loaderOptions.artifactSource.path : null);
-
-  if (!artifactPath) {
-    callback(new Error(`[@soda-gql/plugin-webpack] artifactPath option is required`));
-    return;
-  }
-
-  const resolvedArtifactPath = ensureAbsolutePath(this.rootContext ?? process.cwd(), artifactPath);
-  this.addDependency(resolvedArtifactPath);
-
-  // Use the new transform flow with adapter architecture
+  // Use the new transform flow with coordinator
   transformWithAdapter(
     sourceCode,
     this.resourcePath,
-    resolvedArtifactPath,
-    loaderOptions.mode,
-    loaderOptions.importIdentifier,
     loaderOptions.configPath,
+    loaderOptions.project,
+    loaderOptions.importIdentifier,
     inputSourceMap,
     this.sourceMap ?? false,
   )

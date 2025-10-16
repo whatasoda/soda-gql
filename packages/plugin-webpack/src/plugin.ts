@@ -1,14 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, normalize, resolve } from "node:path";
-import type { BuilderArtifact, BuilderChangeSet, BuilderServiceConfig } from "@soda-gql/builder";
+import type { BuilderChangeSet } from "@soda-gql/builder";
 import {
   createPluginRuntimeFromNormalized,
   formatPluginError,
-  invalidateArtifactCache,
-  loadArtifact,
+  getCoordinator,
   type PluginRuntime,
+  preparePluginState,
+  registerConsumer,
 } from "@soda-gql/plugin-shared";
-import { createBuilderServiceController, createBuilderWatch } from "@soda-gql/plugin-shared/dev";
+import { createBuilderWatch } from "@soda-gql/plugin-shared/dev";
 import type { Compiler, WebpackPluginInstance } from "webpack";
 import { registerCompilerHooks } from "./hooks.js";
 import { DiagnosticsReporter } from "./internal/diagnostics.js";
@@ -18,49 +17,6 @@ import { webpackPluginOptionsSchema } from "./schemas/options.js";
 
 const PLUGIN_NAME = "SodaGqlWebpackPlugin";
 const DIAGNOSTICS_ASSET_NAME = "soda-gql.diagnostics.json";
-
-// Module-level runtime cache shared across plugin instances
-const runtimeCache = new Map<string, Promise<PluginRuntime>>();
-
-type BuilderSourceConfig = {
-  readonly source: "builder";
-  readonly config: BuilderServiceConfig;
-};
-
-type ArtifactFileSourceConfig = {
-  readonly source: "artifact-file";
-  readonly path: string;
-};
-
-type NormalizedOptions = {
-  readonly contextDir: string;
-  readonly artifactPath: string;
-  readonly artifactSource: BuilderSourceConfig | ArtifactFileSourceConfig;
-  readonly diagnostics: DiagnosticsMode;
-  readonly bailOnError: boolean;
-  readonly mode: WebpackPluginOptions["mode"];
-  readonly configPath?: string;
-};
-
-const ensureAbsolutePath = (contextDir: string, value: string): string => {
-  return normalize(isAbsolute(value) ? value : resolve(contextDir, value));
-};
-
-const collectChangedFiles = (contextDir: string, sets: Array<ReadonlySet<string> | undefined>): Set<string> => {
-  const result = new Set<string>();
-  for (const set of sets) {
-    if (!set) continue;
-    for (const file of set) {
-      result.add(ensureAbsolutePath(contextDir, file));
-    }
-  }
-  return result;
-};
-
-const persistArtifact = async (artifactPath: string, artifact: BuilderArtifact): Promise<void> => {
-  await mkdir(dirname(artifactPath), { recursive: true });
-  await writeFile(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
-};
 
 const toWebpackError = (failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure): Error => {
   if (failure.type === "builder-error") {
@@ -80,83 +36,6 @@ const toWebpackError = (failure: import("@soda-gql/plugin-shared/dev").BuilderSe
   return error;
 };
 
-const getOrCreateRuntime = async (
-  artifactPath: string,
-  mode: "runtime" | "zero-runtime",
-  configPath?: string,
-): Promise<PluginRuntime> => {
-  const key = JSON.stringify({ artifactPath, mode, configPath });
-
-  let promise = runtimeCache.get(key);
-  if (!promise) {
-    promise = (async () => {
-      const { normalizePluginOptions } = await import("@soda-gql/plugin-shared");
-      const optionsResult = await normalizePluginOptions({
-        mode,
-        configPath,
-        artifact: { useBuilder: false, path: artifactPath },
-      });
-
-      if (optionsResult.isErr()) {
-        throw new Error(`Failed to normalize runtime options: ${optionsResult.error.message}`);
-      }
-
-      return createPluginRuntimeFromNormalized(optionsResult.value);
-    })();
-    runtimeCache.set(key, promise);
-  }
-
-  return promise;
-};
-
-const normalizeOptions = (compiler: Compiler, raw: Partial<WebpackPluginOptions>): NormalizedOptions => {
-  const contextDir = compiler.context ?? compiler.options.context ?? process.cwd();
-
-  const parsed = webpackPluginOptionsSchema.parse({
-    mode: raw.mode ?? "runtime",
-    ...raw,
-  });
-
-  let artifactPath = parsed.artifactPath ? ensureAbsolutePath(contextDir, parsed.artifactPath) : "";
-  let artifactSource: BuilderSourceConfig | ArtifactFileSourceConfig | null = null;
-
-  if (parsed.artifactSource?.source === "artifact-file") {
-    const resolved = ensureAbsolutePath(contextDir, parsed.artifactSource.path);
-    artifactSource = { source: "artifact-file", path: resolved };
-    if (!artifactPath) {
-      artifactPath = resolved;
-    }
-  } else if (parsed.artifactSource?.source === "builder") {
-    // biome-ignore lint/suspicious/noExplicitAny: BuilderServiceConfig type compatibility
-    const configInput = parsed.artifactSource.config as any;
-    const builderConfig: BuilderServiceConfig = configInput;
-    artifactSource = { source: "builder", config: builderConfig };
-  } else if (artifactPath) {
-    artifactSource = { source: "artifact-file", path: artifactPath };
-  }
-
-  if (!artifactSource) {
-    throw new Error(`[@soda-gql/plugin-webpack] artifactSource or artifactPath must be provided`);
-  }
-
-  if (!artifactPath) {
-    artifactPath =
-      artifactSource.source === "artifact-file"
-        ? artifactSource.path
-        : ensureAbsolutePath(contextDir, join(".soda-gql", "artifacts", "artifact.json"));
-  }
-
-  return {
-    contextDir,
-    artifactPath,
-    artifactSource,
-    diagnostics: parsed.diagnostics,
-    bailOnError: parsed.bailOnError ?? false,
-    mode: parsed.mode,
-    configPath: parsed.configPath,
-  };
-};
-
 export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
   private readonly rawOptions: Partial<WebpackPluginOptions>;
 
@@ -165,87 +44,36 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
   }
 
   apply(compiler: Compiler): void {
-    const options = normalizeOptions(compiler, this.rawOptions);
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME);
-    const diagnostics = new DiagnosticsReporter(options.diagnostics, logger);
 
-    const runtimePromise = getOrCreateRuntime(options.artifactPath, options.mode, options.configPath);
+    // Parse options early
+    const parsed = webpackPluginOptionsSchema.parse({
+      ...this.rawOptions,
+    });
 
-    const builderSource = options.artifactSource.source === "builder" ? options.artifactSource : null;
-    const builderController = builderSource ? createBuilderServiceController(builderSource.config) : null;
-    // biome-ignore lint/suspicious/noExplicitAny: BuilderWatchOptions type compatibility
-    const builderWatch = builderSource ? createBuilderWatch(builderSource.config as any) : null;
+    const diagnosticsMode: DiagnosticsMode = parsed.diagnostics;
+    const bailOnError = parsed.bailOnError;
 
+    // Create diagnostics reporter
+    const diagnostics = new DiagnosticsReporter(diagnosticsMode, logger);
+
+    // Initialize state asynchronously (exclude webpack-specific options)
+    const statePromise = preparePluginState({
+      configPath: this.rawOptions.configPath,
+      project: this.rawOptions.project,
+      importIdentifier: this.rawOptions.importIdentifier,
+      diagnostics: diagnosticsMode === "off" ? undefined : diagnosticsMode,
+    });
+
+    let runtime: PluginRuntime | null = null;
     let manifest: ArtifactManifest | null = null;
-
-    const handleResult = async (result: import("@soda-gql/plugin-shared/dev").BuilderServiceResult): Promise<void> => {
-      if (result.isErr()) {
-        diagnostics.recordError(result.error);
-        if (options.bailOnError) {
-          throw toWebpackError(result.error);
-        }
-        return;
-      }
-
-      const artifact = result.value;
-      diagnostics.recordSuccess(artifact);
-
-      const nextManifest = createArtifactManifest(artifact);
-      const changed = manifestChanged(manifest, nextManifest);
-      manifest = nextManifest;
-
-      if (changed) {
-        await persistArtifact(options.artifactPath, artifact);
-        invalidateArtifactCache(options.artifactPath);
-        const runtime = await runtimePromise;
-        await refreshRuntimeOrReport(runtime);
-      }
-    };
-
-    const runInitialBuild = async (): Promise<void> => {
-      if (!builderController || builderController.initialized) {
-        return;
-      }
-      await handleResult(await builderController.build());
-    };
-
-    const runIncrementalBuild = async (changeSet: BuilderChangeSet): Promise<void> => {
-      if (!builderController) {
-        return;
-      }
-      await handleResult(await builderController.update(changeSet));
-    };
-
-    // Helper to load and report artifact-file diagnostics
-    const reportArtifactFromFile = async (): Promise<void> => {
-      const result = await loadArtifact(options.artifactPath);
-
-      if (result.isErr()) {
-        // Convert ArtifactError to BuilderServiceFailure
-        const artifactError = result.error;
-        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
-          type: "unexpected-error",
-          error: new Error(`Failed to load artifact: ${artifactError.message}`),
-        };
-
-        diagnostics.recordError(failure);
-
-        if (options.bailOnError) {
-          throw toWebpackError(failure);
-        }
-        return;
-      }
-
-      const artifact = result.value;
-      diagnostics.recordSuccess(artifact);
-
-      const nextManifest = createArtifactManifest(artifact);
-      manifest = nextManifest;
-    };
+    let builderWatch: ReturnType<typeof createBuilderWatch> | null = null;
+    let consumerRelease: (() => void) | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     // Helper to handle runtime.refresh() errors
-    const refreshRuntimeOrReport = async (runtime: PluginRuntime): Promise<void> => {
-      const refreshResult = await runtime.refresh();
+    const refreshRuntimeOrReport = async (rt: PluginRuntime): Promise<void> => {
+      const refreshResult = await rt.refresh();
 
       if (refreshResult.isErr()) {
         const pluginError = refreshResult.error;
@@ -256,38 +84,124 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
         diagnostics.recordError(failure);
 
-        if (options.bailOnError) {
+        if (bailOnError) {
           throw toWebpackError(failure);
         }
       }
     };
 
-    const handleArtifactFileChange = async (changed: Set<string>): Promise<void> => {
-      if (!changed.has(options.artifactPath)) {
+    const initializeCoordinator = async (): Promise<void> => {
+      const stateResult = await statePromise;
+
+      if (stateResult.isErr()) {
+        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+          type: "unexpected-error",
+          error: new Error(formatPluginError(stateResult.error)),
+        };
+        diagnostics.recordError(failure);
+        if (bailOnError) {
+          throw toWebpackError(failure);
+        }
         return;
       }
-      invalidateArtifactCache(options.artifactPath);
-      await reportArtifactFromFile();
-      const runtime = await runtimePromise;
-      await refreshRuntimeOrReport(runtime);
+
+      const state = stateResult.value;
+      const coordinator = getCoordinator(state.coordinatorKey);
+
+      if (!coordinator) {
+        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+          type: "unexpected-error",
+          error: new Error("Coordinator not found"),
+        };
+        diagnostics.recordError(failure);
+        if (bailOnError) {
+          throw toWebpackError(failure);
+        }
+        return;
+      }
+
+      // Register as consumer
+      const consumer = registerConsumer(state.coordinatorKey);
+      consumerRelease = () => consumer.release();
+
+      // Create runtime
+      runtime = await createPluginRuntimeFromNormalized(state.options);
+
+      // Initialize diagnostics with initial snapshot
+      const initialSnapshot = state.snapshot;
+      diagnostics.recordSuccess(initialSnapshot.artifact);
+      manifest = createArtifactManifest(initialSnapshot.artifact);
+
+      // Setup builder watch
+      const options = state.options;
+      if (options.builderConfig.config.builder.analyzer) {
+        builderWatch = createBuilderWatch({
+          rootDir: options.builderConfig.config.configDir,
+          schemaHash: options.builderConfig.config.configHash,
+          analyzerVersion: options.builderConfig.config.builder.analyzer,
+        });
+      }
+
+      // Subscribe to coordinator updates
+      unsubscribe = coordinator.subscribe((event) => {
+        if (event.type === "artifact") {
+          const nextArtifact = event.snapshot.artifact;
+          diagnostics.recordSuccess(nextArtifact);
+
+          const nextManifest = createArtifactManifest(nextArtifact);
+          const changed = manifestChanged(manifest, nextManifest);
+          manifest = nextManifest;
+
+          if (changed && runtime) {
+            void refreshRuntimeOrReport(runtime);
+          }
+        } else if (event.type === "error") {
+          // Convert unknown error to BuilderServiceFailure
+          const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+            type: "unexpected-error",
+            error: event.error instanceof Error ? event.error : new Error(String(event.error)),
+          };
+          diagnostics.recordError(failure);
+          if (bailOnError) {
+            logger.error(toWebpackError(failure).message);
+          }
+        }
+      });
+    };
+
+    const runIncrementalBuild = async (changeSet: BuilderChangeSet): Promise<void> => {
+      const stateResult = await statePromise;
+      if (stateResult.isErr()) {
+        return;
+      }
+
+      const state = stateResult.value;
+      const coordinator = getCoordinator(state.coordinatorKey);
+
+      if (!coordinator) {
+        return;
+      }
+
+      try {
+        await coordinator.update(changeSet);
+      } catch (error) {
+        const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
+          type: "unexpected-error",
+          error: error instanceof Error ? error : new Error(String(error)),
+        };
+        diagnostics.recordError(failure);
+        if (bailOnError) {
+          throw toWebpackError(failure);
+        }
+      }
     };
 
     registerCompilerHooks(compiler, {
       pluginName: PLUGIN_NAME,
       run: async () => {
         try {
-          const runtime = await runtimePromise; // Ensure runtime is ready
-          if (builderController) {
-            await runInitialBuild();
-          } else {
-            // Artifact-file mode
-            invalidateArtifactCache(options.artifactPath);
-            await reportArtifactFromFile();
-            await refreshRuntimeOrReport(runtime);
-          }
+          await initializeCoordinator();
         } catch (error) {
-          // Errors are already recorded in diagnostics
-          // Just log for webpack infrastructure
           if (error instanceof Error) {
             logger.error(error.message);
           }
@@ -295,22 +209,20 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       },
       watchRun: async ({ modifiedFiles, removedFiles }) => {
         try {
-          await runtimePromise; // Ensure runtime is ready
-          if (builderController && builderWatch) {
-            if (!builderController.initialized) {
-              await runInitialBuild();
-            }
+          // Ensure coordinator is initialized
+          if (!runtime) {
+            await initializeCoordinator();
+          }
+
+          // Handle file changes through BuilderWatch if available
+          if (builderWatch) {
             builderWatch.trackChanges(modifiedFiles, removedFiles);
             const changeSet = await builderWatch.flush();
             if (changeSet) {
               await runIncrementalBuild(changeSet);
             }
-          } else {
-            const changed = collectChangedFiles(options.contextDir, [modifiedFiles, removedFiles]);
-            await handleArtifactFileChange(changed);
           }
         } catch (error) {
-          // Errors are already recorded in diagnostics
           if (error instanceof Error) {
             logger.error(error.message);
           }
@@ -320,18 +232,14 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
         builderWatch?.reset();
       },
       onWatchClose: () => {
-        builderController?.reset();
         builderWatch?.reset();
-        void (async () => {
-          const runtime = await runtimePromise;
-          runtime.dispose();
-        })();
+        unsubscribe?.();
+        consumerRelease?.();
+        runtime?.dispose();
       },
     });
 
     compiler.hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
-      compilation.fileDependencies.add(options.artifactPath);
-
       const failure = diagnostics.getFailure();
       if (failure) {
         compilation.errors.push(
@@ -341,7 +249,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
         );
       }
 
-      if (options.diagnostics === "json") {
+      if (diagnosticsMode === "json") {
         compilation.hooks.processAssets.tap(
           {
             name: PLUGIN_NAME,
