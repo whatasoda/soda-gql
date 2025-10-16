@@ -5,7 +5,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { Dirent, Stats } from "node:fs";
 
-const SCRIPT_PATH = path.relative(process.cwd(), import.meta.dirname);
+const SCRIPT_PATH = path.relative(process.cwd(), import.meta.filename);
 const USAGE = `\
 Extract Codex MCP conversationId candidates from ~/.codex/sessions
 

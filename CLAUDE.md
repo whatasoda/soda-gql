@@ -71,7 +71,7 @@ IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
     ↓
 Codex analyzes (READ-ONLY)
     ↓
-Find Codex's conversationId by `bun codex:conversation` (NOTE: the latest one may not be the correct one)
+Find Codex's conversationId by `bun codex:conversation` (NOTE: The output includes multiple conversationIds. The latest one may not be the correct one.)
     ↓
 Claude saves conversationId (UUID) for follow-ups
     ↓
