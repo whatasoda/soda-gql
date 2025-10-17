@@ -168,7 +168,7 @@ const buildDiscovered = async ({
   const elements = await evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
 
   // Build artifact from all intermediate modules
-  const artifactResult = await buildArtifact({
+  const artifactResult = buildArtifact({
     analyses,
     elements,
     stats,

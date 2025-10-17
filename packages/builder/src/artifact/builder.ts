@@ -4,11 +4,11 @@ import { aggregate } from "./aggregate";
 import { checkIssues } from "./issue-handler";
 import type { BuildArtifactInput, BuilderArtifact } from "./types";
 
-export const buildArtifact = async ({
+export const buildArtifact = ({
   elements,
   analyses,
   stats: cache,
-}: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
+}: BuildArtifactInput): Result<BuilderArtifact, BuilderError> => {
   const issuesResult = checkIssues({ elements });
   if (issuesResult.isErr()) {
     return err(issuesResult.error);
