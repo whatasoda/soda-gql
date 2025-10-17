@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { NormalizedOptions } from "../options.js";
-import { type PluginCoordinator, createCoordinator } from "./plugin-coordinator.js";
+import { createCoordinator, type PluginCoordinator } from "./plugin-coordinator.js";
 import type { CoordinatorKey, CoordinatorSnapshot } from "./types.js";
 
 /**
@@ -22,11 +22,7 @@ const registry = new Map<CoordinatorKey, RegistryEntry>();
 /**
  * Create a unique key for a coordinator based on its configuration.
  */
-export const createCoordinatorKey = (config: {
-  configPath: string;
-  projectRoot: string;
-  project?: string;
-}): CoordinatorKey => {
+export const createCoordinatorKey = (config: { configPath: string; projectRoot: string; project?: string }): CoordinatorKey => {
   const hash = createHash("sha256");
   hash.update(config.configPath);
   hash.update(config.projectRoot);

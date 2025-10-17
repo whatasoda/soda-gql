@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { rspack } from "@rspack/core";
+import * as sandboxCore from "@soda-gql/core";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
+import * as sandboxRuntime from "@soda-gql/runtime";
 import { transformSync } from "@swc/core";
 import { createFsFromVolume, Volume } from "memfs";
 import { err, ok, type Result } from "neverthrow";
@@ -12,8 +14,6 @@ import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
 import { renderRegistryBlock } from "./codegen";
 import type { IntermediateModule } from "./types";
-import * as sandboxCore from "@soda-gql/core";
-import * as sandboxRuntime from "@soda-gql/runtime";
 
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
@@ -140,7 +140,10 @@ exportGql(gql);`;
       }
 
       if (stats?.hasErrors()) {
-        const errors = stats.toJson().errors?.map((e) => e.message).join("\n");
+        const errors = stats
+          .toJson()
+          .errors?.map((e) => e.message)
+          .join("\n");
         reject(new Error(`Rspack compilation errors:\n${errors}`));
         return;
       }

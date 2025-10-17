@@ -1,10 +1,7 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
+import { type BuilderServiceController, createBuilderServiceController } from "../dev/builder-service-controller.js";
 import type { NormalizedOptions } from "../options.js";
-import {
-  type BuilderServiceController,
-  createBuilderServiceController,
-} from "../dev/builder-service-controller.js";
 import { computeDiff, createSnapshot } from "./snapshot.js";
 import { SubscriptionManager } from "./subscriptions.js";
 import type { CoordinatorDiff, CoordinatorSnapshot } from "./types.js";
@@ -45,8 +42,7 @@ export class PluginCoordinator {
     const result = await this.controller.build();
 
     if (result.isErr()) {
-      const error =
-        result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
+      const error = result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
 
       this.subscriptions.emit({ type: "error", error });
       throw error;
@@ -75,8 +71,7 @@ export class PluginCoordinator {
     const result = await this.controller.update(changeSet);
 
     if (result.isErr()) {
-      const error =
-        result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
+      const error = result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
 
       this.subscriptions.emit({ type: "error", error });
       throw error;

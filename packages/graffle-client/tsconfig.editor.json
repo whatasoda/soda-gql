@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/graffle-client",
+    "tsBuildInfoFile": "../../.typecheck/graffle-client/tsconfig.tsbuildinfo",
+    "rootDir": "./src",
+    "paths": {}
+  },
+  "include": ["./src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../core/tsconfig.editor.json" }, { "path": "../runtime/tsconfig.editor.json" }]
+}

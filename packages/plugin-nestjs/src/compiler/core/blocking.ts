@@ -89,8 +89,6 @@ export function runPromiseSync<T>(promiseFactory: () => Promise<T>): T {
       if (Atomics.load(statusArray, 0) !== 0) {
         break;
       }
-      // Continue waiting
-      continue;
     }
   }
 

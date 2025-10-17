@@ -1,8 +1,7 @@
 import type { BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
-
-import type { NormalizedOptions, OptionsError } from "./options.js";
 import type { CoordinatorKey, CoordinatorSnapshot } from "./coordinator/index.js";
+import type { NormalizedOptions, OptionsError } from "./options.js";
 
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
 
@@ -32,10 +31,7 @@ export type PluginOptionsInvalidBuilderConfigError = PluginErrorBase<
   OptionsInvalidBuilderConfig | Extract<OptionsError, { code: "MISSING_BUILDER_CONFIG" | "CONFIG_LOAD_FAILED" }>
 > & { readonly stage: "normalize-options" };
 
-export type PluginBuilderEntryNotFoundError = PluginErrorBase<
-  "SODA_GQL_BUILDER_ENTRY_NOT_FOUND",
-  BuilderEntryNotFound
-> & {
+export type PluginBuilderEntryNotFoundError = PluginErrorBase<"SODA_GQL_BUILDER_ENTRY_NOT_FOUND", BuilderEntryNotFound> & {
   readonly stage: "builder";
   readonly entry: string;
 };
@@ -65,10 +61,7 @@ export type PluginBuilderUnexpectedError = PluginErrorBase<"SODA_GQL_BUILDER_UNE
   readonly stage: "builder";
 };
 
-export type PluginAnalysisMetadataMissingError = PluginErrorBase<
-  "SODA_GQL_METADATA_NOT_FOUND",
-  AnalysisMetadataMissingCause
-> & {
+export type PluginAnalysisMetadataMissingError = PluginErrorBase<"SODA_GQL_METADATA_NOT_FOUND", AnalysisMetadataMissingCause> & {
   readonly stage: "analysis";
   readonly filename: string;
 };
@@ -118,9 +111,7 @@ export type PluginStateResult = Result<PluginState, PluginError>;
  * Prepare plugin state using coordinator.
  * Creates and registers a coordinator, then returns the initial snapshot.
  */
-export const preparePluginState = async (
-  rawOptions: Partial<import("./types.js").PluginOptions>,
-): Promise<PluginStateResult> => {
+export const preparePluginState = async (rawOptions: Partial<import("./types.js").PluginOptions>): Promise<PluginStateResult> => {
   // Dynamically import to avoid circular dependency
   const { normalizePluginOptions } = await import("./options.js");
   const { createAndRegisterCoordinator } = await import("./coordinator/index.js");

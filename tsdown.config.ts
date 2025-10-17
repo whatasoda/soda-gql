@@ -11,7 +11,13 @@ const aliases = Object.fromEntries(
   ),
 );
 
-const workspaceExternal = (self: string, {  extraExternals = [], extraNoExternals = []  }: { extraExternals?: readonly string[]; extraNoExternals?: readonly string[]; } = {}) => {
+const workspaceExternal = (
+  self: string,
+  {
+    extraExternals = [],
+    extraNoExternals = [],
+  }: { extraExternals?: readonly string[]; extraNoExternals?: readonly string[] } = {},
+) => {
   const externals = new Set(extraExternals);
   const noExternals = new Set(extraNoExternals);
   return (id: string) => {
@@ -81,7 +87,9 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/builder", { extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"] }),
+    external: workspaceExternal("@soda-gql/builder", {
+      extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"],
+    }),
     clean: true,
   },
   {
@@ -121,15 +129,9 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-babel", { extraExternals: [
-          "@babel/core",
-          "@babel/parser",
-          "@babel/traverse",
-          "@babel/types",
-          "neverthrow",
-          "zod",
-        ]
-      }),
+    external: workspaceExternal("@soda-gql/plugin-babel", {
+      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "neverthrow", "zod"],
+    }),
     clean: true,
   },
   {
@@ -137,15 +139,9 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-webpack", { extraExternals: [
-          "@babel/core",
-          "@babel/parser",
-          "@babel/traverse",
-          "@babel/types",
-          "webpack",
-          "zod",
-        ]
-      }),
+    external: workspaceExternal("@soda-gql/plugin-webpack", {
+      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "webpack", "zod"],
+    }),
     clean: true,
   },
   {

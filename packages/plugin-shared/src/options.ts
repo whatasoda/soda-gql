@@ -38,9 +38,7 @@ export type OptionsError =
  * Normalize plugin options and resolve configuration.
  * Always uses builder for artifact generation - no file-based mode.
  */
-export const normalizePluginOptions = async (
-  raw: Partial<PluginOptions>,
-): Promise<Result<NormalizedOptions, OptionsError>> => {
+export const normalizePluginOptions = async (raw: Partial<PluginOptions>): Promise<Result<NormalizedOptions, OptionsError>> => {
   // Extract basic options with defaults
   const importIdentifier = raw.importIdentifier ?? "@/graphql-system";
   const diagnostics = raw.diagnostics ?? "json";

@@ -89,10 +89,7 @@ export function createSodaGqlTransformer(
       console.error(`[@soda-gql/plugin-nestjs] ${error.message}`);
     } else if (error.type === "PLUGIN_ERROR") {
       const pluginError = error.error;
-      console.error(
-        `[@soda-gql/plugin-nestjs] Transform preparation failed (${pluginError.code}):`,
-        pluginError.message,
-      );
+      console.error(`[@soda-gql/plugin-nestjs] Transform preparation failed (${pluginError.code}):`, pluginError.message);
     }
     // Return no-op transformer
     return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;

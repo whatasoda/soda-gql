@@ -1,0 +1,28 @@
+{
+  "name": "@soda-gql/graffle-client",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/runtime": "workspace:*",
+    "graphql": "^16.8.1",
+    "neverthrow": "^8.1.2",
+    "graphql-request": "^7.1.0"
+  },
+  "scripts": {
+    "test": "bun test"
+  }
+}

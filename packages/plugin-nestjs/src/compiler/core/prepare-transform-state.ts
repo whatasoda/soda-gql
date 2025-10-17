@@ -7,10 +7,9 @@
  */
 
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
-import type { CoordinatorConsumer, CoordinatorKey, CoordinatorListener } from "@soda-gql/plugin-shared";
+import type { CoordinatorConsumer, CoordinatorKey, CoordinatorListener, PluginError } from "@soda-gql/plugin-shared";
 import { err, ok, type Result } from "neverthrow";
-import type { PluginError } from "@soda-gql/plugin-shared";
-import { runPromiseSync, BlockingSyncNotSupportedError } from "./blocking.js";
+import { BlockingSyncNotSupportedError, runPromiseSync } from "./blocking.js";
 
 /**
  * Configuration for transform state preparation.

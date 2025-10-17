@@ -9,30 +9,27 @@
  */
 
 export {
+  createCoordinator,
   type PluginCoordinator,
   type PluginCoordinatorOptions,
-  createCoordinator,
 } from "./plugin-coordinator.js";
-
 export {
-  type CoordinatorSnapshot,
-  type CoordinatorDiff,
-  type CoordinatorEvent,
-  type CoordinatorListener,
-  type CoordinatorKey,
-} from "./types.js";
-
-export {
-  createCoordinatorKey,
-  getOrCreateCoordinator,
-  getCoordinator,
-  retain,
-  release,
-  disposeCoordinator,
-  clearCoordinators,
-  registerConsumer,
-  createAndRegisterCoordinator,
   type CoordinatorConsumer,
+  clearCoordinators,
+  createAndRegisterCoordinator,
+  createCoordinatorKey,
+  disposeCoordinator,
+  getCoordinator,
+  getOrCreateCoordinator,
+  registerConsumer,
+  release,
+  retain,
 } from "./registry.js";
-
-export { createSnapshot, computeDiff } from "./snapshot.js";
+export { computeDiff, createSnapshot } from "./snapshot.js";
+export type {
+  CoordinatorDiff,
+  CoordinatorEvent,
+  CoordinatorKey,
+  CoordinatorListener,
+  CoordinatorSnapshot,
+} from "./types.js";
