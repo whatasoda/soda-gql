@@ -146,9 +146,10 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   }
 
   // Bundle the generated module with tsdown
-  const bundleResult = await bundleGraphqlSystem(outPath).match(
-    (result) => Promise.resolve(ok(result)),
-    (error) => Promise.resolve(err(error)),
+  const bundleOutcome = await bundleGraphqlSystem(outPath);
+  const bundleResult = bundleOutcome.match(
+    (result) => ok(result),
+    (error) => err(error),
   );
 
   if (bundleResult.isErr()) {

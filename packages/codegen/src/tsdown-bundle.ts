@@ -14,8 +14,8 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
     const sourceExt = extname(sourcePath);
     const baseName = sourcePath.slice(0, -sourceExt.length);
 
-    const result = await build({
-      entry: [sourcePath],
+    await build({
+      entry: sourcePath,
       format: ["cjs"],
       platform: "node",
       external: ["@soda-gql/core", "@soda-gql/runtime"],
@@ -25,20 +25,11 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
       },
       outDir: sourceDir,
       clean: false,
-      bundle: true,
       minify: false,
       sourcemap: false,
-      silent: true,
+      treeshake: false,
+      logLevel: "silent",
     });
-
-    if (result.errors && result.errors.length > 0) {
-      const errorMessages = result.errors.map((e) => e.message).join("\n");
-      return err({
-        code: "EMIT_FAILED",
-        message: `tsdown bundling failed:\n${errorMessages}`,
-        outPath: sourcePath,
-      });
-    }
 
     const cjsPath = `${baseName}.cjs`;
     const dtsPath = `${baseName}.d.ts`;
