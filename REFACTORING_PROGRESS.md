@@ -1,9 +1,9 @@
 # Plugin Architecture Refactoring Progress
 
 **Date**: 2025-10-17
-**Status**: Codegen ESM + Rspack Bundling Complete - NestJS Example Issues Remaining
+**Status**: Examples Verified - babel-app & nestjs-app Working, Compiler Plugins Investigating
 **Codex ConversationId**: `0199ed8c-ed83-7f93-8349-e5d174d85603` (examples), `0199ed5f-62fe-7622-b6fd-ffaa812050a8` (compiler), `0199ed4b-dc53-7493-91a3-3291b7f9c678` (core), `0199ecf2-b283-7982-ae4c-654047cd9a50` (initial)
-**Current Commits**: 13 total
+**Current Commits**: 14 total (+ 2 uncommitted for nestjs-compiler fix)
 
 ## Executive Summary
 
@@ -13,7 +13,7 @@ Successfully implemented the **PluginCoordinator architecture** to achieve the i
 - Transform operations use coordinator snapshots
 - Zero file-based artifact loading in development
 
-## ✅ Completed Work (13 Commits)
+## ✅ Completed Work (14 Commits)
 
 ### Commit 1: feat(plugin-shared): introduce PluginCoordinator for in-memory artifact management
 
@@ -572,7 +572,70 @@ script.runInNewContext(sandbox);
 - Requires Node.js >= 16 for rspack compatibility
 - Temporary files created in OS temp directory (cleaned up automatically)
 
-## 🚧 Remaining Work (52 Type Errors)
+### Commit 14: fix(core,examples): resolve type inference and examples verification
+
+**Status**: Complete
+**SHA**: `c4e6fda`, `b02e982`
+
+Resolved TypeScript type inference issues and verified working examples.
+
+**Problem: TS2347 Error in Examples**
+
+**Issue**:
+- `TS2347: Untyped function calls may not accept type arguments` in `createRuntimeAdapter`
+- Error occurred in `examples/nestjs-app/inject-module/runtime-adapter.ts:33`
+- Root cause: Type widening when using `typeof hidden` in `RuntimeAdapterFactory`
+
+**Solution**:
+- **Core Type Fix** (`packages/core/src/runtime/runtime-adapter.ts`):
+  - Changed from `type: typeof hidden` to explicit `type: <T>() => Hidden<T>`
+  - Imported `Hidden<T>` type for proper generic preservation
+  - Ensures type information persists through `.d.ts` generation
+
+- **Build Configuration** (`package.json`, `tsdown.config.ts`):
+  - Pinned TypeScript to 5.9.2 via resolutions for consistency
+  - Enhanced `workspaceExternal` with `extraNoExternals` support
+  - Prevented `@soda-gql/runtime` from externalizing `@soda-gql/core/runtime` for Symbol identity
+
+- **Example Configuration** (`examples/nestjs-app/tsconfig.build.json`):
+  - Enabled TypeScript project references for better type resolution
+  - References: core, runtime, plugin-nestjs packages
+  - Resolved exports resolution issues (user manually fixed)
+
+**Nest CLI Plugin Interface Fix** (`packages/plugin-nestjs/src/compiler/tsc/transformer.ts`):
+- Added `nestCliPlugin` wrapper function returning `{ before: () => transformer }`
+- Matches Nest CLI expected plugin interface
+- Replaces direct export of `createSodaGqlTransformer`
+
+**Examples Verification**:
+- ✅ **babel-app**: Build + dev mode working perfectly
+  - Operations registered and ready
+  - Zero-runtime transformation successful
+- ✅ **nestjs-app**: Build + dev mode working perfectly
+  - Webpack compilation successful
+  - Server starts on http://localhost:3000
+  - soda-gql operations registered
+- ⚠️ **nestjs-compiler-tsc**: Plugin interface issue (investigating)
+  - Error: "Neither 'after()' nor 'before()' nor 'afterDeclarations()' function have been provided"
+  - Built files are correct, runtime loading issue suspected
+- ⏸️ **nestjs-compiler-swc**: Not yet tested
+
+**Files Modified**:
+- `packages/core/src/runtime/runtime-adapter.ts` - Explicit generic type signature
+- `package.json` - TypeScript version pinning
+- `tsdown.config.ts` - Enhanced external configuration
+- `examples/nestjs-app/tsconfig.build.json` - Project references enabled
+- `packages/plugin-nestjs/src/compiler/tsc/transformer.ts` - Nest CLI interface wrapper
+
+**Root Cause Analysis**:
+The TS2347 error was caused by TypeScript's type widening when using `typeof` on a generic function. The type system couldn't preserve the generic signature `<T>() => Hidden<T>` when represented as `typeof hidden`. By explicitly defining the type signature in `RuntimeAdapterFactory`, the generic information is preserved through compilation and type declaration generation.
+
+**Known Issues**:
+- NestJS compiler plugins (tsc/swc) have Nest CLI interface recognition issues
+- Exports resolution can fail in certain build tool configurations (requires manual intervention)
+- TODO: Document exports resolution workarounds for different build scenarios
+
+## 🚧 Remaining Work
 
 ### High Priority
 
@@ -739,28 +802,29 @@ Plugin
 
 ## Next Steps
 
-1. **Fix nestjs-app TypeScript error** (est. 30min - 1 hour)
-   - Investigate `TS2347: Untyped function calls may not accept type arguments` in runtime-adapter.ts
-   - Issue with `type<T>()` call in `createRuntimeAdapter`
-   - May require adding explicit type annotations or adjusting type inference
+1. **Fix NestJS compiler plugin interface recognition** (est. 1-2 hours)
+   - Investigate why Nest CLI doesn't recognize the plugin interface
+   - Built files are correct but runtime loading fails
+   - May need to adjust export structure or plugin registration
+   - Affects nestjs-compiler-tsc and nestjs-compiler-swc examples
 
-2. **Test remaining examples** (est. 30min)
-   - Verify nestjs-app builds after TypeScript fix
-   - Test nestjs-compiler-tsc and nestjs-compiler-swc examples
-   - Ensure all examples work with coordinator architecture
-
-3. **Fix test type errors** (est. 1-2 hours)
+2. **Fix test type errors** (est. 1-2 hours)
    - Systematic removal of `mode` option from test files
    - Update DevManager test signatures with coordinator parameters
    - Fix mock data structures to match new PluginState type
    - See detailed breakdown in "Remaining Work" section above
 
-4. **Update documentation** (est. 1-2 hours)
+3. **Document exports resolution workarounds** (est. 30min)
+   - Document the exports resolution issues and manual fixes required
+   - Provide workarounds for different build tool configurations
+   - Add troubleshooting guide for common scenarios
+   - Consider automated solutions for future releases
+
+4. **Update API documentation** (est. 1 hour)
    - Write migration guide with before/after examples
-   - Update API documentation for coordinator usage
+   - Update coordinator API reference
    - Add usage examples for new plugin options
    - Document breaking changes for v0.2.0 release
-   - Document rspack+memfs bundling architecture
 
 ## Technical Notes
 
@@ -809,7 +873,7 @@ coordinator.subscribe((event) => {
 
 ## Conclusion
 
-### Migration Status: 98% Complete
+### Migration Status: 99% Complete
 
 **✅ COMPLETED**:
 - PluginCoordinator architecture fully implemented and tested
@@ -828,21 +892,29 @@ coordinator.subscribe((event) => {
 - Examples migrated to coordinator API (Commit 12)
 - **Codegen ESM extension generation fixed (Commit 13)**
 - **Rspack+memfs GraphQL system bundling implemented (Commit 13)**
-- **babel-app example building successfully (Commit 13)**
+- **Type inference issues resolved (Commit 14)**
+- **babel-app: build + dev verified working (Commit 14)**
+- **nestjs-app: build + dev verified working (Commit 14)**
 
 **⚠️ REMAINING**:
 - Test file updates (52 type errors)
   - Does NOT affect runtime functionality
   - Straightforward mechanical fixes
   - Estimated 1-2 hours to complete
-- nestjs-app TypeScript error in runtime-adapter.ts
-  - `TS2347: Untyped function calls may not accept type arguments`
-  - Issue with `type<T>()` call in `createRuntimeAdapter`
-  - Unrelated to coordinator migration or bundling
+- NestJS compiler plugins (tsc/swc) Nest CLI interface recognition
+  - Built files are correct, runtime loading issue
+  - Requires investigation of Nest CLI plugin resolution
+  - Estimated 1-2 hours to diagnose and fix
+- Exports resolution documentation
+  - Document workarounds for different build scenarios
+  - Estimated 30 minutes
 
 **Key Achievement**: The coordinator-based architecture is fully functional in production code. All plugins (Babel, Webpack, and NestJS compiler) now use in-memory artifacts with event-driven updates, eliminating file I/O and simplifying the API surface. The synchronous bridge enables compiler plugins to access async coordinator operations without breaking TypeScript/SWC transformer APIs.
 
-**Recent Breakthrough**: Implemented rspack+memfs bundling to execute TypeScript GraphQL system modules at build time, resolving the ESM extension issue. The builder now bundles GraphQL system code with proper extension resolution, Symbol preservation through externals, and in-memory execution via VM context. This enables examples to build without pre-compilation or manual extension fixes.
+**Recent Breakthroughs**:
+1. Implemented rspack+memfs bundling to execute TypeScript GraphQL system modules at build time, resolving the ESM extension issue.
+2. Fixed TypeScript type inference by explicitly defining generic signatures instead of using `typeof`, ensuring type information persists through `.d.ts` generation.
+3. Verified working examples: babel-app and nestjs-app both build and run successfully in dev mode with the coordinator architecture.
 
 ---
 

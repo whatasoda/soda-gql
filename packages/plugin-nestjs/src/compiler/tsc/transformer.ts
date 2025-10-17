@@ -137,6 +137,16 @@ export function createSodaGqlTransformer(
 }
 
 /**
+ * Nest CLI plugin interface wrapper.
+ * Returns an object with `before()` method as expected by Nest CLI.
+ */
+function nestCliPlugin(program: ts.Program, config?: Partial<TransformerConfig>) {
+  return {
+    before: () => createSodaGqlTransformer(program, config),
+  };
+}
+
+/**
  * Default export for Nest CLI plugin resolution.
  */
-export default createSodaGqlTransformer;
+export default nestCliPlugin;
