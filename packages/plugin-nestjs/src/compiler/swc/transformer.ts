@@ -130,8 +130,15 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
 /**
  * Default export for Nest CLI plugin resolution.
  *
- * Nest CLI expects a function that returns the plugin function.
+ * For SWC plugins, Nest CLI expects a factory function that returns the transformer.
+ * This is different from TypeScript plugins which use the before() hook pattern.
  */
 export default function sodaGqlSwcPlugin(config?: Partial<TransformerConfig>) {
   return createSodaGqlSwcPlugin(config);
 }
+
+/**
+ * Named export for consistency with TypeScript plugin API.
+ * Some tools may expect a named export instead of default.
+ */
+export { createSodaGqlSwcPlugin as plugin };
