@@ -79,7 +79,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/builder", ["@swc/core", "@swc/types", "neverthrow", "typescript", "zod"]),
+    external: workspaceExternal("@soda-gql/builder", ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"]),
     clean: true,
   },
   {

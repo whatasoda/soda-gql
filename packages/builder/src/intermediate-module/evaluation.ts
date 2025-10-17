@@ -1,13 +1,19 @@
 import { createHash } from "node:crypto";
-import { resolve } from "node:path";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
+import { rspack } from "@rspack/core";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
 import { transformSync } from "@swc/core";
+import { createFsFromVolume, Volume } from "memfs";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
 import { renderRegistryBlock } from "./codegen";
 import type { IntermediateModule } from "./types";
+import * as sandboxCore from "@soda-gql/core";
+import * as sandboxRuntime from "@soda-gql/runtime";
 
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
@@ -43,6 +49,147 @@ const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: str
     });
   }
 };
+
+/**
+ * Bundle and execute GraphQL system module using rspack + memfs.
+ * Creates a self-contained bundle that can run in VM context.
+ * This is cached per session to avoid re-bundling.
+ */
+let cachedGqlModule: unknown = null;
+let cachedModulePath: string | null = null;
+
+async function bundleGraphqlSystemModule(modulePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Create temporary directory for entry file
+    const tmpDir = mkdtempSync(join(tmpdir(), "soda-gql-"));
+    const entryPath = join(tmpDir, "entry.ts");
+
+    // Create entry file that calls exportGql
+    const entryCode = `import { gql } from ${JSON.stringify(modulePath)};
+declare function exportGql(gql: any): void;
+exportGql(gql);`;
+
+    writeFileSync(entryPath, entryCode, "utf-8");
+
+    // Create in-memory filesystem for output
+    const volume = new Volume();
+    const memoryFs = createFsFromVolume(volume);
+
+    // Configure rspack to bundle into memory
+    const compiler = rspack({
+      mode: "development",
+      entry: entryPath,
+      output: {
+        path: "/dist",
+        filename: "bundle.js",
+        iife: true,
+      },
+      module: {
+        rules: [
+          {
+            test: /\.(ts|tsx)$/,
+            use: {
+              loader: "builtin:swc-loader",
+              options: {
+                jsc: {
+                  parser: {
+                    syntax: "typescript",
+                  },
+                  target: "es2022",
+                },
+              },
+            },
+            type: "javascript/auto",
+          },
+        ],
+      },
+      optimization: {
+        minimize: false,
+      },
+      resolve: {
+        extensions: [".ts", ".tsx", ".js", ".jsx"],
+        conditionNames: ["development", "import", "default"],
+        extensionAlias: {
+          ".js": [".ts", ".tsx", ".js"],
+          ".mjs": [".mts", ".mjs"],
+          ".cjs": [".cts", ".cjs"],
+        },
+      },
+      externals: {
+        // Externalize @soda-gql packages to preserve Symbols
+        // Use global variable names that will be provided in VM sandbox
+        "@soda-gql/core": "__SODA_GQL_CORE__",
+        "@soda-gql/runtime": "__SODA_GQL_RUNTIME__",
+      },
+    });
+
+    // Use memory filesystem for output
+    compiler.outputFileSystem = memoryFs as any;
+
+    compiler.run((err, stats) => {
+      // Cleanup temporary directory
+      try {
+        rmSync(tmpDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+
+      if (err) {
+        reject(new Error(`Rspack compilation failed: ${err.message}`));
+        return;
+      }
+
+      if (stats?.hasErrors()) {
+        const errors = stats.toJson().errors?.map((e) => e.message).join("\n");
+        reject(new Error(`Rspack compilation errors:\n${errors}`));
+        return;
+      }
+
+      try {
+        // Read bundled code from memory
+        const bundleCode = memoryFs.readFileSync("/dist/bundle.js", "utf-8") as string;
+        resolve(bundleCode);
+      } catch (readError) {
+        reject(new Error(`Failed to read bundled output: ${readError}`));
+      }
+    });
+  });
+}
+
+async function executeGraphqlSystemModule(modulePath: string): Promise<unknown> {
+  // Use cached module if same path
+  if (cachedModulePath === modulePath && cachedGqlModule !== null) {
+    return cachedGqlModule;
+  }
+
+  // Bundle the GraphQL system module
+  const bundledCode = await bundleGraphqlSystemModule(modulePath);
+
+  // Execute in VM with exportGql callback
+  let exportedGql: unknown = null;
+
+  // Import @soda-gql packages to make them available to the bundled code
+  const sandbox = {
+    // Provide @soda-gql packages as global variables
+    __SODA_GQL_CORE__: sandboxCore,
+    __SODA_GQL_RUNTIME__: sandboxRuntime,
+    exportGql: (gql: unknown) => {
+      exportedGql = gql;
+    },
+  };
+  const script = new Script(bundledCode);
+  script.runInNewContext(sandbox);
+
+  if (exportedGql === null) {
+    throw new Error("exportGql was not called during bundle execution");
+  }
+
+  // Cache the result
+  cachedGqlModule = exportedGql;
+  cachedModulePath = modulePath;
+
+  return cachedGqlModule;
+}
 
 /**
  * Build intermediate modules from dependency graph.
@@ -98,8 +245,11 @@ export const evaluateIntermediateModules = async ({
   const registry = createPseudoModuleRegistry();
   const gqlImportPath = resolve(process.cwd(), graphqlSystemPath);
 
+  // Load the GraphQL system module using rspack bundling
+  const gql = await executeGraphqlSystemModule(gqlImportPath);
+
   const vmContext = createContext({
-    ...(await import(gqlImportPath)),
+    gql,
     registry,
   });
 
