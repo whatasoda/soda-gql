@@ -4,6 +4,7 @@ import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
+import { bundleGraphqlSystem } from "./tsdown-bundle";
 import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
 
 const extensionMap: Record<string, string> = {
@@ -144,8 +145,20 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     return err(writeResult.error);
   }
 
+  // Bundle the generated module with tsdown
+  const bundleResult = await bundleGraphqlSystem(outPath).match(
+    (result) => Promise.resolve(ok(result)),
+    (error) => Promise.resolve(err(error)),
+  );
+
+  if (bundleResult.isErr()) {
+    return err(bundleResult.error);
+  }
+
   return ok({
     schemas: schemaHashes,
     outPath,
+    cjsPath: bundleResult.value.cjsPath,
+    dtsPath: bundleResult.value.dtsPath,
   } satisfies MultiSchemaCodegenSuccess);
 };

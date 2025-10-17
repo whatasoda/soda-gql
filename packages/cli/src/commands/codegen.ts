@@ -213,7 +213,7 @@ const formatMultiSchemaSuccess = (format: OutputFormat, success: MultiSchemaCode
     // biome-ignore lint/suspicious/noExplicitAny: type assertion needed for schema stats
     return sum + (s as any).objects;
   }, 0);
-  return `Generated ${totalObjects} objects from schemas: ${schemaNames} → ${success.outPath}`;
+  return `Generated ${totalObjects} objects from schemas: ${schemaNames}\n  TypeScript: ${success.outPath}\n  CommonJS: ${success.cjsPath}\n  Types: ${success.dtsPath}`;
 };
 
 const formatTemplateSuccess = (format: OutputFormat, outPath: string) => {

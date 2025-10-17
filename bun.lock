@@ -132,6 +132,9 @@
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
       },
+      "devDependencies": {
+        "tsdown": "^0.15.7",
+      },
     },
     "packages/common": {
       "name": "@soda-gql/common",
