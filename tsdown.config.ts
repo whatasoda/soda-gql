@@ -58,6 +58,14 @@ export default defineConfig([
     platform: "neutral" as const,
     external: workspaceExternal("@soda-gql/runtime", { extraNoExternals: ["@soda-gql/core/runtime"] }),
   },
+  {
+    ...common("@soda-gql/graffle-client"),
+    format: ["esm", "cjs"] as const,
+    platform: "neutral" as const,
+    external: workspaceExternal("@soda-gql/graffle-client", {
+      extraExternals: ["graphql", "graphql-request", "neverthrow"],
+    }),
+  },
 
   // Shared/Common packages
   {
