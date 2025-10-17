@@ -1,4 +1,4 @@
-import type { NormalizedExecutionResult } from "@soda-gql/core/runtime";
+import type { NormalizedExecutionResult } from "@soda-gql/core";
 import type { FormattedExecutionResult } from "graphql";
 import { toGraffleClientError } from "./errors";
 import type { GraffleRuntimeAdapter } from "./types";

@@ -24,6 +24,7 @@
     { "path": "./packages/common/tsconfig.editor.json" },
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
+    { "path": "./packages/graffle-client/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-nestjs/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },

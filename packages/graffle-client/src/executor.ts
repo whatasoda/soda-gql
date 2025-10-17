@@ -1,4 +1,4 @@
-import type { AnyOperation } from "@soda-gql/core/runtime";
+import type { AnyOperation } from "@soda-gql/core";
 import { gqlRuntime } from "@soda-gql/core/runtime";
 import { print } from "graphql";
 import { err, ok, type Result } from "neverthrow";
@@ -68,10 +68,10 @@ export const executeOperationByName = async <TVariables extends Record<string, u
 ): Promise<Result<TProjectedData, GraffleClientError>> => {
   try {
     // Get the operation from the runtime registry
-    const operation = gqlRuntime.getOperation(operationName);
+    const operation = gqlRuntime.getOperation(operationName) as AnyOperation;
 
     // Execute the operation
-    return await executeOperation<AnyOperation, TVariables, TProjectedData>(config, operation, variables, options);
+    return await executeOperation(config, operation, variables, options);
   } catch (error) {
     return err(clientConfigError(error instanceof Error ? error.message : `Failed to get operation: ${operationName}`, error));
   }

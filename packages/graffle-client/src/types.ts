@@ -1,5 +1,15 @@
-import type { AnyGraphqlRuntimeAdapter } from "@soda-gql/core/runtime";
+import type { AnyGraphqlRuntimeAdapter } from "@soda-gql/core";
+import type { FormattedExecutionResult } from "graphql";
 import type { GraffleClientError } from "./errors";
+
+/**
+ * Headers type for graffle-client
+ * Compatible with graphql-request and standard fetch APIs
+ */
+type FlatHeaders = Record<string, string>;
+type HeaderTuple = readonly [string, string];
+
+export type GraffleHeadersInit = FlatHeaders | Iterable<HeaderTuple> | undefined;
 
 /**
  * Runtime adapter for graffle-client
@@ -21,11 +31,15 @@ export const isGraffleRuntimeAdapter = (adapter: AnyGraphqlRuntimeAdapter): adap
  * Compatible with graphql-request and can be adapted for other clients
  */
 export type GraphQLClient = {
-  request<TData = unknown, TVariables = Record<string, unknown>>(
+  request<
+    TData extends object = Record<string, unknown>,
+    TVariables = Record<string, unknown>,
+    TExtensions extends object = Record<string, unknown>,
+  >(
     document: string,
     variables?: TVariables,
-    requestHeaders?: HeadersInit,
-  ): Promise<TData>;
+    requestHeaders?: GraffleHeadersInit,
+  ): Promise<FormattedExecutionResult<TData, TExtensions>>;
 };
 
 /**
@@ -40,7 +54,7 @@ export type ExecutorConfig = {
   /**
    * Optional request headers to include with every request
    */
-  headers?: HeadersInit;
+  headers?: GraffleHeadersInit;
 
   /**
    * Optional request context that will be passed to the client
@@ -55,7 +69,7 @@ export type ExecuteOptions = {
   /**
    * Additional headers for this specific request
    */
-  headers?: HeadersInit;
+  headers?: GraffleHeadersInit;
 
   /**
    * Request-specific context
