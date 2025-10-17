@@ -229,8 +229,8 @@ bun run start
 
 ```json
 {
-  "codegen": "soda-gql codegen --schema schema.graphql --out graphql-system/index.ts",
-  "artifact": "soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out .cache/soda-gql-artifact.json",
+  "codegen": "soda-gql codegen --schema:default ./schema.graphql --out ./graphql-system/index.ts --scalar:default ./inject-module/runtime-adapter.ts --runtime-adapter:default ./inject-module/runtime-adapter.ts",
+  "artifact": "soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out ./.cache/soda-gql-artifact.json",
   "build": "nest build",
   "dev": "nest start --watch",
   "start": "node dist/main"
