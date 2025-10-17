@@ -14,6 +14,7 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
     const sourceExt = extname(sourcePath);
     const baseName = sourcePath.slice(0, -sourceExt.length);
 
+    // biome-ignore lint/suspicious/noExplicitAny: tsdown type definitions may be incomplete
     await build({
       entry: sourcePath,
       format: ["cjs"],
@@ -29,7 +30,7 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
       sourcemap: false,
       treeshake: false,
       logLevel: "silent",
-    });
+    } as any);
 
     const cjsPath = `${baseName}.cjs`;
     const dtsPath = `${baseName}.d.ts`;
