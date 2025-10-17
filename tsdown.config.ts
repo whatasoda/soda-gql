@@ -11,12 +11,14 @@ const aliases = Object.fromEntries(
   ),
 );
 
-const workspaceExternal = (self: string, extra: readonly string[] = []) => {
-  const extras = new Set(extra);
+const workspaceExternal = (self: string, {  extraExternals = [], extraNoExternals = []  }: { extraExternals?: readonly string[]; extraNoExternals?: readonly string[]; } = {}) => {
+  const externals = new Set(extraExternals);
+  const noExternals = new Set(extraNoExternals);
   return (id: string) => {
+    if (noExternals.has(id)) return false;
     if (id === self || id.startsWith(`${self}/`)) return false;
     if (id.startsWith("@soda-gql/")) return true;
-    return extras.has(id);
+    return externals.has(id);
   };
 };
 
@@ -42,13 +44,13 @@ export default defineConfig([
     ...common("@soda-gql/core"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/core", ["graphql"]),
+    external: workspaceExternal("@soda-gql/core", { extraExternals: ["graphql"] }),
   },
   {
     ...common("@soda-gql/runtime"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/runtime"),
+    external: workspaceExternal("@soda-gql/runtime", { extraNoExternals: ["@soda-gql/core/runtime"] }),
   },
 
   // Shared/Common packages
@@ -58,7 +60,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/common"),
+    external: workspaceExternal("@soda-gql/common", {}),
     clean: true,
   },
   {
@@ -67,7 +69,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/config", ["zod", "esbuild"]),
+    external: workspaceExternal("@soda-gql/config", { extraExternals: ["zod", "esbuild"] }),
     clean: true,
   },
 
@@ -79,7 +81,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/builder", ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"]),
+    external: workspaceExternal("@soda-gql/builder", { extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"] }),
     clean: true,
   },
   {
@@ -88,7 +90,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/codegen", ["graphql", "zod"]),
+    external: workspaceExternal("@soda-gql/codegen", { extraExternals: ["graphql", "zod"] }),
     clean: true,
   },
 
@@ -101,7 +103,7 @@ export default defineConfig([
     banner: {
       js: "#!/usr/bin/env bun",
     },
-    external: workspaceExternal("@soda-gql/cli", ["neverthrow", "zod"]),
+    external: workspaceExternal("@soda-gql/cli", { extraExternals: ["neverthrow", "zod"] }),
     clean: true,
   },
 
@@ -111,7 +113,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-shared", ["neverthrow", "zod"]),
+    external: workspaceExternal("@soda-gql/plugin-shared", { extraExternals: ["neverthrow", "zod"] }),
     clean: true,
   },
   {
@@ -119,14 +121,15 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-babel", [
-      "@babel/core",
-      "@babel/parser",
-      "@babel/traverse",
-      "@babel/types",
-      "neverthrow",
-      "zod",
-    ]),
+    external: workspaceExternal("@soda-gql/plugin-babel", { extraExternals: [
+          "@babel/core",
+          "@babel/parser",
+          "@babel/traverse",
+          "@babel/types",
+          "neverthrow",
+          "zod",
+        ]
+      }),
     clean: true,
   },
   {
@@ -134,14 +137,15 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-webpack", [
-      "@babel/core",
-      "@babel/parser",
-      "@babel/traverse",
-      "@babel/types",
-      "webpack",
-      "zod",
-    ]),
+    external: workspaceExternal("@soda-gql/plugin-webpack", { extraExternals: [
+          "@babel/core",
+          "@babel/parser",
+          "@babel/traverse",
+          "@babel/types",
+          "webpack",
+          "zod",
+        ]
+      }),
     clean: true,
   },
   {
@@ -149,7 +153,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-nestjs", ["neverthrow", "zod"]),
+    external: workspaceExternal("@soda-gql/plugin-nestjs", { extraExternals: ["neverthrow", "zod"] }),
     clean: true,
   },
 ]);
