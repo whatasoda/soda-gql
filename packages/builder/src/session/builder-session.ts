@@ -137,7 +137,7 @@ const discover = ({
   return ok({ snapshots, analyses, currentModuleAdjacency, affectedFiles, stats });
 };
 
-const buildDiscovered = async ({
+const buildDiscovered = ({
   analyses,
   affectedFiles,
   stats,
@@ -165,7 +165,7 @@ const buildDiscovered = async ({
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
-  const elements = await evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
+  const elements = evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
 
   // Build artifact from all intermediate modules
   const artifactResult = buildArtifact({
@@ -243,7 +243,7 @@ export const createBuilderSession = (options: {
 
     const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
-    const buildResult = await buildDiscovered({
+    const buildResult = buildDiscovered({
       analyses,
       affectedFiles,
       stats,
