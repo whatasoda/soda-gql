@@ -50,7 +50,7 @@ export default defineConfig([
     ...common("@soda-gql/core"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/core", { extraExternals: ["graphql"] }),
+    external: workspaceExternal("@soda-gql/core", { extraExternals: ["graphql", "typescript"] }),
   },
   {
     ...common("@soda-gql/runtime"),
@@ -63,7 +63,7 @@ export default defineConfig([
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
     external: workspaceExternal("@soda-gql/graffle-client", {
-      extraExternals: ["graphql", "graphql-request", "neverthrow"],
+      extraExternals: ["graphql", "graphql-request", "neverthrow", "typescript"],
     }),
   },
 
@@ -83,7 +83,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/config", { extraExternals: ["zod", "esbuild"] }),
+    external: workspaceExternal("@soda-gql/config", { extraExternals: ["zod", "esbuild", "typescript"] }),
     clean: true,
   },
 
@@ -96,7 +96,7 @@ export default defineConfig([
     target: "node18",
     treeshake: false,
     external: workspaceExternal("@soda-gql/builder", {
-      extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod"],
+      extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod", "typescript"],
     }),
     clean: true,
   },
@@ -106,7 +106,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/codegen", { extraExternals: ["graphql", "zod"] }),
+    external: workspaceExternal("@soda-gql/codegen", { extraExternals: ["graphql", "zod", "typescript"] }),
     clean: true,
   },
 
@@ -119,7 +119,7 @@ export default defineConfig([
     banner: {
       js: "#!/usr/bin/env bun",
     },
-    external: workspaceExternal("@soda-gql/cli", { extraExternals: ["neverthrow", "zod"] }),
+    external: workspaceExternal("@soda-gql/cli", { extraExternals: ["neverthrow", "zod", "typescript"] }),
     clean: true,
   },
 
@@ -129,7 +129,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-shared", { extraExternals: ["neverthrow", "zod"] }),
+    external: workspaceExternal("@soda-gql/plugin-shared", { extraExternals: ["neverthrow", "zod", "typescript"] }),
     clean: true,
   },
   {
@@ -138,7 +138,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     external: workspaceExternal("@soda-gql/plugin-babel", {
-      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "neverthrow", "zod"],
+      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "neverthrow", "zod", "typescript"],
     }),
     clean: true,
   },
@@ -148,7 +148,7 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     external: workspaceExternal("@soda-gql/plugin-webpack", {
-      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "webpack", "zod"],
+      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "webpack", "zod", "typescript"],
     }),
     clean: true,
   },
@@ -157,7 +157,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-nestjs", { extraExternals: ["neverthrow", "zod"] }),
+    external: workspaceExternal("@soda-gql/plugin-nestjs", { extraExternals: ["neverthrow", "zod", "typescript"] }),
     clean: true,
   },
 ]);
