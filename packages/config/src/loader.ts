@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { build } from "esbuild";
+import { rolldown } from "rolldown";
 import type { Result } from "neverthrow";
 import { err } from "neverthrow";
 import { DEFAULT_CONFIG_FILENAMES } from "./defaults";
@@ -28,23 +28,29 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
 }
 
 /**
- * Load and execute TypeScript config file using esbuild.
+ * Load and execute TypeScript config file using rolldown.
  */
 async function executeConfigFile(configPath: string): Promise<unknown> {
   // Bundle config file to temp location (use .cjs so require() is available)
   const outfile = join(tmpdir(), `soda-gql-config-${Date.now()}.cjs`);
+  const outdir = dirname(outfile);
 
   try {
-    await build({
-      entryPoints: [configPath],
-      outfile,
-      bundle: true,
+    const bundle = await rolldown({
+      input: configPath,
       platform: "node",
-      format: "cjs",
-      target: "node18",
-      logLevel: "silent",
-      conditions: ["development", "node", "import", "default"],
+      resolve: {
+        conditionNames: ["development", "node", "import", "default"],
+      },
     });
+
+    await bundle.write({
+      format: "cjs",
+      dir: outdir,
+      entryFileNames: `soda-gql-config-${Date.now()}.cjs`,
+    });
+
+    await bundle.close();
   } catch (error) {
     throw configError(
       "CONFIG_LOAD_FAILED",
@@ -58,11 +64,14 @@ async function executeConfigFile(configPath: string): Promise<unknown> {
   const configModule = await import(`file://${outfile}?t=${Date.now()}`);
 
   // Clean up temp file
-  unlinkSync(outfile);
+  try {
+    unlinkSync(outfile);
+  } catch (cleanupError) {
+    // Ignore cleanup errors
+  }
 
   // When importing CJS with import(), the exports are wrapped in { default: ... }
-  // Since the source uses 'export default', esbuild wraps it again as { default: ... }
-  // So we need to unwrap twice: configModule.default.default
+  // Handle various export formats
   let config = configModule.default?.default ?? configModule.default ?? configModule;
 
   // Handle async config functions
