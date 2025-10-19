@@ -50,7 +50,7 @@ export interface BuilderSession {
   /**
    * Perform build fully or incrementally.
    */
-  build(input: { changeSet: BuilderChangeSet | null }): Promise<Result<BuilderArtifact, BuilderError>>;
+  build(input: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError>;
 }
 
 const prepare = (input: {
@@ -137,7 +137,7 @@ const discover = ({
   return ok({ snapshots, analyses, currentModuleAdjacency, affectedFiles, stats });
 };
 
-const buildDiscovered = async ({
+const buildDiscovered = ({
   analyses,
   affectedFiles,
   stats,
@@ -165,7 +165,7 @@ const buildDiscovered = async ({
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
-  const elements = await evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
+  const elements = evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
 
   // Build artifact from all intermediate modules
   const artifactResult = buildArtifact({
@@ -216,7 +216,7 @@ export const createBuilderSession = (options: {
     }),
   );
 
-  const build = async ({ changeSet }: { changeSet: BuilderChangeSet | null }): Promise<Result<BuilderArtifact, BuilderError>> => {
+  const build = ({ changeSet }: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError> => {
     const prepareResult = prepare({ entrypoints, changeSet, lastArtifact: state.lastArtifact });
     if (prepareResult.isErr()) {
       return err(prepareResult.error);
@@ -243,7 +243,7 @@ export const createBuilderSession = (options: {
 
     const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
-    const buildResult = await buildDiscovered({
+    const buildResult = buildDiscovered({
       analyses,
       affectedFiles,
       stats,

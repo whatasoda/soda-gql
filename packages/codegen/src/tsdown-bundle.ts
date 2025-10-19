@@ -1,6 +1,6 @@
 import { dirname, extname } from "node:path";
 import { err, ok, type Result } from "neverthrow";
-import { build } from "tsdown";
+import { build, type UserConfig } from "tsdown";
 import type { CodegenError } from "./types";
 
 export type BundleResult = {
@@ -14,23 +14,20 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
     const sourceExt = extname(sourcePath);
     const baseName = sourcePath.slice(0, -sourceExt.length);
 
-    // biome-ignore lint/suspicious/noExplicitAny: tsdown type definitions may be incomplete
     await build({
       entry: sourcePath,
       format: ["cjs"],
       platform: "node",
       external: ["@soda-gql/core", "@soda-gql/runtime"],
-      dts: {
-        entry: sourcePath,
-        resolve: true,
-      },
+      dts: false,
       outDir: sourceDir,
+      fixedExtension: true,
       clean: false,
       minify: false,
       sourcemap: false,
       treeshake: false,
-      logLevel: "silent",
-    } as any);
+      // logLevel: "silent",
+    } satisfies UserConfig);
 
     const cjsPath = `${baseName}.cjs`;
     const dtsPath = `${baseName}.d.ts`;

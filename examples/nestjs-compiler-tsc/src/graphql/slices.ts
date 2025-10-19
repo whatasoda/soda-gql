@@ -19,7 +19,15 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 export const usersSlice = gql.default(({ slice }) =>
   slice.query(
     {},
-    ({ f }) => [f.users(({ f }) => [f.id(), f.name(), f.email()])],
+    ({ f }) => [
+      //
+      f.users()(({ f }) => [
+        //
+        f.id(),
+        f.name(),
+        f.email(),
+      ]),
+    ],
     ({ select }) => select(["$.users"], (result) => result),
   ),
 );

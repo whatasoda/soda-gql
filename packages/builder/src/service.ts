@@ -22,13 +22,13 @@ export interface BuilderService {
    * Generate artifacts from configured entry points.
    * Returns Result containing BuilderArtifact on success or BuilderError on failure.
    */
-  build(): Promise<Result<BuilderArtifact, BuilderError>>;
+  build(): Result<BuilderArtifact, BuilderError>;
 
   /**
    * Perform incremental update based on file changes.
    * Optional method for incremental builds. Falls back to full rebuild if not supported.
    */
-  update(changeSet: BuilderChangeSet): Promise<Result<BuilderArtifact, BuilderError>>;
+  update(changeSet: BuilderChangeSet): Result<BuilderArtifact, BuilderError>;
 
   /**
    * Get the current generation number of the artifact.
@@ -61,8 +61,8 @@ export const createBuilderService = ({ config, entrypoints }: BuilderServiceConf
   let generation = 0;
   let currentArtifact: BuilderArtifact | null = null;
 
-  const wrapBuild = async (buildFn: () => Promise<Result<BuilderArtifact, BuilderError>>) => {
-    const result = await buildFn();
+  const wrapBuild = (buildFn: () => Result<BuilderArtifact, BuilderError>) => {
+    const result = buildFn();
     if (result.isOk()) {
       generation++;
       currentArtifact = result.value;
@@ -71,8 +71,8 @@ export const createBuilderService = ({ config, entrypoints }: BuilderServiceConf
   };
 
   return {
-    build: async () => wrapBuild(() => session.build({ changeSet: null })),
-    update: async (changeSet: BuilderChangeSet) => wrapBuild(() => session.build({ changeSet })),
+    build: () => wrapBuild(() => session.build({ changeSet: null })),
+    update: (changeSet: BuilderChangeSet) => wrapBuild(() => session.build({ changeSet })),
     getGeneration: () => generation,
     getCurrentArtifact: () => currentArtifact,
   };

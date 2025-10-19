@@ -25,6 +25,7 @@
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
+    "@rspack/core": "^1.5.8",
     "@soda-gql/cli": "workspace:*",
     "@soda-gql/plugin-nestjs": "workspace:*",
     "@types/node": "^20.0.0",
