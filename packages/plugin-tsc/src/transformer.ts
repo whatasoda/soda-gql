@@ -115,6 +115,7 @@ export function createSodaGqlTransformer(
       const transformContext = {
         filename: sourceFile.fileName,
         artifactLookup: (canonicalId: CanonicalId) => prepared.allArtifacts[canonicalId],
+        runtimeModule: prepared.importIdentifier,
       };
 
       const transformResult = adapter.transformProgram(transformContext);

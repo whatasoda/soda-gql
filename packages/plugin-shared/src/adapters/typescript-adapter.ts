@@ -1,19 +1,9 @@
 /**
  * TypeScript implementation of the TransformAdapter interface.
- *
- * Current Status (v0.1.0 pre-release): DETECTION-ONLY IMPLEMENTATION
- * - Detects gql.default(({ operation }) => operation.*) calls
- * - Establishes transformation infrastructure
- * - Does NOT perform AST replacement yet
- * - Operations are still evaluated at runtime
- *
- * Future iterations will add:
- * - Full AST replacement with runtime registrations
- * - Metadata collection and analysis parity with Babel adapter
- * - Zero-runtime code elimination
  */
 
 import type * as ts from "typescript";
+import { resolveCanonicalId } from "../cache.js";
 import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir.js";
 import type {
   TransformAdapter,
@@ -22,6 +12,9 @@ import type {
   TransformProgramContext,
 } from "../core/transform-adapter.js";
 import type { PluginError } from "../state.js";
+import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./typescript/imports.js";
+import { collectGqlDefinitionMetadata } from "./typescript/metadata.js";
+import { transformCallExpression } from "./typescript/transformer.js";
 
 /**
  * TypeScript-specific environment required for the adapter.
@@ -36,7 +29,7 @@ export type TypeScriptEnv = {
  * TypeScript implementation of TransformAdapter.
  */
 export class TypeScriptAdapter implements TransformAdapter {
-  private readonly env: TypeScriptEnv;
+  private env: TypeScriptEnv;
   private readonly ts: typeof ts;
   private readonly factory: ts.NodeFactory;
   private runtimeCallsFromLastTransform: ts.Expression[] = [];
@@ -47,59 +40,104 @@ export class TypeScriptAdapter implements TransformAdapter {
     this.factory = env.context.factory;
   }
 
-  /**
-   * Collect metadata about GraphQL definitions.
-   * TODO: Implement full metadata collection in future iteration.
-   */
-  collectDefinitionMetadata(_context: TransformProgramContext): DefinitionMetadataMap {
-    // Minimal implementation - return empty map for now
-    return new Map();
+  collectDefinitionMetadata(context: TransformProgramContext): DefinitionMetadataMap {
+    const metadata = collectGqlDefinitionMetadata({
+      sourceFile: this.env.sourceFile,
+      typescript: this.ts,
+      filename: context.filename,
+    });
+
+    // Convert TypeScript WeakMap to library-neutral Map with canonical IDs as keys
+    const neutralMetadata: DefinitionMetadataMap = new Map();
+
+    const visit = (node: ts.Node): void => {
+      if (this.ts.isCallExpression(node)) {
+        const meta = metadata.get(node);
+        if (meta) {
+          const canonicalId = resolveCanonicalId(context.filename, meta.astPath);
+          neutralMetadata.set(canonicalId, {
+            astPath: meta.astPath,
+            isTopLevel: meta.isTopLevel,
+            isExported: meta.isExported,
+            exportBinding: meta.exportBinding,
+          });
+        }
+      }
+      this.ts.forEachChild(node, visit);
+    };
+
+    visit(this.env.sourceFile);
+
+    return neutralMetadata;
   }
 
-  /**
-   * Analyze a candidate call expression.
-   * TODO: Implement full call analysis in future iteration.
-   */
-  analyzeCall(_context: TransformProgramContext, _candidate: unknown): GraphQLCallAnalysis | PluginError {
-    throw new Error("[TypeScriptAdapter] analyzeCall not yet implemented");
+  analyzeCall(context: TransformProgramContext, candidate: unknown): GraphQLCallAnalysis | PluginError {
+    if (!this.ts.isCallExpression(candidate)) {
+      throw new Error("[INTERNAL] TypeScriptAdapter.analyzeCall expects ts.CallExpression");
+    }
+
+    // This method is not yet fully implemented for TypeScript adapter
+    // It would need to extract the call and convert to IR
+    throw new Error("[TypeScriptAdapter] analyzeCall not yet fully implemented");
   }
 
-  /**
-   * Transform the entire program.
-   *
-   * Current implementation: Detection-only (v0.1.0 pre-release)
-   * - Detects gql.default calls containing operations
-   * - Marks as transformed when detected
-   * - Returns original AST unchanged
-   *
-   * Future: Will replace GraphQL calls with runtime equivalents
-   */
   transformProgram(context: TransformProgramContext): TransformPassResult {
+    const metadata = collectGqlDefinitionMetadata({
+      sourceFile: this.env.sourceFile,
+      typescript: this.ts,
+      filename: context.filename,
+    });
+
     this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
     const visitor = (node: ts.Node): ts.Node => {
-      // Handle CallExpression nodes
       if (this.ts.isCallExpression(node)) {
-        const gqlCall = this.detectGqlOperationCall(node);
-        if (gqlCall) {
+        const result = transformCallExpression({
+          callNode: node,
+          filename: context.filename,
+          metadata,
+          getArtifact: context.artifactLookup,
+          factory: this.factory,
+          typescript: this.ts,
+        });
+
+        if (result.transformed) {
           transformed = true;
-          // For now, just track that we found a call
-          // Actual transformation will be added in next iteration
-          return node;
+
+          if (result.runtimeCall) {
+            this.runtimeCallsFromLastTransform.push(result.runtimeCall);
+          }
+
+          return result.replacement;
         }
       }
 
       return this.ts.visitEachChild(node, visitor, this.env.context);
     };
 
-    const transformedSourceFile = this.ts.visitNode(this.env.sourceFile, visitor);
-    if (!transformedSourceFile || !this.ts.isSourceFile(transformedSourceFile)) {
+    const visitedNode = this.ts.visitNode(this.env.sourceFile, visitor);
+    if (!visitedNode || !this.ts.isSourceFile(visitedNode)) {
       throw new Error("[TypeScriptAdapter] Failed to transform source file");
     }
 
+    let transformedSourceFile = visitedNode;
+
+    if (transformed) {
+      // Ensure gqlRuntime import exists
+      transformedSourceFile = ensureGqlRuntimeImport(
+        transformedSourceFile,
+        context.runtimeModule,
+        this.factory,
+        this.ts,
+      );
+
+      // Maybe remove unused gql import
+      transformedSourceFile = maybeRemoveUnusedGqlImport(transformedSourceFile, this.factory, this.ts);
+    }
+
     // Update the source file in env for insertRuntimeSideEffects
-    (this.env as { sourceFile: ts.SourceFile }).sourceFile = transformedSourceFile;
+    this.env = { ...this.env, sourceFile: transformedSourceFile };
 
     return {
       transformed,
@@ -107,105 +145,51 @@ export class TypeScriptAdapter implements TransformAdapter {
     };
   }
 
-  /**
-   * Insert runtime side effects (operation registrations) into the program.
-   */
   insertRuntimeSideEffects(context: TransformProgramContext, _runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
     const runtimeCalls = this.runtimeCallsFromLastTransform;
     if (runtimeCalls.length === 0) {
       return;
     }
 
-    // Create runtime import statement
-    const importIdentifier = context.filename; // TODO: Get from state.options.importIdentifier
-    const runtimeImport = this.factory.createImportDeclaration(
-      undefined,
-      this.factory.createImportClause(
-        false,
-        undefined,
-        this.factory.createNamedImports([
-          this.factory.createImportSpecifier(false, undefined, this.factory.createIdentifier("gqlRuntime")),
-        ]),
-      ),
-      this.factory.createStringLiteral(importIdentifier),
-    );
-
-    // Wrap runtime calls in expression statements
+    // Wrap expressions in ExpressionStatements before insertion
     const statements = runtimeCalls.map((expr) => this.factory.createExpressionStatement(expr));
 
-    // Find insertion point after imports
-    const existingStatements = Array.from(this.env.sourceFile.statements);
-    let insertIndex = 0;
-    for (let i = 0; i < existingStatements.length; i++) {
-      const stmt = existingStatements[i];
-      if (stmt && this.ts.isImportDeclaration(stmt)) {
-        insertIndex = i + 1;
-      } else {
-        break;
-      }
-    }
+    // Find the last import statement to insert after all dependencies
+    const lastImportIndex = this.findLastImportIndex();
 
-    // Insert runtime import and calls
+    const existingStatements = Array.from(this.env.sourceFile.statements);
+    const insertIndex = lastImportIndex + 1;
+
     const newStatements = [
       ...existingStatements.slice(0, insertIndex),
-      runtimeImport,
       ...statements,
       ...existingStatements.slice(insertIndex),
     ];
 
     // Update source file with new statements
     const updatedSourceFile = this.factory.updateSourceFile(this.env.sourceFile, newStatements);
-    (this.env as { sourceFile: ts.SourceFile }).sourceFile = updatedSourceFile;
+    this.env = { ...this.env, sourceFile: updatedSourceFile };
 
     // Clear to prevent repeated insertions
     this.runtimeCallsFromLastTransform = [];
   }
 
   /**
-   * Detect if a call expression is a gql.default call containing an operation.
-   *
-   * Note: This currently detects the OLD API pattern (gql.operation.*) for compatibility
-   * with existing test infrastructure. The actual pattern in use is:
-   *   gql.default(({ operation }) => operation.query/mutation/subscription(...))
-   *
-   * Returns the operation kind if detected, null otherwise.
+   * Find the index of the last import statement.
+   * Returns -1 if no imports found.
    */
-  private detectGqlOperationCall(node: ts.CallExpression): string | null {
-    // Match pattern: gql.operation.<kind>(...)
-    // node.expression should be PropertyAccessExpression: operation.<kind>
-    if (!this.ts.isPropertyAccessExpression(node.expression)) {
-      return null;
+  private findLastImportIndex(): number {
+    let lastIndex = -1;
+    const statements = this.env.sourceFile.statements;
+
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i];
+      if (statement && this.ts.isImportDeclaration(statement)) {
+        lastIndex = i;
+      }
     }
 
-    const kindProperty = node.expression;
-    const kind = kindProperty.name.text;
-
-    // Check if supported kind
-    const supportedKinds = ["query", "mutation", "subscription", "fragment"];
-    if (!supportedKinds.includes(kind)) {
-      return null;
-    }
-
-    // kindProperty.expression should be PropertyAccessExpression: gql.operation
-    if (!this.ts.isPropertyAccessExpression(kindProperty.expression)) {
-      return null;
-    }
-
-    const operationProperty = kindProperty.expression;
-    if (operationProperty.name.text !== "operation") {
-      return null;
-    }
-
-    // operationProperty.expression should be Identifier: gql
-    if (!this.ts.isIdentifier(operationProperty.expression)) {
-      return null;
-    }
-
-    if (operationProperty.expression.text !== "gql") {
-      return null;
-    }
-
-    return kind;
+    return lastIndex;
   }
 }
 

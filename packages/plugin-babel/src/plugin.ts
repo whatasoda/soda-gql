@@ -95,6 +95,7 @@ export const createSodaGqlPlugin = (): PluginObj<
       const result = adapter.transformProgram({
         filename,
         artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
+        runtimeModule: pluginState.options.importIdentifier,
       });
 
       // Insert runtime side effects if transformed
@@ -102,6 +103,7 @@ export const createSodaGqlPlugin = (): PluginObj<
         adapter.insertRuntimeSideEffects(
           {
             filename,
+            runtimeModule: pluginState.options.importIdentifier,
             artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
           },
           result.runtimeArtifacts || [],

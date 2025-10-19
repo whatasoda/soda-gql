@@ -15,6 +15,7 @@ import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "
 export type TransformProgramContext = {
   readonly filename: string;
   readonly artifactLookup: (id: CanonicalId) => BuilderArtifactElement | undefined;
+  readonly runtimeModule: string;
 };
 
 /**

@@ -111,6 +111,7 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
     const transformContext = {
       filename,
       artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => prepared.allArtifacts[canonicalId],
+      runtimeModule: prepared.importIdentifier,
     };
 
     const transformResult = adapter.transformProgram(transformContext);

@@ -121,6 +121,7 @@ const transformWithAdapter = async (
             const context = {
               filename: resourcePath,
               artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => pluginState.allArtifacts[canonicalId],
+              runtimeModule: pluginState.options.importIdentifier,
             };
 
             // Transform the program
