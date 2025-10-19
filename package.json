@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",
+    "@swc-node/register": "^1.11.1",
     "@types/bun": "latest",
     "@types/node": "^24.7.2",
     "tsdown": "^0.15.7",

@@ -5,6 +5,7 @@
  * into the Nest CLI build process when using `builder: "tsc"`.
  */
 
+import { CanonicalId } from "@soda-gql/common";
 import { type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
 import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type * as ts from "typescript";
@@ -86,9 +87,7 @@ export function createSodaGqlTransformer(
   // Handle preparation errors
   if (prepareResult.isErr()) {
     const error = prepareResult.error;
-    if (error.type === "BLOCKING_NOT_SUPPORTED") {
-      console.error(`[@soda-gql/plugin-tsc] ${error.message}`);
-    } else if (error.type === "PLUGIN_ERROR") {
+    if (error.type === "PLUGIN_ERROR") {
       const pluginError = error.error;
       console.error(`[@soda-gql/plugin-tsc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
     }
@@ -115,7 +114,7 @@ export function createSodaGqlTransformer(
       // Transform the program
       const transformContext = {
         filename: sourceFile.fileName,
-        artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => prepared.allArtifacts[canonicalId],
+        artifactLookup: (canonicalId: CanonicalId) => prepared.allArtifacts[canonicalId],
       };
 
       const transformResult = adapter.transformProgram(transformContext);

@@ -160,6 +160,5 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas: schemaHashes,
     outPath,
     cjsPath: bundleResult.value.cjsPath,
-    dtsPath: bundleResult.value.dtsPath,
   } satisfies MultiSchemaCodegenSuccess);
 };

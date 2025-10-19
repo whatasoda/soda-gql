@@ -7,9 +7,15 @@
  */
 
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
-import type { CoordinatorConsumer, CoordinatorKey, CoordinatorListener, PluginError } from "@soda-gql/plugin-shared";
+import {
+  type CoordinatorConsumer,
+  type CoordinatorKey,
+  type CoordinatorListener,
+  type PluginError,
+  preparePluginState,
+  registerConsumer,
+} from "@soda-gql/plugin-shared";
 import { err, ok, type Result } from "neverthrow";
-import { BlockingSyncNotSupportedError, runPromiseSync } from "./blocking.js";
 
 /**
  * Configuration for transform state preparation.
@@ -67,17 +73,12 @@ export function prepareTransformState(
   const packageLabel = args.packageLabel ?? "@soda-gql/compiler-plugin";
 
   try {
-    // Import plugin-shared synchronously (modules are already loaded at this point)
-    const { preparePluginState, registerConsumer } = require("@soda-gql/plugin-shared");
-
     // Prepare plugin state synchronously using blocking bridge
-    const stateResult = runPromiseSync<Result<any, PluginError>>(() =>
-      preparePluginState({
-        configPath: args.configPath,
-        project: args.project,
-        importIdentifier: args.importIdentifier,
-      }),
-    );
+    const stateResult = preparePluginState({
+      configPath: args.configPath,
+      project: args.project,
+      importIdentifier: args.importIdentifier,
+    });
 
     if (stateResult.isErr()) {
       return err({
@@ -118,7 +119,7 @@ export function prepareTransformState(
     }
 
     // Ensure latest snapshot synchronously
-    const snapshot = runPromiseSync(() => cached!.consumer.ensureLatest());
+    const snapshot = cached.consumer.ensureLatest();
     cached.allArtifacts = snapshot.elements;
 
     return ok({
@@ -131,12 +132,6 @@ export function prepareTransformState(
       },
     });
   } catch (error) {
-    if (error instanceof BlockingSyncNotSupportedError) {
-      return err({
-        type: "BLOCKING_NOT_SUPPORTED",
-        message: error.message,
-      });
-    }
     throw error;
   }
 }

@@ -5,5 +5,5 @@
  * into NestJS webpack configurations.
  */
 
-export { type NestWebpackConfigFactory, withSodaGql } from "./with-soda-gql.js";
 export { type SodaGqlConfig, sodaGqlConfigSchema } from "./config-schema.js";
+export { type NestWebpackConfigFactory, withSodaGql } from "./with-soda-gql.js";

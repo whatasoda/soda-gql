@@ -1,9 +1,10 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import { type BuilderServiceController, createBuilderServiceController } from "../dev/builder-service-controller.js";
 import type { NormalizedOptions } from "../options.js";
 import { computeDiff, createSnapshot } from "./snapshot.js";
 import { SubscriptionManager } from "./subscriptions.js";
-import type { CoordinatorDiff, CoordinatorSnapshot } from "./types.js";
+import type { CoordinatorDiff, CoordinatorEvent, CoordinatorSnapshot } from "./types.js";
 
 export interface PluginCoordinatorOptions {
   readonly builderConfig: BuilderServiceConfig;
@@ -33,11 +34,11 @@ export class PluginCoordinator {
    * If no changes are detected and a previous artifact exists, returns the cached snapshot.
    * Otherwise, performs an incremental or full build as needed.
    */
-  async ensureLatest(): Promise<CoordinatorSnapshot> {
+  ensureLatest(): CoordinatorSnapshot {
     this.assertNotDisposed();
 
     const prevGeneration = this.controller.getGeneration();
-    const result = await this.controller.build();
+    const result = this.controller.build();
 
     if (result.isErr()) {
       const error = result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
@@ -88,7 +89,7 @@ export class PluginCoordinator {
 
     // If we don't have the previous snapshot, return a full diff
     return {
-      added: Object.keys(this.currentSnapshot.elements) as Array<import("@soda-gql/builder").CanonicalId>,
+      added: Object.keys(this.currentSnapshot.elements) as Array<CanonicalId>,
       updated: [],
       removed: [],
     };
@@ -98,7 +99,7 @@ export class PluginCoordinator {
    * Subscribe to coordinator events (artifact updates, errors, disposal).
    * @returns Unsubscribe function
    */
-  subscribe(listener: (event: import("./types.js").CoordinatorEvent) => void): () => void {
+  subscribe(listener: (event: CoordinatorEvent) => void): () => void {
     this.assertNotDisposed();
     return this.subscriptions.subscribe(listener);
   }

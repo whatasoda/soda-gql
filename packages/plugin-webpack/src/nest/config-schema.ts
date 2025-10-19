@@ -1,5 +1,5 @@
-import { webpackPluginOptionsSchema } from "../schemas/index.js";
 import { z } from "zod";
+import { webpackPluginOptionsSchema } from "../schemas/index.js";
 
 /**
  * Configuration options for withSodaGql helper.

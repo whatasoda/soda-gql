@@ -204,7 +204,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
           // Trigger incremental build when Webpack reports file changes
           // The builder's file tracker will detect the actual changes
-          if (modifiedFiles && modifiedFiles.size > 0 || removedFiles && removedFiles.size > 0) {
+          if ((modifiedFiles && modifiedFiles.size > 0) || (removedFiles && removedFiles.size > 0)) {
             await triggerIncrementalBuild();
           }
         } catch (error) {

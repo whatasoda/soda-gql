@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Script } from "node:vm";
 import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
 import { transformSync } from "@swc/core";
@@ -34,13 +34,14 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
  * Based on the pattern from fuga.js.
  */
 function executeConfigFile(configPath: string): unknown {
+  const configFilename = resolve(configPath);
   try {
     // Read the config file
-    const source = readFileSync(configPath, "utf-8");
+    const source = readFileSync(configFilename, "utf-8");
 
     // Transform TypeScript to CommonJS using SWC
     const result = transformSync(source, {
-      filename: configPath,
+      filename: configFilename,
       jsc: {
         parser: {
           syntax: "typescript",
@@ -54,11 +55,12 @@ function executeConfigFile(configPath: string): unknown {
     });
 
     // Create VM script
-    const script = new Script(result.code, { filename: configPath });
+    const script = new Script(result.code, { filename: configFilename });
 
     // Create CommonJS context
     const pseudoModule: { exports: unknown } = { exports: {} };
-    const customRequireInner = createRequire(configPath);
+    
+    const customRequireInner = createRequire(configFilename);
     const customRequire = (path: string) => {
       // Handle external modules normally
       if (!path.startsWith(".")) {
@@ -66,7 +68,7 @@ function executeConfigFile(configPath: string): unknown {
       }
 
       // Resolve relative imports with existence check
-      const resolvedPath = resolveRelativeImportWithExistenceCheck({ filePath: configPath, specifier: path });
+      const resolvedPath = resolveRelativeImportWithExistenceCheck({ filePath: configFilename, specifier: path });
       if (!resolvedPath) {
         throw new Error(`Module not found: ${path}`);
       }
@@ -78,8 +80,8 @@ function executeConfigFile(configPath: string): unknown {
       require: customRequire,
       module: pseudoModule,
       exports: pseudoModule.exports,
-      __dirname: dirname(configPath),
-      __filename: configPath,
+      __dirname: dirname(configFilename),
+      __filename: configFilename,
       console,
       process,
     });
@@ -98,7 +100,7 @@ function executeConfigFile(configPath: string): unknown {
       throw configError(
         "CONFIG_LOAD_FAILED",
         "Async config functions are not supported in synchronous mode. Export a plain object instead.",
-        configPath,
+        configFilename,
       );
     }
 
@@ -107,7 +109,7 @@ function executeConfigFile(configPath: string): unknown {
     throw configError(
       "CONFIG_LOAD_FAILED",
       `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
-      configPath,
+      configFilename,
       error,
     );
   }
@@ -133,6 +135,8 @@ export function loadConfig(configPath?: string): Result<ResolvedSodaGqlConfig, C
 
     return resolveConfig(validated.value, resolvedPath);
   } catch (error) {
+    console.log(error);
+    
     return err(configError("CONFIG_LOAD_FAILED", `Failed to load config: ${error}`, resolvedPath, error));
   }
 }

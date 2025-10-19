@@ -1,9 +1,9 @@
+import { beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { normalizePath } from "@soda-gql/common";
 import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
-import { createFileTracker, isEmptyDiff, type FileTrackerState } from "@soda-gql/builder/tracker/file-tracker";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { createFileTracker, type FileTrackerState, isEmptyDiff } from "@soda-gql/builder/tracker/file-tracker";
+import { normalizePath } from "@soda-gql/common";
 
 describe("FileTracker", () => {
   const testRoot = join(process.cwd(), ".cache", "test", "file-tracker");
@@ -104,9 +104,7 @@ describe("FileTracker", () => {
 
     const previousState: FileTrackerState = {
       version: 1,
-      files: new Map([
-        [file1, { mtimeMs: 1000, size: 100 }],
-      ]),
+      files: new Map([[file1, { mtimeMs: 1000, size: 100 }]]),
     };
 
     const scanResult = tracker.scan([]);

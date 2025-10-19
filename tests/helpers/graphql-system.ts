@@ -37,11 +37,6 @@ export type EnsureGraphqlSystemBundleResult = {
    * Path to the generated CJS bundle
    */
   readonly cjsPath: string;
-
-  /**
-   * Path to the generated .d.ts file
-   */
-  readonly dtsPath: string;
 };
 
 /**
@@ -90,14 +85,11 @@ export const ensureGraphqlSystemBundle = async (
   });
 
   if (result.isErr()) {
-    throw new Error(
-      `Failed to generate graphql-system bundle: ${result.error.code} - ${result.error.message}`,
-    );
+    throw new Error(`Failed to generate graphql-system bundle: ${result.error.code} - ${result.error.message}`);
   }
 
   return {
     outPath: result.value.outPath,
     cjsPath: result.value.cjsPath,
-    dtsPath: result.value.dtsPath,
   };
 };

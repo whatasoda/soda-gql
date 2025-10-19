@@ -1,7 +1,8 @@
 import type { BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
-import type { CoordinatorKey, CoordinatorSnapshot } from "./coordinator/index.js";
-import type { NormalizedOptions, OptionsError } from "./options.js";
+import { createAndRegisterCoordinator, type CoordinatorKey, type CoordinatorSnapshot } from "./coordinator/index.js";
+import { normalizePluginOptions, type NormalizedOptions, type OptionsError } from "./options.js";
+import { PluginOptions } from "./types.js";
 
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
 
@@ -111,12 +112,9 @@ export type PluginStateResult = Result<PluginState, PluginError>;
  * Prepare plugin state using coordinator.
  * Creates and registers a coordinator, then returns the initial snapshot.
  */
-export const preparePluginState = async (rawOptions: Partial<import("./types.js").PluginOptions>): Promise<PluginStateResult> => {
+export const preparePluginState = (rawOptions: Partial<PluginOptions>): PluginStateResult => {
   // Dynamically import to avoid circular dependency
-  const { normalizePluginOptions } = await import("./options.js");
-  const { createAndRegisterCoordinator } = await import("./coordinator/index.js");
-
-  const optionsResult = await normalizePluginOptions(rawOptions);
+  const optionsResult = normalizePluginOptions(rawOptions);
 
   if (optionsResult.isErr()) {
     return err(mapOptionsError(optionsResult.error));
@@ -125,11 +123,11 @@ export const preparePluginState = async (rawOptions: Partial<import("./types.js"
   const options = optionsResult.value;
 
   // Create and register coordinator
-  const { key, coordinator } = await createAndRegisterCoordinator(options);
+  const { key, coordinator } = createAndRegisterCoordinator(options);
 
   // Ensure latest artifact is built
   try {
-    const snapshot = await coordinator.ensureLatest();
+    const snapshot = coordinator.ensureLatest();
 
     return ok({
       options,

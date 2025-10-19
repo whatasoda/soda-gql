@@ -160,10 +160,7 @@ export const createFileTracker = ({ cacheFactory }: FileTrackerOptions): FileTra
           mtimeMs: stats.mtimeMs,
           size: stats.size,
         });
-      } catch {
-        // Gracefully skip files that don't exist or cannot be read
-        continue;
-      }
+      } catch {}
     }
 
     return ok({ files });
@@ -180,10 +177,7 @@ export const createFileTracker = ({ cacheFactory }: FileTrackerOptions): FileTra
 
       if (!previousMetadata) {
         added.add(path);
-      } else if (
-        previousMetadata.mtimeMs !== currentMetadata.mtimeMs ||
-        previousMetadata.size !== currentMetadata.size
-      ) {
+      } else if (previousMetadata.mtimeMs !== currentMetadata.mtimeMs || previousMetadata.size !== currentMetadata.size) {
         updated.add(path);
       }
     }

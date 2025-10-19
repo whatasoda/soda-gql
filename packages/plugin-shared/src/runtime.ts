@@ -1,11 +1,11 @@
 import { err, ok, type Result } from "neverthrow";
 
-import type { CoordinatorConsumer, CoordinatorKey } from "./coordinator/index.js";
-import { registerConsumer } from "./coordinator/index.js";
-import type { NormalizedOptions } from "./options.js";
-import { normalizePluginOptions } from "./options.js";
-import type { PluginError, PluginState } from "./state.js";
-import type { PluginOptions } from "./types.js";
+import type { CoordinatorConsumer, CoordinatorKey } from "./coordinator";
+import { createAndRegisterCoordinator, registerConsumer } from "./coordinator";
+import type { NormalizedOptions } from "./options";
+import { normalizePluginOptions } from "./options";
+import type { PluginError, PluginState } from "./state";
+import type { PluginOptions } from "./types";
 
 /**
  * Plugin runtime instance that manages plugin state lifecycle with coordinator.
@@ -19,7 +19,7 @@ export interface PluginRuntime {
   /**
    * Force reload via coordinator
    */
-  refresh(): Promise<Result<PluginState, PluginError>>;
+  refresh(): Result<PluginState, PluginError>;
 
   /**
    * Get the normalized options
@@ -43,10 +43,9 @@ type RuntimeCache = {
 /**
  * Create a plugin runtime from normalized options
  */
-export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOptions): Promise<PluginRuntime> => {
+export const createPluginRuntimeFromNormalized = (normalized: NormalizedOptions): PluginRuntime => {
   // Create and register coordinator
-  const { createAndRegisterCoordinator } = await import("./coordinator/index.js");
-  const { key, coordinator } = await createAndRegisterCoordinator(normalized);
+  const { key } = createAndRegisterCoordinator(normalized);
 
   const consumer = registerConsumer(key);
 
@@ -59,7 +58,7 @@ export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOp
   };
 
   // Initialize state
-  const initResult = await loadState(cache);
+  const initResult = loadState(cache);
   if (initResult.isErr()) {
     cache.initError = initResult.error;
   } else {
@@ -77,8 +76,8 @@ export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOp
       return cache.state;
     },
 
-    refresh: async () => {
-      const result = await loadState(cache);
+    refresh: () => {
+      const result = loadState(cache);
       if (result.isOk()) {
         cache.state = result.value;
         cache.initError = null;
@@ -101,8 +100,8 @@ export const createPluginRuntimeFromNormalized = async (normalized: NormalizedOp
 /**
  * Create a plugin runtime from raw options
  */
-export const createPluginRuntime = async (opts: Partial<PluginOptions> = {}): Promise<PluginRuntime> => {
-  const optionsResult = await normalizePluginOptions(opts);
+export const createPluginRuntime = (opts: Partial<PluginOptions> = {}): PluginRuntime => {
+  const optionsResult = normalizePluginOptions(opts);
 
   if (optionsResult.isErr()) {
     // Create a runtime that always throws the normalization error
@@ -111,7 +110,7 @@ export const createPluginRuntime = async (opts: Partial<PluginOptions> = {}): Pr
       getState: () => {
         throw error;
       },
-      refresh: async () => err(error),
+      refresh: () => err(error),
       getOptions: () => {
         throw error;
       },
@@ -122,9 +121,9 @@ export const createPluginRuntime = async (opts: Partial<PluginOptions> = {}): Pr
   return createPluginRuntimeFromNormalized(optionsResult.value);
 };
 
-const loadState = async (cache: RuntimeCache): Promise<Result<PluginState, PluginError>> => {
+const loadState = (cache: RuntimeCache): Result<PluginState, PluginError> => {
   try {
-    const snapshot = await cache.consumer.ensureLatest();
+    const snapshot = cache.consumer.ensureLatest();
 
     const state: PluginState = {
       options: cache.options,

@@ -15,7 +15,7 @@ import {
 } from "../discovery";
 import { builderErrors } from "../errors";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
-import { createFileTracker, isEmptyDiff, type FileDiff, type FileTrackerState } from "../tracker";
+import { createFileTracker, type FileDiff, type FileTrackerState, isEmptyDiff } from "../tracker";
 import type { BuilderError } from "../types";
 import { validateModuleDependencies } from "./dependency-validation";
 import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";

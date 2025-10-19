@@ -13,41 +13,6 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./types": {
-      "development": "./src/types.ts",
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js",
-      "require": "./dist/types.cjs",
-      "default": "./dist/types.js"
-    },
-    "./change-set": {
-      "development": "./src/change-set.ts",
-      "types": "./dist/change-set.d.ts",
-      "import": "./dist/change-set.js",
-      "require": "./dist/change-set.cjs",
-      "default": "./dist/change-set.js"
-    },
-    "./artifact": {
-      "development": "./src/artifact/index.ts",
-      "types": "./dist/artifact/index.d.ts",
-      "import": "./dist/artifact/index.js",
-      "require": "./dist/artifact/index.cjs",
-      "default": "./dist/artifact/index.js"
-    },
-    "./schemas/artifact": {
-      "development": "./src/schemas/artifact.ts",
-      "types": "./dist/schemas/artifact.d.ts",
-      "import": "./dist/schemas/artifact.js",
-      "require": "./dist/schemas/artifact.cjs",
-      "default": "./dist/schemas/artifact.js"
-    },
-    "./service": {
-      "development": "./src/service.ts",
-      "types": "./dist/service.d.ts",
-      "import": "./dist/service.js",
-      "require": "./dist/service.cjs",
-      "default": "./dist/service.js"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {

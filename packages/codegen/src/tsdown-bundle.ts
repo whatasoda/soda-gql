@@ -5,7 +5,6 @@ import type { CodegenError } from "./types";
 
 export type BundleResult = {
   readonly cjsPath: string;
-  readonly dtsPath: string;
 };
 
 export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<BundleResult, CodegenError>> => {
@@ -15,6 +14,8 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
     const baseName = sourcePath.slice(0, -sourceExt.length);
 
     await build({
+      // @ts-expect-error -- this is a workaround to avoid the config file being loaded.
+      config: false,
       entry: sourcePath,
       format: ["cjs"],
       platform: "node",
@@ -26,16 +27,11 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
       minify: false,
       sourcemap: false,
       treeshake: false,
-      // logLevel: "silent",
     } satisfies UserConfig);
 
     const cjsPath = `${baseName}.cjs`;
-    const dtsPath = `${baseName}.d.ts`;
 
-    return ok({
-      cjsPath,
-      dtsPath,
-    });
+    return ok({ cjsPath });
   } catch (error) {
     return err({
       code: "EMIT_FAILED",

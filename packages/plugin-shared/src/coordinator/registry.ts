@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
-import type { BuilderServiceConfig } from "@soda-gql/builder";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { NormalizedOptions } from "../options.js";
 import { createCoordinator, type PluginCoordinator } from "./plugin-coordinator.js";
-import type { CoordinatorKey, CoordinatorSnapshot } from "./types.js";
+import type { CoordinatorEvent, CoordinatorKey, CoordinatorSnapshot } from "./types.js";
 
 /**
  * Registry entry with reference counting.
@@ -37,16 +35,13 @@ export const createCoordinatorKey = (config: { configPath: string; projectRoot: 
 /**
  * Get or create a coordinator instance.
  */
-export const getOrCreateCoordinator = async (
-  key: CoordinatorKey,
-  factory: () => Promise<PluginCoordinator> | PluginCoordinator,
-): Promise<PluginCoordinator> => {
+export const getOrCreateCoordinator = (key: CoordinatorKey, factory: () => PluginCoordinator): PluginCoordinator => {
   const existing = registry.get(key);
   if (existing) {
     return existing.coordinator;
   }
 
-  const coordinator = await factory();
+  const coordinator = factory();
   registry.set(key, {
     coordinator,
     refCount: 0,
@@ -117,9 +112,9 @@ export interface CoordinatorConsumer {
   /** Get current snapshot without building */
   snapshot(): CoordinatorSnapshot | null;
   /** Ensure latest artifact and return snapshot */
-  ensureLatest(): Promise<CoordinatorSnapshot>;
+  ensureLatest(): CoordinatorSnapshot;
   /** Subscribe to events */
-  subscribe(listener: (event: import("./types.js").CoordinatorEvent) => void): () => void;
+  subscribe(listener: (event: CoordinatorEvent) => void): () => void;
   /** Release this consumer's reference */
   release(): void;
   /** Get the coordinator key */
@@ -154,9 +149,9 @@ export const registerConsumer = (key: CoordinatorKey): CoordinatorConsumer => {
 /**
  * Create coordinator from config and register it.
  */
-export const createAndRegisterCoordinator = async (
+export const createAndRegisterCoordinator = (
   normalizedOptions: NormalizedOptions,
-): Promise<{ key: CoordinatorKey; coordinator: PluginCoordinator }> => {
+): { key: CoordinatorKey; coordinator: PluginCoordinator } => {
   const config = normalizedOptions.resolvedConfig;
 
   const key = createCoordinatorKey({
@@ -165,7 +160,7 @@ export const createAndRegisterCoordinator = async (
     project: normalizedOptions.project,
   });
 
-  const coordinator = await getOrCreateCoordinator(key, () =>
+  const coordinator = getOrCreateCoordinator(key, () =>
     createCoordinator({
       builderConfig: normalizedOptions.builderConfig,
       normalizedOptions,

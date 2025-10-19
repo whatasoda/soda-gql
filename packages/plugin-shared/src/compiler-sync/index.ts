@@ -5,12 +5,11 @@
  * required by compiler plugin APIs.
  */
 
-export { BlockingSyncNotSupportedError, runPromiseSync } from "./blocking.js";
 export type {
+  PreparedTransformState,
   PrepareTransformStateArgs,
   PrepareTransformStateError,
-  PreparedTransformState,
 } from "./prepare-transform-state.js";
 export { clearPrepareSyncCache, prepareTransformState } from "./prepare-transform-state.js";
-export type { PrepareTransformSyncArgs, PrepareTransformSyncError, PreparedTransformSync } from "./prepare-transform-sync.js";
+export type { PreparedTransformSync, PrepareTransformSyncArgs, PrepareTransformSyncError } from "./prepare-transform-sync.js";
 export { prepareTransformSync } from "./prepare-transform-sync.js";
