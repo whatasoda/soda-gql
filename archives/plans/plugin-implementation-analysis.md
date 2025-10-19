@@ -1,12 +1,14 @@
 # Plugin Implementation Analysis Report
 
+> **アーカイブ通知**: このドキュメントは歴史的な分析です。`@soda-gql/plugin-nestjs`は v0.1.0で `@soda-gql/plugin-tsc`、`@soda-gql/plugin-swc`、`@soda-gql/plugin-webpack` に分割されました。
+
 ## Overview
 
 soda-gqlのプラグインシステムは3つの主要パッケージで構成されています：
 
 1. **@soda-gql/plugin-shared** - 共通基盤・抽象化レイヤー
 2. **@soda-gql/plugin-babel** - Babel用のTransformAdapter実装
-3. **@soda-gql/plugin-nestjs** - NestJS/Webpack統合
+3. **@soda-gql/plugin-nestjs** - NestJS/Webpack統合（分割済み）
 
 ## 1. Package Roles and Responsibilities
 

@@ -1,5 +1,7 @@
 # Test Fix Progress
 
+> **Archive Notice**: This document describes historical test fixes. `@soda-gql/plugin-nestjs` was subsequently split into separate packages in v0.1.0.
+
 **Date**: 2025-10-17
 **Status**: ✅ Complete
 **Total Errors**: 52 → 0 (All Fixed)

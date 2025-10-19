@@ -1,7 +1,14 @@
 # PE-NestJS: NestJS Plugin
 
+> **🚨 DEPRECATED**: This plan is obsolete. `@soda-gql/plugin-nestjs` was split into:
+> - `@soda-gql/plugin-tsc` - TypeScript compiler plugin
+> - `@soda-gql/plugin-swc` - SWC compiler plugin
+> - `@soda-gql/plugin-webpack` - Webpack loader and plugin
+>
+> This document is kept for historical reference only.
+
 **Task ID**: PE-NestJS
-**Status**: In Progress (Detection-only implementation complete)
+**Status**: Completed (split into separate packages)
 **Duration**: 4-5 days (Estimated 2-3 days remaining for full transformation)
 **Dependencies**: [PE-Shared: Shared Layer](./shared-layer.md)
 

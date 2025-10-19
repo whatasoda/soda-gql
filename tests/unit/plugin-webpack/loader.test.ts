@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
-import loader from "@soda-gql/plugin-nestjs/webpack/loader";
+import loader from "@soda-gql/plugin-webpack/loader";
 import { createTempArtifact } from "./helpers/fixtures.js";
 import { runLoader } from "./helpers/loader.js";
 

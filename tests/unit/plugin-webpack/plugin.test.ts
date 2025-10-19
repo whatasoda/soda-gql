@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
-import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-nestjs/webpack/plugin";
+import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-webpack/plugin";
 import type { Compiler, Stats } from "webpack";
 import webpack from "webpack";
 

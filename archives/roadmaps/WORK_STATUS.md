@@ -1,5 +1,7 @@
 # Work Status: NestJS Example Fix
 
+> **Archive Notice**: This document describes historical work on NestJS examples. `@soda-gql/plugin-nestjs` was subsequently split into `@soda-gql/plugin-tsc`, `@soda-gql/plugin-swc`, and `@soda-gql/plugin-webpack` in v0.1.0.
+
 **Date**: 2025-10-15
 **Branch**: `feat/prepare-for-release`
 **Task**: Fix examples/nestjs-app to work correctly with code transformation

@@ -1,8 +1,8 @@
 # NestJS with TypeScript Compiler Plugin Example
 
-This example demonstrates using `@soda-gql/plugin-nestjs` with the TypeScript compiler plugin (without webpack) for zero-runtime GraphQL transformations.
+This example demonstrates using `@soda-gql/plugin-tsc` with the TypeScript compiler plugin (without webpack) for zero-runtime GraphQL transformations.
 
-> **⚠️ Current Status (v0.1.0 Pre-release)**: The TypeScript compiler plugin is in minimal implementation state. It successfully detects `gql.default` calls with operations and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime. See [plugin status documentation](../../docs/status/plugin-nestjs.md) for details.
+> **⚠️ Current Status (v0.1.0 Pre-release)**: The TypeScript compiler plugin is in minimal implementation state. It successfully detects `gql.default` calls with operations and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime.
 
 ## Features
 
@@ -70,7 +70,7 @@ The TypeScript compiler plugin is configured in `nest-cli.json`:
     "builder": "tsc",
     "plugins": [
       {
-        "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+        "name": "@soda-gql/plugin-tsc",
         "options": {
           "artifactPath": "./.cache/soda-gql-artifact.json",
           "mode": "zero-runtime",
@@ -242,7 +242,7 @@ bun run start
 ### Artifact Not Found
 
 ```
-[@soda-gql/plugin-nestjs] Transform preparation failed (ARTIFACT_NOT_FOUND)
+[@soda-gql/plugin-tsc] Transform preparation failed (ARTIFACT_NOT_FOUND)
 ```
 
 **Solution:** Run the artifact generation command:

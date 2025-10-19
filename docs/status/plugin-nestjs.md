@@ -1,8 +1,15 @@
 # @soda-gql/plugin-nestjs - Current Status
 
+> **🚨 DEPRECATED**: This package has been split into separate packages in v0.1.0:
+> - **`@soda-gql/plugin-tsc`** - TypeScript compiler plugin for NestJS
+> - **`@soda-gql/plugin-swc`** - SWC compiler plugin for NestJS
+> - **`@soda-gql/plugin-webpack`** - Webpack loader and plugin (includes NestJS utilities)
+>
+> This document is kept for historical reference only. Please refer to individual package documentation.
+
 **Release Target**: v0.1.0 (Pre-release)
 **Implementation Level**: 🔶 **Minimal (Detection-only)**
-**Last Updated**: 2025-10-16
+**Last Updated**: 2025-10-19 (marked as deprecated)
 
 > ⚠️ **Pre-release Warning**: This plugin is under active development. The compiler plugins (TypeScript/SWC) currently provide infrastructure and detection but do not perform full AST transformation yet. See [Gaps](#gaps--not-yet-supported) below.
 

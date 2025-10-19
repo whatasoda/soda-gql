@@ -1,5 +1,10 @@
 # plugin-nestjs Completion Report
 
+> **Archive Notice**: This document describes the historical `@soda-gql/plugin-nestjs` package, which was split into separate packages in v0.1.0:
+> - `@soda-gql/plugin-tsc` - TypeScript compiler plugin
+> - `@soda-gql/plugin-swc` - SWC compiler plugin
+> - `@soda-gql/plugin-webpack` - Webpack loader and plugin (includes NestJS utilities)
+
 **Date**: 2025-10-14
 **Goal**: Complete plugin-nestjs to achieve feature parity with plugin-babel
 

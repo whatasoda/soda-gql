@@ -1,8 +1,8 @@
 # NestJS with SWC Compiler Plugin Example
 
-This example demonstrates using `@soda-gql/plugin-nestjs` with the SWC compiler plugin for ultra-fast zero-runtime GraphQL transformations.
+This example demonstrates using `@soda-gql/plugin-swc` with the SWC compiler plugin for ultra-fast zero-runtime GraphQL transformations.
 
-> **⚠️ Current Status (v0.1.0 Pre-release)**: The SWC compiler plugin is in minimal implementation state. It successfully detects `gql.default` calls with operations and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime. See [plugin status documentation](../../docs/status/plugin-nestjs.md) for details.
+> **⚠️ Current Status (v0.1.0 Pre-release)**: The SWC compiler plugin is in minimal implementation state. It successfully detects `gql.default` calls with operations and establishes transformation infrastructure, but **does not yet perform full AST replacement**. Operations are still evaluated at runtime.
 
 ## Features
 
@@ -77,7 +77,7 @@ The SWC compiler plugin is configured in `nest-cli.json`:
     "builder": "swc",
     "swcPlugins": [
       [
-        "@soda-gql/plugin-nestjs/compiler/swc",
+        "@soda-gql/plugin-swc",
         {
           "artifactPath": "./.cache/soda-gql-artifact.json",
           "mode": "zero-runtime",
@@ -180,10 +180,10 @@ nestjs-compiler-swc/
 
 ### SWC Plugin Not Found
 
-Ensure `@soda-gql/plugin-nestjs` is installed with SWC peer dependencies:
+Ensure `@soda-gql/plugin-swc` is installed with SWC peer dependencies:
 
 ```bash
-bun add -D @soda-gql/plugin-nestjs @swc/core @swc/types
+bun add -D @soda-gql/plugin-swc @swc/core @swc/types
 ```
 
 ### Build Errors
@@ -218,10 +218,10 @@ Switching from TSC to SWC is simple:
 +     "swcPlugins": [
         [
 -         {
--           "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+-           "name": "@soda-gql/plugin-tsc",
 -           "options": { ... }
 -         }
-+         "@soda-gql/plugin-nestjs/compiler/swc",
++         "@soda-gql/plugin-swc",
 +         { ... }
         ]
       ]

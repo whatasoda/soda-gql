@@ -1,4 +1,4 @@
-import type { WebpackLoaderOptions } from "@soda-gql/plugin-nestjs/schemas/webpack";
+import type { WebpackLoaderOptions } from "@soda-gql/plugin-webpack/schemas";
 import type { LoaderDefinitionFunction } from "webpack";
 
 type LoaderContext = {

@@ -1,5 +1,10 @@
 # plugin-nestjs Unnecessary Code Analysis
 
+> **アーカイブ通知**: このドキュメントは、v0.1.0で以下のパッケージに分割された歴史的な`@soda-gql/plugin-nestjs`パッケージについて記載しています:
+> - `@soda-gql/plugin-tsc` - TypeScriptコンパイラプラグイン
+> - `@soda-gql/plugin-swc` - SWCコンパイラプラグイン
+> - `@soda-gql/plugin-webpack` - Webpackローダーとプラグイン（NestJSユーティリティを含む）
+
 **Date**: 2025-10-14
 **Purpose**: Identify unnecessary implementations in plugin-nestjs that are not required for build-time transformation
 

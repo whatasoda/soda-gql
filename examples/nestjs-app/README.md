@@ -1,6 +1,6 @@
 # NestJS with Webpack Plugin Example
 
-This example demonstrates the usage of `@soda-gql/plugin-nestjs` in a NestJS application with webpack integration.
+This example demonstrates the usage of `@soda-gql/plugin-webpack` in a NestJS application with webpack integration.
 
 > **Note**: This example uses webpack. For webpack-free alternatives, see:
 > - [TypeScript Compiler Plugin Example](../nestjs-compiler-tsc) - No webpack, uses `nest build`
@@ -88,7 +88,7 @@ The `webpack.config.js` integrates the soda-gql plugin with coordinator-based ar
 
 ```javascript
 const path = require('path');
-const { SodaGqlWebpackPlugin } = require('@soda-gql/plugin-nestjs/webpack/plugin');
+const { SodaGqlWebpackPlugin } = require('@soda-gql/plugin-webpack/plugin');
 
 module.exports = (options, _webpack) => {
   const sodaOptions = {
@@ -108,7 +108,7 @@ module.exports = (options, _webpack) => {
           exclude: /node_modules/,
           use: [
             {
-              loader: '@soda-gql/plugin-nestjs/webpack/loader',
+              loader: '@soda-gql/plugin-webpack/loader',
               options: sodaOptions,
             },
           ],

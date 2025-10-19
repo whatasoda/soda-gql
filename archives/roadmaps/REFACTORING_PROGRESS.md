@@ -1,5 +1,7 @@
 # Plugin Architecture Refactoring Progress
 
+> **Archive Notice**: This document describes historical refactoring. `@soda-gql/plugin-nestjs` was subsequently split into `@soda-gql/plugin-tsc`, `@soda-gql/plugin-swc`, and `@soda-gql/plugin-webpack` in v0.1.0.
+
 **Date**: 2025-10-17
 **Status**: Migration 100% Complete - All Tests Fixed, graffle-client Integration Added
 **Codex ConversationId**: `0199efed-f1e7-7422-ad33-46a8252b3d99` (test fixes), `0199ed8c-ed83-7f93-8349-e5d174d85603` (examples), `0199ed5f-62fe-7622-b6fd-ffaa812050a8` (compiler), `0199ed4b-dc53-7493-91a3-3291b7f9c678` (core), `0199ecf2-b283-7982-ae4c-654047cd9a50` (initial)

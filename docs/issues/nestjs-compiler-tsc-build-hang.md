@@ -4,8 +4,8 @@
 🔴 **Critical** - nestjs-compiler-tsc example hangs indefinitely during build
 
 ## Affected Component
-- Package: `@soda-gql/plugin-nestjs`
-- Path: `packages/plugin-nestjs/src/compiler/`
+- Package: `@soda-gql/plugin-tsc`
+- Path: `packages/plugin-tsc/src/`
 - Examples: `examples/nestjs-compiler-tsc`
 
 ## Problem Description
@@ -32,14 +32,14 @@ bun run build     # ✗ Hangs (>1 minute, no output, no errors)
 
 ### Deadlock in `runPromiseSync`
 
-**Location**: `packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts:69`
+**Location**: `packages/plugin-shared/src/compiler-sync/prepare-transform-state.ts`
 
 ```typescript
 // This causes the deadlock:
 runPromiseSync(() => preparePluginState(...))
 ```
 
-**Blocking Helper**: `packages/plugin-nestjs/src/compiler/core/blocking.ts:45`
+**Blocking Helper**: `packages/plugin-shared/src/compiler-sync/blocking.ts`
 
 The `runPromiseSync` helper uses `Atomics.wait` to block the Node.js main thread while waiting for a promise to resolve. However, the promise itself requires the event loop to complete:
 
@@ -163,16 +163,16 @@ function transform(node) {
 ## Files to Modify
 
 ### High Priority
-- `packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts` - Remove async work from sync context
-- `packages/plugin-nestjs/src/compiler/core/blocking.ts` - Document limitations or remove
-- `packages/plugin-nestjs/src/compiler/tsc/index.ts` - Preload state at plugin init
+- `packages/plugin-shared/src/compiler-sync/prepare-transform-state.ts` - Remove async work from sync context
+- `packages/plugin-shared/src/compiler-sync/blocking.ts` - Document limitations or remove
+- `packages/plugin-tsc/src/transformer.ts` - Preload state at plugin init
 
 ### Medium Priority
 - `packages/plugin-shared/src/state.ts` - Add synchronous state getters
 - `packages/config/src/loader.ts` - Add synchronous config loader
 
 ### Low Priority (Testing)
-- `packages/plugin-nestjs/tests/` - Add regression test for tsc plugin with enabled: true
+- `tests/integration/plugin-tsc/` - Add regression test for tsc plugin with enabled: true
 
 ## Success Criteria
 
@@ -184,7 +184,6 @@ function transform(node) {
 
 ## Related Issues
 
-- Plugin status: docs/status/plugin-nestjs.md
 - Coordinator migration: Already completed
 - SWC plugin: Works correctly (reference implementation)
 
@@ -198,7 +197,7 @@ function transform(node) {
 
 ## References
 
-- Main blocking call: `packages/plugin-nestjs/src/compiler/core/prepare-transform-state.ts:69`
-- Blocking helper: `packages/plugin-nestjs/src/compiler/core/blocking.ts:45`
-- Config loader: `packages/config/src/loader.ts:30`
-- Coordinator: `packages/plugin-shared/src/coordinator/plugin-coordinator.ts:33`
+- Prepare transform state: `packages/plugin-shared/src/compiler-sync/prepare-transform-state.ts`
+- Blocking helper: `packages/plugin-shared/src/compiler-sync/blocking.ts`
+- Config loader: `packages/config/src/loader.ts`
+- Coordinator: `packages/plugin-shared/src/coordinator/plugin-coordinator.ts`

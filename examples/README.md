@@ -2,7 +2,7 @@
 
 This directory contains practical examples demonstrating different integration methods for soda-gql.
 
-> **⚠️ Status Note (v0.1.0 Pre-release)**: The compiler plugin examples (TypeScript/SWC) demonstrate infrastructure and configuration. These plugins currently provide detection-only implementation and do not yet perform full zero-runtime transformation. The webpack example is fully functional. See [plugin status documentation](../docs/status/plugin-nestjs.md) for details.
+> **⚠️ Status Note (v0.1.0 Pre-release)**: The compiler plugin examples (TypeScript/SWC) demonstrate infrastructure and configuration. These plugins currently provide detection-only implementation and do not yet perform full zero-runtime transformation. The webpack example is fully functional.
 
 ## Available Examples
 
@@ -173,7 +173,7 @@ Main changes needed:
    +   "builder": "tsc",  // or "swc"
    +   "plugins": [       // or "swcPlugins"
    +     {
-   +       "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+   +       "name": "@soda-gql/plugin-tsc",
    +       "options": {
    +         "artifactPath": "./.cache/soda-gql-artifact.json",
    +         "mode": "zero-runtime"
@@ -208,10 +208,10 @@ Simple change in `nest-cli.json`:
 +   "swcPlugins": [
       [
 -       {
--         "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+-         "name": "@soda-gql/plugin-tsc",
 -         "options": { ... }
 -       }
-+       "@soda-gql/plugin-nestjs/compiler/swc",
++       "@soda-gql/plugin-swc",
 +       { ... }
       ]
     ]
@@ -236,7 +236,6 @@ See individual example READMEs for specific troubleshooting guides.
 3. **Plugin not transforming (compiler plugins)**
    - Note: TSC/SWC plugins don't transform yet (detection-only in v0.1.0)
    - For working transformation, use webpack or babel plugins
-   - Check [plugin status documentation](../docs/status/plugin-nestjs.md)
 
 ## Contributing
 
@@ -250,6 +249,5 @@ To add a new example:
 
 ## Support
 
-- **Documentation**: [packages/plugin-nestjs/README.md](../packages/plugin-nestjs/README.md)
 - **Issues**: [GitHub Issues](https://github.com/anthropics/soda-gql/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/anthropics/soda-gql/discussions)
