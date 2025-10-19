@@ -1,13 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": false,
-    "rootDir": "src",
-    "outDir": "dist"
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/plugin-tsc",
+    "tsBuildInfoFile": "../../.typecheck/plugin-tsc/tsconfig.tsbuildinfo",
+    "rootDir": "./src",
+    "paths": {}
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "../builder/tsconfig.editor.json" },
-    { "path": "../plugin-shared/tsconfig.editor.json" }
-  ]
+  "references": [{ "path": "../builder/tsconfig.editor.json" }, { "path": "../plugin-shared/tsconfig.editor.json" }]
 }

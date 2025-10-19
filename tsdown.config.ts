@@ -11,24 +11,12 @@ const aliases = Object.fromEntries(
   ),
 );
 
-const workspaceExternal = (
-  self: string,
-  {
-    extraExternals = [],
-    extraNoExternals = [],
-  }: { extraExternals?: readonly string[]; extraNoExternals?: readonly string[] } = {},
-) => {
-  const externals = new Set(extraExternals);
-  const noExternals = new Set(extraNoExternals);
-  return (id: string) => {
-    if (noExternals.has(id)) return false;
-    if (id === self || id.startsWith(`${self}/`)) return false;
-    if (id.startsWith("@soda-gql/")) return true;
-    return externals.has(id);
-  };
+type ConfigureOptions = {
+  externals?: readonly string[];
+  noExternals?: readonly string[];
 };
 
-const common = <T extends keyof typeof packageEntries>(name: T) => {
+const configure = <T extends keyof typeof packageEntries>(name: T, options: ConfigureOptions = {}) => {
   const shortName = name.replace(/^@soda-gql\//, "");
   return {
     name,
@@ -41,131 +29,139 @@ const common = <T extends keyof typeof packageEntries>(name: T) => {
         paths: aliases,
       },
     },
+    external: createExternal(),
   } satisfies UserConfig;
+
+  function createExternal() {
+    const externals = new Set(options.externals);
+    const noExternals = new Set(options.noExternals);
+    const commonExternals = [
+      //
+      "@babel/core",
+      "@babel/parser",
+      "@babel/traverse",
+      "@babel/types",
+      "@swc/core",
+      "@swc/types",
+      "esbuild",
+      "graphql",
+      "graphql-request",
+      "neverthrow",
+      "typescript",
+      "webpack",
+      "xxhash-wasm",
+      "zod",
+    ];
+    return (id: string) => {
+      if (noExternals.has(id)) return false;
+      if (id === name || id.startsWith(`${name}/`)) return false;
+      if (id.startsWith("@soda-gql/") || commonExternals.includes(id)) return true;
+      return externals.has(id);
+    };
+  }
 };
 
 export default defineConfig([
   // Core runtime packages
   {
-    ...common("@soda-gql/core"),
+    ...configure("@soda-gql/core"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/core", { extraExternals: ["graphql", "typescript"] }),
   },
   {
-    ...common("@soda-gql/runtime"),
+    ...configure("@soda-gql/runtime", { noExternals: ["@soda-gql/core/runtime"] }),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/runtime", { extraNoExternals: ["@soda-gql/core/runtime"] }),
   },
   {
-    ...common("@soda-gql/graffle-client"),
+    ...configure("@soda-gql/graffle-client"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
-    external: workspaceExternal("@soda-gql/graffle-client", {
-      extraExternals: ["graphql", "graphql-request", "neverthrow", "typescript"],
-    }),
   },
 
   // Shared/Common packages
   {
-    ...common("@soda-gql/common"),
+    ...configure("@soda-gql/common"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/common", {}),
     clean: true,
   },
   {
-    ...common("@soda-gql/config"),
+    ...configure("@soda-gql/config"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/config", { extraExternals: ["zod", "esbuild", "typescript"] }),
     clean: true,
   },
 
   // Builder and codegen packages (heavy Node usage, avoid tree-shaking)
   {
-    ...common("@soda-gql/builder"),
+    ...configure("@soda-gql/builder"),
     outDir: "packages/builder/dist",
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/builder", {
-      extraExternals: ["neverthrow", "typescript", "xxhash-wasm", "zod"],
-    }),
     clean: true,
   },
   {
-    ...common("@soda-gql/codegen"),
+    ...configure("@soda-gql/codegen"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    external: workspaceExternal("@soda-gql/codegen", { extraExternals: ["graphql", "zod", "typescript"] }),
     clean: true,
   },
 
   // CLI package (needs shebang preservation)
   {
-    ...common("@soda-gql/cli"),
+    ...configure("@soda-gql/cli"),
     format: ["esm"],
     platform: "node",
     target: "node18",
     banner: {
       js: "#!/usr/bin/env bun",
     },
-    external: workspaceExternal("@soda-gql/cli", { extraExternals: ["neverthrow", "zod", "typescript"] }),
     clean: true,
   },
 
   // Plugin packages (externalize host bundler deps)
   {
-    ...common("@soda-gql/plugin-shared"),
+    ...configure("@soda-gql/plugin-shared"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-shared", { extraExternals: ["neverthrow", "zod", "typescript"] }),
     clean: true,
   },
   {
-    ...common("@soda-gql/plugin-babel"),
+    ...configure("@soda-gql/plugin-babel"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-babel", {
-      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "neverthrow", "zod", "typescript"],
-    }),
     clean: true,
   },
   {
-    ...common("@soda-gql/plugin-webpack"),
+    ...configure("@soda-gql/plugin-webpack"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-webpack", {
-      extraExternals: ["@babel/core", "@babel/parser", "@babel/traverse", "@babel/types", "webpack", "zod", "typescript"],
-    }),
     clean: true,
   },
   {
-    ...common("@soda-gql/plugin-tsc"),
+    ...configure("@soda-gql/plugin-tsc"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-tsc", { extraExternals: ["neverthrow", "typescript"] }),
     clean: true,
   },
   {
-    ...common("@soda-gql/plugin-swc"),
+    ...configure("@soda-gql/plugin-swc"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-swc", { extraExternals: ["@swc/core", "@swc/types", "neverthrow", "typescript"] }),
     clean: true,
   },
 ]);

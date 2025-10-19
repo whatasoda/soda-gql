@@ -3,6 +3,11 @@
     "allow": [
       "mcp__codex__codex",
       "mcp__codex__codex-reply",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(rmdir:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
       "Bash(git log:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",

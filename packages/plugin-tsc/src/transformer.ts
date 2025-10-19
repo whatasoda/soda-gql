@@ -60,7 +60,7 @@ export type TransformerConfig = {
  * ```
  */
 export function createSodaGqlTransformer(
-  program: ts.Program,
+  _program: ts.Program,
   rawConfig?: Partial<TransformerConfig>,
 ): ts.TransformerFactory<ts.SourceFile> {
   const config: TransformerConfig = {
@@ -72,7 +72,7 @@ export function createSodaGqlTransformer(
 
   // Short-circuit if disabled
   if (!config.enabled) {
-    return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
+    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
   // Prepare transform state using coordinator
@@ -93,7 +93,7 @@ export function createSodaGqlTransformer(
       console.error(`[@soda-gql/plugin-tsc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
     }
     // Return no-op transformer
-    return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
+    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
   const prepared = prepareResult.value;
