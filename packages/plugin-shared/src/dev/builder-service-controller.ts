@@ -46,11 +46,9 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
     return next;
   };
 
-  const wrapOperation = async (
-    operation: () => Promise<Result<BuilderArtifact, BuilderError>>,
-  ): Promise<BuilderServiceResult> => {
+  const wrapOperation = async (operation: () => Result<BuilderArtifact, BuilderError>): Promise<BuilderServiceResult> => {
     try {
-      const result = await operation();
+      const result = operation();
       if (result.isErr()) {
         return err({ type: "builder-error", error: result.error });
       }

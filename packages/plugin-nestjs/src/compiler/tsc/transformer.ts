@@ -139,12 +139,9 @@ export function createSodaGqlTransformer(
  * This function is called by Nest CLI with (options, program) signature.
  * It must be exported as a top-level named export for CommonJS compatibility.
  */
-export function before(
-  options: Partial<TransformerConfig> = {},
-  program?: ts.Program,
-): ts.TransformerFactory<ts.SourceFile> {
+export function before(options: Partial<TransformerConfig> = {}, program?: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   if (!program) {
-    throw new Error('[@soda-gql/plugin-nestjs] Nest CLI invoked the transformer without a Program instance.');
+    throw new Error("[@soda-gql/plugin-nestjs] Nest CLI invoked the transformer without a Program instance.");
   }
   return createSodaGqlTransformer(program, options);
 }

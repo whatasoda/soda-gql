@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { AnyOperation } from "@soda-gql/core";
-import { gqlRuntime, __resetRuntimeRegistry } from "@soda-gql/core/runtime";
+import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import type { FormattedExecutionResult } from "graphql";
 import { parse } from "graphql";
 import { createExecutor, executeOperation } from "../../../packages/graffle-client/src/executor";

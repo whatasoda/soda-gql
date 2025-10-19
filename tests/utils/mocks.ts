@@ -2,13 +2,11 @@
  * Test mock utilities for coordinator-based plugin architecture
  */
 
-import type { CoordinatorKey } from "@soda-gql/plugin-shared/coordinator";
-import type { CoordinatorSnapshot } from "@soda-gql/plugin-shared/coordinator";
-import type { NormalizedOptions } from "@soda-gql/plugin-shared";
-import type { BuilderArtifact } from "@soda-gql/builder";
-import type { BuilderServiceConfig } from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import type { NormalizedOptions } from "@soda-gql/plugin-shared";
+import type { CoordinatorKey, CoordinatorSnapshot } from "@soda-gql/plugin-shared/coordinator";
 
 /**
  * Create a mock coordinator key for testing
@@ -45,9 +43,7 @@ export const makeMockArtifact = (overrides: Partial<BuilderArtifact> = {}): Buil
  * @param overrides Partial config to override defaults
  * @returns A mock ResolvedSodaGqlConfig
  */
-export const makeMockResolvedConfig = (
-  overrides: Partial<ResolvedSodaGqlConfig> = {},
-): ResolvedSodaGqlConfig => {
+export const makeMockResolvedConfig = (overrides: Partial<ResolvedSodaGqlConfig> = {}): ResolvedSodaGqlConfig => {
   return {
     graphqlSystemPath: overrides.graphqlSystemPath ?? "/mock/graphql-system.ts",
     builder: overrides.builder ?? {
@@ -64,9 +60,7 @@ export const makeMockResolvedConfig = (
  * @param overrides Partial config to override defaults
  * @returns A mock BuilderServiceConfig
  */
-export const makeMockBuilderConfig = (
-  overrides: Partial<BuilderServiceConfig> = {},
-): BuilderServiceConfig => {
+export const makeMockBuilderConfig = (overrides: Partial<BuilderServiceConfig> = {}): BuilderServiceConfig => {
   return {
     config: overrides.config ?? makeMockResolvedConfig(),
     entrypoints: overrides.entrypoints ?? ["src/**/*.ts"],
@@ -95,9 +89,7 @@ export const makeNormalizedOptions = (overrides: Partial<NormalizedOptions> = {}
  * @param overrides Partial snapshot properties to override defaults
  * @returns A mock CoordinatorSnapshot
  */
-export const makeCoordinatorSnapshot = (
-  overrides: Partial<CoordinatorSnapshot> = {},
-): CoordinatorSnapshot => {
+export const makeCoordinatorSnapshot = (overrides: Partial<CoordinatorSnapshot> = {}): CoordinatorSnapshot => {
   const defaultArtifact = makeMockArtifact();
 
   return {

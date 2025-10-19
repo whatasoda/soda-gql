@@ -5,5 +5,4 @@
  * when using Nest CLI with `builder: "tsc"`.
  */
 
-export { before, createSodaGqlTransformer, type TransformerConfig } from "./transformer.js";
-export { default } from "./transformer.js";
+export { before, createSodaGqlTransformer, default, type TransformerConfig } from "./transformer.js";

@@ -1,9 +1,9 @@
 import { existsSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { rolldown } from "rolldown";
 import type { Result } from "neverthrow";
 import { err } from "neverthrow";
+import { rolldown } from "rolldown";
 import { DEFAULT_CONFIG_FILENAMES } from "./defaults";
 import type { ConfigError } from "./errors";
 import { configError } from "./errors";
