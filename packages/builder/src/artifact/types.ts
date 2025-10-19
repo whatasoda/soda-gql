@@ -1,16 +1,8 @@
 import type { CanonicalId } from "@soda-gql/common";
 import type { IntermediateArtifactElement } from "@soda-gql/core";
 import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { ModuleAnalysis } from "../ast";
-import type { ModuleLoadStats } from "../discovery/types";
 
 export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;
-
-export type BuildArtifactInput = {
-  readonly elements: IntermediateElements;
-  readonly analyses: Map<string, ModuleAnalysis>;
-  readonly stats: ModuleLoadStats;
-};
 
 export type BuilderArtifactElementMetadata = {
   readonly sourcePath: string;

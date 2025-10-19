@@ -22,7 +22,7 @@ const emitRegistrationError = (definition: ModuleDefinition, message: string): B
 });
 
 type AggregateInput = {
-  readonly analyses: Map<string, ModuleAnalysis>;
+  readonly analyses: ReadonlyMap<string, ModuleAnalysis>;
   readonly elements: Record<string, IntermediateArtifactElement>;
 };
 

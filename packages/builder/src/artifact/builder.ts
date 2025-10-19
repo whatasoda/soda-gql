@@ -2,7 +2,15 @@ import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../types";
 import { aggregate } from "./aggregate";
 import { checkIssues } from "./issue-handler";
-import type { BuildArtifactInput, BuilderArtifact } from "./types";
+import type { BuilderArtifact, IntermediateElements } from "./types";
+import type { ModuleAnalysis } from "../ast";
+import type { ModuleLoadStats } from "../discovery";
+
+type BuildArtifactInput = {
+  readonly elements: IntermediateElements;
+  readonly analyses: ReadonlyMap<string, ModuleAnalysis>;
+  readonly stats: ModuleLoadStats;
+};
 
 export const buildArtifact = ({
   elements,

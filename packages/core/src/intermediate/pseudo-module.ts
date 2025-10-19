@@ -3,6 +3,7 @@ import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model
 export type PseudoModuleRegistry = ReturnType<typeof createPseudoModuleRegistry>;
 
 type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
+type ArtifactModule = ArtifactRecord;
 type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
 };
@@ -12,31 +13,12 @@ export type IntermediateArtifactElement =
   | { readonly type: "slice"; readonly element: AnySlice }
   | { readonly type: "operation"; readonly element: AnyOperation };
 
-const pseudoModuleRegistries = new Map<string, ReturnType<typeof createPseudoModuleRegistry>>();
-export const getPseudoModuleRegistry = (evaluatorId: string) => {
-  const existing = pseudoModuleRegistries.get(evaluatorId);
-  if (existing) {
-    return existing;
-  }
-
-  const registry = createPseudoModuleRegistry();
-  pseudoModuleRegistries.set(evaluatorId, registry);
-  return registry;
-};
-
-export const clearPseudoModuleRegistry = (evaluatorId: string) => {
-  const registry = pseudoModuleRegistries.get(evaluatorId);
-  if (registry) {
-    registry.clear();
-  }
-};
-
 export const createPseudoModuleRegistry = () => {
-  const modules = new Map<string, () => ArtifactRecord>();
-  const moduleCaches = new Map<string, ArtifactRecord>();
+  const modules = new Map<string, () => ArtifactModule>();
+  const moduleCaches = new Map<string, ArtifactModule>();
   const elements = new Map<string, AcceptableArtifact>();
 
-  const setModule = (filePath: string, factory: () => ArtifactRecord) => {
+  const setModule = (filePath: string, factory: () => ArtifactModule) => {
     modules.set(filePath, () => {
       const cached = moduleCaches.get(filePath);
       if (cached) {
