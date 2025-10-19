@@ -1,7 +1,6 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
-import type { BuilderChangeSet } from "./session";
 import { createBuilderSession } from "./session";
 import type { BuilderError } from "./types";
 
@@ -20,19 +19,20 @@ export type BuilderServiceConfig = {
 export interface BuilderService {
   /**
    * Generate artifacts from configured entry points.
-   * Returns Result containing BuilderArtifact on success or BuilderError on failure.
+   *
+   * The service automatically detects file changes using an internal file tracker.
+   * On first call, performs full build. Subsequent calls perform incremental builds
+   * based on detected file changes (added/updated/removed).
+   *
+   * @param options - Optional build options
+   * @param options.force - If true, bypass change detection and force full rebuild
+   * @returns Result containing BuilderArtifact on success or BuilderError on failure.
    */
-  build(): Result<BuilderArtifact, BuilderError>;
-
-  /**
-   * Perform incremental update based on file changes.
-   * Optional method for incremental builds. Falls back to full rebuild if not supported.
-   */
-  update(changeSet: BuilderChangeSet): Result<BuilderArtifact, BuilderError>;
+  build(options?: { force?: boolean }): Result<BuilderArtifact, BuilderError>;
 
   /**
    * Get the current generation number of the artifact.
-   * Increments on each successful build or update.
+   * Increments on each successful build.
    * Returns 0 if no artifact has been built yet.
    */
   getGeneration(): number;
@@ -48,8 +48,9 @@ export interface BuilderService {
  * Create a builder service instance with session support.
  *
  * The service maintains a long-lived session for incremental builds.
- * First build() call initializes the session, subsequent calls reuse cached state.
- * Use update() for incremental processing when files change.
+ * File changes are automatically detected using an internal file tracker.
+ * First build() call initializes the session, subsequent calls perform
+ * incremental builds based on detected file changes.
  *
  * Note: Empty entry arrays will produce ENTRY_NOT_FOUND errors at build time.
  *
@@ -60,8 +61,7 @@ export const createBuilderService = ({ config, entrypoints }: BuilderServiceConf
   const session = createBuilderSession({ config, entrypoints });
 
   return {
-    build: () => session.build({ changeSet: null }),
-    update: (changeSet: BuilderChangeSet) => session.build({ changeSet }),
+    build: (options) => session.build(options),
     getGeneration: () => session.getGeneration(),
     getCurrentArtifact: () => session.getCurrentArtifact(),
   };
