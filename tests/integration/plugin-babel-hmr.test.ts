@@ -2,24 +2,37 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
 import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
+import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
+
+const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
+const schemaPath = join(fixturesRoot, "schema.graphql");
 
 describe("Plugin-Babel HMR Integration", () => {
+  // Ensure fixture graphql-system bundle exists before running tests
+  const fixtureGraphqlSystemReady = ensureGraphqlSystemBundle({
+    outFile: join(fixturesRoot, "graphql-system", "index.ts"),
+    schemaPath,
+  });
+
   it("bootstraps DevManager when dev.hmr is enabled", async () => {
+    await fixtureGraphqlSystemReady; // Wait for fixture setup
     // Create temp directory
     const tempDir = mkdtempSync(join(tmpdir(), "soda-gql-hmr-test-"));
 
     try {
-      // Create config file
+      // Create config file pointing to fixture graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemPath: join(fixturesRoot, "graphql-system", "index.cjs"),
         builder: {
-          entry: ["**/*.ts"],
+          entry: [join(fixturesRoot, "src", "**/*.ts")],
           analyzer: "ts",
-          outDir: "./.cache",
+          outDir: join(fixturesRoot, ".cache", "soda-gql"),
         },
       });
 
@@ -80,15 +93,17 @@ describe("Plugin-Babel HMR Integration", () => {
   });
 
   it("falls back to production mode when dev.hmr is false", async () => {
+    await fixtureGraphqlSystemReady; // Wait for fixture setup
     const tempDir = mkdtempSync(join(tmpdir(), "soda-gql-prod-test-"));
 
     try {
+      // Create config file pointing to fixture graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemPath: join(fixturesRoot, "graphql-system", "index.cjs"),
         builder: {
-          entry: ["**/*.ts"],
+          entry: [join(fixturesRoot, "src", "**/*.ts")],
           analyzer: "ts",
-          outDir: "./.cache",
+          outDir: join(fixturesRoot, ".cache", "soda-gql"),
         },
       });
 

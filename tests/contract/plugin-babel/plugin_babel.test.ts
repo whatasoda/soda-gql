@@ -5,17 +5,22 @@ import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
 import { type CanonicalId, createBuilderService } from "@soda-gql/builder";
 import type { PluginOptions } from "@soda-gql/plugin-shared";
+import { ensureGraphqlSystemBundle } from "../../helpers/graphql-system";
 import { createTestConfig } from "../../helpers/test-config";
 
 // Helper to create temp config file for tests
-const createTestTempConfig = (tmpDir: string, _artifactPath: string): string => {
+const createTestTempConfig = (tmpDir: string): string => {
   const configPath = join(tmpDir, "soda-gql.config.ts");
+  const graphqlSystemPath = join(fixturesRoot, "graphql-system", "index.cjs");
+  const builderEntry = join(fixturesRoot, "src", "**/*.ts");
+  const builderOutDir = join(fixturesRoot, ".cache", "soda-gql");
+
   const configContent = `export default {
-  graphqlSystemPath: "./src/graphql-system/index.ts",
+  graphqlSystemPath: "${graphqlSystemPath.replace(/\\/g, "/")}",
   builder: {
-    entry: ["**/*.ts"],
+    entry: ["${builderEntry.replace(/\\/g, "/")}"],
     analyzer: "ts",
-    outDir: "./.cache"
+    outDir: "${builderOutDir.replace(/\\/g, "/")}"
   }
 };`;
   writeFileSync(configPath, configContent);
@@ -29,6 +34,7 @@ const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const tmpRoot = join(projectRoot, "tests", ".tmp", "plugin-babel");
 
 const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
+const schemaPath = join(fixturesRoot, "schema.graphql");
 
 const loadPlugin = async (): Promise<babel.PluginItem> => {
   const module = await import("@soda-gql/plugin-babel");
@@ -61,109 +67,33 @@ const transformWithPlugin = async (code: string, filename: string, options: Plug
 };
 
 describe("@soda-gql/plugin-babel", () => {
+  // Ensure fixture graphql-system bundle exists before running tests
+  const fixtureGraphqlSystemReady = ensureGraphqlSystemBundle({
+    outFile: join(fixturesRoot, "graphql-system", "index.ts"),
+    schemaPath,
+  });
+
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it("throws SODA_GQL_ARTIFACT_NOT_FOUND when artifact is missing", async () => {
-    const code = await Bun.file(profileQueryPath).text();
-    const missingArtifact = join(tmpRoot, `missing-${Date.now()}.json`);
-    const testDir = join(tmpRoot, `test-${Date.now()}`);
-    mkdirSync(testDir, { recursive: true });
-    const configPath = createTestTempConfig(testDir, missingArtifact);
-
-    await expect(
-      transformWithPlugin(code, profileQueryPath, {
-        configPath,
-      }),
-    ).rejects.toThrow("SODA_GQL_ARTIFACT_NOT_FOUND");
+  // Note: The following tests are skipped because artifact-file mode no longer exists.
+  // The new plugin architecture always uses the builder service to generate artifacts in-memory.
+  // Error paths for missing artifacts are now tested through the builder-backed flow.
+  it.skip("throws SODA_GQL_ARTIFACT_NOT_FOUND when artifact is missing", async () => {
+    // This test is obsolete - artifact-file mode has been removed
   });
 
-  it("throws when operation is not present in artifact", async () => {
-    const testDir = join(tmpRoot, `test-${Date.now()}`);
-    mkdirSync(testDir, { recursive: true });
-    const artifactPath = join(testDir, `missing-doc-${Date.now()}.json`);
-
-    await Bun.write(
-      artifactPath,
-      JSON.stringify(
-        {
-          elements: {},
-          report: {
-            durationMs: 0,
-            warnings: [],
-            stats: {
-              hits: 0,
-              misses: 0,
-              skips: 0,
-            },
-          },
-        },
-        null,
-        2,
-      ),
-    );
-
-    const configPath = createTestTempConfig(testDir, artifactPath);
-    const code = await Bun.file(profileQueryPath).text();
-
-    await expect(
-      transformWithPlugin(code, profileQueryPath, {
-        configPath,
-      }),
-    ).rejects.toThrow("No builder artifact found for canonical ID");
+  it.skip("throws when operation is not present in artifact", async () => {
+    // This test is obsolete - artifact-file mode has been removed
   });
 
   it("replaces gql.query definitions with zero-runtime import", async () => {
+    await fixtureGraphqlSystemReady; // Wait for fixture setup
     const testDir = join(tmpRoot, `test-${Date.now()}`);
     mkdirSync(testDir, { recursive: true });
-    const artifactPath = join(testDir, `artifact-${Date.now()}.json`);
-    const canonicalId = `${profileQueryPath}::profileQuery`;
 
-    await Bun.write(
-      artifactPath,
-      JSON.stringify(
-        {
-          elements: {
-            [canonicalId]: {
-              type: "operation",
-              id: canonicalId,
-              metadata: {
-                sourcePath: profileQueryPath,
-                sourceHash: "test-hash",
-                contentHash: "test-content-hash",
-              },
-              prebuild: {
-                operationType: "query",
-                operationName: "ProfilePageQuery",
-                document: {
-                  kind: "Document",
-                  definitions: [],
-                },
-                variableNames: ["userId"],
-                projectionPathGraph: {
-                  matches: [],
-                  children: {},
-                },
-              },
-            },
-          },
-          report: {
-            durationMs: 1,
-            warnings: [],
-            stats: {
-              hits: 0,
-              misses: 0,
-              skips: 0,
-            },
-          },
-        },
-        null,
-        2,
-      ),
-    );
-
-    const configPath = createTestTempConfig(testDir, artifactPath);
+    const configPath = createTestTempConfig(testDir);
     const code = await Bun.file(profileQueryPath).text();
 
     const result = await transformWithPlugin(code, profileQueryPath, {
@@ -186,7 +116,8 @@ describe("@soda-gql/plugin-babel", () => {
   });
 
   describe("builder artifact source", () => {
-    it("generates canonical IDs matching artifact-file mode", async () => {
+    it("generates canonical IDs matching builder mode", async () => {
+      await fixtureGraphqlSystemReady; // Wait for fixture setup
       // Generate artifact via builder
       const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
       mkdirSync(builderArtifactsDir, { recursive: true });
@@ -210,12 +141,8 @@ describe("@soda-gql/plugin-babel", () => {
       // Verify builder artifact contains expected canonical ID
       expect(artifact.elements[expectedCanonicalId as CanonicalId]).toBeDefined();
 
-      // Persist artifact for artifact-file mode test
-      const artifactPath = join(builderArtifactsDir, `parity-${Date.now()}.json`);
-      await Bun.write(artifactPath, JSON.stringify(artifact, null, 2));
-
-      // Verify artifact-file mode uses same canonical ID
-      const configPath = createTestTempConfig(builderArtifactsDir, artifactPath);
+      // Verify plugin uses same builder flow
+      const configPath = createTestTempConfig(builderArtifactsDir);
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
         configPath,
@@ -232,9 +159,10 @@ describe("@soda-gql/plugin-babel", () => {
       expect(true).toBe(true); // Placeholder - will be implemented with dev manager
     });
 
-    it("supports artifact file with builder-generated artifact", async () => {
+    it("transforms code using builder service", async () => {
+      await fixtureGraphqlSystemReady; // Wait for fixture setup
       // Generate artifact via builder
-      const builderArtifactsDir = join(tmpRoot, "builder-artifacts");
+      const builderArtifactsDir = join(tmpRoot, "builder-artifacts-2");
       mkdirSync(builderArtifactsDir, { recursive: true });
 
       const service = createBuilderService({ config: createTestConfig(fixturesRoot), entrypoints: [profileQueryPath] });
@@ -250,11 +178,8 @@ describe("@soda-gql/plugin-babel", () => {
         throw new Error("Builder failed");
       }
 
-      const artifactPath = join(builderArtifactsDir, `artifact-${Date.now()}.json`);
-      await Bun.write(artifactPath, JSON.stringify(buildResult.value, null, 2));
-
-      // Use artifact option with config
-      const configPath = createTestTempConfig(builderArtifactsDir, artifactPath);
+      // Plugin uses builder service internally
+      const configPath = createTestTempConfig(builderArtifactsDir);
       const code = await Bun.file(profileQueryPath).text();
       const result = await transformWithPlugin(code, profileQueryPath, {
         configPath,

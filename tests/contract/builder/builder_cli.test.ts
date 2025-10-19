@@ -35,7 +35,7 @@ const prepareWorkspace = (name: string) => {
 
   // Create soda-gql.config.ts for CLI tests
   // Use absolute paths to match integration test pattern
-  const graphqlSystemPath = join(workspaceRoot, "node_modules/@/graphql-system");
+  const graphqlSystemPath = join(workspaceRoot, "node_modules/@/graphql-system/index.cjs");
   const corePath = join(projectRoot, "packages/core/src/index.ts");
 
   const configContent = `
@@ -79,7 +79,23 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   const exists = await Bun.file(outFile).exists();
   expect(exists).toBe(true);
 
-  return { outFile };
+  // Verify .cjs bundle was also generated
+  const stdoutTrimmed = result.stdout.trim();
+  let cjsPath: string;
+
+  if (stdoutTrimmed && stdoutTrimmed.startsWith("{")) {
+    const jsonOutput = JSON.parse(stdoutTrimmed);
+    expect(jsonOutput.cjsPath).toBeDefined();
+    cjsPath = jsonOutput.cjsPath;
+  } else {
+    // If stdout is empty or not JSON, use default .cjs path
+    cjsPath = outFile.replace(/\.ts$/, ".cjs");
+  }
+
+  const cjsExists = await Bun.file(cjsPath).exists();
+  expect(cjsExists).toBe(true);
+
+  return { outFile, cjsPath };
 };
 
 describe("soda-gql builder CLI", () => {

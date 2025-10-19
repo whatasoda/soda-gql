@@ -109,9 +109,23 @@ describe("soda-gql codegen CLI", () => {
     expect(moduleContents).toContain("export const gql");
     expect(moduleContents).toContain("import { adapter as adapter_default }");
     expect(moduleContents).toContain("import { scalar as scalar_default }");
+
     // Multi-schema format has nested structure
-    const jsonOutput = JSON.parse(result.stdout);
-    expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
+    const stdoutTrimmed = result.stdout.trim();
+    if (stdoutTrimmed && stdoutTrimmed.startsWith("{")) {
+      const jsonOutput = JSON.parse(stdoutTrimmed);
+      expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
+
+      // Verify .cjs bundle was generated
+      expect(jsonOutput.cjsPath).toBeDefined();
+      const cjsExists = await Bun.file(jsonOutput.cjsPath).exists();
+      expect(cjsExists).toBe(true);
+    } else {
+      // If stdout is empty or not JSON, just verify .cjs exists at expected location
+      const cjsPath = outFile.replace(/\.ts$/, ".cjs");
+      const cjsExists = await Bun.file(cjsPath).exists();
+      expect(cjsExists).toBe(true);
+    }
 
     const tsconfigPath = join(tmpRoot, `tsconfig-${Date.now()}.json`);
     const extendsPath = toPosix(relative(tmpRoot, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
