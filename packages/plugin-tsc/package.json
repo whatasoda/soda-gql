@@ -8,7 +8,9 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
-    "@soda-gql/plugin-shared": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
     "neverthrow": "^8.1.1"
   },
   "peerDependencies": {

@@ -6,9 +6,9 @@
  */
 
 import type { CanonicalId } from "@soda-gql/common";
-import { createAfterStubTransformer, type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
-import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type * as ts from "typescript";
+import { createAfterStubTransformer, type TypeScriptAdapter, typescriptTransformAdapterFactory } from "./internal/ts-adapter/typescript-adapter.js";
+import { prepareTransformState } from "./internal/state/prepare-transform-state.js";
 
 /**
  * Configuration for the soda-gql TypeScript transformer.
@@ -38,6 +38,8 @@ export type TransformerConfig = {
    */
   readonly enabled?: boolean;
 };
+
+
 
 /**
  * Create a TypeScript transformer for soda-gql.
@@ -109,7 +111,7 @@ export function createSodaGqlTransformer(
         sourceFile,
         context,
         typescript: require("typescript"),
-      }) as TypeScriptAdapter;
+      });
 
       // Transform the program
       const transformContext = {
@@ -127,7 +129,7 @@ export function createSodaGqlTransformer(
       }
 
       // Insert runtime side effects
-      adapter.insertRuntimeSideEffects(transformContext, transformResult.runtimeArtifacts ?? []);
+      adapter.insertRuntimeSideEffects();
 
       // The adapter updates sourceFile internally, retrieve it
       // This is a workaround until we refactor adapter to return transformed source
@@ -169,7 +171,7 @@ export function after(options: Partial<TransformerConfig> = {}): ts.TransformerF
     return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
-  return createAfterStubTransformer(config.importIdentifier, require("typescript"));
+  return createAfterStubTransformer(config.importIdentifier ?? "@/graphql-system", require("typescript"));
 }
 
 /**
