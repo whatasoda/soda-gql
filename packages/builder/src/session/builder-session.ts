@@ -15,9 +15,8 @@ import {
 } from "../discovery";
 import { builderErrors } from "../errors";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
+import { createFileTracker, isEmptyDiff, type FileDiff, type FileTrackerState } from "../tracker";
 import type { BuilderError } from "../types";
-import type { BuilderChangeSet } from "./change-set";
-import { coercePaths } from "./change-set";
 import { validateModuleDependencies } from "./dependency-validation";
 import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
 
@@ -43,8 +42,9 @@ type SessionState = {
 export interface BuilderSession {
   /**
    * Perform build fully or incrementally.
+   * The session automatically detects file changes using the file tracker.
    */
-  build(input: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError>;
+  build(options?: { force?: boolean }): Result<BuilderArtifact, BuilderError>;
   /**
    * Get the current generation number.
    */
@@ -78,21 +78,67 @@ export const createBuilderSession = (options: {
     lastArtifact: null,
   };
 
-  // Reusable discovery infrastructure
+  // Reusable infrastructure
+  const cacheFactory = createJsonCache({
+    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+    prefix: ["builder"],
+  });
+
   const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
   const ensureDiscoveryCache = cachedFn(() =>
     createDiscoveryCache({
-      factory: createJsonCache({
-        rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
-        prefix: ["builder"],
-      }),
+      factory: cacheFactory,
       analyzer: config.builder.analyzer,
       evaluatorId,
     }),
   );
+  const ensureFileTracker = cachedFn(() => createFileTracker({ cacheFactory }));
 
-  const build = ({ changeSet }: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError> => {
-    const prepareResult = prepare({ entrypoints, changeSet, lastArtifact: state.lastArtifact });
+  const build = (options?: { force?: boolean }): Result<BuilderArtifact, BuilderError> => {
+    const force = options?.force ?? false;
+
+    // 1. Resolve entry paths
+    const entryPathsResult = resolveEntryPaths(Array.from(entrypoints));
+    if (entryPathsResult.isErr()) {
+      return err(entryPathsResult.error);
+    }
+    const entryPaths = entryPathsResult.value;
+
+    // 2. Load tracker and detect changes
+    const tracker = ensureFileTracker();
+    const previousStateResult = tracker.loadState();
+    if (previousStateResult.isErr()) {
+      // Soft failure: log and proceed with empty state (full rebuild)
+      console.warn("Failed to load file tracker state, proceeding with full rebuild:", previousStateResult.error);
+    }
+    const previousState: FileTrackerState = previousStateResult.isOk()
+      ? previousStateResult.value
+      : { version: 1, files: new Map() };
+
+    // 3. Scan current files (entry paths + previously tracked files)
+    const allPathsToScan = new Set([...entryPaths, ...previousState.files.keys()]);
+    const scanResult = tracker.scan(Array.from(allPathsToScan));
+    if (scanResult.isErr()) {
+      const trackerError = scanResult.error;
+      return err(
+        builderErrors.discoveryIOError(
+          trackerError.type === "scan-failed" ? trackerError.path : "unknown",
+          `Failed to scan files: ${trackerError.message}`,
+        ),
+      );
+    }
+    const currentScan = scanResult.value;
+
+    // 4. Detect changes
+    const diff = tracker.detectChanges(previousState, currentScan);
+
+    // 5. Prepare for build
+    const prepareResult = prepare({
+      diff,
+      entryPaths,
+      lastArtifact: state.lastArtifact,
+      force,
+    });
     if (prepareResult.isErr()) {
       return err(prepareResult.error);
     }
@@ -101,7 +147,9 @@ export const createBuilderSession = (options: {
       return ok(prepareResult.value.data.artifact);
     }
 
-    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
+    const { changedFiles, removedFiles } = prepareResult.value.data;
+
+    // 6. Run discovery
     const discoveryCache = ensureDiscoveryCache();
     const astAnalyzer = ensureAstAnalyzer();
     const discoveryResult = discover({
@@ -118,6 +166,7 @@ export const createBuilderSession = (options: {
 
     const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
 
+    // 7. Build artifact
     const buildResult = buildDiscovered({
       analyses,
       affectedFiles,
@@ -131,11 +180,18 @@ export const createBuilderSession = (options: {
 
     const { intermediateModules, artifact } = buildResult.value;
 
+    // 8. Update session state
     state.gen++;
     state.snapshots = snapshots;
     state.moduleAdjacency = currentModuleAdjacency;
     state.lastArtifact = artifact;
     state.intermediateModules = intermediateModules;
+
+    // 9. Persist tracker state (soft failure - don't block on cache write)
+    const persistResult = tracker.persist({ version: 1, files: currentScan.files });
+    if (persistResult.isErr()) {
+      console.warn("Failed to persist file tracker state:", persistResult.error);
+    }
 
     return ok(artifact);
   };
@@ -148,28 +204,26 @@ export const createBuilderSession = (options: {
 };
 
 const prepare = (input: {
-  entrypoints: ReadonlySet<string>;
-  readonly changeSet: BuilderChangeSet | null;
+  diff: FileDiff;
+  entryPaths: readonly string[];
   lastArtifact: BuilderArtifact | null;
+  force: boolean;
 }) => {
-  const changeSet = (input.lastArtifact ? input.changeSet : null) ?? { added: [], updated: [], removed: [] };
+  const { diff, lastArtifact, force } = input;
 
-  const changedFiles = new Set<string>([...coercePaths(changeSet.added), ...coercePaths(changeSet.updated)]);
-  const removedFiles = coercePaths(changeSet.removed);
+  // Convert diff to sets for discovery
+  const changedFiles = new Set<string>([...diff.added, ...diff.updated]);
+  const removedFiles = diff.removed;
 
-  if (changedFiles.size === 0 && removedFiles.size === 0 && input.lastArtifact) {
-    return ok({ type: "should-skip" as const, data: { artifact: input.lastArtifact } });
+  // Skip build only if:
+  // 1. Not forced
+  // 2. No changes detected
+  // 3. Previous artifact exists
+  if (!force && isEmptyDiff(diff) && lastArtifact) {
+    return ok({ type: "should-skip" as const, data: { artifact: lastArtifact } });
   }
 
-  // Resolve entry paths
-  const entryPathsResult = resolveEntryPaths(Array.from(input.entrypoints));
-  if (entryPathsResult.isErr()) {
-    return err(entryPathsResult.error);
-  }
-
-  const entryPaths = entryPathsResult.value;
-
-  return ok({ type: "should-build" as const, data: { changedFiles, removedFiles, entryPaths } });
+  return ok({ type: "should-build" as const, data: { changedFiles, removedFiles } });
 };
 
 const discover = ({

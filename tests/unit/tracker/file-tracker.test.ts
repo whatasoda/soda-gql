@@ -208,6 +208,8 @@ describe("FileTracker", () => {
         // Verify metadata matches
         const originalMetadata1 = state.files.get(file1);
         const loadedMetadata1 = loadResult.value.files.get(file1);
+        expect(originalMetadata1).toBeDefined();
+        expect(loadedMetadata1).toBeDefined();
         expect(loadedMetadata1).toEqual(originalMetadata1);
       }
     }
