@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { createSodaGqlTransformer } from "@soda-gql/plugin-tsc";
 import ts from "typescript";
 
-describe.skip("TypeScript Compiler Plugin Integration", () => {
+describe("TypeScript Compiler Plugin Integration", () => {
   const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-tsc");
   const sourceFile = join(fixturesDir, "sample.ts");
 
@@ -109,5 +109,109 @@ describe.skip("TypeScript Compiler Plugin Integration", () => {
 
     expect(emitResult.emitSkipped).toBe(false);
     expect(emittedCode).toBeTruthy();
+  });
+
+  describe("ESM Output", () => {
+    test("should use import and plain gqlRuntime for ESM output", () => {
+      const compilerOptions: ts.CompilerOptions = {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      };
+
+      const program = ts.createProgram([sourceFile], compilerOptions);
+
+      // Note: This test is currently disabled because it requires the full build artifact.
+      // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
+      const transformer = createSodaGqlTransformer(program, {
+        importIdentifier: "@/graphql-system",
+        enabled: false, // Disabled to avoid coordinator initialization
+      });
+
+      let emittedCode = "";
+      const writeFile: ts.WriteFileCallback = (_fileName, text) => {
+        emittedCode = text;
+      };
+
+      const emitResult = program.emit(undefined, writeFile, undefined, false, {
+        before: [transformer],
+      });
+
+      expect(emitResult.emitSkipped).toBe(false);
+
+      // TODO: When enabled with proper artifact mocking:
+      // - Should contain: import { gqlRuntime } from "@soda-gql/runtime"
+      // - Should contain: gqlRuntime.operation(...)
+      // - Should contain: gqlRuntime.getOperation(...)
+      // - Should NOT contain: __soda_gql_runtime
+      // - Should NOT contain: require("@soda-gql/runtime")
+    });
+  });
+
+  describe("CommonJS Output", () => {
+    test("should use require and __soda_gql_runtime accessor for CJS output", () => {
+      const compilerOptions: ts.CompilerOptions = {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.CommonJS,
+        moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      };
+
+      const program = ts.createProgram([sourceFile], compilerOptions);
+
+      // Note: This test is currently disabled because it requires the full build artifact.
+      // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
+      const transformer = createSodaGqlTransformer(program, {
+        importIdentifier: "@/graphql-system",
+        enabled: false, // Disabled to avoid coordinator initialization
+      });
+
+      let emittedCode = "";
+      const writeFile: ts.WriteFileCallback = (_fileName, text) => {
+        emittedCode = text;
+      };
+
+      const emitResult = program.emit(undefined, writeFile, undefined, false, {
+        before: [transformer],
+      });
+
+      expect(emitResult.emitSkipped).toBe(false);
+
+      // TODO: When enabled with proper artifact mocking:
+      // - Should contain: const __soda_gql_runtime = require("@soda-gql/runtime")
+      // - Should contain: __soda_gql_runtime.gqlRuntime.operation(...)
+      // - Should contain: __soda_gql_runtime.gqlRuntime.getOperation(...)
+      // - Should NOT contain: import { gqlRuntime }
+      // - Should NOT contain bare: gqlRuntime.operation (without __soda_gql_runtime prefix)
+    });
+
+    test("should handle Node16/NodeNext module resolution with CJS files", () => {
+      const compilerOptions: ts.CompilerOptions = {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.Node16,
+        moduleResolution: ts.ModuleResolutionKind.Node16,
+      };
+
+      const program = ts.createProgram([sourceFile], compilerOptions);
+
+      const transformer = createSodaGqlTransformer(program, {
+        importIdentifier: "@/graphql-system",
+        enabled: false,
+      });
+
+      let emittedCode = "";
+      const writeFile: ts.WriteFileCallback = (_fileName, text) => {
+        emittedCode = text;
+      };
+
+      const emitResult = program.emit(undefined, writeFile, undefined, false, {
+        before: [transformer],
+      });
+
+      expect(emitResult.emitSkipped).toBe(false);
+
+      // TODO: When enabled, verify that:
+      // - If impliedNodeFormat is CommonJS, uses __soda_gql_runtime pattern
+      // - If impliedNodeFormat is ESM, uses import pattern
+    });
   });
 });

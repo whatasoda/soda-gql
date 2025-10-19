@@ -7,6 +7,7 @@ export const buildModelRuntimeCall = (
   { artifact, builderCall }: GqlCallModel,
   factory: ts.NodeFactory,
   typescript: typeof ts,
+  runtimeAccessor: ts.Expression = factory.createIdentifier("gqlRuntime"),
 ): ts.Expression => {
   const [, , normalize] = builderCall.arguments;
   if (!normalize || !typescript.isExpression(normalize)) {
@@ -14,7 +15,7 @@ export const buildModelRuntimeCall = (
   }
 
   return factory.createCallExpression(
-    factory.createPropertyAccessExpression(factory.createIdentifier("gqlRuntime"), factory.createIdentifier("model")),
+    factory.createPropertyAccessExpression(runtimeAccessor, factory.createIdentifier("model")),
     undefined,
     [
       buildObjectExpression(factory, {
@@ -33,6 +34,7 @@ export const buildSliceRuntimeCall = (
   { artifact, builderCall }: GqlCallSlice,
   factory: ts.NodeFactory,
   typescript: typeof ts,
+  runtimeAccessor: ts.Expression = factory.createIdentifier("gqlRuntime"),
 ): ts.Expression => {
   const [, , projectionBuilder] = builderCall.arguments;
   if (!projectionBuilder || !typescript.isExpression(projectionBuilder)) {
@@ -40,7 +42,7 @@ export const buildSliceRuntimeCall = (
   }
 
   return factory.createCallExpression(
-    factory.createPropertyAccessExpression(factory.createIdentifier("gqlRuntime"), factory.createIdentifier("slice")),
+    factory.createPropertyAccessExpression(runtimeAccessor, factory.createIdentifier("slice")),
     undefined,
     [
       buildObjectExpression(factory, {
@@ -59,6 +61,7 @@ export const buildOperationRuntimeComponents = (
   { artifact, builderCall }: GqlCallOperation,
   factory: ts.NodeFactory,
   typescript: typeof ts,
+  runtimeAccessor: ts.Expression = factory.createIdentifier("gqlRuntime"),
 ) => {
   const [, slicesBuilder] = builderCall.arguments;
   if (!slicesBuilder || !typescript.isExpression(slicesBuilder)) {
@@ -66,7 +69,7 @@ export const buildOperationRuntimeComponents = (
   }
 
   const runtimeCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(factory.createIdentifier("gqlRuntime"), factory.createIdentifier("operation")),
+    factory.createPropertyAccessExpression(runtimeAccessor, factory.createIdentifier("operation")),
     undefined,
     [
       buildObjectExpression(factory, {
@@ -83,7 +86,7 @@ export const buildOperationRuntimeComponents = (
   );
 
   const referenceCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(factory.createIdentifier("gqlRuntime"), factory.createIdentifier("getOperation")),
+    factory.createPropertyAccessExpression(runtimeAccessor, factory.createIdentifier("getOperation")),
     undefined,
     [factory.createStringLiteral(artifact.prebuild.operationName)],
   );

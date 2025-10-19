@@ -1,5 +1,63 @@
 import type * as ts from "typescript";
 
+const RUNTIME_MODULE = "@soda-gql/runtime";
+
+/**
+ * Ensure that the gqlRuntime require exists in the source file for CJS output.
+ * Injects: const __soda_gql_runtime = require("@soda-gql/runtime");
+ * Returns an updated source file with the require added if needed.
+ */
+export const ensureGqlRuntimeRequire = (
+  sourceFile: ts.SourceFile,
+  factory: ts.NodeFactory,
+  typescript: typeof ts,
+): ts.SourceFile => {
+  // Check if the require already exists
+  const existing = sourceFile.statements.find(
+    (statement): statement is ts.VariableStatement =>
+      typescript.isVariableStatement(statement) &&
+      statement.declarationList.declarations.some((decl) => {
+        if (!typescript.isIdentifier(decl.name) || decl.name.text !== "__soda_gql_runtime") {
+          return false;
+        }
+        if (!decl.initializer || !typescript.isCallExpression(decl.initializer)) {
+          return false;
+        }
+        const callExpr = decl.initializer;
+        if (!typescript.isIdentifier(callExpr.expression) || callExpr.expression.text !== "require") {
+          return false;
+        }
+        const arg = callExpr.arguments[0];
+        return arg && typescript.isStringLiteral(arg) && arg.text === RUNTIME_MODULE;
+      }),
+  );
+
+  if (existing) {
+    return sourceFile;
+  }
+
+  // Create: const __soda_gql_runtime = require("@soda-gql/runtime");
+  const requireCall = factory.createCallExpression(factory.createIdentifier("require"), undefined, [
+    factory.createStringLiteral(RUNTIME_MODULE),
+  ]);
+
+  const variableDeclaration = factory.createVariableDeclaration(
+    factory.createIdentifier("__soda_gql_runtime"),
+    undefined,
+    undefined,
+    requireCall,
+  );
+
+  const variableStatement = factory.createVariableStatement(
+    undefined,
+    factory.createVariableDeclarationList([variableDeclaration], typescript.NodeFlags.Const),
+  );
+
+  // Insert at the beginning of the file
+  const newStatements = [variableStatement, ...sourceFile.statements];
+  return factory.updateSourceFile(sourceFile, newStatements);
+};
+
 /**
  * Ensure that the gqlRuntime import exists in the source file.
  * gqlRuntime is always imported from @soda-gql/runtime.
@@ -10,8 +68,6 @@ export const ensureGqlRuntimeImport = (
   factory: ts.NodeFactory,
   typescript: typeof ts,
 ): ts.SourceFile => {
-  const RUNTIME_MODULE = "@soda-gql/runtime";
-
   const existing = sourceFile.statements.find(
     (statement): statement is ts.ImportDeclaration =>
       typescript.isImportDeclaration(statement) &&
@@ -19,10 +75,13 @@ export const ensureGqlRuntimeImport = (
       statement.moduleSpecifier.text === RUNTIME_MODULE,
   );
 
-  if (existing && existing.importClause && existing.importClause.namedBindings && typescript.isNamedImports(existing.importClause.namedBindings)) {
-    const hasSpecifier = existing.importClause.namedBindings.elements.some(
-      (element) => element.name.text === "gqlRuntime",
-    );
+  if (
+    existing &&
+    existing.importClause &&
+    existing.importClause.namedBindings &&
+    typescript.isNamedImports(existing.importClause.namedBindings)
+  ) {
+    const hasSpecifier = existing.importClause.namedBindings.elements.some((element) => element.name.text === "gqlRuntime");
 
     if (hasSpecifier) {
       return sourceFile;
@@ -93,7 +152,11 @@ export const maybeRemoveUnusedGqlImport = (
   // Remove gql-related exports
   updatedStatements = updatedStatements.filter((statement) => {
     // Remove export { foo } where foo was defined using gql
-    if (typescript.isExportDeclaration(statement) && statement.exportClause && typescript.isNamedExports(statement.exportClause)) {
+    if (
+      typescript.isExportDeclaration(statement) &&
+      statement.exportClause &&
+      typescript.isNamedExports(statement.exportClause)
+    ) {
       // Check if any exported identifier is from a gql.default() call
       const hasGqlExports = statement.exportClause.elements.some((element) => {
         const name = (element.propertyName || element.name).text;
@@ -102,7 +165,11 @@ export const maybeRemoveUnusedGqlImport = (
           (stmt): stmt is ts.VariableStatement =>
             typescript.isVariableStatement(stmt) &&
             stmt.declarationList.declarations.some(
-              (decl) => typescript.isIdentifier(decl.name) && decl.name.text === name && decl.initializer && isGqlCall(decl.initializer, typescript),
+              (decl) =>
+                typescript.isIdentifier(decl.name) &&
+                decl.name.text === name &&
+                decl.initializer &&
+                isGqlCall(decl.initializer, typescript),
             ),
         );
         return !!declaration;

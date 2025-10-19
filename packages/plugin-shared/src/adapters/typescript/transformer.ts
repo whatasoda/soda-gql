@@ -12,6 +12,7 @@ type TransformCallExpressionArgs = {
   readonly getArtifact: ArtifactLookup;
   readonly factory: ts.NodeFactory;
   readonly typescript: typeof ts;
+  readonly runtimeAccessor?: ts.Expression;
 };
 
 type TransformCallExpressionResult =
@@ -25,6 +26,7 @@ export const transformCallExpression = ({
   getArtifact,
   factory,
   typescript,
+  runtimeAccessor,
 }: TransformCallExpressionArgs): TransformCallExpressionResult => {
   const builderCall = findGqlBuilderCall(callNode, typescript);
   if (!builderCall) {
@@ -45,26 +47,27 @@ export const transformCallExpression = ({
 
   const gqlCall = gqlCallResult.value;
 
-  return replaceWithRuntimeCall(gqlCall, factory, typescript);
+  return replaceWithRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
 };
 
 const replaceWithRuntimeCall = (
   gqlCall: GqlCall,
   factory: ts.NodeFactory,
   typescript: typeof ts,
+  runtimeAccessor?: ts.Expression,
 ): TransformCallExpressionResult => {
   if (gqlCall.type === "model") {
-    const replacement = buildModelRuntimeCall(gqlCall, factory, typescript);
+    const replacement = buildModelRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
     return { transformed: true, replacement };
   }
 
   if (gqlCall.type === "slice") {
-    const replacement = buildSliceRuntimeCall(gqlCall, factory, typescript);
+    const replacement = buildSliceRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
     return { transformed: true, replacement };
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall, factory, typescript);
+    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall, factory, typescript, runtimeAccessor);
     return { transformed: true, replacement: referenceCall, runtimeCall };
   }
 

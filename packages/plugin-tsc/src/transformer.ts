@@ -5,7 +5,7 @@
  * into the Nest CLI build process when using `builder: "tsc"`.
  */
 
-import { CanonicalId } from "@soda-gql/common";
+import type { CanonicalId } from "@soda-gql/common";
 import { type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
 import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type * as ts from "typescript";
@@ -116,6 +116,7 @@ export function createSodaGqlTransformer(
         filename: sourceFile.fileName,
         artifactLookup: (canonicalId: CanonicalId) => prepared.allArtifacts[canonicalId],
         runtimeModule: prepared.importIdentifier,
+        compilerOptions: context.getCompilerOptions(),
       };
 
       const transformResult = adapter.transformProgram(transformContext);

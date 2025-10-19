@@ -12,7 +12,7 @@ import type {
   TransformProgramContext,
 } from "../core/transform-adapter.js";
 import type { PluginError } from "../state.js";
-import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./typescript/imports.js";
+import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, maybeRemoveUnusedGqlImport } from "./typescript/imports.js";
 import { collectGqlDefinitionMetadata } from "./typescript/metadata.js";
 import { transformCallExpression } from "./typescript/transformer.js";
 
@@ -88,6 +88,17 @@ export class TypeScriptAdapter implements TransformAdapter {
       filename: context.filename,
     });
 
+    // Detect module kind from compiler options
+    const isCJS = this.detectCommonJSOutput(context.compilerOptions);
+
+    // Choose runtime accessor based on module format
+    const runtimeAccessor = isCJS
+      ? this.factory.createPropertyAccessExpression(
+          this.factory.createIdentifier("__soda_gql_runtime"),
+          this.factory.createIdentifier("gqlRuntime"),
+        )
+      : undefined;
+
     this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
@@ -100,6 +111,7 @@ export class TypeScriptAdapter implements TransformAdapter {
           getArtifact: context.artifactLookup,
           factory: this.factory,
           typescript: this.ts,
+          runtimeAccessor,
         });
 
         if (result.transformed) {
@@ -124,8 +136,13 @@ export class TypeScriptAdapter implements TransformAdapter {
     let transformedSourceFile = visitedNode;
 
     if (transformed) {
-      // Ensure gqlRuntime import exists (from @soda-gql/runtime)
-      transformedSourceFile = ensureGqlRuntimeImport(transformedSourceFile, this.factory, this.ts);
+      if (isCJS) {
+        // For CJS: inject require statement
+        transformedSourceFile = ensureGqlRuntimeRequire(transformedSourceFile, this.factory, this.ts);
+      } else {
+        // For ESM: ensure gqlRuntime import exists
+        transformedSourceFile = ensureGqlRuntimeImport(transformedSourceFile, this.factory, this.ts);
+      }
 
       // Remove graphql-system import (runtimeModule)
       transformedSourceFile = maybeRemoveUnusedGqlImport(transformedSourceFile, context.runtimeModule, this.factory, this.ts);
@@ -181,6 +198,40 @@ export class TypeScriptAdapter implements TransformAdapter {
     }
 
     return lastIndex;
+  }
+
+  /**
+   * Detect if the output format is CommonJS based on compiler options.
+   * Uses ts.getEmitModuleKind to determine the actual output module format.
+   */
+  private detectCommonJSOutput(compilerOptions: unknown): boolean {
+    if (!compilerOptions || typeof compilerOptions !== "object") {
+      return false;
+    }
+
+    const options = compilerOptions as ts.CompilerOptions;
+
+    // Use getEmitModuleKind if available (TypeScript 4.7+)
+    if ("getEmitModuleKind" in this.ts && typeof this.ts.getEmitModuleKind === "function") {
+      const emitKind = this.ts.getEmitModuleKind(options);
+      return emitKind === this.ts.ModuleKind.CommonJS;
+    }
+
+    // Fallback: check module option directly
+    const module = options.module;
+    if (module === this.ts.ModuleKind.CommonJS) {
+      return true;
+    }
+
+    // For Node16/NodeNext, check impliedNodeFormat if available
+    if (module === this.ts.ModuleKind.Node16 || module === this.ts.ModuleKind.NodeNext) {
+      const impliedNodeFormat = (this.env.sourceFile as unknown as { impliedNodeFormat?: number }).impliedNodeFormat;
+      if (impliedNodeFormat !== undefined) {
+        return impliedNodeFormat === this.ts.ModuleKind.CommonJS;
+      }
+    }
+
+    return false;
   }
 }
 
