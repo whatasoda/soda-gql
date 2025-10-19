@@ -1,5 +1,5 @@
 const path = require("path");
-const { SodaGqlWebpackPlugin } = require("@soda-gql/plugin-nestjs/webpack/plugin");
+const { SodaGqlWebpackPlugin } = require("@soda-gql/plugin-webpack/plugin");
 
 module.exports = (options, _webpack) => {
   const sodaOptions = {
@@ -33,7 +33,7 @@ module.exports = (options, _webpack) => {
           exclude: /node_modules/,
           use: [
             {
-              loader: "@soda-gql/plugin-nestjs/webpack/loader",
+              loader: "@soda-gql/plugin-webpack/loader",
               options: sodaOptions,
             },
           ],

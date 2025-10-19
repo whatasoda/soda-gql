@@ -41,7 +41,7 @@
       "devDependencies": {
         "@babel/core": "^7.24.0",
         "@nestjs/cli": "^10.0.0",
-        "@soda-gql/plugin-nestjs": "workspace:*",
+        "@soda-gql/plugin-webpack": "workspace:*",
         "@types/node": "^20.0.0",
         "ts-loader": "^9.5.4",
         "webpack": "^5.0.0",
@@ -63,7 +63,7 @@
         "@nestjs/cli": "^10.0.0",
         "@nestjs/schematics": "^10.0.0",
         "@soda-gql/cli": "workspace:*",
-        "@soda-gql/plugin-nestjs": "workspace:*",
+        "@soda-gql/plugin-swc": "workspace:*",
         "@swc/cli": "^0.1.62",
         "@swc/core": "^1.3.0",
         "@types/node": "^20.0.0",
@@ -86,7 +86,7 @@
         "@nestjs/cli": "^10.0.0",
         "@nestjs/schematics": "^10.0.0",
         "@soda-gql/cli": "workspace:*",
-        "@soda-gql/plugin-nestjs": "workspace:*",
+        "@soda-gql/plugin-tsc": "workspace:*",
         "@types/node": "^20.0.0",
         "typescript": "^5.0.0",
       },
@@ -191,37 +191,6 @@
         "@types/babel__core": "^7.20.5",
       },
     },
-    "packages/plugin-nestjs": {
-      "name": "@soda-gql/plugin-nestjs",
-      "version": "0.1.0",
-      "dependencies": {
-        "@soda-gql/builder": "workspace:*",
-        "@soda-gql/common": "workspace:*",
-        "@soda-gql/core": "workspace:*",
-        "@soda-gql/plugin-shared": "workspace:*",
-        "@soda-gql/plugin-webpack": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
-        "neverthrow": "^8.1.1",
-        "zod": "^4.1.11",
-      },
-      "devDependencies": {
-        "@types/webpack": "^5.28.5",
-      },
-      "peerDependencies": {
-        "@babel/core": "^7.24.0",
-        "@swc/core": "^1.0.0",
-        "@swc/types": "^0.1.0",
-        "typescript": "^5.0.0",
-        "webpack": "^5.0.0",
-      },
-      "optionalPeers": [
-        "@babel/core",
-        "@swc/core",
-        "@swc/types",
-        "typescript",
-        "webpack",
-      ],
-    },
     "packages/plugin-shared": {
       "name": "@soda-gql/plugin-shared",
       "version": "0.1.0",
@@ -250,6 +219,31 @@
         "@swc/types",
         "typescript",
       ],
+    },
+    "packages/plugin-swc": {
+      "name": "@soda-gql/plugin-swc",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/plugin-shared": "workspace:*",
+        "neverthrow": "^8.1.1",
+      },
+      "peerDependencies": {
+        "@swc/core": "^1.0.0",
+        "@swc/types": "^0.1.0",
+      },
+    },
+    "packages/plugin-tsc": {
+      "name": "@soda-gql/plugin-tsc",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/plugin-shared": "workspace:*",
+        "neverthrow": "^8.1.1",
+      },
+      "peerDependencies": {
+        "typescript": "^5.0.0",
+      },
     },
     "packages/plugin-webpack": {
       "name": "@soda-gql/plugin-webpack",
@@ -483,9 +477,11 @@
 
     "@soda-gql/plugin-babel": ["@soda-gql/plugin-babel@workspace:packages/plugin-babel"],
 
-    "@soda-gql/plugin-nestjs": ["@soda-gql/plugin-nestjs@workspace:packages/plugin-nestjs"],
-
     "@soda-gql/plugin-shared": ["@soda-gql/plugin-shared@workspace:packages/plugin-shared"],
+
+    "@soda-gql/plugin-swc": ["@soda-gql/plugin-swc@workspace:packages/plugin-swc"],
+
+    "@soda-gql/plugin-tsc": ["@soda-gql/plugin-tsc@workspace:packages/plugin-tsc"],
 
     "@soda-gql/plugin-webpack": ["@soda-gql/plugin-webpack@workspace:packages/plugin-webpack"],
 

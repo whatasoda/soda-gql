@@ -153,11 +153,19 @@ export default defineConfig([
     clean: true,
   },
   {
-    ...common("@soda-gql/plugin-nestjs"),
+    ...common("@soda-gql/plugin-tsc"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
-    external: workspaceExternal("@soda-gql/plugin-nestjs", { extraExternals: ["neverthrow", "zod", "typescript"] }),
+    external: workspaceExternal("@soda-gql/plugin-tsc", { extraExternals: ["neverthrow", "typescript"] }),
+    clean: true,
+  },
+  {
+    ...common("@soda-gql/plugin-swc"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    external: workspaceExternal("@soda-gql/plugin-swc", { extraExternals: ["@swc/core", "@swc/types", "neverthrow", "typescript"] }),
     clean: true,
   },
 ]);

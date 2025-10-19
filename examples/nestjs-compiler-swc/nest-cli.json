@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "swcPlugins": [
       [
-        "@soda-gql/plugin-nestjs/compiler/swc",
+        "@soda-gql/plugin-swc",
         {
           "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"

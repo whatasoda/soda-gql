@@ -6,8 +6,8 @@
  */
 
 import { type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
+import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type * as ts from "typescript";
-import { prepareTransformState } from "../core/prepare-transform-state.js";
 
 /**
  * Configuration for the soda-gql TypeScript transformer.
@@ -51,7 +51,7 @@ export type TransformerConfig = {
  *   "compilerOptions": {
  *     "plugins": [
  *       {
- *         "transform": "@soda-gql/plugin-nestjs/compiler/tsc",
+ *         "transform": "@soda-gql/plugin-tsc",
  *         "configPath": "./soda-gql.config.ts"
  *       }
  *     ]
@@ -80,16 +80,17 @@ export function createSodaGqlTransformer(
     configPath: config.configPath,
     project: config.project,
     importIdentifier: config.importIdentifier,
+    packageLabel: "@soda-gql/plugin-tsc",
   });
 
   // Handle preparation errors
   if (prepareResult.isErr()) {
     const error = prepareResult.error;
     if (error.type === "BLOCKING_NOT_SUPPORTED") {
-      console.error(`[@soda-gql/plugin-nestjs] ${error.message}`);
+      console.error(`[@soda-gql/plugin-tsc] ${error.message}`);
     } else if (error.type === "PLUGIN_ERROR") {
       const pluginError = error.error;
-      console.error(`[@soda-gql/plugin-nestjs] Transform preparation failed (${pluginError.code}):`, pluginError.message);
+      console.error(`[@soda-gql/plugin-tsc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
     }
     // Return no-op transformer
     return (context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
@@ -141,7 +142,7 @@ export function createSodaGqlTransformer(
  */
 export function before(options: Partial<TransformerConfig> = {}, program?: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   if (!program) {
-    throw new Error("[@soda-gql/plugin-nestjs] Nest CLI invoked the transformer without a Program instance.");
+    throw new Error("[@soda-gql/plugin-tsc] Nest CLI invoked the transformer without a Program instance.");
   }
   return createSodaGqlTransformer(program, options);
 }

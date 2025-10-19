@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "plugins": [
       {
-        "name": "@soda-gql/plugin-nestjs/compiler/tsc",
+        "name": "@soda-gql/plugin-tsc",
         "options": {
           "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"

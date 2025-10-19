@@ -18,6 +18,7 @@ export type PrepareTransformStateArgs = {
   readonly configPath?: string;
   readonly project?: string;
   readonly importIdentifier?: string;
+  readonly packageLabel?: string;
 };
 
 /**
@@ -63,6 +64,8 @@ const stateCache = new Map<CoordinatorKey, CacheEntry>();
 export function prepareTransformState(
   args: PrepareTransformStateArgs,
 ): Result<PreparedTransformState, PrepareTransformStateError> {
+  const packageLabel = args.packageLabel ?? "@soda-gql/compiler-plugin";
+
   try {
     // Import plugin-shared synchronously (modules are already loaded at this point)
     const { preparePluginState, registerConsumer } = require("@soda-gql/plugin-shared");
@@ -101,7 +104,7 @@ export function prepareTransformState(
             entry.allArtifacts = event.snapshot.elements;
           }
         } else if (event.type === "error") {
-          console.error("[@soda-gql/plugin-nestjs] Coordinator error:", event.error);
+          console.error(`[${packageLabel}] Coordinator error:`, event.error);
         }
       });
 

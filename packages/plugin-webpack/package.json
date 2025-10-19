@@ -69,6 +69,13 @@
       "require": "./dist/schemas/index.cjs",
       "default": "./dist/schemas/index.js"
     },
+    "./nest": {
+      "development": "./src/nest/index.ts",
+      "types": "./dist/nest/index.d.ts",
+      "import": "./dist/nest/index.js",
+      "require": "./dist/nest/index.cjs",
+      "default": "./dist/nest/index.js"
+    },
     "./package.json": "./package.json"
   }
 }

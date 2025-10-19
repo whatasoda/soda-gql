@@ -1,0 +1,28 @@
+{
+  "name": "@soda-gql/plugin-swc",
+  "version": "0.1.0",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/plugin-shared": "workspace:*",
+    "neverthrow": "^8.1.1"
+  },
+  "peerDependencies": {
+    "@swc/core": "^1.0.0",
+    "@swc/types": "^0.1.0"
+  },
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  }
+}

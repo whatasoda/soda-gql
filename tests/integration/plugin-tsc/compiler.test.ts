@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { createSodaGqlTransformer } from "@soda-gql/plugin-nestjs/compiler/tsc";
+import { createSodaGqlTransformer } from "@soda-gql/plugin-tsc";
 import ts from "typescript";
 
 describe.skip("TypeScript Compiler Plugin Integration", () => {
-  const fixturesDir = join(import.meta.dir, "../../../fixtures/plugin-nestjs/compiler/tsc");
+  const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-tsc");
   const sourceFile = join(fixturesDir, "sample.ts");
 
   test("should accept new configuration options", () => {

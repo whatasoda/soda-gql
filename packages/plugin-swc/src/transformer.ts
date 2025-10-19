@@ -6,8 +6,8 @@
  */
 
 import { type SwcAdapter, swcTransformAdapterFactory } from "@soda-gql/plugin-shared";
+import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type { Module } from "@swc/types";
-import { prepareTransformState } from "../core/prepare-transform-state.js";
 
 /**
  * Configuration for the soda-gql SWC transformer.
@@ -51,7 +51,7 @@ export type TransformerConfig = {
  *     "builder": "swc",
  *     "swcPlugins": [
  *       [
- *         "@soda-gql/plugin-nestjs/compiler/swc",
+ *         "@soda-gql/plugin-swc",
  *         {
  *           "configPath": "./soda-gql.config.ts"
  *         }
@@ -79,16 +79,17 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
     configPath: config.configPath,
     project: config.project,
     importIdentifier: config.importIdentifier,
+    packageLabel: "@soda-gql/plugin-swc",
   });
 
   // Handle preparation errors
   if (prepareResult.isErr()) {
     const error = prepareResult.error;
     if (error.type === "BLOCKING_NOT_SUPPORTED") {
-      console.error(`[@soda-gql/plugin-nestjs] ${error.message}`);
+      console.error(`[@soda-gql/plugin-swc] ${error.message}`);
     } else if (error.type === "PLUGIN_ERROR") {
       const pluginError = error.error;
-      console.error(`[@soda-gql/plugin-nestjs] Transform preparation failed (${pluginError.code}):`, pluginError.message);
+      console.error(`[@soda-gql/plugin-swc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
     }
     // Return no-op transformer
     return (m: Module) => m;

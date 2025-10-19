@@ -28,9 +28,6 @@ bun quality
 # Type check only
 bun typecheck
 
-# Type check tests only
-bun typecheck:tests
-
 # Biome check
 bun biome:check
 ```

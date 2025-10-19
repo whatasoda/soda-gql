@@ -17,8 +17,9 @@
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
-      "@soda-gql/plugin-nestjs/*": ["./packages/plugin-nestjs/src/*"],
       "@soda-gql/plugin-shared/*": ["./packages/plugin-shared/src/*"],
+      "@soda-gql/plugin-swc/*": ["./packages/plugin-swc/src/*"],
+      "@soda-gql/plugin-tsc/*": ["./packages/plugin-tsc/src/*"],
       "@soda-gql/plugin-webpack/*": ["./packages/plugin-webpack/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
     }
@@ -33,8 +34,9 @@
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
-    { "path": "./packages/plugin-nestjs/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },
+    { "path": "./packages/plugin-swc/tsconfig.editor.json" },
+    { "path": "./packages/plugin-tsc/tsconfig.editor.json" },
     { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./examples/babel-app/tsconfig.editor.json" },

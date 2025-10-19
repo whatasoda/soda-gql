@@ -1,4 +1,4 @@
-import { webpackPluginOptionsSchema } from "@soda-gql/plugin-webpack";
+import { webpackPluginOptionsSchema } from "../schemas/index.js";
 import { z } from "zod";
 
 /**

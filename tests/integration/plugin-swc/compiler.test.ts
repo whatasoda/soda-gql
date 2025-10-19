@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { createSodaGqlSwcPlugin } from "@soda-gql/plugin-nestjs/compiler/swc";
+import { createSodaGqlSwcPlugin } from "@soda-gql/plugin-swc";
 import { parseSync, transformSync } from "@swc/core";
 import type { Module } from "@swc/types";
 
 describe.skip("SWC Compiler Plugin Integration", () => {
-  const fixturesDir = join(import.meta.dir, "../../../fixtures/plugin-nestjs/compiler/swc");
+  const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-swc");
   const sourceFile = join(fixturesDir, "sample.ts");
 
   test("should accept new configuration options", async () => {
