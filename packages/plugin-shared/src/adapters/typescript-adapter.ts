@@ -71,7 +71,7 @@ export class TypeScriptAdapter implements TransformAdapter {
     return neutralMetadata;
   }
 
-  analyzeCall(context: TransformProgramContext, candidate: unknown): GraphQLCallAnalysis | PluginError {
+  analyzeCall(_context: TransformProgramContext, candidate: unknown): GraphQLCallAnalysis | PluginError {
     if (!this.ts.isCallExpression(candidate)) {
       throw new Error("[INTERNAL] TypeScriptAdapter.analyzeCall expects ts.CallExpression");
     }
@@ -125,12 +125,7 @@ export class TypeScriptAdapter implements TransformAdapter {
 
     if (transformed) {
       // Ensure gqlRuntime import exists
-      transformedSourceFile = ensureGqlRuntimeImport(
-        transformedSourceFile,
-        context.runtimeModule,
-        this.factory,
-        this.ts,
-      );
+      transformedSourceFile = ensureGqlRuntimeImport(transformedSourceFile, context.runtimeModule, this.factory, this.ts);
 
       // Maybe remove unused gql import
       transformedSourceFile = maybeRemoveUnusedGqlImport(transformedSourceFile, this.factory, this.ts);
@@ -145,7 +140,7 @@ export class TypeScriptAdapter implements TransformAdapter {
     };
   }
 
-  insertRuntimeSideEffects(context: TransformProgramContext, _runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
+  insertRuntimeSideEffects(_context: TransformProgramContext, _runtimeIR: ReadonlyArray<GraphQLCallIR>): void {
     const runtimeCalls = this.runtimeCallsFromLastTransform;
     if (runtimeCalls.length === 0) {
       return;
@@ -160,11 +155,7 @@ export class TypeScriptAdapter implements TransformAdapter {
     const existingStatements = Array.from(this.env.sourceFile.statements);
     const insertIndex = lastImportIndex + 1;
 
-    const newStatements = [
-      ...existingStatements.slice(0, insertIndex),
-      ...statements,
-      ...existingStatements.slice(insertIndex),
-    ];
+    const newStatements = [...existingStatements.slice(0, insertIndex), ...statements, ...existingStatements.slice(insertIndex)];
 
     // Update source file with new statements
     const updatedSourceFile = this.factory.updateSourceFile(this.env.sourceFile, newStatements);

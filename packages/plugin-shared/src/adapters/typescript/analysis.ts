@@ -5,15 +5,15 @@ import type {
   BuilderArtifactSlice,
   CanonicalId,
 } from "@soda-gql/builder";
-import {
-  type PluginAnalysisArtifactMissingError,
-  type PluginAnalysisMetadataMissingError,
-  type PluginAnalysisUnsupportedArtifactTypeError,
-  type PluginError,
-  resolveCanonicalId,
+import type {
+  PluginAnalysisArtifactMissingError,
+  PluginAnalysisMetadataMissingError,
+  PluginAnalysisUnsupportedArtifactTypeError,
+  PluginError,
 } from "@soda-gql/plugin-shared";
 import { err, ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
+import { resolveCanonicalId } from "../../cache.js";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;

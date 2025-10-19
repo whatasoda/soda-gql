@@ -5,14 +5,13 @@ export * from "./adapters/swc-adapter.js";
 export * from "./adapters/typescript-adapter.js";
 // Cache utilities
 export {
-  type ArtifactError,
   getArtifactCacheStats,
   invalidateArtifactCache,
-  type LoadArtifactOptions,
   loadArtifact,
   lookupArtifact,
   resolveCanonicalId,
 } from "./cache.js";
+export type { ArtifactError, LoadArtifactOptions } from "./cache.js";
 // Coordinator (new architecture)
 export * from "./coordinator/index.js";
 
