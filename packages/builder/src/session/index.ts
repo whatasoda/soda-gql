@@ -1,4 +1,4 @@
-export type { BuilderSession, BuilderSessionSnapshot } from "./builder-session";
+export type { BuilderSession } from "./builder-session";
 export { createBuilderSession } from "./builder-session";
 export type { BuilderChangeSet, BuilderFileChange } from "./change-set";
 export { coercePaths, hasFileChanged } from "./change-set";

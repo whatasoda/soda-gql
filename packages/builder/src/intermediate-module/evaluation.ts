@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import * as sandboxCore from "@soda-gql/core";
 import { createPseudoModuleRegistry } from "@soda-gql/core";
@@ -48,6 +48,38 @@ const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: str
 };
 
 /**
+ * Resolve graphql system path to the bundled CJS file.
+ * Accepts both .ts (for backward compatibility) and .cjs paths.
+ * Maps .ts to sibling .cjs file if it exists.
+ */
+function resolveGraphqlSystemPath(configPath: string): string {
+  const ext = extname(configPath);
+
+  // If already pointing to .cjs, use as-is
+  if (ext === ".cjs") {
+    return resolve(process.cwd(), configPath);
+  }
+
+  // If pointing to .ts, try to resolve to sibling .cjs
+  if (ext === ".ts") {
+    const basePath = configPath.slice(0, -3); // Remove .ts
+    const cjsPath = `${basePath}.cjs`;
+    const resolvedCjsPath = resolve(process.cwd(), cjsPath);
+
+    // Check if .cjs exists, otherwise fall back to .ts (for error messages)
+    if (existsSync(resolvedCjsPath)) {
+      return resolvedCjsPath;
+    }
+
+    // Fall back to .ts path (will fail later with clearer error)
+    return resolve(process.cwd(), configPath);
+  }
+
+  // For other extensions or no extension, use as-is
+  return resolve(process.cwd(), configPath);
+}
+
+/**
  * Bundle and execute GraphQL system module using rspack + memfs.
  * Creates a self-contained bundle that can run in VM context.
  * This is cached per session to avoid re-bundling.
@@ -64,12 +96,12 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
   // Bundle the GraphQL system module
   const bundledCode = readFileSync(modulePath, "utf-8");
 
-  // Execute in VM with exportGql callback
-  let exportedGql: unknown = null;
+  // Create a shared CommonJS module exports object
+  const moduleExports: Record<string, unknown> = {};
 
-  // Import @soda-gql packages to make them available to the bundled code
+  // Create sandbox with proper CommonJS emulation
   const sandbox = {
-    // Provide @soda-gql packages as through require()
+    // Provide @soda-gql packages through require()
     require: (path: string) => {
       if (path === "@soda-gql/core") {
         return sandboxCore;
@@ -79,19 +111,27 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
       }
       throw new Error(`Unknown module: ${path}`);
     },
-    module: {
-      exports: {
-        set gql(value: unknown) {
-          exportedGql = value;
-        },
-      },
-    },
+    // Both module.exports and exports point to the same object
+    module: { exports: moduleExports },
+    exports: moduleExports,
+    // Provide Node.js globals for rolldown helpers
+    __dirname: resolve(modulePath, ".."),
+    __filename: modulePath,
+    global: undefined as unknown,
+    globalThis: undefined as unknown,
   };
-  const script = new Script(bundledCode);
+  // Wire global and globalThis to the sandbox itself
+  sandbox.global = sandbox;
+  sandbox.globalThis = sandbox;
+
+  const script = new Script(bundledCode, { filename: modulePath });
   script.runInNewContext(sandbox);
 
-  if (exportedGql === null) {
-    throw new Error("exportGql was not called during bundle execution");
+  // Read exported gql (handle both direct export and default export)
+  const exportedGql = moduleExports.gql ?? moduleExports.default;
+
+  if (exportedGql === undefined) {
+    throw new Error(`No 'gql' export found in GraphQL system module: ${modulePath}`);
   }
 
   // Cache the result
@@ -153,7 +193,7 @@ export const evaluateIntermediateModules = ({
 }) => {
   // Determine import paths from config
   const registry = createPseudoModuleRegistry();
-  const gqlImportPath = resolve(process.cwd(), graphqlSystemPath);
+  const gqlImportPath = resolveGraphqlSystemPath(graphqlSystemPath);
 
   const { gql } = executeGraphqlSystemModule(gqlImportPath);
 

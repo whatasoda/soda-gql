@@ -35,13 +35,13 @@ export interface BuilderService {
    * Increments on each successful build or update.
    * Returns 0 if no artifact has been built yet.
    */
-  getGeneration?(): number;
+  getGeneration(): number;
 
   /**
    * Get the most recent artifact without triggering a new build.
    * Returns null if no artifact has been built yet.
    */
-  getCurrentArtifact?(): BuilderArtifact | null;
+  getCurrentArtifact(): BuilderArtifact | null;
 }
 
 /**
@@ -58,22 +58,11 @@ export interface BuilderService {
  */
 export const createBuilderService = ({ config, entrypoints }: BuilderServiceConfig): BuilderService => {
   const session = createBuilderSession({ config, entrypoints });
-  let generation = 0;
-  let currentArtifact: BuilderArtifact | null = null;
-
-  const wrapBuild = (buildFn: () => Result<BuilderArtifact, BuilderError>) => {
-    const result = buildFn();
-    if (result.isOk()) {
-      generation++;
-      currentArtifact = result.value;
-    }
-    return result;
-  };
 
   return {
-    build: () => wrapBuild(() => session.build({ changeSet: null })),
-    update: (changeSet: BuilderChangeSet) => wrapBuild(() => session.build({ changeSet })),
-    getGeneration: () => generation,
-    getCurrentArtifact: () => currentArtifact,
+    build: () => session.build({ changeSet: null }),
+    update: (changeSet: BuilderChangeSet) => session.build({ changeSet }),
+    getGeneration: () => session.getGeneration(),
+    getCurrentArtifact: () => session.getCurrentArtifact(),
   };
 };

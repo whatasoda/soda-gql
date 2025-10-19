@@ -28,7 +28,7 @@ export type {
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";
-export type { BuilderChangeSet, BuilderFileChange, BuilderSession, BuilderSessionSnapshot } from "./session";
+export type { BuilderChangeSet, BuilderFileChange, BuilderSession } from "./session";
 export { createBuilderSession } from "./session";
 export type {
   BuilderAnalyzer,

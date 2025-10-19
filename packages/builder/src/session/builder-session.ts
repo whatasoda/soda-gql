@@ -25,6 +25,8 @@ import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency
  * Session state maintained across incremental builds.
  */
 type SessionState = {
+  /** Generation number */
+  gen: number;
   /** Discovery snapshots keyed by normalized file path */
   snapshots: Map<string, DiscoverySnapshot>;
   /** Module-level adjacency: file -> files that import it */
@@ -36,14 +38,6 @@ type SessionState = {
 };
 
 /**
- * Session snapshot for debugging and monitoring.
- */
-export type BuilderSessionSnapshot = {
-  readonly snapshotCount: number;
-  readonly moduleAdjacencySize: number;
-};
-
-/**
  * Builder session interface for incremental builds.
  */
 export interface BuilderSession {
@@ -51,10 +45,110 @@ export interface BuilderSession {
    * Perform build fully or incrementally.
    */
   build(input: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError>;
+  /**
+   * Get the current generation number.
+   */
+  getGeneration(): number;
+  /**
+   * Get the current artifact.
+   */
+  getCurrentArtifact(): BuilderArtifact | null;
 }
 
+/**
+ * Create a new builder session.
+ *
+ * The session maintains in-memory state across builds to enable incremental processing.
+ */
+export const createBuilderSession = (options: {
+  readonly evaluatorId?: string;
+  readonly entrypoints: readonly string[] | ReadonlySet<string>;
+  readonly config: ResolvedSodaGqlConfig;
+}): BuilderSession => {
+  const config = options.config;
+  const evaluatorId = options.evaluatorId ?? "default";
+  const entrypoints: ReadonlySet<string> = new Set(options.entrypoints);
+
+  // Session state stored in closure
+  const state: SessionState = {
+    gen: 0,
+    snapshots: new Map(),
+    moduleAdjacency: new Map(),
+    intermediateModules: new Map(),
+    lastArtifact: null,
+  };
+
+  // Reusable discovery infrastructure
+  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
+  const ensureDiscoveryCache = cachedFn(() =>
+    createDiscoveryCache({
+      factory: createJsonCache({
+        rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+        prefix: ["builder"],
+      }),
+      analyzer: config.builder.analyzer,
+      evaluatorId,
+    }),
+  );
+
+  const build = ({ changeSet }: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError> => {
+    const prepareResult = prepare({ entrypoints, changeSet, lastArtifact: state.lastArtifact });
+    if (prepareResult.isErr()) {
+      return err(prepareResult.error);
+    }
+
+    if (prepareResult.value.type === "should-skip") {
+      return ok(prepareResult.value.data.artifact);
+    }
+
+    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
+    const discoveryCache = ensureDiscoveryCache();
+    const astAnalyzer = ensureAstAnalyzer();
+    const discoveryResult = discover({
+      discoveryCache,
+      astAnalyzer,
+      removedFiles,
+      changedFiles,
+      entryPaths,
+      previousModuleAdjacency: state.moduleAdjacency,
+    });
+    if (discoveryResult.isErr()) {
+      return err(discoveryResult.error);
+    }
+
+    const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
+
+    const buildResult = buildDiscovered({
+      analyses,
+      affectedFiles,
+      stats,
+      previousIntermediateModules: state.intermediateModules,
+      graphqlSystemPath: config.graphqlSystemPath,
+    });
+    if (buildResult.isErr()) {
+      return err(buildResult.error);
+    }
+
+    const { intermediateModules, artifact } = buildResult.value;
+
+    state.gen++;
+    state.snapshots = snapshots;
+    state.moduleAdjacency = currentModuleAdjacency;
+    state.lastArtifact = artifact;
+    state.intermediateModules = intermediateModules;
+
+    return ok(artifact);
+  };
+
+  return {
+    build,
+    getGeneration: () => state.gen,
+    getCurrentArtifact: () => state.lastArtifact,
+  };
+};
+
 const prepare = (input: {
-  entrypoints: Set<string>;
+  entrypoints: ReadonlySet<string>;
   readonly changeSet: BuilderChangeSet | null;
   lastArtifact: BuilderArtifact | null;
 }) => {
@@ -179,90 +273,4 @@ const buildDiscovered = ({
   }
 
   return ok({ intermediateModules, artifact: artifactResult.value });
-};
-
-/**
- * Create a new builder session.
- *
- * The session maintains in-memory state across builds to enable incremental processing.
- */
-export const createBuilderSession = (options: {
-  readonly evaluatorId?: string;
-  readonly entrypoints: readonly string[] | ReadonlySet<string>;
-  readonly config: ResolvedSodaGqlConfig;
-}): BuilderSession => {
-  const config = options.config;
-  const evaluatorId = options.evaluatorId ?? "default";
-  const entrypoints = new Set(options.entrypoints);
-
-  // Session state stored in closure
-  const state: SessionState = {
-    snapshots: new Map(),
-    moduleAdjacency: new Map(),
-    intermediateModules: new Map(),
-    lastArtifact: null,
-  };
-
-  // Reusable discovery infrastructure
-  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
-  const ensureDiscoveryCache = cachedFn(() =>
-    createDiscoveryCache({
-      factory: createJsonCache({
-        rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
-        prefix: ["builder"],
-      }),
-      analyzer: config.builder.analyzer,
-      evaluatorId,
-    }),
-  );
-
-  const build = ({ changeSet }: { changeSet: BuilderChangeSet | null }): Result<BuilderArtifact, BuilderError> => {
-    const prepareResult = prepare({ entrypoints, changeSet, lastArtifact: state.lastArtifact });
-    if (prepareResult.isErr()) {
-      return err(prepareResult.error);
-    }
-
-    if (prepareResult.value.type === "should-skip") {
-      return ok(prepareResult.value.data.artifact);
-    }
-
-    const { changedFiles, removedFiles, entryPaths } = prepareResult.value.data;
-    const discoveryCache = ensureDiscoveryCache();
-    const astAnalyzer = ensureAstAnalyzer();
-    const discoveryResult = discover({
-      discoveryCache,
-      astAnalyzer,
-      removedFiles,
-      changedFiles,
-      entryPaths,
-      previousModuleAdjacency: state.moduleAdjacency,
-    });
-    if (discoveryResult.isErr()) {
-      return err(discoveryResult.error);
-    }
-
-    const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
-
-    const buildResult = buildDiscovered({
-      analyses,
-      affectedFiles,
-      stats,
-      previousIntermediateModules: state.intermediateModules,
-      graphqlSystemPath: config.graphqlSystemPath,
-    });
-    if (buildResult.isErr()) {
-      return err(buildResult.error);
-    }
-
-    const { intermediateModules, artifact } = buildResult.value;
-
-    state.snapshots = snapshots;
-    state.moduleAdjacency = currentModuleAdjacency;
-    state.lastArtifact = artifact;
-    state.intermediateModules = intermediateModules;
-
-    return ok(artifact);
-  };
-
-  return { build };
 };

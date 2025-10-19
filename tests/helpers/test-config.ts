@@ -6,7 +6,7 @@ import type { ResolvedSodaGqlConfig } from "../../packages/config/src/types";
  * Uses mock values suitable for temporary test workspaces.
  */
 export const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
-  graphqlSystemPath: join(workspaceRoot, "graphql-system", "index.ts"),
+  graphqlSystemPath: join(workspaceRoot, "graphql-system", "index.cjs"),
   corePath: "@soda-gql/core",
   builder: {
     entry: [join(workspaceRoot, "src/**/*.ts")],
