@@ -124,11 +124,11 @@ export class TypeScriptAdapter implements TransformAdapter {
     let transformedSourceFile = visitedNode;
 
     if (transformed) {
-      // Ensure gqlRuntime import exists
-      transformedSourceFile = ensureGqlRuntimeImport(transformedSourceFile, context.runtimeModule, this.factory, this.ts);
+      // Ensure gqlRuntime import exists (from @soda-gql/runtime)
+      transformedSourceFile = ensureGqlRuntimeImport(transformedSourceFile, this.factory, this.ts);
 
-      // Maybe remove unused gql import
-      transformedSourceFile = maybeRemoveUnusedGqlImport(transformedSourceFile, this.factory, this.ts);
+      // Remove graphql-system import (runtimeModule)
+      transformedSourceFile = maybeRemoveUnusedGqlImport(transformedSourceFile, context.runtimeModule, this.factory, this.ts);
     }
 
     // Update the source file in env for insertRuntimeSideEffects

@@ -130,8 +130,7 @@ export class SwcAdapter implements TransformAdapter {
       return;
     }
 
-    // Create runtime import declaration
-    const importIdentifier = context.filename; // TODO: Get from state.options.importIdentifier
+    // Create runtime import declaration (from @soda-gql/runtime)
     const runtimeImport: ImportDeclaration = {
       type: "ImportDeclaration",
       span: makeSpan(),
@@ -152,7 +151,7 @@ export class SwcAdapter implements TransformAdapter {
       source: {
         type: "StringLiteral",
         span: makeSpan(),
-        value: importIdentifier,
+        value: "@soda-gql/runtime",
       },
       typeOnly: false,
     };
@@ -176,8 +175,27 @@ export class SwcAdapter implements TransformAdapter {
       }
     }
 
+    // Remove the graphql-system import (runtimeModule)
+    const filteredBody = existingBody.filter((stmt) => {
+      if (stmt.type === "ImportDeclaration" && stmt.source.type === "StringLiteral") {
+        return stmt.source.value !== context.runtimeModule;
+      }
+      return true;
+    });
+
+    // Recalculate insert index after filtering
+    let newInsertIndex = 0;
+    for (let i = 0; i < filteredBody.length; i++) {
+      const stmt = filteredBody[i];
+      if (stmt && stmt.type === "ImportDeclaration") {
+        newInsertIndex = i + 1;
+      } else {
+        break;
+      }
+    }
+
     // Insert runtime import and calls
-    const newBody = [...existingBody.slice(0, insertIndex), runtimeImport, ...statements, ...existingBody.slice(insertIndex)];
+    const newBody = [...filteredBody.slice(0, newInsertIndex), runtimeImport, ...statements, ...filteredBody.slice(newInsertIndex)];
 
     // Update module with new body
     this.env = {

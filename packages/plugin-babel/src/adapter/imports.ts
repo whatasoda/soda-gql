@@ -29,28 +29,14 @@ export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   );
 };
 
-export const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>) => {
-  const binding = programPath.scope.getBinding("gql");
-  if (!binding || binding.referencePaths.length > 0) {
-    return;
-  }
-
-  const importSpecifierPath = binding.path;
-  if (!importSpecifierPath.isImportSpecifier()) {
-    return;
-  }
-
-  const declaration = importSpecifierPath.parentPath;
-  if (!declaration?.isImportDeclaration()) {
-    return;
-  }
-
-  const remainingSpecifiers = declaration.node.specifiers.filter((specifier) => specifier !== importSpecifierPath.node);
-
-  if (remainingSpecifiers.length === 0) {
-    declaration.remove();
-    return;
-  }
-
-  declaration.replaceWith(t.importDeclaration(remainingSpecifiers, declaration.node.source));
+export const maybeRemoveUnusedGqlImport = (programPath: NodePath<t.Program>, runtimeModule: string) => {
+  // Find and remove the graphql-system import (runtimeModule)
+  // After transformation, we use @soda-gql/runtime instead
+  programPath.traverse({
+    ImportDeclaration(path) {
+      if (path.node.source.value === runtimeModule) {
+        path.remove();
+      }
+    },
+  });
 };

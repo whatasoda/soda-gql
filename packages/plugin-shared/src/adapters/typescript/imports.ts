@@ -2,19 +2,21 @@ import type * as ts from "typescript";
 
 /**
  * Ensure that the gqlRuntime import exists in the source file.
+ * gqlRuntime is always imported from @soda-gql/runtime.
  * Returns an updated source file with the import added or merged.
  */
 export const ensureGqlRuntimeImport = (
   sourceFile: ts.SourceFile,
-  runtimeModule: string,
   factory: ts.NodeFactory,
   typescript: typeof ts,
 ): ts.SourceFile => {
+  const RUNTIME_MODULE = "@soda-gql/runtime";
+
   const existing = sourceFile.statements.find(
     (statement): statement is ts.ImportDeclaration =>
       typescript.isImportDeclaration(statement) &&
       typescript.isStringLiteral(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text === runtimeModule,
+      statement.moduleSpecifier.text === RUNTIME_MODULE,
   );
 
   if (existing && existing.importClause && existing.importClause.namedBindings && typescript.isNamedImports(existing.importClause.namedBindings)) {
@@ -37,7 +39,7 @@ export const ensureGqlRuntimeImport = (
     const newImportDeclaration = factory.createImportDeclaration(
       undefined,
       newImportClause,
-      factory.createStringLiteral(runtimeModule),
+      factory.createStringLiteral(RUNTIME_MODULE),
       undefined,
     );
 
@@ -53,7 +55,7 @@ export const ensureGqlRuntimeImport = (
       undefined,
       factory.createNamedImports([factory.createImportSpecifier(false, undefined, factory.createIdentifier("gqlRuntime"))]),
     ),
-    factory.createStringLiteral(runtimeModule),
+    factory.createStringLiteral(RUNTIME_MODULE),
     undefined,
   );
 
@@ -62,60 +64,30 @@ export const ensureGqlRuntimeImport = (
 };
 
 /**
- * Remove unused gql import and exports from the source file if they're no longer referenced.
- * This removes both the import statement and any export statements that reference gql definitions.
+ * Remove the graphql-system import (runtimeModule) and gql-related exports from the source file.
+ * After transformation, gqlRuntime is imported from @soda-gql/runtime instead,
+ * so the original graphql-system import should be completely removed.
  */
 export const maybeRemoveUnusedGqlImport = (
   sourceFile: ts.SourceFile,
+  runtimeModule: string,
   factory: ts.NodeFactory,
   typescript: typeof ts,
 ): ts.SourceFile => {
-  // Find the gql import
+  // Find the graphql-system import (the runtimeModule, e.g., "@/graphql-system")
   const gqlImport = sourceFile.statements.find(
     (statement): statement is ts.ImportDeclaration =>
       typescript.isImportDeclaration(statement) &&
-      statement.importClause &&
-      statement.importClause.namedBindings &&
-      typescript.isNamedImports(statement.importClause.namedBindings) &&
-      statement.importClause.namedBindings.elements.some((element) => element.name.text === "gql"),
+      typescript.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === runtimeModule,
   );
 
-  if (!gqlImport || !gqlImport.importClause || !gqlImport.importClause.namedBindings || !typescript.isNamedImports(gqlImport.importClause.namedBindings)) {
+  if (!gqlImport) {
     return sourceFile;
   }
 
-  // Check if gql is used in the file (excluding imports and exports)
-  let gqlIsUsed = false;
-  const visit = (node: ts.Node): void => {
-    if (typescript.isIdentifier(node) && node.text === "gql") {
-      // Skip if this is part of the import declaration
-      if (node.parent === gqlImport.importClause?.namedBindings) {
-        return;
-      }
-
-      // Skip if this is part of an export declaration
-      let parent = node.parent;
-      while (parent) {
-        if (typescript.isExportDeclaration(parent) || typescript.isExportAssignment(parent)) {
-          return;
-        }
-        parent = parent.parent;
-      }
-
-      gqlIsUsed = true;
-    }
-    if (!gqlIsUsed) {
-      typescript.forEachChild(node, visit);
-    }
-  };
-
-  visit(sourceFile);
-
-  if (gqlIsUsed) {
-    return sourceFile;
-  }
-
-  // gql is not used, so remove import and related exports
+  // After transformation, all gql usage should be replaced with gqlRuntime
+  // So we can safely remove the graphql-system import and all gql-related exports
   let updatedStatements = Array.from(sourceFile.statements);
 
   // Remove gql-related exports
@@ -162,24 +134,9 @@ export const maybeRemoveUnusedGqlImport = (
     return true;
   });
 
-  // Remove gql from import specifiers
-  const remainingSpecifiers = gqlImport.importClause.namedBindings.elements.filter((element) => element.name.text !== "gql");
-
-  if (remainingSpecifiers.length === 0) {
-    // Remove entire import declaration
-    updatedStatements = updatedStatements.filter((stmt) => stmt !== gqlImport);
-  } else {
-    // Update import with remaining specifiers
-    const newNamedBindings = factory.createNamedImports(remainingSpecifiers);
-    const newImportClause = factory.createImportClause(false, undefined, newNamedBindings);
-    const newImportDeclaration = factory.createImportDeclaration(
-      undefined,
-      newImportClause,
-      gqlImport.moduleSpecifier,
-      undefined,
-    );
-    updatedStatements = updatedStatements.map((stmt) => (stmt === gqlImport ? newImportDeclaration : stmt));
-  }
+  // Remove the entire graphql-system import declaration
+  // (After transformation, we use @soda-gql/runtime instead)
+  updatedStatements = updatedStatements.filter((stmt) => stmt !== gqlImport);
 
   return factory.updateSourceFile(sourceFile, updatedStatements);
 };

@@ -136,7 +136,7 @@ export class BabelAdapter implements TransformAdapter {
 
     if (transformed) {
       this.env.programPath.scope.crawl();
-      maybeRemoveUnusedGqlImport(this.env.programPath);
+      maybeRemoveUnusedGqlImport(this.env.programPath, context.runtimeModule);
     }
 
     return {
