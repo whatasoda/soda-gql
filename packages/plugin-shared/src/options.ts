@@ -44,8 +44,8 @@ export const normalizePluginOptions = async (raw: Partial<PluginOptions>): Promi
   const diagnostics = raw.diagnostics ?? "json";
   const project = raw.project;
 
-  // Load config
-  const configResult = await loadConfig(raw.configPath);
+  // Load config (now synchronous)
+  const configResult = loadConfig(raw.configPath);
   if (configResult.isErr()) {
     return err({
       type: "OptionsError",

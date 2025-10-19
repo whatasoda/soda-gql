@@ -1,9 +1,11 @@
-import { existsSync, unlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { Script } from "node:vm";
+import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
+import { transformSync } from "@swc/core";
 import type { Result } from "neverthrow";
 import { err } from "neverthrow";
-import { rolldown } from "rolldown";
 import { DEFAULT_CONFIG_FILENAMES } from "./defaults";
 import type { ConfigError } from "./errors";
 import { configError } from "./errors";
@@ -28,64 +30,93 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
 }
 
 /**
- * Load and execute TypeScript config file using rolldown.
+ * Load and execute TypeScript config file synchronously using SWC + VM.
+ * Based on the pattern from fuga.js.
  */
-async function executeConfigFile(configPath: string): Promise<unknown> {
-  // Bundle config file to temp location (use .cjs so require() is available)
-  const outfile = join(tmpdir(), `soda-gql-config-${Date.now()}.cjs`);
-  const outdir = dirname(outfile);
-
+function executeConfigFile(configPath: string): unknown {
   try {
-    const bundle = await rolldown({
-      input: configPath,
-      platform: "node",
-      resolve: {
-        conditionNames: ["development", "node", "import", "default"],
+    // Read the config file
+    const source = readFileSync(configPath, "utf-8");
+
+    // Transform TypeScript to CommonJS using SWC
+    const result = transformSync(source, {
+      filename: configPath,
+      jsc: {
+        parser: {
+          syntax: "typescript",
+        },
       },
+      module: {
+        type: "commonjs",
+      },
+      sourceMaps: false,
+      minify: false,
     });
 
-    await bundle.write({
-      format: "cjs",
-      dir: outdir,
-      entryFileNames: `soda-gql-config-${Date.now()}.cjs`,
+    // Create VM script
+    const script = new Script(result.code, { filename: configPath });
+
+    // Create CommonJS context
+    const pseudoModule: { exports: unknown } = { exports: {} };
+    const customRequireInner = createRequire(configPath);
+    const customRequire = (path: string) => {
+      // Handle external modules normally
+      if (!path.startsWith(".")) {
+        return customRequireInner(path);
+      }
+
+      // Resolve relative imports with existence check
+      const resolvedPath = resolveRelativeImportWithExistenceCheck({ filePath: configPath, specifier: path });
+      if (!resolvedPath) {
+        throw new Error(`Module not found: ${path}`);
+      }
+      return customRequireInner(resolvedPath);
+    };
+
+    // Execute in VM context
+    script.runInNewContext({
+      require: customRequire,
+      module: pseudoModule,
+      exports: pseudoModule.exports,
+      __dirname: dirname(configPath),
+      __filename: configPath,
+      console,
+      process,
     });
 
-    await bundle.close();
+    // Extract config from module.exports
+    let config: unknown = pseudoModule.exports;
+
+    // Handle various export formats
+    // CommonJS: module.exports = { ... } or module.exports.default = { ... }
+    if (config && typeof config === "object" && "default" in config) {
+      config = (config as { default: unknown }).default;
+    }
+
+    // Synchronous mode doesn't support async config functions
+    if (typeof config === "function") {
+      throw configError(
+        "CONFIG_LOAD_FAILED",
+        "Async config functions are not supported in synchronous mode. Export a plain object instead.",
+        configPath,
+      );
+    }
+
+    return config;
   } catch (error) {
     throw configError(
       "CONFIG_LOAD_FAILED",
-      `Failed to bundle config: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
       configPath,
       error,
     );
   }
-
-  // Dynamic import the bundled file (import() can load .cjs files)
-  const configModule = await import(`file://${outfile}?t=${Date.now()}`);
-
-  // Clean up temp file
-  try {
-    unlinkSync(outfile);
-  } catch (cleanupError) {
-    // Ignore cleanup errors
-  }
-
-  // When importing CJS with import(), the exports are wrapped in { default: ... }
-  // Handle various export formats
-  let config = configModule.default?.default ?? configModule.default ?? configModule;
-
-  // Handle async config functions
-  if (typeof config === "function") {
-    config = await config();
-  }
-
-  return config;
 }
 
 /**
  * Load config with Result type (for library use).
  */
-export async function loadConfig(configPath?: string): Promise<Result<ResolvedSodaGqlConfig, ConfigError>> {
+export function loadConfig(configPath?: string): Result<ResolvedSodaGqlConfig, ConfigError> {
   const resolvedPath = configPath ?? findConfigFile();
 
   if (!resolvedPath) {
@@ -93,7 +124,7 @@ export async function loadConfig(configPath?: string): Promise<Result<ResolvedSo
   }
 
   try {
-    const rawConfig = await executeConfigFile(resolvedPath);
+    const rawConfig = executeConfigFile(resolvedPath);
     const validated = validateConfig(rawConfig);
 
     if (validated.isErr()) {
@@ -109,8 +140,8 @@ export async function loadConfig(configPath?: string): Promise<Result<ResolvedSo
 /**
  * Load config or throw (for CLI/app use).
  */
-export async function loadConfigOrThrow(configPath?: string): Promise<ResolvedSodaGqlConfig> {
-  const result = await loadConfig(configPath);
+export function loadConfigOrThrow(configPath?: string): ResolvedSodaGqlConfig {
+  const result = loadConfig(configPath);
   if (result.isErr()) {
     throw new Error(result.error.message);
   }
@@ -120,7 +151,7 @@ export async function loadConfigOrThrow(configPath?: string): Promise<ResolvedSo
 /**
  * Load config from specific directory.
  */
-export async function loadConfigFrom(dir: string): Promise<Result<ResolvedSodaGqlConfig, ConfigError>> {
+export function loadConfigFrom(dir: string): Result<ResolvedSodaGqlConfig, ConfigError> {
   const configPath = findConfigFile(dir);
   return loadConfig(configPath ?? undefined);
 }
