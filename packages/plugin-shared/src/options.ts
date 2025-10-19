@@ -13,6 +13,7 @@ export type NormalizedOptions = {
   readonly resolvedConfig: ResolvedSodaGqlConfig;
   readonly builderConfig: BuilderServiceConfig;
   readonly project?: string;
+  readonly graphqlSystemPath?: string;
 };
 
 export type OptionsError =
@@ -96,5 +97,6 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
     resolvedConfig,
     builderConfig: builderServiceConfig,
     project,
+    graphqlSystemPath: resolvedConfig.graphqlSystemPath,
   });
 };

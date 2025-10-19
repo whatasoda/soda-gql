@@ -86,7 +86,11 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
 
   for (const statement of sourceFile.statements) {
     // ESM exports: export const foo = ...
-    if (typescript.isExportDeclaration(statement) && statement.exportClause && typescript.isNamedExports(statement.exportClause)) {
+    if (
+      typescript.isExportDeclaration(statement) &&
+      statement.exportClause &&
+      typescript.isNamedExports(statement.exportClause)
+    ) {
       for (const element of statement.exportClause.elements) {
         const name = element.name.text;
         bindings.set(name, name);

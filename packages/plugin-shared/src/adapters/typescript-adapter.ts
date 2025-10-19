@@ -16,6 +16,8 @@ import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, maybeRemoveUnusedGqlIm
 import { collectGqlDefinitionMetadata } from "./typescript/metadata.js";
 import { transformCallExpression } from "./typescript/transformer.js";
 
+export { createAfterStubTransformer } from "./typescript/imports.js";
+
 /**
  * TypeScript-specific environment required for the adapter.
  */
@@ -82,6 +84,40 @@ export class TypeScriptAdapter implements TransformAdapter {
   }
 
   transformProgram(context: TransformProgramContext): TransformPassResult {
+    // Check if we're transforming the graphql-system file itself
+    // If so, replace it with an empty module stub to prevent heavy runtime loading
+    if (context.graphqlSystemFilePath) {
+      // Use TypeScript's canonical file name comparison to handle casing, symlinks, etc.
+      const sys = this.ts.sys;
+      const getCanonicalFileName = this.ts.createGetCanonicalFileName(sys.useCaseSensitiveFileNames);
+
+      const toCanonical = (file: string): string => {
+        const resolved = sys.resolvePath ? sys.resolvePath(file) : require("node:path").resolve(file);
+        return getCanonicalFileName(resolved);
+      };
+
+      const currentFileCanonical = toCanonical(this.env.sourceFile.fileName);
+      const systemFileCanonical = toCanonical(context.graphqlSystemFilePath);
+
+      if (currentFileCanonical === systemFileCanonical) {
+        // Create an empty module: export {};
+        const emptyExport = this.factory.createExportDeclaration(
+          undefined,
+          false,
+          this.factory.createNamedExports([]),
+          undefined,
+        );
+
+        const stubSourceFile = this.factory.updateSourceFile(this.env.sourceFile, [emptyExport]);
+        this.env = { ...this.env, sourceFile: stubSourceFile };
+
+        return {
+          transformed: true,
+          runtimeArtifacts: undefined,
+        };
+      }
+    }
+
     const metadata = collectGqlDefinitionMetadata({
       sourceFile: this.env.sourceFile,
       typescript: this.ts,

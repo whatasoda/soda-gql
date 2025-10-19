@@ -1,6 +1,6 @@
 import { dirname, extname } from "node:path";
 import { err, ok, type Result } from "neverthrow";
-import { build, type UserConfig } from "tsdown";
+import { build, type Options } from "tsdown";
 import type { CodegenError } from "./types";
 
 export type BundleResult = {
@@ -14,7 +14,6 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
     const baseName = sourcePath.slice(0, -sourceExt.length);
 
     await build({
-      // @ts-expect-error -- this is a workaround to avoid the config file being loaded.
       config: false,
       entry: sourcePath,
       format: ["cjs"],
@@ -27,7 +26,7 @@ export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<Bu
       minify: false,
       sourcemap: false,
       treeshake: false,
-    } satisfies UserConfig);
+    } satisfies Options);
 
     const cjsPath = `${baseName}.cjs`;
 

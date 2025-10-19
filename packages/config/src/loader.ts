@@ -59,7 +59,7 @@ function executeConfigFile(configPath: string): unknown {
 
     // Create CommonJS context
     const pseudoModule: { exports: unknown } = { exports: {} };
-    
+
     const customRequireInner = createRequire(configFilename);
     const customRequire = (path: string) => {
       // Handle external modules normally
@@ -136,7 +136,7 @@ export function loadConfig(configPath?: string): Result<ResolvedSodaGqlConfig, C
     return resolveConfig(validated.value, resolvedPath);
   } catch (error) {
     console.log(error);
-    
+
     return err(configError("CONFIG_LOAD_FAILED", `Failed to load config: ${error}`, resolvedPath, error));
   }
 }

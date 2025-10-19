@@ -17,6 +17,11 @@ export type TransformProgramContext = {
   readonly artifactLookup: (id: CanonicalId) => BuilderArtifactElement | undefined;
   readonly runtimeModule: string;
   readonly compilerOptions?: unknown;
+  /**
+   * Absolute path to the graphql-system file.
+   * When transforming this file, replace its content with an empty module stub.
+   */
+  readonly graphqlSystemFilePath?: string;
 };
 
 /**

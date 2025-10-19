@@ -195,7 +195,12 @@ export class SwcAdapter implements TransformAdapter {
     }
 
     // Insert runtime import and calls
-    const newBody = [...filteredBody.slice(0, newInsertIndex), runtimeImport, ...statements, ...filteredBody.slice(newInsertIndex)];
+    const newBody = [
+      ...filteredBody.slice(0, newInsertIndex),
+      runtimeImport,
+      ...statements,
+      ...filteredBody.slice(newInsertIndex),
+    ];
 
     // Update module with new body
     this.env = {

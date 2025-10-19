@@ -33,6 +33,7 @@ export type PrepareTransformStateArgs = {
 export type PreparedTransformState = {
   readonly importIdentifier: string;
   readonly allArtifacts: Record<CanonicalId, BuilderArtifactElement>;
+  readonly graphqlSystemPath?: string;
   readonly release: () => void;
 };
 
@@ -125,6 +126,7 @@ export function prepareTransformState(
     return ok({
       importIdentifier: state.options.importIdentifier,
       allArtifacts: cached.allArtifacts,
+      graphqlSystemPath: state.options.graphqlSystemPath,
       release: () => {
         // Release is typically called when the transformer is done
         // For now, we keep the cache alive for reuse

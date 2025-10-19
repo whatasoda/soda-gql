@@ -6,7 +6,7 @@
  */
 
 import type { CanonicalId } from "@soda-gql/common";
-import { type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
+import { createAfterStubTransformer, type TypeScriptAdapter, typescriptTransformAdapterFactory } from "@soda-gql/plugin-shared";
 import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type * as ts from "typescript";
 
@@ -117,6 +117,7 @@ export function createSodaGqlTransformer(
         artifactLookup: (canonicalId: CanonicalId) => prepared.allArtifacts[canonicalId],
         runtimeModule: prepared.importIdentifier,
         compilerOptions: context.getCompilerOptions(),
+        graphqlSystemFilePath: prepared.graphqlSystemPath,
       };
 
       const transformResult = adapter.transformProgram(transformContext);
@@ -149,10 +150,33 @@ export function before(options: Partial<TransformerConfig> = {}, program?: ts.Pr
 }
 
 /**
- * Nest CLI plugin interface object.
- * Provides the before() hook for TypeScript transformations.
+ * Nest CLI plugin hook: after() transformer.
+ *
+ * This runs after TypeScript's own transformers (including CommonJS downleveling).
+ * It replaces require() calls for the graphql-system module with lightweight stubs
+ * to prevent the heavy module from being loaded at runtime.
  */
-const nestCliPlugin = { before };
+export function after(options: Partial<TransformerConfig> = {}): ts.TransformerFactory<ts.SourceFile> {
+  const config: TransformerConfig = {
+    configPath: options.configPath,
+    project: options.project,
+    importIdentifier: options.importIdentifier ?? "@/graphql-system",
+    enabled: options.enabled ?? true,
+  };
+
+  // Short-circuit if disabled
+  if (!config.enabled) {
+    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
+  }
+
+  return createAfterStubTransformer(config.importIdentifier, require("typescript"));
+}
+
+/**
+ * Nest CLI plugin interface object.
+ * Provides the before() and after() hooks for TypeScript transformations.
+ */
+const nestCliPlugin = { before, after };
 
 /**
  * Default export for Nest CLI plugin resolution.
