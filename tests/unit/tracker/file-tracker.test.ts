@@ -210,7 +210,9 @@ describe("FileTracker", () => {
         const loadedMetadata1 = loadResult.value.files.get(file1);
         expect(originalMetadata1).toBeDefined();
         expect(loadedMetadata1).toBeDefined();
-        expect(loadedMetadata1).toEqual(originalMetadata1);
+        if (originalMetadata1 && loadedMetadata1) {
+          expect(loadedMetadata1).toEqual(originalMetadata1);
+        }
       }
     }
   });

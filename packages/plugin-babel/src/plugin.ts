@@ -44,20 +44,10 @@ export const createSodaGqlPlugin = (): PluginObj<
 
         const manager = getDevManager(managerContext);
 
-        // Construct watch options from resolved config
-        const watchOptions = options.builderConfig.config.builder.analyzer
-          ? {
-              rootDir: options.builderConfig.config.configDir,
-              schemaHash: options.builderConfig.config.configHash,
-              analyzerVersion: options.builderConfig.config.builder.analyzer,
-            }
-          : null;
-
         // Initialize manager with coordinator
         await manager.ensureInitialized({
           config: options.builderConfig,
           options,
-          watchOptions,
           coordinatorKey: normalizedState.coordinatorKey,
           initialSnapshot: normalizedState.snapshot,
         });
