@@ -1,4 +1,3 @@
-import type { BuilderChangeSet } from "@soda-gql/builder";
 import {
   createPluginRuntimeFromNormalized,
   formatPluginError,
@@ -7,7 +6,6 @@ import {
   preparePluginState,
   registerConsumer,
 } from "@soda-gql/plugin-shared";
-import { createBuilderWatch } from "@soda-gql/plugin-shared/dev";
 import type { Compiler, WebpackPluginInstance } from "webpack";
 import { registerCompilerHooks } from "./hooks.js";
 import { DiagnosticsReporter } from "./internal/diagnostics.js";
@@ -67,7 +65,6 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
 
     let runtime: PluginRuntime | null = null;
     let manifest: ArtifactManifest | null = null;
-    let builderWatch: ReturnType<typeof createBuilderWatch> | null = null;
     let consumerRelease: (() => void) | null = null;
     let unsubscribe: (() => void) | null = null;
 
@@ -132,16 +129,6 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       diagnostics.recordSuccess(initialSnapshot.artifact);
       manifest = createArtifactManifest(initialSnapshot.artifact);
 
-      // Setup builder watch
-      const options = state.options;
-      if (options.builderConfig.config.builder.analyzer) {
-        builderWatch = createBuilderWatch({
-          rootDir: options.builderConfig.config.configDir,
-          schemaHash: options.builderConfig.config.configHash,
-          analyzerVersion: options.builderConfig.config.builder.analyzer,
-        });
-      }
-
       // Subscribe to coordinator updates
       unsubscribe = coordinator.subscribe((event) => {
         if (event.type === "artifact") {
@@ -169,7 +156,7 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       });
     };
 
-    const runIncrementalBuild = async (changeSet: BuilderChangeSet): Promise<void> => {
+    const triggerIncrementalBuild = async (): Promise<void> => {
       const stateResult = await statePromise;
       if (stateResult.isErr()) {
         return;
@@ -183,7 +170,8 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
       }
 
       try {
-        await coordinator.update(changeSet);
+        // ensureLatest() triggers build, tracker auto-detects file changes
+        await coordinator.ensureLatest();
       } catch (error) {
         const failure: import("@soda-gql/plugin-shared/dev").BuilderServiceFailure = {
           type: "unexpected-error",
@@ -214,13 +202,10 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
             await initializeCoordinator();
           }
 
-          // Handle file changes through BuilderWatch if available
-          if (builderWatch) {
-            builderWatch.trackChanges(modifiedFiles, removedFiles);
-            const changeSet = await builderWatch.flush();
-            if (changeSet) {
-              await runIncrementalBuild(changeSet);
-            }
+          // Trigger incremental build when Webpack reports file changes
+          // The builder's file tracker will detect the actual changes
+          if (modifiedFiles && modifiedFiles.size > 0 || removedFiles && removedFiles.size > 0) {
+            await triggerIncrementalBuild();
           }
         } catch (error) {
           if (error instanceof Error) {
@@ -229,10 +214,9 @@ export class SodaGqlWebpackPlugin implements WebpackPluginInstance {
         }
       },
       onInvalid: () => {
-        builderWatch?.reset();
+        // No-op: tracker maintains its own state
       },
       onWatchClose: () => {
-        builderWatch?.reset();
         unsubscribe?.();
         consumerRelease?.();
         runtime?.dispose();

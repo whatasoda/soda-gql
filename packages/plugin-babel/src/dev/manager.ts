@@ -2,7 +2,6 @@ import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { CoordinatorKey, CoordinatorSnapshot, NormalizedOptions } from "@soda-gql/plugin-shared";
 import {
   createBuilderServiceController,
-  createBuilderWatch,
   DevBuilderSession,
   type DevBuilderSessionLike,
 } from "@soda-gql/plugin-shared/dev";
@@ -12,7 +11,6 @@ export interface DevManager {
   ensureInitialized(params: {
     config: BuilderServiceConfig;
     options: NormalizedOptions;
-    watchOptions?: { rootDir: string; schemaHash: string; analyzerVersion: string } | null;
     coordinatorKey: CoordinatorKey;
     initialSnapshot: CoordinatorSnapshot;
   }): Promise<void>;
@@ -22,7 +20,6 @@ export interface DevManager {
 
 export interface DevManagerDependencies {
   createController?: typeof createBuilderServiceController;
-  createWatch?: typeof createBuilderWatch;
   createSession?: typeof DevBuilderSession;
   createStateStore?: typeof createStateStore;
 }
@@ -30,7 +27,6 @@ export interface DevManagerDependencies {
 export const createDevManager = (deps: DevManagerDependencies = {}): DevManager => {
   const {
     createController = createBuilderServiceController,
-    createWatch = createBuilderWatch,
     createSession = DevBuilderSession,
     createStateStore: createStore = createStateStore,
   } = deps;
@@ -49,20 +45,18 @@ export const createDevManager = (deps: DevManagerDependencies = {}): DevManager 
         return;
       }
 
-      const { config, options, watchOptions, coordinatorKey, initialSnapshot } = params;
+      const { config, options, coordinatorKey, initialSnapshot } = params;
       cachedOptions = options;
       cachedCoordinatorKey = coordinatorKey;
       cachedSnapshot = initialSnapshot;
 
       try {
-        // Create controller and optional watch
+        // Create controller
         const controller = createController(config);
-        const watch = watchOptions ? createWatch(watchOptions) : undefined;
 
         // Create session with initial artifact from coordinator snapshot
         session = new createSession({
           controller,
-          watch,
           initialArtifact: initialSnapshot.artifact,
         });
 

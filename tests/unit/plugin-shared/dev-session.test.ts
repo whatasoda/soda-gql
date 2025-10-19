@@ -17,7 +17,6 @@ describe("DevBuilderSession", () => {
     return {
       initialized: true,
       build: async () => ok(artifact),
-      update: async () => ok(artifact),
       reset: () => {
         // Controller reset should only increment generation
         // It doesn't clear the artifact itself

@@ -4,7 +4,6 @@ import { createDevManager, type StateStore } from "@soda-gql/plugin-babel/dev";
 import type { NormalizedOptions } from "@soda-gql/plugin-shared";
 import type {
   BuilderServiceController,
-  BuilderWatch,
   DevBuilderSessionEvent,
   DevBuilderSessionLike,
   DevBuilderSessionOptions,
@@ -95,8 +94,7 @@ const createMockSnapshot = () => ({
 
 // Test Harness
 type TestHarness = {
-  controller: BuilderServiceController & { buildCalls: number; updateCalls: number };
-  watch: BuilderWatch & { flushCalls: number; resetCalls: number; trackChangesCalls: number };
+  controller: BuilderServiceController & { buildCalls: number };
   session: DevBuilderSessionLike & {
     listeners: Set<(event: DevBuilderSessionEvent) => void>;
     emit: (event: DevBuilderSessionEvent) => void;
@@ -111,14 +109,12 @@ type TestHarness = {
     snapshotValue: any;
   };
   capturedControllerConfig: BuilderServiceConfig | null;
-  capturedWatchOptions: any;
   manager: ReturnType<typeof createDevManager>;
 };
 
 const createTestHarness = (): TestHarness => {
   const captured = {
     controllerConfig: null as BuilderServiceConfig | null,
-    watchOptions: null as any,
   };
 
   const initialBuildDeferred = deferred<void>();
@@ -126,31 +122,9 @@ const createTestHarness = (): TestHarness => {
   // Mock controller
   const controller: any = {
     buildCalls: 0,
-    updateCalls: 0,
     build: async () => {
       controller.buildCalls++;
       return { ok: true, value: createMockArtifact() };
-    },
-    update: async () => {
-      controller.updateCalls++;
-      return { ok: true, value: createMockArtifact() };
-    },
-  };
-
-  // Mock watch
-  const watch: any = {
-    flushCalls: 0,
-    resetCalls: 0,
-    trackChangesCalls: 0,
-    trackChanges: () => {
-      watch.trackChangesCalls++;
-    },
-    flush: async () => {
-      watch.flushCalls++;
-      return null;
-    },
-    reset: () => {
-      watch.resetCalls++;
     },
   };
 
@@ -210,13 +184,9 @@ const createTestHarness = (): TestHarness => {
       captured.controllerConfig = config;
       return controller;
     },
-    createWatch: (options: any) => {
-      captured.watchOptions = options;
-      return watch;
-    },
     createSession: class {
       constructor(opts: DevBuilderSessionOptions) {
-        Object.assign(session, { controller: opts.controller, watch: opts.watch, initialArtifact: opts.initialArtifact });
+        Object.assign(session, { controller: opts.controller, initialArtifact: opts.initialArtifact });
       }
       subscribe = session.subscribe;
       ensureInitialBuild = session.ensureInitialBuild;
@@ -227,14 +197,10 @@ const createTestHarness = (): TestHarness => {
 
   return {
     controller,
-    watch,
     session,
     stateStore,
     get capturedControllerConfig() {
       return captured.controllerConfig;
-    },
-    get capturedWatchOptions() {
-      return captured.watchOptions;
     },
     manager,
   };
@@ -276,42 +242,6 @@ describe("createDevManager", () => {
       await initPromise;
 
       expect(harness.stateStore.initializeCalls).toBe(1);
-    });
-
-    it("creates watch when watchOptions provided", async () => {
-      const harness = createTestHarness();
-      const config = createMockConfig();
-      const options = createMockOptions();
-      const watchOptions = { rootDir: "/test", schemaHash: "hash", analyzerVersion: "1.0.0" };
-
-      const initPromise = harness.manager.ensureInitialized({
-        config,
-        options,
-        watchOptions,
-        coordinatorKey: createMockCoordinatorKey(),
-        initialSnapshot: createMockSnapshot(),
-      });
-      harness.session.resolveInitialBuild();
-      await initPromise;
-
-      expect(harness.capturedWatchOptions).toEqual(watchOptions);
-    });
-
-    it("does not create watch when watchOptions not provided", async () => {
-      const harness = createTestHarness();
-      const config = createMockConfig();
-      const options = createMockOptions();
-
-      const initPromise = harness.manager.ensureInitialized({
-        config,
-        options,
-        coordinatorKey: createMockCoordinatorKey(),
-        initialSnapshot: createMockSnapshot(),
-      });
-      harness.session.resolveInitialBuild();
-      await initPromise;
-
-      expect(harness.capturedWatchOptions).toBeNull();
     });
 
     it("only initializes once on multiple calls", async () => {
