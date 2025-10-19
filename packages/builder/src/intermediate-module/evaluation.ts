@@ -3,13 +3,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import * as sandboxCore from "@soda-gql/core";
-import { createPseudoModuleRegistry } from "@soda-gql/core";
 import * as sandboxRuntime from "@soda-gql/runtime";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
 import { renderRegistryBlock } from "./codegen";
+import { createIntermediateRegistry } from "./registry";
 import type { IntermediateModule } from "./types";
 
 export type BuildIntermediateModulesInput = {
@@ -192,7 +192,7 @@ export const evaluateIntermediateModules = ({
   graphqlSystemPath: string;
 }) => {
   // Determine import paths from config
-  const registry = createPseudoModuleRegistry();
+  const registry = createIntermediateRegistry();
   const gqlImportPath = resolveGraphqlSystemPath(graphqlSystemPath);
 
   const { gql } = executeGraphqlSystemModule(gqlImportPath);

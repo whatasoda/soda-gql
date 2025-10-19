@@ -1,6 +1,7 @@
-import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model, Operation, Slice } from "../types/operation";
+import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model, Operation, Slice } from "@soda-gql/core";
+import type { IntermediateArtifactElement } from "./types";
 
-export type PseudoModuleRegistry = ReturnType<typeof createPseudoModuleRegistry>;
+export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
 
 type AcceptableArtifact = AnyModel | AnySlice | AnyOperation;
 type ArtifactModule = ArtifactRecord;
@@ -8,12 +9,7 @@ type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
-export type IntermediateArtifactElement =
-  | { readonly type: "model"; readonly element: AnyModel }
-  | { readonly type: "slice"; readonly element: AnySlice }
-  | { readonly type: "operation"; readonly element: AnyOperation };
-
-export const createPseudoModuleRegistry = () => {
+export const createIntermediateRegistry = () => {
   const modules = new Map<string, () => ArtifactModule>();
   const moduleCaches = new Map<string, ArtifactModule>();
   const elements = new Map<string, AcceptableArtifact>();
@@ -32,15 +28,7 @@ export const createPseudoModuleRegistry = () => {
     });
   };
 
-  const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
-    const builder = factory();
-    ArtifactElement.setContext(builder, { canonicalId });
-    // Don't evaluate yet - defer until all builders are registered
-    elements.set(canonicalId, builder);
-    return builder;
-  };
-
-  const import_ = (filePath: string) => {
+  const importModule = (filePath: string) => {
     const factory = modules.get(filePath);
     if (!factory) {
       throw new Error(`Module not found or yet to be registered: ${filePath}`);
@@ -60,12 +48,13 @@ export const createPseudoModuleRegistry = () => {
     }
   };
 
-  const clear = () => {
-    modules.clear();
-    moduleCaches.clear();
-    elements.clear();
+  const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
+    const builder = factory();
+    ArtifactElement.setContext(builder, { canonicalId });
+    // Don't evaluate yet - defer until all builders are registered
+    elements.set(canonicalId, builder);
+    return builder;
   };
-
   const evaluate = (): Record<string, IntermediateArtifactElement> => {
     // First, register all modules by calling their factories
     for (const mod of modules.values()) {
@@ -92,12 +81,18 @@ export const createPseudoModuleRegistry = () => {
     return artifacts;
   };
 
+  const clear = () => {
+    modules.clear();
+    moduleCaches.clear();
+    elements.clear();
+  };
+
   return {
     setModule,
-    addElement,
-    import: import_,
+    importModule,
     removeModule,
-    clear,
+    addElement,
     evaluate,
+    clear,
   };
 };

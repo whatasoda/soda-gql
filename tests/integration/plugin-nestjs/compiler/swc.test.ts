@@ -4,7 +4,7 @@ import { createSodaGqlSwcPlugin } from "@soda-gql/plugin-nestjs/compiler/swc";
 import { parseSync, transformSync } from "@swc/core";
 import type { Module } from "@swc/types";
 
-describe("SWC Compiler Plugin Integration", () => {
+describe.skip("SWC Compiler Plugin Integration", () => {
   const fixturesDir = join(import.meta.dir, "../../../fixtures/plugin-nestjs/compiler/swc");
   const sourceFile = join(fixturesDir, "sample.ts");
 

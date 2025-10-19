@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
-import type { IntermediateArtifactElement } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import type { IntermediateArtifactElement } from "../intermediate-module";
 import type { BuilderError } from "../types";
 import type { BuilderArtifactElement, BuilderArtifactElementMetadata } from "./types";
 

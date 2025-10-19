@@ -3,7 +3,7 @@ import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 
 import { aggregate } from "@soda-gql/builder/artifact/aggregate";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import type { IntermediateArtifactElement } from "@soda-gql/core/intermediate/pseudo-module";
+import type { IntermediateArtifactElement } from "@soda-gql/builder/intermediate-module";
 import { Model, Operation, Slice } from "@soda-gql/core/types/operation";
 import { parse } from "graphql";
 

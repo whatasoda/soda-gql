@@ -1,5 +1,4 @@
 export * from "./buildtime";
-export * from "./intermediate";
 export * from "./schema";
 export type * from "./types/fragment";
 export * from "./types/operation";

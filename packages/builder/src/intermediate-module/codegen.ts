@@ -1,5 +1,5 @@
+import { resolveRelativeImportWithReferences } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "../ast";
-import { resolveImportPath } from "./analysis";
 
 const formatFactory = (expression: string): string => {
   const trimmed = expression.trim();
@@ -225,7 +225,7 @@ const renderImportStatements = ({
       return;
     }
 
-    const resolvedPath = resolveImportPath({ filePath, specifier: imp.source, analyses });
+    const resolvedPath = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: analyses });
     if (!resolvedPath) {
       return;
     }
@@ -235,18 +235,18 @@ const renderImportStatements = ({
     importsByFile.set(resolvedPath, imports);
   });
 
-  // Render registry.import() for each file
+  // Render registry.importModule() for each file
   importsByFile.forEach((imports, filePath) => {
     // Check if this is a namespace import
     const namespaceImport = imports.find((imp) => imp.kind === "namespace");
 
     if (namespaceImport) {
-      // Namespace import: const foo = registry.import("path");
-      importLines.push(`    const ${namespaceImport.local} = registry.import("${filePath}");`);
+      // Namespace import: const foo = registry.importModule("path");
+      importLines.push(`    const ${namespaceImport.local} = registry.importModule("${filePath}");`);
       namespaceImports.add(namespaceImport.local);
       importedRootNames.add(namespaceImport.local);
     } else {
-      // Named imports: const { a, b } = registry.import("path");
+      // Named imports: const { a, b } = registry.importModule("path");
       const rootNames = new Set<string>();
 
       imports.forEach((imp) => {
@@ -258,7 +258,7 @@ const renderImportStatements = ({
 
       if (rootNames.size > 0) {
         const destructured = Array.from(rootNames).sort().join(", ");
-        importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+        importLines.push(`    const { ${destructured} } = registry.importModule("${filePath}");`);
       }
     }
   });

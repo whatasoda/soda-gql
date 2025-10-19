@@ -1,4 +1,4 @@
-import type { BuilderArtifact, BuilderServiceConfig } from "@soda-gql/builder";
+import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { CoordinatorKey, CoordinatorSnapshot, NormalizedOptions } from "@soda-gql/plugin-shared";
 import {
   createBuilderServiceController,

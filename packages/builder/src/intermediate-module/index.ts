@@ -1,2 +1,2 @@
 export { evaluateIntermediateModules, generateIntermediateModules } from "./evaluation";
-export type { IntermediateModule } from "./types";
+export type { IntermediateArtifactElement, IntermediateModule } from "./types";

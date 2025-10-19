@@ -241,7 +241,7 @@ const buildDiscovered = ({
   analyses: Map<string, ModuleAnalysis>;
   affectedFiles: Set<string>;
   stats: ModuleLoadStats;
-  previousIntermediateModules: Map<string, IntermediateModule>;
+  previousIntermediateModules: ReadonlyMap<string, IntermediateModule>;
   graphqlSystemPath: string;
 }) => {
   // Create next intermediate modules map (copy current state)

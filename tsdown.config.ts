@@ -96,7 +96,7 @@ export default defineConfig([
     target: "node18",
     treeshake: false,
     external: workspaceExternal("@soda-gql/builder", {
-      extraExternals: ["@rspack/core", "@swc/core", "@swc/types", "memfs", "neverthrow", "typescript", "zod", "typescript"],
+      extraExternals: ["neverthrow", "typescript", "xxhash-wasm", "zod"],
     }),
     clean: true,
   },
