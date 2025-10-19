@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { BuilderChangeSet } from "@soda-gql/builder";
 import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
@@ -71,7 +70,7 @@ describe("BuilderSession incremental end-to-end", () => {
       config: createTestConfig(workspaceRoot),
     });
 
-    const result = await session.build({ changeSet: null });
+    const result = await session.build();
 
     if (result.isErr()) {
       console.error("Build failed:", result.error);
@@ -97,7 +96,7 @@ describe("BuilderSession incremental end-to-end", () => {
     });
 
     // Initial build
-    const initial = await session.build({ changeSet: null });
+    const initial = await session.build();
 
     if (initial.isErr()) {
       console.error("Build failed:", initial.error);
@@ -117,19 +116,12 @@ describe("BuilderSession incremental end-to-end", () => {
     const targetPath = path.join(workspaceRoot, "src/entities/nested-definitions.ts");
     await fs.copyFile(variantPath, targetPath);
 
-    // Update the file's mtime to trigger fingerprint change
+    // Update the file's mtime to trigger file tracker detection
     const now = new Date();
     await fs.utimes(targetPath, now, now);
 
-    // Create change set
-    const changeSet: BuilderChangeSet = {
-      added: new Set(),
-      updated: new Set([targetPath]),
-      removed: new Set(),
-    };
-
-    // Incremental update
-    const updateResult = await session.build({ changeSet });
+    // Incremental update (tracker auto-detects changes)
+    const updateResult = await session.build();
 
     if (updateResult.isErr()) {
       console.error("Update failed:", updateResult.error);
@@ -151,7 +143,7 @@ describe("BuilderSession incremental end-to-end", () => {
       entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
+    const fullRebuild = await fullRebuildSession.build();
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -173,7 +165,7 @@ describe("BuilderSession incremental end-to-end", () => {
     });
 
     // Initial build
-    const initial = await session.build({ changeSet: null });
+    const initial = await session.build();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -186,15 +178,8 @@ describe("BuilderSession incremental end-to-end", () => {
     const targetPath = path.join(workspaceRoot, "src/entities/catalog.ts");
     await fs.copyFile(variantPath, targetPath);
 
-    // Create change set
-    const changeSet: BuilderChangeSet = {
-      added: new Set([targetPath]),
-      updated: new Set(),
-      removed: new Set(),
-    };
-
-    // Incremental update
-    const updateResult = await session.build({ changeSet });
+    // Incremental update (tracker auto-detects new file)
+    const updateResult = await session.build();
 
     if (updateResult.isErr()) {
       console.error("Update failed:", updateResult.error);
@@ -211,7 +196,7 @@ describe("BuilderSession incremental end-to-end", () => {
       entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
+    const fullRebuild = await fullRebuildSession.build();
 
     if (fullRebuild.isErr()) {
       console.error("Full rebuild failed:", fullRebuild.error);
@@ -233,7 +218,7 @@ describe("BuilderSession incremental end-to-end", () => {
     });
 
     // Initial build
-    const initial = await session.build({ changeSet: null });
+    const initial = await session.build();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -245,15 +230,9 @@ describe("BuilderSession incremental end-to-end", () => {
     const targetPath = path.join(workspaceRoot, "src/entities/user.catalog.ts");
     await fs.unlink(targetPath);
 
-    // Create change set
-    const changeSet: BuilderChangeSet = {
-      added: new Set(),
-      updated: new Set(),
-      removed: new Set([targetPath]),
-    };
-
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
-    const updateResult = await session.build({ changeSet });
+    // (tracker auto-detects removed file)
+    const updateResult = await session.build();
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
@@ -271,7 +250,7 @@ describe("BuilderSession incremental end-to-end", () => {
       entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
+    const fullRebuild = await fullRebuildSession.build();
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {
@@ -294,7 +273,7 @@ describe("BuilderSession incremental end-to-end", () => {
     });
 
     // Initial build
-    const initial = await session.build({ changeSet: null });
+    const initial = await session.build();
 
     if (initial.isErr()) {
       console.error("Initial build failed:", initial.error);
@@ -323,15 +302,9 @@ describe("BuilderSession incremental end-to-end", () => {
     const removeTarget = path.join(workspaceRoot, "src/entities/user.catalog.ts");
     await fs.unlink(removeTarget);
 
-    // Create change set
-    const changeSet: BuilderChangeSet = {
-      added: new Set([catalogTarget]),
-      updated: new Set([nestedTarget]),
-      removed: new Set([removeTarget]),
-    };
-
     // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
-    const updateResult = await session.build({ changeSet });
+    // (tracker auto-detects added/updated/removed files)
+    const updateResult = await session.build();
 
     expect(updateResult.isErr()).toBe(true);
     if (updateResult.isErr()) {
@@ -349,7 +322,7 @@ describe("BuilderSession incremental end-to-end", () => {
       entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
-    const fullRebuild = await fullRebuildSession.build({ changeSet: null });
+    const fullRebuild = await fullRebuildSession.build();
 
     expect(fullRebuild.isErr()).toBe(true);
     if (fullRebuild.isErr()) {

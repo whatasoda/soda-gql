@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { BuilderChangeSet } from "@soda-gql/builder";
 import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module/index";
@@ -73,7 +72,7 @@ describe("BuilderSession E2E", () => {
       config: createTestConfig(workspace),
     });
 
-    const result = await session.build({ changeSet: null });
+    const result = await session.build();
 
     expect(result.isOk()).toBe(true);
   });
@@ -85,7 +84,7 @@ describe("BuilderSession E2E", () => {
     });
 
     // Initial build
-    const initialResult = await session.build({ changeSet: null });
+    const initialResult = await session.build();
 
     if (initialResult.isErr()) {
       console.error("Build failed:", initialResult.error);
@@ -98,19 +97,12 @@ describe("BuilderSession E2E", () => {
     const modifiedContent = `${originalContent}\n// modified\n`;
     writeFileSync(userPath, modifiedContent);
 
-    const changeSet: BuilderChangeSet = {
-      added: [],
-      updated: [
-        {
-          filePath: userPath,
-          fingerprint: "modified-fingerprint",
-          mtimeMs: Date.now(),
-        },
-      ],
-      removed: [],
-    };
+    // Touch file to update mtime for tracker detection
+    const now = Date.now() / 1000;
+    utimesSync(userPath, now, now);
 
-    const updateResult = await session.build({ changeSet });
+    // Incremental update (tracker auto-detects changes)
+    const updateResult = await session.build();
     expect(updateResult.isOk()).toBe(true);
   });
 
@@ -121,18 +113,17 @@ describe("BuilderSession E2E", () => {
     });
 
     // Initial build
-    const initialResult = await session.build({ changeSet: null });
+    const initialResult = await session.build();
 
     expect(initialResult.isOk()).toBe(true);
+    const gen1 = session.getGeneration();
 
-    // Empty change set (no changes)
-    const changeSet: BuilderChangeSet = {
-      added: [],
-      updated: [],
-      removed: [],
-    };
-
-    const updateResult = await session.build({ changeSet });
+    // No file changes - tracker should skip rebuild
+    const updateResult = await session.build();
     expect(updateResult.isOk()).toBe(true);
+
+    // Generation should not advance (cached artifact returned)
+    const gen2 = session.getGeneration();
+    expect(gen2).toBe(gen1);
   });
 });
