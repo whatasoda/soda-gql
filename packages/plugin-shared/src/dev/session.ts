@@ -1,11 +1,9 @@
 import { createHash } from "node:crypto";
 
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
 import type { CanonicalId } from "@soda-gql/common";
 
 import type { BuilderServiceController } from "./builder-service-controller";
-import type { BuilderWatch } from "./builder-watch";
 import type {
   DevArtifactDiff,
   DevBuilderSessionEvent,
@@ -17,14 +15,12 @@ import type {
 
 export class DevBuilderSession implements DevBuilderSessionLike {
   private readonly controller: BuilderServiceController;
-  private readonly watch: BuilderWatch | null;
   private previousArtifact: BuilderArtifact | null;
   private previousHashes: Map<CanonicalId, string>;
   private readonly listeners = new Set<DevBuilderSessionListener>();
 
   constructor(options: DevBuilderSessionOptions) {
     this.controller = options.controller;
-    this.watch = options.watch ?? null;
     this.previousArtifact = options.initialArtifact ?? null;
     this.previousHashes = options.initialArtifact ? hashArtifactElements(options.initialArtifact) : new Map();
   }
@@ -48,23 +44,22 @@ export class DevBuilderSession implements DevBuilderSessionLike {
     await this.handleResult(result, "manual");
   }
 
-  async applyFileChanges(modified?: Iterable<string> | null, removed?: Iterable<string> | null): Promise<void> {
-    if (!this.watch) {
-      return;
-    }
-    this.watch.trackChanges(modified, removed);
-    const changeSet = await this.watch.flush();
-    if (!changeSet) {
-      return;
-    }
-    const result = await this.controller.update(changeSet as BuilderChangeSet);
+  /**
+   * Trigger incremental build.
+   *
+   * The builder automatically detects file changes using an internal file tracker.
+   * File parameters are ignored (kept for backward compatibility).
+   *
+   * @deprecated File change detection is now automatic. Use rebuild() instead.
+   */
+  async applyFileChanges(_modified?: Iterable<string> | null, _removed?: Iterable<string> | null): Promise<void> {
+    const result = await this.controller.build();
     await this.handleResult(result, "incremental");
   }
 
   reset(): void {
     this.previousArtifact = null;
     this.previousHashes = new Map();
-    this.watch?.reset();
     this.controller.reset();
   }
 

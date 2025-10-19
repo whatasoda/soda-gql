@@ -2,7 +2,6 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 
 import type { BuilderServiceController, BuilderServiceFailure } from "./builder-service-controller";
-import type { BuilderWatch } from "./builder-watch";
 
 export type DevArtifactDiff = {
   readonly added: CanonicalId[];
@@ -31,7 +30,6 @@ export type DevBuilderSessionListener = (event: DevBuilderSessionEvent) => void;
 
 export type DevBuilderSessionOptions = {
   readonly controller: BuilderServiceController;
-  readonly watch?: BuilderWatch | null;
   readonly initialArtifact?: BuilderArtifact | null;
 };
 

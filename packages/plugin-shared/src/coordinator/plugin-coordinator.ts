@@ -1,5 +1,4 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
 import { type BuilderServiceController, createBuilderServiceController } from "../dev/builder-service-controller.js";
 import type { NormalizedOptions } from "../options.js";
 import { computeDiff, createSnapshot } from "./snapshot.js";
@@ -29,16 +28,15 @@ export class PluginCoordinator {
 
   /**
    * Ensure the latest artifact is built and return a snapshot.
-   * If already initialized, returns the current snapshot without rebuilding.
-   * For incremental updates, use update() instead.
+   *
+   * The builder automatically detects file changes using an internal file tracker.
+   * If no changes are detected and a previous artifact exists, returns the cached snapshot.
+   * Otherwise, performs an incremental or full build as needed.
    */
   async ensureLatest(): Promise<CoordinatorSnapshot> {
     this.assertNotDisposed();
 
-    if (this.currentSnapshot) {
-      return this.currentSnapshot;
-    }
-
+    const prevGeneration = this.controller.getGeneration();
     const result = await this.controller.build();
 
     if (result.isErr()) {
@@ -48,37 +46,16 @@ export class PluginCoordinator {
       throw error;
     }
 
-    const snapshot = createSnapshot(result.value, this.normalizedOptions, this.controller.getGeneration());
+    const currentGeneration = this.controller.getGeneration();
 
-    const diff = computeDiff(this.currentSnapshot, snapshot);
-    this.currentSnapshot = snapshot;
-
-    this.subscriptions.emit({
-      type: "artifact",
-      snapshot,
-      diff,
-    });
-
-    return snapshot;
-  }
-
-  /**
-   * Apply incremental changes and return updated snapshot.
-   */
-  async update(changeSet: BuilderChangeSet): Promise<CoordinatorSnapshot> {
-    this.assertNotDisposed();
-
-    const result = await this.controller.update(changeSet);
-
-    if (result.isErr()) {
-      const error = result.error.type === "builder-error" ? result.error.error : new Error(String(result.error.error));
-
-      this.subscriptions.emit({ type: "error", error });
-      throw error;
+    // If generation hasn't changed, the tracker skipped the build (no changes)
+    // Return the existing snapshot without emitting events
+    if (this.currentSnapshot && prevGeneration === currentGeneration) {
+      return this.currentSnapshot;
     }
 
     const prevSnapshot = this.currentSnapshot;
-    const snapshot = createSnapshot(result.value, this.normalizedOptions, this.controller.getGeneration());
+    const snapshot = createSnapshot(result.value, this.normalizedOptions, currentGeneration);
 
     const diff = computeDiff(prevSnapshot, snapshot);
     this.currentSnapshot = snapshot;

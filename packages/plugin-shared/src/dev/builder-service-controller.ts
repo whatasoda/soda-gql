@@ -5,7 +5,6 @@ import {
   type BuilderServiceConfig,
   createBuilderService,
 } from "@soda-gql/builder";
-import type { BuilderChangeSet } from "@soda-gql/builder/change-set";
 import { err, ok, type Result } from "neverthrow";
 
 export type BuilderServiceFailure =
@@ -16,8 +15,7 @@ export type BuilderServiceResult = Result<BuilderArtifact, BuilderServiceFailure
 
 export interface BuilderServiceController {
   readonly initialized: boolean;
-  build(): Promise<BuilderServiceResult>;
-  update(changeSet: BuilderChangeSet): Promise<BuilderServiceResult>;
+  build(options?: { force?: boolean }): Promise<BuilderServiceResult>;
   reset(): void;
   getGeneration(): number;
   getCurrentArtifact(): BuilderArtifact | null;
@@ -27,7 +25,6 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
   let service: BuilderService | null = null;
   let initialized = false;
   let queue: Promise<void> = Promise.resolve();
-  let generation = 0;
   let currentArtifact: BuilderArtifact | null = null;
 
   const ensureService = (): BuilderService => {
@@ -53,7 +50,6 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
         return err({ type: "builder-error", error: result.error });
       }
       initialized = true;
-      generation++;
       currentArtifact = result.value;
       return ok(result.value);
     } catch (error) {
@@ -65,28 +61,18 @@ export const createBuilderServiceController = (config: BuilderServiceConfig): Bu
     get initialized() {
       return initialized;
     },
-    build: () =>
+    build: (options) =>
       runExclusive(() => {
         const instance = ensureService();
-        return wrapOperation(() => instance.build());
-      }),
-    update: (changeSet) =>
-      runExclusive(() => {
-        const instance = ensureService();
-        const run =
-          initialized && typeof instance.update === "function"
-            ? () => instance.update?.(changeSet) ?? instance.build()
-            : () => instance.build();
-        return wrapOperation(run);
+        return wrapOperation(() => instance.build(options));
       }),
     reset: () => {
       service = null;
       initialized = false;
       queue = Promise.resolve();
-      generation = 0;
       currentArtifact = null;
     },
-    getGeneration: () => generation,
+    getGeneration: () => service?.getGeneration() ?? 0,
     getCurrentArtifact: () => currentArtifact,
   };
 };
