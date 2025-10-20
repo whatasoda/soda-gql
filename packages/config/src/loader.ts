@@ -31,7 +31,6 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
 
 /**
  * Load and execute TypeScript config file synchronously using SWC + VM.
- * Based on the pattern from fuga.js.
  */
 function executeConfigFile(configPath: string): unknown {
   const configFilename = resolve(configPath);
@@ -61,16 +60,16 @@ function executeConfigFile(configPath: string): unknown {
     const pseudoModule: { exports: unknown } = { exports: {} };
 
     const customRequireInner = createRequire(configFilename);
-    const customRequire = (path: string) => {
+    const customRequire = (specifier: string) => {
       // Handle external modules normally
-      if (!path.startsWith(".")) {
-        return customRequireInner(path);
+      if (!specifier.startsWith(".")) {
+        return customRequireInner(specifier);
       }
 
       // Resolve relative imports with existence check
-      const resolvedPath = resolveRelativeImportWithExistenceCheck({ filePath: configFilename, specifier: path });
+      const resolvedPath = resolveRelativeImportWithExistenceCheck({ filePath: configFilename, specifier });
       if (!resolvedPath) {
-        throw new Error(`Module not found: ${path}`);
+        throw new Error(`Module not found: ${specifier}`);
       }
       return customRequireInner(resolvedPath);
     };

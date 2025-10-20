@@ -15,7 +15,7 @@ import {
 } from "../discovery";
 import { builderErrors } from "../errors";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
-import { createFileTracker, type FileDiff, type FileTrackerState, isEmptyDiff } from "../tracker";
+import { createFileTracker, type FileDiff, isEmptyDiff } from "../tracker";
 import type { BuilderError } from "../types";
 import { validateModuleDependencies } from "./dependency-validation";
 import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
@@ -62,12 +62,12 @@ export interface BuilderSession {
  */
 export const createBuilderSession = (options: {
   readonly evaluatorId?: string;
-  readonly entrypoints: readonly string[] | ReadonlySet<string>;
+  readonly entrypointsOverride?: readonly string[] | ReadonlySet<string>;
   readonly config: ResolvedSodaGqlConfig;
 }): BuilderSession => {
   const config = options.config;
   const evaluatorId = options.evaluatorId ?? "default";
-  const entrypoints: ReadonlySet<string> = new Set(options.entrypoints);
+  const entrypoints: ReadonlySet<string> = new Set(options.entrypointsOverride ?? config.builder.entry);
 
   // Session state stored in closure
   const state: SessionState = {
@@ -92,7 +92,7 @@ export const createBuilderSession = (options: {
       evaluatorId,
     }),
   );
-  const ensureFileTracker = cachedFn(() => createFileTracker({ cacheFactory }));
+  const ensureFileTracker = cachedFn(() => createFileTracker());
 
   const build = (options?: { force?: boolean }): Result<BuilderArtifact, BuilderError> => {
     const force = options?.force ?? false;
@@ -106,18 +106,7 @@ export const createBuilderSession = (options: {
 
     // 2. Load tracker and detect changes
     const tracker = ensureFileTracker();
-    const previousStateResult = tracker.loadState();
-    if (previousStateResult.isErr()) {
-      // Soft failure: log and proceed with empty state (full rebuild)
-      console.warn("Failed to load file tracker state, proceeding with full rebuild:", previousStateResult.error);
-    }
-    const previousState: FileTrackerState = previousStateResult.isOk()
-      ? previousStateResult.value
-      : { version: 1, files: new Map() };
-
-    // 3. Scan current files (entry paths + previously tracked files)
-    const allPathsToScan = new Set([...entryPaths, ...previousState.files.keys()]);
-    const scanResult = tracker.scan(Array.from(allPathsToScan));
+    const scanResult = tracker.scan(entryPaths);
     if (scanResult.isErr()) {
       const trackerError = scanResult.error;
       return err(
@@ -127,10 +116,10 @@ export const createBuilderSession = (options: {
         ),
       );
     }
-    const currentScan = scanResult.value;
 
-    // 4. Detect changes
-    const diff = tracker.detectChanges(previousState, currentScan);
+    // 3. Scan current files (entry paths + previously tracked files)
+    const currentScan = scanResult.value;
+    const diff = tracker.detectChanges();
 
     // 5. Prepare for build
     const prepareResult = prepare({
@@ -188,10 +177,7 @@ export const createBuilderSession = (options: {
     state.intermediateModules = intermediateModules;
 
     // 9. Persist tracker state (soft failure - don't block on cache write)
-    const persistResult = tracker.persist({ version: 1, files: currentScan.files });
-    if (persistResult.isErr()) {
-      console.warn("Failed to persist file tracker state:", persistResult.error);
-    }
+    tracker.update(currentScan);
 
     return ok(artifact);
   };

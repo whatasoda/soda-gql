@@ -21,24 +21,6 @@ import type { SodaGqlConfig } from "./types";
  *   builder: { entry: ["./src/**\/*.ts"], outDir: "./.cache" },
  * }));
  */
-export function defineConfig(
-  config: SodaGqlConfig | (() => SodaGqlConfig) | (() => Promise<SodaGqlConfig>),
-): SodaGqlConfig | (() => SodaGqlConfig) | (() => Promise<SodaGqlConfig>) {
-  return config;
-}
-
-/**
- * Define multi-project workspace configuration.
- *
- * @example
- * export default defineWorkspace({
- *   defaultProject: "web",
- *   projects: {
- *     web: { graphqlSystemPath: "./apps/web/graphql-system" },
- *     mobile: { graphqlSystemPath: "./apps/mobile/graphql-system" },
- *   },
- * });
- */
-export function defineWorkspace(config: SodaGqlConfig): SodaGqlConfig {
-  return config;
+export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): SodaGqlConfig {
+  return typeof config === "function" ? config() : config;
 }

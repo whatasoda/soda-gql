@@ -12,7 +12,6 @@ export const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig =
     entry: [join(workspaceRoot, "src/**/*.ts")],
     outDir: join(workspaceRoot, ".cache/soda-gql"),
     analyzer: "ts" as const,
-    mode: "runtime" as const,
   },
   codegen: {
     schema: join(workspaceRoot, "schema.graphql"),

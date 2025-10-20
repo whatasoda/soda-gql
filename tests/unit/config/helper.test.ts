@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { defineConfig, defineWorkspace } from "@soda-gql/config/helper";
+import { defineConfig } from "@soda-gql/config/helper";
 import type { SodaGqlConfig } from "@soda-gql/config/types";
 
 describe("helper.ts", () => {
@@ -91,38 +91,6 @@ describe("helper.ts", () => {
         const resolved = await result();
         expect(resolved.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
       }
-    });
-  });
-
-  describe("defineWorkspace", () => {
-    test("preserves workspace config", () => {
-      const config: SodaGqlConfig = {
-        defaultProject: "web",
-        projects: {
-          web: { graphqlSystemPath: "./apps/web/graphql-system" },
-          mobile: { graphqlSystemPath: "./apps/mobile/graphql-system" },
-        },
-      };
-
-      const result = defineWorkspace(config);
-
-      expect(result).toBe(config);
-      expect(result.defaultProject).toBe("web");
-      expect(result.projects?.web).toBeDefined();
-    });
-
-    test("does not mutate input", () => {
-      const config: SodaGqlConfig = {
-        defaultProject: "web",
-        projects: {
-          web: { graphqlSystemPath: "./apps/web/graphql-system" },
-        },
-      };
-
-      const original = { ...config };
-      defineWorkspace(config);
-
-      expect(config).toEqual(original);
     });
   });
 });

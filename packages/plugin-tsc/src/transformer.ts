@@ -1,186 +1,172 @@
 /**
- * TypeScript transformer for Nest CLI integration.
- *
- * This transformer integrates soda-gql's zero-runtime transformations
- * into the Nest CLI build process when using `builder: "tsc"`.
+ * TypeScript implementation of the TransformAdapter interface.
  */
 
-import type { CanonicalId } from "@soda-gql/common";
-import type * as ts from "typescript";
-import { createAfterStubTransformer, type TypeScriptAdapter, typescriptTransformAdapterFactory } from "./internal/ts-adapter/typescript-adapter.js";
-import { prepareTransformState } from "./internal/state/prepare-transform-state.js";
+import { resolve } from "node:path";
+import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
+import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import * as ts from "typescript";
+import {
+  ensureGqlRuntimeImport,
+  ensureGqlRuntimeRequire,
+  type GraphqlSystemIdentifyHelper,
+} from "./internal/ts-adapter/typescript/imports.js";
+import { collectGqlDefinitionMetadata } from "./internal/ts-adapter/typescript/metadata.js";
+import { transformCallExpression } from "./internal/ts-adapter/typescript/transformer.js";
+
+export { createAfterStubTransformer } from "./internal/ts-adapter/typescript/imports.js";
 
 /**
- * Configuration for the soda-gql TypeScript transformer.
+ * TypeScript-specific environment required for the adapter.
  */
-export type TransformerConfig = {
-  /**
-   * Path to the soda-gql config file.
-   * If not provided, will search for config in standard locations.
-   */
-  readonly configPath?: string;
-
-  /**
-   * Project name for multi-project configs.
-   */
-  readonly project?: string;
-
-  /**
-   * Import identifier for the GraphQL system.
-   * @default "@/graphql-system"
-   */
-  readonly importIdentifier?: string;
-
-  /**
-   * Whether to enable transformation.
-   * Set to false to disable the transformer (useful for debugging).
-   * @default true
-   */
-  readonly enabled?: boolean;
+export type TypeScriptEnv = {
+  readonly sourceFile: ts.SourceFile;
+  readonly context: ts.TransformationContext;
 };
 
+const tsInternals = ts as unknown as {
+  createGetCanonicalFileName: (useCaseSensitiveFileNames: boolean) => (path: string) => string;
+  getEmitModuleKind: (compilerOptions: ts.CompilerOptions) => ts.ModuleKind.CommonJS | ts.ModuleKind.ES2015;
+};
 
+const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): number => {
+  let lastIndex = -1;
+  const statements = sourceFile.statements;
 
-/**
- * Create a TypeScript transformer for soda-gql.
- *
- * This factory signature matches the TypeScript compiler plugin API
- * expected by Nest CLI and other TypeScript tooling.
- *
- * @example
- * ```ts
- * // In tsconfig.json or nest-cli.json:
- * {
- *   "compilerOptions": {
- *     "plugins": [
- *       {
- *         "transform": "@soda-gql/plugin-tsc",
- *         "configPath": "./soda-gql.config.ts"
- *       }
- *     ]
- *   }
- * }
- * ```
- */
-export function createSodaGqlTransformer(
-  _program: ts.Program,
-  rawConfig?: Partial<TransformerConfig>,
-): ts.TransformerFactory<ts.SourceFile> {
-  const config: TransformerConfig = {
-    configPath: rawConfig?.configPath,
-    project: rawConfig?.project,
-    importIdentifier: rawConfig?.importIdentifier ?? "@/graphql-system",
-    enabled: rawConfig?.enabled ?? true,
-  };
-
-  // Short-circuit if disabled
-  if (!config.enabled) {
-    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
-  }
-
-  // Prepare transform state using coordinator
-  const prepareResult = prepareTransformState({
-    configPath: config.configPath,
-    project: config.project,
-    importIdentifier: config.importIdentifier,
-    packageLabel: "@soda-gql/plugin-tsc",
-  });
-
-  // Handle preparation errors
-  if (prepareResult.isErr()) {
-    const error = prepareResult.error;
-    if (error.type === "PLUGIN_ERROR") {
-      const pluginError = error.error;
-      console.error(`[@soda-gql/plugin-tsc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
+  for (let i = 0; i < statements.length; i++) {
+    const statement = statements[i];
+    if (statement && ts.isImportDeclaration(statement)) {
+      lastIndex = i;
     }
-    // Return no-op transformer
-    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
   }
 
-  const prepared = prepareResult.value;
+  return lastIndex;
+};
 
-  return (context: ts.TransformationContext) => {
-    return (sourceFile: ts.SourceFile) => {
-      // Skip declaration files
-      if (sourceFile.isDeclarationFile) {
-        return sourceFile;
+export const createBeforeTransformer = ({
+  program,
+  config,
+  artifact,
+}: {
+  readonly program: ts.Program;
+  readonly config: ResolvedSodaGqlConfig;
+  readonly artifact: BuilderArtifact;
+}) => {
+  const compilerOptions = program.getCompilerOptions();
+  const isCJS = tsInternals.getEmitModuleKind(compilerOptions) === ts.ModuleKind.CommonJS;
+
+  // Use TypeScript's canonical file name comparison to handle casing, symlinks, etc.
+  const getCanonicalFileName = tsInternals.createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames);
+  const toCanonical = (file: string): string => {
+    const resolved = ts.sys.resolvePath ? ts.sys.resolvePath(file) : resolve(file);
+    return getCanonicalFileName(resolved);
+  };
+
+  const graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper = {
+    isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
+      return toCanonical(filePath) === toCanonical(config.graphqlSystemPath);
+    },
+    isGraphqlSystemImportSpecifier: ({ filePath, specifier }: { filePath: string; specifier: string }) => {
+      if (config.graphqlSystemAlias) {
+        return toCanonical(specifier) === toCanonical(config.graphqlSystemAlias);
       }
 
-      // Create TypeScript adapter
-      const adapter = typescriptTransformAdapterFactory.create({
-        sourceFile,
-        context,
-        typescript: require("typescript"),
-      });
-
-      // Transform the program
-      const transformContext = {
-        filename: sourceFile.fileName,
-        artifactLookup: (canonicalId: CanonicalId) => prepared.allArtifacts[canonicalId],
-        runtimeModule: prepared.importIdentifier,
-        compilerOptions: context.getCompilerOptions(),
-        graphqlSystemFilePath: prepared.graphqlSystemPath,
-      };
-
-      const transformResult = adapter.transformProgram(transformContext);
-
-      if (!transformResult.transformed) {
-        return sourceFile;
+      const resolved = resolveRelativeImportWithExistenceCheck({ filePath, specifier });
+      if (!resolved) {
+        return false;
       }
 
-      // Insert runtime side effects
-      adapter.insertRuntimeSideEffects();
+      return toCanonical(resolved) === toCanonical(config.graphqlSystemPath);
+    },
+  };
 
-      // The adapter updates sourceFile internally, retrieve it
-      // This is a workaround until we refactor adapter to return transformed source
-      return (adapter as unknown as { env: { sourceFile: ts.SourceFile } }).env.sourceFile;
+  const makeSourceFileEmpty = ({ factory, sourceFile }: { factory: ts.NodeFactory; sourceFile: ts.SourceFile }) => {
+    return factory.updateSourceFile(sourceFile, [
+      factory.createExportDeclaration(undefined, false, factory.createNamedExports([]), undefined),
+    ]);
+  };
+
+  const transformGqlCalls = ({ sourceFile, context }: { sourceFile: ts.SourceFile; context: ts.TransformationContext }) => {
+    let transformed = false;
+
+    const metadata = collectGqlDefinitionMetadata({
+      sourceFile,
+      filename: sourceFile.fileName,
+    });
+
+    const runtimeCallsFromLastTransform: ts.Expression[] = [];
+    const visitor = (node: ts.Node): ts.Node => {
+      if (ts.isCallExpression(node)) {
+        const result = transformCallExpression({
+          callNode: node,
+          filename: sourceFile.fileName,
+          metadata,
+          getArtifact: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
+          factory: context.factory,
+          isCJS,
+        });
+
+        if (result.transformed) {
+          transformed = true;
+
+          if (result.runtimeCall) {
+            runtimeCallsFromLastTransform.push(result.runtimeCall);
+          }
+
+          return result.replacement;
+        }
+      }
+
+      return ts.visitEachChild(node, visitor, context);
     };
-  };
-}
 
-/**
- * Nest CLI plugin hook: before() transformer.
- *
- * This function is called by Nest CLI with (options, program) signature.
- * It must be exported as a top-level named export for CommonJS compatibility.
- */
-export function before(options: Partial<TransformerConfig> = {}, program?: ts.Program): ts.TransformerFactory<ts.SourceFile> {
-  if (!program) {
-    throw new Error("[@soda-gql/plugin-tsc] Nest CLI invoked the transformer without a Program instance.");
-  }
-  return createSodaGqlTransformer(program, options);
-}
+    const visitedNode = ts.visitNode(sourceFile, visitor);
+    if (!visitedNode || !ts.isSourceFile(visitedNode)) {
+      throw new Error("[TypeScriptAdapter] Failed to transform source file");
+    }
 
-/**
- * Nest CLI plugin hook: after() transformer.
- *
- * This runs after TypeScript's own transformers (including CommonJS downleveling).
- * It replaces require() calls for the graphql-system module with lightweight stubs
- * to prevent the heavy module from being loaded at runtime.
- */
-export function after(options: Partial<TransformerConfig> = {}): ts.TransformerFactory<ts.SourceFile> {
-  const config: TransformerConfig = {
-    configPath: options.configPath,
-    project: options.project,
-    importIdentifier: options.importIdentifier ?? "@/graphql-system",
-    enabled: options.enabled ?? true,
+    if (!transformed) {
+      return sourceFile;
+    }
+
+    if (runtimeCallsFromLastTransform.length === 0) {
+      return visitedNode;
+    }
+
+    const lastImportIndex = findLastImportIndex({ sourceFile });
+
+    return context.factory.updateSourceFile(visitedNode, [
+      ...visitedNode.statements.slice(0, lastImportIndex + 1),
+      ...runtimeCallsFromLastTransform.map((expr) => context.factory.createExpressionStatement(expr)),
+      ...visitedNode.statements.slice(lastImportIndex + 1),
+    ]);
   };
 
-  // Short-circuit if disabled
-  if (!config.enabled) {
-    return (_context: ts.TransformationContext) => (sourceFile: ts.SourceFile) => sourceFile;
-  }
+  return {
+    transform: ({ sourceFile, context }: { sourceFile: ts.SourceFile; context: ts.TransformationContext }) => {
+      if (graphqlSystemIdentifyHelper.isGraphqlSystemFile({ filePath: sourceFile.fileName })) {
+        const transformedSourceFile = makeSourceFileEmpty({ factory: context.factory, sourceFile: sourceFile });
+        return { transformed: true, sourceFile: transformedSourceFile };
+      }
 
-  return createAfterStubTransformer(config.importIdentifier ?? "@/graphql-system", require("typescript"));
-}
+      const original = sourceFile;
+      let current = sourceFile;
+      current = transformGqlCalls({ sourceFile: current, context });
 
-/**
- * Nest CLI plugin interface object.
- * Provides the before() and after() hooks for TypeScript transformations.
- */
-const nestCliPlugin = { before, after };
+      if (current !== sourceFile) {
+        current = isCJS
+          ? ensureGqlRuntimeRequire({ sourceFile: current, factory: context.factory })
+          : ensureGqlRuntimeImport({ sourceFile: current, factory: context.factory });
+      }
 
-/**
- * Default export for Nest CLI plugin resolution.
- */
-export default nestCliPlugin;
+      // current = removeGraphqlSystemImports({
+      //   sourceFile: current,
+      //   factory: context.factory,
+      //   graphqlSystemIdentifyHelper,
+      // });
+
+      return { transformed: current !== original, sourceFile: current };
+    },
+  };
+};

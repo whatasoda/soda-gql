@@ -21,25 +21,13 @@ const CodegenConfigSchema = z.object({
   outDir: z.string().min(1),
 });
 
-const ProjectConfigSchema = z.object({
-  graphqlSystemPath: z.string().min(1),
-  corePath: z.string().optional(),
-  builder: BuilderConfigSchema.optional(),
-  codegen: CodegenConfigSchema.optional(),
-  plugins: z.record(z.string(), z.unknown()).optional(),
-});
-
 const SodaGqlConfigSchema = z.object({
-  // Single project mode
   graphqlSystemPath: z.string().optional(),
+  graphqlSystemAlias: z.string().optional(),
   corePath: z.string().optional(),
   builder: BuilderConfigSchema.optional(),
   codegen: CodegenConfigSchema.optional(),
   plugins: z.record(z.string(), z.unknown()).optional(),
-
-  // Multi-project mode
-  projects: z.record(z.string(), ProjectConfigSchema).optional(),
-  defaultProject: z.string().optional(),
 });
 
 export function validateConfig(config: unknown): Result<SodaGqlConfig, ConfigError> {
@@ -63,39 +51,36 @@ export function resolveConfig(config: SodaGqlConfig, configPath: string): Result
     return isAbsolute(path) ? path : resolve(configDir, path);
   };
 
-  // Handle single-project mode
-  if (!config.projects) {
-    if (!config.graphqlSystemPath) {
-      return err(configError("CONFIG_VALIDATION_FAILED", "graphqlSystemPath is required in single-project mode"));
-    }
-
-    // Compute config hash for cache invalidation
-    const stats = statSync(configPath);
-    const configHash = createHash("sha256").update(readFileSync(configPath)).digest("hex").slice(0, 16);
-
-    return ok({
-      graphqlSystemPath: resolveFromConfig(config.graphqlSystemPath),
-      corePath: config.corePath ? resolveFromConfig(config.corePath) : DEFAULT_CORE_PATH,
-      builder: {
-        ...DEFAULT_BUILDER_CONFIG,
-        ...(config.builder ?? {}),
-        entry: (config.builder?.entry ?? []).map(resolveFromConfig),
-        outDir: resolveFromConfig(config.builder?.outDir ?? DEFAULT_BUILDER_CONFIG.outDir),
-      },
-      codegen: config.codegen
-        ? {
-            schema: resolveFromConfig(config.codegen.schema),
-            outDir: resolveFromConfig(config.codegen.outDir),
-          }
-        : undefined,
-      plugins: config.plugins ?? {},
-      configDir,
-      configPath,
-      configHash,
-      configMtime: stats.mtimeMs,
-    });
+  if (!config.graphqlSystemPath) {
+    return err(configError("CONFIG_VALIDATION_FAILED", "graphqlSystemPath is required"));
   }
 
-  // TODO: Multi-project mode support
-  return err(configError("CONFIG_VALIDATION_FAILED", "Multi-project mode not yet implemented"));
+  // Compute config hash for cache invalidation
+  const stats = statSync(configPath);
+  const configHash = createHash("sha256").update(readFileSync(configPath)).digest("hex").slice(0, 16);
+
+  const resolved: ResolvedSodaGqlConfig = {
+    graphqlSystemPath: resolveFromConfig(config.graphqlSystemPath),
+    graphqlSystemAlias: config.graphqlSystemAlias ?? undefined,
+    corePath: config.corePath ? resolveFromConfig(config.corePath) : DEFAULT_CORE_PATH,
+    builder: {
+      ...DEFAULT_BUILDER_CONFIG,
+      ...(config.builder ?? {}),
+      entry: (config.builder?.entry ?? []).map(resolveFromConfig),
+      outDir: resolveFromConfig(config.builder?.outDir ?? DEFAULT_BUILDER_CONFIG.outDir),
+    },
+    codegen: config.codegen
+      ? {
+          schema: resolveFromConfig(config.codegen.schema),
+          outDir: resolveFromConfig(config.codegen.outDir),
+        }
+      : undefined,
+    plugins: config.plugins ?? {},
+    configDir,
+    configPath,
+    configHash,
+    configMtime: stats.mtimeMs,
+  };
+
+  return ok(resolved);
 }

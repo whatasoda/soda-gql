@@ -145,7 +145,7 @@ export const builderCommand = async (argv: readonly string[]): Promise<number> =
     const options = parsed.value;
 
     // Single build
-    const service = createBuilderService({ config, entrypoints: options.entry });
+    const service = createBuilderService({ config, entrypointsOverride: options.entry });
 
     let result: Result<BuilderArtifact, BuilderError>;
     try {

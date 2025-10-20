@@ -36,7 +36,7 @@ const createService = (workspaceRoot: string, entry: string, config: ReturnType<
   try {
     return createBuilderService({
       config,
-      entrypoints: [entry],
+      entrypointsOverride: [entry],
     });
   } finally {
     process.chdir(originalCwd);

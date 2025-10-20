@@ -10,7 +10,7 @@ import type { BuilderError } from "./types";
  */
 export type BuilderServiceConfig = {
   readonly config: ResolvedSodaGqlConfig;
-  readonly entrypoints: readonly string[] | ReadonlySet<string>;
+  readonly entrypointsOverride?: readonly string[] | ReadonlySet<string>;
 };
 
 /**
@@ -57,8 +57,8 @@ export interface BuilderService {
  * @param config - Builder configuration including entry patterns, analyzer, mode, and optional debugDir
  * @returns BuilderService instance
  */
-export const createBuilderService = ({ config, entrypoints }: BuilderServiceConfig): BuilderService => {
-  const session = createBuilderSession({ config, entrypoints });
+export const createBuilderService = ({ config, entrypointsOverride }: BuilderServiceConfig): BuilderService => {
+  const session = createBuilderSession({ config, entrypointsOverride });
 
   return {
     build: (options) => session.build(options),

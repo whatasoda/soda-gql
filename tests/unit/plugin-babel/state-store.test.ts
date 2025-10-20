@@ -39,7 +39,7 @@ const createMockOptions = (): NormalizedOptions => ({
       codegen: undefined,
       plugins: {},
     },
-    entrypoints: ["**/*.ts"],
+    entrypointsOverride: ["**/*.ts"],
   },
   project: undefined,
 });

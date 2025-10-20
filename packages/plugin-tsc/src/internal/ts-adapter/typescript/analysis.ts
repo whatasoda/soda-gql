@@ -5,9 +5,9 @@ import type {
   BuilderArtifactSlice,
   CanonicalId,
 } from "@soda-gql/builder";
+import { createCanonicalId } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
-import { resolveCanonicalId } from "../../canonical-id.js";
 import type {
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
@@ -50,7 +50,7 @@ export const extractGqlCall = ({
     return err(createMetadataMissingError({ filename }));
   }
 
-  const canonicalId = resolveCanonicalId(filename, meta.astPath);
+  const canonicalId = createCanonicalId(filename, meta.astPath);
   const artifact = getArtifact(canonicalId);
 
   if (!artifact) {
@@ -138,7 +138,7 @@ const resolveBuilderCall = (call: ts.CallExpression, typescript: typeof ts): ts.
   }
 
   const factoryArg = call.arguments[0];
-  if (!typescript.isArrowFunction(factoryArg)) {
+  if (!factoryArg || !typescript.isArrowFunction(factoryArg)) {
     return null;
   }
 

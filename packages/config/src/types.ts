@@ -3,7 +3,6 @@ export type BuilderConfig = {
   readonly entry: readonly string[];
   readonly outDir: string;
   readonly analyzer: "ts" | "swc";
-  readonly mode?: "runtime" | "zero-runtime";
 };
 
 // Codegen-specific config
@@ -26,21 +25,18 @@ export type ProjectConfig = {
 
 // Top-level config (supports multi-project)
 export type SodaGqlConfig = {
-  // Single project mode (simpler)
   readonly graphqlSystemPath?: string;
+  readonly graphqlSystemAlias?: string;
   readonly corePath?: string;
   readonly builder?: BuilderConfig;
   readonly codegen?: CodegenConfig;
   readonly plugins?: PluginConfig;
-
-  // Multi-project mode
-  readonly projects?: Record<string, ProjectConfig>;
-  readonly defaultProject?: string;
 };
 
 // Resolved config (normalized and validated)
 export type ResolvedSodaGqlConfig = {
   readonly graphqlSystemPath: string;
+  readonly graphqlSystemAlias: string | undefined;
   readonly corePath: string;
   readonly builder: Required<BuilderConfig>;
   readonly codegen?: Required<CodegenConfig>;

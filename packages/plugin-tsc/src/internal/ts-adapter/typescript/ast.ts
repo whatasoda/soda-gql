@@ -1,4 +1,4 @@
-import type * as ts from "typescript";
+import * as ts from "typescript";
 
 /**
  * Build a literal expression from a primitive value.
@@ -33,8 +33,8 @@ export const buildLiteralFromValue = (factory: ts.NodeFactory, value: unknown): 
  * Clone a TypeScript node deeply.
  * TypeScript nodes are immutable, so we need to use visitEachChild for deep cloning.
  */
-export const clone = <T extends ts.Node>(typescript: typeof ts, node: T): T => {
-  const cloneVisitor = (n: ts.Node): ts.Node => typescript.visitEachChild(n, cloneVisitor, undefined);
+export const clone = <T extends ts.Node>(node: T): T => {
+  const cloneVisitor = (n: ts.Node): ts.Node => ts.visitEachChild(n, cloneVisitor, undefined);
   return cloneVisitor(node) as T;
 };
 

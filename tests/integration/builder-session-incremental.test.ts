@@ -66,7 +66,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const evaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -91,7 +91,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -140,7 +140,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -160,7 +160,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -193,7 +193,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -213,7 +213,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -247,7 +247,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -268,7 +268,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -319,7 +319,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypoints: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();

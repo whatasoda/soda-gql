@@ -1,28 +1,21 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
-import { createFileTracker, type FileTrackerState, isEmptyDiff } from "@soda-gql/builder/tracker/file-tracker";
+import { createFileTracker, isEmptyDiff } from "@soda-gql/builder/tracker/file-tracker";
 import { normalizePath } from "@soda-gql/common";
 
 describe("FileTracker", () => {
   const testRoot = join(process.cwd(), ".cache", "test", "file-tracker");
   const fixtureRoot = join(testRoot, "fixtures");
-  const cacheRoot = join(testRoot, "cache");
 
   beforeEach(() => {
     // Clean up test directories
     rmSync(testRoot, { recursive: true, force: true });
     mkdirSync(fixtureRoot, { recursive: true });
-    mkdirSync(cacheRoot, { recursive: true });
   });
 
   const createTestTracker = () => {
-    const cacheFactory = createJsonCache({
-      rootDir: cacheRoot,
-      prefix: ["test"],
-    });
-    return createFileTracker({ cacheFactory });
+    return createFileTracker();
   };
 
   const createFixtureFile = (name: string, content: string): string => {
@@ -31,14 +24,20 @@ describe("FileTracker", () => {
     return normalizePath(filePath);
   };
 
-  test("loadState returns empty state when no cache exists", () => {
+  test("new tracker starts with empty state", () => {
     const tracker = createTestTracker();
-    const result = tracker.loadState();
+    const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
+    // First scan should detect the file as added
+    const result = tracker.scan([file1]);
     expect(result.isOk()).toBe(true);
+
     if (result.isOk()) {
-      expect(result.value.files.size).toBe(0);
-      expect(result.value.version).toBe(1);
+      const diff = tracker.detectChanges();
+      expect(diff.added.size).toBe(1);
+      expect(diff.added.has(file1)).toBe(true);
+      expect(diff.updated.size).toBe(0);
+      expect(diff.removed.size).toBe(0);
     }
   });
 
@@ -81,16 +80,11 @@ describe("FileTracker", () => {
     const tracker = createTestTracker();
     const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
-    const previousState: FileTrackerState = {
-      version: 1,
-      files: new Map(),
-    };
-
     const scanResult = tracker.scan([file1]);
     expect(scanResult.isOk()).toBe(true);
 
     if (scanResult.isOk()) {
-      const diff = tracker.detectChanges(previousState, scanResult.value);
+      const diff = tracker.detectChanges();
       expect(diff.added.size).toBe(1);
       expect(diff.added.has(file1)).toBe(true);
       expect(diff.updated.size).toBe(0);
@@ -100,18 +94,22 @@ describe("FileTracker", () => {
 
   test("detectChanges reports removed files", () => {
     const tracker = createTestTracker();
-    const file1 = normalizePath(join(fixtureRoot, "file1.ts"));
+    const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
-    const previousState: FileTrackerState = {
-      version: 1,
-      files: new Map([[file1, { mtimeMs: 1000, size: 100 }]]),
-    };
+    // First scan and update
+    const firstScan = tracker.scan([file1]);
+    expect(firstScan.isOk()).toBe(true);
+    if (firstScan.isOk()) {
+      tracker.update(firstScan.value);
+    }
 
-    const scanResult = tracker.scan([]);
-    expect(scanResult.isOk()).toBe(true);
+    // Remove the file and scan again (empty paths, but tracker remembers file1)
+    rmSync(file1, { force: true });
+    const secondScan = tracker.scan([]);
+    expect(secondScan.isOk()).toBe(true);
 
-    if (scanResult.isOk()) {
-      const diff = tracker.detectChanges(previousState, scanResult.value);
+    if (secondScan.isOk()) {
+      const diff = tracker.detectChanges();
       expect(diff.added.size).toBe(0);
       expect(diff.updated.size).toBe(0);
       expect(diff.removed.size).toBe(1);
@@ -119,37 +117,31 @@ describe("FileTracker", () => {
     }
   });
 
-  test("detectChanges reports updated files when mtime changes", () => {
+  test("detectChanges reports updated files when mtime changes", async () => {
     const tracker = createTestTracker();
     const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
-    // First scan
+    // First scan and update
     const firstScan = tracker.scan([file1]);
     expect(firstScan.isOk()).toBe(true);
-
     if (firstScan.isOk()) {
-      const previousState: FileTrackerState = {
-        version: 1,
-        files: firstScan.value.files,
-      };
+      tracker.update(firstScan.value);
+    }
 
-      // Wait a bit and modify the file
-      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-      delay(10).then(() => {
-        writeFileSync(file1, "export const a = 2;", "utf8");
+    // Wait a bit and modify the file
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    writeFileSync(file1, "export const a = 2;", "utf8");
 
-        // Second scan
-        const secondScan = tracker.scan([file1]);
-        expect(secondScan.isOk()).toBe(true);
+    // Second scan
+    const secondScan = tracker.scan([file1]);
+    expect(secondScan.isOk()).toBe(true);
 
-        if (secondScan.isOk()) {
-          const diff = tracker.detectChanges(previousState, secondScan.value);
-          expect(diff.added.size).toBe(0);
-          expect(diff.updated.size).toBe(1);
-          expect(diff.updated.has(file1)).toBe(true);
-          expect(diff.removed.size).toBe(0);
-        }
-      });
+    if (secondScan.isOk()) {
+      const diff = tracker.detectChanges();
+      expect(diff.added.size).toBe(0);
+      expect(diff.updated.size).toBe(1);
+      expect(diff.updated.has(file1)).toBe(true);
+      expect(diff.removed.size).toBe(0);
     }
   });
 
@@ -157,16 +149,19 @@ describe("FileTracker", () => {
     const tracker = createTestTracker();
     const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
-    const scanResult = tracker.scan([file1]);
-    expect(scanResult.isOk()).toBe(true);
+    // First scan and update
+    const firstScan = tracker.scan([file1]);
+    expect(firstScan.isOk()).toBe(true);
+    if (firstScan.isOk()) {
+      tracker.update(firstScan.value);
+    }
 
-    if (scanResult.isOk()) {
-      const previousState: FileTrackerState = {
-        version: 1,
-        files: scanResult.value.files,
-      };
+    // Second scan without changes
+    const secondScan = tracker.scan([file1]);
+    expect(secondScan.isOk()).toBe(true);
 
-      const diff = tracker.detectChanges(previousState, scanResult.value);
+    if (secondScan.isOk()) {
+      const diff = tracker.detectChanges();
       expect(isEmptyDiff(diff)).toBe(true);
       expect(diff.added.size).toBe(0);
       expect(diff.updated.size).toBe(0);
@@ -174,7 +169,7 @@ describe("FileTracker", () => {
     }
   });
 
-  test("persist and loadState round-trip successfully", () => {
+  test("update retains state within same tracker instance", () => {
     const tracker = createTestTracker();
     const file1 = createFixtureFile("file1.ts", "export const a = 1;");
     const file2 = createFixtureFile("file2.ts", "export const b = 2;");
@@ -183,34 +178,47 @@ describe("FileTracker", () => {
     expect(scanResult.isOk()).toBe(true);
 
     if (scanResult.isOk()) {
-      const state: FileTrackerState = {
-        version: 1,
-        files: scanResult.value.files,
-      };
+      // Update state
+      tracker.update(scanResult.value);
 
-      // Persist state
-      const persistResult = tracker.persist(state);
-      expect(persistResult.isOk()).toBe(true);
+      // Scan again - should remember both files
+      const secondScan = tracker.scan([]);
+      expect(secondScan.isOk()).toBe(true);
 
-      // Create new tracker instance to test persistence
-      const newTracker = createTestTracker();
-      const loadResult = newTracker.loadState();
-      expect(loadResult.isOk()).toBe(true);
+      if (secondScan.isOk()) {
+        // Should have scanned both files (remembered from previous state)
+        expect(secondScan.value.files.size).toBe(2);
+        expect(secondScan.value.files.has(file1)).toBe(true);
+        expect(secondScan.value.files.has(file2)).toBe(true);
 
-      if (loadResult.isOk()) {
-        expect(loadResult.value.version).toBe(1);
-        expect(loadResult.value.files.size).toBe(2);
-        expect(loadResult.value.files.has(file1)).toBe(true);
-        expect(loadResult.value.files.has(file2)).toBe(true);
+        // No changes detected
+        const diff = tracker.detectChanges();
+        expect(isEmptyDiff(diff)).toBe(true);
+      }
+    }
+  });
 
-        // Verify metadata matches
-        const originalMetadata1 = state.files.get(file1);
-        const loadedMetadata1 = loadResult.value.files.get(file1);
-        expect(originalMetadata1).toBeDefined();
-        expect(loadedMetadata1).toBeDefined();
-        if (originalMetadata1 && loadedMetadata1) {
-          expect(loadedMetadata1).toEqual(originalMetadata1);
-        }
+  test("new tracker instance starts with empty state", () => {
+    const tracker1 = createTestTracker();
+    const file1 = createFixtureFile("file1.ts", "export const a = 1;");
+
+    const scanResult = tracker1.scan([file1]);
+    expect(scanResult.isOk()).toBe(true);
+
+    if (scanResult.isOk()) {
+      // Update state in first tracker
+      tracker1.update(scanResult.value);
+
+      // Create new tracker instance - should start empty (no cross-instance persistence)
+      const tracker2 = createTestTracker();
+      const secondScan = tracker2.scan([file1]);
+      expect(secondScan.isOk()).toBe(true);
+
+      if (secondScan.isOk()) {
+        // New tracker detects file as added
+        const diff = tracker2.detectChanges();
+        expect(diff.added.size).toBe(1);
+        expect(diff.added.has(file1)).toBe(true);
       }
     }
   });
@@ -253,23 +261,20 @@ describe("FileTracker", () => {
     const tracker = createTestTracker();
     const file1 = createFixtureFile("file1.ts", "export const a = 1;");
 
-    // Scan with already normalized path
+    // First scan and update
     const scanResult = tracker.scan([file1]);
     expect(scanResult.isOk()).toBe(true);
 
     if (scanResult.isOk()) {
-      const state: FileTrackerState = {
-        version: 1,
-        files: scanResult.value.files,
-      };
-
       // Verify the normalized path is stored
-      expect(state.files.has(file1)).toBe(true);
+      expect(scanResult.value.files.has(file1)).toBe(true);
+
+      tracker.update(scanResult.value);
 
       // Scan again with the same path - should detect no changes
       const secondScan = tracker.scan([file1]);
       if (secondScan.isOk()) {
-        const diff = tracker.detectChanges(state, secondScan.value);
+        const diff = tracker.detectChanges();
         expect(isEmptyDiff(diff)).toBe(true);
       }
     }

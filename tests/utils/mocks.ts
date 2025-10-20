@@ -63,7 +63,7 @@ export const makeMockResolvedConfig = (overrides: Partial<ResolvedSodaGqlConfig>
 export const makeMockBuilderConfig = (overrides: Partial<BuilderServiceConfig> = {}): BuilderServiceConfig => {
   return {
     config: overrides.config ?? makeMockResolvedConfig(),
-    entrypoints: overrides.entrypoints ?? ["src/**/*.ts"],
+    entrypointsOverride: overrides.entrypointsOverride ?? ["src/**/*.ts"],
     ...overrides,
   };
 };

@@ -148,29 +148,6 @@ describe("validator.ts", () => {
       rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    test("rejects multi-project mode (not yet implemented)", () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), "soda-gql-test-"));
-      const configPath = join(tmpDir, "soda-gql.config.ts");
-      writeFileSync(configPath, `export default {}`);
-
-      const config: SodaGqlConfig = {
-        projects: {
-          web: {
-            graphqlSystemPath: "./apps/web/graphql-system",
-          },
-        },
-      };
-
-      const result = resolveConfig(config, configPath);
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toContain("not yet implemented");
-      }
-
-      rmSync(tmpDir, { recursive: true, force: true });
-    });
-
     test("resolves codegen paths when present", () => {
       const tmpDir = mkdtempSync(join(tmpdir(), "soda-gql-test-"));
       const configPath = join(tmpDir, "soda-gql.config.ts");

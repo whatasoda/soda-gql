@@ -5,4 +5,10 @@
  * when using Nest CLI with `builder: "tsc"`.
  */
 
-export { before, createSodaGqlTransformer, default, type TransformerConfig } from "./transformer.js";
+export * from "./plugin";
+
+import plugin from "./plugin";
+
+export const { before, after } = plugin;
+
+export default plugin;

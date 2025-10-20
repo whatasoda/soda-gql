@@ -1,8 +1,6 @@
 import { statSync } from "node:fs";
 import { normalizePath } from "@soda-gql/common";
-import { err, ok, type Result } from "neverthrow";
-import { z } from "zod";
-import type { JsonCacheFactory } from "../cache/json-cache";
+import { ok, type Result } from "neverthrow";
 
 /**
  * File metadata tracked for change detection.
@@ -12,16 +10,6 @@ export type FileMetadata = {
   mtimeMs: number;
   /** File size in bytes */
   size: number;
-};
-
-/**
- * Persistent state of tracked files.
- */
-export type FileTrackerState = {
-  /** Version for cache invalidation */
-  version: number;
-  /** Map of normalized file paths to metadata */
-  files: Map<string, FileMetadata>;
 };
 
 /**
@@ -47,111 +35,49 @@ export type FileDiff = {
 /**
  * Errors that can occur during file tracking operations.
  */
-export type TrackerError =
-  | { type: "cache-read-failed"; message: string }
-  | { type: "cache-write-failed"; message: string }
-  | { type: "scan-failed"; path: string; message: string };
+export type TrackerError = { type: "scan-failed"; path: string; message: string };
 
 /**
  * File tracker interface for detecting file changes across builds.
  */
 export interface FileTracker {
   /**
-   * Load previously persisted tracker state from cache.
-   * Returns empty state if no cache exists or cache is invalid.
-   */
-  loadState(): Result<FileTrackerState, TrackerError>;
-
-  /**
    * Scan current file system state for the given paths.
    * Gracefully skips files that don't exist or cannot be read.
    */
-  scan(paths: readonly string[]): Result<FileScan, TrackerError>;
+  scan(extraPaths: readonly string[]): Result<FileScan, TrackerError>;
 
   /**
    * Detect changes between previous and current file states.
    */
-  detectChanges(previous: FileTrackerState, current: FileScan): FileDiff;
+  detectChanges(): FileDiff;
 
   /**
-   * Persist current tracker state to cache for next build.
+   * Update the in-memory tracker state.
+   * State persists only for the lifetime of this process.
    */
-  persist(state: FileTrackerState): Result<void, TrackerError>;
+  update(scan: FileScan): void;
 }
 
 /**
- * Options for creating a file tracker.
- */
-export type FileTrackerOptions = {
-  /** JSON cache factory to use for persistence */
-  cacheFactory: JsonCacheFactory;
-};
-
-const TRACKER_VERSION = 1;
-const CACHE_NAMESPACE = ["file-tracker"];
-const CACHE_KEY = "state";
-
-/**
- * Zod schema for file metadata.
- */
-const fileMetadataSchema = z.object({
-  mtimeMs: z.number(),
-  size: z.number(),
-});
-
-/**
- * Zod schema for tracker state persistence.
- */
-const trackerStateSchema = z.object({
-  version: z.number(),
-  files: z.record(z.string(), fileMetadataSchema),
-});
-
-/**
- * Create a file tracker that maintains independent state for change detection.
+ * Create a file tracker that maintains in-memory state for change detection.
  *
- * The tracker persists file metadata (mtime, size) across builds and detects
- * which files have been added, updated, or removed. It is completely independent
- * of the discovery mechanism and maintains its own cache.
+ * The tracker keeps file metadata (mtime, size) in memory during the process lifetime
+ * and detects which files have been added, updated, or removed. State is scoped to
+ * the process and does not persist across restarts.
  */
-export const createFileTracker = ({ cacheFactory }: FileTrackerOptions): FileTracker => {
-  const cache = cacheFactory.createStore({
-    namespace: CACHE_NAMESPACE,
-    schema: trackerStateSchema,
-    version: `v${TRACKER_VERSION}`,
-  });
-
-  const loadState = (): Result<FileTrackerState, TrackerError> => {
-    try {
-      const cached = cache.load(CACHE_KEY);
-
-      if (!cached) {
-        return ok({
-          version: TRACKER_VERSION,
-          files: new Map(),
-        });
-      }
-
-      // Convert plain object to Map
-      const files = new Map(Object.entries(cached.files));
-
-      return ok({
-        version: cached.version,
-        files,
-      });
-    } catch (error) {
-      // Non-fatal: return empty state and let the build proceed
-      return ok({
-        version: TRACKER_VERSION,
-        files: new Map(),
-      });
-    }
+export const createFileTracker = (): FileTracker => {
+  // In-memory state that persists for the lifetime of this tracker instance
+  let currentScan: FileScan = {
+    files: new Map(),
   };
+  let nextScan: FileScan | null = null;
 
-  const scan = (paths: readonly string[]): Result<FileScan, TrackerError> => {
+  const scan = (extraPaths: readonly string[]): Result<FileScan, TrackerError> => {
+    const allPathsToScan = new Set([...extraPaths, ...currentScan.files.keys()]);
     const files = new Map<string, FileMetadata>();
 
-    for (const path of paths) {
+    for (const path of allPathsToScan) {
       try {
         const normalized = normalizePath(path);
         const stats = statSync(normalized);
@@ -163,10 +89,13 @@ export const createFileTracker = ({ cacheFactory }: FileTrackerOptions): FileTra
       } catch {}
     }
 
-    return ok({ files });
+    nextScan = { files };
+    return ok(nextScan);
   };
 
-  const detectChanges = (previous: FileTrackerState, current: FileScan): FileDiff => {
+  const detectChanges = (): FileDiff => {
+    const previous = currentScan;
+    const current = nextScan ?? currentScan;
     const added = new Set<string>();
     const updated = new Set<string>();
     const removed = new Set<string>();
@@ -192,33 +121,16 @@ export const createFileTracker = ({ cacheFactory }: FileTrackerOptions): FileTra
     return { added, updated, removed };
   };
 
-  const persist = (state: FileTrackerState): Result<void, TrackerError> => {
-    try {
-      // Convert Map to plain object for JSON serialization
-      const filesObject: Record<string, FileMetadata> = {};
-      for (const [path, metadata] of state.files) {
-        filesObject[path] = metadata;
-      }
-
-      cache.store(CACHE_KEY, {
-        version: state.version,
-        files: filesObject,
-      });
-
-      return ok(undefined);
-    } catch (error) {
-      return err({
-        type: "cache-write-failed",
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
+  const update = (scan: FileScan): void => {
+    // Update in-memory state - promote nextScan to currentScan
+    currentScan = scan;
+    nextScan = null;
   };
 
   return {
-    loadState,
     scan,
     detectChanges,
-    persist,
+    update,
   };
 };
 

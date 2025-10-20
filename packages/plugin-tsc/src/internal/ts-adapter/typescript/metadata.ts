@@ -1,6 +1,6 @@
 import type { CanonicalPathTracker } from "@soda-gql/builder";
 import { createCanonicalTracker } from "@soda-gql/builder";
-import type * as ts from "typescript";
+import * as ts from "typescript";
 
 export type GqlDefinitionMetadata = {
   readonly astPath: string;
@@ -15,7 +15,6 @@ type CanonicalTrackerFactory = typeof createCanonicalTracker;
 
 type CollectArgs = {
   readonly sourceFile: ts.SourceFile;
-  readonly typescript: typeof ts;
   readonly filename: string;
   readonly createTracker?: CanonicalTrackerFactory;
 };
@@ -23,13 +22,8 @@ type CollectArgs = {
 type ScopeHandle = ReturnType<CanonicalPathTracker["enterScope"]>;
 type ExportBindingMap = Map<string, string>;
 
-export const collectGqlDefinitionMetadata = ({
-  sourceFile,
-  typescript,
-  filename,
-  createTracker,
-}: CollectArgs): GqlDefinitionMetadataMap => {
-  const exportBindings = collectExportBindings(sourceFile, typescript);
+export const collectGqlDefinitionMetadata = ({ sourceFile, filename, createTracker }: CollectArgs): GqlDefinitionMetadataMap => {
+  const exportBindings = collectExportBindings(sourceFile);
   const trackerFactory = createTracker ?? createCanonicalTracker;
   const tracker = trackerFactory({
     filePath: filename,
@@ -42,11 +36,11 @@ export const collectGqlDefinitionMetadata = ({
 
   const visit = (node: ts.Node): void => {
     // Handle GraphQL definition calls
-    if (typescript.isCallExpression(node) && isGqlDefinitionCall(node, typescript)) {
+    if (ts.isCallExpression(node) && isGqlDefinitionCall(node, ts)) {
       const depthBeforeRegister = tracker.currentDepth();
       const { astPath } = tracker.registerDefinition();
       const isTopLevel = depthBeforeRegister <= 1;
-      const exportInfo = isTopLevel ? resolveTopLevelExport(node, exportBindings, typescript) : null;
+      const exportInfo = isTopLevel ? resolveTopLevelExport(node, exportBindings, ts) : null;
 
       metadata.set(node, {
         astPath,
@@ -60,13 +54,13 @@ export const collectGqlDefinitionMetadata = ({
     }
 
     // Enter scope if this node creates one
-    const handle = maybeEnterScope(node, tracker, getAnonymousName, typescript);
+    const handle = maybeEnterScope(node, tracker, getAnonymousName, ts);
     if (handle) {
       scopeHandles.set(node, handle);
     }
 
     // Visit children
-    typescript.forEachChild(node, visit);
+    ts.forEachChild(node, visit);
 
     // Exit scope if we entered one
     const scopeHandle = scopeHandles.get(node);
@@ -81,16 +75,12 @@ export const collectGqlDefinitionMetadata = ({
   return metadata;
 };
 
-const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts): ExportBindingMap => {
+const collectExportBindings = (sourceFile: ts.SourceFile): ExportBindingMap => {
   const bindings: ExportBindingMap = new Map();
 
   for (const statement of sourceFile.statements) {
     // ESM exports: export const foo = ...
-    if (
-      typescript.isExportDeclaration(statement) &&
-      statement.exportClause &&
-      typescript.isNamedExports(statement.exportClause)
-    ) {
+    if (ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
       for (const element of statement.exportClause.elements) {
         const name = element.name.text;
         bindings.set(name, name);
@@ -99,12 +89,9 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
     }
 
     // Export variable declaration: export const foo = ...
-    if (
-      typescript.isVariableStatement(statement) &&
-      statement.modifiers?.some((m) => m.kind === typescript.SyntaxKind.ExportKeyword)
-    ) {
+    if (ts.isVariableStatement(statement) && statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
       for (const declaration of statement.declarationList.declarations) {
-        if (typescript.isIdentifier(declaration.name)) {
+        if (ts.isIdentifier(declaration.name)) {
           bindings.set(declaration.name.text, declaration.name.text);
         }
       }
@@ -113,8 +100,8 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
 
     // Export function/class: export function foo() {} or export class Foo {}
     if (
-      (typescript.isFunctionDeclaration(statement) || typescript.isClassDeclaration(statement)) &&
-      statement.modifiers?.some((m) => m.kind === typescript.SyntaxKind.ExportKeyword) &&
+      (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
+      statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
       statement.name
     ) {
       bindings.set(statement.name.text, statement.name.text);
@@ -122,8 +109,8 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
     }
 
     // CommonJS exports: exports.foo = ... or module.exports.foo = ...
-    if (typescript.isExpressionStatement(statement) && typescript.isBinaryExpression(statement.expression)) {
-      const exportName = getCommonJsExportName(statement.expression.left, typescript);
+    if (ts.isExpressionStatement(statement) && ts.isBinaryExpression(statement.expression)) {
+      const exportName = getCommonJsExportName(statement.expression.left);
       if (exportName) {
         bindings.set(exportName, exportName);
       }
@@ -133,18 +120,18 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
   return bindings;
 };
 
-const getCommonJsExportName = (node: ts.Node, typescript: typeof ts): string | null => {
-  if (!typescript.isPropertyAccessExpression(node)) {
+const getCommonJsExportName = (node: ts.Node): string | null => {
+  if (!ts.isPropertyAccessExpression(node)) {
     return null;
   }
 
   // Check if it's exports.foo or module.exports.foo
-  const isExports = typescript.isIdentifier(node.expression) && node.expression.text === "exports";
+  const isExports = ts.isIdentifier(node.expression) && node.expression.text === "exports";
   const isModuleExports =
-    typescript.isPropertyAccessExpression(node.expression) &&
-    typescript.isIdentifier(node.expression.expression) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
     node.expression.expression.text === "module" &&
-    typescript.isIdentifier(node.expression.name) &&
+    ts.isIdentifier(node.expression.name) &&
     node.expression.name.text === "exports";
 
   if (!isExports && !isModuleExports) {
@@ -152,7 +139,7 @@ const getCommonJsExportName = (node: ts.Node, typescript: typeof ts): string | n
   }
 
   // Extract property name
-  if (typescript.isIdentifier(node.name)) {
+  if (ts.isIdentifier(node.name)) {
     return node.name.text;
   }
 
@@ -224,7 +211,7 @@ const resolveTopLevelExport = (
 
   // CommonJS: exports.foo = gql.default(...);
   if (typescript.isBinaryExpression(parent)) {
-    const exportName = getCommonJsExportName(parent.left, typescript);
+    const exportName = getCommonJsExportName(parent.left);
     if (exportName && exportBindings.has(exportName)) {
       return { isExported: true, exportBinding: exportName };
     }
@@ -241,7 +228,7 @@ const maybeEnterScope = (
 ): ScopeHandle | null => {
   // CommonJS exports: exports.foo = ... or module.exports.foo = ...
   if (typescript.isBinaryExpression(node)) {
-    const exportName = getCommonJsExportName(node.left, typescript);
+    const exportName = getCommonJsExportName(node.left);
     if (exportName) {
       return tracker.enterScope({ segment: exportName, kind: "variable", stableKey: `var:${exportName}` });
     }

@@ -11,7 +11,6 @@ export const DEFAULT_BUILDER_CONFIG: Required<BuilderConfig> = {
   entry: [],
   outDir: "./.cache/soda-gql",
   analyzer: "ts",
-  mode: "runtime",
 };
 
 export const DEFAULT_CORE_PATH = "@soda-gql/core";

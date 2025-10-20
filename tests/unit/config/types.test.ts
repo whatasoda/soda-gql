@@ -14,13 +14,11 @@ describe("types.ts", () => {
       entry: ["./src/**/*.ts"],
       outDir: "./.cache",
       analyzer: "ts",
-      mode: "runtime",
     };
 
     expect(config.entry).toEqual(["./src/**/*.ts"]);
     expect(config.outDir).toBe("./.cache");
     expect(config.analyzer).toBe("ts");
-    expect(config.mode).toBe("runtime");
   });
 
   test("BuilderConfig allows optional fields", () => {
@@ -31,7 +29,6 @@ describe("types.ts", () => {
     };
 
     expect(config.analyzer).toBe("ts");
-    expect(config.mode).toBeUndefined();
   });
 
   test("CodegenConfig accepts valid configuration", () => {
@@ -85,24 +82,6 @@ describe("types.ts", () => {
     };
 
     expect(config.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
-    expect(config.projects).toBeUndefined();
-  });
-
-  test("SodaGqlConfig accepts multi-project mode", () => {
-    const config: SodaGqlConfig = {
-      projects: {
-        web: {
-          graphqlSystemPath: "./apps/web/graphql-system",
-        },
-        mobile: {
-          graphqlSystemPath: "./apps/mobile/graphql-system",
-        },
-      },
-      defaultProject: "web",
-    };
-
-    expect(config.projects?.web).toBeDefined();
-    expect(config.defaultProject).toBe("web");
   });
 
   test("ResolvedSodaGqlConfig has all required fields", () => {
@@ -113,7 +92,6 @@ describe("types.ts", () => {
         entry: ["/abs/path/to/src/**/*.ts"],
         outDir: "/abs/path/to/.cache",
         analyzer: "ts",
-        mode: "runtime",
       },
       codegen: {
         schema: "/abs/path/to/schema.graphql",
@@ -139,7 +117,6 @@ describe("types.ts", () => {
         entry: ["/abs/path/to/src/**/*.ts"],
         outDir: "/abs/path/to/.cache",
         analyzer: "ts",
-        mode: "runtime",
       },
       plugins: {},
       configDir: "/abs/path/to",

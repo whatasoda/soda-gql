@@ -88,7 +88,7 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
   // Create BuilderServiceConfig
   const builderServiceConfig: BuilderServiceConfig = {
     config: resolvedConfig,
-    entrypoints: resolvedConfig.builder.entry,
+    entrypointsOverride: resolvedConfig.builder.entry,
   };
 
   return ok({

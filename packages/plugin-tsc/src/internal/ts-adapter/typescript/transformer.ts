@@ -1,4 +1,4 @@
-import type * as ts from "typescript";
+import * as ts from "typescript";
 import { formatPluginError } from "../../errors.js";
 import type { ArtifactLookup, GqlCall } from "./analysis.js";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis.js";
@@ -11,8 +11,7 @@ type TransformCallExpressionArgs = {
   readonly metadata: GqlDefinitionMetadataMap;
   readonly getArtifact: ArtifactLookup;
   readonly factory: ts.NodeFactory;
-  readonly typescript: typeof ts;
-  readonly runtimeAccessor?: ts.Expression;
+  readonly isCJS: boolean;
 };
 
 type TransformCallExpressionResult =
@@ -25,10 +24,9 @@ export const transformCallExpression = ({
   metadata,
   getArtifact,
   factory,
-  typescript,
-  runtimeAccessor,
+  isCJS,
 }: TransformCallExpressionArgs): TransformCallExpressionResult => {
-  const builderCall = findGqlBuilderCall(callNode, typescript);
+  const builderCall = findGqlBuilderCall(callNode, ts);
   if (!builderCall) {
     return { transformed: false };
   }
@@ -47,27 +45,30 @@ export const transformCallExpression = ({
 
   const gqlCall = gqlCallResult.value;
 
-  return replaceWithRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
+  return replaceWithRuntimeCall({ gqlCall, factory, isCJS });
 };
 
-const replaceWithRuntimeCall = (
-  gqlCall: GqlCall,
-  factory: ts.NodeFactory,
-  typescript: typeof ts,
-  runtimeAccessor?: ts.Expression,
-): TransformCallExpressionResult => {
+const replaceWithRuntimeCall = ({
+  gqlCall,
+  factory,
+  isCJS,
+}: {
+  gqlCall: GqlCall;
+  factory: ts.NodeFactory;
+  isCJS: boolean;
+}): TransformCallExpressionResult => {
   if (gqlCall.type === "model") {
-    const replacement = buildModelRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
-    return { transformed: true, replacement };
+    const replacement = buildModelRuntimeCall({ gqlCall, factory, isCJS });
+    return { transformed: true, replacement: replacement as ts.Expression };
   }
 
   if (gqlCall.type === "slice") {
-    const replacement = buildSliceRuntimeCall(gqlCall, factory, typescript, runtimeAccessor);
+    const replacement = buildSliceRuntimeCall({ gqlCall, factory, isCJS });
     return { transformed: true, replacement };
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall, factory, typescript, runtimeAccessor);
+    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents({ gqlCall, factory, isCJS });
     return { transformed: true, replacement: referenceCall, runtimeCall };
   }
 

@@ -59,7 +59,7 @@ const createMockOptions = (): NormalizedOptions => ({
       codegen: undefined,
       plugins: {},
     },
-    entrypoints: ["**/*.ts"],
+    entrypointsOverride: ["**/*.ts"],
   },
   project: undefined,
 });
@@ -79,7 +79,7 @@ const createMockArtifact = (): BuilderArtifact => ({
 
 const createMockConfig = (): BuilderServiceConfig => ({
   config: createMockOptions().resolvedConfig,
-  entrypoints: ["**/*.ts"],
+  entrypointsOverride: ["**/*.ts"],
 });
 
 const createMockCoordinatorKey = (): string => "mock-coordinator-key";

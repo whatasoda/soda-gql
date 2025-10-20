@@ -68,7 +68,7 @@ describe("BuilderSession E2E", () => {
 
   it("should perform initial build and cache state", async () => {
     const session = createBuilderSession({
-      entrypoints: [join(workspace, "src/**/*.ts")],
+      entrypointsOverride: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 
@@ -79,7 +79,7 @@ describe("BuilderSession E2E", () => {
 
   it("should handle file modification incrementally", async () => {
     const session = createBuilderSession({
-      entrypoints: [join(workspace, "src/**/*.ts")],
+      entrypointsOverride: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 
@@ -108,7 +108,7 @@ describe("BuilderSession E2E", () => {
 
   it("should handle empty update (no actual changes)", async () => {
     const session = createBuilderSession({
-      entrypoints: [join(workspace, "src/**/*.ts")],
+      entrypointsOverride: [join(workspace, "src/**/*.ts")],
       config: createTestConfig(workspace),
     });
 

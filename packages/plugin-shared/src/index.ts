@@ -2,7 +2,6 @@
 
 // Adapters
 export * from "./adapters/swc-adapter.js";
-export * from "./adapters/typescript-adapter.js";
 export type { ArtifactError, LoadArtifactOptions } from "./cache.js";
 // Cache utilities
 export {

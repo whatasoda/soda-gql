@@ -1,5 +1,3 @@
-// Types
-
 // Defaults
 export {
   DEFAULT_BUILDER_CONFIG,
@@ -11,7 +9,7 @@ export {
 export type { ConfigError, ConfigErrorCode } from "./errors";
 export { configError } from "./errors";
 // Helpers
-export { defineConfig, defineWorkspace } from "./helper";
+export { defineConfig } from "./helper";
 // Loader
 export {
   findConfigFile,

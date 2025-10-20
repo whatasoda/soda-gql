@@ -21,7 +21,7 @@ describe("BuilderService generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(typeof service.getGeneration).toBe("function");
@@ -40,7 +40,7 @@ describe("BuilderService generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(typeof service.getCurrentArtifact).toBe("function");
@@ -59,7 +59,7 @@ describe("BuilderService generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(service.getGeneration?.()).toBe(0);
@@ -78,7 +78,7 @@ describe("BuilderService generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(service.getCurrentArtifact?.()).toBeNull();
@@ -97,7 +97,7 @@ describe("BuilderService generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [], // Empty entrypoints causes ENTRY_NOT_FOUND error
+      entrypointsOverride: [], // Empty entrypoints causes ENTRY_NOT_FOUND error
     });
 
     const result = await service.build();

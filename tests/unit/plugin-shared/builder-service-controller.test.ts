@@ -21,7 +21,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(typeof controller.getGeneration).toBe("function");
@@ -40,7 +40,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(typeof controller.getCurrentArtifact).toBe("function");
@@ -59,7 +59,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(controller.getGeneration()).toBe(0);
@@ -78,7 +78,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     expect(controller.getCurrentArtifact()).toBeNull();
@@ -97,7 +97,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [], // Empty entrypoints causes ENTRY_NOT_FOUND error
+      entrypointsOverride: [], // Empty entrypoints causes ENTRY_NOT_FOUND error
     });
 
     const result = await controller.build();
@@ -120,7 +120,7 @@ describe("BuilderServiceController generation tracking API", () => {
         codegen: undefined,
         plugins: {},
       },
-      entrypoints: [],
+      entrypointsOverride: [],
     });
 
     // Trigger error build to ensure generation stays at 0

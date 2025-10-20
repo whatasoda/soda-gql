@@ -54,7 +54,7 @@ const buildArtifact = async (workspace: string): Promise<BuilderArtifact> => {
   try {
     const service = createBuilderService({
       config: createTestConfig(workspace),
-      entrypoints: [join(workspace, "src", "pages", "profile.page.ts")],
+      entrypointsOverride: [join(workspace, "src", "pages", "profile.page.ts")],
     });
 
     const buildResult = await service.build();
