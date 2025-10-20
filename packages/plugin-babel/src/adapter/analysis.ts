@@ -2,6 +2,7 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type {
   BuilderArtifactElement,
+  BuilderArtifactInlineOperation,
   BuilderArtifactModel,
   BuilderArtifactOperation,
   BuilderArtifactSlice,
@@ -28,8 +29,12 @@ export type GqlCallBase = {
 export type GqlCallModel = GqlCallBase & { readonly type: "model"; readonly artifact: BuilderArtifactModel };
 export type GqlCallSlice = GqlCallBase & { readonly type: "slice"; readonly artifact: BuilderArtifactSlice };
 export type GqlCallOperation = GqlCallBase & { readonly type: "operation"; readonly artifact: BuilderArtifactOperation };
+export type GqlCallInlineOperation = GqlCallBase & {
+  readonly type: "inlineOperation";
+  readonly artifact: BuilderArtifactInlineOperation;
+};
 
-export type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation;
+export type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation | GqlCallInlineOperation;
 
 export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -72,6 +77,10 @@ export const extractGqlCall = ({
 
   if (artifact.type === "operation") {
     return ok({ ...base, type: "operation", artifact });
+  }
+
+  if (artifact.type === "inlineOperation") {
+    return ok({ ...base, type: "inlineOperation", artifact });
   }
 
   return err(

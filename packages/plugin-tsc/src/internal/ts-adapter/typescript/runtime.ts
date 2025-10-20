@@ -1,6 +1,11 @@
-import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
+import type {
+  RuntimeComposedOperationInput,
+  RuntimeInlineOperationInput,
+  RuntimeModelInput,
+  RuntimeSliceInput,
+} from "@soda-gql/core/runtime";
 import * as ts from "typescript";
-import type { GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis.js";
+import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis.js";
 import { buildJsonParseExpression, buildObjectExpression, clone } from "./ast.js";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
@@ -71,7 +76,7 @@ export const buildSliceRuntimeCall = ({
   );
 };
 
-export const buildOperationRuntimeComponents = ({
+export const buildComposedOperationRuntimeComponents = ({
   gqlCall,
   factory,
   isCJS,
@@ -82,11 +87,14 @@ export const buildOperationRuntimeComponents = ({
 }) => {
   const [, slicesBuilder] = gqlCall.builderCall.arguments;
   if (!slicesBuilder || !ts.isExpression(slicesBuilder)) {
-    throw new Error("[INTERNAL] operation requires a slices builder");
+    throw new Error("[INTERNAL] composed operation requires a slices builder");
   }
 
   const runtimeCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("operation")),
+    factory.createPropertyAccessExpression(
+      createRuntimeAccessor({ isCJS, factory }),
+      factory.createIdentifier("composedOperation"),
+    ),
     undefined,
     [
       buildObjectExpression(factory, {
@@ -99,7 +107,55 @@ export const buildOperationRuntimeComponents = ({
   );
 
   const referenceCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("getOperation")),
+    factory.createPropertyAccessExpression(
+      createRuntimeAccessor({ isCJS, factory }),
+      factory.createIdentifier("getComposedOperation"),
+    ),
+    undefined,
+    [factory.createStringLiteral(gqlCall.artifact.prebuild.operationName)],
+  );
+
+  return {
+    referenceCall,
+    runtimeCall,
+  };
+};
+
+export const buildInlineOperationRuntimeComponents = ({
+  gqlCall,
+  factory,
+  isCJS,
+}: {
+  gqlCall: GqlCallInlineOperation;
+  factory: ts.NodeFactory;
+  isCJS: boolean;
+}) => {
+  const [, fieldBuilder] = gqlCall.builderCall.arguments;
+  if (!fieldBuilder || !ts.isExpression(fieldBuilder)) {
+    throw new Error("[INTERNAL] inline operation requires a field builder");
+  }
+
+  const runtimeCall = factory.createCallExpression(
+    factory.createPropertyAccessExpression(
+      createRuntimeAccessor({ isCJS, factory }),
+      factory.createIdentifier("inlineOperation"),
+    ),
+    undefined,
+    [
+      buildObjectExpression(factory, {
+        prebuild: buildJsonParseExpression<RuntimeInlineOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
+        runtime: buildObjectExpression<keyof RuntimeInlineOperationInput["runtime"]>(factory, {
+          buildFields: clone(fieldBuilder),
+        }),
+      }),
+    ],
+  );
+
+  const referenceCall = factory.createCallExpression(
+    factory.createPropertyAccessExpression(
+      createRuntimeAccessor({ isCJS, factory }),
+      factory.createIdentifier("getInlineOperation"),
+    ),
     undefined,
     [factory.createStringLiteral(gqlCall.artifact.prebuild.operationName)],
   );

@@ -3,7 +3,12 @@ import { formatPluginError } from "../../errors.js";
 import type { ArtifactLookup, GqlCall } from "./analysis.js";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis.js";
 import type { GqlDefinitionMetadataMap } from "./metadata.js";
-import { buildModelRuntimeCall, buildOperationRuntimeComponents, buildSliceRuntimeCall } from "./runtime.js";
+import {
+  buildComposedOperationRuntimeComponents,
+  buildInlineOperationRuntimeComponents,
+  buildModelRuntimeCall,
+  buildSliceRuntimeCall,
+} from "./runtime.js";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;
@@ -68,7 +73,12 @@ const replaceWithRuntimeCall = ({
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents({ gqlCall, factory, isCJS });
+    const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS });
+    return { transformed: true, replacement: referenceCall, runtimeCall };
+  }
+
+  if (gqlCall.type === "inlineOperation") {
+    const { referenceCall, runtimeCall } = buildInlineOperationRuntimeComponents({ gqlCall, factory, isCJS });
     return { transformed: true, replacement: referenceCall, runtimeCall };
   }
 

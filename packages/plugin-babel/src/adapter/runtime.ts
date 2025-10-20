@@ -1,6 +1,11 @@
 import { types as t } from "@babel/core";
-import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
+import type {
+  RuntimeComposedOperationInput,
+  RuntimeInlineOperationInput,
+  RuntimeModelInput,
+  RuntimeSliceInput,
+} from "@soda-gql/core/runtime";
+import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
 import { buildObjectExpression, clone } from "./ast";
 
 export const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): t.Expression => {
@@ -39,26 +44,58 @@ export const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): 
   ]);
 };
 
-export const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOperation) => {
+export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOperation) => {
   const [, slicesBuilder] = builderCall.arguments;
   if (!slicesBuilder || !t.isExpression(slicesBuilder)) {
-    throw new Error("[INTERNAL] operation requires a slices builder");
+    throw new Error("[INTERNAL] composed operation requires a slices builder");
   }
 
-  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("operation")), [
+  const runtimeCall = t.callExpression(
+    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("composedOperation")),
+    [
+      buildObjectExpression({
+        prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
+          t.stringLiteral(JSON.stringify(artifact.prebuild)),
+        ]),
+        runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>({
+          getSlices: clone(slicesBuilder),
+        }),
+      }),
+    ],
+  );
+
+  const referenceCall = t.callExpression(
+    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getComposedOperation")),
+    [t.stringLiteral(artifact.prebuild.operationName)],
+  );
+
+  return {
+    referenceCall,
+    runtimeCall,
+  };
+};
+
+export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallInlineOperation) => {
+  const [, fieldBuilder] = builderCall.arguments;
+  if (!fieldBuilder || !t.isExpression(fieldBuilder)) {
+    throw new Error("[INTERNAL] inline operation requires a field builder");
+  }
+
+  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("inlineOperation")), [
     buildObjectExpression({
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
         t.stringLiteral(JSON.stringify(artifact.prebuild)),
       ]),
-      runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>({
-        getSlices: clone(slicesBuilder),
+      runtime: buildObjectExpression<keyof RuntimeInlineOperationInput["runtime"]>({
+        buildFields: clone(fieldBuilder),
       }),
     }),
   ]);
 
-  const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getOperation")), [
-    t.stringLiteral(artifact.prebuild.operationName),
-  ]);
+  const referenceCall = t.callExpression(
+    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getInlineOperation")),
+    [t.stringLiteral(artifact.prebuild.operationName)],
+  );
 
   return {
     referenceCall,

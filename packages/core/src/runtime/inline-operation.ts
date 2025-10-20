@@ -8,7 +8,7 @@ import { registerInlineOperation } from "./runtime-registry";
 export type RuntimeInlineOperationInput = {
   prebuild: StripFunctions<AnyInlineOperationOf<OperationType>>;
   runtime: {
-    getSlices: (tools: { $: AnyAssignableInput }) => { [key: string]: AnySlicePayload };
+    buildFields: (tools: { $: AnyAssignableInput }) => Partial<Record<string, any>>;
   };
 };
 
@@ -17,7 +17,7 @@ export const createRuntimeInlineOperation = (input: RuntimeInlineOperationInput)
     operationType: input.prebuild.operationType,
     operationName: input.prebuild.operationName,
     variableNames: input.prebuild.variableNames,
-    documentSource: hidden(),
+    documentSource: () => input.runtime.buildFields({ $: {} as AnyAssignableInput }),
     document: input.prebuild.document,
   } satisfies StripSymbols<AnyInlineOperationOf<OperationType>> as AnyInlineOperationOf<OperationType>;
 

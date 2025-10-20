@@ -68,7 +68,7 @@ export const executeOperationByName = async <TVariables extends Record<string, u
 ): Promise<Result<TProjectedData, GraffleClientError>> => {
   try {
     // Get the operation from the runtime registry
-    const operation = gqlRuntime.getOperation(operationName) as AnyComposedOperation;
+    const operation = gqlRuntime.getComposedOperation(operationName) as AnyComposedOperation;
 
     // Execute the operation
     return await executeOperation(config, operation, variables, options);

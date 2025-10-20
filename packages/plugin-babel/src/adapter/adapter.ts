@@ -23,7 +23,7 @@ import { makeRuntimeExpression, resolveCanonicalId } from "@soda-gql/plugin-shar
 import { extractGqlCall, findGqlBuilderCall, type GqlCall } from "./analysis";
 import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./imports";
 import { collectGqlDefinitionMetadata, type GqlDefinitionMetadataMap } from "./metadata";
-import { buildOperationRuntimeComponents } from "./runtime";
+import { buildComposedOperationRuntimeComponents, buildInlineOperationRuntimeComponents } from "./runtime";
 import { transformCallExpression } from "./transformer";
 
 /**
@@ -231,7 +231,10 @@ export class BabelAdapter implements TransformAdapter {
     // For operations, we also need to insert a runtime call
     let runtimeInsertion: RuntimeExpression | undefined;
     if (gqlCall.type === "operation") {
-      const { runtimeCall } = buildOperationRuntimeComponents(gqlCall);
+      const { runtimeCall } = buildComposedOperationRuntimeComponents(gqlCall);
+      runtimeInsertion = makeRuntimeExpression(runtimeCall);
+    } else if (gqlCall.type === "inlineOperation") {
+      const { runtimeCall } = buildInlineOperationRuntimeComponents(gqlCall);
       runtimeInsertion = makeRuntimeExpression(runtimeCall);
     }
 

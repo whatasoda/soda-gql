@@ -603,7 +603,7 @@ const ${schemaVar} = {
 export type Schema_${name} = typeof ${schemaVar} & { _?: never };
 export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
 
-    gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+    gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
   }
 
   // Include createRuntimeAdapter import only in inline mode
@@ -612,7 +612,7 @@ export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
   return `\
 import {
   type AnyGraphqlSchema,
-  createGqlInvoker,
+  createGqlElementComposer,
   define,
   defineOperationRoots,
   unsafeInputType,

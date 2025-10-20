@@ -87,6 +87,22 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         continue;
       }
 
+      if (element.type === "inlineOperation") {
+        const prebuild = {
+          operationType: element.element.operationType,
+          operationName: element.element.operationName,
+          document: element.element.document,
+          variableNames: element.element.variableNames,
+        };
+        registry.set(definition.canonicalId, {
+          id: definition.canonicalId,
+          type: "inlineOperation",
+          prebuild,
+          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
+        });
+        continue;
+      }
+
       return err(emitRegistrationError(definition, "UNKNOWN_ARTIFACT_KIND"));
     }
   }

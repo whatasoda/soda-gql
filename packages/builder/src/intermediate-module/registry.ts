@@ -1,9 +1,11 @@
 import {
   type AnyComposedOperation,
+  type AnyInlineOperation,
   type AnyModel,
   type AnySlice,
   ComposedOperation,
   GqlElement,
+  InlineOperation,
   Model,
   Slice,
 } from "@soda-gql/core";
@@ -11,7 +13,7 @@ import type { IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
 
-type AcceptableArtifact = AnyModel | AnySlice | AnyComposedOperation;
+type AcceptableArtifact = AnyModel | AnySlice | AnyComposedOperation | AnyInlineOperation;
 type ArtifactModule = ArtifactRecord;
 type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
@@ -83,6 +85,8 @@ export const createIntermediateRegistry = () => {
         artifacts[canonicalId] = { type: "slice", element };
       } else if (element instanceof ComposedOperation) {
         artifacts[canonicalId] = { type: "operation", element };
+      } else if (element instanceof InlineOperation) {
+        artifacts[canonicalId] = { type: "inlineOperation", element };
       }
     }
 

@@ -4,7 +4,12 @@ import { formatPluginError } from "@soda-gql/plugin-shared";
 import type { ArtifactLookup, GqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import { buildModelRuntimeCall, buildOperationRuntimeComponents, buildSliceRuntimeCall } from "./runtime";
+import {
+  buildComposedOperationRuntimeComponents,
+  buildInlineOperationRuntimeComponents,
+  buildModelRuntimeCall,
+  buildSliceRuntimeCall,
+} from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callPath: NodePath<t.CallExpression>;
@@ -59,7 +64,13 @@ const replaceWithRuntimeCall = (callPath: NodePath<t.CallExpression>, gqlCall: G
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildOperationRuntimeComponents(gqlCall);
+    const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents(gqlCall);
+    callPath.replaceWith(referenceCall);
+    return { transformed: true, runtimeCall };
+  }
+
+  if (gqlCall.type === "inlineOperation") {
+    const { referenceCall, runtimeCall } = buildInlineOperationRuntimeComponents(gqlCall);
     callPath.replaceWith(referenceCall);
     return { transformed: true, runtimeCall };
   }
