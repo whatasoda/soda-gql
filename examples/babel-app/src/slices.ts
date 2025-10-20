@@ -67,8 +67,8 @@ export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
 /**
  * Subscription slice for user updates
  */
-export const userUpdatesSlice = gql.default(({ slice }, { $ }) =>
-  slice.subscription(
+export const userUpdatesSlice = gql.default(({ subscription }, { $ }) =>
+  subscription.slice(
     {
       variables: [$("userId").scalar("ID:!")],
     },

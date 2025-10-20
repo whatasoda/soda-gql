@@ -84,7 +84,7 @@ export function createUserQueries() {
 // Case 4: Arrow function with nested definitions
 // Should be collected with canonical ID: filePath::queryFactory.arrow#0.baseQuery
 export const queryFactory = () => {
-  const baseQuery = gql.default(({ slice }) =>
+  const baseQuery = gql.default(({ query }) =>
     query.slice(
       {},
       ({ f }) => [
@@ -154,7 +154,7 @@ export function createUserOperation() {
         variables: [$("id").scalar("ID:!")],
       },
       ({ $ }) => ({
-        user: nestedQueries.users.byId.build({ id: $.id }),
+        user: nestedQueries.users.byId.embed({ id: $.id }),
       }),
     ),
   );
@@ -173,7 +173,7 @@ export const operationFactory = () => {
         variables: [$("limit").scalar("Int:?")],
       },
       ({ $ }) => ({
-        users: nestedQueries.users.list.build({ limit: $.limit }),
+        users: nestedQueries.users.list.embed({ limit: $.limit }),
       }),
     ),
   );
@@ -194,7 +194,7 @@ export const nestedOperations = {
           variables: [$("id").scalar("ID:!")],
         },
         ({ $ }) => ({
-          user: nestedQueries.users.byId.build({ id: $.id }),
+          user: nestedQueries.users.byId.embed({ id: $.id }),
         }),
       ),
     ),
@@ -205,7 +205,7 @@ export const nestedOperations = {
           variables: [$("limit").scalar("Int:?")],
         },
         ({ $ }) => ({
-          users: nestedQueries.users.list.build({ limit: $.limit }),
+          users: nestedQueries.users.list.embed({ limit: $.limit }),
         }),
       ),
     ),

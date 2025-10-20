@@ -26,7 +26,7 @@ export const catalogOperation = gql.default(({ query }, { $ }) =>
       variables: [$("limit").scalar("Int:?")],
     },
     ({ $ }) => ({
-      products: catalogSlice.build({ limit: $.limit }),
+      products: catalogSlice.embed({ limit: $.limit }),
     }),
   ),
 );

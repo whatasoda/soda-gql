@@ -12,7 +12,7 @@ exports.getUserQuery = graphql_system_1.gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     () => ({
-      user: slices_1.userSlice.build({}),
+      user: slices_1.userSlice.embed({}),
     }),
   ),
 );

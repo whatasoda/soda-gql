@@ -25,7 +25,7 @@ export const defaultQuery = gql.default(({ query }) =>
       // Test fixture: using any to create a mock slice
       const fakeSlice: any = undefined;
       return {
-        users: fakeSlice.build({}),
+        users: fakeSlice.embed({}),
       };
     },
   ),

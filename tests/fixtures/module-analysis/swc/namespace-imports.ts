@@ -9,7 +9,7 @@ export const pageQuery = gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      catalogUsers: userCatalog.collections.byCategory.build({ categoryId: $.userId }),
+      catalogUsers: userCatalog.collections.byCategory.embed({ categoryId: $.userId }),
     }),
   ),
 );

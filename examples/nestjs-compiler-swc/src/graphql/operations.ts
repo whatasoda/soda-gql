@@ -13,7 +13,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.build({ id: $.userId }),
+      user: userSlice.embed({ id: $.userId }),
     }),
   ),
 );
@@ -29,7 +29,7 @@ export const getUsersQuery = gql.default(({ operation }) =>
       operationName: "GetUsers",
     },
     () => ({
-      users: usersSlice.build(),
+      users: usersSlice.embed(),
     }),
   ),
 );

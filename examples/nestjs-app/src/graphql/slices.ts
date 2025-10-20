@@ -63,7 +63,7 @@ export const createUserSlice = gql.default(({ mutation }, { $ }) =>
 /**
  * Mutation slice to update a user
  */
-export const updateUserSlice = gql.default(({ slice }, { $ }) =>
+export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
   mutation.slice(
     {
       variables: [

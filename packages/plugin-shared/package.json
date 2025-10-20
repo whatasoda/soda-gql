@@ -27,13 +27,6 @@
       "require": "./dist/errors.cjs",
       "default": "./dist/errors.js"
     },
-    "./compiler-sync": {
-      "development": "./src/compiler-sync/index.ts",
-      "types": "./dist/compiler-sync/index.d.ts",
-      "import": "./dist/compiler-sync/index.js",
-      "require": "./dist/compiler-sync/index.cjs",
-      "default": "./dist/compiler-sync/index.js"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {

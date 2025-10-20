@@ -29,7 +29,7 @@ export const slices = {
 };
 
 const sliceCollection = {
-  userSlice: gql.default(({ slice }) =>
+  userSlice: gql.default(({ query }) =>
     query.slice(
       {},
       ({ f }) => [f.users(({ f }) => [f.id()])],

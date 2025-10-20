@@ -24,7 +24,7 @@ export const userUpdatedSubscription = gql.default(({ subscription }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userUpdatedSlice.build({ userId: $.userId }),
+      user: userUpdatedSlice.embed({ userId: $.userId }),
     }),
   ),
 );

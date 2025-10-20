@@ -47,6 +47,7 @@ const configure = <T extends keyof typeof packageEntries>(name: T, options: Conf
       "graphql",
       "graphql-request",
       "neverthrow",
+      "tsdown",
       "typescript",
       "webpack",
       "xxhash-wasm",

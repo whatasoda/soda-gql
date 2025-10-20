@@ -1,4 +1,4 @@
-import type { AnyComposedOperation, AnyModel, AnySlice } from "../types/element";
+import type { AnyComposedOperation, AnyInlineOperation, AnyModel, AnySlice } from "../types/element";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createComposedOperationComposerFactory } from "./composed-operation";
@@ -7,7 +7,9 @@ import { createGqlModelComposers } from "./model";
 import { createSliceComposerFactory } from "./slice";
 import { createVarBuilder } from "./var-builder";
 
-export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnySlice | AnyComposedOperation>(
+export type GqlElementComposer<TComposers, THelper> = <
+  TResult extends AnyModel | AnySlice | AnyComposedOperation | AnyInlineOperation,
+>(
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 

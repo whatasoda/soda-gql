@@ -15,7 +15,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      user: userSlice.build({ id: $.userId, categoryId: $.categoryId }),
+      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
     }),
   ),
 );
@@ -30,7 +30,7 @@ export const listUsersQuery = gql.default(({ mutation }, { $ }) =>
       variables: [$("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
-      users: usersSlice.build({ categoryId: $.categoryId }),
+      users: usersSlice.embed({ categoryId: $.categoryId }),
     }),
   ),
 );
@@ -38,7 +38,7 @@ export const listUsersQuery = gql.default(({ mutation }, { $ }) =>
 /**
  * Mutation operation to update user
  */
-export const updateUserMutation = gql.default(({ operation }, { $ }) =>
+export const updateUserMutation = gql.default(({ subscription }, { $ }) =>
   mutation.composed(
     {
       operationName: "UpdateUser",
@@ -49,7 +49,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      result: updateUserSlice.build({ id: $.userId, name: $.name }),
+      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
     }),
   ),
 );
@@ -58,13 +58,13 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
  * Subscription operation for user updates
  */
 export const userUpdatesSubscription = gql.default(({ operation }, { $ }) =>
-  operation.subscription(
+  subscription.composed(
     {
       operationName: "UserUpdates",
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      updates: userUpdatesSlice.build({ userId: $.userId }),
+      updates: userUpdatesSlice.embed({ userId: $.userId }),
     }),
   ),
 );

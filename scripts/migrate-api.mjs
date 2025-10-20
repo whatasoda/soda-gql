@@ -82,9 +82,9 @@ for (const filePath of files) {
       changed = true;
     }
 
-    // Pattern 3: slice.embed → slice.build
-    if (content.includes(".embed(")) {
-      content = content.replace(/\.embed\(/g, ".build(");
+    // Pattern 3: slice.build → slice.embed (reverted)
+    if (content.includes(".build(")) {
+      content = content.replace(/\.build\(/g, ".embed(");
       changed = true;
     }
 

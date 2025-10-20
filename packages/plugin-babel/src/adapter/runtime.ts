@@ -76,19 +76,12 @@ export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall 
 };
 
 export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallInlineOperation) => {
-  const [, fieldBuilder] = builderCall.arguments;
-  if (!fieldBuilder || !t.isExpression(fieldBuilder)) {
-    throw new Error("[INTERNAL] inline operation requires a field builder");
-  }
-
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("inlineOperation")), [
     buildObjectExpression({
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
         t.stringLiteral(JSON.stringify(artifact.prebuild)),
       ]),
-      runtime: buildObjectExpression<keyof RuntimeInlineOperationInput["runtime"]>({
-        buildFields: clone(fieldBuilder),
-      }),
+      runtime: buildObjectExpression({}),
     }),
   ]);
 

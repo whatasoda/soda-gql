@@ -12,7 +12,7 @@ export const profileQuery = gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.build({ id: $.userId }),
+      user: userSlice.embed({ id: $.userId }),
     }),
   ),
 );
@@ -24,7 +24,7 @@ export const updateProfileMutation = gql.default(({ mutation }, { $ }) =>
       variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
-      result: updateUserSlice.build({ id: $.userId, name: $.name }),
+      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
     }),
   ),
 );
@@ -62,7 +62,7 @@ export const complexQuery = gql.default(({ operation }) =>
       operationName: "ComplexQuery",
     },
     () => ({
-      nested: nestedSlice.build({}),
+      nested: nestedSlice.embed({}),
     }),
   ),
 );

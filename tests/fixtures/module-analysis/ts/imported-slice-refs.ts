@@ -9,7 +9,7 @@ export const pageQuery = gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      users: userSlice.build({ id: $.userId }),
+      users: userSlice.embed({ id: $.userId }),
     }),
   ),
 );

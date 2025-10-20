@@ -130,11 +130,6 @@ export const buildInlineOperationRuntimeComponents = ({
   factory: ts.NodeFactory;
   isCJS: boolean;
 }) => {
-  const [, fieldBuilder] = gqlCall.builderCall.arguments;
-  if (!fieldBuilder || !ts.isExpression(fieldBuilder)) {
-    throw new Error("[INTERNAL] inline operation requires a field builder");
-  }
-
   const runtimeCall = factory.createCallExpression(
     factory.createPropertyAccessExpression(
       createRuntimeAccessor({ isCJS, factory }),
@@ -144,9 +139,7 @@ export const buildInlineOperationRuntimeComponents = ({
     [
       buildObjectExpression(factory, {
         prebuild: buildJsonParseExpression<RuntimeInlineOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
-        runtime: buildObjectExpression<keyof RuntimeInlineOperationInput["runtime"]>(factory, {
-          buildFields: clone(fieldBuilder),
-        }),
+        runtime: buildObjectExpression(factory, {}),
       }),
     ],
   );

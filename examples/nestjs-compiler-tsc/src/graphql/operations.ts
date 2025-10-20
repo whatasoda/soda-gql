@@ -13,7 +13,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.build({ id: $.userId }),
+      user: userSlice.embed({ id: $.userId }),
     }),
   ),
 );
@@ -23,13 +23,30 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
  *
  * This demonstrates fetching a list of users with the same fields.
  */
-export const getUsersQuery = gql.default(({ operation }) =>
+export const getUsersQuery = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "GetUsers",
     },
     () => ({
-      users: usersSlice.build(),
+      users: usersSlice.embed(),
     }),
+  ),
+);
+
+export const inline = gql.default(({ query }) =>
+  query.inline(
+    {
+      operationName: "InlineTest",
+    },
+    ({ f }) => [
+      //
+      f.users()(({ f }) => [
+        //
+        f.id(),
+        f.name(),
+        f.email(),
+      ]),
+    ],
   ),
 );
