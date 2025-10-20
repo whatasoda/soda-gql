@@ -7,7 +7,7 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
-import { type PluginError } from "./errors.js";
+import type { PluginError } from "./errors";
 
 /**
  * Normalized plugin options after validation.
@@ -38,6 +38,10 @@ export type PluginOptions = {
   readonly diagnostics?: "json" | "console";
   readonly dev?: {
     readonly hmr?: boolean;
+  };
+  readonly artifact?: {
+    readonly useBuilder?: boolean;
+    readonly path?: string;
   };
 };
 
@@ -115,6 +119,50 @@ export const preparePluginState = async (rawOptions: Partial<PluginOptions>): Pr
   }
 
   const options = optionsResult.value;
+
+  // Check if artifact override is provided
+  if (rawOptions.artifact?.useBuilder === false) {
+    const artifactPath = rawOptions.artifact.path;
+    if (!artifactPath) {
+      return err({
+        type: "PluginError",
+        code: "OPTIONS_INVALID_BUILDER_CONFIG",
+        message: "Artifact path is required when useBuilder is false",
+        cause: {
+          code: "MISSING_ARTIFACT_PATH",
+          message: "Artifact path is required when useBuilder is false",
+        },
+        stage: "normalize-options",
+      });
+    }
+
+    // Load artifact from JSON file
+    try {
+      const { readFileSync } = await import("node:fs");
+      const { resolve, dirname } = await import("node:path");
+
+      // Resolve artifact path relative to config directory
+      const configDir = dirname(rawOptions.configPath ?? process.cwd());
+      const resolvedArtifactPath = resolve(configDir, artifactPath);
+
+      const artifactJson = readFileSync(resolvedArtifactPath, "utf-8");
+      const artifact = JSON.parse(artifactJson) as BuilderArtifact;
+
+      return ok({
+        options,
+        allArtifacts: artifact.elements,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return err({
+        type: "PluginError",
+        code: "SODA_GQL_BUILDER_UNEXPECTED",
+        message: `Failed to load artifact from ${artifactPath}: ${message}`,
+        cause: error as Error,
+        stage: "builder",
+      });
+    }
+  }
 
   // Create builder service
   const builderService = createBuilderService({ config: options.resolvedConfig });

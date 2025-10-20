@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, type CanonicalId, createBuilderService } from "@soda-gql/builder";
@@ -16,14 +17,21 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 
 const createWorkspace = () => {
-  const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
-  mkdirSync(tmpRoot, { recursive: true });
+  const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-runtime-flow-"));
   const workspaceRoot = resolve(tmpRoot, `runtime-flow-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {
     recursive: true,
     filter: (src) => !src.includes("graphql-system"),
   });
+
+  // Symlink node_modules so transformed modules can resolve @soda-gql packages
+  const nodeModulesSrc = join(projectRoot, "node_modules");
+  const nodeModulesDest = join(workspaceRoot, "node_modules");
+  if (!existsSync(nodeModulesDest)) {
+    symlinkSync(nodeModulesSrc, nodeModulesDest, "dir");
+  }
+
   return workspaceRoot;
 };
 
@@ -45,15 +53,19 @@ const setupWorkspace = async (workspace: string) => {
     throw new Error(`codegen failed: ${codegenResult.error.code}`);
   }
 
-  return graphqlSystemEntry;
+  return { tsPath: graphqlSystemEntry, cjsPath: codegenResult.value.cjsPath };
 };
 
-const buildArtifact = async (workspace: string): Promise<BuilderArtifact> => {
+const buildArtifact = async (workspace: string, cjsPath: string): Promise<BuilderArtifact> => {
   const originalCwd = process.cwd();
   process.chdir(workspace);
   try {
+    const config = createTestConfig(workspace);
+    // Override graphqlSystemPath with the actual bundled CJS path from codegen
+    config.graphqlSystemPath = cjsPath;
+
     const service = createBuilderService({
-      config: createTestConfig(workspace),
+      config,
       entrypointsOverride: [join(workspace, "src", "pages", "profile.page.ts")],
     });
 
@@ -77,9 +89,9 @@ describe("Runtime Flow Integration", () => {
   describe("runtime mode", () => {
     it("generates artifact with all operations, models, and slices", async () => {
       const workspace = createWorkspace();
-      await setupWorkspace(workspace);
+      const { cjsPath } = await setupWorkspace(workspace);
 
-      const artifact = await buildArtifact(workspace);
+      const artifact = await buildArtifact(workspace, cjsPath);
 
       // Verify artifact structure
       expect(Object.keys(artifact.elements).length).toBeGreaterThan(0);
@@ -107,9 +119,9 @@ describe("Runtime Flow Integration", () => {
   describe("zero-runtime mode", () => {
     it("transforms and verifies runtime behavior", async () => {
       const workspace = createWorkspace();
-      await setupWorkspace(workspace);
+      const { cjsPath } = await setupWorkspace(workspace);
 
-      const artifact = await buildArtifact(workspace);
+      const artifact = await buildArtifact(workspace, cjsPath);
 
       // Transform files
       const transformOutDir = join(workspace, ".cache", "soda-gql", "plugin-output");
@@ -128,6 +140,14 @@ describe("Runtime Flow Integration", () => {
         const sourceCode = await Bun.file(filePath).text();
         const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
           skipTypeCheck: true,
+          configOverrides: {
+            graphqlSystemPath: cjsPath,
+            builder: {
+              entry: [join(workspace, "src/**/*.ts")],
+              outDir: join(workspace, ".cache", "soda-gql"),
+              analyzer: "ts",
+            },
+          },
         });
 
         const relativePath = filePath.slice(workspace.length + 1);
@@ -187,9 +207,9 @@ describe("Runtime Flow Integration", () => {
         expect(normalized).toEqual(mockUserSelection);
 
         expect(userModule.userSlice).toBeDefined();
-        expect(userModule.userSlice.build).toBeDefined();
+        expect(userModule.userSlice.embed).toBeDefined();
 
-        const sliceResult = userModule.userSlice.build({ id: "user-1", categoryId: "cat-1" });
+        const sliceResult = userModule.userSlice.embed({ id: "user-1", categoryId: "cat-1" });
         expect(sliceResult.variables).toEqual({ id: "user-1", categoryId: "cat-1" });
         expect(sliceResult.projection).toBeDefined();
       });

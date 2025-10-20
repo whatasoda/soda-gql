@@ -45,6 +45,14 @@ export type TransformOptions = {
   importIdentifier?: string;
   skipTypeCheck?: boolean;
   additionalFiles?: Array<{ path: string; content: string }>; // Additional files for type checking context
+  configOverrides?: {
+    graphqlSystemPath?: string;
+    builder?: {
+      entry?: string[];
+      outDir?: string;
+      analyzer?: "ts";
+    };
+  };
 };
 
 /**
@@ -61,9 +69,10 @@ export const runBabelTransform = async (
   try {
     const {
       mode = "zero-runtime",
-      importIdentifier = "@soda-gql/runtime",
+      importIdentifier = "@/graphql-system",
       skipTypeCheck = false,
       additionalFiles = [],
+      configOverrides = {},
     } = options;
 
     const artifactPath = tempDir.join("artifact.json");
@@ -71,13 +80,17 @@ export const runBabelTransform = async (
     await fs.writeFile(artifactPath, JSON.stringify(artifact));
 
     // Create temp config file that references the artifact
+    // Use overrides if provided, otherwise use defaults
+    const graphqlSystemPath = configOverrides.graphqlSystemPath ?? "./src/graphql-system/index.ts";
+    const builderConfig = {
+      entry: configOverrides.builder?.entry ?? ["**/*.ts"],
+      analyzer: (configOverrides.builder?.analyzer ?? "ts") as "ts",
+      outDir: configOverrides.builder?.outDir ?? "./.cache",
+    };
+
     const configPath = createTempConfigFile(tempDir.path, {
-      graphqlSystemPath: "./src/graphql-system/index.ts", // Required field
-      builder: {
-        entry: ["**/*.ts"], // Dummy entry (not used in artifact-file mode)
-        analyzer: "ts", // Dummy analyzer (not used in artifact-file mode)
-        outDir: "./.cache", // Required field
-      },
+      graphqlSystemPath,
+      builder: builderConfig,
     });
 
     const result = await transformAsync(source, {
