@@ -4,6 +4,7 @@
  */
 
 import { getPortableHasher } from "@soda-gql/common";
+import type { GraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 
 /**
@@ -19,8 +20,9 @@ export interface AnalyzerAdapter<TFile, THandle> {
 
   /**
    * Collect identifiers imported from /graphql-system that represent gql APIs.
+   * Uses GraphqlSystemIdentifyHelper to properly identify graphql-system imports.
    */
-  collectGqlIdentifiers(file: TFile): ReadonlySet<string>;
+  collectGqlIdentifiers(file: TFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string>;
 
   /**
    * Collect all module imports.
@@ -69,6 +71,7 @@ export interface AnalyzerAdapter<TFile, THandle> {
 export const analyzeModuleCore = <TFile, THandle>(
   input: AnalyzeModuleInput,
   adapter: AnalyzerAdapter<TFile, THandle>,
+  graphqlHelper: GraphqlSystemIdentifyHelper,
 ): ModuleAnalysis => {
   // Parse source
   const hasher = getPortableHasher();
@@ -87,7 +90,7 @@ export const analyzeModuleCore = <TFile, THandle>(
   }
 
   // Collect identifiers, imports, and exports
-  const gqlIdentifiers = adapter.collectGqlIdentifiers(file);
+  const gqlIdentifiers = adapter.collectGqlIdentifiers(file, graphqlHelper);
   const imports = adapter.collectImports(file);
   const exports = adapter.collectExports(file);
 

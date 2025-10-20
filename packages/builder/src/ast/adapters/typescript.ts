@@ -6,6 +6,7 @@
 import { extname } from "node:path";
 import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import ts from "typescript";
+import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 import type {
@@ -32,7 +33,7 @@ const toLocation = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation =>
   } satisfies SourceLocation;
 };
 
-const collectGqlImports = (sourceFile: ts.SourceFile): ReadonlySet<string> => {
+const collectGqlImports = (sourceFile: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> => {
   const identifiers = new Set<string>();
 
   sourceFile.statements.forEach((statement) => {
@@ -41,7 +42,7 @@ const collectGqlImports = (sourceFile: ts.SourceFile): ReadonlySet<string> => {
     }
 
     const moduleText = (statement.moduleSpecifier as ts.StringLiteral).text;
-    if (!moduleText.endsWith("/graphql-system")) {
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: sourceFile.fileName, specifier: moduleText })) {
       return;
     }
 
@@ -450,8 +451,8 @@ export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     return createSourceFile(input.filePath, input.source);
   },
 
-  collectGqlIdentifiers(file: ts.SourceFile): ReadonlySet<string> {
-    return collectGqlImports(file);
+  collectGqlIdentifiers(file: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
+    return collectGqlImports(file, helper);
   },
 
   collectImports(file: ts.SourceFile): readonly ModuleImport[] {

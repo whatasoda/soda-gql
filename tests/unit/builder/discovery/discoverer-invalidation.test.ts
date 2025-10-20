@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getAstAnalyzer } from "@soda-gql/builder/ast";
+import { createAstAnalyzer } from "@soda-gql/builder/ast";
 import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
 import { createDiscoveryCache } from "@soda-gql/builder/discovery/cache";
 import { discoverModules } from "@soda-gql/builder/discovery/discoverer";
 import { clearFingerprintCache } from "@soda-gql/builder/discovery/fingerprint";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder/internal/graphql-system";
+import { createTestConfig } from "../../../helpers/test-config";
 
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 
@@ -30,7 +32,9 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     writeFileSync(fileB, `import { c } from "./c";\nexport const b = 2;`);
     writeFileSync(fileC, `export const c = 3;`);
 
-    const astAnalyzer = getAstAnalyzer("ts");
+    const testConfig = createTestConfig(root);
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
     clearFingerprintCache();
 
@@ -83,7 +87,9 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     writeFileSync(fileA, `import { b } from "./b";\nexport const a = 1;`);
     writeFileSync(fileB, `export const b = 2;`);
 
-    const astAnalyzer = getAstAnalyzer("ts");
+    const testConfig = createTestConfig(root);
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
     clearFingerprintCache();
 
@@ -127,7 +133,9 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     const fileA = join(fixtureRoot, "a.ts");
     writeFileSync(fileA, `export const a = 1;`);
 
-    const astAnalyzer = getAstAnalyzer("ts");
+    const testConfig = createTestConfig(root);
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
     clearFingerprintCache();
 

@@ -6,6 +6,7 @@
 import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
+import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 
@@ -241,7 +242,7 @@ const collectExports = (module: Module): ModuleExport[] => {
   return exports;
 };
 
-const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
+const collectGqlIdentifiers = (module: SwcModule, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> => {
   const identifiers = new Set<string>();
   module.body.forEach((item) => {
     const declaration =
@@ -255,7 +256,7 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     if (!declaration) {
       return;
     }
-    if (!declaration.source.value.endsWith("/graphql-system")) {
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: module.__filePath, specifier: declaration.source.value })) {
       return;
     }
     // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
@@ -588,8 +589,8 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     return swcModule;
   },
 
-  collectGqlIdentifiers(file: Module): ReadonlySet<string> {
-    return collectGqlIdentifiers(file);
+  collectGqlIdentifiers(file: Module, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
+    return collectGqlIdentifiers(file as SwcModule, helper);
   },
 
   collectImports(file: Module): readonly ModuleImport[] {

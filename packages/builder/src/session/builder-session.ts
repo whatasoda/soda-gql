@@ -3,7 +3,7 @@ import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
-import { getAstAnalyzer, type ModuleAnalysis } from "../ast";
+import { createAstAnalyzer, type ModuleAnalysis } from "../ast";
 import { createJsonCache } from "../cache/json-cache";
 import {
   createDiscoveryCache,
@@ -15,6 +15,7 @@ import {
 } from "../discovery";
 import { builderErrors } from "../errors";
 import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
+import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createFileTracker, type FileDiff, isEmptyDiff } from "../tracker";
 import type { BuilderError } from "../types";
 import { validateModuleDependencies } from "./dependency-validation";
@@ -84,7 +85,13 @@ export const createBuilderSession = (options: {
     prefix: ["builder"],
   });
 
-  const ensureAstAnalyzer = cachedFn(() => getAstAnalyzer(config.builder.analyzer));
+  const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
+  const ensureAstAnalyzer = cachedFn(() =>
+    createAstAnalyzer({
+      analyzer: config.builder.analyzer,
+      graphqlHelper,
+    }),
+  );
   const ensureDiscoveryCache = cachedFn(() =>
     createDiscoveryCache({
       factory: cacheFactory,
@@ -221,7 +228,7 @@ const discover = ({
   previousModuleAdjacency,
 }: {
   discoveryCache: DiscoveryCache;
-  astAnalyzer: ReturnType<typeof getAstAnalyzer>;
+  astAnalyzer: ReturnType<typeof createAstAnalyzer>;
   removedFiles: Set<string>;
   changedFiles: Set<string>;
   entryPaths: readonly string[];

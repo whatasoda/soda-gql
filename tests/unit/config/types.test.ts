@@ -87,6 +87,7 @@ describe("types.ts", () => {
   test("ResolvedSodaGqlConfig has all required fields", () => {
     const config: ResolvedSodaGqlConfig = {
       graphqlSystemPath: "/abs/path/to/graphql-system/index.ts",
+      graphqlSystemAlias: undefined,
       corePath: "/abs/path/to/@soda-gql/core",
       builder: {
         entry: ["/abs/path/to/src/**/*.ts"],
@@ -112,6 +113,7 @@ describe("types.ts", () => {
   test("ResolvedSodaGqlConfig allows optional codegen", () => {
     const config: ResolvedSodaGqlConfig = {
       graphqlSystemPath: "/abs/path/to/graphql-system/index.ts",
+      graphqlSystemAlias: undefined,
       corePath: "/abs/path/to/@soda-gql/core",
       builder: {
         entry: ["/abs/path/to/src/**/*.ts"],

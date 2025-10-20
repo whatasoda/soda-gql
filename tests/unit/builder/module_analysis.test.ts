@@ -1,8 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { getAstAnalyzer } from "@soda-gql/builder/ast";
+import { createAstAnalyzer } from "@soda-gql/builder/ast";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder/internal/graphql-system";
+import { createTestConfig } from "../../helpers/test-config";
 import { loadModuleAnalysisFixture } from "../../utils";
 
-const analyzeModule = getAstAnalyzer("ts").analyze;
+const testConfig = createTestConfig("/test");
+const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+const analyzeModule = createAstAnalyzer({ analyzer: "ts", graphqlHelper }).analyze;
 
 const loadFixture = (name: string) => loadModuleAnalysisFixture("ts", name);
 
