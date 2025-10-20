@@ -161,8 +161,15 @@ describe("validator.ts", () => {
         graphqlSystemPath: "./src/graphql-system/index.ts",
         graphqlSystemAlias: undefined,
         codegen: {
-          schema: "./schema.graphql",
-          outDir: "./src/graphql-system",
+          format: "human",
+          output: "./src/graphql-system/index.ts",
+          schemas: {
+            default: {
+              schema: "./schema.graphql",
+              runtimeAdapter: "./inject/runtime-adapter.ts",
+              scalars: "./inject/scalars.ts",
+            },
+          },
         },
       };
 
@@ -171,8 +178,8 @@ describe("validator.ts", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.codegen).toBeDefined();
-        expect(result.value.codegen?.schema).toContain("schema.graphql");
-        expect(result.value.codegen?.outDir).toContain("graphql-system");
+        expect(result.value.codegen?.output).toContain("graphql-system");
+        expect(result.value.codegen?.schemas.default?.schema).toContain("schema.graphql");
       }
 
       rmSync(tmpDir, { recursive: true, force: true });

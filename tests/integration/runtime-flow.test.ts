@@ -60,9 +60,12 @@ const buildArtifact = async (workspace: string, cjsPath: string): Promise<Builde
   const originalCwd = process.cwd();
   process.chdir(workspace);
   try {
-    const config = createTestConfig(workspace);
+    const baseConfig = createTestConfig(workspace);
     // Override graphqlSystemPath with the actual bundled CJS path from codegen
-    config.graphqlSystemPath = cjsPath;
+    const config = {
+      ...baseConfig,
+      graphqlSystemPath: cjsPath,
+    };
 
     const service = createBuilderService({
       config,

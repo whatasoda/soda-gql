@@ -7,8 +7,6 @@ import { createBeforeTransformer } from "./transformer";
 export type TscPluginConfig = {
   readonly configPath?: string;
   readonly enabled?: boolean;
-  readonly project?: string;
-  readonly importIdentifier?: string;
 };
 
 const fallbackPlugin = {

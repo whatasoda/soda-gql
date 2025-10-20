@@ -6,9 +6,16 @@ export type BuilderConfig = {
 };
 
 // Codegen-specific config
-export type CodegenConfig = {
+export type CodegenSchemaConfig = {
   readonly schema: string;
-  readonly outDir: string;
+  readonly runtimeAdapter: string;
+  readonly scalars: string;
+};
+
+export type CodegenConfig = {
+  readonly format?: "human" | "json";
+  readonly output: string;
+  readonly schemas: Record<string, CodegenSchemaConfig>;
 };
 
 // Plugin-specific config (extensible)

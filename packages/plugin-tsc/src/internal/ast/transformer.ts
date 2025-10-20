@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import { formatPluginError } from "../../errors";
+import { formatPluginError } from "../errors";
 import type { ArtifactLookup, GqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
@@ -72,7 +72,7 @@ const replaceWithRuntimeCall = ({
     return { transformed: true, replacement };
   }
 
-  if (gqlCall.type === "operation") {
+  if (gqlCall.type === "composedOperation") {
     const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS });
     return { transformed: true, replacement: referenceCall, runtimeCall };
   }

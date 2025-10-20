@@ -1,7 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { createSodaGqlTransformer } from "@soda-gql/plugin-tsc";
+import { createTscPlugin, type TscPluginConfig } from "@soda-gql/plugin-tsc/plugin";
 import ts from "typescript";
+
+/**
+ * Create a TypeScript transformer for testing purposes.
+ * This is a helper that wraps createTscPlugin to match the signature expected by tests.
+ */
+export const createSodaGqlTransformer = (
+  program: ts.Program,
+  options: TscPluginConfig | undefined,
+): ts.TransformerFactory<ts.SourceFile> => {
+  const plugin = createTscPlugin(options);
+  return plugin.before({}, program);
+};
 
 describe("TypeScript Compiler Plugin Integration", () => {
   const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-tsc");
@@ -21,8 +33,6 @@ describe("TypeScript Compiler Plugin Integration", () => {
     // Create transformer with new options (disabled to avoid coordinator initialization)
     const transformer = createSodaGqlTransformer(program, {
       configPath: "./soda-gql.config.ts",
-      project: "default",
-      importIdentifier: "@/graphql-system",
       enabled: false, // Disable to test option parsing without coordinator
     });
 
@@ -62,7 +72,6 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
     const transformer = createSodaGqlTransformer(program, {
       configPath: "./soda-gql.config.ts",
-      importIdentifier: "@/graphql-system",
       enabled: false,
     });
 
@@ -94,7 +103,6 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
     const transformer = createSodaGqlTransformer(program, {
       configPath: "/nonexistent/soda-gql.config.ts",
-      importIdentifier: "@/graphql-system",
     });
 
     let emittedCode = "";
@@ -124,13 +132,12 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // Note: This test is currently disabled because it requires the full build artifact.
       // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
       const transformer = createSodaGqlTransformer(program, {
-        importIdentifier: "@/graphql-system",
         enabled: false, // Disabled to avoid coordinator initialization
       });
 
-      let emittedCode = "";
+      let _emittedCode = "";
       const writeFile: ts.WriteFileCallback = (_fileName, text) => {
-        emittedCode = text;
+        _emittedCode = text;
       };
 
       const emitResult = program.emit(undefined, writeFile, undefined, false, {
@@ -161,13 +168,12 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // Note: This test is currently disabled because it requires the full build artifact.
       // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
       const transformer = createSodaGqlTransformer(program, {
-        importIdentifier: "@/graphql-system",
         enabled: false, // Disabled to avoid coordinator initialization
       });
 
-      let emittedCode = "";
+      let _emittedCode = "";
       const writeFile: ts.WriteFileCallback = (_fileName, text) => {
-        emittedCode = text;
+        _emittedCode = text;
       };
 
       const emitResult = program.emit(undefined, writeFile, undefined, false, {
@@ -194,13 +200,12 @@ describe("TypeScript Compiler Plugin Integration", () => {
       const program = ts.createProgram([sourceFile], compilerOptions);
 
       const transformer = createSodaGqlTransformer(program, {
-        importIdentifier: "@/graphql-system",
         enabled: false,
       });
 
-      let emittedCode = "";
+      let _emittedCode = "";
       const writeFile: ts.WriteFileCallback = (_fileName, text) => {
-        emittedCode = text;
+        _emittedCode = text;
       };
 
       const emitResult = program.emit(undefined, writeFile, undefined, false, {

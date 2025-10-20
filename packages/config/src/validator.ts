@@ -16,9 +16,16 @@ const BuilderConfigSchema = z.object({
   mode: z.enum(["runtime", "zero-runtime"]).optional(),
 });
 
-const CodegenConfigSchema = z.object({
+const CodegenSchemaConfigSchema = z.object({
   schema: z.string().min(1),
-  outDir: z.string().min(1),
+  runtimeAdapter: z.string().min(1),
+  scalars: z.string().min(1),
+});
+
+const CodegenConfigSchema = z.object({
+  format: z.enum(["human", "json"]).optional(),
+  output: z.string().min(1),
+  schemas: z.record(z.string(), CodegenSchemaConfigSchema),
 });
 
 const SodaGqlConfigSchema = z.object({
@@ -71,8 +78,18 @@ export function resolveConfig(config: SodaGqlConfig, configPath: string): Result
     },
     codegen: config.codegen
       ? {
-          schema: resolveFromConfig(config.codegen.schema),
-          outDir: resolveFromConfig(config.codegen.outDir),
+          format: config.codegen.format ?? "human",
+          output: resolveFromConfig(config.codegen.output),
+          schemas: Object.fromEntries(
+            Object.entries(config.codegen.schemas).map(([name, schemaConfig]) => [
+              name,
+              {
+                schema: resolveFromConfig(schemaConfig.schema),
+                runtimeAdapter: resolveFromConfig(schemaConfig.runtimeAdapter),
+                scalars: resolveFromConfig(schemaConfig.scalars),
+              },
+            ]),
+          ),
         }
       : undefined,
     plugins: config.plugins ?? {},

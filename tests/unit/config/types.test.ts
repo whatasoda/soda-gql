@@ -33,12 +33,20 @@ describe("types.ts", () => {
 
   test("CodegenConfig accepts valid configuration", () => {
     const config: CodegenConfig = {
-      schema: "./schema.graphql",
-      outDir: "./src/graphql-system",
+      format: "human",
+      output: "./src/graphql-system/index.ts",
+      schemas: {
+        default: {
+          schema: "./schema.graphql",
+          runtimeAdapter: "./inject/runtime-adapter.ts",
+          scalars: "./inject/scalars.ts",
+        },
+      },
     };
 
-    expect(config.schema).toBe("./schema.graphql");
-    expect(config.outDir).toBe("./src/graphql-system");
+    expect(config.format).toBe("human");
+    expect(config.output).toBe("./src/graphql-system/index.ts");
+    expect(config.schemas.default?.schema).toBe("./schema.graphql");
   });
 
   test("PluginConfig accepts arbitrary key-value pairs", () => {
@@ -61,8 +69,15 @@ describe("types.ts", () => {
         analyzer: "ts",
       },
       codegen: {
-        schema: "./schema.graphql",
-        outDir: "./src/graphql-system",
+        format: "human",
+        output: "./src/graphql-system/index.ts",
+        schemas: {
+          default: {
+            schema: "./schema.graphql",
+            runtimeAdapter: "./inject/runtime-adapter.ts",
+            scalars: "./inject/scalars.ts",
+          },
+        },
       },
       plugins: {},
     };
@@ -96,8 +111,15 @@ describe("types.ts", () => {
         analyzer: "ts",
       },
       codegen: {
-        schema: "/abs/path/to/schema.graphql",
-        outDir: "/abs/path/to/src/graphql-system",
+        format: "human",
+        output: "/abs/path/to/src/graphql-system/index.ts",
+        schemas: {
+          default: {
+            schema: "/abs/path/to/schema.graphql",
+            runtimeAdapter: "/abs/path/to/inject/runtime-adapter.ts",
+            scalars: "/abs/path/to/inject/scalars.ts",
+          },
+        },
       },
       plugins: {},
       configDir: "/abs/path/to",

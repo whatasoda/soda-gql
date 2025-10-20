@@ -18,8 +18,15 @@ export const createTestConfig = (
     analyzer: "ts" as const,
   },
   codegen: {
-    schema: join(workspaceRoot, "schema.graphql"),
-    outDir: join(workspaceRoot, "graphql-system"),
+    format: "human" as const,
+    output: join(workspaceRoot, "graphql-system/index.ts"),
+    schemas: {
+      default: {
+        schema: join(workspaceRoot, "schema.graphql"),
+        runtimeAdapter: join(workspaceRoot, "inject/runtime-adapter.ts"),
+        scalars: join(workspaceRoot, "inject/scalars.ts"),
+      },
+    },
   },
   plugins: {},
   configDir: workspaceRoot,

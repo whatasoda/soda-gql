@@ -14,26 +14,35 @@ import type {
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
-} from "../../errors";
+} from "../errors";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
-export type GqlCallBase = {
+export interface GqlCallBase {
   readonly callNode: ts.CallExpression;
   readonly canonicalId: CanonicalId;
   readonly builderCall: ts.CallExpression;
-};
+}
 
-export type GqlCallModel = GqlCallBase & { readonly type: "model"; readonly artifact: BuilderArtifactModel };
-export type GqlCallSlice = GqlCallBase & { readonly type: "slice"; readonly artifact: BuilderArtifactSlice };
-export type GqlCallOperation = GqlCallBase & { readonly type: "operation"; readonly artifact: BuilderArtifactOperation };
-export type GqlCallInlineOperation = GqlCallBase & {
+export interface GqlCallModel extends GqlCallBase {
+  readonly type: "model";
+  readonly artifact: BuilderArtifactModel;
+}
+export interface GqlCallSlice extends GqlCallBase {
+  readonly type: "slice";
+  readonly artifact: BuilderArtifactSlice;
+}
+export interface GqlCallComposedOperation extends GqlCallBase {
+  readonly type: "composedOperation";
+  readonly artifact: BuilderArtifactOperation;
+}
+export interface GqlCallInlineOperation extends GqlCallBase {
   readonly type: "inlineOperation";
   readonly artifact: BuilderArtifactInlineOperation;
-};
+}
 
-export type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation | GqlCallInlineOperation;
+export type GqlCall = GqlCallModel | GqlCallSlice | GqlCallComposedOperation | GqlCallInlineOperation;
 
 export type ExtractGqlCallArgs = {
   readonly callNode: ts.CallExpression;
@@ -73,7 +82,7 @@ export const extractGqlCall = ({
   }
 
   if (artifact.type === "operation") {
-    return ok({ ...base, type: "operation", artifact });
+    return ok({ ...base, type: "composedOperation", artifact });
   }
 
   if (artifact.type === "inlineOperation") {

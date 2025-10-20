@@ -12,11 +12,11 @@ import {
   ensureGqlRuntimeRequire,
   type GraphqlSystemIdentifyHelper,
   removeGraphqlSystemImports,
-} from "./internal/ts-adapter/typescript/imports";
-import { collectGqlDefinitionMetadata } from "./internal/ts-adapter/typescript/metadata";
-import { transformCallExpression } from "./internal/ts-adapter/typescript/transformer";
+} from "./internal/ast/imports";
+import { collectGqlDefinitionMetadata } from "./internal/ast/metadata";
+import { transformCallExpression } from "./internal/ast/transformer";
 
-export { createAfterStubTransformer } from "./internal/ts-adapter/typescript/imports";
+export { createAfterStubTransformer } from "./internal/ast/imports";
 
 /**
  * TypeScript-specific environment required for the adapter.
