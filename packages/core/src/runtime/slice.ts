@@ -1,4 +1,4 @@
-import type { AnyExecutionResultProjectionsBuilder, AnySliceOf } from "../types/operation";
+import type { AnyExecutionResultProjectionsBuilder, AnySliceOf } from "../types/element";
 import { Projection } from "../types/runtime";
 import type { OperationType } from "../types/schema";
 import { hidden } from "../utils/hidden";
@@ -22,7 +22,7 @@ export const createRuntimeSlice = (input: RuntimeSliceInput) => {
   const projection = handleProjectionBuilder(input.runtime.buildProjection);
   return {
     operationType: input.prebuild.operationType,
-    load: (variables) => ({
+    embed: (variables) => ({
       variables,
       getFields: hidden(),
       projection,

@@ -15,7 +15,7 @@ export const getUserQuery = gql.default(({ operation }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      user: userSlice.load({ id: $.userId, categoryId: $.categoryId }),
+      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
     }),
   ),
 );
@@ -30,7 +30,7 @@ export const listUsersQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
-      users: usersSlice.load({ categoryId: $.categoryId }),
+      users: usersSlice.embed({ categoryId: $.categoryId }),
     }),
   ),
 );
@@ -49,7 +49,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      result: updateUserSlice.load({ id: $.userId, name: $.name }),
+      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
     }),
   ),
 );
@@ -64,7 +64,7 @@ export const userUpdatesSubscription = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      updates: userUpdatesSlice.load({ userId: $.userId }),
+      updates: userUpdatesSlice.embed({ userId: $.userId }),
     }),
   ),
 );

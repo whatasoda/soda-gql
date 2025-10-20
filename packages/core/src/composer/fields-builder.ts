@@ -1,4 +1,3 @@
-import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import {
   type AnyFieldSelectionFactory,
   type AnyFieldSelectionFactoryReturn,
@@ -9,7 +8,8 @@ import {
   mergeFields,
   type NestedObjectFieldsBuilder,
   type NestedUnionFieldsBuilder,
-} from "../types/operation";
+} from "../types/element";
+import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type {
   AnyGraphqlSchema,
   OutputEnumSpecifier,

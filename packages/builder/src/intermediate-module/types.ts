@@ -1,5 +1,5 @@
 import type { Script } from "node:vm";
-import type { AnyModel, AnyOperation, AnySlice } from "@soda-gql/core";
+import type { AnyComposedOperation, AnyModel, AnySlice } from "@soda-gql/core";
 
 export type IntermediateModule = {
   readonly filePath: string;
@@ -13,4 +13,4 @@ export type IntermediateModule = {
 export type IntermediateArtifactElement =
   | { readonly type: "model"; readonly element: AnyModel }
   | { readonly type: "slice"; readonly element: AnySlice }
-  | { readonly type: "operation"; readonly element: AnyOperation };
+  | { readonly type: "operation"; readonly element: AnyComposedOperation };

@@ -1,19 +1,19 @@
 import { handleProjectionBuilder } from "../runtime/slice";
-import type { AnyFields } from "../types/fragment";
 import {
   type ExecutionResultProjectionsBuilder,
   type FieldsBuilder,
   type MergeFields,
   mergeFields,
   Slice,
-} from "../types/operation";
+} from "../types/element";
+import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
-export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
+export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
   schema: NoInfer<TSchema>,
 ) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
@@ -31,7 +31,7 @@ export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAda
       options: {
         variables?: TVarDefinitions;
       },
-      builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
+      fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
       projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, MergeFields<TFieldEntries>, TProjection>,
     ) =>
       Slice.create<TSchema, TOperationType, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TProjection>(() => {
@@ -40,10 +40,10 @@ export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAda
 
         return {
           operationType,
-          load: (variables) => {
+          embed: (variables) => {
             const f = createFieldFactories(schema, operationTypeName);
             const $ = createVarAssignments(varDefinitions, variables);
-            const fields = mergeFields(builder({ f, $ }));
+            const fields = mergeFields(fieldBuilder({ f, $ }));
             return { variables, getFields: () => fields, projection };
           },
         };

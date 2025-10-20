@@ -1,5 +1,10 @@
 import { createExecutionResultParser } from "../runtime/parse-execution-result";
-import { type AnySliceContents, type ConcatSliceContents, Operation, type OperationDefinitionBuilder } from "../types/operation";
+import {
+  type AnySlicePayloads,
+  ComposedOperation,
+  type ComposedOperationDefinitionBuilder,
+  type ConcatSlicePayloads,
+} from "../types/element";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
@@ -7,20 +12,23 @@ import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
-export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>() => {
+export const createComposedOperationComposerFactory = <
+  TSchema extends AnyGraphqlSchema,
+  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
+>() => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     return <
       TOperationName extends string,
-      TSliceFragments extends AnySliceContents,
+      TSliceFragments extends AnySlicePayloads,
       TVarDefinitions extends InputTypeSpecifiers[] = [{}],
     >(
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
       },
-      builder: OperationDefinitionBuilder<TSchema, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
+      builder: ComposedOperationDefinitionBuilder<TSchema, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
     ) => {
-      return Operation.create<
+      return ComposedOperation.create<
         TSchema,
         TRuntimeAdapter,
         TOperationType,
@@ -37,7 +45,7 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
           Object.entries(fragments).flatMap(([label, { getFields: fields }]) =>
             Object.entries(fields).map(([key, reference]) => [`${label}_${key}`, reference]),
           ),
-        ) as ConcatSliceContents<TSliceFragments>;
+        ) as ConcatSlicePayloads<TSliceFragments>;
         const projectionPathGraph = createPathGraphFromSliceEntries(fragments);
 
         return {

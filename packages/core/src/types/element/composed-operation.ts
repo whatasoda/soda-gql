@@ -12,11 +12,14 @@ import type {
   InputTypeSpecifiers,
   OperationType,
 } from "../schema";
-import { ComposerElement } from "./artifact-element";
-import type { AnySliceContents } from "./slice";
+import { GqlElement, type GqlElementContext } from "./gql-element";
+import type { AnySlicePayloads } from "./slice";
 
-export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
-export type AnyOperationOf<TOperationType extends OperationType> = Operation<
+export type AnyComposedOperation =
+  | AnyComposedOperationOf<"query">
+  | AnyComposedOperationOf<"mutation">
+  | AnyComposedOperationOf<"subscription">;
+export type AnyComposedOperationOf<TOperationType extends OperationType> = ComposedOperation<
   AnyGraphqlRuntimeAdapter,
   TOperationType,
   string,
@@ -26,9 +29,9 @@ export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   any
 >;
 
-declare const __OPERATION_BRAND__: unique symbol;
+declare const __COMPOSED_OPERATION_BRAND__: unique symbol;
 
-type OperationArtifact<
+type ComposedOperationDefinition<
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TOperationType extends OperationType,
   TOperationName extends string,
@@ -45,7 +48,7 @@ type OperationArtifact<
   readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData;
 };
 
-export class Operation<
+export class ComposedOperation<
     TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
     TOperationType extends OperationType,
     TOperationName extends string,
@@ -54,41 +57,65 @@ export class Operation<
     TRawData extends object,
     TProjectedData extends object,
   >
-  extends ComposerElement<
-    OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+  extends GqlElement<
+    ComposedOperationDefinition<
+      TRuntimeAdapter,
+      TOperationType,
+      TOperationName,
+      TVariableNames,
+      TVariables,
+      TRawData,
+      TProjectedData
+    >
   >
   implements
-    OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
+    ComposedOperationDefinition<
+      TRuntimeAdapter,
+      TOperationType,
+      TOperationName,
+      TVariableNames,
+      TVariables,
+      TRawData,
+      TProjectedData
+    >
 {
-  declare readonly [__OPERATION_BRAND__]: Hidden<{
+  declare readonly [__COMPOSED_OPERATION_BRAND__]: Hidden<{
     operationType: TOperationType;
   }>;
 
   private constructor(
-    factory: (
-      context: import("./artifact-element").ComposerContext | null,
-    ) => OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>,
+    define: (
+      context: GqlElementContext | null,
+    ) => ComposedOperationDefinition<
+      TRuntimeAdapter,
+      TOperationType,
+      TOperationName,
+      TVariableNames,
+      TVariables,
+      TRawData,
+      TProjectedData
+    >,
   ) {
-    super(factory);
+    super(define);
   }
 
   public get operationType() {
-    return ComposerElement.get(this).operationType;
+    return GqlElement.get(this).operationType;
   }
   public get operationName() {
-    return ComposerElement.get(this).operationName;
+    return GqlElement.get(this).operationName;
   }
   public get variableNames() {
-    return ComposerElement.get(this).variableNames;
+    return GqlElement.get(this).variableNames;
   }
   public get projectionPathGraph() {
-    return ComposerElement.get(this).projectionPathGraph;
+    return GqlElement.get(this).projectionPathGraph;
   }
   public get document() {
-    return ComposerElement.get(this).document;
+    return GqlElement.get(this).document;
   }
   public get parse() {
-    return ComposerElement.get(this).parse;
+    return GqlElement.get(this).parse;
   }
 
   static create<
@@ -97,23 +124,25 @@ export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableDefinitions extends InputTypeSpecifiers,
-    TSliceFragments extends AnySliceContents,
+    TSliceFragments extends AnySlicePayloads,
   >(
-    factory: (context: import("./artifact-element").ComposerContext | null) => {
+    define: (context: import("./gql-element").GqlElementContext | null) => {
       operationType: TOperationType;
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
       projectionPathGraph: ProjectionPathGraphNode;
       document: TypedQueryDocumentNode<
-        InferOperationRawData<TSchema, TSliceFragments>,
+        InferComposedOperationRawData<TSchema, TSliceFragments>,
         ConstAssignableInput<TSchema, TVariableDefinitions>
       >;
-      parse: (result: NormalizedExecutionResult<TRuntimeAdapter, InferOperationRawData<TSchema, TSliceFragments>, any>) => {
+      parse: (
+        result: NormalizedExecutionResult<TRuntimeAdapter, InferComposedOperationRawData<TSchema, TSliceFragments>, any>,
+      ) => {
         [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
       };
     },
   ) {
-    return new Operation(factory);
+    return new ComposedOperation(define);
   }
 }
 
@@ -122,24 +151,23 @@ export type ProjectionPathGraphNode = {
   readonly children: { readonly [segment: string]: ProjectionPathGraphNode };
 };
 
-export type ConcatSliceContents<TSliceContents extends AnySliceContents> = Prettify<
+export type ConcatSlicePayloads<TSlicePayloads extends AnySlicePayloads> = Prettify<
   UnionToIntersection<
     {
-      [TLabel in keyof TSliceContents & string]: TSliceContents[TLabel] extends { getFields: () => infer TFields }
+      [TLabel in keyof TSlicePayloads & string]: TSlicePayloads[TLabel] extends { getFields: () => infer TFields }
         ? { [K in keyof TFields & string as `${TLabel}_${K}`]: TFields[K] }
         : {};
-    }[keyof TSliceContents & string]
+    }[keyof TSlicePayloads & string]
   >
 > &
   AnyFields;
 
-export type InferOperationRawData<TSchema extends AnyGraphqlSchema, TSliceContents extends AnySliceContents> = Prettify<
-  InferFields<TSchema, ConcatSliceContents<TSliceContents>>
+export type InferComposedOperationRawData<TSchema extends AnyGraphqlSchema, TSlicePayloads extends AnySlicePayloads> = Prettify<
+  InferFields<TSchema, ConcatSlicePayloads<TSlicePayloads>>
 >;
 
-/** Builder invoked from userland to wire slices with operation-level variables. */
-export type OperationDefinitionBuilder<
+export type ComposedOperationDefinitionBuilder<
   TSchema extends AnyGraphqlSchema,
   TVarDefinitions extends InputTypeSpecifiers,
-  TSliceContents extends AnySliceContents,
+  TSliceContents extends AnySlicePayloads,
 > = (tools: { $: NoInfer<AssignableInput<TSchema, TVarDefinitions>> }) => TSliceContents;

@@ -4,7 +4,7 @@ import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../schema";
-import { ComposerElement } from "./artifact-element";
+import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
@@ -28,7 +28,7 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends ComposerElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
   implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
@@ -36,18 +36,18 @@ export class Model<
     output: TNormalized;
   }>;
 
-  private constructor(factory: () => ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>) {
-    super(factory);
+  private constructor(define: () => ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>) {
+    super(define);
   }
 
   public get typename() {
-    return ComposerElement.get(this).typename;
+    return GqlElement.get(this).typename;
   }
   public get fragment() {
-    return ComposerElement.get(this).fragment;
+    return GqlElement.get(this).fragment;
   }
   public get normalize() {
-    return ComposerElement.get(this).normalize;
+    return GqlElement.get(this).normalize;
   }
 
   static create<
@@ -57,7 +57,7 @@ export class Model<
     TFields extends AnyFields,
     TNormalized extends object,
   >(
-    factory: () => {
+    define: () => {
       typename: TTypeName;
       fragment: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
       normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized;
@@ -67,7 +67,7 @@ export class Model<
     type Raw = InferFields<TSchema, TFields> & { [key: symbol]: never };
 
     return new Model(
-      factory as () => ModelArtifact<
+      define as () => ModelArtifact<
         TTypeName,
         SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
         Fields,

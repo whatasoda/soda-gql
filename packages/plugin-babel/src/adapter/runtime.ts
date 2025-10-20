@@ -1,5 +1,5 @@
 import { types as t } from "@babel/core";
-import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
+import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
 import type { GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
 import { buildObjectExpression, clone } from "./ast";
 
@@ -50,7 +50,7 @@ export const buildOperationRuntimeComponents = ({ artifact, builderCall }: GqlCa
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
         t.stringLiteral(JSON.stringify(artifact.prebuild)),
       ]),
-      runtime: buildObjectExpression<keyof RuntimeOperationInput["runtime"]>({
+      runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>({
         getSlices: clone(slicesBuilder),
       }),
     }),

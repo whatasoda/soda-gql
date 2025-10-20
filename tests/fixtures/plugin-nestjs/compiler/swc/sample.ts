@@ -29,7 +29,7 @@ export const userQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.load({ id: $.userId }),
+      user: userSlice.embed({ id: $.userId }),
     }),
   ),
 );
@@ -41,7 +41,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
     },
     ({ $ }) => ({
-      result: updateUserSlice.load({ id: $.userId, name: $.name }),
+      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
     }),
   ),
 );

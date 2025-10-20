@@ -1,4 +1,4 @@
-import type { AnySliceContent, ProjectionPathGraphNode } from "../types/operation";
+import type { AnySlicePayload, ProjectionPathGraphNode } from "../types/element";
 import { mapValues } from "../utils/map-values";
 
 type ExecutionResultProjectionPathGraphIntermediate = {
@@ -22,7 +22,7 @@ function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[s
   } satisfies ProjectionPathGraphNode;
 }
 
-export function createPathGraphFromSliceEntries(fragments: { [key: string]: AnySliceContent }) {
+export function createPathGraphFromSliceEntries(fragments: { [key: string]: AnySlicePayload }) {
   const paths = Object.entries(fragments).flatMap(([label, slice]) =>
     Array.from(
       new Map(

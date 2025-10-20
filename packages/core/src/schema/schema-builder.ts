@@ -9,7 +9,7 @@ import type {
 } from "../types/schema";
 import { type Hidden, hidden } from "../utils/hidden";
 import { wrapByKey } from "../utils/wrap-by-key";
-import { unsafeOutputRef } from "./type-ref-builder";
+import { unsafeOutputType } from "./type-specifier-builder";
 
 export const defineScalar = <const TName extends string, TInput, TOutput, TDirectives extends AnyConstDirectiveAttachments>(
   name: TName,
@@ -54,7 +54,7 @@ export const define = <const TName extends string>(name: TName) => ({
     ({
       name,
       fields: {
-        __typename: unsafeOutputRef.typename(`${name}:!`, {}),
+        __typename: unsafeOutputType.typename(`${name}:!`, {}),
         ...fields,
       },
       directives,

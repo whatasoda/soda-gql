@@ -24,7 +24,7 @@ export const pageQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userByIdSlice.load({ userId: $.userId }),
+      user: userByIdSlice.embed({ userId: $.userId }),
     }),
   ),
 );

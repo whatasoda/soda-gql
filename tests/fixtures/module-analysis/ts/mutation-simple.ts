@@ -24,7 +24,7 @@ export const createPostMutation = gql.default(({ operation }, { $ }) =>
       variables: [$("title").scalar("String:!"), $("body").scalar("String:?")],
     },
     ({ $ }) => ({
-      post: createPostSlice.load({ title: $.title, body: $.body }),
+      post: createPostSlice.embed({ title: $.title, body: $.body }),
     }),
   ),
 );

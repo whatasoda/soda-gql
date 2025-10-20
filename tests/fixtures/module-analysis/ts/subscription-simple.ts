@@ -24,7 +24,7 @@ export const postCreatedSubscription = gql.default(({ operation }) =>
       variables: [],
     },
     () => ({
-      post: postCreatedSlice.load(),
+      post: postCreatedSlice.embed(),
     }),
   ),
 );

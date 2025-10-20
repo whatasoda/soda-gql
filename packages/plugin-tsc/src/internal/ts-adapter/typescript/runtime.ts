@@ -1,4 +1,4 @@
-import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
+import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
 import * as ts from "typescript";
 import type { GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis.js";
 import { buildJsonParseExpression, buildObjectExpression, clone } from "./ast.js";
@@ -90,8 +90,8 @@ export const buildOperationRuntimeComponents = ({
     undefined,
     [
       buildObjectExpression(factory, {
-        prebuild: buildJsonParseExpression<RuntimeOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
-        runtime: buildObjectExpression<keyof RuntimeOperationInput["runtime"]>(factory, {
+        prebuild: buildJsonParseExpression<RuntimeComposedOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
+        runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>(factory, {
           getSlices: clone(slicesBuilder),
         }),
       }),

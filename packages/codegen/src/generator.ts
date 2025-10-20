@@ -352,14 +352,14 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
   const directives = renderDirectives(definition.directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeInputRef.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+    return `unsafeInputType.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeInputRef.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+    return `unsafeInputType.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
-  return `unsafeInputRef.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+  return `unsafeInputType.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -382,22 +382,22 @@ const renderOutputRef = (
   const directiveMap = renderDirectives(directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeOutputRef.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isUnionName(schema, name)) {
-    return `unsafeOutputRef.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isObjectName(schema, name)) {
-    return `unsafeOutputRef.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
-  return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+  return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -615,8 +615,8 @@ import {
   createGqlInvoker,
   define,
   defineOperationRoots,
-  unsafeInputRef,
-  unsafeOutputRef,
+  unsafeInputType,
+  unsafeOutputType,
 } from "@soda-gql/core";${runtimeImport}
 ${extraImports}
 ${schemaBlocks.join("\n")}

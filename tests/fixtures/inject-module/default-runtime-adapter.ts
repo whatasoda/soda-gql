@@ -1,5 +1,5 @@
 import { defineScalar } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
+import { createRuntimeAdapter } from "../../../packages/runtime/dist/composer-element";
 
 export const scalar = {
   ...defineScalar("ID", ({ type }) => ({

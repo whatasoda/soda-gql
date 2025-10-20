@@ -1,5 +1,5 @@
 import type { CanonicalId } from "@soda-gql/common";
-import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
+import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
 export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;
@@ -17,7 +17,7 @@ type BuilderArtifactElementBase = {
 
 export type BuilderArtifactOperation = BuilderArtifactElementBase & {
   readonly type: "operation";
-  readonly prebuild: RuntimeOperationInput["prebuild"];
+  readonly prebuild: RuntimeComposedOperationInput["prebuild"];
 };
 
 export type BuilderArtifactSlice = BuilderArtifactElementBase & {

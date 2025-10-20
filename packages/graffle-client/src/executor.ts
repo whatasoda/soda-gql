@@ -1,4 +1,4 @@
-import type { AnyOperation } from "@soda-gql/core";
+import type { AnyComposedOperation } from "@soda-gql/core";
 import { gqlRuntime } from "@soda-gql/core/runtime";
 import { print } from "graphql";
 import { err, ok, type Result } from "neverthrow";
@@ -16,7 +16,7 @@ import type { ExecuteOptions, ExecutorConfig } from "./types";
  * @returns Result containing the parsed operation data or a client error
  */
 export const executeOperation = async <
-  TOperation extends AnyOperation,
+  TOperation extends AnyComposedOperation,
   TVariables extends Record<string, unknown>,
   TProjectedData extends object,
 >(
@@ -68,7 +68,7 @@ export const executeOperationByName = async <TVariables extends Record<string, u
 ): Promise<Result<TProjectedData, GraffleClientError>> => {
   try {
     // Get the operation from the runtime registry
-    const operation = gqlRuntime.getOperation(operationName) as AnyOperation;
+    const operation = gqlRuntime.getOperation(operationName) as AnyComposedOperation;
 
     // Execute the operation
     return await executeOperation(config, operation, variables, options);
@@ -91,7 +91,7 @@ export const createExecutor = (config: ExecutorConfig) => {
     /**
      * Execute an operation
      */
-    execute: <TOperation extends AnyOperation, TVariables extends Record<string, unknown>, TProjectedData extends object>(
+    execute: <TOperation extends AnyComposedOperation, TVariables extends Record<string, unknown>, TProjectedData extends object>(
       operation: TOperation,
       variables: TVariables,
       options?: ExecuteOptions,

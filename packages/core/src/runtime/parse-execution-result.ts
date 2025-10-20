@@ -1,5 +1,5 @@
 import type { GraphQLFormattedError } from "graphql";
-import type { AnySliceContents, ProjectionPathGraphNode } from "../types/operation";
+import type { AnySlicePayloads, ProjectionPathGraphNode } from "../types/element";
 import {
   type AnyGraphqlRuntimeAdapter,
   SlicedExecutionResultEmpty,
@@ -79,7 +79,7 @@ export const createExecutionResultParser = <TRuntimeAdapter extends AnyGraphqlRu
   fragments,
   projectionPathGraph,
 }: {
-  fragments: AnySliceContents;
+  fragments: AnySlicePayloads;
   projectionPathGraph: ProjectionPathGraphNode;
 }) => {
   const prepare = (result: NormalizedExecutionResult<TRuntimeAdapter, object, object>) => {

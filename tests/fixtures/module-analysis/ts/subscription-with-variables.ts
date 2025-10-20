@@ -24,7 +24,7 @@ export const userUpdatedSubscription = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userUpdatedSlice.load({ userId: $.userId }),
+      user: userUpdatedSlice.embed({ userId: $.userId }),
     }),
   ),
 );

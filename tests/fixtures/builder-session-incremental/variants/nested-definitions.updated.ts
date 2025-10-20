@@ -154,7 +154,7 @@ export function createUserOperation() {
         variables: [$("id").scalar("ID:!")],
       },
       ({ $ }) => ({
-        user: nestedQueries.users.byId.load({ id: $.id }),
+        user: nestedQueries.users.byId.embed({ id: $.id }),
       }),
     ),
   );
@@ -173,7 +173,7 @@ export const operationFactory = () => {
         variables: [$("limit").scalar("Int:?")],
       },
       ({ $ }) => ({
-        users: nestedQueries.users.list.load({ limit: $.limit }),
+        users: nestedQueries.users.list.embed({ limit: $.limit }),
       }),
     ),
   );
@@ -194,7 +194,7 @@ export const nestedOperations = {
           variables: [$("id").scalar("ID:!")],
         },
         ({ $ }) => ({
-          user: nestedQueries.users.byId.load({ id: $.id }),
+          user: nestedQueries.users.byId.embed({ id: $.id }),
         }),
       ),
     ),
@@ -205,7 +205,7 @@ export const nestedOperations = {
           variables: [$("limit").scalar("Int:?")],
         },
         ({ $ }) => ({
-          users: nestedQueries.users.list.load({ limit: $.limit }),
+          users: nestedQueries.users.list.embed({ limit: $.limit }),
         }),
       ),
     ),

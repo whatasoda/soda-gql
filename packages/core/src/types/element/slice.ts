@@ -3,7 +3,7 @@ import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../schema";
-import { ComposerElement } from "./artifact-element";
+import { GqlElement } from "./gql-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
 export type AnySliceOf<TOperationType extends OperationType> = Slice<TOperationType, any, AnyFields, AnyProjection>;
@@ -15,7 +15,7 @@ type SliceDefinition<
   TProjection extends AnyProjection,
 > = {
   readonly operationType: TOperationType;
-  readonly load: (variables: TVariables) => SliceContent<TVariables, TFields, TProjection>;
+  readonly embed: (variables: TVariables) => SlicePayload<TVariables, TFields, TProjection>;
 };
 
 declare const __OPERATION_SLICE_BRAND__: unique symbol;
@@ -25,7 +25,7 @@ export class Slice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyProjection,
   >
-  extends ComposerElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>>
+  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>>
   implements SliceDefinition<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
@@ -38,10 +38,10 @@ export class Slice<
   }
 
   public get operationType() {
-    return ComposerElement.get(this).operationType;
+    return GqlElement.get(this).operationType;
   }
-  public get load() {
-    return ComposerElement.get(this).load;
+  public get embed() {
+    return GqlElement.get(this).embed;
   }
 
   static create<
@@ -53,9 +53,9 @@ export class Slice<
   >(
     define: () => {
       operationType: TOperationType;
-      load: (
+      embed: (
         variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-      ) => SliceContent<
+      ) => SlicePayload<
         SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
         TFields,
         TProjection
@@ -69,10 +69,10 @@ export class Slice<
   }
 }
 
-export type AnySliceContents = { [key: string]: AnySliceContent };
+export type AnySlicePayloads = { [key: string]: AnySlicePayload };
 
-export type AnySliceContent = SliceContent<AnyAssignableInput | void, AnyFields, AnyProjection>;
-export type SliceContent<
+export type AnySlicePayload = SlicePayload<AnyAssignableInput | void, AnyFields, AnyProjection>;
+export type SlicePayload<
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
   TProjection extends AnyProjection,

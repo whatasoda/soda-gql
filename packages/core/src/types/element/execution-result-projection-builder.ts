@@ -10,7 +10,6 @@ export type AnyExecutionResultProjectionsBuilder = ExecutionResultProjectionsBui
   any
 >;
 
-/** Builder used to declare how slice results are projected. */
 export type ExecutionResultProjectionsBuilder<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
@@ -18,7 +17,6 @@ export type ExecutionResultProjectionsBuilder<
   TProjection extends AnyProjection,
 > = (tools: { select: ResultSelector<TSchema, TRuntimeAdapter, TFields> }) => TProjection;
 
-/** Helper passed to selection builders for choosing a field path and projector. */
 type ResultSelector<
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,

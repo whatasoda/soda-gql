@@ -10,8 +10,8 @@ import {
 } from "../types/schema";
 import type { ConstValue } from "../types/schema/const-value";
 
-const createUnsafeInputRefFactory = <const TKind extends InputTypeKind>(kind: TKind) => {
-  type UnsafeInputRef<
+const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind>(kind: TKind) => {
+  type UnsafeInputTypeSpecifier<
     TName extends string,
     TModifier extends TypeModifier,
     TDefaultFactory extends (() => ConstValue) | null,
@@ -35,23 +35,23 @@ const createUnsafeInputRefFactory = <const TKind extends InputTypeKind>(kind: TK
       default?: TDefaultFactory;
       directives?: TDirectives;
     },
-  ): UnsafeInputRef<TName, TModifier, TDefaultFactory, TDirectives> =>
+  ): UnsafeInputTypeSpecifier<TName, TModifier, TDefaultFactory, TDirectives> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       defaultValue: extras.default ? { default: extras.default() } : null,
       directives: extras.directives ?? ({} as TDirectives),
-    }) satisfies AnyTypeSpecifier as UnsafeInputRef<TName, TModifier, TDefaultFactory, TDirectives>;
+    }) satisfies AnyTypeSpecifier as UnsafeInputTypeSpecifier<TName, TModifier, TDefaultFactory, TDirectives>;
 };
 
-export const unsafeInputRef = {
-  scalar: createUnsafeInputRefFactory("scalar"),
-  enum: createUnsafeInputRefFactory("enum"),
-  input: createUnsafeInputRefFactory("input"),
+export const unsafeInputType = {
+  scalar: createUnsafeInputTypeSpecifierFactory("scalar"),
+  enum: createUnsafeInputTypeSpecifierFactory("enum"),
+  input: createUnsafeInputTypeSpecifierFactory("input"),
 };
 
-const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: TKind) => {
-  type UnsafeOutputRef<
+const createUnsafeOutputTypeSpecifierFactory = <const TKind extends OutputTypeKind>(kind: TKind) => {
+  type UnsafeOutputTypeSpecifier<
     TName extends string,
     TModifier extends TypeModifier,
     TArguments extends InputTypeSpecifiers,
@@ -75,13 +75,13 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
       arguments?: TArguments;
       directives?: TDirectives;
     },
-  ): UnsafeOutputRef<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments, TDirectives> =>
+  ): UnsafeOutputTypeSpecifier<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments, TDirectives> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       arguments: extras.arguments ?? ({} as TArguments),
       directives: extras.directives ?? ({} as TDirectives),
-    }) satisfies AnyTypeSpecifier as UnsafeOutputRef<
+    }) satisfies AnyTypeSpecifier as UnsafeOutputTypeSpecifier<
       TName,
       TModifier,
       InputTypeSpecifiers extends TArguments ? {} : TArguments,
@@ -89,10 +89,10 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
     >;
 };
 
-export const unsafeOutputRef = {
-  scalar: createUnsafeOutputRefFactory("scalar"),
-  enum: createUnsafeOutputRefFactory("enum"),
-  object: createUnsafeOutputRefFactory("object"),
-  union: createUnsafeOutputRefFactory("union"),
-  typename: createUnsafeOutputRefFactory("typename"),
+export const unsafeOutputType = {
+  scalar: createUnsafeOutputTypeSpecifierFactory("scalar"),
+  enum: createUnsafeOutputTypeSpecifierFactory("enum"),
+  object: createUnsafeOutputTypeSpecifierFactory("object"),
+  union: createUnsafeOutputTypeSpecifierFactory("union"),
+  typename: createUnsafeOutputTypeSpecifierFactory("typename"),
 };
