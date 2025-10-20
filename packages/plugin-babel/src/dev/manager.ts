@@ -1,7 +1,7 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { CoordinatorKey, CoordinatorSnapshot, NormalizedOptions } from "@soda-gql/plugin-shared";
 import { createBuilderServiceController, DevBuilderSession, type DevBuilderSessionLike } from "@soda-gql/plugin-shared/dev";
-import { createStateStore, type StateStore } from "./state-store.js";
+import { createStateStore, type StateStore } from "./state-store";
 
 export interface DevManager {
   ensureInitialized(params: {

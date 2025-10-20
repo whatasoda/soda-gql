@@ -14,14 +14,14 @@
  */
 
 import type { CallExpression, ExpressionStatement, ImportDeclaration, Module, Span } from "@swc/types";
-import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir.js";
+import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir";
 import type {
   TransformAdapter,
   TransformAdapterFactory,
   TransformPassResult,
   TransformProgramContext,
-} from "../core/transform-adapter.js";
-import type { PluginError } from "../state.js";
+} from "../core/transform-adapter";
+import type { PluginError } from "../state";
 
 /**
  * SWC-specific environment required for the adapter.
@@ -72,7 +72,7 @@ export class SwcAdapter implements TransformAdapter {
    *
    * Future: Will replace GraphQL calls with runtime equivalents
    */
-  transformProgram(context: TransformProgramContext): TransformPassResult {
+  transformProgram(_context: TransformProgramContext): TransformPassResult {
     this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
@@ -165,11 +165,11 @@ export class SwcAdapter implements TransformAdapter {
 
     // Find insertion point after imports
     const existingBody = this.env.module.body;
-    let insertIndex = 0;
+    let _insertIndex = 0;
     for (let i = 0; i < existingBody.length; i++) {
       const stmt = existingBody[i];
       if (stmt && stmt.type === "ImportDeclaration") {
-        insertIndex = i + 1;
+        _insertIndex = i + 1;
       } else {
         break;
       }

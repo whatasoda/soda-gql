@@ -4,4 +4,4 @@ export {
   type WebpackPluginOptions,
   webpackLoaderOptionsSchema,
   webpackPluginOptionsSchema,
-} from "./options.js";
+} from "./options";

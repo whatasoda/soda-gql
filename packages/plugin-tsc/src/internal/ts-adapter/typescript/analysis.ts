@@ -14,8 +14,8 @@ import type {
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
-} from "../../errors.js";
-import type { GqlDefinitionMetadataMap } from "./metadata.js";
+} from "../../errors";
+import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 

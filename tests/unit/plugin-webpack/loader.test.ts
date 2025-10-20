@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
 import loader from "@soda-gql/plugin-webpack/loader";
-import { createTempArtifact } from "./helpers/fixtures.js";
-import { runLoader } from "./helpers/loader.js";
+import { createTempArtifact } from "./helpers/fixtures";
+import { runLoader } from "./helpers/loader";
 
 describe("SodaGqlWebpackLoader", () => {
   describe("Runtime mode", () => {
@@ -24,7 +24,7 @@ describe("SodaGqlWebpackLoader", () => {
       });
 
       const tempDir = join(artifactPath, "..");
-      const configPath = createTempConfigFile(tempDir, {
+      const _configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
         graphqlSystemAlias: undefined,
         builder: {
@@ -66,7 +66,7 @@ describe("SodaGqlWebpackLoader", () => {
       });
 
       const tempDir = join(artifactPath, "..");
-      const configPath = createTempConfigFile(tempDir, {
+      const _configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
         graphqlSystemAlias: undefined,
         builder: {
@@ -143,7 +143,7 @@ export const data = { value: 42 };
       });
 
       const tempDir = join(artifactPath, "..");
-      const configPath = createTempConfigFile(tempDir, {
+      const _configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
         graphqlSystemAlias: undefined,
         builder: {

@@ -7,7 +7,7 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
-import { formatPluginError, type PluginError } from "./errors.js";
+import { formatPluginError, type PluginError } from "./errors";
 
 /**
  * Prepared transform state containing artifacts and configuration.

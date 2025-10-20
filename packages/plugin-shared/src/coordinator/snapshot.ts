@@ -1,6 +1,6 @@
 import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
-import type { NormalizedOptions } from "../options.js";
-import type { CoordinatorDiff, CoordinatorSnapshot } from "./types.js";
+import type { NormalizedOptions } from "../options";
+import type { CoordinatorDiff, CoordinatorSnapshot } from "./types";
 
 /**
  * Create a snapshot from builder artifact and options.

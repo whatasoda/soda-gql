@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
@@ -14,14 +16,16 @@ describe("BuilderSession incremental end-to-end", () => {
   let workspaceRoot: string;
   let fixtureRoot: string;
   let originalCwd: string;
+  let tmpRoot: string;
 
   beforeEach(async () => {
     originalCwd = process.cwd();
     fixtureRoot = path.join(process.cwd(), "tests/fixtures/runtime-app");
 
-    // Create temporary workspace
+    // Create temporary workspace in system temp
+    tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
     const timestamp = Date.now();
-    workspaceRoot = path.join(process.cwd(), "tests/.tmp/integration", `session-${timestamp}`);
+    workspaceRoot = path.join(tmpRoot, `session-${timestamp}`);
     await fs.mkdir(workspaceRoot, { recursive: true });
 
     // Copy fixture to workspace (exclude graphql-system)
@@ -54,11 +58,13 @@ describe("BuilderSession incremental end-to-end", () => {
 
   afterEach(async () => {
     // Restore cwd
-    process.chdir(originalCwd);
+    if (originalCwd) {
+      process.chdir(originalCwd);
+    }
 
     // Clean up workspace
-    if (workspaceRoot) {
-      await fs.rm(workspaceRoot, { recursive: true, force: true });
+    if (tmpRoot) {
+      await fs.rm(tmpRoot, { recursive: true, force: true });
     }
   });
 

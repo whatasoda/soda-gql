@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { NormalizedOptions } from "../options.js";
-import { createCoordinator, type PluginCoordinator } from "./plugin-coordinator.js";
-import type { CoordinatorEvent, CoordinatorKey, CoordinatorSnapshot } from "./types.js";
+import type { NormalizedOptions } from "../options";
+import { createCoordinator, type PluginCoordinator } from "./plugin-coordinator";
+import type { CoordinatorEvent, CoordinatorKey, CoordinatorSnapshot } from "./types";
 
 /**
  * Registry entry with reference counting.

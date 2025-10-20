@@ -124,8 +124,7 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
   sandbox.global = sandbox;
   sandbox.globalThis = sandbox;
 
-  const script = new Script(bundledCode, { filename: modulePath });
-  script.runInNewContext(sandbox);
+  new Script(bundledCode, { filename: modulePath }).runInNewContext(sandbox);
 
   // Read exported gql (handle both direct export and default export)
   const exportedGql = moduleExports.gql ?? moduleExports.default;
@@ -197,10 +196,7 @@ export const evaluateIntermediateModules = ({
 
   const { gql } = executeGraphqlSystemModule(gqlImportPath);
 
-  const vmContext = createContext({
-    gql,
-    registry,
-  });
+  const vmContext = createContext({ gql, registry });
 
   for (const { script, filePath } of intermediateModules.values()) {
     try {

@@ -2,9 +2,9 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
-import { babelTransformAdapterFactory } from "./adapter/index.js";
-import { type PluginOptions, type PluginState, preparePluginState } from "./internal/builder-bridge.js";
-import { formatPluginError } from "./internal/errors.js";
+import { babelTransformAdapterFactory } from "./adapter/index";
+import { type PluginOptions, type PluginState, preparePluginState } from "./internal/builder-bridge";
+import { formatPluginError } from "./internal/errors";
 
 type PluginPassState = PluginPass & {
   _state?: PluginState;

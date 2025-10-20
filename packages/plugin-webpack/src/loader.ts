@@ -5,9 +5,9 @@ import type { TransformAdapterFactory } from "@soda-gql/plugin-shared";
 import { formatPluginError, isPluginError, prepareTransform } from "@soda-gql/plugin-shared";
 import type { LoaderDefinitionFunction } from "webpack";
 
-import { type WebpackLoaderOptions, webpackLoaderOptionsSchema } from "./schemas/options.js";
+import { type WebpackLoaderOptions, webpackLoaderOptionsSchema } from "./schemas/options";
 
-const LOADER_NAME = "SodaGqlWebpackLoader";
+const _LOADER_NAME = "SodaGqlWebpackLoader";
 const TS_DECLARATION_REGEX = /\.d\.tsx?$/;
 
 type BabelParserPlugin = string | [string, Record<string, unknown>];

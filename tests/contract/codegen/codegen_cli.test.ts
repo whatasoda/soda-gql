@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { copyDefaultInject } from "../../fixtures/inject-module/index";
 import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../utils/cli";
@@ -29,10 +30,9 @@ const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
 const toPosix = (value: string): string => value.split(/\\|\//).join("/");
 
 describe("soda-gql codegen CLI", () => {
-  const tmpRoot = join(projectRoot, "tests", ".tmp", "codegen-cli");
+  const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-codegen-cli-"));
 
   it("reports SCHEMA_NOT_FOUND when schema file is missing", async () => {
-    mkdirSync(tmpRoot, { recursive: true });
     const outFile = join(tmpRoot, `missing-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
 
@@ -55,7 +55,6 @@ describe("soda-gql codegen CLI", () => {
   });
 
   it("returns schema validation error details for invalid schema", async () => {
-    mkdirSync(tmpRoot, { recursive: true });
     const invalidSchemaPath = join(tmpRoot, `invalid-${Date.now()}.graphql`);
     await Bun.write(invalidSchemaPath, "type Query { invalid }");
     const outFile = join(tmpRoot, `invalid-schema-${Date.now()}.ts`);
@@ -82,7 +81,6 @@ describe("soda-gql codegen CLI", () => {
   });
 
   it("emits graphql-system bundle for valid schema", async () => {
-    mkdirSync(tmpRoot, { recursive: true });
     const schemaPath = join(projectRoot, "tests", "fixtures", "runtime-app", "schema.graphql");
     const outFile = join(tmpRoot, `runtime-schema-${Date.now()}.ts`);
     const injectFile = join(tmpRoot, `inject-${Date.now()}.ts`);
@@ -156,7 +154,6 @@ describe("soda-gql codegen CLI", () => {
   });
 
   it("creates inject module template", async () => {
-    mkdirSync(tmpRoot, { recursive: true });
     const templatePath = join(tmpRoot, `inject-template-${Date.now()}.ts`);
 
     const result = await runCodegenCli(["--emit-inject-template", templatePath]);

@@ -1,6 +1,6 @@
 import type { CanonicalId } from "@soda-gql/builder";
-import * as ts from "typescript";
-import type { GqlDefinitionMetadataMap } from "./metadata.js";
+import type * as ts from "typescript";
+import type { GqlDefinitionMetadataMap } from "./metadata";
 
 // Artifact lookup function type
 type ArtifactLookup = (id: CanonicalId) => unknown;
@@ -19,10 +19,7 @@ type TransformCallExpressionResult =
   | { readonly transformed: false }
   | { readonly transformed: true; readonly replacement: ts.Expression; readonly runtimeCall?: ts.Expression };
 
-export const transformCallExpression = ({
-  callNode,
-  typescript,
-}: TransformCallExpressionArgs): TransformCallExpressionResult => {
+export const transformCallExpression = ({ callNode, typescript }: TransformCallExpressionArgs): TransformCallExpressionResult => {
   // Check if this is a gql definition call
   const builderCall = findGqlBuilderCall(callNode, typescript);
   if (!builderCall) {

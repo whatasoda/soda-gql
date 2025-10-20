@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBuilderSession } from "@soda-gql/builder/session";
@@ -9,7 +10,7 @@ import { createTestConfig } from "../helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
-const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
+const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-integration-"));
 
 const generateGraphqlSystem = async (workspaceRoot: string) => {
   const schemaPath = join(workspaceRoot, "schema.graphql");
@@ -32,7 +33,6 @@ const generateGraphqlSystem = async (workspaceRoot: string) => {
 };
 
 const copyFixtureWorkspace = (name: string) => {
-  mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {
@@ -60,7 +60,9 @@ describe("BuilderSession E2E", () => {
   });
 
   afterEach(() => {
-    process.chdir(originalCwd);
+    if (originalCwd) {
+      process.chdir(originalCwd);
+    }
     if (workspace) {
       rmSync(workspace, { recursive: true, force: true });
     }

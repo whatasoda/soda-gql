@@ -3,20 +3,20 @@
  */
 
 import type * as ts from "typescript";
-import { resolveCanonicalId } from "../cache.js";
-import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir.js";
+import { resolveCanonicalId } from "../cache";
+import type { DefinitionMetadataMap, GraphQLCallAnalysis, GraphQLCallIR } from "../core/ir";
 import type {
   TransformAdapter,
   TransformAdapterFactory,
   TransformPassResult,
   TransformProgramContext,
-} from "../core/transform-adapter.js";
-import type { PluginError } from "../state.js";
-import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, maybeRemoveUnusedGqlImport } from "./typescript/imports.js";
-import { collectGqlDefinitionMetadata } from "./typescript/metadata.js";
-import { transformCallExpression } from "./typescript/transformer.js";
+} from "../core/transform-adapter";
+import type { PluginError } from "../state";
+import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, maybeRemoveUnusedGqlImport } from "./typescript/imports";
+import { collectGqlDefinitionMetadata } from "./typescript/metadata";
+import { transformCallExpression } from "./typescript/transformer";
 
-export { createAfterStubTransformer } from "./typescript/imports.js";
+export { createAfterStubTransformer } from "./typescript/imports";
 
 /**
  * TypeScript-specific environment required for the adapter.

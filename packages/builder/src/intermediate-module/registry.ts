@@ -21,21 +21,11 @@ type ArtifactRecord = {
 
 export const createIntermediateRegistry = () => {
   const modules = new Map<string, () => ArtifactModule>();
-  const moduleCaches = new Map<string, ArtifactModule>();
   const elements = new Map<string, AcceptableArtifact>();
 
   const setModule = (filePath: string, factory: () => ArtifactModule) => {
-    modules.set(filePath, () => {
-      const cached = moduleCaches.get(filePath);
-      if (cached) {
-        return cached;
-      }
-
-      const exports = factory();
-
-      moduleCaches.set(filePath, exports);
-      return exports;
-    });
+    let cached: ArtifactModule | undefined;
+    modules.set(filePath, () => (cached ??= factory()));
   };
 
   const importModule = (filePath: string) => {
@@ -44,18 +34,6 @@ export const createIntermediateRegistry = () => {
       throw new Error(`Module not found or yet to be registered: ${filePath}`);
     }
     return factory();
-  };
-
-  const removeModule = (filePath: string) => {
-    modules.delete(filePath);
-    moduleCaches.delete(filePath);
-    // Remove all entries that belong to this module (canonicalId prefix is "filePath::")
-    const prefix = `${filePath}::`;
-    for (const canonicalId of elements.keys()) {
-      if (canonicalId.startsWith(prefix)) {
-        elements.delete(canonicalId);
-      }
-    }
   };
 
   const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
@@ -95,14 +73,12 @@ export const createIntermediateRegistry = () => {
 
   const clear = () => {
     modules.clear();
-    moduleCaches.clear();
     elements.clear();
   };
 
   return {
     setModule,
     importModule,
-    removeModule,
     addElement,
     evaluate,
     clear,

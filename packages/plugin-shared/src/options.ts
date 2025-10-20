@@ -1,7 +1,7 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
-import type { PluginOptions } from "./types.js";
+import type { PluginOptions } from "./types";
 
 /**
  * Normalized plugin options after validation and config resolution.

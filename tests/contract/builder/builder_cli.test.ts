@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { copyDefaultRuntimeAdapter, copyDefaultScalar } from "../../fixtures/inject-module/index";
 import type { CliResult } from "../../utils/cli";
@@ -7,7 +8,7 @@ import { getProjectRoot, runBuilderCli as runBuilderCliUtil, runCodegenCli as ru
 
 const projectRoot = getProjectRoot();
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
-const tmpRoot = join(projectRoot, "tests", ".tmp", "builder-cli");
+const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-builder-cli-"));
 
 const runCodegenCli = async (args: readonly string[]): Promise<CliResult> => {
   return runCodegenCliUtil(args, { cwd: projectRoot });
@@ -25,7 +26,6 @@ const runBuilderCli = async (workspaceRoot: string, args: readonly string[]): Pr
 };
 
 const prepareWorkspace = (name: string) => {
-  mkdirSync(tmpRoot, { recursive: true });
   const workspaceRoot = resolve(tmpRoot, `${name}-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {

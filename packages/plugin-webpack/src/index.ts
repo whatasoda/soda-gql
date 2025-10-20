@@ -1,4 +1,4 @@
-export { registerCompilerHooks } from "./hooks.js";
-export { SodaGqlWebpackPlugin } from "./plugin.js";
-export type { DiagnosticsMode, WebpackLoaderOptions, WebpackPluginOptions } from "./schemas/options.js";
-export { webpackLoaderOptionsSchema, webpackPluginOptionsSchema } from "./schemas/options.js";
+export { registerCompilerHooks } from "./hooks";
+export { SodaGqlWebpackPlugin } from "./plugin";
+export type { DiagnosticsMode, WebpackLoaderOptions, WebpackPluginOptions } from "./schemas/options";
+export { webpackLoaderOptionsSchema, webpackPluginOptionsSchema } from "./schemas/options";

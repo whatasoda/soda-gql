@@ -2,7 +2,7 @@ import type { BuilderArtifact, BuilderError } from "@soda-gql/builder";
 import type { BuilderServiceFailure } from "@soda-gql/plugin-shared/dev";
 import type { Compiler } from "webpack";
 
-import type { DiagnosticsMode } from "../schemas/options.js";
+import type { DiagnosticsMode } from "../schemas/options";
 
 type InfrastructureLogger = ReturnType<Compiler["getInfrastructureLogger"]>;
 

@@ -1,8 +1,8 @@
 import { err, ok, type Result } from "neverthrow";
-import { normalizePluginOptions, type OptionsError } from "../options.js";
-import { createPluginRuntimeFromNormalized, type PluginRuntime } from "../runtime.js";
-import type { PluginError, PluginState } from "../state.js";
-import type { PluginOptions } from "../types.js";
+import { normalizePluginOptions, type OptionsError } from "../options";
+import { createPluginRuntimeFromNormalized, type PluginRuntime } from "../runtime";
+import type { PluginError, PluginState } from "../state";
+import type { PluginOptions } from "../types";
 
 /**
  * Arguments for preparing a transform operation (simplified for coordinator-based architecture)

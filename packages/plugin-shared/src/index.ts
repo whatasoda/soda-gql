@@ -1,8 +1,8 @@
 // Re-export public APIs
 
 // Adapters
-export * from "./adapters/swc-adapter.js";
-export type { ArtifactError, LoadArtifactOptions } from "./cache.js";
+export * from "./adapters/swc-adapter";
+export type { ArtifactError, LoadArtifactOptions } from "./cache";
 // Cache utilities
 export {
   getArtifactCacheStats,
@@ -10,21 +10,21 @@ export {
   loadArtifact,
   lookupArtifact,
   resolveCanonicalId,
-} from "./cache.js";
+} from "./cache";
 // Coordinator (new architecture)
-export * from "./coordinator/index.js";
+export * from "./coordinator/index";
 
 // Core
-export * from "./core/ir.js";
-export * from "./core/transform-adapter.js";
+export * from "./core/ir";
+export * from "./core/transform-adapter";
 
 // Options and types
-export * from "./errors.js";
-export * from "./options.js";
+export * from "./errors";
+export * from "./options";
 // Legacy runtime (will be removed)
-export * from "./runtime.js";
+export * from "./runtime";
 // State management
-export * from "./state.js";
+export * from "./state";
 // Transform utilities
-export * from "./transform/prepare-transform.js";
-export * from "./types.js";
+export * from "./transform/prepare-transform";
+export * from "./types";

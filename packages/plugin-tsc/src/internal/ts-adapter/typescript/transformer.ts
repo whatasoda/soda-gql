@@ -1,14 +1,14 @@
 import * as ts from "typescript";
-import { formatPluginError } from "../../errors.js";
-import type { ArtifactLookup, GqlCall } from "./analysis.js";
-import { extractGqlCall, findGqlBuilderCall } from "./analysis.js";
-import type { GqlDefinitionMetadataMap } from "./metadata.js";
+import { formatPluginError } from "../../errors";
+import type { ArtifactLookup, GqlCall } from "./analysis";
+import { extractGqlCall, findGqlBuilderCall } from "./analysis";
+import type { GqlDefinitionMetadataMap } from "./metadata";
 import {
   buildComposedOperationRuntimeComponents,
   buildInlineOperationRuntimeComponents,
   buildModelRuntimeCall,
   buildSliceRuntimeCall,
-} from "./runtime.js";
+} from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;

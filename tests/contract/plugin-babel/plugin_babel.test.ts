@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as babel from "@babel/core";
@@ -32,7 +33,7 @@ type BabelResult = babel.BabelFileResult | null;
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
-const tmpRoot = join(projectRoot, "tests", ".tmp", "plugin-babel");
+const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-plugin-babel-"));
 
 const profileQueryPath = join(fixturesRoot, "src", "pages", "profile.query.ts");
 const schemaPath = join(fixturesRoot, "schema.graphql");

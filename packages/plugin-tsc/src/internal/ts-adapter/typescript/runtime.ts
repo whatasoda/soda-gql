@@ -5,8 +5,8 @@ import type {
   RuntimeSliceInput,
 } from "@soda-gql/core/runtime";
 import * as ts from "typescript";
-import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis.js";
-import { buildJsonParseExpression, buildObjectExpression, clone } from "./ast.js";
+import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
+import { buildJsonParseExpression, buildObjectExpression, clone } from "./ast";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
   isCJS

@@ -1,10 +1,10 @@
 import type { BuilderServiceConfig } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
-import { type BuilderServiceController, createBuilderServiceController } from "../dev/builder-service-controller.js";
-import type { NormalizedOptions } from "../options.js";
-import { computeDiff, createSnapshot } from "./snapshot.js";
-import { SubscriptionManager } from "./subscriptions.js";
-import type { CoordinatorDiff, CoordinatorEvent, CoordinatorSnapshot } from "./types.js";
+import { type BuilderServiceController, createBuilderServiceController } from "../dev/builder-service-controller";
+import type { NormalizedOptions } from "../options";
+import { computeDiff, createSnapshot } from "./snapshot";
+import { SubscriptionManager } from "./subscriptions";
+import type { CoordinatorDiff, CoordinatorEvent, CoordinatorSnapshot } from "./types";
 
 export interface PluginCoordinatorOptions {
   readonly builderConfig: BuilderServiceConfig;

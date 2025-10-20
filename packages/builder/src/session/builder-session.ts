@@ -294,7 +294,19 @@ const buildDiscovered = ({
   // Create next intermediate modules map (copy current state)
   const intermediateModules = new Map(previousIntermediateModules);
 
-  const targetFiles = affectedFiles.size > 0 ? affectedFiles : new Set(analyses.keys());
+  // Build target set: include affected files + any newly discovered files that haven't been built yet
+  const targetFiles = new Set(affectedFiles);
+  for (const filePath of analyses.keys()) {
+    if (!previousIntermediateModules.has(filePath)) {
+      targetFiles.add(filePath);
+    }
+  }
+  // If no targets identified (e.g., first build with no changes), build everything
+  if (targetFiles.size === 0) {
+    for (const filePath of analyses.keys()) {
+      targetFiles.add(filePath);
+    }
+  }
 
   // Remove deleted intermediate modules from next map immediately
   for (const targetFilePath of targetFiles) {

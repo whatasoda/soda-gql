@@ -12,7 +12,7 @@ export {
   createCoordinator,
   type PluginCoordinator,
   type PluginCoordinatorOptions,
-} from "./plugin-coordinator.js";
+} from "./plugin-coordinator";
 export {
   type CoordinatorConsumer,
   clearCoordinators,
@@ -24,12 +24,12 @@ export {
   registerConsumer,
   release,
   retain,
-} from "./registry.js";
-export { computeDiff, createSnapshot } from "./snapshot.js";
+} from "./registry";
+export { computeDiff, createSnapshot } from "./snapshot";
 export type {
   CoordinatorDiff,
   CoordinatorEvent,
   CoordinatorKey,
   CoordinatorListener,
   CoordinatorSnapshot,
-} from "./types.js";
+} from "./types";

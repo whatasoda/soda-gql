@@ -2,6 +2,9 @@
   "name": "@soda-gql/builder",
   "version": "0.0.1",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,7 +19,6 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@soda-gql/codegen": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@swc/core": "^1.6.3",

@@ -1,5 +1,5 @@
 import type { BuilderArtifact, BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
-import type { NormalizedOptions } from "../options.js";
+import type { NormalizedOptions } from "../options";
 
 /**
  * Immutable snapshot of coordinator state at a specific generation.

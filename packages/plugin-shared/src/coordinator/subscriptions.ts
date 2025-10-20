@@ -1,4 +1,4 @@
-import type { CoordinatorEvent, CoordinatorListener } from "./types.js";
+import type { CoordinatorEvent, CoordinatorListener } from "./types";
 
 /**
  * Manages event subscriptions for a coordinator.

@@ -7,7 +7,8 @@
     "graffle",
     "importee",
     "neverthrow",
-    "t_wada"
+    "t_wada",
+    "xxhash-wasm"
   ],
   "ignoreRegExpList": [],
   "ignorePaths": [

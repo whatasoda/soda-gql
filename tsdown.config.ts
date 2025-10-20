@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig, type UserConfig } from "tsdown";
-import { packageEntries } from "./scripts/generated/exports-manifest.js";
+import { packageEntries } from "./scripts/generated/exports-manifest";
 
 const aliases = Object.fromEntries(
   Object.entries(packageEntries).flatMap(([pkg, exports]) =>

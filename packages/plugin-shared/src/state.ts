@@ -1,8 +1,8 @@
 import type { BuilderArtifactElement, BuilderError, CanonicalId } from "@soda-gql/builder";
 import { err, ok, type Result } from "neverthrow";
-import { type CoordinatorKey, type CoordinatorSnapshot, createAndRegisterCoordinator } from "./coordinator/index.js";
-import { type NormalizedOptions, normalizePluginOptions, type OptionsError } from "./options.js";
-import type { PluginOptions } from "./types.js";
+import { type CoordinatorKey, type CoordinatorSnapshot, createAndRegisterCoordinator } from "./coordinator/index";
+import { type NormalizedOptions, normalizePluginOptions, type OptionsError } from "./options";
+import type { PluginOptions } from "./types";
 
 type OptionsInvalidBuilderConfig = Extract<OptionsError, { code: "INVALID_BUILDER_CONFIG" }>;
 

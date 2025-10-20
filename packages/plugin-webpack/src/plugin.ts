@@ -7,11 +7,11 @@ import {
   registerConsumer,
 } from "@soda-gql/plugin-shared";
 import type { Compiler, WebpackPluginInstance } from "webpack";
-import { registerCompilerHooks } from "./hooks.js";
-import { DiagnosticsReporter } from "./internal/diagnostics.js";
-import { type ArtifactManifest, createArtifactManifest, manifestChanged } from "./internal/manifest.js";
-import type { DiagnosticsMode, WebpackPluginOptions } from "./schemas/options.js";
-import { webpackPluginOptionsSchema } from "./schemas/options.js";
+import { registerCompilerHooks } from "./hooks";
+import { DiagnosticsReporter } from "./internal/diagnostics";
+import { type ArtifactManifest, createArtifactManifest, manifestChanged } from "./internal/manifest";
+import type { DiagnosticsMode, WebpackPluginOptions } from "./schemas/options";
+import { webpackPluginOptionsSchema } from "./schemas/options";
 
 const PLUGIN_NAME = "SodaGqlWebpackPlugin";
 const DIAGNOSTICS_ASSET_NAME = "soda-gql.diagnostics.json";

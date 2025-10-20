@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import type { Configuration, RuleSetRule } from "webpack";
-import type { WebpackLoaderOptions } from "../schemas/options.js";
-import { SodaGqlWebpackPlugin } from "../plugin.js";
-import { type SodaGqlConfig, sodaGqlConfigSchema } from "./config-schema.js";
+import { SodaGqlWebpackPlugin } from "../plugin";
+import type { WebpackLoaderOptions } from "../schemas/options";
+import { type SodaGqlConfig, sodaGqlConfigSchema } from "./config-schema";
 
 const require = createRequire(import.meta.url);
 const loaderModulePath = require.resolve("@soda-gql/plugin-webpack/loader");

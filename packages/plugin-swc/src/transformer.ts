@@ -6,8 +6,8 @@
  */
 
 import type { Module } from "@swc/types";
-import { prepareTransformState } from "./internal/builder-bridge.js";
-import { createSwcAdapter, type SwcEnv } from "./internal/swc-adapter.js";
+import { prepareTransformState } from "./internal/builder-bridge";
+import { createSwcAdapter, type SwcEnv } from "./internal/swc-adapter";
 
 /**
  * Configuration for the soda-gql SWC transformer.
