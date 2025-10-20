@@ -76,7 +76,7 @@ afterEach(() => {
 describe("Runtime Flow Integration", () => {
   describe("runtime mode", () => {
     it("generates artifact with all operations, models, and slices", async () => {
-      const workspace = copyFixtureWorkspace("runtime");
+      const workspace = createWorkspace();
       await setupWorkspace(workspace);
 
       const artifact = await buildArtifact(workspace);
@@ -106,7 +106,7 @@ describe("Runtime Flow Integration", () => {
 
   describe("zero-runtime mode", () => {
     it("transforms and verifies runtime behavior", async () => {
-      const workspace = copyFixtureWorkspace("zero-runtime");
+      const workspace = createWorkspace();
       await setupWorkspace(workspace);
 
       const artifact = await buildArtifact(workspace);

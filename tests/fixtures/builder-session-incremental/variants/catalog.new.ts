@@ -26,7 +26,7 @@ export const catalogOperation = gql.default(({ operation }, { $ }) =>
       variables: [$("limit").scalar("Int:?")],
     },
     ({ $ }) => ({
-      products: catalogSlice.build({ limit: $.limit }),
+      products: catalogSlice.load({ limit: $.limit }),
     }),
   ),
 );

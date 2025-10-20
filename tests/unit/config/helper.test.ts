@@ -29,10 +29,9 @@ describe("helper.ts", () => {
       });
     });
 
-    test("preserves sync function", () => {
+    test("executes sync function", () => {
       const configFn = () => ({
         graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -42,11 +41,17 @@ describe("helper.ts", () => {
 
       const result = defineConfig(configFn);
 
-      expect(result).toBe(configFn);
-      expect(typeof result).toBe("function");
+      expect(result).toEqual({
+        graphqlSystemPath: "./src/graphql-system/index.ts",
+        builder: {
+          entry: ["./src/**/*.ts"],
+          outDir: "./.cache",
+          analyzer: "ts" as const,
+        },
+      });
     });
 
-    test("preserves async function", () => {
+    test("returns promise for async function", () => {
       const configFn = async () => ({
         graphqlSystemPath: await Promise.resolve("./src/graphql-system/index.ts"),
         builder: {
@@ -58,8 +63,7 @@ describe("helper.ts", () => {
 
       const result = defineConfig(configFn);
 
-      expect(result).toBe(configFn);
-      expect(typeof result).toBe("function");
+      expect(result).toBeInstanceOf(Promise);
     });
 
     test("does not mutate input", () => {
@@ -82,7 +86,6 @@ describe("helper.ts", () => {
     test("allows async execution", async () => {
       const configFn = async () => ({
         graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -92,10 +95,8 @@ describe("helper.ts", () => {
 
       const result = defineConfig(configFn);
 
-      if (typeof result === "function") {
-        const resolved = await result();
-        expect(resolved.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
-      }
+      const resolved = await result;
+      expect(resolved.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
     });
   });
 });

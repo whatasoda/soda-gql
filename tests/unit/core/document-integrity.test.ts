@@ -6,7 +6,7 @@ import {
   buildWithTypeModifier,
 } from "@soda-gql/core/buildtime/build-document";
 import type { TypeModifier } from "@soda-gql/core/types/schema/type-modifier";
-import type { InputTypeRefs } from "@soda-gql/core/types/schema/type-ref";
+import type { InputTypeSpecifiers } from "@soda-gql/core/types/schema/type-specifier";
 import { Kind } from "graphql";
 
 describe("Document Integrity Tests", () => {
@@ -165,7 +165,7 @@ describe("Document Integrity Tests", () => {
         buildDocument({
           operationType: invalidOperation,
           operationName: "TestOperation",
-          variables: {} as InputTypeRefs,
+          variables: {} as InputTypeSpecifiers,
           fields: {},
         });
       }).toThrow();

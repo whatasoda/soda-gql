@@ -19,7 +19,7 @@ export const getUserQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.build({ id: $.userId }),
+      user: userSlice.load({ id: $.userId }),
     }),
   ),
 );

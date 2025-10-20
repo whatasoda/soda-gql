@@ -3,19 +3,19 @@ import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../schema";
-import { ArtifactElement } from "./artifact-element";
+import { ComposerElement } from "./artifact-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
 export type AnySliceOf<TOperationType extends OperationType> = Slice<TOperationType, any, AnyFields, AnyProjection>;
 
-type SliceArtifact<
+type SliceDefinition<
   TOperationType extends OperationType,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
   TProjection extends AnyProjection,
 > = {
   readonly operationType: TOperationType;
-  readonly build: (variables: TVariables) => SliceContent<TVariables, TFields, TProjection>;
+  readonly load: (variables: TVariables) => SliceContent<TVariables, TFields, TProjection>;
 };
 
 declare const __OPERATION_SLICE_BRAND__: unique symbol;
@@ -25,23 +25,23 @@ export class Slice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyProjection,
   >
-  extends ArtifactElement<SliceArtifact<TOperationType, TVariables, TFields, TProjection>>
-  implements SliceArtifact<TOperationType, TVariables, TFields, TProjection>
+  extends ComposerElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>>
+  implements SliceDefinition<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
     operationType: TOperationType;
     output: InferExecutionResultProjection<TProjection>;
   }>;
 
-  private constructor(factory: () => SliceArtifact<TOperationType, TVariables, TFields, TProjection>) {
-    super(factory);
+  private constructor(define: () => SliceDefinition<TOperationType, TVariables, TFields, TProjection>) {
+    super(define);
   }
 
   public get operationType() {
-    return ArtifactElement.get(this).operationType;
+    return ComposerElement.get(this).operationType;
   }
-  public get build() {
-    return ArtifactElement.get(this).build;
+  public get load() {
+    return ComposerElement.get(this).load;
   }
 
   static create<
@@ -51,9 +51,9 @@ export class Slice<
     TFields extends AnyFields,
     TProjection extends AnyProjection,
   >(
-    factory: () => {
+    define: () => {
       operationType: TOperationType;
-      build: (
+      load: (
         variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
       ) => SliceContent<
         SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
@@ -65,7 +65,7 @@ export class Slice<
     type Fields = TFields & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Slice(factory as () => SliceArtifact<TOperationType, Variables, Fields, TProjection>);
+    return new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>);
   }
 }
 

@@ -1,39 +1,39 @@
-const ARTIFACT_DEFINITION_FACTORY = Symbol("ARTIFACT_DEFINITION_FACTORY");
-const ARTIFACT_DEFINITION_CONTEXT = Symbol("ARTIFACT_DEFINITION_CONTEXT");
+const COMPOSER_FACTORY = Symbol("COMPOSER_FACTORY");
+const COMPOSER_CONTEXT = Symbol("COMPOSER_CONTEXT");
 
-export type BuilderContext = {
+export type ComposerContext = {
   canonicalId: string;
 };
 
-export type BuilderFactory<T> = (context: BuilderContext | null) => T;
+export type ComposerDefinitionFactory<T> = (context: ComposerContext | null) => T;
 
-export abstract class ArtifactElement<TArtifact> {
-  private [ARTIFACT_DEFINITION_FACTORY]: BuilderFactory<TArtifact>;
-  private [ARTIFACT_DEFINITION_CONTEXT]: BuilderContext | null = null;
+export abstract class ComposerElement<TDefinition> {
+  private [COMPOSER_FACTORY]: ComposerDefinitionFactory<TDefinition>;
+  private [COMPOSER_CONTEXT]: ComposerContext | null = null;
 
-  protected constructor(build: BuilderFactory<TArtifact>) {
-    let cache: { value: TArtifact } | null = null;
+  protected constructor(define: ComposerDefinitionFactory<TDefinition>) {
+    let cache: { value: TDefinition } | null = null;
 
-    this[ARTIFACT_DEFINITION_FACTORY] = (context) => {
+    this[COMPOSER_FACTORY] = (context) => {
       if (cache) {
         return cache.value;
       }
-      const value = build(context);
+      const value = define(context);
       cache = { value };
       return value;
     };
   }
 
-  static setContext<TBuilder extends ArtifactElement<any>>(instance: TBuilder, context: BuilderContext): void {
-    instance[ARTIFACT_DEFINITION_CONTEXT] = context;
+  static setContext<TElement extends ComposerElement<any>>(element: TElement, context: ComposerContext): void {
+    element[COMPOSER_CONTEXT] = context;
   }
 
-  static evaluate(instance: ArtifactElement<any>): void {
-    void ArtifactElement.get(instance);
+  static evaluate(element: ComposerElement<any>): void {
+    void ComposerElement.get(element);
   }
 
-  static get<TValue>(instance: ArtifactElement<TValue>): TValue {
-    const context = instance[ARTIFACT_DEFINITION_CONTEXT];
-    return instance[ARTIFACT_DEFINITION_FACTORY](context);
+  static get<TValue>(element: ComposerElement<TValue>): TValue {
+    const context = element[COMPOSER_CONTEXT];
+    return element[COMPOSER_FACTORY](context);
   }
 }

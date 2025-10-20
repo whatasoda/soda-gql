@@ -12,7 +12,7 @@ import type {
   InputTypeSpecifiers,
   OperationType,
 } from "../schema";
-import { ArtifactElement } from "./artifact-element";
+import { ComposerElement } from "./artifact-element";
 import type { AnySliceContents } from "./slice";
 
 export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
@@ -54,7 +54,7 @@ export class Operation<
     TRawData extends object,
     TProjectedData extends object,
   >
-  extends ArtifactElement<
+  extends ComposerElement<
     OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>
   >
   implements
@@ -66,29 +66,29 @@ export class Operation<
 
   private constructor(
     factory: (
-      context: import("./artifact-element").BuilderContext | null,
+      context: import("./artifact-element").ComposerContext | null,
     ) => OperationArtifact<TRuntimeAdapter, TOperationType, TOperationName, TVariableNames, TVariables, TRawData, TProjectedData>,
   ) {
     super(factory);
   }
 
   public get operationType() {
-    return ArtifactElement.get(this).operationType;
+    return ComposerElement.get(this).operationType;
   }
   public get operationName() {
-    return ArtifactElement.get(this).operationName;
+    return ComposerElement.get(this).operationName;
   }
   public get variableNames() {
-    return ArtifactElement.get(this).variableNames;
+    return ComposerElement.get(this).variableNames;
   }
   public get projectionPathGraph() {
-    return ArtifactElement.get(this).projectionPathGraph;
+    return ComposerElement.get(this).projectionPathGraph;
   }
   public get document() {
-    return ArtifactElement.get(this).document;
+    return ComposerElement.get(this).document;
   }
   public get parse() {
-    return ArtifactElement.get(this).parse;
+    return ComposerElement.get(this).parse;
   }
 
   static create<
@@ -99,7 +99,7 @@ export class Operation<
     TVariableDefinitions extends InputTypeSpecifiers,
     TSliceFragments extends AnySliceContents,
   >(
-    factory: (context: import("./artifact-element").BuilderContext | null) => {
+    factory: (context: import("./artifact-element").ComposerContext | null) => {
       operationType: TOperationType;
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];

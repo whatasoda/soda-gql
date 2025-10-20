@@ -13,7 +13,6 @@ describe("BuilderServiceController generation tracking API", () => {
       config: {
         graphqlSystemPath: "./test.ts",
         graphqlSystemAlias: undefined,
-        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
@@ -33,7 +32,6 @@ describe("BuilderServiceController generation tracking API", () => {
     const controller = createBuilderServiceController({
       config: {
         graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
         graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
@@ -55,7 +53,6 @@ describe("BuilderServiceController generation tracking API", () => {
       config: {
         graphqlSystemPath: "./test.ts",
         graphqlSystemAlias: undefined,
-        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
@@ -76,7 +73,6 @@ describe("BuilderServiceController generation tracking API", () => {
       config: {
         graphqlSystemPath: "./test.ts",
         graphqlSystemAlias: undefined,
-        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
@@ -96,7 +92,6 @@ describe("BuilderServiceController generation tracking API", () => {
     const controller = createBuilderServiceController({
       config: {
         graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
         graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
@@ -121,7 +116,6 @@ describe("BuilderServiceController generation tracking API", () => {
     const controller = createBuilderServiceController({
       config: {
         graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
         graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",

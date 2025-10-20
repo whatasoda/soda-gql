@@ -79,6 +79,7 @@ describe("SodaGqlWebpackLoader", () => {
       const result = await runLoader({
         loader,
         resourcePath: join(tempDir, "entry.d.ts"),
+        options: {},
         rootContext: tempDir,
         source,
       });
@@ -96,6 +97,7 @@ describe("SodaGqlWebpackLoader", () => {
       const result = await runLoader({
         loader,
         resourcePath: "/tmp/entry.ts",
+        options: {},
         source,
       });
 
@@ -110,6 +112,7 @@ describe("SodaGqlWebpackLoader", () => {
       const result = await runLoader({
         loader,
         resourcePath: "/tmp/entry.ts",
+        options: {},
         source,
       });
 

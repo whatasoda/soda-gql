@@ -14,15 +14,15 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
-      users: userSlice.build({
+      users: userSlice.load({
         id: $.userId,
         categoryId: $.categoryId,
       }),
-      remoteUsers: userSliceCatalog.byId.build({
+      remoteUsers: userSliceCatalog.byId.load({
         id: $.userId,
         categoryId: $.categoryId,
       }),
-      catalogUsers: userCatalog.collections.byCategory.build({
+      catalogUsers: userCatalog.collections.byCategory.load({
         categoryId: $.categoryId,
       }),
     }),

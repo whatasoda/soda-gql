@@ -4,7 +4,7 @@ import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../schema";
-import { ArtifactElement } from "./artifact-element";
+import { ComposerElement } from "./artifact-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
@@ -28,7 +28,7 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends ArtifactElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  extends ComposerElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
   implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
@@ -41,13 +41,13 @@ export class Model<
   }
 
   public get typename() {
-    return ArtifactElement.get(this).typename;
+    return ComposerElement.get(this).typename;
   }
   public get fragment() {
-    return ArtifactElement.get(this).fragment;
+    return ComposerElement.get(this).fragment;
   }
   public get normalize() {
-    return ArtifactElement.get(this).normalize;
+    return ComposerElement.get(this).normalize;
   }
 
   static create<

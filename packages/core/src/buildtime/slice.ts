@@ -40,7 +40,7 @@ export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAda
 
         return {
           operationType,
-          build: (variables) => {
+          load: (variables) => {
             const f = createFieldFactories(schema, operationTypeName);
             const $ = createVarAssignments(varDefinitions, variables);
             const fields = mergeFields(builder({ f, $ }));

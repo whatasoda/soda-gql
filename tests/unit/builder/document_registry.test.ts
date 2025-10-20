@@ -71,7 +71,7 @@ describe("artifact aggregate", () => {
         type: "slice",
         element: Slice.create(() => ({
           operationType: "query",
-          build: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
+          load: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
         })),
       },
       [operationId]: {

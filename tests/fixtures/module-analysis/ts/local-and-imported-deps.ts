@@ -26,7 +26,7 @@ export const pageQuery = gql.default(({ operation }, { $ }) =>
     },
     ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),
-      post: postSlice.build({ postId: $.postId }),
+      post: postSlice.load({ postId: $.postId }),
     }),
   ),
 );

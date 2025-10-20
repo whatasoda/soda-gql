@@ -22,7 +22,7 @@ export const createRuntimeSlice = (input: RuntimeSliceInput) => {
   const projection = handleProjectionBuilder(input.runtime.buildProjection);
   return {
     operationType: input.prebuild.operationType,
-    build: (variables) => ({
+    load: (variables) => ({
       variables,
       getFields: hidden(),
       projection,

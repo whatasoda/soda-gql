@@ -1,4 +1,4 @@
-import { type AnyModel, type AnyOperation, type AnySlice, ArtifactElement, Model, Operation, Slice } from "@soda-gql/core";
+import { type AnyModel, type AnyOperation, type AnySlice, ComposerElement, Model, Operation, Slice } from "@soda-gql/core";
 import type { IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
@@ -50,7 +50,7 @@ export const createIntermediateRegistry = () => {
 
   const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
     const builder = factory();
-    ArtifactElement.setContext(builder, { canonicalId });
+    ComposerElement.setContext(builder, { canonicalId });
     // Don't evaluate yet - defer until all builders are registered
     elements.set(canonicalId, builder);
     return builder;
@@ -63,7 +63,7 @@ export const createIntermediateRegistry = () => {
 
     // Then, evaluate all builders after registration
     for (const element of elements.values()) {
-      ArtifactElement.evaluate(element);
+      ComposerElement.evaluate(element);
     }
 
     // Build a single record with discriminated union entries

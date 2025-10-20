@@ -153,7 +153,7 @@ describe("createGqlInvoker", () => {
       ),
     );
 
-    const sliceFragment = userSlice.build({ id: "1" });
+    const sliceFragment = userSlice.load({ id: "1" });
     expect(sliceFragment.projection).toBeInstanceOf(Projection);
 
     const profileQuery = gql(({ operation }, { $ }) =>
@@ -163,7 +163,7 @@ describe("createGqlInvoker", () => {
           variables: [$("userId").scalar("ID:!")],
         },
         ({ $ }) => ({
-          user: userSlice.build({ id: $.userId }),
+          user: userSlice.load({ id: $.userId }),
         }),
       ),
     );

@@ -23,7 +23,7 @@ export const pageAction = gql.default(({ operation }, { $ }) =>
       variables: [$("title").scalar("String:!")],
     },
     ({ $ }) => ({
-      post: postSlice.build({ title: $.title }),
+      post: postSlice.load({ title: $.title }),
     }),
   ),
 );
