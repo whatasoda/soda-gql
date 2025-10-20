@@ -5,9 +5,9 @@
  * into the Nest CLI build process when using `builder: "swc"`.
  */
 
-import { type SwcAdapter, swcTransformAdapterFactory } from "@soda-gql/plugin-shared";
-import { prepareTransformState } from "@soda-gql/plugin-shared/compiler-sync";
 import type { Module } from "@swc/types";
+import { prepareTransformState } from "./internal/builder-bridge.js";
+import { createSwcAdapter, type SwcEnv } from "./internal/swc-adapter.js";
 
 /**
  * Configuration for the soda-gql SWC transformer.
@@ -100,12 +100,15 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
 
-    // Create SWC adapter
-    const adapter = swcTransformAdapterFactory.create({
+    // Create SWC adapter environment
+    const env: SwcEnv = {
       module: m,
       swc: options.swc,
       filename,
-    }) as SwcAdapter;
+    };
+
+    // Create SWC adapter
+    const adapter = createSwcAdapter(env);
 
     // Transform the program
     const transformContext = {
@@ -123,9 +126,8 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
     // Insert runtime side effects
     adapter.insertRuntimeSideEffects(transformContext, transformResult.runtimeArtifacts ?? []);
 
-    // The adapter updates module internally, retrieve it
-    // This is a workaround until we refactor adapter to return transformed module
-    return (adapter as unknown as { env: { module: Module } }).env.module;
+    // Return the transformed module
+    return adapter.getModule();
   };
 }
 
