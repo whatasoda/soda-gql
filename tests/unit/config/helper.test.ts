@@ -7,6 +7,7 @@ describe("helper.ts", () => {
     test("preserves static config object", () => {
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -19,6 +20,7 @@ describe("helper.ts", () => {
       expect(result).toBe(config);
       expect(result).toEqual({
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -30,6 +32,7 @@ describe("helper.ts", () => {
     test("preserves sync function", () => {
       const configFn = () => ({
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -62,6 +65,7 @@ describe("helper.ts", () => {
     test("does not mutate input", () => {
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -78,6 +82,7 @@ describe("helper.ts", () => {
     test("allows async execution", async () => {
       const configFn = async () => ({
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",

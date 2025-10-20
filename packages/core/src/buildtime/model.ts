@@ -1,6 +1,6 @@
 import type { AnyFields, InferFields } from "../types/fragment";
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/operation";
-import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 import { mapValues } from "../utils/map-values";
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -9,7 +9,7 @@ export const createGqlModels = <TSchema extends AnyGraphqlSchema>(schema: NoInfe
   type ModelBuilder<TTypeName extends keyof TSchema["object"] & string> = <
     TFieldEntries extends AnyFields[],
     TNormalized extends object,
-    TVarDefinitions extends InputTypeRefs[] = [{}],
+    TVarDefinitions extends InputTypeSpecifiers[] = [{}],
   >(
     options: {
       variables?: TVarDefinitions;
@@ -21,7 +21,7 @@ export const createGqlModels = <TSchema extends AnyGraphqlSchema>(schema: NoInfe
   >;
 
   const createBuilder = <TTypeName extends keyof TSchema["object"] & string>(typename: TTypeName): ModelBuilder<TTypeName> => {
-    return <TFieldEntries extends AnyFields[], TNormalized extends object, TVarDefinitions extends InputTypeRefs[] = [{}]>(
+    return <TFieldEntries extends AnyFields[], TNormalized extends object, TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
       },

@@ -50,7 +50,7 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
   const project = raw.project;
 
   // Load config
-  const configResult = loadConfig({ configPath: raw.configPath, project });
+  const configResult = loadConfig(raw.configPath);
   if (configResult.isErr()) {
     return err({
       type: "PluginError",

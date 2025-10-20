@@ -26,7 +26,7 @@ export function createPathGraphFromSliceEntries(fragments: { [key: string]: AnyS
   const paths = Object.entries(fragments).flatMap(([label, slice]) =>
     Array.from(
       new Map(
-        slice.projection.paths.map(({ raw, segments }) => {
+        slice.projection.paths.map(({ full: raw, segments }) => {
           const [first, ...rest] = segments;
           return [raw, { label, raw, segments: [`${label}_${first}`, ...rest] }];
         }),

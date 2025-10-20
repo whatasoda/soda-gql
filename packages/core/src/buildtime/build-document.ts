@@ -22,7 +22,7 @@ import {
   type InferFields,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType, TypeModifier } from "../types/schema";
+import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeSpecifiers, OperationType, TypeModifier } from "../types/schema";
 import type { ConstValue } from "../types/schema/const-value";
 
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
@@ -216,7 +216,7 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
   return curr.type;
 };
 
-const buildVariables = (variables: InputTypeRefs): VariableDefinitionNode[] => {
+const buildVariables = (variables: InputTypeSpecifiers): VariableDefinitionNode[] => {
   return Object.entries(variables).map(
     ([name, ref]): VariableDefinitionNode => ({
       kind: Kind.VARIABLE_DEFINITION,
@@ -244,7 +244,7 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
 export const buildDocument = <
   TSchema extends AnyGraphqlSchema,
   TFields extends AnyFields,
-  TVarDefinitions extends InputTypeRefs,
+  TVarDefinitions extends InputTypeSpecifiers,
 >(options: {
   operationName: string;
   operationType: OperationType;

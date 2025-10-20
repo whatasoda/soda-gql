@@ -1,12 +1,12 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
-import type { AnyGraphqlSchema, InputTypeRefs } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../types/schema";
 import { mapValues } from "../utils/map-values";
 import type { UnionToIntersection } from "../utils/type-utils";
 
-export const mergeVarDefinitions = <TVarDefinitions extends InputTypeRefs[]>(definitions: TVarDefinitions) =>
+export const mergeVarDefinitions = <TVarDefinitions extends InputTypeSpecifiers[]>(definitions: TVarDefinitions) =>
   Object.assign({}, ...definitions) as MergeVarDefinitions<TVarDefinitions>;
 
-export type MergeVarDefinitions<TVarDefinitions extends InputTypeRefs[]> = UnionToIntersection<
+export type MergeVarDefinitions<TVarDefinitions extends InputTypeSpecifiers[]> = UnionToIntersection<
   TVarDefinitions[number]
 > extends infer TDefinitions
   ? {
@@ -14,7 +14,7 @@ export type MergeVarDefinitions<TVarDefinitions extends InputTypeRefs[]> = Union
     } & {}
   : never;
 
-export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeRefs>(
+export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
   definitions: TVariableDefinitions,
   provided: AnyAssignableInput | void,
 ): AssignableInput<TSchema, TVariableDefinitions> => {
@@ -29,10 +29,10 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
   return provided as AssignableInput<TSchema, TVariableDefinitions>;
 };
 
-export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeRefs>(
+export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
   definitions: TVarDefinitions,
 ) =>
-  mapValues(definitions as InputTypeRefs, (_ref, name) => VarRef.create<typeof _ref>(name)) as AssignableInput<
+  mapValues(definitions as InputTypeSpecifiers, (_ref, name) => VarRef.create<typeof _ref>(name)) as AssignableInput<
     TSchema,
     TVarDefinitions
   >;

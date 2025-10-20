@@ -10,6 +10,7 @@ describe("validator.ts", () => {
     test("validates correct config", () => {
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -28,6 +29,7 @@ describe("validator.ts", () => {
     test("allows config with minimal fields", () => {
       const config = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
       };
 
       const result = validateConfig(config);
@@ -38,6 +40,7 @@ describe("validator.ts", () => {
     test("rejects invalid builder.analyzer", () => {
       const config = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -53,11 +56,11 @@ describe("validator.ts", () => {
     test("allows explicit analyzer and mode", () => {
       const config = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
           analyzer: "ts" as const,
-          mode: "runtime" as const,
         },
       };
 
@@ -66,7 +69,6 @@ describe("validator.ts", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.builder?.analyzer).toBe("ts");
-        expect(result.value.builder?.mode).toBe("runtime");
       }
     });
   });
@@ -75,10 +77,12 @@ describe("validator.ts", () => {
     test("resolves single-project config with absolute paths", () => {
       const tmpDir = mkdtempSync(join(tmpdir(), "soda-gql-test-"));
       const configPath = join(tmpDir, "soda-gql.config.ts");
-      writeFileSync(configPath, `export default { graphqlSystemPath: "./src/graphql-system/index.ts" }`);
+      writeFileSync(configPath, `export default { graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined }`);
 
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["./src/**/*.ts"],
           outDir: "./.cache",
@@ -108,6 +112,7 @@ describe("validator.ts", () => {
 
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
       };
 
       const result = resolveConfig(config, configPath);
@@ -116,7 +121,6 @@ describe("validator.ts", () => {
       if (result.isOk()) {
         expect(result.value.corePath).toBe("@soda-gql/core");
         expect(result.value.builder.analyzer).toBe("ts");
-        expect(result.value.builder.mode).toBe("runtime");
         expect(result.value.builder.outDir).toContain(".cache/soda-gql");
         expect(result.value.plugins).toEqual({});
       }
@@ -155,6 +159,7 @@ describe("validator.ts", () => {
 
       const config: SodaGqlConfig = {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         codegen: {
           schema: "./schema.graphql",
           outDir: "./src/graphql-system",

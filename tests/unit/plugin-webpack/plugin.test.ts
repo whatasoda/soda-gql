@@ -54,6 +54,7 @@ describe("SodaGqlWebpackPlugin", () => {
       // Create config file
       const configPath = createTempConfigFile(tmpDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -62,7 +63,6 @@ describe("SodaGqlWebpackPlugin", () => {
       });
 
       const compiler = webpack({
-        mode: "development",
         context: tmpDir,
         entry: entryPath,
         output: {
@@ -101,6 +101,7 @@ describe("SodaGqlWebpackPlugin", () => {
       // Create config file
       const configPath = createTempConfigFile(tmpDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -109,7 +110,6 @@ describe("SodaGqlWebpackPlugin", () => {
       });
 
       const compiler = webpack({
-        mode: "development",
         context: tmpDir,
         entry: entryPath,
         output: {
@@ -142,6 +142,7 @@ describe("SodaGqlWebpackPlugin", () => {
       // Create config file
       const configPath = createTempConfigFile(tmpDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -150,7 +151,6 @@ describe("SodaGqlWebpackPlugin", () => {
       });
 
       const compiler = webpack({
-        mode: "development",
         context: tmpDir,
         entry: entryPath,
         output: {

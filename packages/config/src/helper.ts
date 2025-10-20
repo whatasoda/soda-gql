@@ -21,6 +21,11 @@ import type { SodaGqlConfig } from "./types";
  *   builder: { entry: ["./src/**\/*.ts"], outDir: "./.cache" },
  * }));
  */
-export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): SodaGqlConfig {
+export function defineConfig(config: SodaGqlConfig): SodaGqlConfig;
+export function defineConfig(config: () => SodaGqlConfig): SodaGqlConfig;
+export function defineConfig(config: () => Promise<SodaGqlConfig>): Promise<SodaGqlConfig>;
+export function defineConfig(
+  config: SodaGqlConfig | (() => SodaGqlConfig) | (() => Promise<SodaGqlConfig>),
+): SodaGqlConfig | Promise<SodaGqlConfig> {
   return typeof config === "function" ? config() : config;
 }

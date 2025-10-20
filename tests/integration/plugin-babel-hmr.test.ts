@@ -65,7 +65,6 @@ describe("Plugin-Babel HMR Integration", () => {
           [
             createSodaGqlPlugin,
             {
-              mode: "zero-runtime",
               configPath,
               artifact: {
                 useBuilder: false,
@@ -130,7 +129,6 @@ describe("Plugin-Babel HMR Integration", () => {
           [
             createSodaGqlPlugin,
             {
-              mode: "runtime",
               configPath,
               artifact: {
                 useBuilder: false,

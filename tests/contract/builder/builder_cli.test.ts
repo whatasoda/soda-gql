@@ -43,6 +43,7 @@ import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
   graphqlSystemPath: "${graphqlSystemPath.replace(/\\/g, "/")}",
+        graphqlSystemAlias: undefined,
   corePath: "${corePath.replace(/\\/g, "/")}",
 });
 `;

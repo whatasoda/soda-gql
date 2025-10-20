@@ -12,11 +12,11 @@ import {
 } from "../types/operation";
 import type {
   AnyGraphqlSchema,
-  OutputEnumRef,
-  OutputObjectRef,
-  OutputScalarRef,
-  OutputTypenameRef,
-  OutputUnionRef,
+  OutputEnumSpecifier,
+  OutputObjectSpecifier,
+  OutputScalarSpecifier,
+  OutputTypenameSpecifier,
+  OutputUnionSpecifier,
   UnionMemberName,
 } from "../types/schema";
 import { mapValues } from "../utils/map-values";
@@ -70,7 +70,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
 
       if (type.kind === "object") {
-        type TSelection = AnyFieldSelection & { type: OutputObjectRef };
+        type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject[]>(
           nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
         ) =>
@@ -88,7 +88,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       }
 
       if (type.kind === "union") {
-        type TSelection = AnyFieldSelection & { type: OutputUnionRef };
+        type TSelection = AnyFieldSelection & { type: OutputUnionSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedUnion>(
           nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
         ) =>
@@ -114,7 +114,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       }
 
       if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
-        type TSelection = AnyFieldSelection & { type: OutputTypenameRef | OutputScalarRef | OutputEnumRef };
+        type TSelection = AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = wrap({
           parent: typeName,
           field: fieldName,

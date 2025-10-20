@@ -74,6 +74,11 @@ export class TypeScriptAdapter implements TransformAdapter {
   }
 
   analyzeCall(_context: TransformProgramContext, candidate: unknown): GraphQLCallAnalysis | PluginError {
+    // Type guard to ensure candidate is a TypeScript Node
+    if (!this.isTypeScriptNode(candidate)) {
+      throw new Error("[INTERNAL] TypeScriptAdapter.analyzeCall expects ts.CallExpression");
+    }
+
     if (!this.ts.isCallExpression(candidate)) {
       throw new Error("[INTERNAL] TypeScriptAdapter.analyzeCall expects ts.CallExpression");
     }
@@ -83,38 +88,70 @@ export class TypeScriptAdapter implements TransformAdapter {
     throw new Error("[TypeScriptAdapter] analyzeCall not yet fully implemented");
   }
 
+  /**
+   * Type guard to check if a value is a TypeScript Node.
+   */
+  private isTypeScriptNode(candidate: unknown): candidate is ts.Node {
+    return typeof candidate === "object" && candidate !== null && "kind" in candidate && "flags" in candidate;
+  }
+
   transformProgram(context: TransformProgramContext): TransformPassResult {
     // Check if we're transforming the graphql-system file itself
     // If so, replace it with an empty module stub to prevent heavy runtime loading
     if (context.graphqlSystemFilePath) {
-      // Use TypeScript's canonical file name comparison to handle casing, symlinks, etc.
+      // Use TypeScript's sys for file comparison
       const sys = this.ts.sys;
-      const getCanonicalFileName = this.ts.createGetCanonicalFileName(sys.useCaseSensitiveFileNames);
+      if (!sys) {
+        // Fallback to simple string comparison if sys is not available
+        if (this.env.sourceFile.fileName === context.graphqlSystemFilePath) {
+          // Create an empty module: export {};
+          const emptyExport = this.factory.createExportDeclaration(
+            undefined,
+            false,
+            this.factory.createNamedExports([]),
+            undefined,
+          );
 
-      const toCanonical = (file: string): string => {
-        const resolved = sys.resolvePath ? sys.resolvePath(file) : require("node:path").resolve(file);
-        return getCanonicalFileName(resolved);
-      };
+          const stubSourceFile = this.factory.updateSourceFile(this.env.sourceFile, [emptyExport]);
+          this.env = { ...this.env, sourceFile: stubSourceFile };
 
-      const currentFileCanonical = toCanonical(this.env.sourceFile.fileName);
-      const systemFileCanonical = toCanonical(context.graphqlSystemFilePath);
-
-      if (currentFileCanonical === systemFileCanonical) {
-        // Create an empty module: export {};
-        const emptyExport = this.factory.createExportDeclaration(
-          undefined,
-          false,
-          this.factory.createNamedExports([]),
-          undefined,
-        );
-
-        const stubSourceFile = this.factory.updateSourceFile(this.env.sourceFile, [emptyExport]);
-        this.env = { ...this.env, sourceFile: stubSourceFile };
-
-        return {
-          transformed: true,
-          runtimeArtifacts: undefined,
+          return {
+            transformed: true,
+            runtimeArtifacts: undefined,
+          };
+        }
+      } else {
+        // Use canonical file name comparison
+        const useCaseSensitiveFileNames = sys.useCaseSensitiveFileNames ?? false;
+        const getCanonicalFileName = (fileName: string): string => {
+          return useCaseSensitiveFileNames ? fileName : fileName.toLowerCase();
         };
+
+        const toCanonical = (file: string): string => {
+          const resolved = sys.resolvePath ? sys.resolvePath(file) : require("node:path").resolve(file);
+          return getCanonicalFileName(resolved);
+        };
+
+        const currentFileCanonical = toCanonical(this.env.sourceFile.fileName);
+        const systemFileCanonical = toCanonical(context.graphqlSystemFilePath);
+
+        if (currentFileCanonical === systemFileCanonical) {
+          // Create an empty module: export {};
+          const emptyExport = this.factory.createExportDeclaration(
+            undefined,
+            false,
+            this.factory.createNamedExports([]),
+            undefined,
+          );
+
+          const stubSourceFile = this.factory.updateSourceFile(this.env.sourceFile, [emptyExport]);
+          this.env = { ...this.env, sourceFile: stubSourceFile };
+
+          return {
+            transformed: true,
+            runtimeArtifacts: undefined,
+          };
+        }
       }
     }
 
@@ -238,7 +275,7 @@ export class TypeScriptAdapter implements TransformAdapter {
 
   /**
    * Detect if the output format is CommonJS based on compiler options.
-   * Uses ts.getEmitModuleKind to determine the actual output module format.
+   * Uses internal TypeScript APIs if available to determine the actual output module format.
    */
   private detectCommonJSOutput(compilerOptions: unknown): boolean {
     if (!compilerOptions || typeof compilerOptions !== "object") {
@@ -247,10 +284,19 @@ export class TypeScriptAdapter implements TransformAdapter {
 
     const options = compilerOptions as ts.CompilerOptions;
 
-    // Use getEmitModuleKind if available (TypeScript 4.7+)
-    if ("getEmitModuleKind" in this.ts && typeof this.ts.getEmitModuleKind === "function") {
-      const emitKind = this.ts.getEmitModuleKind(options);
-      return emitKind === this.ts.ModuleKind.CommonJS;
+    // Try accessing internal API via type assertion
+    // TypeScript has getEmitModuleKind in internal APIs but not in public types
+    const tsInternal = this.ts as typeof ts & {
+      getEmitModuleKind?: (options: ts.CompilerOptions) => ts.ModuleKind;
+    };
+
+    if (tsInternal.getEmitModuleKind) {
+      try {
+        const emitKind = tsInternal.getEmitModuleKind(options);
+        return emitKind === this.ts.ModuleKind.CommonJS;
+      } catch {
+        // Fall through to fallback logic
+      }
     }
 
     // Fallback: check module option directly

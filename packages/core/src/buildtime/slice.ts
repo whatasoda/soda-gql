@@ -8,7 +8,7 @@ import {
   Slice,
 } from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
-import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -23,7 +23,11 @@ export const createSliceFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAda
       throw new Error(`Operation type ${operationType} is not defined in schema roots`);
     }
 
-    return <TFieldEntries extends AnyFields[], TProjection extends AnyProjection, TVarDefinitions extends InputTypeRefs[] = [{}]>(
+    return <
+      TFieldEntries extends AnyFields[],
+      TProjection extends AnyProjection,
+      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
+    >(
       options: {
         variables?: TVarDefinitions;
       },

@@ -3,7 +3,7 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
-import type { AnyGraphqlSchema, InputTypeRefs } from "../schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../schema";
 import { ArtifactElement } from "./artifact-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
@@ -53,7 +53,7 @@ export class Model<
   static create<
     TSchema extends AnyGraphqlSchema,
     TTypeName extends keyof TSchema["object"] & string,
-    TVariableDefinitions extends InputTypeRefs,
+    TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
     TNormalized extends object,
   >(

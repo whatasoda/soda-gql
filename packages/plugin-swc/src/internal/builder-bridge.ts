@@ -43,7 +43,7 @@ export const prepareTransformState = (options: PrepareOptions): Result<PreparedS
   const { configPath, project, importIdentifier, packageLabel } = options;
 
   // Load configuration
-  const configResult = loadConfig({ configPath, project });
+  const configResult = loadConfig(configPath);
   if (configResult.isErr()) {
     const configError = configResult.error;
     const pluginError: PluginError = {

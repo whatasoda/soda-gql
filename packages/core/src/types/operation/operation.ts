@@ -5,7 +5,13 @@ import type { Prettify } from "../../utils/prettify";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
-import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, InputTypeRefs, OperationType } from "../schema";
+import type {
+  AnyConstAssignableInput,
+  AnyGraphqlSchema,
+  ConstAssignableInput,
+  InputTypeSpecifiers,
+  OperationType,
+} from "../schema";
 import { ArtifactElement } from "./artifact-element";
 import type { AnySliceContents } from "./slice";
 
@@ -90,7 +96,7 @@ export class Operation<
     TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
     TOperationType extends OperationType,
     TOperationName extends string,
-    TVariableDefinitions extends InputTypeRefs,
+    TVariableDefinitions extends InputTypeSpecifiers,
     TSliceFragments extends AnySliceContents,
   >(
     factory: (context: import("./artifact-element").BuilderContext | null) => {
@@ -134,6 +140,6 @@ export type InferOperationRawData<TSchema extends AnyGraphqlSchema, TSliceConten
 /** Builder invoked from userland to wire slices with operation-level variables. */
 export type OperationDefinitionBuilder<
   TSchema extends AnyGraphqlSchema,
-  TVarDefinitions extends InputTypeRefs,
+  TVarDefinitions extends InputTypeSpecifiers,
   TSliceContents extends AnySliceContents,
 > = (tools: { $: NoInfer<AssignableInput<TSchema, TVarDefinitions>> }) => TSliceContents;

@@ -4,9 +4,11 @@ import { loadConfig } from "@soda-gql/config";
 import type * as ts from "typescript";
 import { createBeforeTransformer } from "./transformer";
 
-type TscPluginConfig = {
+export type TscPluginConfig = {
   readonly configPath?: string;
   readonly enabled?: boolean;
+  readonly project?: string;
+  readonly importIdentifier?: string;
 };
 
 const fallbackPlugin = {
@@ -87,6 +89,18 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
   };
 
   return plugin;
+};
+
+/**
+ * Create a TypeScript transformer for testing purposes.
+ * This is a helper that wraps createTscPlugin to match the signature expected by tests.
+ */
+export const createSodaGqlTransformer = (
+  program: ts.Program,
+  options: TscPluginConfig = {},
+): ts.TransformerFactory<ts.SourceFile> => {
+  const plugin = createTscPlugin(options);
+  return plugin.before({}, program);
 };
 
 export default createTscPlugin();

@@ -20,7 +20,6 @@ describe("defaults.ts", () => {
       entry: [],
       outDir: "./.cache/soda-gql",
       analyzer: "ts",
-      mode: "runtime",
     });
   });
 
@@ -31,10 +30,6 @@ describe("defaults.ts", () => {
 
   test("DEFAULT_BUILDER_CONFIG.analyzer is 'ts'", () => {
     expect(DEFAULT_BUILDER_CONFIG.analyzer).toBe("ts");
-  });
-
-  test("DEFAULT_BUILDER_CONFIG.mode is 'runtime'", () => {
-    expect(DEFAULT_BUILDER_CONFIG.mode).toBe("runtime");
   });
 
   test("DEFAULT_CORE_PATH is '@soda-gql/core'", () => {

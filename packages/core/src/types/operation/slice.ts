@@ -2,7 +2,7 @@ import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
-import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../schema";
 import { ArtifactElement } from "./artifact-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
@@ -47,7 +47,7 @@ export class Slice<
   static create<
     TSchema extends AnyGraphqlSchema,
     TOperationType extends OperationType,
-    TVariableDefinitions extends InputTypeRefs,
+    TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
     TProjection extends AnyProjection,
   >(

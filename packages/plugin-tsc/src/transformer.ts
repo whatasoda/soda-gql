@@ -11,6 +11,7 @@ import {
   ensureGqlRuntimeImport,
   ensureGqlRuntimeRequire,
   type GraphqlSystemIdentifyHelper,
+  removeGraphqlSystemImports,
 } from "./internal/ts-adapter/typescript/imports.js";
 import { collectGqlDefinitionMetadata } from "./internal/ts-adapter/typescript/metadata.js";
 import { transformCallExpression } from "./internal/ts-adapter/typescript/transformer.js";
@@ -160,11 +161,11 @@ export const createBeforeTransformer = ({
           : ensureGqlRuntimeImport({ sourceFile: current, factory: context.factory });
       }
 
-      // current = removeGraphqlSystemImports({
-      //   sourceFile: current,
-      //   factory: context.factory,
-      //   graphqlSystemIdentifyHelper,
-      // });
+      current = removeGraphqlSystemImports({
+        sourceFile: current,
+        factory: context.factory,
+        graphqlSystemIdentifyHelper,
+      });
 
       return { transformed: current !== original, sourceFile: current };
     },

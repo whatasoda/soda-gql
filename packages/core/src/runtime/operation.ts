@@ -2,7 +2,7 @@ import type { Kind } from "graphql";
 import { createVarRefs } from "../buildtime/input";
 import type { AnyAssignableInput } from "../types/fragment";
 import type { AnyOperationOf, AnySliceContent } from "../types/operation";
-import type { AnyGraphqlSchema, InputTypeRef, InputTypeRefs, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifier, InputTypeSpecifiers, OperationType } from "../types/schema";
 import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 import { createExecutionResultParser } from "./parse-execution-result";
 import { registerOperation } from "./runtime-registry";
@@ -32,8 +32,8 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
     projectionPathGraph: input.prebuild.projectionPathGraph,
     parse: createExecutionResultParser({
       fragments: input.runtime.getSlices({
-        $: createVarRefs<AnyGraphqlSchema, InputTypeRefs>(
-          Object.fromEntries(input.prebuild.variableNames.map((name) => [name, null as unknown as InputTypeRef])),
+        $: createVarRefs<AnyGraphqlSchema, InputTypeSpecifiers>(
+          Object.fromEntries(input.prebuild.variableNames.map((name) => [name, null as unknown as InputTypeSpecifier])),
         ),
       }),
       projectionPathGraph: input.prebuild.projectionPathGraph,

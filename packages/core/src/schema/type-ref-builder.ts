@@ -1,8 +1,8 @@
 import {
   type AnyConstDirectiveAttachments,
-  type AnyTypeRef,
+  type AnyTypeSpecifier,
   type InputTypeKind,
-  type InputTypeRefs,
+  type InputTypeSpecifiers,
   type ModifiedTypeName,
   type OutputTypeKind,
   parseModifiedTypeName,
@@ -41,7 +41,7 @@ const createUnsafeInputRefFactory = <const TKind extends InputTypeKind>(kind: TK
       ...parseModifiedTypeName(type),
       defaultValue: extras.default ? { default: extras.default() } : null,
       directives: extras.directives ?? ({} as TDirectives),
-    }) satisfies AnyTypeRef as UnsafeInputRef<TName, TModifier, TDefaultFactory, TDirectives>;
+    }) satisfies AnyTypeSpecifier as UnsafeInputRef<TName, TModifier, TDefaultFactory, TDirectives>;
 };
 
 export const unsafeInputRef = {
@@ -54,7 +54,7 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
   type UnsafeOutputRef<
     TName extends string,
     TModifier extends TypeModifier,
-    TArguments extends InputTypeRefs,
+    TArguments extends InputTypeSpecifiers,
     TDirectives extends AnyConstDirectiveAttachments,
   > = {
     kind: TKind;
@@ -67,7 +67,7 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
   return <
     const TName extends string,
     const TModifier extends TypeModifier,
-    const TArguments extends InputTypeRefs = {},
+    const TArguments extends InputTypeSpecifiers = {},
     const TDirectives extends AnyConstDirectiveAttachments = {},
   >(
     type: ModifiedTypeName<string, TName, TModifier>,
@@ -75,13 +75,18 @@ const createUnsafeOutputRefFactory = <const TKind extends OutputTypeKind>(kind: 
       arguments?: TArguments;
       directives?: TDirectives;
     },
-  ): UnsafeOutputRef<TName, TModifier, InputTypeRefs extends TArguments ? {} : TArguments, TDirectives> =>
+  ): UnsafeOutputRef<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments, TDirectives> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       arguments: extras.arguments ?? ({} as TArguments),
       directives: extras.directives ?? ({} as TDirectives),
-    }) satisfies AnyTypeRef as UnsafeOutputRef<TName, TModifier, InputTypeRefs extends TArguments ? {} : TArguments, TDirectives>;
+    }) satisfies AnyTypeSpecifier as UnsafeOutputRef<
+      TName,
+      TModifier,
+      InputTypeSpecifiers extends TArguments ? {} : TArguments,
+      TDirectives
+    >;
 };
 
 export const unsafeOutputRef = {

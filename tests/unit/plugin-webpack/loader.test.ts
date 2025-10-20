@@ -26,6 +26,7 @@ describe("SodaGqlWebpackLoader", () => {
       const tempDir = join(artifactPath, "..");
       const configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -36,9 +37,9 @@ describe("SodaGqlWebpackLoader", () => {
       const result = await runLoader({
         loader,
         resourcePath: join(tempDir, "entry.ts"),
+        options: {},
         rootContext: tempDir,
         source,
-        options: { mode: "runtime", artifactPath, configPath },
         sourceMap: { version: 3, mappings: "" },
       });
 
@@ -67,6 +68,7 @@ describe("SodaGqlWebpackLoader", () => {
       const tempDir = join(artifactPath, "..");
       const configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -79,7 +81,6 @@ describe("SodaGqlWebpackLoader", () => {
         resourcePath: join(tempDir, "entry.d.ts"),
         rootContext: tempDir,
         source,
-        options: { mode: "zero-runtime", artifactPath, configPath },
       });
 
       expect(result.error).toBeUndefined();
@@ -96,7 +97,6 @@ describe("SodaGqlWebpackLoader", () => {
         loader,
         resourcePath: "/tmp/entry.ts",
         source,
-        options: { mode: "invalid-mode" } as any,
       });
 
       expect(result.error).toBeDefined();
@@ -111,7 +111,6 @@ describe("SodaGqlWebpackLoader", () => {
         loader,
         resourcePath: "/tmp/entry.ts",
         source,
-        options: { mode: "zero-runtime" } as any,
       });
 
       expect(result.error).toBeDefined();
@@ -143,6 +142,7 @@ export const data = { value: 42 };
       const tempDir = join(artifactPath, "..");
       const configPath = createTempConfigFile(tempDir, {
         graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         builder: {
           entry: ["**/*.ts"],
           analyzer: "ts",
@@ -153,9 +153,9 @@ export const data = { value: 42 };
       const result = await runLoader({
         loader,
         resourcePath: join(tempDir, "entry.ts"),
+        options: {},
         rootContext: tempDir,
         source,
-        options: { mode: "zero-runtime", artifactPath, configPath },
       });
 
       expect(result.error).toBeUndefined();

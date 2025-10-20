@@ -1,7 +1,7 @@
 import {
   type AnyConstDirectiveAttachments,
   type AnyGraphqlSchema,
-  type AnyTypeRef,
+  type AnyTypeSpecifier,
   type ConstAssignableInputValue,
   type ModifiedTypeName,
   parseModifiedTypeName,
@@ -62,7 +62,7 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
           ...parseModifiedTypeName(type),
           defaultValue: extras?.default ? { default: extras.default() } : null,
           directives: extras?.directives ?? ({} as TDirectives),
-        } satisfies AnyTypeRef as InputRef<TTypeName, TModifier, TDefaultFn, TDirectives>);
+        } satisfies AnyTypeSpecifier as InputRef<TTypeName, TModifier, TDefaultFn, TDirectives>);
     };
 
     return {

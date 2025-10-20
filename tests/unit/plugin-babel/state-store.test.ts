@@ -8,6 +8,7 @@ const createMockOptions = (): NormalizedOptions => ({
   diagnostics: "json",
   resolvedConfig: {
     graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
     corePath: "@soda-gql/core",
     configDir: "/test",
     configPath: "/test/soda-gql.config.ts",
@@ -17,7 +18,6 @@ const createMockOptions = (): NormalizedOptions => ({
       entry: ["**/*.ts"],
       analyzer: "ts",
       outDir: "./.cache",
-      mode: "zero-runtime",
     },
     codegen: undefined,
     plugins: {},
@@ -25,6 +25,7 @@ const createMockOptions = (): NormalizedOptions => ({
   builderConfig: {
     config: {
       graphqlSystemPath: "./src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
       corePath: "@soda-gql/core",
       configDir: "/test",
       configPath: "/test/soda-gql.config.ts",
@@ -34,7 +35,6 @@ const createMockOptions = (): NormalizedOptions => ({
         entry: ["**/*.ts"],
         analyzer: "ts",
         outDir: "./.cache",
-        mode: "zero-runtime",
       },
       codegen: undefined,
       plugins: {},

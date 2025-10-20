@@ -12,12 +12,13 @@ describe("BuilderService generation tracking API", () => {
     const service = createBuilderService({
       config: {
         graphqlSystemPath: "./test.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache", mode: "zero-runtime" },
+        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
         codegen: undefined,
         plugins: {},
       },
@@ -31,12 +32,13 @@ describe("BuilderService generation tracking API", () => {
     const service = createBuilderService({
       config: {
         graphqlSystemPath: "./test.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache", mode: "zero-runtime" },
+        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
         codegen: undefined,
         plugins: {},
       },
@@ -50,12 +52,13 @@ describe("BuilderService generation tracking API", () => {
     const service = createBuilderService({
       config: {
         graphqlSystemPath: "./test.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache", mode: "zero-runtime" },
+        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
         codegen: undefined,
         plugins: {},
       },
@@ -69,12 +72,13 @@ describe("BuilderService generation tracking API", () => {
     const service = createBuilderService({
       config: {
         graphqlSystemPath: "./test.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache", mode: "zero-runtime" },
+        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
         codegen: undefined,
         plugins: {},
       },
@@ -88,12 +92,13 @@ describe("BuilderService generation tracking API", () => {
     const service = createBuilderService({
       config: {
         graphqlSystemPath: "./test.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache", mode: "zero-runtime" },
+        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
         codegen: undefined,
         plugins: {},
       },

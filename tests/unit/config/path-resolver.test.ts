@@ -71,12 +71,12 @@ describe("path-resolver.ts", () => {
     test("resolves gql import path from config", () => {
       const config: ResolvedSodaGqlConfig = {
         graphqlSystemPath: "/project/src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         builder: {
           entry: [],
           outDir: "/project/.cache/soda-gql",
           analyzer: "ts",
-          mode: "runtime",
         },
         plugins: {},
         configDir: "/project",
@@ -93,12 +93,12 @@ describe("path-resolver.ts", () => {
     test("handles different outDir depths", () => {
       const config: ResolvedSodaGqlConfig = {
         graphqlSystemPath: "/project/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         builder: {
           entry: [],
           outDir: "/project/dist",
           analyzer: "ts",
-          mode: "runtime",
         },
         plugins: {},
         configDir: "/project",
@@ -117,12 +117,12 @@ describe("path-resolver.ts", () => {
     test("resolves core import path without extension mapping", () => {
       const config: ResolvedSodaGqlConfig = {
         graphqlSystemPath: "/project/src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         corePath: "@soda-gql/core",
         builder: {
           entry: [],
           outDir: "/project/.cache/soda-gql",
           analyzer: "ts",
-          mode: "runtime",
         },
         plugins: {},
         configDir: "/project",
@@ -139,12 +139,12 @@ describe("path-resolver.ts", () => {
     test("handles absolute corePath", () => {
       const config: ResolvedSodaGqlConfig = {
         graphqlSystemPath: "/project/src/graphql-system/index.ts",
+        graphqlSystemAlias: undefined,
         corePath: "/project/node_modules/@soda-gql/core/index.ts",
         builder: {
           entry: [],
           outDir: "/project/.cache",
           analyzer: "ts",
-          mode: "runtime",
         },
         plugins: {},
         configDir: "/project",

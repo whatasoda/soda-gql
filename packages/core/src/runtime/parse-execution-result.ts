@@ -107,7 +107,7 @@ export const createExecutionResultParser = <TRuntimeAdapter extends AnyGraphqlRu
       const { projection } = fragment;
 
       if (prepared.type === "graphql") {
-        const matchedErrors = projection.paths.flatMap(({ raw }) => prepared.errorMaps[label]?.[raw] ?? []);
+        const matchedErrors = projection.paths.flatMap(({ full: raw }) => prepared.errorMaps[label]?.[raw] ?? []);
         const uniqueErrors = Array.from(new Set(matchedErrors.map(({ error }) => error)).values());
 
         if (uniqueErrors.length > 0) {

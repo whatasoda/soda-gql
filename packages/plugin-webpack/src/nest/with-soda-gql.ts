@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import type { Configuration, RuleSetRule } from "webpack";
-import type { WebpackLoaderOptions } from "../loader.js";
+import type { WebpackLoaderOptions } from "../schemas/options.js";
 import { SodaGqlWebpackPlugin } from "../plugin.js";
 import { type SodaGqlConfig, sodaGqlConfigSchema } from "./config-schema.js";
 

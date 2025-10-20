@@ -15,10 +15,10 @@ import { typeCheckFiles } from "../utils/type-check";
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 
-const copyFixtureWorkspace = (mode: "runtime" | "zero-runtime") => {
+const createWorkspace = () => {
   const tmpRoot = join(projectRoot, "tests", ".tmp", "integration");
   mkdirSync(tmpRoot, { recursive: true });
-  const workspaceRoot = resolve(tmpRoot, `${mode}-flow-${Date.now()}`);
+  const workspaceRoot = resolve(tmpRoot, `runtime-flow-${Date.now()}`);
   rmSync(workspaceRoot, { recursive: true, force: true });
   cpSync(fixturesRoot, workspaceRoot, {
     recursive: true,
@@ -127,7 +127,6 @@ describe("Runtime Flow Integration", () => {
       for (const filePath of targets) {
         const sourceCode = await Bun.file(filePath).text();
         const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
-          mode: "zero-runtime",
           skipTypeCheck: true,
         });
 

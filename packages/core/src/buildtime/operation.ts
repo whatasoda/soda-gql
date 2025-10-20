@@ -1,7 +1,7 @@
 import { createExecutionResultParser } from "../runtime/parse-execution-result";
 import { type AnySliceContents, type ConcatSliceContents, Operation, type OperationDefinitionBuilder } from "../types/operation";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { AnyGraphqlSchema, InputTypeRefs, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -12,7 +12,7 @@ export const createOperationFactory = <TSchema extends AnyGraphqlSchema, TRuntim
     return <
       TOperationName extends string,
       TSliceFragments extends AnySliceContents,
-      TVarDefinitions extends InputTypeRefs[] = [{}],
+      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
     >(
       options: {
         operationName: TOperationName;

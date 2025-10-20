@@ -1,11 +1,11 @@
 import type {
   AnyConstDirectiveAttachments,
-  EnumDef,
-  InputDef,
-  ObjectDef,
+  EnumDefinition,
+  InputDefinition,
+  ObjectDefinition,
   OperationRoots,
-  ScalarDef,
-  UnionDef,
+  ScalarDefinition,
+  UnionDefinition,
 } from "../types/schema";
 import { type Hidden, hidden } from "../utils/hidden";
 import { wrapByKey } from "../utils/wrap-by-key";
@@ -23,10 +23,10 @@ export const defineScalar = <const TName extends string, TInput, TOutput, TDirec
     _type: hidden() as Hidden<{ input: TInput; output: TOutput }>,
     name,
     directives: definition({ type: hidden }).directives,
-  } satisfies ScalarDef<{ input: TInput; output: TOutput }>);
+  } satisfies ScalarDefinition<{ input: TInput; output: TOutput }>);
 
 export const define = <const TName extends string>(name: TName) => ({
-  enum: <const TValues extends EnumDef<string>["values"], TDirectives extends AnyConstDirectiveAttachments>(
+  enum: <const TValues extends EnumDefinition<string>["values"], TDirectives extends AnyConstDirectiveAttachments>(
     values: TValues,
     directives: TDirectives,
   ) =>
@@ -35,9 +35,9 @@ export const define = <const TName extends string>(name: TName) => ({
       name,
       values,
       directives,
-    }) satisfies EnumDef<keyof TValues & string>,
+    }) satisfies EnumDefinition<keyof TValues & string>,
 
-  input: <TFields extends InputDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
+  input: <TFields extends InputDefinition["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
@@ -45,9 +45,9 @@ export const define = <const TName extends string>(name: TName) => ({
       name,
       fields,
       directives,
-    }) satisfies InputDef,
+    }) satisfies InputDefinition,
 
-  object: <TFields extends ObjectDef["fields"], TDirectives extends AnyConstDirectiveAttachments>(
+  object: <TFields extends ObjectDefinition["fields"], TDirectives extends AnyConstDirectiveAttachments>(
     fields: TFields,
     directives: TDirectives,
   ) =>
@@ -58,9 +58,9 @@ export const define = <const TName extends string>(name: TName) => ({
         ...fields,
       },
       directives,
-    }) satisfies ObjectDef,
+    }) satisfies ObjectDefinition,
 
-  union: <TTypes extends UnionDef["types"], TDirectives extends AnyConstDirectiveAttachments>(
+  union: <TTypes extends UnionDefinition["types"], TDirectives extends AnyConstDirectiveAttachments>(
     types: TTypes,
     directives: TDirectives,
   ) =>
@@ -68,7 +68,7 @@ export const define = <const TName extends string>(name: TName) => ({
       name,
       types,
       directives,
-    }) satisfies UnionDef,
+    }) satisfies UnionDefinition,
 });
 
 export const defineOperationRoots = <const TOperationRoots extends OperationRoots>(operationRoots: TOperationRoots) =>

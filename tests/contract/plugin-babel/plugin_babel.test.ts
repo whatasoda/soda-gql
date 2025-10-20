@@ -17,6 +17,7 @@ const createTestTempConfig = (tmpDir: string): string => {
 
   const configContent = `export default {
   graphqlSystemPath: "${graphqlSystemPath.replace(/\\/g, "/")}",
+        graphqlSystemAlias: undefined,
   builder: {
     entry: ["${builderEntry.replace(/\\/g, "/")}"],
     analyzer: "ts",

@@ -24,7 +24,7 @@ export type PreparedTransform = {
 };
 
 // Module-level runtime cache keyed by coordinator key
-const runtimeCache = new Map<string, Promise<PluginRuntime>>();
+const runtimeCache = new Map<string, PluginRuntime>();
 
 /**
  * Prepare transform by normalizing options and loading plugin state via coordinator.
@@ -55,7 +55,7 @@ export async function prepareTransform(args: PrepareTransformArgs): Promise<Resu
   });
 
   // Get or create cached runtime
-  const getRuntime = async (): Promise<PluginRuntime> => {
+  const getRuntime = (): PluginRuntime => {
     let entry = runtimeCache.get(runtimeKey);
     if (!entry) {
       entry = createPluginRuntimeFromNormalized(normalizedOptions);
@@ -65,7 +65,7 @@ export async function prepareTransform(args: PrepareTransformArgs): Promise<Resu
   };
 
   try {
-    const runtime = await getRuntime();
+    const runtime = getRuntime();
     const state = runtime.getState();
 
     return ok({

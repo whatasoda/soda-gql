@@ -32,7 +32,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     writeFileSync(fileB, `import { c } from "./c";\nexport const b = 2;`);
     writeFileSync(fileC, `export const c = 3;`);
 
-    const testConfig = createTestConfig(root);
+    const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
@@ -87,7 +87,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     writeFileSync(fileA, `import { b } from "./b";\nexport const a = 1;`);
     writeFileSync(fileB, `export const b = 2;`);
 
-    const testConfig = createTestConfig(root);
+    const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
@@ -133,7 +133,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     const fileA = join(fixtureRoot, "a.ts");
     writeFileSync(fileA, `export const a = 1;`);
 
-    const testConfig = createTestConfig(root);
+    const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
     const cache = makeCache(fixtureRoot);
