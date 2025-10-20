@@ -1,15 +1,15 @@
 import { gql } from "@soda-gql/core";
 
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     { variables: [$("id").scalar("ID:!")] },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
     ({ select }) => select(["$.user"], (result) => result.map((entry) => entry)),
   ),
 );
 
-export const updateUserSlice = gql.default(({ slice }, { $ }) =>
-  slice.mutation(
+export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
+  mutation.slice(
     {
       variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
     },
@@ -19,8 +19,8 @@ export const updateUserSlice = gql.default(({ slice }, { $ }) =>
 );
 
 export const slices = {
-  byId: gql.default(({ slice }, { $ }) =>
-    slice.query(
+  byId: gql.default(({ query }, { $ }) =>
+    query.slice(
       { variables: [$("id").scalar("ID:!")] },
       ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
       ({ select }) => select(["$.user"], (result) => result),
@@ -30,7 +30,7 @@ export const slices = {
 
 const sliceCollection = {
   userSlice: gql.default(({ slice }) =>
-    slice.query(
+    query.slice(
       {},
       ({ f }) => [f.users(({ f }) => [f.id()])],
       ({ select }) => select(["$.users"], (result) => result),

@@ -6,8 +6,8 @@ import { userSlice, usersSlice } from "./slices";
  *
  * This will be transformed to zero-runtime code by the SWC compiler plugin.
  */
-export const getUserQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const getUserQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "GetUser",
       variables: [$("userId").scalar("ID:!")],
@@ -24,7 +24,7 @@ export const getUserQuery = gql.default(({ operation }, { $ }) =>
  * This demonstrates fetching a list of users with the same fields.
  */
 export const getUsersQuery = gql.default(({ operation }) =>
-  operation.query(
+  query.composed(
     {
       operationName: "GetUsers",
     },

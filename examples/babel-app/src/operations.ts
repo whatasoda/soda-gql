@@ -4,8 +4,8 @@ import { updateUserSlice, userSlice, usersSlice, userUpdatesSlice } from "./slic
 /**
  * Query operation to fetch a single user
  */
-export const getUserQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const getUserQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "GetUser",
       variables: [
@@ -15,7 +15,7 @@ export const getUserQuery = gql.default(({ operation }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
+      user: userSlice.build({ id: $.userId, categoryId: $.categoryId }),
     }),
   ),
 );
@@ -23,14 +23,14 @@ export const getUserQuery = gql.default(({ operation }, { $ }) =>
 /**
  * Query operation to fetch multiple users
  */
-export const listUsersQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const listUsersQuery = gql.default(({ mutation }, { $ }) =>
+  query.composed(
     {
       operationName: "ListUsers",
       variables: [$("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
-      users: usersSlice.embed({ categoryId: $.categoryId }),
+      users: usersSlice.build({ categoryId: $.categoryId }),
     }),
   ),
 );
@@ -39,7 +39,7 @@ export const listUsersQuery = gql.default(({ operation }, { $ }) =>
  * Mutation operation to update user
  */
 export const updateUserMutation = gql.default(({ operation }, { $ }) =>
-  operation.mutation(
+  mutation.composed(
     {
       operationName: "UpdateUser",
       variables: [
@@ -49,7 +49,7 @@ export const updateUserMutation = gql.default(({ operation }, { $ }) =>
       ],
     },
     ({ $ }) => ({
-      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
+      result: updateUserSlice.build({ id: $.userId, name: $.name }),
     }),
   ),
 );
@@ -64,7 +64,7 @@ export const userUpdatesSubscription = gql.default(({ operation }, { $ }) =>
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      updates: userUpdatesSlice.embed({ userId: $.userId }),
+      updates: userUpdatesSlice.build({ userId: $.userId }),
     }),
   ),
 );

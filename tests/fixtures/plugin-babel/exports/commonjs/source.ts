@@ -9,8 +9,8 @@ const graphql_system_1 = { gql: { default: () => {} } };
 const userSlice = { build: {} };
 const updateUserSlice = { build: {} };
 
-exports.updateUserMutation = graphql_system_1.gql.default(({ operation }, { $ }) =>
-  operation.mutation(
+exports.updateUserMutation = graphql_system_1.gql.default(({ mutation }, { $ }) =>
+  mutation.composed(
     {
       operationName: "UpdateUser",
       variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
@@ -21,8 +21,8 @@ exports.updateUserMutation = graphql_system_1.gql.default(({ operation }, { $ })
   ),
 );
 
-exports.getUserQuery = graphql_system_1.gql.default(({ operation }, { $ }) =>
-  operation.query(
+exports.getUserQuery = graphql_system_1.gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "GetUser",
       variables: [$("userId").scalar("ID:!")],

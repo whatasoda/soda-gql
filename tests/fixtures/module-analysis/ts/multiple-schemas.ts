@@ -15,8 +15,8 @@ export const adminModel = gql.admin(({ model }) =>
   ),
 );
 
-export const defaultQuery = gql.default(({ operation }) =>
-  operation.query(
+export const defaultQuery = gql.default(({ query }) =>
+  query.composed(
     {
       operationName: "DefaultData",
       variables: [],

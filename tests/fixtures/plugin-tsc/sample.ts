@@ -1,8 +1,8 @@
 import { gql } from "@/graphql-system";
 
 // Simple slice for testing
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("id").scalar("ID:!")],
     },
@@ -12,14 +12,14 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 );
 
 // Simple operation for testing
-export const getUserQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const getUserQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "GetUser",
       variables: [$("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId }),
+      user: userSlice.build({ id: $.userId }),
     }),
   ),
 );

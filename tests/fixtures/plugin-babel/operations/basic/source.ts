@@ -5,8 +5,8 @@ const userSlice = { build: {} as any } as any;
 const nestedSlice = { build: {} as any } as any;
 const updateUserSlice = { build: {} as any } as any;
 
-export const profileQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const profileQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "ProfileQuery",
       variables: [$("userId").scalar("ID:!")],
@@ -17,8 +17,8 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
   ),
 );
 
-export const updateProfileMutation = gql.default(({ operation }, { $ }) =>
-  operation.mutation(
+export const updateProfileMutation = gql.default(({ mutation }, { $ }) =>
+  mutation.composed(
     {
       operationName: "UpdateProfile",
       variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
@@ -30,7 +30,7 @@ export const updateProfileMutation = gql.default(({ operation }, { $ }) =>
 );
 
 export const query1 = gql.default(({ operation }) =>
-  operation.query(
+  query.composed(
     {
       operationName: "Query1",
     },
@@ -39,7 +39,7 @@ export const query1 = gql.default(({ operation }) =>
 );
 
 export const query2 = gql.default(({ operation }) =>
-  operation.query(
+  query.composed(
     {
       operationName: "Query2",
     },
@@ -48,7 +48,7 @@ export const query2 = gql.default(({ operation }) =>
 );
 
 export const queryWith2Args = gql.default(({ operation }) =>
-  operation.query(
+  query.composed(
     {
       operationName: "Query2Args",
     },
@@ -57,7 +57,7 @@ export const queryWith2Args = gql.default(({ operation }) =>
 );
 
 export const complexQuery = gql.default(({ operation }) =>
-  operation.query(
+  query.composed(
     {
       operationName: "ComplexQuery",
     },

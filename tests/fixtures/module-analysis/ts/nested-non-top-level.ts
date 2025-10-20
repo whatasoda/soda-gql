@@ -1,8 +1,8 @@
 import { gql } from "@/graphql-system";
 
 const buildSlice = () => {
-  const invalid = gql.default(({ slice }) =>
-    slice.query(
+  const invalid = gql.default(({ query }) =>
+    query.slice(
       { variables: [] },
       // @ts-expect-error - Test fixture with invalid arguments
       () => ({}),

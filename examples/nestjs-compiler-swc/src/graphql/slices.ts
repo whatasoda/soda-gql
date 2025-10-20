@@ -3,8 +3,8 @@ import { gql } from "@/graphql-system";
 /**
  * Slice to fetch a single user by ID
  */
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("id").scalar("ID:!")],
     },
@@ -16,8 +16,8 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 /**
  * Slice to fetch all users
  */
-export const usersSlice = gql.default(({ slice }) =>
-  slice.query(
+export const usersSlice = gql.default(({ query }) =>
+  query.slice(
     {},
     ({ f }) => [f.users(({ f }) => [f.id(), f.name(), f.email()])],
     ({ select }) => select(["$.users"], (result) => result),

@@ -1,7 +1,7 @@
 import { gql } from "@/graphql-system";
 
-const postCreatedSlice = gql.default(({ slice }) =>
-  slice.subscription(
+const postCreatedSlice = gql.default(({ subscription }) =>
+  subscription.slice(
     {
       variables: [],
     },
@@ -17,14 +17,14 @@ const postCreatedSlice = gql.default(({ slice }) =>
   ),
 );
 
-export const postCreatedSubscription = gql.default(({ operation }) =>
-  operation.subscription(
+export const postCreatedSubscription = gql.default(({ subscription }) =>
+  subscription.composed(
     {
       operationName: "PostCreated",
       variables: [],
     },
     () => ({
-      post: postCreatedSlice.embed(),
+      post: postCreatedSlice.build(),
     }),
   ),
 );

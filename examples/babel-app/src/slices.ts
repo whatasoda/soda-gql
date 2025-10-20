@@ -4,8 +4,8 @@ import { userModel } from "./models";
 /**
  * Query slice to fetch a single user
  */
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
@@ -23,8 +23,8 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 /**
  * Query slice to fetch multiple users
  */
-export const usersSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const usersSlice = gql.default(({ mutation }, { $ }) =>
+  query.slice(
     {
       variables: [$("categoryId").scalar("ID:?")],
     },
@@ -43,8 +43,8 @@ export const usersSlice = gql.default(({ slice }, { $ }) =>
 /**
  * Mutation slice to update user
  */
-export const updateUserSlice = gql.default(({ slice }, { $ }) =>
-  slice.mutation(
+export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
+  mutation.slice(
     {
       variables: [
         //
