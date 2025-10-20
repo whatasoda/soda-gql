@@ -156,9 +156,9 @@ describe("Runtime Flow Integration", () => {
         );
 
         expect(recordedOperations.some((op) => op.operationName === "ProfilePageQuery")).toBe(true);
-        expect(profileModule.profileQuery).toBe(gqlRuntime.getOperation("ProfilePageQuery"));
+        expect(profileModule.profileQuery).toBe(gqlRuntime.getComposedOperation("ProfilePageQuery"));
 
-        const profileOp = gqlRuntime.getOperation("ProfilePageQuery");
+        const profileOp = gqlRuntime.getComposedOperation("ProfilePageQuery");
         expect(profileOp.variableNames).toContain("userId");
         expect(profileOp.variableNames).toContain("categoryId");
 

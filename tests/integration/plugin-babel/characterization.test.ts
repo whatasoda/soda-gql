@@ -18,10 +18,10 @@ describe("Plugin-Babel Behavioral Tests", () => {
       expect(transformed).toContain("gqlRuntime.operation(");
 
       // Verify operations are registered
-      expect(transformed).toContain('gqlRuntime.getOperation("ProfileQuery")');
-      expect(transformed).toContain('gqlRuntime.getOperation("UpdateProfile")');
-      expect(transformed).toContain('gqlRuntime.getOperation("Query1")');
-      expect(transformed).toContain('gqlRuntime.getOperation("Query2")');
+      expect(transformed).toContain('gqlRuntime.getComposedOperation("ProfileQuery")');
+      expect(transformed).toContain('gqlRuntime.getComposedOperation("UpdateProfile")');
+      expect(transformed).toContain('gqlRuntime.getComposedOperation("Query1")');
+      expect(transformed).toContain('gqlRuntime.getComposedOperation("Query2")');
     });
   });
 

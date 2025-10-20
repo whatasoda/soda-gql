@@ -23,7 +23,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
 /**
  * Query operation to fetch multiple users
  */
-export const listUsersQuery = gql.default(({ mutation }, { $ }) =>
+export const listUsersQuery = gql.default(({ query }, { $ }) =>
   query.composed(
     {
       operationName: "ListUsers",
@@ -38,7 +38,7 @@ export const listUsersQuery = gql.default(({ mutation }, { $ }) =>
 /**
  * Mutation operation to update user
  */
-export const updateUserMutation = gql.default(({ subscription }, { $ }) =>
+export const updateUserMutation = gql.default(({ mutation }, { $ }) =>
   mutation.composed(
     {
       operationName: "UpdateUser",
@@ -57,7 +57,7 @@ export const updateUserMutation = gql.default(({ subscription }, { $ }) =>
 /**
  * Subscription operation for user updates
  */
-export const userUpdatesSubscription = gql.default(({ operation }, { $ }) =>
+export const userUpdatesSubscription = gql.default(({ subscription }, { $ }) =>
   subscription.composed(
     {
       operationName: "UserUpdates",

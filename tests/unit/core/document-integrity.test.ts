@@ -4,7 +4,7 @@ import {
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
-} from "@soda-gql/core/buildtime/build-document";
+} from "@soda-gql/core/composer/build-document";
 import type { TypeModifier } from "@soda-gql/core/types/schema/type-modifier";
 import type { InputTypeSpecifiers } from "@soda-gql/core/types/schema/type-specifier";
 import { Kind } from "graphql";

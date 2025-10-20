@@ -22,7 +22,7 @@ export const userSlice = gql.default(({ query }, { $ }) =>
 /**
  * Query slice to fetch all users
  */
-export const usersSlice = gql.default(({ mutation }) =>
+export const usersSlice = gql.default(({ query }) =>
   query.slice(
     {},
     ({ f }) => [

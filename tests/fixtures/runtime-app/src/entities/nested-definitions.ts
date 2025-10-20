@@ -105,7 +105,7 @@ export const queryFactory = () => {
 // - filePath::nestedQueries.users.byId
 export const nestedQueries = {
   users: {
-    list: gql.default(({ slice }, { $ }) =>
+    list: gql.default(({ query }, { $ }) =>
       query.slice(
         {
           variables: [$("limit").scalar("Int:?")],
@@ -121,7 +121,7 @@ export const nestedQueries = {
         ({ select }) => select(["$.users"], (result) => result),
       ),
     ),
-    byId: gql.default(({ slice }, { $ }) =>
+    byId: gql.default(({ query }, { $ }) =>
       query.slice(
         {
           variables: [$("id").scalar("ID:!")],
@@ -163,7 +163,7 @@ export function createUserOperation() {
 // Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
 // Uses the previously defined nestedQueries.users.list slice
 export const operationFactory = () => {
-  const listUsersOperation = gql.default(({ operation }, { $ }) =>
+  const listUsersOperation = gql.default(({ query }, { $ }) =>
     query.composed(
       {
         operationName: "ListUsers",
@@ -184,7 +184,7 @@ export const operationFactory = () => {
 // - filePath::nestedOperations.users.listUsers
 export const nestedOperations = {
   users: {
-    getUser: gql.default(({ operation }, { $ }) =>
+    getUser: gql.default(({ query }, { $ }) =>
       query.composed(
         {
           operationName: "NestedGetUser",
@@ -195,7 +195,7 @@ export const nestedOperations = {
         }),
       ),
     ),
-    listUsers: gql.default(({ operation }, { $ }) =>
+    listUsers: gql.default(({ query }, { $ }) =>
       query.composed(
         {
           operationName: "NestedListUsers",

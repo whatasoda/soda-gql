@@ -4,7 +4,7 @@ import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 import { aggregate } from "@soda-gql/builder/artifact/aggregate";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import type { IntermediateArtifactElement } from "@soda-gql/builder/intermediate-module";
-import { Model, Operation, Slice } from "@soda-gql/core/types/operation";
+import { ComposedOperation, Model, Slice } from "@soda-gql/core/types/element";
 import { parse } from "graphql";
 
 describe("canonical identifier helpers", () => {
@@ -76,7 +76,7 @@ describe("artifact aggregate", () => {
       },
       [operationId]: {
         type: "operation",
-        element: Operation.create(() => ({
+        element: ComposedOperation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: parse("query ProfilePageQuery { users { id } }") as any,
@@ -229,7 +229,7 @@ describe("artifact aggregate", () => {
     const intermediateModule = createTestIntermediateModule({
       [operationId]: {
         type: "operation",
-        element: Operation.create(() => ({
+        element: ComposedOperation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: document as any,

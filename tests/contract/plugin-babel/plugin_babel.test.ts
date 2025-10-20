@@ -110,7 +110,7 @@ describe("@soda-gql/plugin-babel", () => {
     expect(transformed).toContain("prebuild: JSON.parse(");
     expect(transformed).toContain("operationType");
     expect(transformed).toContain("query");
-    expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
+    expect(transformed).toContain('export const profileQuery = gqlRuntime.getComposedOperation("ProfilePageQuery")');
     const outputDir = join(tmpRoot, "transforms");
     mkdirSync(outputDir, { recursive: true });
     await Bun.write(join(outputDir, `transform.${Date.now()}.ts`), transformed);

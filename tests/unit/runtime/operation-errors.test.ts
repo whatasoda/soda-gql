@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createExecutionResultParser } from "@soda-gql/core/runtime/parse-execution-result";
-import type { ProjectionPathGraphNode } from "@soda-gql/core/types/operation/operation";
+import type { ProjectionPathGraphNode } from "@soda-gql/core/types/element/composed-operation";
 import type { NormalizedExecutionResult } from "@soda-gql/core/types/runtime/execution-result";
 import { Projection } from "@soda-gql/core/types/runtime/projection";
 import type { AnyGraphqlRuntimeAdapter } from "@soda-gql/core/types/runtime/runtime-adapter";

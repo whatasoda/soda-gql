@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql-examples/nestjs-compiler-swc",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "description": "NestJS example using SWC compiler plugin for soda-gql",
   "scripts": {

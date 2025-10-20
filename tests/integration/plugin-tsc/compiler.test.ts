@@ -142,7 +142,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // TODO: When enabled with proper artifact mocking:
       // - Should contain: import { gqlRuntime } from "@soda-gql/runtime"
       // - Should contain: gqlRuntime.operation(...)
-      // - Should contain: gqlRuntime.getOperation(...)
+      // - Should contain: gqlRuntime.getComposedOperation(...)
       // - Should NOT contain: __soda_gql_runtime
       // - Should NOT contain: require("@soda-gql/runtime")
     });
@@ -179,7 +179,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // TODO: When enabled with proper artifact mocking:
       // - Should contain: const __soda_gql_runtime = require("@soda-gql/runtime")
       // - Should contain: __soda_gql_runtime.gqlRuntime.operation(...)
-      // - Should contain: __soda_gql_runtime.gqlRuntime.getOperation(...)
+      // - Should contain: __soda_gql_runtime.gqlRuntime.getComposedOperation(...)
       // - Should NOT contain: import { gqlRuntime }
       // - Should NOT contain bare: gqlRuntime.operation (without __soda_gql_runtime prefix)
     });
