@@ -32,7 +32,7 @@
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
-    "@soda-gql/plugin-shared": "workspace:*",
+    "@soda-gql/config": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/parser": "^7.24.0",
     "@babel/traverse": "^7.24.0",

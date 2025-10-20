@@ -1,13 +1,11 @@
-import { createSodaGqlPlugin } from "./plugin";
+import { createSodaGqlPlugin } from "./plugin.js";
 
 export {
   assertUnreachable,
   formatPluginError,
   isPluginError,
   type PluginError,
-  type PluginResult,
-  pluginErr,
-} from "@soda-gql/plugin-shared/errors";
+} from "./internal/errors.js";
 
 export { createSodaGqlPlugin };
 export default createSodaGqlPlugin;
