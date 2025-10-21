@@ -89,7 +89,7 @@ export const prepareTransformState = (options: PrepareOptions): Result<PreparedS
   const graphqlSystemPath = `${config.outdir}/index.ts`;
 
   return ok({
-    importIdentifier: importIdentifier ?? (config.graphqlSystemAliases[0] ?? "@/graphql-system"),
+    importIdentifier: importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system",
     allArtifacts: artifact.elements,
     graphqlSystemPath,
   });

@@ -50,24 +50,20 @@ export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall 
     throw new Error("[INTERNAL] composed operation requires a slices builder");
   }
 
-  const runtimeCall = t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("composedOperation")),
-    [
-      buildObjectExpression({
-        prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
-          t.stringLiteral(JSON.stringify(artifact.prebuild)),
-        ]),
-        runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>({
-          getSlices: clone(slicesBuilder),
-        }),
+  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("composedOperation")), [
+    buildObjectExpression({
+      prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
+        t.stringLiteral(JSON.stringify(artifact.prebuild)),
+      ]),
+      runtime: buildObjectExpression<keyof RuntimeComposedOperationInput["runtime"]>({
+        getSlices: clone(slicesBuilder),
       }),
-    ],
-  );
+    }),
+  ]);
 
-  const referenceCall = t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getComposedOperation")),
-    [t.stringLiteral(artifact.prebuild.operationName)],
-  );
+  const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getComposedOperation")), [
+    t.stringLiteral(artifact.prebuild.operationName),
+  ]);
 
   return {
     referenceCall,
@@ -85,10 +81,9 @@ export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall }:
     }),
   ]);
 
-  const referenceCall = t.callExpression(
-    t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getInlineOperation")),
-    [t.stringLiteral(artifact.prebuild.operationName)],
-  );
+  const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getInlineOperation")), [
+    t.stringLiteral(artifact.prebuild.operationName),
+  ]);
 
   return {
     referenceCall,

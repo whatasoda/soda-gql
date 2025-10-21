@@ -59,37 +59,31 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
 
   const resolvedConfig = configResult.value;
 
-  // Validate builder config exists
-  if (!resolvedConfig.builder) {
-    return err({
-      type: "OptionsError",
-      code: "MISSING_BUILDER_CONFIG",
-      message: "Builder configuration is missing in resolved config",
-    });
-  }
-
-  // Validate builder has required fields
-  if (!resolvedConfig.builder.entry || resolvedConfig.builder.entry.length === 0) {
+  // Validate include has required fields
+  if (!resolvedConfig.include || resolvedConfig.include.length === 0) {
     return err({
       type: "OptionsError",
       code: "INVALID_BUILDER_CONFIG",
-      message: "Builder config must include non-empty entry array",
+      message: "Config must include non-empty include array",
     });
   }
 
-  if (!resolvedConfig.builder.analyzer) {
+  if (!resolvedConfig.analyzer) {
     return err({
       type: "OptionsError",
       code: "INVALID_BUILDER_CONFIG",
-      message: "Builder config must include analyzer",
+      message: "Config must include analyzer",
     });
   }
 
   // Create BuilderServiceConfig
   const builderServiceConfig: BuilderServiceConfig = {
     config: resolvedConfig,
-    entrypointsOverride: resolvedConfig.builder.entry,
+    entrypointsOverride: resolvedConfig.include,
   };
+
+  // Derive graphqlSystemPath from outdir
+  const graphqlSystemPath = `${resolvedConfig.outdir}/index.ts`;
 
   return ok({
     importIdentifier,
@@ -97,6 +91,6 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
     resolvedConfig,
     builderConfig: builderServiceConfig,
     project,
-    graphqlSystemPath: resolvedConfig.graphqlSystemPath,
+    graphqlSystemPath,
   });
 };

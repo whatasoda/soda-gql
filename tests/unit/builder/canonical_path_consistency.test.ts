@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { createAstAnalyzer } from "@soda-gql/builder/ast";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder/internal/graphql-system";
-import { loadModuleAnalysisFixture } from "../../utils";
 import { createTestConfig } from "../../helpers/test-config";
+import { loadModuleAnalysisFixture } from "../../utils";
 
 describe("Canonical path consistency", () => {
   // Helper to safely access array elements while satisfying linter

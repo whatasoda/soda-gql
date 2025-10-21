@@ -5,8 +5,8 @@
  * for the SWC plugin, without the full TransformAdapter interface from plugin-shared.
  */
 
-import type { CallExpression, ExpressionStatement, ImportDeclaration, Module, Span } from "@swc/types";
 import type { CanonicalId } from "@soda-gql/builder";
+import type { CallExpression, ExpressionStatement, ImportDeclaration, Module, Span } from "@swc/types";
 
 /**
  * SWC-specific environment required for the adapter.

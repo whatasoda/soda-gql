@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import ts from "typescript";
 import {
-  ensureGqlRuntimeRequire,
   ensureGqlRuntimeImport,
+  ensureGqlRuntimeRequire,
   maybeRemoveUnusedGqlImport,
 } from "@soda-gql/plugin-shared/adapters/typescript/imports";
+import ts from "typescript";
 
 describe("ensureGqlRuntimeRequire", () => {
   const factory = ts.factory;
@@ -157,7 +157,7 @@ describe("maybeRemoveUnusedGqlImport", () => {
 
     // Should not contain the graphql-system import
     expect(output).not.toContain('@/graphql-system"');
-    expect(output).not.toContain('import { gql }');
+    expect(output).not.toContain("import { gql }");
 
     // Should still contain the runtime import and other code
     expect(output).toContain('@soda-gql/runtime"');

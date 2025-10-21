@@ -1,6 +1,6 @@
 import type { CanonicalPathTracker } from "@soda-gql/builder";
 import { createCanonicalTracker } from "@soda-gql/builder";
-import * as ts from "typescript";
+import type * as ts from "typescript";
 
 export type GqlDefinitionMetadata = {
   readonly astPath: string;
@@ -86,7 +86,11 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
 
   for (const statement of sourceFile.statements) {
     // ESM exports: export const foo = ...
-    if (typescript.isExportDeclaration(statement) && statement.exportClause && typescript.isNamedExports(statement.exportClause)) {
+    if (
+      typescript.isExportDeclaration(statement) &&
+      statement.exportClause &&
+      typescript.isNamedExports(statement.exportClause)
+    ) {
       for (const element of statement.exportClause.elements) {
         const name = element.name.text;
         bindings.set(name, name);
@@ -95,7 +99,10 @@ const collectExportBindings = (sourceFile: ts.SourceFile, typescript: typeof ts)
     }
 
     // Export variable declaration: export const foo = ...
-    if (typescript.isVariableStatement(statement) && statement.modifiers?.some((m) => m.kind === typescript.SyntaxKind.ExportKeyword)) {
+    if (
+      typescript.isVariableStatement(statement) &&
+      statement.modifiers?.some((m) => m.kind === typescript.SyntaxKind.ExportKeyword)
+    ) {
       for (const declaration of statement.declarationList.declarations) {
         if (typescript.isIdentifier(declaration.name)) {
           bindings.set(declaration.name.text, declaration.name.text);
