@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createBuilderServiceController } from "@soda-gql/plugin-shared/dev";
+import { makeMockResolvedConfig } from "../../utils/mocks";
 
 /**
  * Unit tests for BuilderServiceController generation tracking.
@@ -10,18 +11,16 @@ import { createBuilderServiceController } from "@soda-gql/plugin-shared/dev";
 describe("BuilderServiceController generation tracking API", () => {
   it("has getGeneration method", () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [],
     });
 
@@ -30,18 +29,16 @@ describe("BuilderServiceController generation tracking API", () => {
 
   it("has getCurrentArtifact method", () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [],
     });
 
@@ -50,18 +47,16 @@ describe("BuilderServiceController generation tracking API", () => {
 
   it("starts with generation 0", () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [],
     });
 
@@ -70,18 +65,16 @@ describe("BuilderServiceController generation tracking API", () => {
 
   it("returns null before first build", () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [],
     });
 
@@ -90,18 +83,16 @@ describe("BuilderServiceController generation tracking API", () => {
 
   it("does not increment generation on build error", async () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [], // Empty entrypoints causes ENTRY_NOT_FOUND error
     });
 
@@ -114,18 +105,16 @@ describe("BuilderServiceController generation tracking API", () => {
 
   it("resets generation on reset", async () => {
     const controller = createBuilderServiceController({
-      config: {
-        graphqlSystemPath: "./test.ts",
-        graphqlSystemAlias: undefined,
+      config: makeMockResolvedConfig({
+        outdir: ".cache",
+        include: [],
+        analyzer: "ts",
         corePath: "@soda-gql/core",
         configDir: "/test",
         configPath: "/test/config.ts",
         configHash: "hash",
         configMtime: 0,
-        builder: { entry: [], analyzer: "ts", outDir: ".cache" },
-        codegen: undefined,
-        plugins: {},
-      },
+      }),
       entrypointsOverride: [],
     });
 

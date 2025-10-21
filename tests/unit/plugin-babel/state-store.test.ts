@@ -2,43 +2,32 @@ import { describe, expect, it } from "bun:test";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createStateStore } from "@soda-gql/plugin-babel/dev";
 import type { NormalizedOptions } from "@soda-gql/plugin-shared";
+import { makeMockResolvedConfig } from "../../utils/mocks";
 
 const createMockOptions = (): NormalizedOptions => ({
   importIdentifier: "@soda-gql/runtime",
   diagnostics: "json",
-  resolvedConfig: {
-    graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
+  resolvedConfig: makeMockResolvedConfig({
+    outdir: "./src/graphql-system",
+    include: ["**/*.ts"],
+    analyzer: "ts",
     corePath: "@soda-gql/core",
     configDir: "/test",
     configPath: "/test/soda-gql.config.ts",
     configHash: "test-hash",
     configMtime: Date.now(),
-    builder: {
-      entry: ["**/*.ts"],
-      analyzer: "ts",
-      outDir: "./.cache",
-    },
-    codegen: undefined,
-    plugins: {},
-  },
+  }),
   builderConfig: {
-    config: {
-      graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
+    config: makeMockResolvedConfig({
+      outdir: "./src/graphql-system",
+      include: ["**/*.ts"],
+      analyzer: "ts",
       corePath: "@soda-gql/core",
       configDir: "/test",
       configPath: "/test/soda-gql.config.ts",
       configHash: "test-hash",
       configMtime: Date.now(),
-      builder: {
-        entry: ["**/*.ts"],
-        analyzer: "ts",
-        outDir: "./.cache",
-      },
-      codegen: undefined,
-      plugins: {},
-    },
+    }),
     entrypointsOverride: ["**/*.ts"],
   },
   project: undefined,

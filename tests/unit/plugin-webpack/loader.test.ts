@@ -5,6 +5,19 @@ import loader from "@soda-gql/plugin-webpack/loader";
 import { createTempArtifact } from "./helpers/fixtures";
 import { runLoader } from "./helpers/loader";
 
+const createMockConfig = () => ({
+  outdir: "./graphql-system",
+  include: ["**/*.ts"],
+  analyzer: "ts" as const,
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      runtimeAdapter: "./runtime-adapter.ts",
+      scalars: "./scalars.ts",
+    },
+  },
+});
+
 describe("SodaGqlWebpackLoader", () => {
   describe("Runtime mode", () => {
     test("returns source unchanged in runtime mode", async () => {
@@ -24,15 +37,7 @@ describe("SodaGqlWebpackLoader", () => {
       });
 
       const tempDir = join(artifactPath, "..");
-      const _configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const _configPath = createTempConfigFile(tempDir, createMockConfig());
 
       const result = await runLoader({
         loader,
@@ -66,15 +71,7 @@ describe("SodaGqlWebpackLoader", () => {
       });
 
       const tempDir = join(artifactPath, "..");
-      const _configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const _configPath = createTempConfigFile(tempDir, createMockConfig());
 
       const result = await runLoader({
         loader,
@@ -143,15 +140,7 @@ export const data = { value: 42 };
       });
 
       const tempDir = join(artifactPath, "..");
-      const _configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const _configPath = createTempConfigFile(tempDir, createMockConfig());
 
       const result = await runLoader({
         loader,

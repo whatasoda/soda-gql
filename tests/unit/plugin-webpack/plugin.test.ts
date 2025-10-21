@@ -7,6 +7,19 @@ import { SodaGqlWebpackPlugin } from "@soda-gql/plugin-webpack/plugin";
 import type { Compiler, Stats } from "webpack";
 import webpack from "webpack";
 
+const createMockConfig = () => ({
+  outdir: "./graphql-system",
+  include: ["**/*.ts"],
+  analyzer: "ts" as const,
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      runtimeAdapter: "./runtime-adapter.ts",
+      scalars: "./scalars.ts",
+    },
+  },
+});
+
 describe("SodaGqlWebpackPlugin", () => {
   let tmpDir: string;
 
@@ -52,15 +65,7 @@ describe("SodaGqlWebpackPlugin", () => {
       await writeFile(entryPath, "export const foo = 'bar';", "utf8");
 
       // Create config file
-      const configPath = createTempConfigFile(tmpDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const configPath = createTempConfigFile(tmpDir, createMockConfig());
 
       const compiler = webpack({
         context: tmpDir,
@@ -99,15 +104,7 @@ describe("SodaGqlWebpackPlugin", () => {
       await writeFile(entryPath, "export const foo = 'bar';", "utf8");
 
       // Create config file
-      const configPath = createTempConfigFile(tmpDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const configPath = createTempConfigFile(tmpDir, createMockConfig());
 
       const compiler = webpack({
         context: tmpDir,
@@ -140,15 +137,7 @@ describe("SodaGqlWebpackPlugin", () => {
       await writeFile(entryPath, "export const foo = 'bar';", "utf8");
 
       // Create config file
-      const configPath = createTempConfigFile(tmpDir, {
-        graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        builder: {
-          entry: ["**/*.ts"],
-          analyzer: "ts",
-          outDir: "./.cache",
-        },
-      });
+      const configPath = createTempConfigFile(tmpDir, createMockConfig());
 
       const compiler = webpack({
         context: tmpDir,

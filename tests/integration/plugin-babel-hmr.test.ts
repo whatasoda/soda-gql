@@ -28,11 +28,15 @@ describe("Plugin-Babel HMR Integration", () => {
     try {
       // Create config file pointing to fixture graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: join(fixturesRoot, "graphql-system", "index.cjs"),
-        builder: {
-          entry: [join(fixturesRoot, "src", "**/*.ts")],
-          analyzer: "ts",
-          outDir: join(fixturesRoot, ".cache", "soda-gql"),
+        outdir: join(fixturesRoot, "graphql-system"),
+        include: [join(fixturesRoot, "src", "**/*.ts")],
+        analyzer: "ts",
+        schemas: {
+          default: {
+            schema: schemaPath,
+            runtimeAdapter: join(fixturesRoot, "runtime-adapter.ts"),
+            scalars: join(fixturesRoot, "scalars.ts"),
+          },
         },
       });
 
@@ -98,11 +102,15 @@ describe("Plugin-Babel HMR Integration", () => {
     try {
       // Create config file pointing to fixture graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        graphqlSystemPath: join(fixturesRoot, "graphql-system", "index.cjs"),
-        builder: {
-          entry: [join(fixturesRoot, "src", "**/*.ts")],
-          analyzer: "ts",
-          outDir: join(fixturesRoot, ".cache", "soda-gql"),
+        outdir: join(fixturesRoot, "graphql-system"),
+        include: [join(fixturesRoot, "src", "**/*.ts")],
+        analyzer: "ts",
+        schemas: {
+          default: {
+            schema: schemaPath,
+            runtimeAdapter: join(fixturesRoot, "runtime-adapter.ts"),
+            scalars: join(fixturesRoot, "scalars.ts"),
+          },
         },
       });
 

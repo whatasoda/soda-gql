@@ -61,11 +61,9 @@ const buildArtifact = async (workspace: string, cjsPath: string): Promise<Builde
   process.chdir(workspace);
   try {
     const baseConfig = createTestConfig(workspace);
-    // Override graphqlSystemPath with the actual bundled CJS path from codegen
-    const config = {
-      ...baseConfig,
-      graphqlSystemPath: cjsPath,
-    };
+    // Use the graphql system outdir derived from config
+    // Note: cjsPath is used by codegen and doesn't affect builder service
+    const config = baseConfig;
 
     const service = createBuilderService({
       config,
@@ -144,12 +142,9 @@ describe("Runtime Flow Integration", () => {
         const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
           skipTypeCheck: true,
           configOverrides: {
-            graphqlSystemPath: cjsPath,
-            builder: {
-              entry: [join(workspace, "src/**/*.ts")],
-              outDir: join(workspace, ".cache", "soda-gql"),
-              analyzer: "ts",
-            },
+            outdir: dirname(cjsPath),
+            include: [join(workspace, "src/**/*.ts")],
+            analyzer: "ts",
           },
         });
 

@@ -3,6 +3,10 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 
+// Read version from package.json
+const rootPackageJson = JSON.parse(await readFile("package.json", "utf-8")) as { version?: string };
+const version = rootPackageJson.version ?? "0.1.0";
+
 await $`bun run build`;
 
 await $`mkdir -p dist`;
