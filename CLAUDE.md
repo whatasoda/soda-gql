@@ -12,7 +12,7 @@ Checklist:
 
 ## Project Status
 
-**soda-gql is at pre-release v0.1.0**:
+**soda-gql is at pre-release v0.0.1**:
 - All refactors and architectural changes are encouraged
 - Breaking changes are acceptable
 - NO migration paths required

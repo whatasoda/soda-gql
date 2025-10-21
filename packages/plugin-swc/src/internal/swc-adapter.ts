@@ -50,12 +50,12 @@ export class SwcAdapter {
   /**
    * Transform the entire program.
    *
-   * Detection-only implementation for v0.1.0:
+   * Detection-only implementation for v0.0.1:
    * - Detects gql.default calls containing operations
    * - Marks as transformed when detected
    * - Returns original AST unchanged
    */
-  transformProgram(context: TransformContext): TransformResult {
+  transformProgram(_context: TransformContext): TransformResult {
     this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
@@ -146,11 +146,11 @@ export class SwcAdapter {
 
     // Find insertion point after imports
     const existingBody = this.env.module.body;
-    let insertIndex = 0;
+    let _insertIndex = 0;
     for (let i = 0; i < existingBody.length; i++) {
       const stmt = existingBody[i];
       if (stmt && stmt.type === "ImportDeclaration") {
-        insertIndex = i + 1;
+        _insertIndex = i + 1;
       } else {
         break;
       }

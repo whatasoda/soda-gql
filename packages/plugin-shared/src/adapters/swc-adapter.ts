@@ -1,7 +1,7 @@
 /**
  * SWC implementation of the TransformAdapter interface.
  *
- * Current Status (v0.1.0 pre-release): DETECTION-ONLY IMPLEMENTATION
+ * Current Status (v0.0.1 pre-release): DETECTION-ONLY IMPLEMENTATION
  * - Detects gql.default(({ operation }) => operation.*) calls
  * - Establishes transformation infrastructure
  * - Does NOT perform AST replacement yet
