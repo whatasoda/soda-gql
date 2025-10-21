@@ -1,6 +1,0 @@
-/**
- * Error types for plugin-swc.
- * Re-exports from @soda-gql/plugin-common.
- */
-
-export { assertUnreachable, formatPluginError, isPluginError } from "@soda-gql/plugin-common";
