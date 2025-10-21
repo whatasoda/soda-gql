@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { createTscPlugin, type TscPluginConfig } from "@soda-gql/tsc-plugin/plugin";
+import { createTscPlugin, type PluginOptions } from "@soda-gql/tsc-plugin/plugin";
 import ts from "typescript";
 
 /**
@@ -9,7 +9,7 @@ import ts from "typescript";
  */
 export const createSodaGqlTransformer = (
   program: ts.Program,
-  options: TscPluginConfig | undefined,
+  options: PluginOptions | undefined,
 ): ts.TransformerFactory<ts.SourceFile> => {
   const plugin = createTscPlugin(options);
   return plugin.before({}, program);

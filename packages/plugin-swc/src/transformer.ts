@@ -49,6 +49,9 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
 
   console.log("[@soda-gql/plugin-swc] Plugin initialized");
 
+  // Get runtime module from config aliases or use default (like babel-plugin)
+  const runtimeModule = pluginState.config.graphqlSystemAliases[0] ?? "@/graphql-system";
+
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
 
@@ -72,7 +75,7 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
     const transformContext = {
       filename,
       artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => artifact.elements[canonicalId],
-      runtimeModule: pluginState.importIdentifier,
+      runtimeModule,
     };
 
     const transformResult = adapter.transformProgram(transformContext);

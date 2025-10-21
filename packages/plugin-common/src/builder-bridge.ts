@@ -14,16 +14,6 @@ import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 export type PluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
-  readonly importIdentifier?: string;
-  /**
-   * Artifact configuration.
-   * If useBuilder is false, artifact will be loaded from the specified path.
-   * If useBuilder is true or not specified, artifact will be built from source files.
-   */
-  readonly artifact?: {
-    readonly useBuilder?: boolean;
-    readonly path?: string;
-  };
 };
 
 /**
@@ -33,7 +23,6 @@ export type PluginState = {
   readonly config: ResolvedSodaGqlConfig;
   readonly ensureBuilderService: () => ReturnType<typeof createBuilderService>;
   readonly getArtifact: () => BuilderArtifact | null;
-  readonly importIdentifier: string;
 };
 
 /**
@@ -54,36 +43,6 @@ export const preparePluginState = (options: PluginOptions, pluginName: string): 
   }
 
   const config = configResult.value;
-  const importIdentifier = options.importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system";
-
-  // Support test mode where artifact is loaded from file instead of built
-  const useBuilder = options.artifact?.useBuilder ?? true;
-  const artifactPath = options.artifact?.path;
-
-  if (!useBuilder && artifactPath) {
-    // Test mode: Load artifact from file
-    const getArtifact = (): BuilderArtifact | null => {
-      try {
-        const fs = require("node:fs");
-        const artifactJson = fs.readFileSync(artifactPath, "utf-8");
-        return JSON.parse(artifactJson) as BuilderArtifact;
-      } catch (error) {
-        console.error(`[${pluginName}] Failed to load artifact from ${artifactPath}:`, error);
-        return null;
-      }
-    };
-
-    return {
-      config,
-      ensureBuilderService: () => {
-        throw new Error("Builder service not available in test mode with preloaded artifact");
-      },
-      getArtifact,
-      importIdentifier,
-    };
-  }
-
-  // Normal mode: Build artifact from source files
   const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
 
   /**
@@ -104,6 +63,5 @@ export const preparePluginState = (options: PluginOptions, pluginName: string): 
     config,
     ensureBuilderService,
     getArtifact,
-    importIdentifier,
   };
 };

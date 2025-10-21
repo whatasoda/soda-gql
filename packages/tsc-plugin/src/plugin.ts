@@ -4,7 +4,7 @@ import { loadConfig } from "@soda-gql/config";
 import type * as ts from "typescript";
 import { createBeforeTransformer } from "./transformer";
 
-export type TscPluginConfig = {
+export type PluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
 };
@@ -22,13 +22,13 @@ const fallbackPlugin = {
   },
 };
 
-export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
-  const enabled = pluginConfig.enabled ?? true;
+export const createTscPlugin = (options: PluginOptions = {}) => {
+  const enabled = options.enabled ?? true;
   if (!enabled) {
     return fallbackPlugin;
   }
 
-  const configPath = pluginConfig.configPath ?? "./soda-gql.config.ts";
+  const configPath = options.configPath ?? "./soda-gql.config.ts";
   const configResult = loadConfig(configPath);
   if (configResult.isErr()) {
     console.error(`[@soda-gql/tsc-plugin] Failed to load config: ${configResult.error.message}`);
@@ -95,7 +95,7 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
  */
 export const createSodaGqlTransformer = (
   program: ts.Program,
-  options: TscPluginConfig = {},
+  options: PluginOptions = {},
 ): ts.TransformerFactory<ts.SourceFile> => {
   const plugin = createTscPlugin(options);
   return plugin.before({}, program);
