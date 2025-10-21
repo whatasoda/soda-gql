@@ -4,7 +4,7 @@
   "private": true,
   "description": "NestJS example using TypeScript compiler plugin for soda-gql",
   "scripts": {
-    "codegen": "soda-gql codegen --schema:default ./schema.graphql --out ./graphql-system/index.ts --scalar:default ./inject-module/runtime-adapter.ts --runtime-adapter:default ./inject-module/runtime-adapter.ts",
+    "codegen": "soda-gql codegen",
     "artifact": "soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out ./.cache/soda-gql-artifact.json",
     "build": "nest build",
     "dev": "nest start --watch",
