@@ -140,7 +140,7 @@ describe("soda-gql codegen CLI", () => {
 
     // Multi-schema format has nested structure
     const stdoutTrimmed = result.stdout.trim();
-    if (stdoutTrimmed && stdoutTrimmed.startsWith("{")) {
+    if (stdoutTrimmed?.startsWith("{")) {
       const jsonOutput = JSON.parse(stdoutTrimmed);
       expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
 
@@ -179,7 +179,7 @@ describe("soda-gql codegen CLI", () => {
 
     await Bun.write(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`);
 
-    const typecheckResult = await runTypecheck(tsconfigPath);
+    await runTypecheck(tsconfigPath);
     // Skip typecheck assertion for now - bun types issue unrelated to this refactoring
     // expect(typecheckResult.exitCode).toBe(0);
   });

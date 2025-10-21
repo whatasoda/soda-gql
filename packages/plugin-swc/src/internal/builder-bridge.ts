@@ -40,7 +40,7 @@ export type BridgeError =
  * This is a synchronous operation that eagerly builds artifacts.
  */
 export const prepareTransformState = (options: PrepareOptions): Result<PreparedState, BridgeError> => {
-  const { configPath, project, importIdentifier, packageLabel } = options;
+  const { configPath, importIdentifier, packageLabel } = options;
 
   // Load configuration
   const configResult = loadConfig(configPath);

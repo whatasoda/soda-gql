@@ -1,10 +1,5 @@
 import { types as t } from "@babel/core";
-import type {
-  RuntimeComposedOperationInput,
-  RuntimeInlineOperationInput,
-  RuntimeModelInput,
-  RuntimeSliceInput,
-} from "@soda-gql/core/runtime";
+import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
 import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
 import { buildObjectExpression, clone } from "./ast";
 
@@ -71,7 +66,7 @@ export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall 
   };
 };
 
-export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallInlineOperation) => {
+export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall: _ }: GqlCallInlineOperation) => {
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("inlineOperation")), [
     buildObjectExpression({
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [

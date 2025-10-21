@@ -84,7 +84,7 @@ const ensureGraphqlSystem = async (workspaceRoot: string) => {
   const stdoutTrimmed = result.stdout.trim();
   let cjsPath: string;
 
-  if (stdoutTrimmed && stdoutTrimmed.startsWith("{")) {
+  if (stdoutTrimmed?.startsWith("{")) {
     const jsonOutput = JSON.parse(stdoutTrimmed);
     expect(jsonOutput.cjsPath).toBeDefined();
     cjsPath = jsonOutput.cjsPath;

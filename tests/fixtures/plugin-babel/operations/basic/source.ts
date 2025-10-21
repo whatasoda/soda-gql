@@ -1,4 +1,4 @@
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 
 // Stub dependencies for runtime execution
 const userSlice = { build: {} as any } as any;
@@ -29,7 +29,7 @@ export const updateProfileMutation = gql.default(({ mutation }, { $ }) =>
   ),
 );
 
-export const query1 = gql.default(({ operation }) =>
+export const query1 = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "Query1",
@@ -38,7 +38,7 @@ export const query1 = gql.default(({ operation }) =>
   ),
 );
 
-export const query2 = gql.default(({ operation }) =>
+export const query2 = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "Query2",
@@ -47,7 +47,7 @@ export const query2 = gql.default(({ operation }) =>
   ),
 );
 
-export const queryWith2Args = gql.default(({ operation }) =>
+export const queryWith2Args = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "Query2Args",
@@ -56,7 +56,7 @@ export const queryWith2Args = gql.default(({ operation }) =>
   ),
 );
 
-export const complexQuery = gql.default(({ operation }) =>
+export const complexQuery = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "ComplexQuery",

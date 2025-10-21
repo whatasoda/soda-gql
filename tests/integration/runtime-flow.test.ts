@@ -56,7 +56,7 @@ const setupWorkspace = async (workspace: string) => {
   return { tsPath: graphqlSystemEntry, cjsPath: codegenResult.value.cjsPath };
 };
 
-const buildArtifact = async (workspace: string, cjsPath: string): Promise<BuilderArtifact> => {
+const buildArtifact = async (workspace: string): Promise<BuilderArtifact> => {
   const originalCwd = process.cwd();
   process.chdir(workspace);
   try {
@@ -90,9 +90,9 @@ describe("Runtime Flow Integration", () => {
   describe("runtime mode", () => {
     it("generates artifact with all operations, models, and slices", async () => {
       const workspace = createWorkspace();
-      const { cjsPath } = await setupWorkspace(workspace);
+      await setupWorkspace(workspace);
 
-      const artifact = await buildArtifact(workspace, cjsPath);
+      const artifact = await buildArtifact(workspace);
 
       // Verify artifact structure
       expect(Object.keys(artifact.elements).length).toBeGreaterThan(0);
@@ -120,9 +120,9 @@ describe("Runtime Flow Integration", () => {
   describe("zero-runtime mode", () => {
     it("transforms and verifies runtime behavior", async () => {
       const workspace = createWorkspace();
-      const { cjsPath } = await setupWorkspace(workspace);
+      const { tsPath } = await setupWorkspace(workspace);
 
-      const artifact = await buildArtifact(workspace, cjsPath);
+      const artifact = await buildArtifact(workspace);
 
       // Transform files
       const transformOutDir = join(workspace, ".cache", "soda-gql", "plugin-output");
@@ -142,7 +142,7 @@ describe("Runtime Flow Integration", () => {
         const transformed = await runBabelTransform(sourceCode, filePath, artifact, {
           skipTypeCheck: true,
           configOverrides: {
-            outdir: dirname(cjsPath),
+            outdir: dirname(tsPath),
             include: [join(workspace, "src/**/*.ts")],
             analyzer: "ts",
           },

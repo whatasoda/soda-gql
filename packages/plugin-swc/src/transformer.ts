@@ -20,11 +20,6 @@ export type TransformerConfig = {
   readonly configPath?: string;
 
   /**
-   * Project name for multi-project configs.
-   */
-  readonly project?: string;
-
-  /**
    * Import identifier for the GraphQL system.
    * @default "@/graphql-system"
    */
@@ -64,7 +59,6 @@ export type TransformerConfig = {
 export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
   const config: TransformerConfig = {
     configPath: rawConfig?.configPath,
-    project: rawConfig?.project,
     importIdentifier: rawConfig?.importIdentifier ?? "@/graphql-system",
     enabled: rawConfig?.enabled ?? true,
   };
@@ -77,7 +71,6 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
   // Prepare transform state using coordinator
   const prepareResult = prepareTransformState({
     configPath: config.configPath,
-    project: config.project,
     importIdentifier: config.importIdentifier,
     packageLabel: "@soda-gql/plugin-swc",
   });

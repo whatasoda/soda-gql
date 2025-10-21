@@ -39,8 +39,3 @@ export const createAstAnalyzer = ({
     analyze,
   };
 };
-
-// Deprecated: Use createAstAnalyzer instead
-export const getAstAnalyzer = (analyzer: BuilderAnalyzer) => {
-  throw new Error("getAstAnalyzer is deprecated. Use createAstAnalyzer with graphqlHelper parameter instead.");
-};
