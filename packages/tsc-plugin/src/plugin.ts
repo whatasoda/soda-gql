@@ -31,7 +31,7 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
   const configPath = pluginConfig.configPath ?? "./soda-gql.config.ts";
   const configResult = loadConfig(configPath);
   if (configResult.isErr()) {
-    console.error(`[@soda-gql/plugin-tsc] Failed to load config: ${configResult.error.message}`);
+    console.error(`[@soda-gql/tsc-plugin] Failed to load config: ${configResult.error.message}`);
     return fallbackPlugin;
   }
 
@@ -49,13 +49,13 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
       const builderService = ensureBuilderService();
       const buildResult = builderService.build();
       if (buildResult.isErr()) {
-        console.error(`[@soda-gql/plugin-tsc] Failed to build initial artifact: ${buildResult.error.message}`);
+        console.error(`[@soda-gql/tsc-plugin] Failed to build initial artifact: ${buildResult.error.message}`);
         return fallbackPlugin.before(_options, program);
       }
 
       const artifact = buildResult.value;
       const beforeTransformer = createBeforeTransformer({ program, config, artifact });
-      console.log("[@soda-gql/plugin-tsc] Transforming program");
+      console.log("[@soda-gql/tsc-plugin] Transforming program");
 
       return (context: ts.TransformationContext) => {
         return (sourceFile: ts.SourceFile) => {

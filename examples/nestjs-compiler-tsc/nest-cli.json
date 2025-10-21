@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "plugins": [
       {
-        "name": "@soda-gql/plugin-tsc",
+        "name": "@soda-gql/tsc-plugin",
         "options": {
           "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"

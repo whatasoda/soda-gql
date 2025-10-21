@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { createTscPlugin, type TscPluginConfig } from "@soda-gql/plugin-tsc/plugin";
+import { createTscPlugin, type TscPluginConfig } from "@soda-gql/tsc-plugin/plugin";
 import ts from "typescript";
 
 /**
@@ -16,7 +16,7 @@ export const createSodaGqlTransformer = (
 };
 
 describe("TypeScript Compiler Plugin Integration", () => {
-  const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-tsc");
+  const fixturesDir = join(import.meta.dir, "../../fixtures/tsc-plugin");
   const sourceFile = join(fixturesDir, "sample.ts");
 
   test("should accept new configuration options", () => {

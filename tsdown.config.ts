@@ -153,7 +153,7 @@ export default defineConfig([
     clean: true,
   },
   {
-    ...configure("@soda-gql/plugin-tsc"),
+    ...configure("@soda-gql/tsc-plugin"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",

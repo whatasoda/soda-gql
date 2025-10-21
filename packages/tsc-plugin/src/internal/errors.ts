@@ -1,5 +1,5 @@
 /**
- * Error types and formatters for plugin-tsc.
+ * Error types and formatters for tsc-plugin.
  * Simplified from plugin-shared to include only types actually used by the TypeScript transformer.
  */
 

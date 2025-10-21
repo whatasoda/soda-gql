@@ -28,7 +28,7 @@
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-shared/tsconfig.editor.json" },
     { "path": "./packages/plugin-swc/tsconfig.editor.json" },
-    { "path": "./packages/plugin-tsc/tsconfig.editor.json" },
+    { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" }
   ]

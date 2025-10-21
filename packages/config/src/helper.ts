@@ -1,8 +1,8 @@
-import z from "zod";
-import type { SchemaConfig, SodaGqlConfig } from "./types";
-import { err, ok, Result } from "neverthrow";
-import { configError, ConfigError } from "./errors";
 import { defineSchemaFor } from "@soda-gql/common";
+import { err, ok, type Result } from "neverthrow";
+import z from "zod";
+import { type ConfigError, configError } from "./errors";
+import type { SchemaConfig, SodaGqlConfig } from "./types";
 
 /**
  * Thin wrapper class to simplify the validation of exported value from config file.
@@ -11,7 +11,7 @@ import { defineSchemaFor } from "@soda-gql/common";
  */
 export class SodaGqlConfigContainer {
   private constructor(public readonly config: SodaGqlConfig) {}
-  
+
   public static create(config: SodaGqlConfig): SodaGqlConfigContainer {
     return new SodaGqlConfigContainer(config);
   }
@@ -55,9 +55,7 @@ export class SodaGqlConfigContainer {
  */
 export function defineConfig(config: SodaGqlConfig): SodaGqlConfigContainer;
 export function defineConfig(config: () => SodaGqlConfig): SodaGqlConfigContainer;
-export function defineConfig(
-  config: SodaGqlConfig | (() => SodaGqlConfig),
-): SodaGqlConfigContainer {
+export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): SodaGqlConfigContainer {
   const validated = validateConfig(typeof config === "function" ? config() : config);
   if (validated.isErr()) {
     throw validated.error;

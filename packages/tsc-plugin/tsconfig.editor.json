@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["development"],
-    "outDir": "../../.typecheck/plugin-tsc",
-    "tsBuildInfoFile": "../../.typecheck/plugin-tsc/tsconfig.tsbuildinfo",
+    "outDir": "../../.typecheck/tsc-plugin",
+    "tsBuildInfoFile": "../../.typecheck/tsc-plugin/tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "paths": {}
   },

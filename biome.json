@@ -49,6 +49,7 @@
       "packages/**/*",
       "examples/**/*",
       "**/tests/**/*",
+      "scripts/prepublish.ts",
       "!bun.lock",
       "!**/node_modules/**/*",
       "!**/dist/**/*",
