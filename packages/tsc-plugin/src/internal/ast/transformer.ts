@@ -1,3 +1,4 @@
+import { formatPluginError } from "@soda-gql/plugin-common";
 import * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
@@ -8,7 +9,6 @@ import {
   buildModelRuntimeCall,
   buildSliceRuntimeCall,
 } from "./runtime";
-import { formatPluginError } from "@soda-gql/plugin-common";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;

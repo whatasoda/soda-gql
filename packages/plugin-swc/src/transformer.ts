@@ -5,8 +5,8 @@
  * into the Nest CLI build process when using `builder: "swc"`.
  */
 
-import type { Module } from "@swc/types";
 import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
+import type { Module } from "@swc/types";
 import { createSwcAdapter, type SwcEnv } from "./internal/ast/swc-adapter";
 
 /**

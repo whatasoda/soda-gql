@@ -1,11 +1,6 @@
 import { types as t } from "@babel/core";
 import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type {
-  BabelGqlCallInlineOperation,
-  BabelGqlCallModel,
-  BabelGqlCallOperation,
-  BabelGqlCallSlice,
-} from "./analysis";
+import type { BabelGqlCallInlineOperation, BabelGqlCallModel, BabelGqlCallOperation, BabelGqlCallSlice } from "./analysis";
 import { buildObjectExpression, clone } from "./ast";
 
 export const buildModelRuntimeCall = ({ artifact, builderCall }: BabelGqlCallModel): t.Expression => {

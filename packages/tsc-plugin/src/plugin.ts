@@ -2,7 +2,7 @@ import { createBuilderService } from "@soda-gql/builder";
 import { cachedFn } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
 import type * as ts from "typescript";
-import { createBeforeTransformer } from "./transformer";
+import { createTransformer } from "./transformer";
 
 export type PluginOptions = {
   readonly configPath?: string;
@@ -11,11 +11,6 @@ export type PluginOptions = {
 
 const fallbackPlugin = {
   before: (_options: unknown, _program: ts.Program): ts.TransformerFactory<ts.SourceFile> => {
-    return (_context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
-      return (sourceFile: ts.SourceFile) => sourceFile;
-    };
-  },
-  after: (_options: unknown, _program: ts.Program): ts.TransformerFactory<ts.SourceFile> => {
     return (_context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
       return (sourceFile: ts.SourceFile) => sourceFile;
     };
@@ -53,7 +48,7 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
       }
 
       const artifact = buildResult.value;
-      const beforeTransformer = createBeforeTransformer({ program, config, artifact });
+      const beforeTransformer = createTransformer({ program, config, artifact });
       console.log("[@soda-gql/tsc-plugin] Transforming program");
 
       return (context: ts.TransformationContext) => {
@@ -71,17 +66,6 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
           return transformResult.sourceFile;
         };
       };
-    },
-
-    /**
-     * TypeScript Compiler Plugin hook: after() transformer.
-     *
-     * This runs after TypeScript's own transformers (including CommonJS down transformation).
-     * It replaces require() calls for the graphql-system module with lightweight stubs
-     * to prevent the heavy module from being loaded at runtime.
-     */
-    after(_options: unknown, _program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
-      return fallbackPlugin.after(_options, _program);
     },
   };
 

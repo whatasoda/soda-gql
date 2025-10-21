@@ -45,7 +45,7 @@ const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): num
   return lastIndex;
 };
 
-export const createBeforeTransformer = ({
+export const createTransformer = ({
   program,
   config,
   artifact,

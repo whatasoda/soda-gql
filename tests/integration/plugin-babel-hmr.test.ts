@@ -74,7 +74,6 @@ describe("Plugin-Babel HMR Integration", () => {
                 useBuilder: false,
                 path: artifactPath,
               },
-              importIdentifier: "@/graphql-system",
               dev: {
                 hmr: false, // Explicitly disabled
               },
