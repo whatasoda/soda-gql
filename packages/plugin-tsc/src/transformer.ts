@@ -64,13 +64,17 @@ export const createBeforeTransformer = ({
     return getCanonicalFileName(resolved);
   };
 
+  // Derive graphqlSystemPath from outdir
+  const graphqlSystemPath = resolve(config.outdir, "index.ts");
+
   const graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper = {
     isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
-      return toCanonical(filePath) === toCanonical(config.graphqlSystemPath);
+      return toCanonical(filePath) === toCanonical(graphqlSystemPath);
     },
     isGraphqlSystemImportSpecifier: ({ filePath, specifier }: { filePath: string; specifier: string }) => {
-      if (config.graphqlSystemAlias) {
-        return toCanonical(specifier) === toCanonical(config.graphqlSystemAlias);
+      // Check against any alias
+      if (config.graphqlSystemAliases.some((alias) => toCanonical(specifier) === toCanonical(alias))) {
+        return true;
       }
 
       const resolved = resolveRelativeImportWithExistenceCheck({ filePath, specifier });
@@ -78,7 +82,7 @@ export const createBeforeTransformer = ({
         return false;
       }
 
-      return toCanonical(resolved) === toCanonical(config.graphqlSystemPath);
+      return toCanonical(resolved) === toCanonical(graphqlSystemPath);
     },
   };
 

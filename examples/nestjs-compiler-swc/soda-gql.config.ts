@@ -1,10 +1,14 @@
 import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
-  graphqlSystemPath: "./graphql-system/index.cjs",
-  builder: {
-    entry: ["./src/**/*.ts"],
-    outDir: ".cache/soda-gql",
-    analyzer: "ts",
+  outdir: "./graphql-system",
+  include: ["./src/**/*.ts"],
+  analyzer: "ts",
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      runtimeAdapter: "./inject-module/runtime-adapter.ts",
+      scalars: "./inject-module/runtime-adapter.ts", // Using runtime-adapter as placeholder
+    },
   },
 });

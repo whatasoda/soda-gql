@@ -70,40 +70,29 @@ export const normalizePluginOptions = (raw: Partial<PluginOptions>): Result<Norm
 
   const resolvedConfig = configResult.value;
 
-  // Validate builder config exists
-  if (!resolvedConfig.builder) {
+  // Validate include has required fields
+  if (!resolvedConfig.include || resolvedConfig.include.length === 0) {
     return err({
       type: "PluginError",
       code: "OPTIONS_INVALID_BUILDER_CONFIG",
-      message: "Builder configuration is missing in resolved config",
+      message: "Config must include non-empty include array",
       cause: {
-        code: "MISSING_BUILDER_CONFIG",
-        message: "Builder configuration is missing in resolved config",
+        code: "INVALID_BUILDER_CONFIG",
+        message: "Config must include non-empty include array",
       },
       stage: "normalize-options",
     });
   }
 
-  // Validate builder has required fields
-  if (!resolvedConfig.builder.entry || resolvedConfig.builder.entry.length === 0) {
-    return err({
-      type: "PluginError",
-      code: "OPTIONS_INVALID_BUILDER_CONFIG",
-      message: "Builder config must include non-empty entry array",
-      cause: {
-        code: "INVALID_BUILDER_CONFIG",
-        message: "Builder config must include non-empty entry array",
-      },
-      stage: "normalize-options",
-    });
-  }
+  // Derive graphqlSystemPath from outdir
+  const graphqlSystemPath = `${resolvedConfig.outdir}/index.ts`;
 
   return ok({
     importIdentifier,
     diagnostics,
     resolvedConfig,
     project,
-    graphqlSystemPath: resolvedConfig.graphqlSystemPath,
+    graphqlSystemPath,
   });
 };
 

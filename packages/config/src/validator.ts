@@ -1,40 +1,29 @@
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import type { Result } from "neverthrow";
 import { err, ok } from "neverthrow";
 import { z } from "zod";
-import { DEFAULT_BUILDER_CONFIG, DEFAULT_CORE_PATH } from "./defaults";
+import { DEFAULT_CORE_PATH } from "./defaults";
 import type { ConfigError } from "./errors";
 import { configError } from "./errors";
 import type { ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
 
-const BuilderConfigSchema = z.object({
-  entry: z.array(z.string()).optional(),
-  outDir: z.string().min(1).optional(),
-  analyzer: z.enum(["ts", "babel"]).optional(),
-  mode: z.enum(["runtime", "zero-runtime"]).optional(),
-});
-
-const CodegenSchemaConfigSchema = z.object({
+const SchemaConfigSchema = z.object({
   schema: z.string().min(1),
   runtimeAdapter: z.string().min(1),
   scalars: z.string().min(1),
 });
 
-const CodegenConfigSchema = z.object({
-  format: z.enum(["human", "json"]).optional(),
-  output: z.string().min(1),
-  schemas: z.record(z.string(), CodegenSchemaConfigSchema),
-});
-
 const SodaGqlConfigSchema = z.object({
-  graphqlSystemPath: z.string().optional(),
-  graphqlSystemAlias: z.string().optional(),
-  corePath: z.string().optional(),
-  builder: BuilderConfigSchema.optional(),
-  codegen: CodegenConfigSchema.optional(),
+  analyzer: z.enum(["ts", "swc"]).optional(),
+  outdir: z.string().min(1),
+  graphqlSystemAliases: z.array(z.string()).optional(),
+  include: z.array(z.string().min(1)),
+  exclude: z.array(z.string().min(1)).optional(),
+  schemas: z.record(z.string(), SchemaConfigSchema),
   plugins: z.record(z.string(), z.unknown()).optional(),
+  corePath: z.string().optional(),
 });
 
 export function validateConfig(config: unknown): Result<SodaGqlConfig, ConfigError> {
@@ -58,41 +47,40 @@ export function resolveConfig(config: SodaGqlConfig, configPath: string): Result
     return isAbsolute(path) ? path : resolve(configDir, path);
   };
 
-  if (!config.graphqlSystemPath) {
-    return err(configError("CONFIG_VALIDATION_FAILED", "graphqlSystemPath is required"));
-  }
-
   // Compute config hash for cache invalidation
   const stats = statSync(configPath);
   const configHash = createHash("sha256").update(readFileSync(configPath)).digest("hex").slice(0, 16);
 
+  // Default analyzer to "ts"
+  const analyzer = config.analyzer ?? "ts";
+
+  // Default graphqlSystemAliases to ["@/<basename(outdir)>"]
+  const graphqlSystemAliases = config.graphqlSystemAliases ?? [`@/${basename(config.outdir)}`];
+
+  // Default exclude to empty array
+  const exclude = config.exclude ?? [];
+
+  // Resolve corePath
+  const corePath = config.corePath ? resolveFromConfig(config.corePath) : DEFAULT_CORE_PATH;
+
   const resolved: ResolvedSodaGqlConfig = {
-    graphqlSystemPath: resolveFromConfig(config.graphqlSystemPath),
-    graphqlSystemAlias: config.graphqlSystemAlias ?? undefined,
-    corePath: config.corePath ? resolveFromConfig(config.corePath) : DEFAULT_CORE_PATH,
-    builder: {
-      ...DEFAULT_BUILDER_CONFIG,
-      ...(config.builder ?? {}),
-      entry: (config.builder?.entry ?? []).map(resolveFromConfig),
-      outDir: resolveFromConfig(config.builder?.outDir ?? DEFAULT_BUILDER_CONFIG.outDir),
-    },
-    codegen: config.codegen
-      ? {
-          format: config.codegen.format ?? "human",
-          output: resolveFromConfig(config.codegen.output),
-          schemas: Object.fromEntries(
-            Object.entries(config.codegen.schemas).map(([name, schemaConfig]) => [
-              name,
-              {
-                schema: resolveFromConfig(schemaConfig.schema),
-                runtimeAdapter: resolveFromConfig(schemaConfig.runtimeAdapter),
-                scalars: resolveFromConfig(schemaConfig.scalars),
-              },
-            ]),
-          ),
-        }
-      : undefined,
+    analyzer,
+    outdir: resolveFromConfig(config.outdir),
+    graphqlSystemAliases,
+    include: config.include.map(resolveFromConfig),
+    exclude: exclude.map(resolveFromConfig),
+    schemas: Object.fromEntries(
+      Object.entries(config.schemas).map(([name, schemaConfig]) => [
+        name,
+        {
+          schema: resolveFromConfig(schemaConfig.schema),
+          runtimeAdapter: resolveFromConfig(schemaConfig.runtimeAdapter),
+          scalars: resolveFromConfig(schemaConfig.scalars),
+        },
+      ]),
+    ),
     plugins: config.plugins ?? {},
+    corePath,
     configDir,
     configPath,
     configHash,

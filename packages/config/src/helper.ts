@@ -5,21 +5,36 @@ import type { SodaGqlConfig } from "./types";
  * Supports both static and dynamic (async) configs.
  *
  * @example Static config
+ * ```ts
  * import { defineConfig } from "@soda-gql/config";
  *
  * export default defineConfig({
- *   graphqlSystemPath: "./src/graphql-system/index.ts",
- *   builder: {
- *     entry: ["./src/**\/*.ts"],
- *     outDir: "./.cache",
+ *   outdir: "./graphql-system",
+ *   include: ["./src/**\/*.ts"],
+ *   schemas: {
+ *     default: {
+ *       schema: "./schema.graphql",
+ *       runtimeAdapter: "./runtime-adapter.ts",
+ *       scalars: "./scalars.ts",
+ *     },
  *   },
  * });
+ * ```
  *
  * @example Async config
+ * ```ts
  * export default defineConfig(async () => ({
- *   graphqlSystemPath: await resolveGraphqlSystem(),
- *   builder: { entry: ["./src/**\/*.ts"], outDir: "./.cache" },
+ *   outdir: await resolveOutputDir(),
+ *   include: ["./src/**\/*.ts"],
+ *   schemas: {
+ *     default: {
+ *       schema: "./schema.graphql",
+ *       runtimeAdapter: "./runtime-adapter.ts",
+ *       scalars: "./scalars.ts",
+ *     },
+ *   },
  * }));
+ * ```
  */
 export function defineConfig(config: SodaGqlConfig): SodaGqlConfig;
 export function defineConfig(config: () => SodaGqlConfig): SodaGqlConfig;

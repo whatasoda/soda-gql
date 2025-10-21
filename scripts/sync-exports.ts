@@ -1,5 +1,5 @@
 import { readdir, readFile, writeFile, access, mkdir } from "node:fs/promises";
-import { join, relative, dirname, extname, basename } from "node:path";
+import { join } from "node:path";
 import { constants } from "node:fs";
 
 const REPO_ROOT = join(import.meta.dir, "..");

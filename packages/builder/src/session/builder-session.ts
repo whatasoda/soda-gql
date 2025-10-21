@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
@@ -68,7 +68,7 @@ export const createBuilderSession = (options: {
 }): BuilderSession => {
   const config = options.config;
   const evaluatorId = options.evaluatorId ?? "default";
-  const entrypoints: ReadonlySet<string> = new Set(options.entrypointsOverride ?? config.builder.entry);
+  const entrypoints: ReadonlySet<string> = new Set(options.entrypointsOverride ?? config.include);
 
   // Session state stored in closure
   const state: SessionState = {
@@ -88,14 +88,14 @@ export const createBuilderSession = (options: {
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
   const ensureAstAnalyzer = cachedFn(() =>
     createAstAnalyzer({
-      analyzer: config.builder.analyzer,
+      analyzer: config.analyzer,
       graphqlHelper,
     }),
   );
   const ensureDiscoveryCache = cachedFn(() =>
     createDiscoveryCache({
       factory: cacheFactory,
-      analyzer: config.builder.analyzer,
+      analyzer: config.analyzer,
       evaluatorId,
     }),
   );
@@ -168,7 +168,7 @@ export const createBuilderSession = (options: {
       affectedFiles,
       stats,
       previousIntermediateModules: state.intermediateModules,
-      graphqlSystemPath: config.graphqlSystemPath,
+      graphqlSystemPath: resolve(config.outdir, "index.ts"),
     });
     if (buildResult.isErr()) {
       return err(buildResult.error);

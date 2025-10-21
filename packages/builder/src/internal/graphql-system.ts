@@ -41,16 +41,20 @@ export const createGraphqlSystemIdentifyHelper = (config: ResolvedSodaGqlConfig)
     return getCanonicalFileName(resolved);
   };
 
-  const canonicalGraphqlSystemPath = toCanonical(config.graphqlSystemPath);
-  const canonicalAlias = config.graphqlSystemAlias ? toCanonical(config.graphqlSystemAlias) : null;
+  // Derive graphql system path from outdir (assume index.ts as default entry)
+  const graphqlSystemPath = resolve(config.outdir, "index.ts");
+  const canonicalGraphqlSystemPath = toCanonical(graphqlSystemPath);
+
+  // Build canonical alias map
+  const canonicalAliases = new Set(config.graphqlSystemAliases.map((alias) => alias));
 
   return {
     isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
       return toCanonical(filePath) === canonicalGraphqlSystemPath;
     },
     isGraphqlSystemImportSpecifier: ({ filePath, specifier }: { filePath: string; specifier: string }) => {
-      // Check against alias first if configured
-      if (canonicalAlias && specifier === config.graphqlSystemAlias) {
+      // Check against aliases first if configured
+      if (canonicalAliases.has(specifier)) {
         return true;
       }
 

@@ -56,11 +56,11 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
 
   const config = configResult.value;
 
-  // Check if codegen config exists
-  if (!config.codegen) {
+  // Check if schemas config exists
+  if (!config.schemas || Object.keys(config.schemas).length === 0) {
     return err<ParsedCommand, CodegenError>({
       code: "EMIT_FAILED",
-      message: "codegen configuration is required in soda-gql.config.ts",
+      message: "schemas configuration is required in soda-gql.config.ts",
       outPath: "",
     });
   }
@@ -70,17 +70,20 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
   const runtimeAdapters: Record<string, string> = {};
   const scalars: Record<string, string> = {};
 
-  for (const [name, schemaConfig] of Object.entries(config.codegen.schemas)) {
+  for (const [name, schemaConfig] of Object.entries(config.schemas)) {
     schemas[name] = schemaConfig.schema;
     runtimeAdapters[name] = schemaConfig.runtimeAdapter;
     scalars[name] = schemaConfig.scalars;
   }
 
+  // Derive output path from outdir (default to index.ts)
+  const outPath = resolve(config.outdir, "index.ts");
+
   return ok<ParsedCommand, CodegenError>({
     kind: "multi",
     schemas,
-    outPath: config.codegen.output,
-    format: (args.format ?? config.codegen.format) as CodegenFormat,
+    outPath,
+    format: (args.format ?? "human") as CodegenFormat,
     runtimeAdapters,
     scalars,
   });

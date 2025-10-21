@@ -85,9 +85,12 @@ export const prepareTransformState = (options: PrepareOptions): Result<PreparedS
   const artifact = buildResult.value;
 
   // Return prepared state
+  // Derive graphqlSystemPath from outdir
+  const graphqlSystemPath = `${config.outdir}/index.ts`;
+
   return ok({
-    importIdentifier: importIdentifier ?? "@/graphql-system",
+    importIdentifier: importIdentifier ?? (config.graphqlSystemAliases[0] ?? "@/graphql-system"),
     allArtifacts: artifact.elements,
-    graphqlSystemPath: config.graphqlSystemPath,
+    graphqlSystemPath,
   });
 };

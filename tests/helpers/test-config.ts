@@ -7,28 +7,22 @@ import type { ResolvedSodaGqlConfig } from "../../packages/config/src/types";
  */
 export const createTestConfig = (
   workspaceRoot: string,
-  options?: { graphqlSystemAlias?: string },
+  options?: { graphqlSystemAliases?: readonly string[] },
 ): ResolvedSodaGqlConfig => ({
-  graphqlSystemPath: join(workspaceRoot, "graphql-system", "index.cjs"),
-  graphqlSystemAlias: options?.graphqlSystemAlias ?? "@/graphql-system",
-  corePath: "@soda-gql/core",
-  builder: {
-    entry: [join(workspaceRoot, "src/**/*.ts")],
-    outDir: join(workspaceRoot, ".cache/soda-gql"),
-    analyzer: "ts" as const,
-  },
-  codegen: {
-    format: "human" as const,
-    output: join(workspaceRoot, "graphql-system/index.ts"),
-    schemas: {
-      default: {
-        schema: join(workspaceRoot, "schema.graphql"),
-        runtimeAdapter: join(workspaceRoot, "inject/runtime-adapter.ts"),
-        scalars: join(workspaceRoot, "inject/scalars.ts"),
-      },
+  analyzer: "ts" as const,
+  outdir: join(workspaceRoot, "graphql-system"),
+  graphqlSystemAliases: options?.graphqlSystemAliases ?? ["@/graphql-system"],
+  include: [join(workspaceRoot, "src/**/*.ts")],
+  exclude: [],
+  schemas: {
+    default: {
+      schema: join(workspaceRoot, "schema.graphql"),
+      runtimeAdapter: join(workspaceRoot, "inject/runtime-adapter.ts"),
+      scalars: join(workspaceRoot, "inject/scalars.ts"),
     },
   },
   plugins: {},
+  corePath: "@soda-gql/core",
   configDir: workspaceRoot,
   configPath: join(workspaceRoot, "soda-gql.config.ts"),
   configHash: `test-${Date.now()}`,

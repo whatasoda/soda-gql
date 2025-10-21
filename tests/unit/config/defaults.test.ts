@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_BUILDER_CONFIG, DEFAULT_CONFIG_FILENAMES, DEFAULT_CORE_PATH } from "@soda-gql/config/defaults";
+import { DEFAULT_ANALYZER, DEFAULT_CONFIG_FILENAMES, DEFAULT_CORE_PATH } from "@soda-gql/config/defaults";
 
 describe("defaults.ts", () => {
   test("DEFAULT_CONFIG_FILENAMES contains expected filenames", () => {
@@ -15,21 +15,8 @@ describe("defaults.ts", () => {
     expect(DEFAULT_CONFIG_FILENAMES.length).toBe(4);
   });
 
-  test("DEFAULT_BUILDER_CONFIG has all required fields", () => {
-    expect(DEFAULT_BUILDER_CONFIG).toEqual({
-      entry: [],
-      outDir: "./.cache/soda-gql",
-      analyzer: "ts",
-    });
-  });
-
-  test("DEFAULT_BUILDER_CONFIG.entry is empty array", () => {
-    expect(DEFAULT_BUILDER_CONFIG.entry).toEqual([]);
-    expect(Array.isArray(DEFAULT_BUILDER_CONFIG.entry)).toBe(true);
-  });
-
-  test("DEFAULT_BUILDER_CONFIG.analyzer is 'ts'", () => {
-    expect(DEFAULT_BUILDER_CONFIG.analyzer).toBe("ts");
+  test("DEFAULT_ANALYZER is 'ts'", () => {
+    expect(DEFAULT_ANALYZER).toBe("ts");
   });
 
   test("DEFAULT_CORE_PATH is '@soda-gql/core'", () => {

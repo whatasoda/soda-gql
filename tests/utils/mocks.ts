@@ -45,12 +45,24 @@ export const makeMockArtifact = (overrides: Partial<BuilderArtifact> = {}): Buil
  */
 export const makeMockResolvedConfig = (overrides: Partial<ResolvedSodaGqlConfig> = {}): ResolvedSodaGqlConfig => {
   return {
-    graphqlSystemPath: overrides.graphqlSystemPath ?? "/mock/graphql-system.ts",
-    builder: overrides.builder ?? {
-      entry: ["src/**/*.ts"],
-      outDir: ".cache/soda-gql",
-      analyzer: "ts" as const,
+    analyzer: "ts" as const,
+    outdir: "/mock/graphql-system",
+    graphqlSystemAliases: ["@/graphql-system"],
+    include: ["src/**/*.ts"],
+    exclude: [],
+    schemas: {
+      default: {
+        schema: "/mock/schema.graphql",
+        runtimeAdapter: "/mock/runtime-adapter.ts",
+        scalars: "/mock/scalars.ts",
+      },
     },
+    plugins: {},
+    corePath: "@soda-gql/core",
+    configDir: "/mock",
+    configPath: "/mock/soda-gql.config.ts",
+    configHash: "mock-hash",
+    configMtime: Date.now(),
     ...overrides,
   } as ResolvedSodaGqlConfig;
 };

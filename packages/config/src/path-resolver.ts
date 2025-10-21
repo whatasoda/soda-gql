@@ -51,9 +51,10 @@ export function resolveImportPath(
  * Get gql import path from resolved config.
  */
 export function getGqlImportPath(config: ResolvedSodaGqlConfig): string {
+  const graphqlSystemPath = resolve(config.outdir, "index.ts");
   return resolveImportPath(
-    config.builder.outDir,
-    config.graphqlSystemPath,
+    config.outdir,
+    graphqlSystemPath,
     true, // Emitted JS
   );
 }
@@ -63,7 +64,7 @@ export function getGqlImportPath(config: ResolvedSodaGqlConfig): string {
  */
 export function getCoreImportPath(config: ResolvedSodaGqlConfig): string {
   return resolveImportPath(
-    config.builder.outDir,
+    config.outdir,
     config.corePath,
     false, // Source - package exports handle this
   );

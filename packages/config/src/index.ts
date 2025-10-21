@@ -1,6 +1,6 @@
 // Defaults
 export {
-  DEFAULT_BUILDER_CONFIG,
+  DEFAULT_ANALYZER,
   DEFAULT_CONFIG_FILENAMES,
   DEFAULT_CORE_PATH,
 } from "./defaults";
@@ -27,11 +27,9 @@ export {
 // Test utilities
 export { createTempConfigFile, withTempConfig } from "./test-utils";
 export type {
-  BuilderConfig,
-  CodegenConfig,
   PluginConfig,
-  ProjectConfig,
   ResolvedSodaGqlConfig,
+  SchemaConfig,
   SodaGqlConfig,
 } from "./types";
 // Validator
