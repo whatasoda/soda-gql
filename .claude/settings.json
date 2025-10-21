@@ -27,6 +27,7 @@
       "Bash(bun run validate:tests:*)",
       "Bash(bun run examples:codegen:*)",
       "Bash(bun run codex:conversation:*)",
+      "Bash(bun ~/.claude/scripts/whatasoda/codex-setup/extract-conversation-id.ts:*)",
       "WebSearch",
       "mcp__serena__activate_project",
       "mcp__serena__check_onboarding_performed",
