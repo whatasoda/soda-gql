@@ -25,86 +25,30 @@ export type BabelEnv = {
 /**
  * Babel implementation of TransformAdapter.
  */
-export class BabelAdapter implements TransformAdapter {
-  private readonly env: BabelEnv;
-  private readonly graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper;
-  private runtimeCallsFromLastTransform: t.Expression[] = [];
+/**
+ * Creates a Babel implementation of TransformAdapter using closure pattern.
+ */
+const createBabelAdapter = (env: BabelEnv, graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper): TransformAdapter => {
+  let runtimeCallsFromLastTransform: t.Expression[] = [];
 
-  constructor(env: BabelEnv, graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper) {
-    this.env = env;
-    this.graphqlSystemIdentifyHelper = graphqlSystemIdentifyHelper;
-  }
-
-  transformProgram(context: TransformProgramContext): TransformPassResult {
-    const metadata = collectGqlDefinitionMetadata({
-      programPath: this.env.programPath,
-      filename: context.filename,
-    });
-
-    this.runtimeCallsFromLastTransform = [];
-    let transformed = false;
-
-    this.env.programPath.traverse({
-      CallExpression: (callPath) => {
-        const result = transformCallExpression({
-          callPath,
-          filename: context.filename,
-          metadata,
-          getArtifact: context.artifactLookup,
-        });
-
-        if (result.transformed) {
-          ensureGqlRuntimeImport(this.env.programPath);
-          transformed = true;
-
-          if (result.runtimeCall) {
-            this.runtimeCallsFromLastTransform.push(result.runtimeCall);
-          }
-        }
-      },
-    });
-
-    if (transformed) {
-      this.env.programPath.scope.crawl();
-      removeGraphqlSystemImports(this.env.programPath, this.graphqlSystemIdentifyHelper, context.filename);
+  /**
+   * Check if a node is a require() or __webpack_require__() call.
+   */
+  const isRequireCall = (node: t.Node): boolean => {
+    if (!env.types.isCallExpression(node)) {
+      return false;
     }
 
-    return {
-      transformed,
-      runtimeArtifacts: undefined,
-    };
-  }
-
-  insertRuntimeSideEffects(_context: TransformProgramContext, _runtimeIR: ReadonlyArray<unknown>): void {
-    // Use internally tracked runtime calls from transformProgram
-    const runtimeCalls = this.runtimeCallsFromLastTransform;
-    if (runtimeCalls.length === 0) {
-      return;
-    }
-
-    // Wrap expressions in ExpressionStatements before insertion
-    const statements = runtimeCalls.map((expr) => this.env.types.expressionStatement(expr));
-
-    // Find the last import/require statement to insert after all dependencies
-    const lastLoaderPath = this.findLastModuleLoader();
-
-    if (lastLoaderPath) {
-      lastLoaderPath.insertAfter(statements);
-    } else {
-      // Fallback: insert at the beginning if no loaders found
-      this.env.programPath.unshiftContainer("body", statements);
-    }
-
-    // Clear to prevent repeated insertions
-    this.runtimeCallsFromLastTransform = [];
-  }
+    const callee = node.callee;
+    return env.types.isIdentifier(callee) && (callee.name === "require" || callee.name === "__webpack_require__");
+  };
 
   /**
    * Find the last statement that loads a module (import or require).
    * Handles both ESM imports and CommonJS require() calls.
    */
-  private findLastModuleLoader(): NodePath<t.Statement> | null {
-    const bodyPaths = this.env.programPath.get("body");
+  const findLastModuleLoader = (): NodePath<t.Statement> | null => {
+    const bodyPaths = env.programPath.get("body");
     let lastLoader: NodePath<t.Statement> | null = null;
 
     for (const path of bodyPaths) {
@@ -117,7 +61,7 @@ export class BabelAdapter implements TransformAdapter {
       // CommonJS: const foo = require("bar") or const foo = __webpack_require__(123)
       if (path.isVariableDeclaration()) {
         for (const declarator of path.node.declarations) {
-          if (declarator.init && this.isRequireCall(declarator.init)) {
+          if (declarator.init && isRequireCall(declarator.init)) {
             lastLoader = path;
             break;
           }
@@ -127,26 +71,83 @@ export class BabelAdapter implements TransformAdapter {
 
       // CommonJS: require("bar") or __webpack_require__(123) as standalone expression
       if (path.isExpressionStatement()) {
-        if (this.isRequireCall(path.node.expression)) {
+        if (isRequireCall(path.node.expression)) {
           lastLoader = path;
         }
       }
     }
 
     return lastLoader;
-  }
+  };
 
-  /**
-   * Check if a node is a require() or __webpack_require__() call.
-   */
-  private isRequireCall(node: t.Node): boolean {
-    if (!this.env.types.isCallExpression(node)) {
-      return false;
+  const transformProgram = (context: TransformProgramContext): TransformPassResult => {
+    const metadata = collectGqlDefinitionMetadata({
+      programPath: env.programPath,
+      filename: context.filename,
+    });
+
+    runtimeCallsFromLastTransform = [];
+    let transformed = false;
+
+    env.programPath.traverse({
+      CallExpression: (callPath) => {
+        const result = transformCallExpression({
+          callPath,
+          filename: context.filename,
+          metadata,
+          getArtifact: context.artifactLookup,
+        });
+
+        if (result.transformed) {
+          ensureGqlRuntimeImport(env.programPath);
+          transformed = true;
+
+          if (result.runtimeCall) {
+            runtimeCallsFromLastTransform.push(result.runtimeCall);
+          }
+        }
+      },
+    });
+
+    if (transformed) {
+      env.programPath.scope.crawl();
+      removeGraphqlSystemImports(env.programPath, graphqlSystemIdentifyHelper, context.filename);
     }
 
-    const callee = node.callee;
-    return this.env.types.isIdentifier(callee) && (callee.name === "require" || callee.name === "__webpack_require__");
-  }
+    return {
+      transformed,
+      runtimeArtifacts: undefined,
+    };
+  };
+
+  const insertRuntimeSideEffects = (_context: TransformProgramContext, _runtimeIR: ReadonlyArray<unknown>): void => {
+    // Use internally tracked runtime calls from transformProgram
+    const runtimeCalls = runtimeCallsFromLastTransform;
+    if (runtimeCalls.length === 0) {
+      return;
+    }
+
+    // Wrap expressions in ExpressionStatements before insertion
+    const statements = runtimeCalls.map((expr) => env.types.expressionStatement(expr));
+
+    // Find the last import/require statement to insert after all dependencies
+    const lastLoaderPath = findLastModuleLoader();
+
+    if (lastLoaderPath) {
+      lastLoaderPath.insertAfter(statements);
+    } else {
+      // Fallback: insert at the beginning if no loaders found
+      env.programPath.unshiftContainer("body", statements);
+    }
+
+    // Clear to prevent repeated insertions
+    runtimeCallsFromLastTransform = [];
+  };
+
+  return {
+    transformProgram,
+    insertRuntimeSideEffects,
+  };
 }
 
 /**
@@ -154,11 +155,11 @@ export class BabelAdapter implements TransformAdapter {
  */
 export const babelTransformAdapterFactory: TransformAdapterFactory = {
   id: "babel",
-  create(env: unknown): BabelAdapter {
+  create(env: unknown): TransformAdapter {
     if (!isBabelEnv(env)) {
       throw new Error("[INTERNAL] BabelAdapter requires BabelEnv");
     }
-    return new BabelAdapter(env, env.graphqlSystemIdentifyHelper);
+    return createBabelAdapter(env, env.graphqlSystemIdentifyHelper);
   },
 };
 
