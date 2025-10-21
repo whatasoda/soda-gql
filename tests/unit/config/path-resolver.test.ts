@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { getCoreImportPath, getGqlImportPath, resolveImportPath } from "@soda-gql/config/path-resolver";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config/types";
+import { makeMockResolvedConfig } from "../../utils/mocks";
 
 describe("path-resolver.ts", () => {
   describe("resolveImportPath", () => {
@@ -61,101 +61,53 @@ describe("path-resolver.ts", () => {
     test("normalizes Windows-style separators", () => {
       const result = resolveImportPath("/project/.cache", "/project/src\\module.ts", true);
 
-      // Note: Node path.relative already normalizes separators, so this test
-      // mainly ensures replace(/\\/g, '/') doesn't break on Unix paths
       expect(result).toContain("module.js");
     });
   });
 
   describe("getGqlImportPath", () => {
     test("resolves gql import path from config", () => {
-      const config: ResolvedSodaGqlConfig = {
-        graphqlSystemPath: "/project/src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        corePath: "@soda-gql/core",
-        builder: {
-          entry: [],
-          outDir: "/project/.cache/soda-gql",
-          analyzer: "ts",
-        },
-        plugins: {},
-        configDir: "/project",
-        configPath: "/project/soda-gql.config.ts",
-        configHash: "abc123",
-        configMtime: 123456,
-      };
+      const config = makeMockResolvedConfig({
+        outdir: "/project/graphql-system",
+      });
 
       const result = getGqlImportPath(config);
 
-      expect(result).toBe("../../src/graphql-system/index.js");
+      expect(result).toBe("./index.js");
     });
 
     test("handles different outDir depths", () => {
-      const config: ResolvedSodaGqlConfig = {
-        graphqlSystemPath: "/project/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        corePath: "@soda-gql/core",
-        builder: {
-          entry: [],
-          outDir: "/project/dist",
-          analyzer: "ts",
-        },
-        plugins: {},
-        configDir: "/project",
-        configPath: "/project/soda-gql.config.ts",
-        configHash: "abc123",
-        configMtime: 123456,
-      };
+      const config = makeMockResolvedConfig({
+        outdir: "/project/dist",
+      });
 
       const result = getGqlImportPath(config);
 
-      expect(result).toBe("../graphql-system/index.js");
+      expect(result).toBe("./index.js");
     });
   });
 
   describe("getCoreImportPath", () => {
     test("resolves core import path without extension mapping", () => {
-      const config: ResolvedSodaGqlConfig = {
-        graphqlSystemPath: "/project/src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
+      const config = makeMockResolvedConfig({
+        outdir: "/project/graphql-system",
         corePath: "@soda-gql/core",
-        builder: {
-          entry: [],
-          outDir: "/project/.cache/soda-gql",
-          analyzer: "ts",
-        },
-        plugins: {},
-        configDir: "/project",
-        configPath: "/project/soda-gql.config.ts",
-        configHash: "abc123",
-        configMtime: 123456,
-      };
+      });
 
       const result = getCoreImportPath(config);
 
       expect(result).toBe("@soda-gql/core");
     });
 
-    test("handles absolute corePath", () => {
-      const config: ResolvedSodaGqlConfig = {
-        graphqlSystemPath: "/project/src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-        corePath: "/project/node_modules/@soda-gql/core/index.ts",
-        builder: {
-          entry: [],
-          outDir: "/project/.cache",
-          analyzer: "ts",
-        },
-        plugins: {},
-        configDir: "/project",
-        configPath: "/project/soda-gql.config.ts",
-        configHash: "abc123",
-        configMtime: 123456,
-      };
+    test("handles custom core path", () => {
+      const config = makeMockResolvedConfig({
+        outdir: "/project/dist",
+        corePath: "/project/custom-core",
+      });
 
       const result = getCoreImportPath(config);
 
-      expect(result).toBe("../node_modules/@soda-gql/core/index.ts");
+      expect(result).toBe("../custom-core");
     });
   });
 });

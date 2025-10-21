@@ -15,7 +15,7 @@
     },
     "examples/babel-app": {
       "name": "@soda-gql-examples/babel",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -29,7 +29,7 @@
     },
     "examples/nestjs-app": {
       "name": "@soda-gql-examples/nestjs-webpack",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@nestjs/common": "^10.0.0",
         "@nestjs/core": "^10.0.0",
@@ -50,7 +50,7 @@
     },
     "examples/nestjs-compiler-swc": {
       "name": "@soda-gql-examples/nestjs-compiler-swc",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@nestjs/common": "^10.0.0",
         "@nestjs/core": "^10.0.0",
@@ -73,7 +73,7 @@
     },
     "examples/nestjs-compiler-tsc": {
       "name": "@soda-gql-examples/nestjs-compiler-tsc",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@nestjs/common": "^10.0.0",
         "@nestjs/core": "^10.0.0",
@@ -94,9 +94,8 @@
     },
     "packages/builder": {
       "name": "@soda-gql/builder",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
-        "@soda-gql/codegen": "workspace:*",
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@swc/core": "^1.6.3",
@@ -110,7 +109,7 @@
     },
     "packages/cli": {
       "name": "@soda-gql/cli",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "bin": {
         "soda-gql": "./src/index.ts",
       },
@@ -123,7 +122,7 @@
     },
     "packages/codegen": {
       "name": "@soda-gql/codegen",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -137,14 +136,14 @@
     },
     "packages/common": {
       "name": "@soda-gql/common",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "zod": "^4.1.11",
       },
     },
     "packages/config": {
       "name": "@soda-gql/config",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "neverthrow": "^8.2.0",
         "zod": "^4.1.11",
@@ -158,14 +157,17 @@
     },
     "packages/core": {
       "name": "@soda-gql/core",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
+        "graphql": "^16.*",
+      },
+      "devDependencies": {
         "graphql": "^16.8.1",
       },
     },
     "packages/graffle-client": {
       "name": "@soda-gql/graffle-client",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -176,7 +178,7 @@
     },
     "packages/plugin-babel": {
       "name": "@soda-gql/plugin-babel",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@babel/parser": "^7.24.0",
@@ -184,7 +186,7 @@
         "@babel/types": "^7.24.0",
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
-        "@soda-gql/plugin-shared": "workspace:*",
+        "@soda-gql/config": "workspace:*",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
       },
@@ -194,7 +196,7 @@
     },
     "packages/plugin-shared": {
       "name": "@soda-gql/plugin-shared",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@babel/parser": "^7.24.0",
@@ -223,10 +225,10 @@
     },
     "packages/plugin-swc": {
       "name": "@soda-gql/plugin-swc",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
-        "@soda-gql/plugin-shared": "workspace:*",
+        "@soda-gql/config": "workspace:*",
         "neverthrow": "^8.1.1",
       },
       "peerDependencies": {
@@ -236,7 +238,7 @@
     },
     "packages/plugin-tsc": {
       "name": "@soda-gql/plugin-tsc",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -250,7 +252,7 @@
     },
     "packages/plugin-webpack": {
       "name": "@soda-gql/plugin-webpack",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/plugin-babel": "workspace:*",
@@ -267,7 +269,7 @@
     },
     "packages/runtime": {
       "name": "@soda-gql/runtime",
-      "version": "0.1.0",
+      "version": "0.0.1",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
       },

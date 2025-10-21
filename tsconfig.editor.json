@@ -8,7 +8,7 @@
     "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
-  "include": ["tests/**/*", "scripts/**/*", "tsdown.config.ts"],
+  "include": ["package.json", "tests/**/*", "scripts/**/*", "tsdown.config.ts"],
   "exclude": [
     "node_modules",
     "dist",

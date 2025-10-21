@@ -23,6 +23,6 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "graphql": "^16.8.1"
+    "graphql": "16.*"
   }
 }
