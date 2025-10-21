@@ -47,10 +47,16 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
     return noopTransformer;
   }
 
-  console.log("[@soda-gql/plugin-swc] Transforming program");
+  console.log("[@soda-gql/plugin-swc] Plugin initialized");
 
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
+
+    // Rebuild artifact on every compilation (like tsc-plugin)
+    const artifact = pluginState.getArtifact();
+    if (!artifact) {
+      return m;
+    }
 
     // Create SWC adapter environment
     const env: SwcEnv = {
@@ -65,7 +71,7 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
     // Transform the program
     const transformContext = {
       filename,
-      artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => pluginState.artifact.elements[canonicalId],
+      artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => artifact.elements[canonicalId],
       runtimeModule: pluginState.importIdentifier,
     };
 

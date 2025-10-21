@@ -11,4 +11,4 @@ export * from "./plugin";
 import { createSodaGqlPlugin } from "./plugin";
 
 export { createSodaGqlPlugin };
-export default createSodaGqlPlugin();
+export default createSodaGqlPlugin;

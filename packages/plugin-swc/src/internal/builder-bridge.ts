@@ -15,6 +15,15 @@ export type SwcPluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
   readonly importIdentifier?: string;
+  /**
+   * Artifact configuration.
+   * If useBuilder is false, artifact will be loaded from the specified path.
+   * If useBuilder is true or not specified, artifact will be built from source files.
+   */
+  readonly artifact?: {
+    readonly useBuilder?: boolean;
+    readonly path?: string;
+  };
 };
 
 /**
@@ -22,8 +31,8 @@ export type SwcPluginOptions = {
  */
 export type PluginState = {
   readonly config: ResolvedSodaGqlConfig;
-  readonly artifact: BuilderArtifact;
   readonly ensureBuilderService: () => ReturnType<typeof createBuilderService>;
+  readonly getArtifact: () => BuilderArtifact | null;
   readonly importIdentifier: string;
 };
 
@@ -45,23 +54,56 @@ export const preparePluginState = (options: SwcPluginOptions): PluginState | nul
   }
 
   const config = configResult.value;
-  const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
+  const importIdentifier = options.importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system";
 
-  // Initial build to get artifact
-  const builderService = ensureBuilderService();
-  const buildResult = builderService.build();
-  if (buildResult.isErr()) {
-    console.error(`[@soda-gql/plugin-swc] Failed to build initial artifact: ${buildResult.error.message}`);
-    return null;
+  // Support test mode where artifact is loaded from file instead of built
+  const useBuilder = options.artifact?.useBuilder ?? true;
+  const artifactPath = options.artifact?.path;
+
+  if (!useBuilder && artifactPath) {
+    // Test mode: Load artifact from file
+    const getArtifact = (): BuilderArtifact | null => {
+      try {
+        const fs = require("node:fs");
+        const artifactJson = fs.readFileSync(artifactPath, "utf-8");
+        return JSON.parse(artifactJson) as BuilderArtifact;
+      } catch (error) {
+        console.error(`[@soda-gql/plugin-swc] Failed to load artifact from ${artifactPath}:`, error);
+        return null;
+      }
+    };
+
+    return {
+      config,
+      ensureBuilderService: () => {
+        throw new Error("Builder service not available in test mode with preloaded artifact");
+      },
+      getArtifact,
+      importIdentifier,
+    };
   }
 
-  const artifact = buildResult.value;
-  const importIdentifier = options.importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system";
+  // Normal mode: Build artifact from source files
+  const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
+
+  /**
+   * Build artifact on every invocation (like tsc-plugin).
+   * This ensures the artifact is always up-to-date with the latest source files.
+   */
+  const getArtifact = (): BuilderArtifact | null => {
+    const builderService = ensureBuilderService();
+    const buildResult = builderService.build();
+    if (buildResult.isErr()) {
+      console.error(`[@soda-gql/plugin-swc] Failed to build artifact: ${buildResult.error.message}`);
+      return null;
+    }
+    return buildResult.value;
+  };
 
   return {
     config,
-    artifact,
     ensureBuilderService,
+    getArtifact,
     importIdentifier,
   };
 };

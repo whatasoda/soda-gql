@@ -39,6 +39,12 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
           return;
         }
 
+        // Rebuild artifact on every compilation (like tsc-plugin)
+        const artifact = pluginState.getArtifact();
+        if (!artifact) {
+          return;
+        }
+
         // Create Babel adapter instance
         const adapter = babelTransformAdapterFactory.create({
           programPath,
@@ -48,7 +54,7 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
         // Transform using adapter
         const result = adapter.transformProgram({
           filename,
-          artifactLookup: (canonicalId: CanonicalId) => pluginState.artifact.elements[canonicalId],
+          artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
           runtimeModule,
         });
 
@@ -58,7 +64,7 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
             {
               filename,
               runtimeModule,
-              artifactLookup: (canonicalId: CanonicalId) => pluginState.artifact.elements[canonicalId],
+              artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
             },
             result.runtimeArtifacts || [],
           );
