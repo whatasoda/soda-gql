@@ -14,6 +14,10 @@ import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 export type PluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
+  readonly artifact?: {
+    readonly useBuilder: boolean;
+    readonly path?: string;
+  };
 };
 
 /**
@@ -41,14 +45,29 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
     return null;
   }
 
+
   const config = configResult.value;
   const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
 
   /**
    * Build artifact on every invocation (like tsc-plugin).
+   * If artifact.useBuilder is false and artifact.path is provided, load from file instead.
    * This ensures the artifact is always up-to-date with the latest source files.
    */
   const getArtifact = (): BuilderArtifact | null => {
+    // If artifact path is provided and useBuilder is false, load from file
+    if (options.artifact && !options.artifact.useBuilder && options.artifact.path) {
+      try {
+        const fs = require("node:fs");
+        const artifactContent = fs.readFileSync(options.artifact.path, "utf-8");
+        return JSON.parse(artifactContent) as BuilderArtifact;
+      } catch (error) {
+        console.error(`[${pluginName}] Failed to load artifact from ${options.artifact.path}:`, error);
+        return null;
+      }
+    }
+
+    // Otherwise, build artifact using builder service
     const builderService = ensureBuilderService();
     const buildResult = builderService.build();
     if (buildResult.isErr()) {

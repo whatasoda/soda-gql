@@ -24,7 +24,7 @@ const fallbackPlugin = (): PluginObj => ({
   },
 });
 
-export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj => {
+export const createSodaGqlPlugin = (_babel: unknown, options: BabelPluginOptions = {}): PluginObj => {
   // Create plugin session synchronously (no async pre())
   const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
 
