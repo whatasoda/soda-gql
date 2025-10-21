@@ -17,7 +17,7 @@
       "Bash(bun biome:check:*)",
       "Bash(bun validate:tests:*)",
       "Bash(bun examples:codegen:*)",
-      "Bash(bun codex:conversation:*)",
+      "Bash(bun publish-npm:dry-run:*)",
       "Bash(bun run test:*)",
       "Bash(bun run build:*)",
       "Bash(bun run quality:*)",
@@ -26,7 +26,7 @@
       "Bash(bun run biome:check:*)",
       "Bash(bun run validate:tests:*)",
       "Bash(bun run examples:codegen:*)",
-      "Bash(bun run codex:conversation:*)",
+      "Bash(bun run publish-npm:dry-run:*)",
       "Bash(bun ~/.claude/scripts/whatasoda/codex-setup/extract-conversation-id.ts:*)",
       "WebSearch",
       "mcp__serena__activate_project",
@@ -68,7 +68,11 @@
     ],
     "deny": [
       "Bash(bun test:*)",
-      "Bash(bun build:*)"
+      "Bash(bun build:*)",
+      "Bash(bun publish-npm:*)",
+      "Bash(bun publish-npm:provenance:*)",
+      "Bash(bun run publish-npm:*)",
+      "Bash(bun run publish-npm:provenance:*)"
     ],
     "ask": []
   }
