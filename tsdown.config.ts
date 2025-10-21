@@ -132,21 +132,7 @@ export default defineConfig([
 
   // Plugin packages (externalize host bundler deps)
   {
-    ...configure("@soda-gql/plugin-shared"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
-  {
     ...configure("@soda-gql/plugin-babel"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/plugin-webpack"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",

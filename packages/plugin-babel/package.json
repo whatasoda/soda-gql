@@ -23,20 +23,6 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./adapter": {
-      "development": "./src/adapter/index.ts",
-      "types": "./dist/adapter/index.d.ts",
-      "import": "./dist/adapter/index.js",
-      "require": "./dist/adapter/index.cjs",
-      "default": "./dist/adapter/index.js"
-    },
-    "./dev": {
-      "development": "./src/dev/index.ts",
-      "types": "./dist/dev/index.d.ts",
-      "import": "./dist/dev/index.js",
-      "require": "./dist/dev/index.cjs",
-      "default": "./dist/dev/index.js"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
