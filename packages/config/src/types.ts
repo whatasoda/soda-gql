@@ -51,11 +51,6 @@ export type SodaGqlConfig = {
    * The plugins to use for the project.
    */
   readonly plugins?: PluginConfig;
-  /**
-   * The path to @soda-gql/core package.
-   * Usually auto-detected, but can be overridden for testing or non-standard setups.
-   */
-  readonly corePath?: string;
 };
 
 // Resolved config (normalized and validated)
@@ -67,9 +62,4 @@ export type ResolvedSodaGqlConfig = {
   readonly exclude: readonly string[];
   readonly schemas: Readonly<Record<string, SchemaConfig>>;
   readonly plugins: PluginConfig;
-  readonly corePath: string;
-  readonly configDir: string;
-  readonly configPath: string;
-  readonly configHash: string; // For cache invalidation
-  readonly configMtime: number; // For watch mode
 };

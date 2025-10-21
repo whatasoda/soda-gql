@@ -48,8 +48,6 @@ export async function prepareTransform(args: PrepareTransformArgs): Promise<Resu
 
   // Create runtime key for caching based on config
   const runtimeKey = JSON.stringify({
-    configPath: normalizedOptions.resolvedConfig.configPath,
-    configHash: normalizedOptions.resolvedConfig.configHash,
     project: normalizedOptions.project,
     importIdentifier: normalizedOptions.importIdentifier,
   });

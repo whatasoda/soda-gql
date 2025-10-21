@@ -91,7 +91,6 @@ describe("path-resolver.ts", () => {
     test("resolves core import path without extension mapping", () => {
       const config = makeMockResolvedConfig({
         outdir: "/project/graphql-system",
-        corePath: "@soda-gql/core",
       });
 
       const result = getCoreImportPath(config);
@@ -102,7 +101,6 @@ describe("path-resolver.ts", () => {
     test("handles custom core path", () => {
       const config = makeMockResolvedConfig({
         outdir: "/project/dist",
-        corePath: "/project/custom-core",
       });
 
       const result = getCoreImportPath(config);

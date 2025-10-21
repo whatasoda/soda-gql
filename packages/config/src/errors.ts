@@ -7,7 +7,17 @@ export type ConfigError = {
   readonly cause?: unknown;
 };
 
-export const configError = (code: ConfigErrorCode, message: string, filePath?: string, cause?: unknown): ConfigError => ({
+export const configError = ({
+  code,
+  message,
+  filePath,
+  cause,
+}: {
+  code: ConfigErrorCode;
+  message: string;
+  filePath?: string;
+  cause?: unknown;
+}): ConfigError => ({
   code,
   message,
   filePath,

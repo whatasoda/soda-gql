@@ -57,14 +57,12 @@ describe("types.ts", () => {
         },
       },
       plugins: { babel: { enabled: true } },
-      corePath: "/custom/path/to/core",
     };
 
     expect(config.analyzer).toBe("swc");
     expect(config.graphqlSystemAliases).toEqual(["@/gql", "@/graphql"]);
     expect(config.exclude).toEqual(["./src/**/*.test.ts"]);
     expect(config.plugins?.babel).toEqual({ enabled: true });
-    expect(config.corePath).toBe("/custom/path/to/core");
   });
 
   test("ResolvedSodaGqlConfig has all required fields", () => {
@@ -82,17 +80,11 @@ describe("types.ts", () => {
         },
       },
       plugins: {},
-      corePath: "/abs/path/to/@soda-gql/core",
-      configDir: "/abs/path/to",
-      configPath: "/abs/path/to/soda-gql.config.ts",
-      configHash: "abc123def456",
-      configMtime: 1234567890,
     };
 
     expect(config.analyzer).toBe("ts");
     expect(config.outdir).toContain("/graphql-system");
     expect(config.graphqlSystemAliases).toEqual(["@/graphql-system"]);
-    expect(config.configHash).toBe("abc123def456");
   });
 
   test("ResolvedSodaGqlConfig has defaults applied", () => {
@@ -110,11 +102,6 @@ describe("types.ts", () => {
         },
       },
       plugins: {},
-      corePath: "@soda-gql/core",
-      configDir: "/abs/path/to",
-      configPath: "/abs/path/to/soda-gql.config.ts",
-      configHash: "abc123def456",
-      configMtime: 1234567890,
     };
 
     expect(config.analyzer).toBe("ts");

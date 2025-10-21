@@ -5,3 +5,4 @@
 export * from "./canonical-id";
 export * from "./portable";
 export * from "./utils";
+export * from "./zod";

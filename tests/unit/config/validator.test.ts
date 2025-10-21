@@ -142,10 +142,6 @@ describe("validator.ts", () => {
       if (result.isOk()) {
         expect(result.value.outdir).toContain("graphql-system");
         expect(result.value.outdir).toMatch(/^[/\\]/); // absolute path
-        expect(result.value.configPath).toBe(configPath);
-        expect(result.value.configDir).toBe(tmpDir);
-        expect(result.value.configHash).toHaveLength(16);
-        expect(result.value.configMtime).toBeGreaterThan(0);
       }
 
       rmSync(tmpDir, { recursive: true, force: true });
@@ -172,7 +168,6 @@ describe("validator.ts", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.corePath).toBe("@soda-gql/core");
         expect(result.value.analyzer).toBe("ts");
         expect(result.value.graphqlSystemAliases).toEqual(["@/graphql-system"]);
         expect(result.value.exclude).toEqual([]);

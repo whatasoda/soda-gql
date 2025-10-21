@@ -22,9 +22,4 @@ export const createTestConfig = (
     },
   },
   plugins: {},
-  corePath: "@soda-gql/core",
-  configDir: workspaceRoot,
-  configPath: join(workspaceRoot, "soda-gql.config.ts"),
-  configHash: `test-${Date.now()}`,
-  configMtime: Date.now(),
 });

@@ -61,24 +61,6 @@ describe("helper.ts", () => {
       });
     });
 
-    test("returns promise for async function", () => {
-      const configFn = async () => ({
-        outdir: await Promise.resolve("./graphql-system"),
-        include: ["./src/**/*.ts"],
-        schemas: {
-          default: {
-            schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
-            scalars: "./scalars.ts",
-          },
-        },
-      });
-
-      const result = defineConfig(configFn);
-
-      expect(result).toBeInstanceOf(Promise);
-    });
-
     test("does not mutate input", () => {
       const config: SodaGqlConfig = {
         outdir: "./graphql-system",
@@ -98,7 +80,7 @@ describe("helper.ts", () => {
       expect(config).toEqual(original);
     });
 
-    test("allows async execution", async () => {
+    test("does not allows async execution", async () => {
       const configFn = async () => ({
         outdir: "./graphql-system",
         include: ["./src/**/*.ts"],
@@ -111,10 +93,8 @@ describe("helper.ts", () => {
         },
       });
 
-      const result = defineConfig(configFn);
-
-      const resolved = await result;
-      expect(resolved.outdir).toBe("./graphql-system");
+      // @ts-expect-error - we expect this to throw
+      expect(() => defineConfig(configFn)).toThrow();
     });
   });
 });

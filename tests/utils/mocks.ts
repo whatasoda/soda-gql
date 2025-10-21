@@ -58,11 +58,6 @@ export const makeMockResolvedConfig = (overrides: Partial<ResolvedSodaGqlConfig>
       },
     },
     plugins: {},
-    corePath: "@soda-gql/core",
-    configDir: "/mock",
-    configPath: "/mock/soda-gql.config.ts",
-    configHash: "mock-hash",
-    configMtime: Date.now(),
     ...overrides,
   } as ResolvedSodaGqlConfig;
 };
