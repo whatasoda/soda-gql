@@ -5,8 +5,8 @@ import { err } from "neverthrow";
 import type { ConfigError } from "./errors";
 import { configError } from "./errors";
 import { executeConfigFile } from "./evaluation";
+import { normalizeConfig } from "./normalize";
 import type { ResolvedSodaGqlConfig } from "./types";
-import { resolveConfig } from "./validator";
 
 export const DEFAULT_CONFIG_FILENAMES = [
   "soda-gql.config.ts",
@@ -43,7 +43,7 @@ export function loadConfig(configPath: string | undefined): Result<ResolvedSodaG
   }
 
   try {
-    return resolveConfig(executeConfigFile(resolvedPath));
+    return normalizeConfig(executeConfigFile(resolvedPath));
   } catch (error) {
     return err(
       configError({

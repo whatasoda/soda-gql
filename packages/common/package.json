@@ -17,6 +17,27 @@
       "require": "./dist/portable/index.cjs",
       "default": "./dist/portable/index.js"
     },
+    "./canonical-id": {
+      "development": "./src/canonical-id/index.ts",
+      "types": "./dist/canonical-id/index.d.ts",
+      "import": "./dist/canonical-id/index.js",
+      "require": "./dist/canonical-id/index.cjs",
+      "default": "./dist/canonical-id/index.js"
+    },
+    "./utils": {
+      "development": "./src/utils/index.ts",
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.cjs",
+      "default": "./dist/utils/index.js"
+    },
+    "./zod": {
+      "development": "./src/zod/index.ts",
+      "types": "./dist/zod/index.d.ts",
+      "import": "./dist/zod/index.js",
+      "require": "./dist/zod/index.cjs",
+      "default": "./dist/zod/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

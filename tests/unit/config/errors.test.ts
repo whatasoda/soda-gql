@@ -4,7 +4,7 @@ import { configError } from "@soda-gql/config/errors";
 
 describe("errors.ts", () => {
   test("configError creates error with code and message", () => {
-    const error = configError("CONFIG_NOT_FOUND", "Config file not found");
+    const error = configError({ code: "CONFIG_NOT_FOUND", message: "Config file not found" });
 
     expect(error.code).toBe("CONFIG_NOT_FOUND");
     expect(error.message).toBe("Config file not found");
@@ -13,7 +13,7 @@ describe("errors.ts", () => {
   });
 
   test("configError accepts optional filePath", () => {
-    const error = configError("CONFIG_LOAD_FAILED", "Failed to load config", "/path/to/config.ts");
+    const error = configError({ code: "CONFIG_LOAD_FAILED", message: "Failed to load config", filePath: "/path/to/config.ts" });
 
     expect(error.code).toBe("CONFIG_LOAD_FAILED");
     expect(error.filePath).toBe("/path/to/config.ts");
@@ -21,7 +21,7 @@ describe("errors.ts", () => {
 
   test("configError accepts optional cause", () => {
     const cause = new Error("Original error");
-    const error = configError("CONFIG_VALIDATION_FAILED", "Validation failed", undefined, cause);
+    const error = configError({ code: "CONFIG_VALIDATION_FAILED", message: "Validation failed", cause });
 
     expect(error.code).toBe("CONFIG_VALIDATION_FAILED");
     expect(error.cause).toBe(cause);
@@ -29,7 +29,7 @@ describe("errors.ts", () => {
 
   test("configError accepts all parameters", () => {
     const cause = new Error("Original error");
-    const error = configError("CONFIG_INVALID_PATH", "Invalid path", "/invalid/path", cause);
+    const error = configError({ code: "CONFIG_INVALID_PATH", message: "Invalid path", filePath: "/invalid/path", cause });
 
     expect(error.code).toBe("CONFIG_INVALID_PATH");
     expect(error.message).toBe("Invalid path");
@@ -46,7 +46,7 @@ describe("errors.ts", () => {
     ];
 
     for (const code of codes) {
-      const error = configError(code, `Test message for ${code}`);
+      const error = configError({ code, message: `Test message for ${code}` });
       expect(error.code).toBe(code);
     }
   });

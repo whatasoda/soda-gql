@@ -127,7 +127,7 @@ const writeArtifact = async (artifact: BuilderArtifact, outPath: string): Promis
 export const builderCommand = async (argv: readonly string[]): Promise<number> => {
   try {
     // Load config first (now synchronous)
-    const configResult = loadConfig();
+    const configResult = loadConfig(undefined);
     if (configResult.isErr()) {
       const error = configResult.error;
       process.stderr.write(`${formatBuilderError("json", error as BuilderError)}\n`);

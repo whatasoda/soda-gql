@@ -1,16 +1,12 @@
-// Errors
 export type { ConfigError, ConfigErrorCode } from "./errors";
 export { configError } from "./errors";
-// Helpers
-export { defineConfig } from "./helper";
-// Loader
+export { defineConfig, validateConfig } from "./helper";
 export {
   findConfigFile,
   loadConfig,
   loadConfigFrom,
 } from "./loader";
-
-// Test utilities
+export { normalizeConfig } from "./normalize";
 export { createTempConfigFile, withTempConfig } from "./test-utils";
 export type {
   PluginConfig,
@@ -18,5 +14,3 @@ export type {
   SchemaConfig,
   SodaGqlConfig,
 } from "./types";
-// Validator
-export { resolveConfig, validateConfig } from "./validator";

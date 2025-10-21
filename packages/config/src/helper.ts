@@ -4,6 +4,11 @@ import { err, ok, Result } from "neverthrow";
 import { configError, ConfigError } from "./errors";
 import { defineSchemaFor } from "@soda-gql/common";
 
+/**
+ * Thin wrapper class to simplify the validation of exported value from config file.
+ * As we use SWC + VM to execute the config file, the exported value is not typed.
+ * This wrapper class ensures the exported value is a valid soda-gql config object.
+ */
 export class SodaGqlConfigContainer {
   private constructor(public readonly config: SodaGqlConfig) {}
   

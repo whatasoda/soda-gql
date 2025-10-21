@@ -20,9 +20,8 @@ const registry = new Map<CoordinatorKey, RegistryEntry>();
 /**
  * Create a unique key for a coordinator based on its configuration.
  */
-export const createCoordinatorKey = (config: { projectRoot: string; project?: string }): CoordinatorKey => {
+export const createCoordinatorKey = (config: { project?: string }): CoordinatorKey => {
   const hash = createHash("sha256");
-  hash.update(config.projectRoot);
   if (config.project) {
     hash.update(config.project);
   }
@@ -151,10 +150,9 @@ export const registerConsumer = (key: CoordinatorKey): CoordinatorConsumer => {
 export const createAndRegisterCoordinator = (
   normalizedOptions: NormalizedOptions,
 ): { key: CoordinatorKey; coordinator: PluginCoordinator } => {
-  const config = normalizedOptions.resolvedConfig;
+  const _config = normalizedOptions.resolvedConfig;
 
   const key = createCoordinatorKey({
-    projectRoot: config.configDir,
     project: normalizedOptions.project,
   });
 
