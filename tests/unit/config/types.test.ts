@@ -1,52 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import type {
-  BuilderConfig,
-  CodegenConfig,
   PluginConfig,
-  ProjectConfig,
   ResolvedSodaGqlConfig,
+  SchemaConfig,
   SodaGqlConfig,
 } from "@soda-gql/config/types";
 
 describe("types.ts", () => {
-  test("BuilderConfig accepts valid configuration", () => {
-    const config: BuilderConfig = {
-      entry: ["./src/**/*.ts"],
-      outDir: "./.cache",
-      analyzer: "ts",
+  test("SchemaConfig accepts valid configuration", () => {
+    const config: SchemaConfig = {
+      schema: "./schema.graphql",
+      runtimeAdapter: "./runtime-adapter.ts",
+      scalars: "./scalars.ts",
     };
 
-    expect(config.entry).toEqual(["./src/**/*.ts"]);
-    expect(config.outDir).toBe("./.cache");
-    expect(config.analyzer).toBe("ts");
-  });
-
-  test("BuilderConfig allows optional fields", () => {
-    const config: BuilderConfig = {
-      entry: ["./src/**/*.ts"],
-      outDir: "./.cache",
-      analyzer: "ts",
-    };
-
-    expect(config.analyzer).toBe("ts");
-  });
-
-  test("CodegenConfig accepts valid configuration", () => {
-    const config: CodegenConfig = {
-      format: "human",
-      output: "./src/graphql-system/index.ts",
-      schemas: {
-        default: {
-          schema: "./schema.graphql",
-          runtimeAdapter: "./inject/runtime-adapter.ts",
-          scalars: "./inject/scalars.ts",
-        },
-      },
-    };
-
-    expect(config.format).toBe("human");
-    expect(config.output).toBe("./src/graphql-system/index.ts");
-    expect(config.schemas.default?.schema).toBe("./schema.graphql");
+    expect(config.schema).toBe("./schema.graphql");
+    expect(config.runtimeAdapter).toBe("./runtime-adapter.ts");
+    expect(config.scalars).toBe("./scalars.ts");
   });
 
   test("PluginConfig accepts arbitrary key-value pairs", () => {
@@ -59,97 +29,101 @@ describe("types.ts", () => {
     expect(config.anotherPlugin).toBe("value");
   });
 
-  test("ProjectConfig accepts valid configuration", () => {
-    const config: ProjectConfig = {
-      graphqlSystemPath: "./src/graphql-system/index.ts",
-      corePath: "@soda-gql/core",
-      builder: {
-        entry: ["./src/**/*.ts"],
-        outDir: "./.cache",
-        analyzer: "ts",
-      },
-      codegen: {
-        format: "human",
-        output: "./src/graphql-system/index.ts",
-        schemas: {
-          default: {
-            schema: "./schema.graphql",
-            runtimeAdapter: "./inject/runtime-adapter.ts",
-            scalars: "./inject/scalars.ts",
-          },
+  test("SodaGqlConfig accepts unified configuration", () => {
+    const config: SodaGqlConfig = {
+      outdir: "./graphql-system",
+      include: ["./src/**/*.ts"],
+      schemas: {
+        default: {
+          schema: "./schema.graphql",
+          runtimeAdapter: "./runtime-adapter.ts",
+          scalars: "./scalars.ts",
         },
       },
-      plugins: {},
     };
 
-    expect(config.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
-    expect(config.corePath).toBe("@soda-gql/core");
+    expect(config.outdir).toBe("./graphql-system");
+    expect(config.include).toEqual(["./src/**/*.ts"]);
+    expect(config.schemas.default?.schema).toBe("./schema.graphql");
   });
 
-  test("SodaGqlConfig accepts single-project mode", () => {
+  test("SodaGqlConfig allows optional fields", () => {
     const config: SodaGqlConfig = {
-      graphqlSystemPath: "./src/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-      builder: {
-        entry: ["./src/**/*.ts"],
-        outDir: "./.cache",
-        analyzer: "ts",
+      analyzer: "swc",
+      outdir: "./graphql-system",
+      graphqlSystemAliases: ["@/gql", "@/graphql"],
+      include: ["./src/**/*.ts"],
+      exclude: ["./src/**/*.test.ts"],
+      schemas: {
+        default: {
+          schema: "./schema.graphql",
+          runtimeAdapter: "./runtime-adapter.ts",
+          scalars: "./scalars.ts",
+        },
       },
+      plugins: { babel: { enabled: true } },
+      corePath: "/custom/path/to/core",
     };
 
-    expect(config.graphqlSystemPath).toBe("./src/graphql-system/index.ts");
+    expect(config.analyzer).toBe("swc");
+    expect(config.graphqlSystemAliases).toEqual(["@/gql", "@/graphql"]);
+    expect(config.exclude).toEqual(["./src/**/*.test.ts"]);
+    expect(config.plugins?.babel).toEqual({ enabled: true });
+    expect(config.corePath).toBe("/custom/path/to/core");
   });
 
   test("ResolvedSodaGqlConfig has all required fields", () => {
     const config: ResolvedSodaGqlConfig = {
-      graphqlSystemPath: "/abs/path/to/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-      corePath: "/abs/path/to/@soda-gql/core",
-      builder: {
-        entry: ["/abs/path/to/src/**/*.ts"],
-        outDir: "/abs/path/to/.cache",
-        analyzer: "ts",
-      },
-      codegen: {
-        format: "human",
-        output: "/abs/path/to/src/graphql-system/index.ts",
-        schemas: {
-          default: {
-            schema: "/abs/path/to/schema.graphql",
-            runtimeAdapter: "/abs/path/to/inject/runtime-adapter.ts",
-            scalars: "/abs/path/to/inject/scalars.ts",
-          },
+      analyzer: "ts",
+      outdir: "/abs/path/to/graphql-system",
+      graphqlSystemAliases: ["@/graphql-system"],
+      include: ["/abs/path/to/src/**/*.ts"],
+      exclude: [],
+      schemas: {
+        default: {
+          schema: "/abs/path/to/schema.graphql",
+          runtimeAdapter: "/abs/path/to/runtime-adapter.ts",
+          scalars: "/abs/path/to/scalars.ts",
         },
       },
       plugins: {},
+      corePath: "/abs/path/to/@soda-gql/core",
       configDir: "/abs/path/to",
       configPath: "/abs/path/to/soda-gql.config.ts",
       configHash: "abc123def456",
       configMtime: 1234567890,
     };
 
-    expect(config.graphqlSystemPath).toContain("/graphql-system/index.ts");
-    expect(config.builder.analyzer).toBe("ts");
+    expect(config.analyzer).toBe("ts");
+    expect(config.outdir).toContain("/graphql-system");
+    expect(config.graphqlSystemAliases).toEqual(["@/graphql-system"]);
     expect(config.configHash).toBe("abc123def456");
   });
 
-  test("ResolvedSodaGqlConfig allows optional codegen", () => {
+  test("ResolvedSodaGqlConfig has defaults applied", () => {
     const config: ResolvedSodaGqlConfig = {
-      graphqlSystemPath: "/abs/path/to/graphql-system/index.ts",
-        graphqlSystemAlias: undefined,
-      corePath: "/abs/path/to/@soda-gql/core",
-      builder: {
-        entry: ["/abs/path/to/src/**/*.ts"],
-        outDir: "/abs/path/to/.cache",
-        analyzer: "ts",
+      analyzer: "ts",
+      outdir: "/abs/path/to/graphql-system",
+      graphqlSystemAliases: ["@/graphql-system"],
+      include: ["/abs/path/to/src/**/*.ts"],
+      exclude: [],
+      schemas: {
+        default: {
+          schema: "/abs/path/to/schema.graphql",
+          runtimeAdapter: "/abs/path/to/runtime-adapter.ts",
+          scalars: "/abs/path/to/scalars.ts",
+        },
       },
       plugins: {},
+      corePath: "@soda-gql/core",
       configDir: "/abs/path/to",
       configPath: "/abs/path/to/soda-gql.config.ts",
       configHash: "abc123def456",
       configMtime: 1234567890,
     };
 
-    expect(config.codegen).toBeUndefined();
+    expect(config.analyzer).toBe("ts");
+    expect(config.exclude).toEqual([]);
+    expect(config.plugins).toEqual({});
   });
 });

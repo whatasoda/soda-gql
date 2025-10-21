@@ -118,7 +118,7 @@ export const preparePluginState = async (rawOptions: Partial<PluginOptions>): Pr
         code: "OPTIONS_INVALID_BUILDER_CONFIG",
         message: "Artifact path is required when useBuilder is false",
         cause: {
-          code: "MISSING_ARTIFACT_PATH",
+          code: "INVALID_BUILDER_CONFIG",
           message: "Artifact path is required when useBuilder is false",
         },
         stage: "normalize-options",

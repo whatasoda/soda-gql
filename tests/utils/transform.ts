@@ -46,12 +46,9 @@ export type TransformOptions = {
   skipTypeCheck?: boolean;
   additionalFiles?: Array<{ path: string; content: string }>; // Additional files for type checking context
   configOverrides?: {
-    graphqlSystemPath?: string;
-    builder?: {
-      entry?: string[];
-      outDir?: string;
-      analyzer?: "ts";
-    };
+    outdir?: string;
+    include?: string[];
+    analyzer?: "ts";
   };
 };
 
@@ -81,16 +78,17 @@ export const runBabelTransform = async (
 
     // Create temp config file that references the artifact
     // Use overrides if provided, otherwise use defaults
-    const graphqlSystemPath = configOverrides.graphqlSystemPath ?? "./src/graphql-system/index.ts";
-    const builderConfig = {
-      entry: configOverrides.builder?.entry ?? ["**/*.ts"],
-      analyzer: (configOverrides.builder?.analyzer ?? "ts") as "ts",
-      outDir: configOverrides.builder?.outDir ?? "./.cache",
-    };
-
     const configPath = createTempConfigFile(tempDir.path, {
-      graphqlSystemPath,
-      builder: builderConfig,
+      outdir: configOverrides.outdir ?? "./graphql-system",
+      include: configOverrides.include ?? ["**/*.ts"],
+      analyzer: configOverrides.analyzer ?? "ts",
+      schemas: {
+        default: {
+          schema: "./schema.graphql",
+          runtimeAdapter: "./runtime-adapter.ts",
+          scalars: "./scalars.ts",
+        },
+      },
     });
 
     const result = await transformAsync(source, {
