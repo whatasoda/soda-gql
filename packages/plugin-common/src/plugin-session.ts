@@ -1,5 +1,5 @@
 /**
- * Builder bridge for all plugins.
+ * Plugin session management for all plugins.
  * Unified from plugin-babel and plugin-swc implementations.
  */
 
@@ -17,19 +17,19 @@ export type PluginOptions = {
 };
 
 /**
- * Plugin state containing builder service and configuration.
+ * Plugin session containing builder service and configuration.
  */
-export type PluginState = {
+export type PluginSession = {
   readonly config: ResolvedSodaGqlConfig;
   readonly ensureBuilderService: () => ReturnType<typeof createBuilderService>;
   readonly getArtifact: () => BuilderArtifact | null;
 };
 
 /**
- * Prepare plugin state by loading config and creating cached builder service.
+ * Create plugin session by loading config and creating cached builder service.
  * Returns null if disabled or config load fails.
  */
-export const preparePluginState = (options: PluginOptions, pluginName: string): PluginState | null => {
+export const createPluginSession = (options: PluginOptions, pluginName: string): PluginSession | null => {
   const enabled = options.enabled ?? true;
   if (!enabled) {
     return null;

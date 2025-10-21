@@ -5,7 +5,6 @@
  * zero-runtime transformations.
  */
 
-export type { BabelPluginOptions } from "./internal/builder-bridge";
 export * from "./plugin";
 
 import { createSodaGqlPlugin } from "./plugin";

@@ -6,8 +6,13 @@
  */
 
 import type { Module } from "@swc/types";
+import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
 import { createSwcAdapter, type SwcEnv } from "./internal/ast/swc-adapter";
-import { preparePluginState, type SwcPluginOptions } from "./internal/builder-bridge";
+
+/**
+ * SWC plugin options.
+ */
+export type SwcPluginOptions = PluginOptions;
 
 /**
  * Configuration for the soda-gql SWC transformer.
@@ -40,23 +45,23 @@ const noopTransformer = (m: Module) => m;
  * ```
  */
 export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
-  // Prepare plugin state
-  const pluginState = preparePluginState(config);
+  // Create plugin session
+  const pluginSession = createPluginSession(config, "@soda-gql/plugin-swc");
 
-  if (!pluginState) {
+  if (!pluginSession) {
     return noopTransformer;
   }
 
   console.log("[@soda-gql/plugin-swc] Plugin initialized");
 
   // Get runtime module from config aliases or use default (like babel-plugin)
-  const runtimeModule = pluginState.config.graphqlSystemAliases[0] ?? "@/graphql-system";
+  const runtimeModule = pluginSession.config.graphqlSystemAliases[0] ?? "@/graphql-system";
 
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
 
     // Rebuild artifact on every compilation (like tsc-plugin)
-    const artifact = pluginState.getArtifact();
+    const artifact = pluginSession.getArtifact();
     if (!artifact) {
       return m;
     }

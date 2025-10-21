@@ -2,11 +2,16 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
+import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
 import { babelTransformAdapterFactory } from "./internal/ast/index";
-import { type BabelPluginOptions, type PluginState, preparePluginState } from "./internal/builder-bridge";
+
+/**
+ * Babel plugin options.
+ */
+export type BabelPluginOptions = PluginOptions;
 
 type PluginPassState = PluginPass & {
-  _state?: PluginState;
+  _state?: PluginSession;
 };
 
 const fallbackPlugin = (): PluginObj => ({
@@ -19,15 +24,15 @@ const fallbackPlugin = (): PluginObj => ({
 });
 
 export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj => {
-  // Prepare state synchronously (no async pre())
-  const pluginState = preparePluginState(options);
+  // Create plugin session synchronously (no async pre())
+  const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
 
-  if (!pluginState) {
+  if (!pluginSession) {
     return fallbackPlugin();
   }
 
   // Get runtime module from config aliases or use default
-  const runtimeModule = pluginState.config.graphqlSystemAliases[0] ?? "@/graphql-system";
+  const runtimeModule = pluginSession.config.graphqlSystemAliases[0] ?? "@/graphql-system";
 
   return {
     name: "@soda-gql/plugin-babel",
@@ -40,7 +45,7 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
         }
 
         // Rebuild artifact on every compilation (like tsc-plugin)
-        const artifact = pluginState.getArtifact();
+        const artifact = pluginSession.getArtifact();
         if (!artifact) {
           return;
         }
