@@ -6,6 +6,7 @@ export type ConstValue =
   | undefined
   | { readonly [key: string]: ConstValue }
   | readonly ConstValue[];
+
 export type ConstValues = {
   readonly [key: string]: ConstValue;
 };

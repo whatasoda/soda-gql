@@ -81,7 +81,6 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-test_dist
 
 # Gatsby files
 .cache/
@@ -139,11 +138,10 @@ test_dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-.serena
-
 # Build directories
 build/
 dist/
+.typecheck/
 
 # IDE files
 .idea/
@@ -162,6 +160,9 @@ bun.lockb
 .tmp
 
 .prompts
+
+# Generated files
+scripts/generated/
 
 # Test fixture stubs
 tests/fixtures/runtime-app/graphql-system/

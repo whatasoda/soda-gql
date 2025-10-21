@@ -1,0 +1,17 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "builder": "tsc",
+    "deleteOutDir": true,
+    "plugins": [
+      {
+        "name": "@soda-gql/tsc-plugin",
+        "options": {
+          "configPath": "./soda-gql.config.ts",
+          "importIdentifier": "@/graphql-system"
+        }
+      }
+    ]
+  }
+}

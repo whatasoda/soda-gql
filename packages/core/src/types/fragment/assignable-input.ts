@@ -2,12 +2,12 @@ import type { ConstValue } from "../schema/const-value";
 import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "../schema/schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "../schema/type-modifier";
 import type {
-  InputInferrableTypeRef,
-  InputInputObjectRef,
-  InputTypeRef,
-  InputTypeRefs,
-  StripTailingListFromTypeRef,
-} from "../schema/type-ref";
+  InputInferrableTypeSpecifier,
+  InputInputObjectSpecifier,
+  InputTypeSpecifier,
+  InputTypeSpecifiers,
+  StripTailingListFromTypeSpecifier,
+} from "../schema/type-specifier";
 import type { AnyVarRef, VarRefBy } from "./var-ref";
 
 export type AnyAssignableInputValue =
@@ -22,16 +22,16 @@ export type AnyAssignableInput = {
   readonly [key: string]: AnyAssignableInputValue;
 };
 
-export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeRefs> = {
+export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeSpecifiers> = {
   readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
 };
-export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeRef> =
+export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeSpecifier> =
   | VarRefBy<TRef>
   | (TRef["modifier"] extends `${string}${ListTypeModifierSuffix}`
-      ? AssignableInputValue<TSchema, StripTailingListFromTypeRef<TRef>>[]
+      ? AssignableInputValue<TSchema, StripTailingListFromTypeSpecifier<TRef>>[]
       :
-          | (TRef extends InputInputObjectRef ? AssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
-          | (TRef extends InputInferrableTypeRef ? InferInputTypeRef<TSchema, TRef> : never));
+          | (TRef extends InputInputObjectSpecifier ? AssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
+          | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchema, TRef> : never));
 
 export type AssignableInputByFieldName<
   TSchema extends AnyGraphqlSchema,

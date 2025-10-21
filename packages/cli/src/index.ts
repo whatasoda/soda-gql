@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { builderCommand } from "./commands/builder";
 import { codegenCommand } from "./commands/codegen";
+import { formatError } from "./utils/format";
 
 const dispatch = async (argv: readonly string[]): Promise<number> => {
   const [command, ...rest] = argv;
@@ -9,7 +10,7 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
     process.stdout.write(`Usage: soda-gql <command> [options]\n`);
     process.stdout.write(`\nCommands:\n`);
     process.stdout.write(`  codegen    Generate graphql-system runtime module\n`);
-    process.stdout.write(`  builder    Run document builder (not yet implemented)\n`);
+    process.stdout.write(`  builder    Build GraphQL runtime artifacts from entry points\n`);
     return 0;
   }
 
@@ -28,12 +29,16 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
 if (import.meta.main) {
   dispatch(Bun.argv.slice(2))
     .then((exitCode) => {
-      process.exit(exitCode);
+      process.exitCode = exitCode;
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error);
-      process.stderr.write(`${message}\n`);
-      process.exit(1);
+      const unexpectedError = {
+        code: "UNEXPECTED_ERROR",
+        message,
+      };
+      process.stderr.write(`${formatError(unexpectedError, "json")}\n`);
+      process.exitCode = 1;
     });
 }
 

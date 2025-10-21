@@ -6,14 +6,13 @@ This document provides guidance for contributors working on the soda-gql codebas
 
 Checklist:
 - [ ] Project Status is documented
-- [ ] AI-Assisted Development is documented
 - [ ] Package Management is documented
 - [ ] Code Conventions are documented
 - [ ] Testing Conventions are documented
 
 ## Project Status
 
-**soda-gql is at pre-release v0.1.0**:
+**soda-gql is at pre-release v0.0.1**:
 - All refactors and architectural changes are encouraged
 - Breaking changes are acceptable
 - NO migration paths required
@@ -23,110 +22,6 @@ Checklist:
 
 See the main [README](./README.md) for installation and setup instructions.
 
-## AI-Assisted Development
-
-This project uses Codex MCP for complex code analysis, implementation planning, and follow-ups.
-
-**Note**: Codex provides read-only analysis and planning. All file modifications and command executions are performed by Claude following Codex's strategy.
-
-**When to use Codex**:
-- Writing new code or modifying existing implementations
-- Debugging and fixing errors
-- Refactoring and performance optimization
-- Architecture decisions and API design
-- Complex code analysis requiring deep codebase understanding
-- Follow-ups after all cases above are complete
-
-**How to use Codex**:
-1. Use the `mcp__codex__codex` tool with your implementation request
-2. Codex will analyze the codebase and provide a detailed strategy
-3. Implement following Codex's guidance
-4. For follow-ups, use `mcp__codex__codex-reply` with the conversationId (UUID)
-
-### Pre-Action Checkpoint (Execute Before Every Code Action)
-
-**P0 - MUST NEVER BREAK**:
-- [ ] Am I (Claude) about to edit code? → Codex plan required
-- [ ] Has Codex been consulted for this code task? → If NO, STOP
-- [ ] Is Codex's conversationId saved for follow-ups? → UUID format required
-
-**P1 - STRONGLY REQUIRED**:
-- [ ] Am I following Codex's strategy exactly? → If NO, re-consult
-- [ ] Are there implementation issues? → Use `mcp__codex__codex-reply`
-- [ ] Is the task complete? → Verify against Codex's success criteria
-
-**P2 - RECOMMENDED**:
-- [ ] Are tests/checks run as Codex specified?
-- [ ] Is user informed of progress?
-- [ ] Are edge cases from Codex's warnings handled?
-
-### Canonical Flow Diagram
-
-```
-User Request
-    ↓
-Claude receives → Translates to English if needed
-    ↓
-IMMEDIATE: Call mcp__codex__codex (NO EXCEPTIONS)
-    ↓
-Codex analyzes (READ-ONLY) → Returns conversationId (UUID)
-    ↓
-Claude saves conversationId (UUID) for follow-ups
-    ↓
-Claude implements EXACTLY as specified
-    ↓
-Issues arise? → Call mcp__codex__codex-reply WITH conversationId
-    ↓ ↕️
-Codex refines plan (READ-ONLY) ← Claude reports execution results
-    ↓
-Repeat until complete → User receives result
-```
-
-### Communication Requirements
-
-**Language Protocol**:
-- **ALL communication with Codex MUST be in English**
-- Translate user requests to English before sending to Codex
-- File paths, error messages, and context must be in English
-
-**Handoff Protocol**:
-- **Claude → Codex**: Include full user context, file paths, error messages
-- **Codex → Claude**: Provide implementation steps, patterns, warnings
-- **Claude → Codex (follow-up)**: Include execution results, errors encountered
-- **Codex → Claude (refinement)**: Adjusted strategy based on feedback
-
-### Task Classification
-
-**✅ REQUIRES CODEX (Mandatory)**:
-- Writing new code
-- Modifying existing code
-- Debugging and fixing errors
-- Refactoring
-- Performance optimization
-- Architecture decisions
-- API design
-- Database schema changes
-- Test implementation
-- Code reviews
-
-**⚪ DOES NOT REQUIRE CODEX (Claude handles alone)**:
-- Running existing commands (`bun test`, `bun install`)
-- Reading files for information only
-- Git operations (`git status`, `git log`, `git diff`)
-- File system operations (`ls`, `mkdir`, `mv`)
-- Documentation queries (non-code)
-- Project setup verification
-- Status reporting
-- User clarification questions
-
-**🤔 EDGE CASES**:
-- **Configuration file changes**: Use Codex if it affects application behavior
-- **README updates**: Use Codex if documenting code architecture
-- **Package.json scripts**: Use Codex if adding new build/test scripts
-- **Environment variables**: Use Codex if adding new application config
-
----
-
 ## Project Reference
 
 ### Package Management
@@ -134,7 +29,7 @@ Repeat until complete → User receives result
 **Use Bun for all operations**:
 - `bun install` (not npm/yarn/pnpm)
 - `bun run <script>` (not npm run)
-- `bun test` (not jest/vitest)
+- `bun run test` (not jest/vitest, not `bun test`)
 
 **Use Node.js APIs for implementation**:
 - Node.js `fs/promises` for file operations
@@ -167,20 +62,35 @@ Repeat until complete → User receives result
   - DO NOT build fields directly (no `f` access)
   - Use `slice.build()` to compose multiple slices
   - Act as integration layer for slices
-- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ ...f.createProduct(...) }))`
+- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ result: f.createProduct(...)(({ f }) => [f.id()]) }))`
 - **Correct pattern**: Create slice with field selection, then compose in operation with `slice.build()`
+  ```typescript
+  // Slice with field access
+  const createProductSlice = gql.default(({ mutation }, { $ }) =>
+    mutation.slice(
+      { variables: [$("name").scalar("String:!")] },
+      ({ f, $ }) => [f.createProduct({ name: $.name })(({ f }) => [f.id(), f.name()])],
+      ({ select }) => select(["$.createProduct"], (result) => result),
+    ),
+  );
+
+  // Operation composing slice
+  const createProductMutation = gql.default(({ mutation }, { $ }) =>
+    mutation.composed(
+      { operationName: "CreateProduct", variables: [$("productName").scalar("String:!")] },
+      ({ $ }) => ({ result: createProductSlice.build({ name: $.productName }) }),
+    ),
+  );
+  ```
 
 ### Commands
 
 ```bash
 # Generate typed runtime entry from schema
-bun run soda-gql codegen --schema ./schema.graphql --out packages/graphql-system/src/index.ts
-
-# Produce runtime GraphQL documents
-bun run soda-gql builder --mode runtime --entry ./src/pages/**/*.ts --out ./.cache/soda-gql/runtime.json
+bun run soda-gql codegen
 
 # Run tests
-bun test
+bun run test
 
 # Quality checks (linting + type check)
 bun quality

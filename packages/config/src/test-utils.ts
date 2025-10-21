@@ -31,11 +31,8 @@ export default defineConfig(${JSON.stringify(config, null, 2)});
 export function createTempConfigFile(dir: string, config: Partial<SodaGqlConfig>): string {
   const configPath = join(dir, "soda-gql.config.ts");
 
-  const configContent = `
-import { defineConfig } from "@soda-gql/config";
-
-export default defineConfig(${JSON.stringify(config, null, 2)});
-`.trim();
+  // Write config as direct export (no imports needed for simple configs)
+  const configContent = `export default ${JSON.stringify(config, null, 2)};`;
 
   writeFileSync(configPath, configContent);
   return configPath;

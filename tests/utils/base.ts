@@ -1,4 +1,5 @@
 import { afterEach, beforeEach } from "bun:test";
+import { getPortableFS } from "@soda-gql/common";
 import { TestTempDir } from ".";
 
 /**
@@ -45,32 +46,35 @@ export class TestSuite {
   /**
    * Write content to a file in the temp directory
    */
-  protected async writeTempFile(relativePath: string, content: string): Promise<string> {
+  public async writeTempFile(relativePath: string, content: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
-    await Bun.write(fullPath, content);
+    const fs = getPortableFS();
+    await fs.writeFile(fullPath, content);
     return fullPath;
   }
 
   /**
    * Read content from a file in the temp directory
    */
-  protected async readTempFile(relativePath: string): Promise<string> {
+  public async readTempFile(relativePath: string): Promise<string> {
     const fullPath = this.tempDir.join(relativePath);
-    return Bun.file(fullPath).text();
+    const fs = getPortableFS();
+    return await fs.readFile(fullPath);
   }
 
   /**
    * Check if a file exists in the temp directory
    */
-  protected async tempFileExists(relativePath: string): Promise<boolean> {
+  public async tempFileExists(relativePath: string): Promise<boolean> {
     const fullPath = this.tempDir.join(relativePath);
-    return Bun.file(fullPath).exists();
+    const fs = getPortableFS();
+    return await fs.exists(fullPath);
   }
 
   /**
    * Get the full path to a file in the temp directory
    */
-  protected getTempPath(relativePath = ""): string {
+  public getTempPath(relativePath = ""): string {
     return relativePath ? this.tempDir.join(relativePath) : this.tempDir.path;
   }
 }

@@ -1,33 +1,36 @@
-import type { PluginObj, PluginPass, types as t } from "@babel/core";
+import type { PluginObj, PluginPass } from "@babel/core";
+import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { ArtifactLookup } from "./analysis/gql-call";
-import { collectGqlDefinitionMetadata } from "./metadata/collector";
-import { type PluginState, preparePluginState } from "./state";
-import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./transform/import-utils";
-import { insertRuntimeCalls, transformCallExpression } from "./transform/transformer";
-import type { SodaGqlBabelOptions } from "./types";
+import type { CanonicalId } from "@soda-gql/builder";
+import { babelTransformAdapterFactory } from "./adapter/index";
+import { type PluginOptions, type PluginState, preparePluginState } from "./internal/builder-bridge";
+import { formatPluginError } from "./internal/errors";
 
-type PluginPassState = PluginPass & { _state?: PluginState };
+type PluginPassState = PluginPass & {
+  _state?: PluginState;
+};
 
-export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: PluginState }> => ({
+export const createSodaGqlPlugin = (): PluginObj<PluginOptions & { _state?: PluginState }> => ({
   name: "@soda-gql/plugin-babel",
   // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
-  // Sync transforms are unsupported for builder artifact source mode
   async pre() {
-    const rawOptions = (this as unknown as { opts?: Partial<SodaGqlBabelOptions> }).opts ?? {};
+    const rawOptions = (this as unknown as { opts?: Partial<PluginOptions> }).opts ?? {};
     const stateResult = await preparePluginState(rawOptions);
 
     if (stateResult.isErr()) {
-      throw new Error(stateResult.error.message);
+      throw new Error(formatPluginError(stateResult.error));
     }
 
-    this._state = stateResult.value;
+    const normalizedState = stateResult.value;
+
+    // Store state for transform
+    this._state = normalizedState;
   },
   visitor: {
     Program(programPath: NodePath<t.Program>, state) {
       const pass = state as unknown as PluginPassState;
       const pluginState = pass._state;
-      if (!pluginState || pluginState.options.mode === "runtime") {
+      if (!pluginState) {
         return;
       }
 
@@ -36,37 +39,37 @@ export const createPlugin = (): PluginObj<SodaGqlBabelOptions & { _state?: Plugi
         return;
       }
 
-      const metadata = collectGqlDefinitionMetadata({ programPath, filename });
-      const getArtifact: ArtifactLookup = (canonicalId) => pluginState.allArtifacts[canonicalId];
-
-      const runtimeCalls: t.Expression[] = [];
-      let mutated = false;
-
-      programPath.traverse({
-        CallExpression(callPath) {
-          const result = transformCallExpression({
-            callPath,
-            filename,
-            metadata,
-            getArtifact,
-          });
-
-          if (result.transformed) {
-            ensureGqlRuntimeImport(programPath);
-            mutated = true;
-
-            if (result.runtimeCall) {
-              runtimeCalls.push(result.runtimeCall);
-            }
-          }
-        },
+      // Create Babel adapter instance
+      const adapter = babelTransformAdapterFactory.create({
+        programPath,
+        types: t,
       });
 
-      insertRuntimeCalls(programPath, runtimeCalls);
+      // Transform using adapter
+      const result = adapter.transformProgram({
+        filename,
+        artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
+        runtimeModule: pluginState.options.importIdentifier,
+      });
 
-      if (mutated) {
-        programPath.scope.crawl();
-        maybeRemoveUnusedGqlImport(programPath);
+      // Insert runtime side effects if transformed
+      if (result.transformed) {
+        adapter.insertRuntimeSideEffects(
+          {
+            filename,
+            runtimeModule: pluginState.options.importIdentifier,
+            artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
+          },
+          result.runtimeArtifacts || [],
+        );
+      }
+
+      // Handle errors
+      if (result.errors && result.errors.length > 0) {
+        const firstError = result.errors[0];
+        if (firstError) {
+          throw new Error(formatPluginError(firstError));
+        }
       }
     },
   },

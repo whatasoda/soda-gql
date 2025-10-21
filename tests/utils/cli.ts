@@ -1,5 +1,6 @@
 import { expect } from "bun:test";
 import { join } from "node:path";
+import { spawn } from "@soda-gql/common";
 import { getProjectRoot } from ".";
 
 export type CliResult = {
@@ -32,34 +33,31 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
   // Call CLI entry point directly to preserve cwd for config discovery
   const cliEntryPoint = join(getProjectRoot(), "packages/cli/src/index.ts");
 
-  const subprocess = Bun.spawn({
-    cmd: ["bun", cliEntryPoint, command, ...args],
-    cwd,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      ...env,
-    },
-  });
-
-  // Add timeout handling
-  const timeoutPromise = new Promise<never>((_, reject) => {
+  // Use portable spawn with timeout handling
+  const timeoutPromise = new Promise<CliResult>((_, reject) => {
     setTimeout(() => {
-      subprocess.kill();
       reject(new Error(`CLI command timed out after ${timeout}ms`));
     }, timeout);
   });
 
-  try {
-    const [stdout, stderr, exitCode] = await Promise.race([
-      Promise.all([new Response(subprocess.stdout).text(), new Response(subprocess.stderr).text(), subprocess.exited]),
-      timeoutPromise,
-    ]);
+  // Ensure development condition is set for module resolution in spawned processes
+  const nodeOptions = [process.env.NODE_OPTIONS, "--conditions=development"].filter(Boolean).join(" ");
 
-    return { stdout, stderr, exitCode };
+  const spawnPromise = spawn({
+    cmd: ["bun", "--conditions=development", cliEntryPoint, command, ...args],
+    cwd,
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      ...env,
+      NODE_OPTIONS: nodeOptions,
+    },
+  });
+
+  try {
+    const result = await Promise.race([spawnPromise, timeoutPromise]);
+    return result;
   } catch (error) {
-    subprocess.kill();
     throw error;
   }
 };
@@ -93,8 +91,10 @@ export const assertCliSuccess = (result: CliResult): void => {
 export const assertCliError = (result: CliResult, expectedErrorCode?: string): void => {
   expect(result.exitCode).toBe(1);
   if (expectedErrorCode) {
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const payload = JSON.parse(result.stdout);
+    // Check stderr first (where errors are now written), fallback to stdout for backwards compatibility
+    const errorOutput = result.stderr || result.stdout;
+    expect(() => JSON.parse(errorOutput)).not.toThrow();
+    const payload = JSON.parse(errorOutput);
     expect(payload.error).toBeDefined();
     expect(payload.error.code).toBe(expectedErrorCode);
   }

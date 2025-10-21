@@ -2,6 +2,8 @@
  * Shared types and constants for module analyzers (TypeScript and SWC).
  */
 
+import type { CanonicalId } from "@soda-gql/common";
+
 export type SourcePosition = {
   readonly line: number;
   readonly column: number;
@@ -13,6 +15,7 @@ export type SourceLocation = {
 };
 
 export type ModuleDefinition = {
+  readonly canonicalId: CanonicalId;
   /** AST-derived path uniquely identifying this definition's location (e.g., "MyComponent.useQuery.def") */
   readonly astPath: string;
   /** Whether this definition is at the top level of the module */

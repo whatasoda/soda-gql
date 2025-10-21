@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getPortableFS } from "@soda-gql/common";
 
 /**
  * Get the project root directory
@@ -38,7 +39,8 @@ export class TestTempDir {
  * Assert that a file exists
  */
 export const assertFileExists = async (path: string): Promise<void> => {
-  const exists = await Bun.file(path).exists();
+  const fs = getPortableFS();
+  const exists = await fs.exists(path);
   expect(exists).toBe(true);
 };
 
@@ -47,7 +49,8 @@ export const assertFileExists = async (path: string): Promise<void> => {
  */
 export const assertFileContains = async (path: string, content: string): Promise<void> => {
   await assertFileExists(path);
-  const fileContent = await Bun.file(path).text();
+  const fs = getPortableFS();
+  const fileContent = await fs.readFile(path);
   expect(fileContent).toContain(content);
 };
 
@@ -56,7 +59,8 @@ export const assertFileContains = async (path: string, content: string): Promise
  */
 export const assertFileDoesNotContain = async (path: string, content: string): Promise<void> => {
   await assertFileExists(path);
-  const fileContent = await Bun.file(path).text();
+  const fs = getPortableFS();
+  const fileContent = await fs.readFile(path);
   expect(fileContent).not.toContain(content);
 };
 
@@ -64,7 +68,8 @@ export const assertFileDoesNotContain = async (path: string, content: string): P
  * Assert that a file does not exist
  */
 export const assertFileDoesNotExist = async (path: string): Promise<void> => {
-  const exists = await Bun.file(path).exists();
+  const fs = getPortableFS();
+  const exists = await fs.exists(path);
   expect(exists).toBe(false);
 };
 
@@ -73,14 +78,16 @@ export const assertFileDoesNotExist = async (path: string): Promise<void> => {
  */
 export const readTestFile = async (path: string): Promise<string> => {
   await assertFileExists(path);
-  return Bun.file(path).text();
+  const fs = getPortableFS();
+  return await fs.readFile(path);
 };
 
 /**
  * Write file content
  */
 export const writeTestFile = async (path: string, content: string): Promise<void> => {
-  await Bun.write(path, content);
+  const fs = getPortableFS();
+  await fs.writeFile(path, content);
 };
 
 export * from "./fixtureHelpers";

@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/plugin-swc",
+    "tsBuildInfoFile": "../../.typecheck/plugin-swc/tsconfig.tsbuildinfo",
+    "rootDir": "src",
+    "paths": {}
+  },
+  "include": ["src/**/*"],
+  "references": [{ "path": "../builder/tsconfig.editor.json" }, { "path": "../plugin-shared/tsconfig.editor.json" }]
+}

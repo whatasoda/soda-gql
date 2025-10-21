@@ -90,6 +90,6 @@ describe("@soda-gql/plugin-babel zero-runtime transforms", () => {
     expect(transformed).toContain("operationType");
     expect(transformed).toContain("query");
     expect(transformed).toContain("ProfilePageQuery");
-    expect(transformed).toContain('export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery")');
+    expect(transformed).toContain('export const profileQuery = gqlRuntime.getComposedOperation("ProfilePageQuery")');
   });
 });

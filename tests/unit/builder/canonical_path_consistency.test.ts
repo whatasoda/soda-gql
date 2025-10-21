@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { getAstAnalyzer } from "../../../packages/builder/src/ast";
+import { createAstAnalyzer } from "@soda-gql/builder/ast";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder/internal/graphql-system";
+import { createTestConfig } from "../../helpers/test-config";
 import { loadModuleAnalysisFixture } from "../../utils";
 
 describe("Canonical path consistency", () => {
@@ -15,8 +17,10 @@ describe("Canonical path consistency", () => {
   const loadFixture = (name: string) => loadModuleAnalysisFixture("shared", name);
 
   describe("TypeScript and SWC adapters produce consistent astPath", () => {
-    const analyzeWithTS = getAstAnalyzer("ts").analyze;
-    const analyzeWithSWC = getAstAnalyzer("swc").analyze;
+    const testConfig = createTestConfig("/test");
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const analyzeWithTS = createAstAnalyzer({ analyzer: "ts", graphqlHelper }).analyze;
+    const analyzeWithSWC = createAstAnalyzer({ analyzer: "swc", graphqlHelper }).analyze;
 
     it("generates same astPath for top-level definitions", () => {
       const { filePath, source } = loadFixture("top-level-simple");
@@ -116,7 +120,9 @@ describe("Canonical path consistency", () => {
   });
 
   describe("Export binding detection", () => {
-    const analyzeWithTS = getAstAnalyzer("ts").analyze;
+    const testConfig = createTestConfig("/test");
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const analyzeWithTS = createAstAnalyzer({ analyzer: "ts", graphqlHelper }).analyze;
 
     it("detects exported definitions", () => {
       const { filePath, source } = loadFixture("exported-and-private");
@@ -148,7 +154,9 @@ describe("Canonical path consistency", () => {
   });
 
   describe("Complex nesting scenarios", () => {
-    const analyzeWithTS = getAstAnalyzer("ts").analyze;
+    const testConfig = createTestConfig("/test");
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const analyzeWithTS = createAstAnalyzer({ analyzer: "ts", graphqlHelper }).analyze;
 
     it("handles deeply nested definitions", () => {
       const { filePath, source } = loadFixture("deeply-nested");

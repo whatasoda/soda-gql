@@ -13,8 +13,7 @@ export type AvailableFieldPathOf<TSchema extends AnyGraphqlSchema, TFields exten
   TSchema,
   TFields,
   "$"
-> &
-  string;
+>;
 
 /** Recursive helper used to build path strings for nested selections. */
 type AvailableFieldPathsInner<TSchema extends AnyGraphqlSchema, TFields extends AnyFields, TCurr extends AnyFieldPath> = {
@@ -39,9 +38,11 @@ type InferByFieldPathInner<
   TPathTarget extends AnyFieldPath,
   TPathCurrent extends AnyFieldPath,
 > = {
-  readonly [TAliasName in keyof TFields & string]: `${TPathCurrent}.${TAliasName}` extends TPathTarget
-    ? InferField<TSchema, TFields[TAliasName]>
-    : TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
-      ? InferByFieldPathInner<TSchema, TNested, TPathTarget, `${TPathCurrent}.${TAliasName}`>
-      : never;
-}[keyof TFields & string];
+  readonly [TAliasName in keyof TFields]: TAliasName extends string
+    ? `${TPathCurrent}.${TAliasName}` extends TPathTarget
+      ? InferField<TSchema, TFields[TAliasName]>
+      : TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
+        ? InferByFieldPathInner<TSchema, TNested, TPathTarget, `${TPathCurrent}.${TAliasName}`>
+        : never
+    : never;
+}[keyof TFields];

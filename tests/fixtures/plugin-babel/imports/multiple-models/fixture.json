@@ -1,0 +1,7 @@
+{
+  "source": "source.ts",
+  "elements": [
+    { "export": "model1", "type": "model", "prebuild": { "typename": "User" } },
+    { "export": "model2", "type": "model", "prebuild": { "typename": "Post" } }
+  ]
+}

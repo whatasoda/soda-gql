@@ -4,8 +4,9 @@
  */
 
 import { extname } from "node:path";
+import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import ts from "typescript";
-import { createCanonicalTracker } from "../../canonical-id/path-tracker";
+import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 import type {
@@ -32,7 +33,7 @@ const toLocation = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation =>
   } satisfies SourceLocation;
 };
 
-const collectGqlImports = (sourceFile: ts.SourceFile): ReadonlySet<string> => {
+const collectGqlImports = (sourceFile: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> => {
   const identifiers = new Set<string>();
 
   sourceFile.statements.forEach((statement) => {
@@ -41,7 +42,7 @@ const collectGqlImports = (sourceFile: ts.SourceFile): ReadonlySet<string> => {
     }
 
     const moduleText = (statement.moduleSpecifier as ts.StringLiteral).text;
-    if (!moduleText.endsWith("/graphql-system")) {
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: sourceFile.fileName, specifier: moduleText })) {
       return;
     }
 
@@ -226,11 +227,15 @@ const getPropertyName = (name: ts.PropertyName): string | null => {
 /**
  * Collect all gql definitions (exported, non-exported, top-level, nested)
  */
-const collectAllDefinitions = (
-  sourceFile: ts.SourceFile,
-  identifiers: ReadonlySet<string>,
-  exports: readonly ModuleExport[],
-): {
+const collectAllDefinitions = ({
+  sourceFile,
+  identifiers,
+  exports,
+}: {
+  sourceFile: ts.SourceFile;
+  identifiers: ReadonlySet<string>;
+  exports: readonly ModuleExport[];
+}): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly ts.CallExpression[];
 } => {
@@ -412,6 +417,7 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
+        canonicalId: createCanonicalId(sourceFile.fileName, item.astPath),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -445,8 +451,8 @@ export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     return createSourceFile(input.filePath, input.source);
   },
 
-  collectGqlIdentifiers(file: ts.SourceFile): ReadonlySet<string> {
-    return collectGqlImports(file);
+  collectGqlIdentifiers(file: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
+    return collectGqlImports(file, helper);
   },
 
   collectImports(file: ts.SourceFile): readonly ModuleImport[] {
@@ -469,7 +475,11 @@ export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression
     readonly definitions: readonly ModuleDefinition[];
     readonly handles: readonly ts.CallExpression[];
   } {
-    const { definitions, handledCalls } = collectAllDefinitions(file, context.gqlIdentifiers, context.exports);
+    const { definitions, handledCalls } = collectAllDefinitions({
+      sourceFile: file,
+      identifiers: context.gqlIdentifiers,
+      exports: context.exports,
+    });
     return { definitions, handles: handledCalls };
   },
 

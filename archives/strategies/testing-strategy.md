@@ -1,11 +1,11 @@
 # Testing Strategy Guide (Pre-release Reset)
 
 ## Intent
-Rebuild the test suite to validate the new IR-centric pipeline. Eliminate coverage for deprecated behaviours and assume we can delete or rename any public surface to support better tests.
+Rebuild the test suite to validate the new IR-centric pipeline. Eliminate coverage for deprecated behaviors and assume we can delete or rename any public surface to support better tests.
 
 ## Principles
 - Tests should exercise the desired architecture, not the legacy implementations.
-- Prefer deterministic snapshots of IR, diagnostics, and runtime code over indirect behavioural assertions.
+- Prefer deterministic snapshots of IR, diagnostics, and runtime code over indirect behavioral assertions.
 - Remove brittle fixtures and regenerate them under the new package layout.
 - Gate merges on coverage thresholds that reflect the rewritten system, not historical baselines.
 

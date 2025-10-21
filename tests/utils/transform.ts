@@ -3,6 +3,8 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
+import { getPortableFS } from "@soda-gql/common";
+import { createTempConfigFile } from "@soda-gql/config";
 import createPlugin from "@soda-gql/plugin-babel";
 import { getProjectRoot, TestTempDir } from ".";
 import { typeCheckFiles } from "./type-check";
@@ -43,6 +45,11 @@ export type TransformOptions = {
   importIdentifier?: string;
   skipTypeCheck?: boolean;
   additionalFiles?: Array<{ path: string; content: string }>; // Additional files for type checking context
+  configOverrides?: {
+    outdir?: string;
+    include?: string[];
+    analyzer?: "ts";
+  };
 };
 
 /**
@@ -59,13 +66,30 @@ export const runBabelTransform = async (
   try {
     const {
       mode = "zero-runtime",
-      importIdentifier = "@soda-gql/runtime",
+      importIdentifier = "@/graphql-system",
       skipTypeCheck = false,
       additionalFiles = [],
+      configOverrides = {},
     } = options;
 
     const artifactPath = tempDir.join("artifact.json");
-    await Bun.write(artifactPath, JSON.stringify(artifact));
+    const fs = getPortableFS();
+    await fs.writeFile(artifactPath, JSON.stringify(artifact));
+
+    // Create temp config file that references the artifact
+    // Use overrides if provided, otherwise use defaults
+    const configPath = createTempConfigFile(tempDir.path, {
+      outdir: configOverrides.outdir ?? "./graphql-system",
+      include: configOverrides.include ?? ["**/*.ts"],
+      analyzer: configOverrides.analyzer ?? "ts",
+      schemas: {
+        default: {
+          schema: "./schema.graphql",
+          runtimeAdapter: "./runtime-adapter.ts",
+          scalars: "./scalars.ts",
+        },
+      },
+    });
 
     const result = await transformAsync(source, {
       filename,
@@ -80,7 +104,11 @@ export const runBabelTransform = async (
           createPlugin,
           {
             mode,
-            artifactSource: { source: "artifact-file", path: artifactPath },
+            configPath,
+            artifact: {
+              useBuilder: false,
+              path: artifactPath,
+            },
             importIdentifier,
           },
         ],

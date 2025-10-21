@@ -1,3 +1,5 @@
+import { assertUnreachable } from "../errors";
+import type { GraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import type { BuilderAnalyzer } from "../types";
 import { swcAdapter } from "./adapters/swc";
 import { typescriptAdapter } from "./adapters/typescript";
@@ -15,20 +17,30 @@ export type {
   SourcePosition,
 } from "./types";
 
-export const getAstAnalyzer = (analyzer: BuilderAnalyzer) => {
+export const createAstAnalyzer = ({
+  analyzer,
+  graphqlHelper,
+}: {
+  readonly analyzer: BuilderAnalyzer;
+  readonly graphqlHelper: GraphqlSystemIdentifyHelper;
+}) => {
   const analyze = (input: AnalyzeModuleInput): ModuleAnalysis => {
-    switch (analyzer) {
-      case "ts":
-        return analyzeModuleCore(input, typescriptAdapter);
-      case "swc":
-        return analyzeModuleCore(input, swcAdapter);
-      default:
-        throw new Error(`Unsupported analyzer: ${analyzer}`);
+    if (analyzer === "ts") {
+      return analyzeModuleCore(input, typescriptAdapter, graphqlHelper);
     }
+    if (analyzer === "swc") {
+      return analyzeModuleCore(input, swcAdapter, graphqlHelper);
+    }
+    return assertUnreachable(analyzer, "createAstAnalyzer");
   };
 
   return {
     type: analyzer,
     analyze,
   };
+};
+
+// Deprecated: Use createAstAnalyzer instead
+export const getAstAnalyzer = (analyzer: BuilderAnalyzer) => {
+  throw new Error("getAstAnalyzer is deprecated. Use createAstAnalyzer with graphqlHelper parameter instead.");
 };

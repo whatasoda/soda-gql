@@ -86,6 +86,7 @@ export type MultiSchemaCodegenSuccess = {
     }
   >;
   readonly outPath: string;
+  readonly cjsPath: string;
 };
 
 export type CodegenResult = Result<CodegenSuccess, CodegenError>;

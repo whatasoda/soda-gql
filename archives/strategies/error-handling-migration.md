@@ -46,4 +46,4 @@ bun run typecheck
 ```
 
 ## Rollback Policy
-If a consumer depends on legacy diagnostics, break it now and document the new behaviour. Do **not** ship adapters unless Codex explicitly directs otherwise.
+If a consumer depends on legacy diagnostics, break it now and document the new behavior. Do **not** ship adapters unless Codex explicitly directs otherwise.

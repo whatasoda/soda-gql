@@ -22,7 +22,8 @@
         "useTemplate": "error"
       },
       "complexity": {
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noUselessCatch": "off"
       },
       "suspicious": {
         "noExplicitAny": "error",
@@ -37,21 +38,24 @@
       "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
     }
   },
   "files": {
     "includes": [
-      "debug.ts",
-      "debug.transformed.ts",
+      "./tsdown.config.ts",
       "packages/**/*",
       "examples/**/*",
       "**/tests/**/*",
+      "scripts/prepublish.ts",
       "!bun.lock",
-      "!**/tests/.tmp/**/*",
-      "!**/.cache/**/*",
+      "!**/node_modules/**/*",
       "!**/dist/**/*",
-      "!**/test_dist/**/*",
-      "!**/node_modules/**/*"
+      "!**/tests/.tmp/**/*",
+      "!**/.typecheck/**/*",
+      "!**/.cache/**/*"
     ],
     "ignoreUnknown": false
   },
@@ -79,6 +83,19 @@
           "correctness": {
             "noUnusedVariables": "off",
             "noUnusedImports": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["examples/nestjs-compiler-tsc/**/*"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off"
           }
         }
       }

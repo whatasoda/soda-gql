@@ -1,0 +1,10 @@
+{
+  ".": "./src/index.ts",
+  "./plugin": "./src/plugin.ts",
+  "./loader": "./src/loader.ts",
+  "./hooks": "./src/hooks.ts",
+  "./internal/diagnostics": "./src/internal/diagnostics.ts",
+  "./internal/manifest": "./src/internal/manifest.ts",
+  "./schemas": "./src/schemas/index.ts",
+  "./nest": "./src/nest/index.ts"
+}

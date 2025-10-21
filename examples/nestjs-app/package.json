@@ -1,0 +1,28 @@
+{
+  "name": "@soda-gql-examples/nestjs-webpack",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "codegen": "soda-gql codegen --schema:default ./schema.graphql --out ./graphql-system/index.ts --scalar:default ./inject-module/runtime-adapter.ts --runtime-adapter:default ./inject-module/runtime-adapter.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/runtime": "workspace:*",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@nestjs/cli": "^10.0.0",
+    "@soda-gql/plugin-webpack": "workspace:*",
+    "@types/node": "^20.0.0",
+    "ts-loader": "^9.5.4",
+    "webpack": "^5.0.0"
+  }
+}

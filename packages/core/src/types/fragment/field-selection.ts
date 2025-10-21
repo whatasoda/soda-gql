@@ -7,11 +7,11 @@ import type {
   AnyTypeName,
   ApplyTypeModifier,
   InferOutputTypeRef,
-  OutputInferrableTypeRef,
-  OutputObjectRef,
-  OutputTypeRef,
-  OutputUnionRef,
-  PickTypeRefByFieldName,
+  OutputInferrableTypeSpecifier,
+  OutputObjectSpecifier,
+  OutputTypeSpecifier,
+  OutputUnionSpecifier,
+  PickTypeSpecifierByFieldName,
 } from "../schema";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
@@ -24,7 +24,7 @@ import type { AnyDirectiveAttachments } from "./directives";
 export type AnyFieldSelection = {
   readonly parent: AnyTypeName;
   readonly field: AnyFieldName;
-  readonly type: OutputTypeRef;
+  readonly type: OutputTypeSpecifier;
   readonly args: AnyAssignableInput;
   readonly directives: AnyDirectiveAttachments;
   readonly object: AnyNestedObject | null;
@@ -45,7 +45,7 @@ export type AnyFields = {
 export type AbstractFieldSelection<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
-  TRef extends OutputTypeRef,
+  TRef extends OutputTypeSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
   TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
@@ -64,15 +64,15 @@ export type FieldSelectionTemplateOf<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
-> = PickTypeRefByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends OutputTypeRef
+> = PickTypeSpecifierByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends OutputTypeSpecifier
   ? AbstractFieldSelection<
       TTypeName,
       TFieldName,
       TRef,
       AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
       AnyDirectiveAttachments,
-      | (TRef extends OutputObjectRef ? { object: AnyNestedObject } : never)
-      | (TRef extends OutputUnionRef ? { union: AnyNestedUnion } : never)
+      | (TRef extends OutputObjectSpecifier ? { object: AnyNestedObject } : never)
+      | (TRef extends OutputUnionSpecifier ? { union: AnyNestedUnion } : never)
     >
   : never;
 
@@ -84,13 +84,13 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
-      type: infer TRef extends OutputObjectRef;
+      type: infer TRef extends OutputObjectSpecifier;
       object: infer TNested extends AnyNestedObject;
     }
       ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchema, TNested>>
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputUnionRef;
+      type: infer TRef extends OutputUnionSpecifier;
       union: infer TNested extends AnyNestedUnion;
     }
       ? ApplyTypeModifier<
@@ -103,7 +103,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
         >
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputInferrableTypeRef;
+      type: infer TRef extends OutputInferrableTypeSpecifier;
     }
       ? InferOutputTypeRef<TSchema, TRef>
       : never);

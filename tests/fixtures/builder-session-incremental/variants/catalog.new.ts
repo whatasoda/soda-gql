@@ -1,8 +1,8 @@
 import { gql } from "@/graphql-system";
 
 // New catalog file to test adding modules
-export const catalogSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const catalogSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("limit").scalar("Int:?")],
     },
@@ -19,14 +19,14 @@ export const catalogSlice = gql.default(({ slice }, { $ }) =>
   ),
 );
 
-export const catalogOperation = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const catalogOperation = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "GetCatalog",
       variables: [$("limit").scalar("Int:?")],
     },
     ({ $ }) => ({
-      products: catalogSlice.build({ limit: $.limit }),
+      products: catalogSlice.embed({ limit: $.limit }),
     }),
   ),
 );

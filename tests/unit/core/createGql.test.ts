@@ -2,15 +2,15 @@ import { describe, expect, it } from "bun:test";
 import {
   type AnyGraphqlRuntimeAdapter,
   type AnyGraphqlSchema,
-  createGqlInvoker,
+  createGqlElementComposer,
   define,
   defineOperationRoots,
   defineScalar,
   Projection,
-  unsafeInputRef,
-  unsafeOutputRef,
-} from "../../../packages/core";
-import { createRuntimeAdapter } from "../../../packages/runtime";
+  unsafeInputType,
+  unsafeOutputType,
+} from "@soda-gql/core";
+import { createRuntimeAdapter } from "@soda-gql/core/runtime";
 
 const schema = {
   operations: defineOperationRoots({
@@ -35,9 +35,9 @@ const schema = {
   object: {
     Query: define("Query").object(
       {
-        user: unsafeOutputRef.object("User:!", {
+        user: unsafeOutputType.object("User:!", {
           arguments: {
-            id: unsafeInputRef.scalar("ID:!", {}),
+            id: unsafeInputType.scalar("ID:!", {}),
           },
           directives: {},
         }),
@@ -48,8 +48,8 @@ const schema = {
     Subscription: define("Subscription").object({}, {}),
     User: define("User").object(
       {
-        id: unsafeOutputRef.scalar("ID:!", { directives: {} }),
-        name: unsafeOutputRef.scalar("String:!", { directives: {} }),
+        id: unsafeOutputType.scalar("ID:!", { directives: {} }),
+        name: unsafeOutputType.scalar("String:!", { directives: {} }),
       },
       {},
     ),
@@ -64,7 +64,7 @@ const adapter = createRuntimeAdapter(({ type }) => ({
 })) satisfies AnyGraphqlRuntimeAdapter;
 
 describe("createGqlInvoker", () => {
-  const gql = createGqlInvoker<Schema, typeof adapter>(schema);
+  const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;
@@ -139,8 +139,8 @@ describe("createGqlInvoker", () => {
       ),
     );
 
-    const userSlice = gql(({ slice }, { $ }) =>
-      slice.query(
+    const userSlice = gql(({ query }, { $ }) =>
+      query.slice(
         { variables: [$("id").scalar("ID:!")] },
         ({ f, $ }) => [
           //
@@ -153,17 +153,17 @@ describe("createGqlInvoker", () => {
       ),
     );
 
-    const sliceFragment = userSlice.build({ id: "1" });
+    const sliceFragment = userSlice.embed({ id: "1" });
     expect(sliceFragment.projection).toBeInstanceOf(Projection);
 
-    const profileQuery = gql(({ operation }, { $ }) =>
-      operation.query(
+    const profileQuery = gql(({ query }, { $ }) =>
+      query.composed(
         {
           operationName: "ProfilePageQuery",
           variables: [$("userId").scalar("ID:!")],
         },
         ({ $ }) => ({
-          user: userSlice.build({ id: $.userId }),
+          user: userSlice.embed({ id: $.userId }),
         }),
       ),
     );

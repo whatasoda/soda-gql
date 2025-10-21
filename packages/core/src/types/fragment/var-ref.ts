@@ -1,7 +1,7 @@
 import type { Hidden } from "../../utils/hidden";
 import type { Prettify } from "../../utils/prettify";
 import type { ApplyTypeModifier } from "../schema/type-modifier";
-import type { AnyDefaultValue, InputTypeRef } from "../schema/type-ref";
+import type { AnyDefaultValue, InputTypeSpecifier } from "../schema/type-specifier";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 export type AnyVarRef = VarRef<any>;
@@ -12,8 +12,8 @@ type AnyVarRefMeta = {
   readonly modifier: unknown;
 };
 
-export type VarRefBy<TRef extends InputTypeRef> = VarRef<VarRefMetaBy<TRef>>;
-type VarRefMetaBy<TRef extends InputTypeRef> = Prettify<{
+export type VarRefBy<TRef extends InputTypeSpecifier> = VarRef<VarRefMetaBy<TRef>>;
+type VarRefMetaBy<TRef extends InputTypeSpecifier> = Prettify<{
   readonly kind: TRef["kind"];
   readonly name: TRef["name"];
   readonly modifier:
@@ -28,7 +28,7 @@ export class VarRef<TMeta extends AnyVarRefMeta> {
 
   private constructor(public readonly name: string) {}
 
-  static create<TRef extends InputTypeRef>(name: string): VarRefBy<TRef> {
+  static create<TRef extends InputTypeSpecifier>(name: string): VarRefBy<TRef> {
     return new VarRef<VarRefMetaBy<TRef>>(name);
   }
 }

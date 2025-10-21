@@ -15,16 +15,18 @@ export const adminModel = gql.admin(({ model }) =>
   ),
 );
 
-export const defaultQuery = gql.default(({ operation }) =>
-  operation.query(
+export const defaultQuery = gql.default(({ query }) =>
+  query.composed(
     {
       operationName: "DefaultData",
       variables: [],
     },
-    // @ts-expect-error - Test fixture: f doesn't exist when no variables
-    ({ f }) => ({
-      // @ts-expect-error - Test fixture: nested f also doesn't exist
-      ...f.users({}, ({ f }) => ({ ...f.id() })),
-    }),
+    () => {
+      // Test fixture: using any to create a mock slice
+      const fakeSlice: any = undefined;
+      return {
+        users: fakeSlice.embed({}),
+      };
+    },
   ),
 );

@@ -1,27 +1,44 @@
 {
   "name": "soda-gql",
-  "module": "index.ts",
+  "version": "0.0.1",
   "type": "module",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ],
   "scripts": {
+    "prepublish": "bun run scripts/prepublish.ts",
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
-    "quality": "bun run biome:check && bun run typecheck",
+    "validate:tests": "bun run scripts/validate-tests.ts",
+    "quality": "bun run validate:tests && bun run typecheck && bun run biome:check",
+    "exports:sync": "bun scripts/sync-exports.ts",
+    "build": "bun run exports:sync && bunx tsdown",
+    "build:watch": "bunx tsdown --watch",
+    "test": "bun --conditions=development test",
+    "clean:dist": "find packages -name dist -type d -prune -exec rm -rf {} +",
     "soda-gql": "bun run packages/cli/src/index.ts",
     "fixture:setup": "bun soda-gql codegen --out tests/fixtures/runtime-app/graphql-system/index.ts --schema:default tests/fixtures/runtime-app/schema.graphql --scalar:default tests/fixtures/inject-module/default-scalar.ts --runtime-adapter:default tests/fixtures/inject-module/default-runtime-adapter.ts",
+    "examples:codegen": "cd examples/babel-app && bun run codegen && cd ../nestjs-app && bun run codegen",
     "perf:builder": "bun run scripts/perf/collect-builder-metrics.ts",
-    "cleanup": "rm -rf .cache tests/.tmp"
+    "cleanup": "rm -rf .cache tests/.tmp",
+    "codex:conversation": "bun scripts/extract-codex-conversation-ids.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",
+    "@swc-node/register": "^1.11.1",
     "@types/bun": "latest",
+    "@types/node": "^24.7.2",
+    "graphql": "^16.8.1",
+    "tsdown": "^0.15.7",
     "typescript": "^5.9.2",
-    "zod": "^4.1.5"
+    "zod": "^4.1.11"
   },
-  "dependencies": {
-    "xxhash-wasm": "^1.1.0"
+  "patchedDependencies": {
+    "@swc/core@1.13.5": "patches/@swc%2Fcore@1.13.5.patch"
+  },
+  "resolutions": {
+    "typescript": "5.9.2"
   }
 }

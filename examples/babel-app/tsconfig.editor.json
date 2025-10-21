@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/examples/babel-app",
+    "tsBuildInfoFile": "../../.typecheck/examples/babel-app/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.editor.json" },
+    { "path": "../../packages/runtime/tsconfig.editor.json" }
+  ]
+}

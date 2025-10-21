@@ -1,57 +1,40 @@
 import { err, ok, type Result } from "neverthrow";
+import type { ModuleAnalysis } from "../ast";
+import type { ModuleLoadStats } from "../discovery";
 import type { BuilderError } from "../types";
 import { aggregate } from "./aggregate";
 import { checkIssues } from "./issue-handler";
-import { loadIntermediateModules } from "./loader";
-import type { BuildArtifactInput, BuilderArtifact } from "./types";
+import type { BuilderArtifact, IntermediateElements } from "./types";
 
-export const buildArtifact = async ({
-  graph,
-  cache,
-  intermediateModulePath,
-  intermediateModulePaths,
-  evaluatorId,
-}: BuildArtifactInput): Promise<Result<BuilderArtifact, BuilderError>> => {
-  const chunkPaths = intermediateModulePaths ?? (intermediateModulePath ? new Map([["", intermediateModulePath]]) : undefined);
+type BuildArtifactInput = {
+  readonly elements: IntermediateElements;
+  readonly analyses: ReadonlyMap<string, ModuleAnalysis>;
+  readonly stats: ModuleLoadStats;
+};
 
-  if (!chunkPaths) {
-    return err({
-      code: "MODULE_EVALUATION_FAILED",
-      filePath: "",
-      astPath: "",
-      message: "Either intermediateModulePath or intermediateModulePaths must be provided",
-    });
-  }
-
-  // Chunk mode: load multiple chunks
-  const moduleResult = await loadIntermediateModules({ chunkPaths, evaluatorId });
-  if (moduleResult.isErr()) {
-    return err(moduleResult.error);
-  }
-  const intermediateModule = moduleResult.value;
-
-  // Check for errors
-  const issuesResult = checkIssues(intermediateModule);
+export const buildArtifact = ({
+  elements,
+  analyses,
+  stats: cache,
+}: BuildArtifactInput): Result<BuilderArtifact, BuilderError> => {
+  const issuesResult = checkIssues({ elements });
   if (issuesResult.isErr()) {
     return err(issuesResult.error);
   }
 
   const warnings = issuesResult.value;
 
-  // Classify and register nodes
-  const aggregationResult = aggregate({ graph, elements: intermediateModule.elements });
+  const aggregationResult = aggregate({ analyses, elements });
   if (aggregationResult.isErr()) {
     return err(aggregationResult.error);
   }
 
-  const elementMap = aggregationResult.value;
-
   return ok({
-    elements: Object.fromEntries(elementMap.entries()),
+    elements: Object.fromEntries(aggregationResult.value.entries()),
     report: {
       durationMs: 0,
       warnings,
-      cache,
+      stats: cache,
     },
   } satisfies BuilderArtifact);
 };

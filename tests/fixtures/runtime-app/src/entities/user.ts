@@ -54,8 +54,8 @@ export const userRemote = {
   ),
 };
 
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
@@ -74,8 +74,8 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 );
 
 export const userSliceCatalog = {
-  byId: gql.default(({ slice }, { $ }) =>
-    slice.query(
+  byId: gql.default(({ query }, { $ }) =>
+    query.slice(
       {
         variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
       },

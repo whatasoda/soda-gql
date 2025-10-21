@@ -1,7 +1,5 @@
-import type { ModuleImport } from "../ast";
-import type { DependencyGraphNode, ModuleSummary } from "../dependency-graph";
-import type { FileGroup } from "./analysis";
-import { resolveImportPath } from "./analysis";
+import { resolveRelativeImportWithReferences } from "@soda-gql/common";
+import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "../ast";
 
 const formatFactory = (expression: string): string => {
   const trimmed = expression.trim();
@@ -21,12 +19,12 @@ type TreeNode = {
   children: Map<string, TreeNode>; // Branch node with children
 };
 
-const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
+const buildTree = (definitions: readonly ModuleDefinition[]): Map<string, TreeNode> => {
   const roots = new Map<string, TreeNode>();
 
-  nodes.forEach((node) => {
-    const parts = node.localPath.split(".");
-    const expressionText = node.definition.expression.trim();
+  definitions.forEach((definition) => {
+    const parts = definition.astPath.split(".");
+    const expressionText = definition.expression.trim();
 
     if (parts.length === 1) {
       // Top-level export
@@ -34,7 +32,7 @@ const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
       if (rootName) {
         roots.set(rootName, {
           expression: expressionText,
-          canonicalId: node.id,
+          canonicalId: definition.canonicalId,
           children: new Map(),
         });
       }
@@ -66,7 +64,7 @@ const buildTree = (nodes: DependencyGraphNode[]): Map<string, TreeNode> => {
       if (leafName) {
         current.children.set(leafName, {
           expression: expressionText,
-          canonicalId: node.id,
+          canonicalId: definition.canonicalId,
           children: new Map(),
         });
       }
@@ -166,8 +164,8 @@ const renderTreeNode = (node: TreeNode, indent: number): string => {
   return `{\n${entries.join("\n")}\n${indentStr}}`;
 };
 
-const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
-  const tree = buildTree(nodes);
+const buildNestedObject = (definition: readonly ModuleDefinition[]): string => {
+  const tree = buildTree(definition);
   const declarations: string[] = [];
   const returnEntries: string[] = [];
 
@@ -201,10 +199,15 @@ const buildNestedObject = (nodes: DependencyGraphNode[]): string => {
  * Render import statements for the intermediate module using ModuleSummary.
  * Only includes imports from modules that have gql exports.
  */
-const renderImportStatements = (
-  summary: ModuleSummary,
-  summaries: Map<string, ModuleSummary>,
-): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
+const renderImportStatements = ({
+  filePath,
+  analysis,
+  analyses,
+}: {
+  filePath: string;
+  analysis: ModuleAnalysis;
+  analyses: Map<string, ModuleAnalysis>;
+}): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
   const importLines: string[] = [];
   const importedRootNames = new Set<string>();
   const namespaceImports = new Set<string>();
@@ -212,24 +215,18 @@ const renderImportStatements = (
   // Group imports by resolved file path
   const importsByFile = new Map<string, ModuleImport[]>();
 
-  summary.runtimeImports.forEach((imp) => {
+  analysis.imports.forEach((imp) => {
+    if (imp.isTypeOnly) {
+      return;
+    }
+
     // Skip non-relative imports (external packages)
     if (!imp.source.startsWith(".")) {
       return;
     }
 
-    const resolvedPath = resolveImportPath(summary.filePath, imp.source, summaries);
+    const resolvedPath = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: analyses });
     if (!resolvedPath) {
-      return;
-    }
-
-    const targetSummary = summaries.get(resolvedPath);
-    if (!targetSummary) {
-      return;
-    }
-
-    // Only include imports from modules with gql exports
-    if (targetSummary.gqlExports.length === 0) {
       return;
     }
 
@@ -238,18 +235,18 @@ const renderImportStatements = (
     importsByFile.set(resolvedPath, imports);
   });
 
-  // Render registry.import() for each file
+  // Render registry.importModule() for each file
   importsByFile.forEach((imports, filePath) => {
     // Check if this is a namespace import
     const namespaceImport = imports.find((imp) => imp.kind === "namespace");
 
     if (namespaceImport) {
-      // Namespace import: const foo = registry.import("path");
-      importLines.push(`    const ${namespaceImport.local} = registry.import("${filePath}");`);
+      // Namespace import: const foo = registry.importModule("path");
+      importLines.push(`    const ${namespaceImport.local} = registry.importModule("${filePath}");`);
       namespaceImports.add(namespaceImport.local);
       importedRootNames.add(namespaceImport.local);
     } else {
-      // Named imports: const { a, b } = registry.import("path");
+      // Named imports: const { a, b } = registry.importModule("path");
       const rootNames = new Set<string>();
 
       imports.forEach((imp) => {
@@ -261,66 +258,28 @@ const renderImportStatements = (
 
       if (rootNames.size > 0) {
         const destructured = Array.from(rootNames).sort().join(", ");
-        importLines.push(`    const { ${destructured} } = registry.import("${filePath}");`);
+        importLines.push(`    const { ${destructured} } = registry.importModule("${filePath}");`);
       }
     }
   });
 
   return {
-    imports: importLines.length > 0 ? `\n${importLines.join("\n")}\n` : "",
+    imports: importLines.length > 0 ? `${importLines.join("\n")}` : "",
     importedRootNames,
     namespaceImports,
   };
 };
 
-const renderRegistryBlock = (fileGroup: FileGroup, summaries: Map<string, ModuleSummary>): string => {
-  const { filePath, nodes } = fileGroup;
+export const renderRegistryBlock = ({
+  filePath,
+  analysis,
+  analyses,
+}: {
+  filePath: string;
+  analysis: ModuleAnalysis;
+  analyses: Map<string, ModuleAnalysis>;
+}): string => {
+  const { imports } = renderImportStatements({ filePath, analysis, analyses });
 
-  // Get the module summary for this file
-  const summary = summaries.get(filePath) ?? ({ filePath, runtimeImports: [], gqlExports: [] } satisfies ModuleSummary);
-
-  const { imports } = renderImportStatements(summary, summaries);
-  const body = buildNestedObject(nodes);
-
-  return `registry.addModule("${filePath}", () => {${imports}\n${body}\n});`;
-};
-
-export type IntermediateModuleSourceInput = {
-  readonly fileGroups: FileGroup[];
-  readonly summaries: Map<string, ModuleSummary>;
-  readonly gqlImportPath: string;
-  readonly coreImportPath: string;
-  readonly evaluatorId: string;
-};
-
-/**
- * Build the complete intermediate module source code.
- */
-export const buildIntermediateModuleSource = ({
-  fileGroups,
-  summaries,
-  gqlImportPath,
-  coreImportPath,
-  evaluatorId,
-}: IntermediateModuleSourceInput): string => {
-  const registryBlocks = fileGroups.map((group) => renderRegistryBlock(group, summaries));
-
-  const imports = [
-    //
-    `import { gql } from "${gqlImportPath}";`,
-    `import { getPseudoModuleRegistry } from "${coreImportPath}";`,
-  ].join("\n");
-
-  const registrySection = `const registry = getPseudoModuleRegistry("${evaluatorId ?? "default"}");`;
-
-  const registerFuncSection = [
-    //
-    "export const register = () => {",
-    registryBlocks.join("\n\n"),
-    "}",
-  ].join("\n");
-
-  // const exportSection = `export const elements = registry.evaluate();`;
-
-  return `${imports}\n\n${registrySection}\n\n${registerFuncSection}\n\n`;
+  return [`registry.setModule("${filePath}", () => {`, imports, "", buildNestedObject(analysis.definitions), "});"].join("\n");
 };

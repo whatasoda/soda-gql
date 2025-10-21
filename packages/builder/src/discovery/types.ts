@@ -1,6 +1,4 @@
-import type { ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport, SourceLocation } from "../ast";
-import type { CanonicalId } from "../canonical-id/canonical-id";
-import type { BuilderAnalyzer } from "../types";
+import type { ModuleAnalysis } from "../ast";
 import type { FileFingerprint } from "./fingerprint";
 
 /**
@@ -16,26 +14,6 @@ export type DiscoveredDependency = {
 };
 
 /**
- * Augments ModuleDefinition with a precomputed canonical ID for downstream consumers.
- */
-export type DiscoverySnapshotDefinition = ModuleDefinition & {
-  /** Canonical identifier derived from file path and export name. */
-  readonly canonicalId: CanonicalId;
-};
-
-/**
- * Metadata for cache validation and invalidation.
- */
-export type DiscoverySnapshotMetadata = {
-  /** Analyzer version used to create this snapshot. */
-  readonly analyzerVersion: string;
-  /** Schema hash to detect schema changes. */
-  readonly schemaHash: string;
-  /** Plugin options hash to detect configuration changes. */
-  readonly pluginOptionsHash?: string;
-};
-
-/**
  * Immutable cacheable record produced by the discovery phase for a single source file.
  * Captures analyzer output, dependency fan-out, and bookkeeping metadata.
  */
@@ -44,122 +22,19 @@ export type DiscoverySnapshot = {
   readonly filePath: string;
   /** Normalized path (POSIX separators) used as a stable cache key. */
   readonly normalizedFilePath: string;
-  /** Analyzer implementation that produced this snapshot (ts, swc, …). */
-  readonly analyzer: BuilderAnalyzer;
   /** Signature of the source contents used to validate cache entries. */
   readonly signature: string;
   /** File fingerprint for fast cache invalidation. */
   readonly fingerprint: FileFingerprint;
-  /** Metadata for cache validation (analyzer version, schema hash, etc.). */
-  readonly metadata: DiscoverySnapshotMetadata;
+  /** Analyzer type identifier for cache versioning. */
+  readonly analyzer: string;
   /** Milliseconds since epoch when this snapshot was created. */
   readonly createdAtMs: number;
   /** Raw analyzer output (imports, exports, definitions, diagnostics). */
   readonly analysis: ModuleAnalysis;
-  /** Convenience view with canonical IDs attached to each top-level definition. */
-  readonly definitions: readonly DiscoverySnapshotDefinition[];
   /** Resolved graph edges for relative imports encountered in the file. */
   readonly dependencies: readonly DiscoveredDependency[];
-  /** Analyzer diagnostics preserved for incremental builds and tooling. */
-  readonly diagnostics: readonly ModuleDiagnostic[];
-  /** Module exports captured for dep-graph construction. */
-  readonly exports: readonly ModuleExport[];
-  /** Module imports captured for dep-graph construction. */
-  readonly imports: readonly ModuleImport[];
 };
-
-/**
- * Categorization for evaluated definitions. Mirrors OperationRegistry buckets plus helper entries.
- */
-export type ModuleEvaluationKind = "model" | "slice" | "operation" | "helper";
-
-/**
- * Issue emitted while evaluating module exports (surfaced in BuilderError).
- */
-export type ModuleEvaluationIssue = {
-  /** Machine-readable issue code (e.g., DUPLICATE_OPERATION_NAME). */
-  readonly code: string;
-  /** Human-readable explanation. */
-  readonly message: string;
-  /** Severity gatekeeping whether the build can continue. */
-  readonly severity: "error" | "warning";
-  /** Definition associated with the issue, when available. */
-  readonly canonicalId?: CanonicalId;
-  /** Source location to highlight in tooling. */
-  readonly loc?: SourceLocation;
-};
-
-/**
- * Successful evaluation record for a single definition.
- */
-export type ModuleEvaluationDefinition = {
-  /** Definition's canonical identifier (file path + export). */
-  readonly canonicalId: CanonicalId;
-  /** Export name as declared in source. */
-  readonly exportName: string;
-  /** Classification used by downstream registries. */
-  readonly kind: ModuleEvaluationKind;
-  /** Location of the defining call for diagnostics. */
-  readonly loc: SourceLocation;
-};
-
-/**
- * Aggregated result returned by ModuleEvaluator after processing a snapshot.
- */
-export type ModuleEvaluationResult = {
-  /** Definitions that were successfully evaluated/categorized. */
-  readonly definitions: readonly ModuleEvaluationDefinition[];
-  /** Issues raised while evaluating this module. */
-  readonly issues: readonly ModuleEvaluationIssue[];
-};
-
-/**
- * Execution context provided to evaluators to resolve cross-module data.
- */
-export type ModuleEvaluatorContext = {
-  /**
-   * Retrieve the latest snapshot for a dependency.
-   * Returns null when the dependency is external or undiscovered.
-   */
-  readonly getSnapshot: (filePath: string) => DiscoverySnapshot | null;
-  /**
-   * Resolve a module specifier relative to a file on disk.
-   * Should mirror Node resolution semantics for local modules.
-   */
-  readonly resolve: (specifier: string, from: string) => string | null;
-  /**
-   * Dynamically import a discovered module for runtime evaluation.
-   * Implementations can stub this in tests or swap loaders in Node vs Bun.
-   */
-  readonly importModule: (absolutePath: string) => Promise<unknown>;
-};
-
-/**
- * Input payload handed to a ModuleEvaluator.
- */
-export type ModuleEvaluatorInput = {
-  /** Snapshot being evaluated. */
-  readonly snapshot: DiscoverySnapshot;
-};
-
-/**
- * Injectable evaluation contract invoked during discovery.
- * Allows different strategies (e.g., eager runtime evaluation vs. no-op in dry runs).
- */
-export interface ModuleEvaluator {
-  /**
-   * Evaluate definitions exported by a discovered module.
-   * Should never throw; errors must be captured in the returned issues array.
-   */
-  evaluateModule(
-    input: ModuleEvaluatorInput,
-    context: ModuleEvaluatorContext,
-  ): Promise<ModuleEvaluationResult> | ModuleEvaluationResult;
-  /**
-   * Optional hook for cleanup (close watchers, dispose VM, etc.).
-   */
-  dispose?(): Promise<void> | void;
-}
 
 /**
  * Cache abstraction for storing and retrieving discovery snapshots.
@@ -198,3 +73,9 @@ export interface DiscoveryCache {
    */
   size(): number;
 }
+
+export type ModuleLoadStats = {
+  readonly hits: number;
+  readonly misses: number;
+  readonly skips: number;
+};

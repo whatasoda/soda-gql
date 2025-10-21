@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/config",
+    "tsBuildInfoFile": "../../.typecheck/config/tsconfig.tsbuildinfo",
+    "rootDir": "./src",
+    "paths": {}
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../common/tsconfig.editor.json" }]
+}

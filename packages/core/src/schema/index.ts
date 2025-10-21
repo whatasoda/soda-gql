@@ -1,2 +1,2 @@
 export { define, defineOperationRoots, defineScalar } from "./schema-builder";
-export { unsafeInputRef, unsafeOutputRef } from "./type-ref-builder";
+export { unsafeInputType, unsafeOutputType } from "./type-specifier-builder";

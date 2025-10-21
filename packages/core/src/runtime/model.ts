@@ -1,4 +1,4 @@
-import type { AnyModel } from "../types/operation";
+import type { AnyModel } from "../types/element";
 import { hidden } from "../utils/hidden";
 import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 

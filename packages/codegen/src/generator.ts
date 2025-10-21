@@ -352,14 +352,14 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
   const directives = renderDirectives(definition.directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeInputRef.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+    return `unsafeInputType.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeInputRef.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+    return `unsafeInputType.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
   }
 
-  return `unsafeInputRef.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+  return `unsafeInputType.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -382,22 +382,22 @@ const renderOutputRef = (
   const directiveMap = renderDirectives(directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeOutputRef.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isUnionName(schema, name)) {
-    return `unsafeOutputRef.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
   if (isObjectName(schema, name)) {
-    return `unsafeOutputRef.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
   }
 
-  return `unsafeOutputRef.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+  return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -569,7 +569,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     }
   }
 
-  const extraImports = imports.join("\n");
+  const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
 
   // Generate per-schema definitions
   const schemaBlocks: string[] = [];
@@ -603,21 +603,22 @@ const ${schemaVar} = {
 export type Schema_${name} = typeof ${schemaVar} & { _?: never };
 export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
 
-    gqlEntries.push(`  ${name}: createGqlInvoker<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+    gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
   }
+
+  // Include createRuntimeAdapter import only in inline mode
+  const runtimeImport = $$.injection.mode === "inline" ? '\nimport { createRuntimeAdapter } from "@soda-gql/runtime";' : "";
 
   return `\
 import {
   type AnyGraphqlSchema,
-  createGqlInvoker,
+  createGqlElementComposer,
   define,
   defineOperationRoots,
-  unsafeInputRef,
-  unsafeOutputRef,
-} from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
+  unsafeInputType,
+  unsafeOutputType,
+} from "@soda-gql/core";${runtimeImport}
 ${extraImports}
-
 ${schemaBlocks.join("\n")}
 
 export const gql = {

@@ -1,0 +1,35 @@
+{
+  "extends": ["./tsconfig.json", "./tsconfig.base.json"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "customConditions": ["development"],
+    "outDir": ".typecheck/root",
+    "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
+    "rootDir": "."
+  },
+  "include": ["package.json", "tests/**/*", "scripts/**/*", "tsdown.config.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".typecheck",
+    "tests/.tmp/**/*",
+    ".tmp/**/*",
+    "tests/fixtures/plugin-babel/**/source.ts"
+  ],
+  "references": [
+    { "path": "./packages/builder/tsconfig.editor.json" },
+    { "path": "./packages/cli/tsconfig.editor.json" },
+    { "path": "./packages/codegen/tsconfig.editor.json" },
+    { "path": "./packages/common/tsconfig.editor.json" },
+    { "path": "./packages/config/tsconfig.editor.json" },
+    { "path": "./packages/core/tsconfig.editor.json" },
+    { "path": "./packages/graffle-client/tsconfig.editor.json" },
+    { "path": "./packages/plugin-babel/tsconfig.editor.json" },
+    { "path": "./packages/plugin-shared/tsconfig.editor.json" },
+    { "path": "./packages/plugin-swc/tsconfig.editor.json" },
+    { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
+    { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
+    { "path": "./packages/runtime/tsconfig.editor.json" }
+  ]
+}

@@ -1,9 +1,4 @@
 export { createDiscoveryCache } from "./cache";
-export {
-  type CreateDiscoveryPipelineOptions,
-  createDiscoveryPipeline,
-  type DiscoveryPipeline,
-  type LoadedModules,
-  type ModuleLoadStats,
-} from "./discovery-pipeline";
-export type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition } from "./types";
+export { discoverModules } from "./discoverer";
+export { resolveEntryPaths } from "./entry-paths";
+export type { DiscoveryCache, DiscoverySnapshot, ModuleLoadStats } from "./types";

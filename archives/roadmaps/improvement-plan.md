@@ -3,7 +3,7 @@
 ## Release Status
 - Version: `0.1.0-pre`
 - Contract: **Breaking changes allowed without restriction.**
-- Compatibility Stance: We will redesign APIs, naming, packaging, and file layouts in pursuit of the ideal architecture. No migration guides or shims will be produced for legacy behaviour.
+- Compatibility Stance: We will redesign APIs, naming, packaging, and file layouts in pursuit of the ideal architecture. No migration guides or shims will be produced for legacy behavior.
 
 ## Executive Summary
 - Treat the current codebase as a prototype. Preserve only concepts that demonstrably accelerate the new architecture.

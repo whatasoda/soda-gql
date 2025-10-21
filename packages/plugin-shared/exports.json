@@ -1,0 +1,5 @@
+{
+  ".": "./src/index.ts",
+  "./dev": "./src/dev/index.ts",
+  "./errors": "./src/errors.ts"
+}

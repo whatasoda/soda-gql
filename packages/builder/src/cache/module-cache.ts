@@ -62,7 +62,7 @@ export class ModuleCacheManager extends JsonEntityCache<string, ModuleCacheRecor
 
   store(analysis: ModuleAnalysis): void {
     if (!analysis.signature) {
-      throw new Error(`ModuleAnalysis for ${analysis.filePath} is missing a signature`);
+      throw new Error(`[INTERNAL] ModuleAnalysis for ${analysis.filePath} is missing a signature`);
     }
 
     const key = this.normalizeKey(analysis.filePath);

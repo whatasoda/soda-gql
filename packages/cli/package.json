@@ -1,30 +1,37 @@
 {
   "name": "@soda-gql/cli",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
-  "bin": {
-    "soda-gql": "./src/index.ts"
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
   },
+  "bin": {
+    "soda-gql": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
-    "./package.json": "./package.json",
-    "./tsconfig.json": "./tsconfig.json"
-  },
-  "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/codegen": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "neverthrow": "^8.1.1",
-    "zod": "^4.1.5"
+    "zod": "^4.1.11"
   }
 }

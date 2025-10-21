@@ -1,18 +1,22 @@
 import { readFileSync, statSync } from "node:fs";
-import type { getAstAnalyzer } from "../ast";
-import { createCanonicalId } from "../canonical-id/canonical-id";
-import { normalizeToPosix } from "../utils/path-utils";
+import { normalizePath } from "@soda-gql/common";
+import { err, ok } from "neverthrow";
+import type { createAstAnalyzer } from "../ast";
+import { type BuilderResult, builderErrors } from "../errors";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
-import type { DiscoveryCache, DiscoverySnapshot, DiscoverySnapshotDefinition, DiscoverySnapshotMetadata } from "./types";
+import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
-  readonly astAnalyzer: ReturnType<typeof getAstAnalyzer>;
-  readonly cache?: DiscoveryCache;
-  readonly metadata: DiscoverySnapshotMetadata;
+  readonly astAnalyzer: ReturnType<typeof createAstAnalyzer>;
   /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
-  readonly invalidatedPaths?: ReadonlySet<string>;
+  readonly incremental?: {
+    readonly cache: DiscoveryCache;
+    readonly changedFiles: Set<string>;
+    readonly removedFiles: Set<string>;
+    readonly affectedFiles: Set<string>;
+  };
 };
 
 export type DiscoverModulesResult = {
@@ -30,20 +34,35 @@ export type DiscoverModulesResult = {
 export const discoverModules = ({
   entryPaths,
   astAnalyzer,
-  cache,
-  metadata,
-  invalidatedPaths,
-}: DiscoverModulesOptions): DiscoverModulesResult => {
+  incremental,
+}: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
-  const invalidatedSet = invalidatedPaths ?? new Set<string>();
+  const changedFiles = incremental?.changedFiles ?? new Set<string>();
+  const removedFiles = incremental?.removedFiles ?? new Set<string>();
+  const affectedFiles = incremental?.affectedFiles ?? new Set<string>();
+  const invalidatedSet = new Set<string>([...changedFiles, ...removedFiles, ...affectedFiles]);
   let cacheHits = 0;
   let cacheMisses = 0;
   let cacheSkips = 0;
 
+  if (incremental) {
+    for (const filePath of removedFiles) {
+      incremental.cache.delete(filePath);
+      invalidateFingerprint(filePath);
+    }
+  }
+
   while (stack.length > 0) {
-    const filePath = stack.pop();
-    if (!filePath || snapshots.has(filePath)) {
+    const rawFilePath = stack.pop();
+    if (!rawFilePath) {
+      continue;
+    }
+
+    // Normalize path for consistent cache key matching
+    const filePath = normalizePath(rawFilePath);
+
+    if (snapshots.has(filePath)) {
       continue;
     }
 
@@ -52,12 +71,13 @@ export const discoverModules = ({
       invalidateFingerprint(filePath);
       cacheSkips++;
       // Fall through to re-read and re-parse
-    } else if (cache) {
+    } else if (incremental) {
       // Try fingerprint-based cache check (avoid reading file)
-      const cached = cache.peek(filePath);
+      const cached = incremental.cache.peek(filePath);
+
       if (cached) {
         try {
-          // Fast path: check mtime/size without reading file content
+          // Fast path: check fingerprint without reading file content
           const stats = statSync(filePath);
           const mtimeMs = stats.mtimeMs;
           const sizeBytes = stats.size;
@@ -88,12 +108,12 @@ export const discoverModules = ({
       // Handle deleted files gracefully - they may be in cache but removed from disk
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         // Delete from cache and invalidate fingerprint
-        cache?.delete(filePath);
+        incremental?.cache.delete(filePath);
         invalidateFingerprint(filePath);
         continue;
       }
-      // Re-throw other IO errors
-      throw error;
+      // Return other IO errors
+      return err(builderErrors.discoveryIOError(filePath, error instanceof Error ? error.message : String(error)));
     }
     const signature = createSourceHash(source);
 
@@ -111,48 +131,37 @@ export const discoverModules = ({
       }
     }
 
-    // Create definitions with canonical IDs
-    const definitions: DiscoverySnapshotDefinition[] = analysis.definitions.map((def) => ({
-      ...def,
-      canonicalId: createCanonicalId(filePath, def.astPath),
-    }));
-
     // Compute fingerprint
     const fingerprintResult = computeFingerprint(filePath);
     if (fingerprintResult.isErr()) {
-      throw new Error(`Failed to compute fingerprint for ${filePath}: ${fingerprintResult.error.message}`);
+      return err(builderErrors.discoveryIOError(filePath, `Failed to compute fingerprint: ${fingerprintResult.error.message}`));
     }
     const fingerprint = fingerprintResult.value;
 
     // Create snapshot
     const snapshot: DiscoverySnapshot = {
       filePath,
-      normalizedFilePath: normalizeToPosix(filePath),
-      analyzer: astAnalyzer.type,
+      normalizedFilePath: normalizePath(filePath),
       signature,
       fingerprint,
-      metadata,
+      analyzer: astAnalyzer.type,
       createdAtMs: Date.now(),
       analysis,
-      definitions,
       dependencies,
-      diagnostics: analysis.diagnostics,
-      exports: analysis.exports,
-      imports: analysis.imports,
     };
 
     snapshots.set(filePath, snapshot);
 
     // Store in cache
-    if (cache) {
-      cache.store(snapshot);
+    if (incremental) {
+      incremental.cache.store(snapshot);
     }
   }
 
-  return {
+  return ok({
     snapshots: Array.from(snapshots.values()),
     cacheHits,
     cacheMisses,
     cacheSkips,
-  };
+  });
 };

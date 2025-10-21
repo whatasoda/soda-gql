@@ -24,7 +24,7 @@ export class Projection<TProjected> {
 }
 
 export type ProjectionPath = {
-  raw: string;
+  full: string;
   segments: Tuple<string>;
 };
 
@@ -35,10 +35,9 @@ function createProjectionPath(path: string): ProjectionPath {
   }
 
   return {
-    raw: path,
+    full: path,
     segments: segments.slice(1) as Tuple<string>,
   };
 }
 
-/** Infer the output type produced by a selection or multi-selection. */
 export type InferExecutionResultProjection<TProjection extends AnyProjection> = ReturnType<TProjection["projector"]>;

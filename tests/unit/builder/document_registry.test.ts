@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { parse } from "graphql";
+import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
 
-import { aggregate } from "../../../packages/builder/src/artifact/aggregate";
-import type { DependencyGraph, DependencyGraphNode } from "../../../packages/builder/src/dependency-graph/types";
-import { type CanonicalId, createCanonicalId } from "../../../packages/builder/src/index";
-import type { IntermediateArtifactElement } from "../../../packages/core/src/intermediate/pseudo-module";
-import { Model, Operation, Slice } from "../../../packages/core/src/types/operation";
+import { aggregate } from "@soda-gql/builder/artifact/aggregate";
+import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
+import type { IntermediateArtifactElement } from "@soda-gql/builder/intermediate-module";
+import { ComposedOperation, Model, Slice } from "@soda-gql/core/types/element";
+import { parse } from "graphql";
 
 describe("canonical identifier helpers", () => {
   it("normalizes absolute file paths and export names", () => {
@@ -19,25 +19,22 @@ describe("canonical identifier helpers", () => {
 });
 
 // Test helpers
-const createTestGraphNode = (id: CanonicalId, filePath: string): DependencyGraphNode => ({
-  id,
+const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): ModuleAnalysis => ({
   filePath,
-  localPath: id.split("::")[1] ?? "",
+  signature: "test-sig",
+  definitions,
+  diagnostics: [],
+  imports: [],
+  exports: [],
+});
+
+const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
+  canonicalId: id,
+  astPath: id.split("::")[1] ?? "",
+  isTopLevel: true,
   isExported: true,
-  definition: {
-    astPath: id.split("::")[1] ?? "",
-    isTopLevel: true,
-    isExported: true,
-    exportBinding: id.split("::")[1],
-    loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-    expression: "stub",
-  },
-  dependencies: [],
-  moduleSummary: {
-    filePath,
-    runtimeImports: [],
-    gqlExports: [id],
-  },
+  expression: "stub",
+  loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
 });
 
 const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
@@ -50,10 +47,15 @@ describe("artifact aggregate", () => {
     const sliceId = createCanonicalId("/app/src/entities/user.ts", "userSlice");
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
-    const graph: DependencyGraph = new Map([
-      [modelId, createTestGraphNode(modelId, "/app/src/entities/user.ts")],
-      [sliceId, createTestGraphNode(sliceId, "/app/src/entities/user.ts")],
-      [operationId, createTestGraphNode(operationId, "/app/src/pages/profile.query.ts")],
+    const analyses = new Map<string, ModuleAnalysis>([
+      [
+        "/app/src/entities/user.ts",
+        createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)]),
+      ],
+      [
+        "/app/src/pages/profile.query.ts",
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+      ],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -69,12 +71,12 @@ describe("artifact aggregate", () => {
         type: "slice",
         element: Slice.create(() => ({
           operationType: "query",
-          build: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
+          embed: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
         })),
       },
       [operationId]: {
         type: "operation",
-        element: Operation.create(() => ({
+        element: ComposedOperation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: parse("query ProfilePageQuery { users { id } }") as any,
@@ -85,7 +87,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate({ graph, elements: intermediateModule.elements });
+    const result = aggregate({ analyses, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(
@@ -123,13 +125,15 @@ describe("artifact aggregate", () => {
   it("fails when artifact is not found in intermediate module", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
-    const graph: DependencyGraph = new Map([[modelId, createTestGraphNode(modelId, "/app/src/entities/user.ts")]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       // Missing modelId
     });
 
-    const result = aggregate({ graph, elements: intermediateModule.elements });
+    const result = aggregate({ analyses, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -137,8 +141,8 @@ describe("artifact aggregate", () => {
         throw new Error("Expected aggregate to fail");
       },
       (error) => {
-        expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-        if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+        if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
           expect(error.message).toContain("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
           expect(error.filePath).toBe("/app/src/entities/user.ts");
         }
@@ -146,14 +150,13 @@ describe("artifact aggregate", () => {
     );
   });
 
-  it("fails when duplicate canonical ID exists in graph", () => {
+  it("fails when duplicate canonical ID exists in analysis", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
-    // Create two nodes with the same ID (simulating a bug in graph construction)
-    const graph: DependencyGraph = new Map([[modelId, createTestGraphNode(modelId, "/app/src/entities/user.ts")]]);
-
-    // Manually add duplicate to bypass Map's deduplication for testing
-    const _duplicateNode = createTestGraphNode(modelId, "/app/src/entities/user.ts");
+    // Create analysis with single definition
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       [modelId]: {
@@ -167,22 +170,21 @@ describe("artifact aggregate", () => {
     });
 
     // First pass succeeds
-    const result1 = aggregate({ graph, elements: intermediateModule.elements });
+    const result1 = aggregate({ analyses, elements: intermediateModule.elements });
     expect(result1.isOk()).toBe(true);
 
-    // To test duplicate detection, we need to simulate the aggregator seeing the same ID twice
-    // This is normally prevented by Map, but we can test the logic by creating a custom scenario
-    // Actually, looking at the aggregate code, it checks `registry.has(node.id)` before setting
-    // Since Map prevents duplicates in the graph, this path is only hit if there's a logic error
-
-    // For now, we acknowledge that duplicate detection in the graph itself is handled by Map
-    // The ARTIFACT_ALREADY_REGISTERED error would only occur if the aggregate function had bugs
+    // Note: Duplicate detection is handled by aggregate checking `registry.has(definition.canonicalId)`
+    // Since we can't create duplicate definitions in a single analysis easily, this test
+    // verifies the normal case. The ARTIFACT_ALREADY_REGISTERED error would require
+    // malformed input or a bug in the aggregate function.
   });
 
   it("fails when artifact has unknown type", () => {
     const unknownId = createCanonicalId("/app/src/entities/unknown.ts", "unknownThing");
 
-    const graph: DependencyGraph = new Map([[unknownId, createTestGraphNode(unknownId, "/app/src/entities/unknown.ts")]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/unknown.ts", createTestAnalysis("/app/src/entities/unknown.ts", [createTestDefinition(unknownId)])],
+    ]);
 
     const intermediateModule = createTestIntermediateModule({
       [unknownId]: {
@@ -191,7 +193,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate({ graph, elements: intermediateModule.elements });
+    const result = aggregate({ analyses, elements: intermediateModule.elements });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -199,8 +201,8 @@ describe("artifact aggregate", () => {
         throw new Error("Expected aggregate to fail");
       },
       (error) => {
-        expect(error.code).toBe("MODULE_EVALUATION_FAILED");
-        if (error.code === "MODULE_EVALUATION_FAILED") {
+        expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+        if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
           expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
           expect(error.filePath).toBe("/app/src/entities/unknown.ts");
         }
@@ -211,7 +213,12 @@ describe("artifact aggregate", () => {
   it("preserves all prebuild data for operations", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
-    const graph: DependencyGraph = new Map([[operationId, createTestGraphNode(operationId, "/app/src/pages/profile.query.ts")]]);
+    const analyses = new Map<string, ModuleAnalysis>([
+      [
+        "/app/src/pages/profile.query.ts",
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+      ],
+    ]);
 
     const document = parse("query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }");
     const projectionPathGraph = {
@@ -222,7 +229,7 @@ describe("artifact aggregate", () => {
     const intermediateModule = createTestIntermediateModule({
       [operationId]: {
         type: "operation",
-        element: Operation.create(() => ({
+        element: ComposedOperation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: document as any,
@@ -233,7 +240,7 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate({ graph, elements: intermediateModule.elements });
+    const result = aggregate({ analyses, elements: intermediateModule.elements });
 
     expect(result.isOk()).toBe(true);
     result.match(

@@ -1,7 +1,7 @@
 import { gql } from "@/graphql-system";
 
-const createPostSlice = gql.default(({ slice }, { $ }) =>
-  slice.mutation(
+const createPostSlice = gql.default(({ mutation }, { $ }) =>
+  mutation.slice(
     {
       variables: [$("title").scalar("String:!"), $("body").scalar("String:?")],
     },
@@ -17,14 +17,14 @@ const createPostSlice = gql.default(({ slice }, { $ }) =>
   ),
 );
 
-export const createPostMutation = gql.default(({ operation }, { $ }) =>
-  operation.mutation(
+export const createPostMutation = gql.default(({ mutation }, { $ }) =>
+  mutation.composed(
     {
       operationName: "CreatePost",
       variables: [$("title").scalar("String:!"), $("body").scalar("String:?")],
     },
     ({ $ }) => ({
-      post: createPostSlice.build({ title: $.title, body: $.body }),
+      post: createPostSlice.embed({ title: $.title, body: $.body }),
     }),
   ),
 );

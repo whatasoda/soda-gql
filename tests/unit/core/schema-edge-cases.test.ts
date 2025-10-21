@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeOutputRef } from "../../../packages/core/src";
-import { createFieldFactories } from "../../../packages/core/src/buildtime/fields-builder";
-import { createVarBuilder } from "../../../packages/core/src/buildtime/var-builder";
-import type { AnyGraphqlSchema } from "../../../packages/core/src/types/schema";
+import { define, defineScalar, unsafeOutputType } from "@soda-gql/core/";
+import { createFieldFactories } from "@soda-gql/core/composer/fields-builder";
+import { createVarBuilder } from "@soda-gql/core/composer/var-builder";
+import type { AnyGraphqlSchema } from "@soda-gql/core/types/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Non-existent field arguments", () => {
@@ -25,7 +25,7 @@ describe("Schema Edge Cases", () => {
         object: {
           Query: define("Query").object(
             {
-              user: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
+              user: unsafeOutputType.scalar("String:!", { arguments: {}, directives: {} }),
             },
             {},
           ),
@@ -117,7 +117,7 @@ describe("Schema Edge Cases", () => {
         object: {
           Query: define("Query").object(
             {
-              result: unsafeOutputRef.union("SearchResult:!", { arguments: {}, directives: {} }),
+              result: unsafeOutputType.union("SearchResult:!", { arguments: {}, directives: {} }),
             },
             {},
           ),
@@ -160,15 +160,15 @@ describe("Schema Edge Cases", () => {
         object: {
           Query: define("Query").object(
             {
-              node: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }),
+              node: unsafeOutputType.object("Node:?", { arguments: {}, directives: {} }),
             },
             {},
           ),
           Node: define("Node").object(
             {
-              id: unsafeOutputRef.scalar("String:!", { arguments: {}, directives: {} }),
-              parent: unsafeOutputRef.object("Node:?", { arguments: {}, directives: {} }), // Circular reference
-              children: unsafeOutputRef.object("Node:![]!", { arguments: {}, directives: {} }), // Another circular reference
+              id: unsafeOutputType.scalar("String:!", { arguments: {}, directives: {} }),
+              parent: unsafeOutputType.object("Node:?", { arguments: {}, directives: {} }), // Circular reference
+              children: unsafeOutputType.object("Node:![]!", { arguments: {}, directives: {} }), // Another circular reference
             },
             {},
           ),

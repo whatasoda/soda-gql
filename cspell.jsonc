@@ -1,7 +1,22 @@
 {
   "version": "0.2",
   "language": "en",
-  "words": ["codegen", "neverthrow", "t_wada"],
+  "words": [
+    "bunx",
+    "codegen",
+    "graffle",
+    "Hatada",
+    "importee",
+    "neverthrow",
+    "Shota",
+    "t_wada",
+    "toplevel",
+    "whatasoda",
+    "xxhash-wasm"
+  ],
   "ignoreRegExpList": [],
-  "ignorePaths": ["node_modules", "dist"]
+  "ignorePaths": [
+    "node_modules",
+    "dist"
+  ]
 }

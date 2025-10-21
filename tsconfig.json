@@ -2,17 +2,44 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "customConditions": ["development"],
+    // NOTE: These paths are only available on `tests` and `scripts` directories.
+    // In order to make bun test pass, we need to put these paths here, as well.
+    // To avoid duplicated management, tsconfig.editor.json is extended with this file.
+    "paths": {
+      "@/graphql-system": ["./tests/fixtures/runtime-app/graphql-system/index.ts"],
+      "@soda-gql/builder/*": ["./packages/builder/src/*"],
+      "@soda-gql/cli/*": ["./packages/cli/src/*"],
+      "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
+      "@soda-gql/common/*": ["./packages/common/src/*"],
+      "@soda-gql/config/*": ["./packages/config/src/*"],
+      "@soda-gql/core/*": ["./packages/core/src/*"],
+      "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
+      "@soda-gql/plugin-shared/*": ["./packages/plugin-shared/src/*"],
+      "@soda-gql/plugin-swc/*": ["./packages/plugin-swc/src/*"],
+      "@soda-gql/tsc-plugin/*": ["./packages/tsc-plugin/src/*"],
+      "@soda-gql/plugin-webpack/*": ["./packages/plugin-webpack/src/*"],
+      "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
+    }
   },
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/config" },
-    { "path": "./packages/codegen" },
-    { "path": "./packages/cli" },
-    { "path": "./packages/builder" },
-    { "path": "./packages/plugin-babel" },
-    { "path": "./packages/runtime" },
-    { "path": "./tests" }
+    { "path": "./tsconfig.editor.json" },
+    { "path": "./packages/builder/tsconfig.editor.json" },
+    { "path": "./packages/cli/tsconfig.editor.json" },
+    { "path": "./packages/codegen/tsconfig.editor.json" },
+    { "path": "./packages/common/tsconfig.editor.json" },
+    { "path": "./packages/config/tsconfig.editor.json" },
+    { "path": "./packages/core/tsconfig.editor.json" },
+    { "path": "./packages/plugin-babel/tsconfig.editor.json" },
+    { "path": "./packages/plugin-shared/tsconfig.editor.json" },
+    { "path": "./packages/plugin-swc/tsconfig.editor.json" },
+    { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
+    { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
+    { "path": "./packages/runtime/tsconfig.editor.json" },
+    { "path": "./examples/babel-app/tsconfig.editor.json" },
+    { "path": "./examples/nestjs-app/tsconfig.editor.json" }
   ]
 }

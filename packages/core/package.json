@@ -1,25 +1,38 @@
 {
   "name": "@soda-gql/core",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./runtime": {
-      "types": "./src/runtime/index.ts",
-      "import": "./src/runtime/index.ts",
-      "default": "./src/runtime/index.ts"
+      "development": "./src/runtime/index.ts",
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js",
+      "require": "./dist/runtime/index.cjs",
+      "default": "./dist/runtime/index.js"
     },
-    "./package.json": "./package.json",
-    "./tsconfig.json": "./tsconfig.json"
+    "./package.json": "./package.json"
   },
   "dependencies": {
-    "graphql": "^16.8.1"
+    "graphql": "16.*"
   }
 }

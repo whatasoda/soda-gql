@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { type CanonicalId, createCanonicalTracker } from "../../../packages/builder/src/index";
+import { type CanonicalId, createCanonicalTracker } from "@soda-gql/builder";
 
 describe("CanonicalPathTracker", () => {
   const filePath = "/test/src/test.ts";

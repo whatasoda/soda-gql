@@ -1,23 +1,44 @@
 import { existsSync } from "node:fs";
-import { basename, dirname, relative, resolve } from "node:path";
+import { basename, dirname, extname, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
+import { bundleGraphqlSystem } from "./tsdown-bundle";
 import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
+
+const extensionMap: Record<string, string> = {
+  ".ts": ".js",
+  ".tsx": ".js",
+  ".mts": ".mjs",
+  ".cts": ".cjs",
+  ".js": ".js",
+  ".mjs": ".mjs",
+  ".cjs": ".cjs",
+};
 
 const toImportSpecifier = (fromPath: string, targetPath: string): string => {
   const fromDir = dirname(fromPath);
-  const raw = relative(fromDir, targetPath);
-  const normalized = raw.replace(/\\/g, "/");
-  const stripExtension = (value: string): string => value.replace(/\.(?:ts|tsx)$/u, "");
+  const normalized = relative(fromDir, targetPath).replace(/\\/g, "/");
+  const sourceExt = extname(targetPath);
+  const runtimeExt = extensionMap[sourceExt] ?? sourceExt;
 
   if (normalized.length === 0) {
-    return `./${stripExtension(basename(targetPath))}`;
+    const base = runtimeExt !== sourceExt ? basename(targetPath, sourceExt) : basename(targetPath);
+    return `./${base}${runtimeExt}`;
   }
 
-  const sanitized = stripExtension(normalized);
-  return sanitized.startsWith(".") ? sanitized : `./${sanitized}`;
+  const withPrefix = normalized.startsWith(".") ? normalized : `./${normalized}`;
+  if (!runtimeExt) {
+    return withPrefix;
+  }
+  if (withPrefix.endsWith(runtimeExt)) {
+    return withPrefix;
+  }
+
+  const currentExt = extname(withPrefix);
+  const withoutExt = currentExt ? withPrefix.slice(0, -currentExt.length) : withPrefix;
+  return `${withoutExt}${runtimeExt}`;
 };
 
 export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
@@ -124,8 +145,20 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     return err(writeResult.error);
   }
 
+  // Bundle the generated module with tsdown
+  const bundleOutcome = await bundleGraphqlSystem(outPath);
+  const bundleResult = bundleOutcome.match(
+    (result) => ok(result),
+    (error) => err(error),
+  );
+
+  if (bundleResult.isErr()) {
+    return err(bundleResult.error);
+  }
+
   return ok({
     schemas: schemaHashes,
     outPath,
+    cjsPath: bundleResult.value.cjsPath,
   } satisfies MultiSchemaCodegenSuccess);
 };

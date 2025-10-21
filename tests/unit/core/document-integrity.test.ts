@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { Kind } from "graphql";
 import {
   buildArgumentValue,
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
-} from "../../../packages/core/src/buildtime/build-document";
-import type { TypeModifier } from "../../../packages/core/src/types/schema/type-modifier";
-import type { InputTypeRefs } from "../../../packages/core/src/types/schema/type-ref";
+} from "@soda-gql/core/composer/build-document";
+import type { TypeModifier } from "@soda-gql/core/types/schema/type-modifier";
+import type { InputTypeSpecifiers } from "@soda-gql/core/types/schema/type-specifier";
+import { Kind } from "graphql";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -165,7 +165,7 @@ describe("Document Integrity Tests", () => {
         buildDocument({
           operationType: invalidOperation,
           operationName: "TestOperation",
-          variables: {} as InputTypeRefs,
+          variables: {} as InputTypeSpecifiers,
           fields: {},
         });
       }).toThrow();

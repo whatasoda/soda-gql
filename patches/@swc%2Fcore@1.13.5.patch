@@ -1,0 +1,175 @@
+diff --git a/binding.js b/binding.js
+index a4ccc92a8133604ae2679ae29b561078da93a07c..a58e325d34bef385e65b8c3c12a2834e12a3df4f 100644
+--- a/binding.js
++++ b/binding.js
+@@ -65,7 +65,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-android-arm64')
++        return require('@swc/core-android-arm64'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -77,7 +77,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-android-arm-eabi')
++        return require('@swc/core-android-arm-eabi'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -93,7 +93,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-win32-x64-msvc')
++        return require('@swc/core-win32-x64-msvc'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -105,7 +105,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-win32-ia32-msvc')
++        return require('@swc/core-win32-ia32-msvc'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -117,7 +117,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-win32-arm64-msvc')
++        return require('@swc/core-win32-arm64-msvc'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -132,7 +132,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-darwin-universal')
++        return require('@swc/core-darwin-universal'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -144,7 +144,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-darwin-x64')
++        return require('@swc/core-darwin-x64'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -156,7 +156,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-darwin-arm64')
++        return require('@swc/core-darwin-arm64'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -172,7 +172,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-freebsd-x64')
++        return require('@swc/core-freebsd-x64'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -184,7 +184,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-freebsd-arm64')
++        return require('@swc/core-freebsd-arm64'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -201,7 +201,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-x64-musl')
++        return require('@swc/core-linux-x64-musl'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -213,7 +213,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-x64-gnu')
++        return require('@swc/core-linux-x64-gnu'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -227,7 +227,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-arm64-musl')
++        return require('@swc/core-linux-arm64-musl'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -239,7 +239,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-arm64-gnu')
++        return require('@swc/core-linux-arm64-gnu'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -252,7 +252,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-arm-gnueabihf')
++        return require('@swc/core-linux-arm-gnueabihf'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -265,7 +265,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-riscv64-musl')
++        return require('@swc/core-linux-riscv64-musl'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -277,7 +277,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-riscv64-gnu')
++        return require('@swc/core-linux-riscv64-gnu'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -290,7 +290,7 @@ function requireNative() {
+         loadErrors.push(e)
+       }
+       try {
+-        return require('@swc/core-linux-s390x-gnu')
++        return require('@swc/core-linux-s390x-gnu'.slice(0))
+       } catch (e) {
+         loadErrors.push(e)
+       }
+@@ -315,7 +315,7 @@ if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+   }
+   if (!nativeBinding) {
+     try {
+-      nativeBinding = require('@swc/core-wasm32-wasi')
++      nativeBinding = require('@swc/core-wasm32-wasi'.slice(0))
+     } catch (err) {
+       if (process.env.NAPI_RS_FORCE_WASI) {
+         console.error(err)

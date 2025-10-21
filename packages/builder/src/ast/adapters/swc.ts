@@ -3,9 +3,10 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
+import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
-import { createCanonicalTracker } from "../../canonical-id/path-tracker";
+import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter } from "../core";
 
@@ -241,7 +242,7 @@ const collectExports = (module: Module): ModuleExport[] => {
   return exports;
 };
 
-const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
+const collectGqlIdentifiers = (module: SwcModule, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> => {
   const identifiers = new Set<string>();
   module.body.forEach((item) => {
     const declaration =
@@ -255,7 +256,7 @@ const collectGqlIdentifiers = (module: Module): ReadonlySet<string> => {
     if (!declaration) {
       return;
     }
-    if (!declaration.source.value.endsWith("/graphql-system")) {
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: module.__filePath, specifier: declaration.source.value })) {
       return;
     }
     // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
@@ -297,14 +298,21 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
   return true;
 };
 
-const collectAllDefinitions = (
-  module: SwcModule,
-  gqlIdentifiers: ReadonlySet<string>,
-  _imports: readonly ModuleImport[],
-  exports: readonly ModuleExport[],
-  resolvePosition: (offset: number) => SourcePosition,
-  source: string,
-): {
+const collectAllDefinitions = ({
+  module,
+  gqlIdentifiers,
+  imports: _imports,
+  exports,
+  resolvePosition,
+  source,
+}: {
+  module: SwcModule;
+  gqlIdentifiers: ReadonlySet<string>;
+  imports: readonly ModuleImport[];
+  exports: readonly ModuleExport[];
+  resolvePosition: (offset: number) => SourcePosition;
+  source: string;
+}): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly CallExpression[];
 } => {
@@ -536,6 +544,7 @@ const collectAllDefinitions = (
   const definitions = pending.map(
     (item) =>
       ({
+        canonicalId: createCanonicalId(module.__filePath, item.astPath),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -580,8 +589,8 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     return swcModule;
   },
 
-  collectGqlIdentifiers(file: Module): ReadonlySet<string> {
-    return collectGqlIdentifiers(file);
+  collectGqlIdentifiers(file: Module, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
+    return collectGqlIdentifiers(file as SwcModule, helper);
   },
 
   collectImports(file: Module): readonly ModuleImport[] {
@@ -605,14 +614,14 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     readonly handles: readonly CallExpression[];
   } {
     const resolvePosition = toPositionResolver(context.source);
-    const { definitions, handledCalls } = collectAllDefinitions(
-      file as SwcModule,
-      context.gqlIdentifiers,
-      context.imports,
-      context.exports,
+    const { definitions, handledCalls } = collectAllDefinitions({
+      module: file as SwcModule,
+      gqlIdentifiers: context.gqlIdentifiers,
+      imports: context.imports,
+      exports: context.exports,
       resolvePosition,
-      context.source,
-    );
+      source: context.source,
+    });
     return { definitions, handles: handledCalls };
   },
 

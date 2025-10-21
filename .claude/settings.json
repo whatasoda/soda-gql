@@ -3,17 +3,31 @@
     "allow": [
       "mcp__codex__codex",
       "mcp__codex__codex-reply",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(rmdir:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(git log:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(bun test:*)",
       "Bash(bun quality:*)",
       "Bash(bun typecheck:*)",
-      "Bash(bun typecheck:tests:*)",
+      "Bash(bun exports:sync)",
       "Bash(bun biome:check:*)",
+      "Bash(bun validate:tests:*)",
+      "Bash(bun examples:codegen:*)",
+      "Bash(bun codex:conversation:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run build:*)",
       "Bash(bun run quality:*)",
       "Bash(bun run typecheck:*)",
-      "Bash(bun run typecheck:tests:*)",
+      "Bash(bun run exports:sync)",
       "Bash(bun run biome:check:*)",
+      "Bash(bun run validate:tests:*)",
+      "Bash(bun run examples:codegen:*)",
+      "Bash(bun run codex:conversation:*)",
+      "Bash(bun ~/.claude/scripts/whatasoda/codex-setup/extract-conversation-id.ts:*)",
       "WebSearch",
       "mcp__serena__activate_project",
       "mcp__serena__check_onboarding_performed",
@@ -52,7 +66,10 @@
       "mcp__serena__summarize_changes",
       "mcp__serena__switch_modes"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(bun test:*)",
+      "Bash(bun build:*)"
+    ],
     "ask": []
   }
 }

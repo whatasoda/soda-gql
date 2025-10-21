@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/packages/plugin-webpack",
+    "tsBuildInfoFile": "../../.typecheck/packages/plugin-webpack/tsconfig.tsbuildinfo",
+    "rootDir": "src",
+    "paths": {
+      "@soda-gql/plugin-shared": ["../plugin-shared/src/index.ts"],
+      "@soda-gql/plugin-shared/*": ["../plugin-shared/src/*"],
+      "@soda-gql/plugin-babel": ["../plugin-babel/src/index.ts"],
+      "@soda-gql/plugin-babel/*": ["../plugin-babel/src/*"],
+      "@soda-gql/builder": ["../builder/src/index.ts"],
+      "@soda-gql/builder/*": ["../builder/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../plugin-babel/tsconfig.editor.json" },
+    { "path": "../plugin-shared/tsconfig.editor.json" }
+  ]
+}

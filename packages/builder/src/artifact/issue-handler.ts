@@ -1,11 +1,10 @@
 import { err, ok, type Result } from "neverthrow";
-import type { IntermediateModuleOutput } from "../intermediate-module/types";
 import type { BuilderError } from "../types";
+import type { IntermediateElements } from "./types";
 
 const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 
-export const checkIssues = (intermediateModule: IntermediateModuleOutput): Result<string[], BuilderError> => {
-  const { elements } = intermediateModule;
+export const checkIssues = ({ elements }: { elements: IntermediateElements }): Result<string[], BuilderError> => {
   const operationNames = new Set<string>();
 
   for (const [canonicalId, { type, element }] of Object.entries(elements)) {
@@ -17,6 +16,7 @@ export const checkIssues = (intermediateModule: IntermediateModuleOutput): Resul
       const sources = [canonicalToFilePath(canonicalId)];
       return err({
         code: "DOC_DUPLICATE",
+        message: `Duplicate document name: ${element.operationName}`,
         name: element.operationName,
         sources,
       });

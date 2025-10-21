@@ -1,36 +1,50 @@
-import type { RuntimeModelInput, RuntimeOperationInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { CanonicalId } from "../canonical-id";
-import type { DependencyGraph } from "../dependency-graph";
-import type { ModuleLoadStats } from "../discovery/discovery-pipeline";
-import type { ChunkDiff, ChunkManifest } from "../intermediate-module/chunks";
+import type { CanonicalId } from "@soda-gql/common";
+import type {
+  RuntimeComposedOperationInput,
+  RuntimeInlineOperationInput,
+  RuntimeModelInput,
+  RuntimeSliceInput,
+} from "@soda-gql/core/runtime";
+import type { IntermediateArtifactElement } from "../intermediate-module";
 
-export type BuildArtifactInput = {
-  readonly graph: DependencyGraph;
-  readonly cache: ModuleLoadStats;
-  readonly intermediateModulePath?: string; // Legacy single-file mode
-  readonly intermediateModulePaths?: Map<string, string>; // Chunk mode: chunkId → transpiledPath
-  readonly evaluatorId: string;
+export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;
+
+export type BuilderArtifactElementMetadata = {
+  readonly sourcePath: string;
+  readonly sourceHash: string;
+  readonly contentHash: string;
 };
 
-export type BuilderArtifactOperation = {
+type BuilderArtifactElementBase = {
   readonly id: CanonicalId;
+  readonly metadata: BuilderArtifactElementMetadata;
+};
+
+export type BuilderArtifactOperation = BuilderArtifactElementBase & {
   readonly type: "operation";
-  readonly prebuild: RuntimeOperationInput["prebuild"];
+  readonly prebuild: RuntimeComposedOperationInput["prebuild"];
 };
 
-export type BuilderArtifactSlice = {
-  readonly id: CanonicalId;
+export type BuilderArtifactInlineOperation = BuilderArtifactElementBase & {
+  readonly type: "inlineOperation";
+  readonly prebuild: RuntimeInlineOperationInput["prebuild"];
+};
+
+export type BuilderArtifactSlice = BuilderArtifactElementBase & {
   readonly type: "slice";
   readonly prebuild: RuntimeSliceInput["prebuild"];
 };
 
-export type BuilderArtifactModel = {
-  readonly id: CanonicalId;
+export type BuilderArtifactModel = BuilderArtifactElementBase & {
   readonly type: "model";
   readonly prebuild: RuntimeModelInput["prebuild"];
 };
 
-export type BuilderArtifactElement = BuilderArtifactOperation | BuilderArtifactSlice | BuilderArtifactModel;
+export type BuilderArtifactElement =
+  | BuilderArtifactOperation
+  | BuilderArtifactInlineOperation
+  | BuilderArtifactSlice
+  | BuilderArtifactModel;
 
 export type BuilderArtifact = {
   readonly elements: Record<CanonicalId, BuilderArtifactElement>;
@@ -38,26 +52,10 @@ export type BuilderArtifact = {
   readonly report: {
     readonly durationMs: number;
     readonly warnings: readonly string[];
-    readonly cache: {
+    readonly stats: {
       readonly hits: number;
       readonly misses: number;
       readonly skips: number;
     };
   };
-};
-
-/**
- * Delta representing changes in builder artifact between builds.
- */
-export type BuilderArtifactDelta = {
-  /** Added elements (new definitions) */
-  readonly added: Record<CanonicalId, BuilderArtifactElement>;
-  /** Updated elements (modified definitions) */
-  readonly updated: Record<CanonicalId, BuilderArtifactElement>;
-  /** Removed element IDs */
-  readonly removed: Set<CanonicalId>;
-  /** Chunk-level changes */
-  readonly chunks: ChunkDiff;
-  /** Updated chunk manifest */
-  readonly manifest: ChunkManifest;
 };
