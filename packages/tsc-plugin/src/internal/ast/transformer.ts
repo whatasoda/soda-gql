@@ -1,6 +1,5 @@
 import * as ts from "typescript";
-import { formatPluginError } from "../errors";
-import type { ArtifactLookup, GqlCall } from "./analysis";
+import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 import {
@@ -9,6 +8,7 @@ import {
   buildModelRuntimeCall,
   buildSliceRuntimeCall,
 } from "./runtime";
+import { formatPluginError } from "@soda-gql/plugin-common";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;
@@ -58,7 +58,7 @@ const replaceWithRuntimeCall = ({
   factory,
   isCJS,
 }: {
-  gqlCall: GqlCall;
+  gqlCall: TsGqlCall;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }): TransformCallExpressionResult => {
@@ -72,7 +72,7 @@ const replaceWithRuntimeCall = ({
     return { transformed: true, replacement };
   }
 
-  if (gqlCall.type === "composedOperation") {
+  if (gqlCall.type === "operation") {
     const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS });
     return { transformed: true, replacement: referenceCall, runtimeCall };
   }

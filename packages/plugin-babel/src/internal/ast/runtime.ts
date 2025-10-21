@@ -1,9 +1,14 @@
 import { types as t } from "@babel/core";
 import type { RuntimeComposedOperationInput, RuntimeModelInput, RuntimeSliceInput } from "@soda-gql/core/runtime";
-import type { GqlCallInlineOperation, GqlCallModel, GqlCallOperation, GqlCallSlice } from "./analysis";
+import type {
+  BabelGqlCallInlineOperation,
+  BabelGqlCallModel,
+  BabelGqlCallOperation,
+  BabelGqlCallSlice,
+} from "./analysis";
 import { buildObjectExpression, clone } from "./ast";
 
-export const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): t.Expression => {
+export const buildModelRuntimeCall = ({ artifact, builderCall }: BabelGqlCallModel): t.Expression => {
   const [, , normalize] = builderCall.arguments;
   if (!normalize || !t.isExpression(normalize)) {
     throw new Error("[INTERNAL] model requires a normalize function");
@@ -21,7 +26,7 @@ export const buildModelRuntimeCall = ({ artifact, builderCall }: GqlCallModel): 
   ]);
 };
 
-export const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): t.Expression => {
+export const buildSliceRuntimeCall = ({ artifact, builderCall }: BabelGqlCallSlice): t.Expression => {
   const [, , projectionBuilder] = builderCall.arguments;
   if (!projectionBuilder || !t.isExpression(projectionBuilder)) {
     throw new Error("[INTERNAL] slice requires a projection builder");
@@ -39,7 +44,7 @@ export const buildSliceRuntimeCall = ({ artifact, builderCall }: GqlCallSlice): 
   ]);
 };
 
-export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall }: GqlCallOperation) => {
+export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall }: BabelGqlCallOperation) => {
   const [, slicesBuilder] = builderCall.arguments;
   if (!slicesBuilder || !t.isExpression(slicesBuilder)) {
     throw new Error("[INTERNAL] composed operation requires a slices builder");
@@ -66,7 +71,7 @@ export const buildComposedOperationRuntimeComponents = ({ artifact, builderCall 
   };
 };
 
-export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall: _ }: GqlCallInlineOperation) => {
+export const buildInlineOperationRuntimeComponents = ({ artifact, builderCall: _ }: BabelGqlCallInlineOperation) => {
   const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("inlineOperation")), [
     buildObjectExpression({
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [

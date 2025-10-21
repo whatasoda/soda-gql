@@ -1,7 +1,7 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { formatPluginError } from "../errors";
-import type { ArtifactLookup, GqlCall } from "./analysis";
+import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 import {
@@ -50,7 +50,7 @@ export const transformCallExpression = ({
   return replaceWithRuntimeCall(callPath, gqlCall);
 };
 
-const replaceWithRuntimeCall = (callPath: NodePath<t.CallExpression>, gqlCall: GqlCall): TransformCallExpressionResult => {
+const replaceWithRuntimeCall = (callPath: NodePath<t.CallExpression>, gqlCall: BabelGqlCall): TransformCallExpressionResult => {
   if (gqlCall.type === "model") {
     const replacement = buildModelRuntimeCall(gqlCall);
     callPath.replaceWith(replacement);

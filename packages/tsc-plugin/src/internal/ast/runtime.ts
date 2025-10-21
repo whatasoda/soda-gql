@@ -5,7 +5,7 @@ import type {
   RuntimeSliceInput,
 } from "@soda-gql/core/runtime";
 import * as ts from "typescript";
-import type { GqlCallComposedOperation, GqlCallInlineOperation, GqlCallModel, GqlCallSlice } from "./analysis";
+import type { TsGqlCallInlineOperation, TsGqlCallModel, TsGqlCallOperation, TsGqlCallSlice } from "./analysis";
 import { buildJsonParseExpression, buildObjectExpression, clone } from "./ast";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
@@ -21,7 +21,7 @@ export const buildModelRuntimeCall = ({
   factory,
   isCJS,
 }: {
-  gqlCall: GqlCallModel;
+  gqlCall: TsGqlCallModel;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }): ts.Expression => {
@@ -51,7 +51,7 @@ export const buildSliceRuntimeCall = ({
   factory,
   isCJS,
 }: {
-  gqlCall: GqlCallSlice;
+  gqlCall: TsGqlCallSlice;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }): ts.Expression => {
@@ -81,7 +81,7 @@ export const buildComposedOperationRuntimeComponents = ({
   factory,
   isCJS,
 }: {
-  gqlCall: GqlCallComposedOperation;
+  gqlCall: TsGqlCallOperation;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }) => {
@@ -126,7 +126,7 @@ export const buildInlineOperationRuntimeComponents = ({
   factory,
   isCJS,
 }: {
-  gqlCall: GqlCallInlineOperation;
+  gqlCall: TsGqlCallInlineOperation;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }) => {

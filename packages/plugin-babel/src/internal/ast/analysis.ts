@@ -1,13 +1,14 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
+import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 import type {
-  BuilderArtifactElement,
-  BuilderArtifactInlineOperation,
-  BuilderArtifactModel,
-  BuilderArtifactOperation,
-  BuilderArtifactSlice,
-  CanonicalId,
-} from "@soda-gql/builder";
+  GqlCall,
+  GqlCallInlineOperation,
+  GqlCallModel,
+  GqlCallOperation,
+  GqlCallSlice,
+} from "@soda-gql/plugin-common";
+import { resolveCanonicalId } from "@soda-gql/plugin-common";
 import { err, ok, type Result } from "neverthrow";
 import type {
   PluginAnalysisArtifactMissingError,
@@ -15,26 +16,19 @@ import type {
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
 } from "../errors";
-import { resolveCanonicalId } from "../utils";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
-export type GqlCallBase = {
+// Babel-specific GqlCall types
+export type BabelGqlCallModel = GqlCallModel<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
+export type BabelGqlCallSlice = GqlCallSlice<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
+export type BabelGqlCallOperation = GqlCallOperation<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
+export type BabelGqlCallInlineOperation = GqlCallInlineOperation<t.CallExpression> & {
   readonly nodePath: NodePath<t.CallExpression>;
-  readonly canonicalId: CanonicalId;
-  readonly builderCall: t.CallExpression;
 };
 
-export type GqlCallModel = GqlCallBase & { readonly type: "model"; readonly artifact: BuilderArtifactModel };
-export type GqlCallSlice = GqlCallBase & { readonly type: "slice"; readonly artifact: BuilderArtifactSlice };
-export type GqlCallOperation = GqlCallBase & { readonly type: "operation"; readonly artifact: BuilderArtifactOperation };
-export type GqlCallInlineOperation = GqlCallBase & {
-  readonly type: "inlineOperation";
-  readonly artifact: BuilderArtifactInlineOperation;
-};
-
-export type GqlCall = GqlCallModel | GqlCallSlice | GqlCallOperation | GqlCallInlineOperation;
+export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallSlice | BabelGqlCallOperation | BabelGqlCallInlineOperation;
 
 export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -50,7 +44,7 @@ export const extractGqlCall = ({
   metadata,
   builderCall,
   getArtifact,
-}: ExtractGqlCallArgs): Result<GqlCall, PluginError> => {
+}: ExtractGqlCallArgs): Result<BabelGqlCall, PluginError> => {
   const callExpression = nodePath.node;
 
   const meta = metadata.get(callExpression);
@@ -65,22 +59,20 @@ export const extractGqlCall = ({
     return err(createArtifactMissingError({ filename, canonicalId }));
   }
 
-  const base: GqlCallBase = { nodePath, canonicalId, builderCall };
-
   if (artifact.type === "model") {
-    return ok({ ...base, type: "model", artifact });
+    return ok({ nodePath, canonicalId, builderCall, type: "model", artifact });
   }
 
   if (artifact.type === "slice") {
-    return ok({ ...base, type: "slice", artifact });
+    return ok({ nodePath, canonicalId, builderCall, type: "slice", artifact });
   }
 
   if (artifact.type === "operation") {
-    return ok({ ...base, type: "operation", artifact });
+    return ok({ nodePath, canonicalId, builderCall, type: "operation", artifact });
   }
 
   if (artifact.type === "inlineOperation") {
-    return ok({ ...base, type: "inlineOperation", artifact });
+    return ok({ nodePath, canonicalId, builderCall, type: "inlineOperation", artifact });
   }
 
   return err(

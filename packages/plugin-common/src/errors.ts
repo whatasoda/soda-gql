@@ -1,6 +1,6 @@
 /**
- * Error types and formatters for tsc-plugin.
- * Simplified from plugin-shared to include only types actually used by the TypeScript transformer.
+ * Error types and formatters for plugin-babel.
+ * Simplified from plugin-shared to include only types actually used by the Babel transformer.
  */
 
 import type { BuilderError, CanonicalId } from "@soda-gql/builder";

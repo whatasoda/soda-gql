@@ -1,8 +1,8 @@
 {
-  "name": "@soda-gql/tsc-plugin",
+  "name": "@soda-gql/plugin-common",
   "version": "0.0.1",
   "type": "module",
-  "private": false,
+  "private": true,
   "license": "MIT",
   "files": [
     "dist"
@@ -15,17 +15,6 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "dependencies": {
-    "@soda-gql/builder": "workspace:*",
-    "@soda-gql/common": "workspace:*",
-    "@soda-gql/config": "workspace:*",
-    "@soda-gql/core": "workspace:*",
-    "@soda-gql/plugin-common": "workspace:*",
-    "neverthrow": "^8.1.1"
-  },
-  "peerDependencies": {
-    "typescript": "5.*"
-  },
   "exports": {
     ".": {
       "development": "./src/index.ts",
@@ -35,5 +24,11 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "neverthrow": "^8.1.1"
   }
 }

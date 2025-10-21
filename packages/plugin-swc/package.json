@@ -19,6 +19,7 @@
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
     "neverthrow": "^8.1.1"
   },
   "peerDependencies": {

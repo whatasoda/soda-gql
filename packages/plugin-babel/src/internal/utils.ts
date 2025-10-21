@@ -1,16 +1,9 @@
 /**
  * Utility functions for plugin-babel.
- * Simplified from plugin-shared to be self-contained.
+ * Re-exports from @soda-gql/plugin-common.
  */
 
-import { resolve } from "node:path";
-import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
-
-/**
- * Resolve a canonical ID from a filename and AST path.
- */
-export const resolveCanonicalId = (filename: string, astPath: string): CanonicalId =>
-  createCanonicalId(resolve(filename), astPath);
+export { resolveCanonicalId } from "@soda-gql/plugin-common";
 
 /**
  * Wrap an adapter-specific expression handle into a runtime expression.
