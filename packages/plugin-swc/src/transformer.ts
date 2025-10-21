@@ -6,32 +6,15 @@
  */
 
 import type { Module } from "@swc/types";
-import { prepareTransformState } from "./internal/builder-bridge";
-import { createSwcAdapter, type SwcEnv } from "./internal/swc-adapter";
+import { createSwcAdapter, type SwcEnv } from "./internal/ast/swc-adapter";
+import { preparePluginState, type SwcPluginOptions } from "./internal/builder-bridge";
 
 /**
  * Configuration for the soda-gql SWC transformer.
  */
-export type TransformerConfig = {
-  /**
-   * Path to the soda-gql config file.
-   * If not provided, will search for config in standard locations.
-   */
-  readonly configPath?: string;
+export type TransformerConfig = SwcPluginOptions;
 
-  /**
-   * Import identifier for the GraphQL system.
-   * @default "@/graphql-system"
-   */
-  readonly importIdentifier?: string;
-
-  /**
-   * Whether to enable transformation.
-   * Set to false to disable the transformer (useful for debugging).
-   * @default true
-   */
-  readonly enabled?: boolean;
-};
+const noopTransformer = (m: Module) => m;
 
 /**
  * Create an SWC plugin for soda-gql.
@@ -56,39 +39,15 @@ export type TransformerConfig = {
  * }
  * ```
  */
-export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
-  const config: TransformerConfig = {
-    configPath: rawConfig?.configPath,
-    importIdentifier: rawConfig?.importIdentifier ?? "@/graphql-system",
-    enabled: rawConfig?.enabled ?? true,
-  };
+export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
+  // Prepare plugin state
+  const pluginState = preparePluginState(config);
 
-  // Short-circuit if disabled
-  if (!config.enabled) {
-    return (m: Module) => m;
+  if (!pluginState) {
+    return noopTransformer;
   }
 
-  // Prepare transform state using coordinator
-  const prepareResult = prepareTransformState({
-    configPath: config.configPath,
-    importIdentifier: config.importIdentifier,
-    packageLabel: "@soda-gql/plugin-swc",
-  });
-
-  // Handle preparation errors
-  if (prepareResult.isErr()) {
-    const error = prepareResult.error;
-    if (error.type === "BLOCKING_NOT_SUPPORTED") {
-      console.error(`[@soda-gql/plugin-swc] ${error.message}`);
-    } else if (error.type === "PLUGIN_ERROR") {
-      const pluginError = error.error;
-      console.error(`[@soda-gql/plugin-swc] Transform preparation failed (${pluginError.code}):`, pluginError.message);
-    }
-    // Return no-op transformer
-    return (m: Module) => m;
-  }
-
-  const prepared = prepareResult.value;
+  console.log("[@soda-gql/plugin-swc] Transforming program");
 
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
@@ -106,8 +65,8 @@ export function createSodaGqlSwcPlugin(rawConfig?: Partial<TransformerConfig>) {
     // Transform the program
     const transformContext = {
       filename,
-      artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => prepared.allArtifacts[canonicalId],
-      runtimeModule: prepared.importIdentifier,
+      artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => pluginState.artifact.elements[canonicalId],
+      runtimeModule: pluginState.importIdentifier,
     };
 
     const transformResult = adapter.transformProgram(transformContext);

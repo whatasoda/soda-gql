@@ -1,11 +1,14 @@
+/**
+ * Babel plugin entrypoint for soda-gql.
+ *
+ * This module provides Babel transformer integration for soda-gql
+ * zero-runtime transformations.
+ */
+
+export type { BabelPluginOptions } from "./internal/builder-bridge";
+export * from "./plugin";
+
 import { createSodaGqlPlugin } from "./plugin";
 
-export {
-  assertUnreachable,
-  formatPluginError,
-  isPluginError,
-  type PluginError,
-} from "./internal/errors";
-
 export { createSodaGqlPlugin };
-export default createSodaGqlPlugin;
+export default createSodaGqlPlugin();

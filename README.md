@@ -76,8 +76,8 @@ export const userModel = gql.default(({ model }, { $ }) =>
 );
 
 // Create a query slice
-export const userSlice = gql.default(({ slice }, { $ }) =>
-  slice.query(
+export const userSlice = gql.default(({ query }, { $ }) =>
+  query.slice(
     {
       variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
@@ -99,18 +99,43 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 );
 
 // Build a complete operation
-export const profileQuery = gql.default(({ operation }, { $ }) =>
-  operation.query(
+export const profileQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
     {
       operationName: "ProfileQuery",
       variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
-      users: userSlice.build({
+      users: userSlice.embed({
         id: $.userId,
         categoryId: $.categoryId,
       }),
     }),
+  ),
+);
+
+export const profileQueryInline = gql.default(({ query }, { $ }) =>
+  query.inline(
+    {
+      operationName: "ProfileQuery",
+      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+    },
+    ({ f, $ }) => [
+      //
+      f.users({
+        id: [$.userId],
+        categoryId: $.categoryId,
+      })(({ f }) => [
+        //
+        f.id(null, { alias: "uuid" }),
+        f.name(),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [
+          //
+          f.id(),
+          f.title(),
+        ]),
+      ]),
+    ],
   ),
 );
 ```

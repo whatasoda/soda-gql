@@ -1,96 +1,67 @@
 /**
  * Builder bridge for plugin-swc.
- * Replaces the shared coordinator infrastructure with a direct builder invocation.
+ * Simplified to match tsc-plugin pattern with direct builder invocation.
  */
 
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
-import { loadConfig } from "@soda-gql/config";
-import { err, ok, type Result } from "neverthrow";
-import { formatPluginError, type PluginError } from "./errors";
+import { cachedFn } from "@soda-gql/common";
+import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 /**
- * Prepared transform state containing artifacts and configuration.
+ * SWC plugin options.
  */
-export type PreparedState = {
-  readonly importIdentifier: string;
-  readonly allArtifacts: BuilderArtifact["elements"];
-  readonly graphqlSystemPath: string;
-};
-
-/**
- * Options for preparing transform state.
- */
-export type PrepareOptions = {
+export type SwcPluginOptions = {
   readonly configPath?: string;
-  readonly project?: string;
+  readonly enabled?: boolean;
   readonly importIdentifier?: string;
-  readonly packageLabel: string;
 };
 
 /**
- * Error types for the bridge.
+ * Plugin state containing builder service and configuration.
  */
-export type BridgeError =
-  | { readonly type: "PLUGIN_ERROR"; readonly error: PluginError }
-  | { readonly type: "BLOCKING_NOT_SUPPORTED"; readonly message: string };
+export type PluginState = {
+  readonly config: ResolvedSodaGqlConfig;
+  readonly artifact: BuilderArtifact;
+  readonly ensureBuilderService: () => ReturnType<typeof createBuilderService>;
+  readonly importIdentifier: string;
+};
 
 /**
- * Prepare transform state by loading config and running builder.
- * This is a synchronous operation that eagerly builds artifacts.
+ * Prepare plugin state by loading config and creating cached builder service.
+ * Returns null if disabled or config load fails.
  */
-export const prepareTransformState = (options: PrepareOptions): Result<PreparedState, BridgeError> => {
-  const { configPath, importIdentifier, packageLabel } = options;
+export const preparePluginState = (options: SwcPluginOptions): PluginState | null => {
+  const enabled = options.enabled ?? true;
+  if (!enabled) {
+    return null;
+  }
 
-  // Load configuration
+  const configPath = options.configPath ?? "./soda-gql.config.ts";
   const configResult = loadConfig(configPath);
   if (configResult.isErr()) {
-    const configError = configResult.error;
-    const pluginError: PluginError = {
-      type: "PluginError",
-      code: "OPTIONS_INVALID_BUILDER_CONFIG",
-      message: `Failed to load configuration: ${configError.message}`,
-      cause: {
-        code: "CONFIG_LOAD_FAILED",
-        message: configError.message,
-      },
-      stage: "normalize-options",
-    };
-    return err({ type: "PLUGIN_ERROR", error: pluginError });
+    console.error(`[@soda-gql/plugin-swc] Failed to load config: ${configResult.error.message}`);
+    return null;
   }
 
   const config = configResult.value;
+  const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
 
-  // Create builder service
-  const builderService = createBuilderService({ config });
-
-  // Run builder to get artifacts
+  // Initial build to get artifact
+  const builderService = ensureBuilderService();
   const buildResult = builderService.build();
   if (buildResult.isErr()) {
-    const builderError = buildResult.error;
-
-    // Map builder errors to plugin errors
-    const pluginError: PluginError = {
-      type: "PluginError",
-      code: "SODA_GQL_BUILDER_UNEXPECTED",
-      message: `Builder failed: ${builderError.message}`,
-      cause: builderError,
-      stage: "builder",
-    };
-
-    console.error(`[${packageLabel}] ${formatPluginError(pluginError)}`);
-    return err({ type: "PLUGIN_ERROR", error: pluginError });
+    console.error(`[@soda-gql/plugin-swc] Failed to build initial artifact: ${buildResult.error.message}`);
+    return null;
   }
 
   const artifact = buildResult.value;
+  const importIdentifier = options.importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system";
 
-  // Return prepared state
-  // Derive graphqlSystemPath from outdir
-  const graphqlSystemPath = `${config.outdir}/index.ts`;
-
-  return ok({
-    importIdentifier: importIdentifier ?? config.graphqlSystemAliases[0] ?? "@/graphql-system",
-    allArtifacts: artifact.elements,
-    graphqlSystemPath,
-  });
+  return {
+    config,
+    artifact,
+    ensureBuilderService,
+    importIdentifier,
+  };
 };

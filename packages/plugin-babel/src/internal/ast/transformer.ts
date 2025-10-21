@@ -1,6 +1,6 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { formatPluginError } from "@soda-gql/plugin-shared";
+import { formatPluginError } from "../errors";
 import type { ArtifactLookup, GqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
