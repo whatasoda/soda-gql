@@ -9,6 +9,6 @@ export * from "./plugin";
 
 import plugin from "./plugin";
 
-export const { before, after } = plugin;
+export const { before } = plugin;
 
 export default plugin;

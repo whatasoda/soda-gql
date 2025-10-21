@@ -5,8 +5,9 @@
  * for the SWC plugin, without the full TransformAdapter interface from plugin-shared.
  */
 
-import type { CanonicalId } from "@soda-gql/builder";
-import type { CallExpression, ExpressionStatement, ImportDeclaration, Module, Span } from "@swc/types";
+import type { CanonicalId, GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import type { CallExpression, ExpressionStatement, Module, Span } from "@swc/types";
+import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./imports";
 
 /**
  * SWC-specific environment required for the adapter.
@@ -40,11 +41,13 @@ export type TransformResult = {
 export class SwcAdapter {
   private env: SwcEnv;
   private readonly swc: typeof import("@swc/core");
+  private readonly graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper;
   private runtimeCallsFromLastTransform: CallExpression[] = [];
 
-  constructor(env: SwcEnv) {
+  constructor(env: SwcEnv, graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper) {
     this.env = env;
     this.swc = env.swc;
+    this.graphqlSystemIdentifyHelper = graphqlSystemIdentifyHelper;
   }
 
   /**
@@ -111,32 +114,6 @@ export class SwcAdapter {
       return;
     }
 
-    // Create runtime import declaration (from @soda-gql/runtime)
-    const runtimeImport: ImportDeclaration = {
-      type: "ImportDeclaration",
-      span: makeSpan(),
-      specifiers: [
-        {
-          type: "ImportSpecifier",
-          span: makeSpan(),
-          local: {
-            type: "Identifier",
-            span: makeSpan(),
-            value: "gqlRuntime",
-            optional: false,
-          },
-          imported: undefined,
-          isTypeOnly: false,
-        },
-      ],
-      source: {
-        type: "StringLiteral",
-        span: makeSpan(),
-        value: "@soda-gql/runtime",
-      },
-      typeOnly: false,
-    };
-
     // Wrap runtime calls in expression statements
     const statements: ExpressionStatement[] = runtimeCalls.map((expr) => ({
       type: "ExpressionStatement",
@@ -144,44 +121,25 @@ export class SwcAdapter {
       expression: expr,
     }));
 
+    // Remove the graphql-system import using the helper
+    let filteredBody = removeGraphqlSystemImports(this.env.module.body, this.graphqlSystemIdentifyHelper, context.filename);
+
+    // Ensure gqlRuntime import exists
+    filteredBody = ensureGqlRuntimeImport(filteredBody);
+
     // Find insertion point after imports
-    const existingBody = this.env.module.body;
-    let _insertIndex = 0;
-    for (let i = 0; i < existingBody.length; i++) {
-      const stmt = existingBody[i];
-      if (stmt && stmt.type === "ImportDeclaration") {
-        _insertIndex = i + 1;
-      } else {
-        break;
-      }
-    }
-
-    // Remove the graphql-system import (runtimeModule)
-    const filteredBody = existingBody.filter((stmt) => {
-      if (stmt.type === "ImportDeclaration" && stmt.source.type === "StringLiteral") {
-        return stmt.source.value !== context.runtimeModule;
-      }
-      return true;
-    });
-
-    // Recalculate insert index after filtering
-    let newInsertIndex = 0;
+    let insertIndex = 0;
     for (let i = 0; i < filteredBody.length; i++) {
       const stmt = filteredBody[i];
       if (stmt && stmt.type === "ImportDeclaration") {
-        newInsertIndex = i + 1;
+        insertIndex = i + 1;
       } else {
         break;
       }
     }
 
-    // Insert runtime import and calls
-    const newBody = [
-      ...filteredBody.slice(0, newInsertIndex),
-      runtimeImport,
-      ...statements,
-      ...filteredBody.slice(newInsertIndex),
-    ];
+    // Insert runtime calls after imports
+    const newBody = [...filteredBody.slice(0, insertIndex), ...statements, ...filteredBody.slice(insertIndex)];
 
     // Update module with new body
     this.env = {
@@ -259,8 +217,8 @@ export class SwcAdapter {
 /**
  * Factory for creating SwcAdapter instances.
  */
-export const createSwcAdapter = (env: SwcEnv): SwcAdapter => {
-  return new SwcAdapter(env);
+export const createSwcAdapter = (env: SwcEnv, graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper): SwcAdapter => {
+  return new SwcAdapter(env, graphqlSystemIdentifyHelper);
 };
 
 /**

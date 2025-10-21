@@ -11,7 +11,6 @@ import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 export type TransformProgramContext = {
   readonly filename: string;
   readonly artifactLookup: (id: CanonicalId) => BuilderArtifactElement | undefined;
-  readonly runtimeModule: string;
 };
 
 /**

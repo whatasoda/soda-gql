@@ -7,8 +7,9 @@
 
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
+import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { TransformAdapter, TransformAdapterFactory, TransformPassResult, TransformProgramContext } from "../types";
-import { ensureGqlRuntimeImport, maybeRemoveUnusedGqlImport } from "./imports";
+import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./imports";
 import { collectGqlDefinitionMetadata } from "./metadata";
 import { transformCallExpression } from "./transformer";
 
@@ -18,6 +19,7 @@ import { transformCallExpression } from "./transformer";
 export type BabelEnv = {
   readonly programPath: NodePath<t.Program>;
   readonly types: typeof t;
+  readonly graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper;
 };
 
 /**
@@ -25,10 +27,12 @@ export type BabelEnv = {
  */
 export class BabelAdapter implements TransformAdapter {
   private readonly env: BabelEnv;
+  private readonly graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper;
   private runtimeCallsFromLastTransform: t.Expression[] = [];
 
-  constructor(env: BabelEnv) {
+  constructor(env: BabelEnv, graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper) {
     this.env = env;
+    this.graphqlSystemIdentifyHelper = graphqlSystemIdentifyHelper;
   }
 
   transformProgram(context: TransformProgramContext): TransformPassResult {
@@ -62,7 +66,7 @@ export class BabelAdapter implements TransformAdapter {
 
     if (transformed) {
       this.env.programPath.scope.crawl();
-      maybeRemoveUnusedGqlImport(this.env.programPath, context.runtimeModule);
+      removeGraphqlSystemImports(this.env.programPath, this.graphqlSystemIdentifyHelper, context.filename);
     }
 
     return {
@@ -154,7 +158,7 @@ export const babelTransformAdapterFactory: TransformAdapterFactory = {
     if (!isBabelEnv(env)) {
       throw new Error("[INTERNAL] BabelAdapter requires BabelEnv");
     }
-    return new BabelAdapter(env);
+    return new BabelAdapter(env, env.graphqlSystemIdentifyHelper);
   },
 };
 
@@ -162,5 +166,7 @@ export const babelTransformAdapterFactory: TransformAdapterFactory = {
  * Type guard for BabelEnv.
  */
 const isBabelEnv = (env: unknown): env is BabelEnv => {
-  return typeof env === "object" && env !== null && "programPath" in env && "types" in env;
+  return (
+    typeof env === "object" && env !== null && "programPath" in env && "types" in env && "graphqlSystemIdentifyHelper" in env
+  );
 };

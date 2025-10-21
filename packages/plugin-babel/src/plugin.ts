@@ -2,6 +2,7 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
 import { babelTransformAdapterFactory } from "./internal/ast/index";
 
@@ -31,8 +32,8 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
     return fallbackPlugin();
   }
 
-  // Get runtime module from config aliases or use default
-  const runtimeModule = pluginSession.config.graphqlSystemAliases[0] ?? "@/graphql-system";
+  // Create graphql system identify helper
+  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(pluginSession.config);
 
   return {
     name: "@soda-gql/plugin-babel",
@@ -54,13 +55,13 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
         const adapter = babelTransformAdapterFactory.create({
           programPath,
           types: t,
+          graphqlSystemIdentifyHelper,
         });
 
         // Transform using adapter
         const result = adapter.transformProgram({
           filename,
           artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
-          runtimeModule,
         });
 
         // Insert runtime side effects if transformed
@@ -68,7 +69,6 @@ export const createSodaGqlPlugin = (options: BabelPluginOptions = {}): PluginObj
           adapter.insertRuntimeSideEffects(
             {
               filename,
-              runtimeModule,
               artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
             },
             result.runtimeArtifacts || [],

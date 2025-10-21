@@ -2,17 +2,11 @@
  * TypeScript implementation of the TransformAdapter interface.
  */
 
-import { resolve } from "node:path";
 import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
-import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
-import {
-  ensureGqlRuntimeImport,
-  ensureGqlRuntimeRequire,
-  type GraphqlSystemIdentifyHelper,
-  removeGraphqlSystemImports,
-} from "./internal/ast/imports";
+import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./internal/ast/imports";
 import { collectGqlDefinitionMetadata } from "./internal/ast/metadata";
 import { transformCallExpression } from "./internal/ast/transformer";
 
@@ -57,34 +51,8 @@ export const createTransformer = ({
   const compilerOptions = program.getCompilerOptions();
   const isCJS = tsInternals.getEmitModuleKind(compilerOptions) === ts.ModuleKind.CommonJS;
 
-  // Use TypeScript's canonical file name comparison to handle casing, symlinks, etc.
-  const getCanonicalFileName = tsInternals.createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames);
-  const toCanonical = (file: string): string => {
-    const resolved = ts.sys.resolvePath ? ts.sys.resolvePath(file) : resolve(file);
-    return getCanonicalFileName(resolved);
-  };
-
-  // Derive graphqlSystemPath from outdir
-  const graphqlSystemPath = resolve(config.outdir, "index.ts");
-
-  const graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper = {
-    isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
-      return toCanonical(filePath) === toCanonical(graphqlSystemPath);
-    },
-    isGraphqlSystemImportSpecifier: ({ filePath, specifier }: { filePath: string; specifier: string }) => {
-      // Check against any alias
-      if (config.graphqlSystemAliases.some((alias) => toCanonical(specifier) === toCanonical(alias))) {
-        return true;
-      }
-
-      const resolved = resolveRelativeImportWithExistenceCheck({ filePath, specifier });
-      if (!resolved) {
-        return false;
-      }
-
-      return toCanonical(resolved) === toCanonical(graphqlSystemPath);
-    },
-  };
+  // Create graphql system identify helper using builder's implementation
+  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(config);
 
   const makeSourceFileEmpty = ({ factory, sourceFile }: { factory: ts.NodeFactory; sourceFile: ts.SourceFile }) => {
     return factory.updateSourceFile(sourceFile, [

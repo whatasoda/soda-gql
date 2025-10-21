@@ -28,6 +28,11 @@
     "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {
+    "@babel/core": "*",
+    "@babel/parser": "*",
+    "@babel/traverse": "*",
+    "@babel/types": "*",
+    "@biomejs/biome": "2.2.3",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/cli": "workspace:*",
     "@soda-gql/codegen": "workspace:*",
@@ -38,7 +43,6 @@
     "@soda-gql/plugin-swc": "workspace:*",
     "@soda-gql/tsc-plugin": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
-    "@biomejs/biome": "2.2.3",
     "@swc-node/register": "^1.11.1",
     "@swc/core": "^1.0.0",
     "@swc/types": "^0.1.0",

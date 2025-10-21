@@ -1,9 +1,5 @@
+import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import ts from "typescript";
-
-export type GraphqlSystemIdentifyHelper = {
-  readonly isGraphqlSystemFile: (input: { filePath: string }) => boolean;
-  readonly isGraphqlSystemImportSpecifier: (input: { filePath: string; specifier: string }) => boolean;
-};
 
 const RUNTIME_MODULE = "@soda-gql/runtime";
 

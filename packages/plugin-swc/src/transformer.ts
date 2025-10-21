@@ -5,6 +5,7 @@
  * into the Nest CLI build process when using `builder: "swc"`.
  */
 
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
 import type { Module } from "@swc/types";
 import { createSwcAdapter, type SwcEnv } from "./internal/ast/swc-adapter";
@@ -57,6 +58,9 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
   // Get runtime module from config aliases or use default (like babel-plugin)
   const runtimeModule = pluginSession.config.graphqlSystemAliases[0] ?? "@/graphql-system";
 
+  // Create graphql system identify helper
+  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(pluginSession.config);
+
   return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
     const filename = options.filename;
 
@@ -74,7 +78,7 @@ export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
     };
 
     // Create SWC adapter
-    const adapter = createSwcAdapter(env);
+    const adapter = createSwcAdapter(env, graphqlSystemIdentifyHelper);
 
     // Transform the program
     const transformContext = {
