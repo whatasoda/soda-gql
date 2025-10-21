@@ -2,12 +2,22 @@
   "name": "@soda-gql/cli",
   "version": "0.0.1",
   "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "bin": {
+    "soda-gql": "./dist/index.js"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "soda-gql": "./src/index.ts"
-  },
   "exports": {
     ".": {
       "development": "./src/index.ts",

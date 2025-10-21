@@ -2,7 +2,7 @@
   "name": "@soda-gql/plugin-webpack",
   "version": "0.0.1",
   "type": "module",
-  "sideEffects": false,
+  "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

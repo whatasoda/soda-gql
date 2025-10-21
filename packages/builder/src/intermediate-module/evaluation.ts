@@ -114,7 +114,6 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
     // Both module.exports and exports point to the same object
     module: { exports: moduleExports },
     exports: moduleExports,
-    // Provide Node.js globals for rolldown helpers
     __dirname: resolve(modulePath, ".."),
     __filename: modulePath,
     global: undefined as unknown,

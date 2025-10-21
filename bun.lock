@@ -8,6 +8,7 @@
         "@swc-node/register": "^1.11.1",
         "@types/bun": "latest",
         "@types/node": "^24.7.2",
+        "graphql": "^16.8.1",
         "tsdown": "^0.15.7",
         "typescript": "^5.9.2",
         "zod": "^4.1.11",
@@ -128,9 +129,6 @@
         "@soda-gql/runtime": "workspace:*",
         "graphql": "^16.8.1",
         "neverthrow": "^8.1.1",
-        "zod": "^4.1.11",
-      },
-      "devDependencies": {
         "tsdown": "^0.15.7",
       },
     },
@@ -145,24 +143,17 @@
       "name": "@soda-gql/config",
       "version": "0.0.1",
       "dependencies": {
+        "@soda-gql/common": "workspace:*",
+        "@swc/core": "^1.10.0",
         "neverthrow": "^8.2.0",
         "zod": "^4.1.11",
-      },
-      "devDependencies": {
-        "rolldown": "^1.0.0-beta.43",
-      },
-      "peerDependencies": {
-        "typescript": "^5.9.2",
       },
     },
     "packages/core": {
       "name": "@soda-gql/core",
       "version": "0.0.1",
       "dependencies": {
-        "graphql": "^16.*",
-      },
-      "devDependencies": {
-        "graphql": "^16.8.1",
+        "graphql": "16.*",
       },
     },
     "packages/graffle-client": {
@@ -247,7 +238,7 @@
         "neverthrow": "^8.1.1",
       },
       "peerDependencies": {
-        "typescript": "^5.0.0",
+        "typescript": "5.*",
       },
     },
     "packages/plugin-webpack": {

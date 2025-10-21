@@ -3,11 +3,16 @@
   "version": "0.0.1",
   "description": "Centralized configuration loader and helpers for soda-gql tooling.",
   "type": "module",
+  "private": false,
   "license": "MIT",
-  "sideEffects": false,
   "files": [
     "dist"
   ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
   "exports": {
     ".": {
       "development": "./src/index.ts",
@@ -23,16 +28,8 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@soda-gql/common": "workspace:*",
+    "@swc/core": "^1.10.0",
     "neverthrow": "^8.2.0",
     "zod": "^4.1.11"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.2"
-  },
-  "engines": {
-    "bun": ">=1.1.0"
-  },
-  "devDependencies": {
-    "rolldown": "^1.0.0-beta.43"
   }
 }

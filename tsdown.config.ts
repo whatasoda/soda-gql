@@ -44,6 +44,7 @@ const configure = <T extends keyof typeof packageEntries>(name: T, options: Conf
       "@swc/core",
       "@swc/types",
       "esbuild",
+      "fast-glob",
       "graphql",
       "graphql-request",
       "neverthrow",

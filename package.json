@@ -8,6 +8,7 @@
     "examples/*"
   ],
   "scripts": {
+    "prepublish": "bun run scripts/prepublish.ts",
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
     "validate:tests": "bun run scripts/validate-tests.ts",

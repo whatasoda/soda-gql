@@ -2,7 +2,7 @@
   "name": "@soda-gql/plugin-tsc",
   "version": "0.0.1",
   "type": "module",
-  "sideEffects": false,
+  "private": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,7 +14,7 @@
     "neverthrow": "^8.1.1"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "5.*"
   },
   "exports": {
     ".": {

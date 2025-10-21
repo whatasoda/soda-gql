@@ -2,6 +2,16 @@
   "name": "@soda-gql/codegen",
   "version": "0.0.1",
   "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,9 +30,6 @@
     "@soda-gql/runtime": "workspace:*",
     "graphql": "^16.8.1",
     "neverthrow": "^8.1.1",
-    "zod": "^4.1.11"
-  },
-  "devDependencies": {
     "tsdown": "^0.15.7"
   }
 }

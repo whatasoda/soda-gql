@@ -2,6 +2,7 @@
   "name": "@soda-gql/runtime",
   "version": "0.0.1",
   "type": "module",
+  "private": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

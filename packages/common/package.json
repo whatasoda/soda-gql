@@ -2,6 +2,19 @@
   "name": "@soda-gql/common",
   "version": "0.0.1",
   "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
@@ -42,8 +55,5 @@
   },
   "dependencies": {
     "zod": "^4.1.11"
-  },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts"
+  }
 }
