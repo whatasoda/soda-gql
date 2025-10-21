@@ -7,15 +7,13 @@ import type {
   GqlCallModel,
   GqlCallOperation,
   GqlCallSlice,
-} from "@soda-gql/plugin-common";
-import { resolveCanonicalId } from "@soda-gql/plugin-common";
-import { err, ok, type Result } from "neverthrow";
-import type {
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
-} from "../errors";
+} from "@soda-gql/plugin-common";
+import { resolveCanonicalId } from "@soda-gql/plugin-common";
+import { err, ok, type Result } from "neverthrow";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;

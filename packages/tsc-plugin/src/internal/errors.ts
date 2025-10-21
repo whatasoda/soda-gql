@@ -1,5 +1,5 @@
 /**
- * Error types for plugin-swc.
+ * Error types for tsc-plugin.
  * Re-exports from @soda-gql/plugin-common.
  */
 
