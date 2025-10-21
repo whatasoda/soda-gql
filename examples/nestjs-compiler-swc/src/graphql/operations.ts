@@ -23,7 +23,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
  *
  * This demonstrates fetching a list of users with the same fields.
  */
-export const getUsersQuery = gql.default(({ operation }) =>
+export const getUsersQuery = gql.default(({ query }) =>
   query.composed(
     {
       operationName: "GetUsers",

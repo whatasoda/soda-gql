@@ -9,9 +9,9 @@
   ],
   "scripts": {
     "prepublish": "bun run scripts/prepublish.ts",
-    "publish-npm": "bun publish-npm:dry-run && bun scripts/publish.ts",
+    "publish-npm": "bun scripts/publish.ts",
     "publish-npm:dry-run": "bun scripts/publish.ts --dry-run",
-    "publish-npm:provenance": "bun publish-npm:dry-run && bun scripts/publish.ts --provenance",
+    "publish-npm:provenance": "bun scripts/publish.ts --provenance",
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
     "validate:tests": "bun run scripts/validate-tests.ts",

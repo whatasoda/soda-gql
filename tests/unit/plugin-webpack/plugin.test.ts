@@ -131,7 +131,6 @@ describe("SodaGqlWebpackPlugin", () => {
 
   describe("Error handling", () => {
     test("adds compilation error when artifact file is missing and bailOnError is true", async () => {
-      const artifactPath = join(tmpDir, "missing-artifact.json");
       const entryPath = join(tmpDir, "entry.js");
 
       await writeFile(entryPath, "export const foo = 'bar';", "utf8");

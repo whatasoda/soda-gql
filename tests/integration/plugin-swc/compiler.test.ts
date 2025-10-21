@@ -21,7 +21,6 @@ describe.skip("SWC Compiler Plugin Integration", () => {
     // Create our plugin with new options (disabled to avoid coordinator initialization)
     const plugin = createSodaGqlSwcPlugin({
       configPath: "./soda-gql.config.ts",
-      project: "default",
       importIdentifier: "@/graphql-system",
       enabled: false, // Disable to test option parsing without coordinator
     });
