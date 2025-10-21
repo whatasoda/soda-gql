@@ -28,8 +28,7 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
     return fallbackPlugin;
   }
 
-  const configPath = options.configPath ?? "./soda-gql.config.ts";
-  const configResult = loadConfig(configPath);
+  const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
     console.error(`[@soda-gql/tsc-plugin] Failed to load config: ${configResult.error.message}`);
     return fallbackPlugin;

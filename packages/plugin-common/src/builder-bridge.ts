@@ -35,8 +35,7 @@ export const preparePluginState = (options: PluginOptions, pluginName: string): 
     return null;
   }
 
-  const configPath = options.configPath ?? "./soda-gql.config.ts";
-  const configResult = loadConfig(configPath);
+  const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
     console.error(`[${pluginName}] Failed to load config: ${configResult.error.message}`);
     return null;
