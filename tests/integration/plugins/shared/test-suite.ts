@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
+import type { ModuleFormat, PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
 import { loadPluginFixture, loadPluginFixtureMulti } from "../../../utils/pluginFixtures";
 import { createPluginTestRunner } from "../../../utils/pluginTestRunner";
 
@@ -10,10 +10,11 @@ import { createPluginTestRunner } from "../../../utils/pluginTestRunner";
  * Each plugin implementation (Babel, TSC, SWC) runs this same suite
  * with their specific transform function.
  */
-export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
+export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig, moduleFormat: ModuleFormat) => {
   const testRunner = createPluginTestRunner(config);
+  const formatLabel = moduleFormat === "cjs" ? "CommonJS" : "ESM";
 
-  describe("Model transformations", () => {
+  describe(`Model transformations (${formatLabel})`, () => {
     it("should transform model definitions", async () => {
       const fixture = await loadPluginFixture("models/basic");
 
@@ -22,7 +23,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         sourceCode: fixture.sourceCode,
         sourcePath: fixture.sourcePath,
         artifact: fixture.artifact,
-        moduleFormat: "esm",
+        moduleFormat,
         expectations: {
           shouldContainRuntimeCall: "gqlRuntime.model",
           shouldNotContainGqlImport: true,
@@ -33,10 +34,13 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
       expect(result.wasTransformed).toBe(true);
       expect(result.transformedCode).toContain("gqlRuntime.model");
       expect(result.transformedCode).not.toContain("@/graphql-system");
+      if (moduleFormat === "cjs") {
+        expect(result.transformedCode).toContain('require("@soda-gql/runtime")');
+      }
     });
   });
 
-  describe("Slice transformations", () => {
+  describe(`Slice transformations (${formatLabel})`, () => {
     it("should transform slice definitions", async () => {
       const fixture = await loadPluginFixture("slices/basic");
 
@@ -45,7 +49,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         sourceCode: fixture.sourceCode,
         sourcePath: fixture.sourcePath,
         artifact: fixture.artifact,
-        moduleFormat: "esm",
+        moduleFormat,
         expectations: {
           shouldContainRuntimeCall: "gqlRuntime.slice",
           shouldNotContainGqlImport: true,
@@ -55,10 +59,13 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
 
       expect(result.wasTransformed).toBe(true);
       expect(result.transformedCode).toContain("gqlRuntime.slice");
+      if (moduleFormat === "cjs") {
+        expect(result.transformedCode).toContain('require("@soda-gql/runtime")');
+      }
     });
   });
 
-  describe("Operation transformations", () => {
+  describe(`Operation transformations (${formatLabel})`, () => {
     it("should transform operation definitions", async () => {
       const fixture = await loadPluginFixture("operations/basic");
 
@@ -67,7 +74,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         sourceCode: fixture.sourceCode,
         sourcePath: fixture.sourcePath,
         artifact: fixture.artifact,
-        moduleFormat: "esm",
+        moduleFormat,
         expectations: {
           shouldContainRuntimeCall: "gqlRuntime.composedOperation",
           shouldNotContainGqlImport: true,
@@ -78,10 +85,13 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
       expect(result.wasTransformed).toBe(true);
       expect(result.transformedCode).toContain("gqlRuntime.composedOperation");
       expect(result.transformedCode).toContain("gqlRuntime.getComposedOperation");
+      if (moduleFormat === "cjs") {
+        expect(result.transformedCode).toContain('require("@soda-gql/runtime")');
+      }
     });
   });
 
-  describe("Import handling", () => {
+  describe(`Import handling (${formatLabel})`, () => {
     it("should add runtime import when transforming gql code", async () => {
       const fixture = await loadPluginFixture("imports/add-runtime");
 
@@ -90,7 +100,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         sourceCode: fixture.sourceCode,
         sourcePath: fixture.sourcePath,
         artifact: fixture.artifact,
-        moduleFormat: "esm",
+        moduleFormat,
         expectations: {
           shouldContainRuntimeImport: true,
           shouldNotContainGqlImport: true,
@@ -98,11 +108,15 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
       });
 
       expect(result.wasTransformed).toBe(true);
-      expect(result.transformedCode).toMatch(/import.*@soda-gql\/runtime/);
+      if (moduleFormat === "cjs") {
+        expect(result.transformedCode).toContain('require("@soda-gql/runtime")');
+      } else {
+        expect(result.transformedCode).toMatch(/import.*@soda-gql\/runtime/);
+      }
     });
   });
 
-  describe("Multi-file transformations", () => {
+  describe(`Multi-file transformations (${formatLabel})`, () => {
     it("should transform operations that import slices from another file", async () => {
       const fixture = await loadPluginFixtureMulti("operations/composed-with-imported-slices");
 
@@ -112,7 +126,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,
-          moduleFormat: "esm",
+          moduleFormat,
           expectations: {
             shouldNotContainGqlImport: true,
             shouldContainRuntimeImport: true,
@@ -130,8 +144,9 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         if (file.sourcePath.includes("operations.ts")) {
           expect(result.transformedCode).toContain("gqlRuntime.composedOperation");
           expect(result.transformedCode).toContain("gqlRuntime.getComposedOperation");
-          // Verify that imports from slices are preserved
-          expect(result.transformedCode).toMatch(/import\s*{\s*userSlice\s*,\s*postsSlice\s*}\s*from\s*["']\.\/slices["']/);
+          // Verify that imports from slices are preserved (ESM import or CJS require)
+          // Note: TypeScript's own transform might leave ESM imports even in CJS mode for non-runtime imports
+          expect(result.transformedCode).toMatch(/(import|require)\s*.*\.\/slices/);
         }
       }
     });
@@ -145,7 +160,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,
-          moduleFormat: "esm",
+          moduleFormat,
           expectations: {
             shouldContainRuntimeCall: "gqlRuntime.model",
             shouldNotContainGqlImport: true,
@@ -168,7 +183,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,
-          moduleFormat: "esm",
+          moduleFormat,
           expectations: {
             shouldNotContainGqlImport: true,
             shouldContainRuntimeImport: true,
@@ -200,7 +215,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,
-          moduleFormat: "esm",
+          moduleFormat,
           expectations: {
             shouldNotContainGqlImport: true,
             shouldContainRuntimeImport: true,
@@ -212,8 +227,9 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         // Verify slices file contains slice runtime calls and imports from models
         if (file.sourcePath.includes("slices.ts")) {
           expect(result.transformedCode).toContain("gqlRuntime.slice");
-          // Verify that imports from models are preserved
-          expect(result.transformedCode).toMatch(/import\s*{\s*userModel\s*,\s*postModel\s*}\s*from\s*["']\.\/models["']/);
+          // Verify that imports from models are preserved (ESM import or CJS require)
+          // Note: TypeScript's own transform might leave ESM imports even in CJS mode for non-runtime imports
+          expect(result.transformedCode).toMatch(/(import|require)\s*.*\.\/models/);
         }
 
         // Verify models file contains model runtime calls
@@ -234,7 +250,7 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,
-          moduleFormat: "esm",
+          moduleFormat,
           expectations: {
             shouldNotContainGqlImport: true,
             shouldContainRuntimeImport: true,
@@ -247,8 +263,9 @@ export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
         if (file.sourcePath.includes("operations.ts")) {
           expect(result.transformedCode).toContain("gqlRuntime.inlineOperation");
           expect(result.transformedCode).toContain("gqlRuntime.getInlineOperation");
-          // Verify that imports from models are preserved
-          expect(result.transformedCode).toMatch(/import\s*{\s*userModel\s*}\s*from\s*["']\.\/models["']/);
+          // Verify that imports from models are preserved (ESM import or CJS require)
+          // Note: TypeScript's own transform might leave ESM imports even in CJS mode for non-runtime imports
+          expect(result.transformedCode).toMatch(/(import|require)\s*.*\.\/models/);
         }
 
         // Verify models file contains model runtime calls

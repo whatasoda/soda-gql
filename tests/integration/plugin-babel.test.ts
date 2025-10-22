@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
+import type { PluginTestRunnerTransformer } from "../utils/pluginTestRunner";
 import { runCommonPluginTestSuite } from "./plugins/shared/test-suite";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -19,45 +20,67 @@ describe("Plugin-Babel Transformation Tests", () => {
     schemaPath,
   });
 
-  // Run common test suite with Babel-specific transform function
-  runCommonPluginTestSuite({
-    pluginName: "babel-plugin",
-    transform: async ({ sourceCode, sourcePath, artifact, moduleFormat }) => {
-      await fixtureGraphqlSystemReady; // Wait for fixture setup
-      const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
+  // Transform function for Babel plugin
+  const babelTransform: PluginTestRunnerTransformer = async ({ sourceCode, sourcePath, artifact, moduleFormat }) => {
+    await fixtureGraphqlSystemReady; // Wait for fixture setup
+    const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
 
-      try {
-        // Write artifact to temp file
-        const artifactPath = join(tempDir, "artifact.json");
-        writeFileSync(artifactPath, JSON.stringify(artifact));
+    try {
+      // Write artifact to temp file
+      const artifactPath = join(tempDir, "artifact.json");
+      writeFileSync(artifactPath, JSON.stringify(artifact));
 
-        // Use examples/babel-app config as a valid config file
-        const exampleConfigPath = join(projectRoot, "examples/babel-app/soda-gql.config.ts");
+      // Use examples/babel-app config as a valid config file
+      const exampleConfigPath = join(projectRoot, "examples/babel-app/soda-gql.config.ts");
 
-        const result = await transformAsync(sourceCode, {
-          filename: sourcePath,
-          plugins: [
-            [
-              createSodaGqlPlugin,
-              {
-                configPath: exampleConfigPath,
-                artifact: {
-                  useBuilder: false,
-                  path: artifactPath,
-                },
-              },
-            ],
-          ],
-        });
+      const plugins: Array<[any, any]> = [
+        [
+          createSodaGqlPlugin,
+          {
+            configPath: exampleConfigPath,
+            artifact: {
+              useBuilder: false,
+              path: artifactPath,
+            },
+          },
+        ],
+      ];
 
-        if (!result || !result.code) {
-          throw new Error("Babel transformation failed");
-        }
-
-        return result.code;
-      } finally {
-        rmSync(tempDir, { recursive: true, force: true });
+      // Add CJS transformation plugin if needed
+      if (moduleFormat === "cjs") {
+        plugins.push(["@babel/plugin-transform-modules-commonjs", {}]);
       }
+
+      const result = await transformAsync(sourceCode, {
+        filename: sourcePath,
+        plugins,
+      });
+
+      if (!result || !result.code) {
+        throw new Error("Babel transformation failed");
+      }
+
+      return result.code;
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  };
+
+  // Run common test suite with Babel-specific transform function (ESM)
+  runCommonPluginTestSuite(
+    {
+      pluginName: "babel-plugin",
+      transform: babelTransform,
     },
-  });
+    "esm"
+  );
+
+  // Run common test suite with Babel-specific transform function (CJS)
+  runCommonPluginTestSuite(
+    {
+      pluginName: "babel-plugin",
+      transform: babelTransform,
+    },
+    "cjs"
+  );
 });
