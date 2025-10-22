@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
@@ -195,7 +195,7 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
       // oldId format: /path/to/workspace/src/filename.ts::exportName
       // Find the original path by matching filename
       const workspacePath = oldId.split("::")[0];
-      const filename = basename(workspacePath);
+      const filename = basename(workspacePath!);
       const exportName = oldId.split("::")[1];
 
       // Find original path for this filename

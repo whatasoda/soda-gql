@@ -17,3 +17,25 @@ export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
     ({ select }) => select(["$.updateUser"], (result) => result),
   ),
 );
+
+export const slices = {
+  byId: gql.default(({ query }, { $ }) =>
+    query.slice(
+      { variables: [$("id").scalar("ID:!")] },
+      ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+      ({ select }) => select(["$.user"], (result) => result),
+    ),
+  ),
+};
+
+const sliceCollection = {
+  userSlice: gql.default(({ query }) =>
+    query.slice(
+      {},
+      ({ f }) => [f.users({})(({ f }) => [f.id()])],
+      ({ select }) => select(["$.users"], (result) => result),
+    ),
+  ),
+};
+
+export default sliceCollection;

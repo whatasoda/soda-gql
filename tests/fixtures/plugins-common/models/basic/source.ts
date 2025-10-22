@@ -15,3 +15,13 @@ export const productModel = gql.default(({ model }) => {
     (selection) => ({ id: selection.id, name: selection.name }),
   );
 });
+
+export const models = {
+  user: gql.default(({ model }) =>
+    model.User(
+      {},
+      ({ f }) => [f.id()],
+      (selection) => ({ id: selection.id }),
+    ),
+  ),
+};

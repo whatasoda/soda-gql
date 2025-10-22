@@ -19,3 +19,21 @@ export const updateProfileMutation = gql.default(({ mutation }, { $ }) =>
     () => ({}),
   ),
 );
+
+export const query1 = gql.default(({ query }) =>
+  query.composed(
+    {
+      operationName: "Query1",
+    },
+    () => ({}),
+  ),
+);
+
+export const query2 = gql.default(({ query }) =>
+  query.composed(
+    {
+      operationName: "Query2",
+    },
+    () => ({}),
+  ),
+);
