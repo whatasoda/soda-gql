@@ -122,7 +122,7 @@ export const loadPluginFixture = async (name: string): Promise<LoadedPluginFixtu
  *
  * All files are built together in the same workspace to preserve cross-file imports.
  *
- * @param name - Fixture name relative to tests/fixtures/plugins-common (e.g., "operations/with-imported-slices")
+ * @param name - Fixture name relative to tests/fixtures/plugins-common (e.g., "operations/composed-with-imported-slices")
  */
 export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPluginFixtureMulti> => {
   const fixtureDir = join(FIXTURE_ROOT, name);

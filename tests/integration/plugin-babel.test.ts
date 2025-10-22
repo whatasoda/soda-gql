@@ -154,12 +154,12 @@ describe("Plugin-Babel Transformation Tests", () => {
 
   describe("Multi-file transformations", () => {
     it("should transform operations that import slices from another file", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/with-imported-slices");
+      const fixture = await loadPluginFixtureMulti("operations/composed-with-imported-slices");
 
       // Transform all files
       for (const file of fixture.files) {
         const result = await testRunner.testTransformation({
-          fixtureName: `operations/with-imported-slices/${file.sourcePath.split("/").pop()}`,
+          fixtureName: `operations/composed-with-imported-slices/${file.sourcePath.split("/").pop()}`,
           sourceCode: file.sourceCode,
           sourcePath: file.sourcePath,
           artifact: fixture.artifact,

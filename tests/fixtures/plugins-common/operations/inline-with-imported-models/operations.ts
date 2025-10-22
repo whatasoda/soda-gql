@@ -7,8 +7,12 @@ export const getUserById = gql.default(({ query }, { $ }) =>
       operationName: "GetUserById",
       variables: [$("id").scalar("ID:!")],
     },
-    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.email()])],
-    ({ select }) =>
-      select(["$.user"], (user) => userModel.embed({ ...user })),
+    ({ f, $ }) => [
+      //
+      f.user({ id: $.id })(() => [
+        //
+        userModel.fragment()
+      ]),
+    ],
   ),
 );
