@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import swc from "@swc/core";
 import { createSodaGqlSwcPlugin } from "@soda-gql/plugin-swc";
+import swc from "@swc/core";
 import { runCommonPluginTestSuite } from "./shared/test-suite";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));

@@ -9,7 +9,7 @@ import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoade
 import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
-import { createWorkspace, setupGraphqlSystem, cleanupWorkspace } from "../utils/workspace";
+import { createWorkspace, setupGraphqlSystem } from "../utils/workspace";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");

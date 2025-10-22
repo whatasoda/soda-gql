@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";

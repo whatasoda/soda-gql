@@ -20,6 +20,13 @@ export type PluginTransformResult = {
   wasTransformed: boolean;
 };
 
+export type PluginTestRunnerTransformer = (params: {
+  sourceCode: string;
+  sourcePath: string;
+  artifact: BuilderArtifact;
+  moduleFormat: ModuleFormat;
+}) => Promise<string>;
+
 /**
  * Plugin test runner configuration
  */
@@ -27,12 +34,7 @@ export type PluginTestRunnerConfig = {
   /** Plugin name for logging */
   pluginName: string;
   /** Function to transform source code using the plugin */
-  transform: (params: {
-    sourceCode: string;
-    sourcePath: string;
-    artifact: BuilderArtifact;
-    moduleFormat: ModuleFormat;
-  }) => Promise<string>;
+  transform: PluginTestRunnerTransformer;
 };
 
 /**
@@ -73,9 +75,7 @@ export const createPluginTestRunner = (config: PluginTestRunnerConfig) => {
     // Verify expectations
     if (expectations.shouldContainRuntimeCall) {
       if (!transformedCode.includes(expectations.shouldContainRuntimeCall)) {
-        throw new Error(
-          `[${pluginName}] Expected transformed code to contain "${expectations.shouldContainRuntimeCall}"`,
-        );
+        throw new Error(`[${pluginName}] Expected transformed code to contain "${expectations.shouldContainRuntimeCall}"`);
       }
     }
 

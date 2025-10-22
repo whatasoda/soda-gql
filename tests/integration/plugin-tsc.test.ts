@@ -2,17 +2,17 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createTransformer } from "@soda-gql/tsc-plugin/transformer";
 import * as ts from "typescript";
 import { createTestConfig } from "../helpers/test-config";
-import { createTransformer } from "@soda-gql/tsc-plugin/transformer";
 import { loadPluginFixture } from "../utils/pluginFixtures";
-import { createPluginTestRunner } from "../utils/pluginTestRunner";
+import { createPluginTestRunner, type PluginTestRunnerTransformer } from "../utils/pluginTestRunner";
 import { runCommonPluginTestSuite } from "./plugins/shared/test-suite";
 
 describe("Plugin-TSC Transformation Tests", () => {
   // Transform function for TSC plugin
-  const createTscTransform = (moduleFormat: "esm" | "cjs") => {
-    return async ({ sourceCode, sourcePath, artifact }: any) => {
+  const createTscTransform = (moduleFormat: "esm" | "cjs"): PluginTestRunnerTransformer => {
+    return async ({ sourceCode, sourcePath, artifact }) => {
       const tempDir = mkdtempSync(join(tmpdir(), "tsc-plugin-test-"));
 
       try {
@@ -56,13 +56,11 @@ describe("Plugin-TSC Transformation Tests", () => {
           isEmitNotificationEnabled: () => false,
           isSubstitutionEnabled: () => false,
           onEmitNode: () => {},
-          onSubstituteNode: (hint, node) => node,
+          onSubstituteNode: (_hint, node) => node,
           startLexicalEnvironment: () => {},
           suspendLexicalEnvironment: () => {},
           resumeLexicalEnvironment: () => {},
           endLexicalEnvironment: () => [],
-          getEmitResolver: () => ({} as any),
-          getEmitHost: () => ({} as any),
         };
 
         // Transform using our custom transformer
