@@ -1,16 +1,16 @@
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 
 export const model1 = gql.default(({ model }) =>
-  model(
-    { typename: "User" },
+  model.User(
+    {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),
   ),
 );
 
 export const model2 = gql.default(({ model }) =>
-  model(
-    { typename: "Post" },
+  model.Post(
+    {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),
   ),

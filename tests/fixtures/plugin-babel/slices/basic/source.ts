@@ -1,10 +1,10 @@
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 
 export const userSlice = gql.default(({ query }, { $ }) =>
   query.slice(
     { variables: [$("id").scalar("ID:!")] },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
-    ({ select }) => select(["$.user"], (result) => result.map((entry) => entry)),
+    ({ select }) => select(["$.user"], (result) => result),
   ),
 );
 
@@ -32,7 +32,7 @@ const sliceCollection = {
   userSlice: gql.default(({ query }) =>
     query.slice(
       {},
-      ({ f }) => [f.users(({ f }) => [f.id()])],
+      ({ f }) => [f.users({})(({ f }) => [f.id()])],
       ({ select }) => select(["$.users"], (result) => result),
     ),
   ),

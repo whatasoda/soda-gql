@@ -14,8 +14,7 @@
     "dist",
     ".typecheck",
     "tests/.tmp/**/*",
-    ".tmp/**/*",
-    "tests/fixtures/plugin-babel/**/source.ts"
+    ".tmp/**/*"
   ],
   "references": [
     { "path": "./packages/builder/tsconfig.editor.json" },

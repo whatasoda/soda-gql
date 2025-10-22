@@ -1,11 +1,12 @@
-import { type GraphQLSchema, gql } from "@soda-gql/core";
+import type { AnyGraphqlSchema } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 
 export const userModel = gql.default(({ model }) =>
-  model(
-    { typename: "User" },
+  model.User(
+    {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),
   ),
 );
 
-export const schema: GraphQLSchema = gql.schema;
+export const schema: AnyGraphqlSchema = {} as AnyGraphqlSchema;

@@ -1,12 +1,12 @@
-import { gql } from "@soda-gql/core";
-import type { ExecutionResult } from "@soda-gql/runtime";
+import { gql } from "@/graphql-system";
+import type { RuntimeModelInput } from "@soda-gql/core/runtime";
 
 export const userModel = gql.default(({ model }) =>
-  model(
-    { typename: "User" },
+  model.User(
+    {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),
   ),
 );
 
-export type QueryResult = ExecutionResult;
+export type ModelInput = RuntimeModelInput;

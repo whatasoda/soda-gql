@@ -1,9 +1,21 @@
 import { gql } from "@/graphql-system";
 
 // Stub dependencies for runtime execution
-const userSlice = { build: {} as any } as any;
-const nestedSlice = { build: {} as any } as any;
-const updateUserSlice = { build: {} as any } as any;
+const userSlice: any = {
+  embed(_args: any) {
+    return {};
+  },
+};
+const nestedSlice: any = {
+  embed(_args: any) {
+    return {};
+  },
+};
+const updateUserSlice: any = {
+  embed(_args: any) {
+    return {};
+  },
+};
 
 export const profileQuery = gql.default(({ query }, { $ }) =>
   query.composed(

@@ -1,4 +1,4 @@
-import { gql } from "@soda-gql/core";
+import { gql } from "@/graphql-system";
 import { userSlice } from "./slices";
 
 export const getUserQuery = gql.default(({ query }, { $ }) =>
@@ -7,8 +7,8 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
       operationName: "GetUser",
       variables: [$("userId").scalar("ID:!")],
     },
-    () => ({
-      user: userSlice.embed({}),
+    ({ $ }) => ({
+      user: userSlice.embed({ userId: $.userId }),
     }),
   ),
 );
