@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
@@ -23,7 +22,8 @@ describe("Plugin-Babel HMR Integration", () => {
   it("bootstraps DevManager when dev.hmr is enabled", async () => {
     await fixtureGraphqlSystemReady; // Wait for fixture setup
     // Create temp directory
-    const tempDir = mkdtempSync(join(tmpdir(), "soda-gql-hmr-test-"));
+    const tempDir = join(projectRoot, "tests/.tmp/plugin-babel-hmr-test", `${Date.now()}`);
+    mkdirSync(tempDir, { recursive: true });
 
     try {
       // Create config file pointing to fixture graphql-system
@@ -96,7 +96,8 @@ describe("Plugin-Babel HMR Integration", () => {
 
   it("falls back to production mode when dev.hmr is false", async () => {
     await fixtureGraphqlSystemReady; // Wait for fixture setup
-    const tempDir = mkdtempSync(join(tmpdir(), "soda-gql-prod-test-"));
+    const tempDir = join(projectRoot, "tests/.tmp/plugin-babel-hmr-test", `${Date.now()}`);
+    mkdirSync(tempDir, { recursive: true });
 
     try {
       // Create config file pointing to fixture graphql-system

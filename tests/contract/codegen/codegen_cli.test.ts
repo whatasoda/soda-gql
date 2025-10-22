@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
+import { createTempConfigFile } from "@soda-gql/config/test-utils";
 import { copyDefaultInject } from "../../fixtures/inject-module/index";
 import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../utils/cli";
 
@@ -29,16 +29,9 @@ const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
 
 const toPosix = (value: string): string => value.split(/\\|\//).join("/");
 
-const writeConfig = (dir: string, payload: Record<string, unknown>): string => {
-  const configPath = join(dir, "soda-gql.config.ts");
-  const configContent = `export default ${JSON.stringify(payload, null, 2)};
-`;
-  Bun.write(configPath, configContent);
-  return configPath;
-};
-
 describe("soda-gql codegen CLI", () => {
-  const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-codegen-cli-"));
+  const tmpRoot = join(projectRoot, "tests/.tmp/codegen-cli-test");
+  mkdirSync(tmpRoot, { recursive: true });
 
   it("reports SCHEMA_NOT_FOUND when schema file is missing", async () => {
     const caseDir = join(tmpRoot, `case-${Date.now()}`);
@@ -50,17 +43,14 @@ describe("soda-gql codegen CLI", () => {
 
     copyDefaultInject(injectFile);
 
-    const configPath = writeConfig(caseDir, {
-      graphqlSystemPath: outFile,
-      codegen: {
-        format: "json",
-        output: outFile,
-        schemas: {
-          default: {
-            schema: schemaFile,
-            runtimeAdapter: injectFile,
-            scalars: injectFile,
-          },
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: join(caseDir, "graphql-system"),
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaFile,
+          runtimeAdapter: injectFile,
+          scalars: injectFile,
         },
       },
     });
@@ -81,17 +71,14 @@ describe("soda-gql codegen CLI", () => {
 
     copyDefaultInject(injectFile);
 
-    const configPath = writeConfig(caseDir, {
-      graphqlSystemPath: outFile,
-      codegen: {
-        format: "json",
-        output: outFile,
-        schemas: {
-          default: {
-            schema: invalidSchemaPath,
-            runtimeAdapter: injectFile,
-            scalars: injectFile,
-          },
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: join(caseDir, "graphql-system"),
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: invalidSchemaPath,
+          runtimeAdapter: injectFile,
+          scalars: injectFile,
         },
       },
     });
@@ -108,22 +95,20 @@ describe("soda-gql codegen CLI", () => {
     mkdirSync(caseDir, { recursive: true });
 
     const schemaPath = join(projectRoot, "tests", "fixtures", "runtime-app", "schema.graphql");
-    const outFile = join(caseDir, "output.ts");
+    const outDir = join(caseDir, "graphql-system");
+    const outFile = join(outDir, "index.ts");
     const injectFile = join(caseDir, "inject.ts");
 
     copyDefaultInject(injectFile);
 
-    const configPath = writeConfig(caseDir, {
-      graphqlSystemPath: outFile,
-      codegen: {
-        format: "json",
-        output: outFile,
-        schemas: {
-          default: {
-            schema: schemaPath,
-            runtimeAdapter: injectFile,
-            scalars: injectFile,
-          },
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          runtimeAdapter: injectFile,
+          scalars: injectFile,
         },
       },
     });
