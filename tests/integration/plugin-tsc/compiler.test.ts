@@ -145,7 +145,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       const program = ts.createProgram([sourceFile], compilerOptions);
 
       // Note: This test is currently disabled because it requires the full build artifact.
-      // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
+      // In a real scenario, the plugin would use builder to generate artifacts naturally.
       const transformer = createSodaGqlTransformer(program, {
         enabled: false, // Disabled to avoid coordinator initialization
       });
@@ -161,7 +161,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
       expect(emitResult.emitSkipped).toBe(false);
 
-      // TODO: When enabled with proper artifact mocking:
+      // TODO: When enabled with builder-generated artifacts:
       // - Should contain: import { gqlRuntime } from "@soda-gql/runtime"
       // - Should contain: gqlRuntime.operation(...)
       // - Should contain: gqlRuntime.getComposedOperation(...)
@@ -181,7 +181,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       const program = ts.createProgram([sourceFile], compilerOptions);
 
       // Note: This test is currently disabled because it requires the full build artifact.
-      // In a real scenario, prepareTransformState would be mocked to return fixture artifacts.
+      // In a real scenario, the plugin would use builder to generate artifacts naturally.
       const transformer = createSodaGqlTransformer(program, {
         enabled: false, // Disabled to avoid coordinator initialization
       });
@@ -197,7 +197,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
       expect(emitResult.emitSkipped).toBe(false);
 
-      // TODO: When enabled with proper artifact mocking:
+      // TODO: When enabled with builder-generated artifacts:
       // - Should contain: const __soda_gql_runtime = require("@soda-gql/runtime")
       // - Should contain: __soda_gql_runtime.gqlRuntime.operation(...)
       // - Should contain: __soda_gql_runtime.gqlRuntime.getComposedOperation(...)
@@ -229,7 +229,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
       expect(emitResult.emitSkipped).toBe(false);
 
-      // TODO: When enabled, verify that:
+      // TODO: When enabled with builder-generated artifacts, verify that:
       // - If impliedNodeFormat is CommonJS, uses __soda_gql_runtime pattern
       // - If impliedNodeFormat is ESM, uses import pattern
     });

@@ -29,9 +29,15 @@ export default defineConfig(${JSON.stringify(config, null, 2)});
  * Simple temp config creation (without auto-cleanup).
  */
 export function createTempConfigFile(dir: string, config: Partial<SodaGqlConfig>): string {
-  const configPath = join(dir, "soda-gql.config.json");
+  const configPath = join(dir, "soda-gql.config.ts");
 
-  // Write config as JSON for test environments (避免module resolution issues)
-  writeFileSync(configPath, JSON.stringify(config, null, 2));
+  // Write config as TypeScript module
+  const configContent = `
+import { defineConfig } from "@soda-gql/config";
+
+export default defineConfig(${JSON.stringify(config, null, 2)});
+`.trim();
+
+  writeFileSync(configPath, configContent);
   return configPath;
 }

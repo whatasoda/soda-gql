@@ -41,7 +41,12 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
 
   const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
-    console.error(`[${pluginName}] Failed to load config: ${configResult.error.message}`);
+    console.error(`[${pluginName}] Failed to load config:`, {
+      code: configResult.error.code,
+      message: configResult.error.message,
+      filePath: configResult.error.filePath,
+      cause: configResult.error.cause,
+    });
     return null;
   }
 

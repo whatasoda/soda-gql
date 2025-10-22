@@ -1,87 +1,101 @@
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
-import { createCanonicalId } from "@soda-gql/builder";
-import { createBuilderArtifact, createInvalidArtifactElement } from "./artifact-fixtures";
+import type { BuilderArtifact } from "@soda-gql/builder";
+import { createBuilderService } from "@soda-gql/builder";
+import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
+import { createTestConfig } from "../helpers/test-config";
 import { getProjectRoot } from "./index";
-
-type FixtureElementSpec = {
-  export: string;
-  type?: "operation" | "model" | "slice";
-  kind?: "invalid";
-  prebuild?: Record<string, unknown>;
-  data?: Record<string, unknown>;
-};
-
-type FixtureSpec = {
-  source: string;
-  elements: FixtureElementSpec[];
-  artifactOverrides?: {
-    durationMs?: number;
-    warnings?: readonly string[];
-    cache?: { hits?: number; misses?: number; skips?: number };
-  };
-};
 
 export type LoadedPluginBabelFixture = {
   sourcePath: string;
   sourceCode: string;
   artifact: BuilderArtifact;
-  elements: readonly FixtureElementSpec[];
 };
 
 const FIXTURE_ROOT = join(getProjectRoot(), "tests/fixtures/plugin-babel");
+const SCHEMA_PATH = join(getProjectRoot(), "tests/fixtures/runtime-app/schema.graphql");
+const TMP_ROOT = join(getProjectRoot(), "tests/.tmp/plugin-babel-fixtures");
 
-const readJson = async <T>(path: string): Promise<T> => {
-  const file = Bun.file(path);
-  if (!(await file.exists())) {
-    throw new Error(`Fixture metadata missing: ${path}`);
-  }
-  return (await file.json()) as T;
-};
-
+/**
+ * Load a plugin-babel fixture by running the builder to generate artifact.
+ * This ensures tests use naturally generated artifacts, not hardcoded ones.
+ */
 export const loadPluginBabelFixture = async (name: string): Promise<LoadedPluginBabelFixture> => {
   const fixtureDir = join(FIXTURE_ROOT, name);
-  const spec = await readJson<FixtureSpec>(join(fixtureDir, "fixture.json"));
-  const sourcePath = join(fixtureDir, spec.source);
+  const sourcePath = join(fixtureDir, "source.ts");
   const sourceFile = Bun.file(sourcePath);
+
   if (!(await sourceFile.exists())) {
     throw new Error(`Fixture source missing: ${sourcePath}`);
   }
 
-  const elements: Array<[string, BuilderArtifactElement]> = [];
-  for (const entry of spec.elements) {
-    const canonicalId = createCanonicalId(sourcePath, entry.export);
-    if (entry.kind === "invalid") {
-      const invalid = createInvalidArtifactElement({
-        id: canonicalId,
-        type: entry.type ?? "unknown",
-        prebuild: entry.data ?? {},
-      });
-      elements.push([canonicalId, invalid]);
-      continue;
+  // Create temporary workspace for this fixture
+  const workspaceRoot = join(TMP_ROOT, name.replace(/\//g, "-"), `${Date.now()}`);
+  mkdirSync(workspaceRoot, { recursive: true });
+
+  try {
+    // Setup workspace structure
+    const srcDir = join(workspaceRoot, "src");
+    mkdirSync(srcDir, { recursive: true });
+
+    // Copy source file to src/
+    const destSourcePath = join(srcDir, "fixture.ts");
+    cpSync(sourcePath, destSourcePath);
+
+    // Generate GraphQL system
+    const graphqlSystemDir = join(workspaceRoot, "graphql-system");
+    await ensureGraphqlSystemBundle({
+      outFile: join(graphqlSystemDir, "index.ts"),
+      schemaPath: SCHEMA_PATH,
+    });
+
+    // Create builder service
+    const config = createTestConfig(workspaceRoot, {
+      graphqlSystemAliases: ["@/graphql-system"],
+    });
+
+    const service = createBuilderService({
+      config: {
+        ...config,
+        outdir: graphqlSystemDir,
+        include: [join(srcDir, "**/*.ts")],
+      },
+    });
+
+    // Build artifact
+    const buildResult = service.build();
+    if (buildResult.isErr()) {
+      throw new Error(`Builder failed for ${name}: ${buildResult.error.code}`);
     }
 
-    if (!entry.type) {
-      throw new Error(`Fixture ${name} element ${entry.export} is missing "type"`);
+    const artifact = buildResult.value;
+    const sourceCode = await sourceFile.text();
+
+    // Rewrite canonical IDs to use original fixture path instead of workspace path
+    // This allows the artifact to be used with the original source file during transformation
+    const rewrittenElements: typeof artifact.elements = {};
+    for (const [oldId, element] of Object.entries(artifact.elements)) {
+      // Replace workspace path with original fixture path
+      // oldId format: /path/to/workspace/src/fixture.ts::exportName
+      // newId format: /path/to/fixture/source.ts::exportName
+      const exportName = oldId.split("::")[1];
+      const newId = `${sourcePath}::${exportName}`;
+      rewrittenElements[newId as any] = {
+        ...element,
+        id: newId as any,
+      };
     }
 
-    elements.push([
-      canonicalId,
-      {
-        id: canonicalId,
-        type: entry.type,
-        prebuild: entry.prebuild ?? {},
-      } as BuilderArtifactElement,
-    ]);
+    return {
+      sourcePath,
+      sourceCode,
+      artifact: {
+        ...artifact,
+        elements: rewrittenElements,
+      },
+    };
+  } finally {
+    // Cleanup workspace
+    rmSync(workspaceRoot, { recursive: true, force: true });
   }
-
-  const artifact = createBuilderArtifact(elements as any, spec.artifactOverrides);
-  const sourceCode = await sourceFile.text();
-
-  return {
-    sourcePath,
-    sourceCode,
-    artifact,
-    elements: spec.elements,
-  };
 };

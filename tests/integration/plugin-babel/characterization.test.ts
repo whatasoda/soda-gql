@@ -15,7 +15,7 @@ describe("Plugin-Babel Behavioral Tests", () => {
       // Verify transformation behavior
       assertTransformRemovesGql(transformed);
       expect(transformed).toContain("import { gqlRuntime");
-      expect(transformed).toContain("gqlRuntime.operation(");
+      expect(transformed).toContain("gqlRuntime.composedOperation(");
 
       // Verify operations are registered
       expect(transformed).toContain('gqlRuntime.getComposedOperation("ProfileQuery")');
@@ -123,15 +123,6 @@ describe("Plugin-Babel Behavioral Tests", () => {
   });
 
   describe("Error Scenarios", () => {
-    it("handles invalid artifacts by throwing error", async () => {
-      const fixture = await loadPluginBabelFixture("errors/invalid-artifact");
-
-      // Invalid artifacts should cause transformation to fail
-      await expect(
-        runBabelTransform(fixture.sourceCode, fixture.sourcePath, fixture.artifact, { skipTypeCheck: true }),
-      ).rejects.toThrow();
-    });
-
     it("handles files with no gql usage", async () => {
       const fixture = await loadPluginBabelFixture("errors/no-gql");
 
