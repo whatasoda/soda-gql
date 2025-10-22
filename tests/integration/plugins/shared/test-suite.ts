@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ModuleFormat, PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
+import type { PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
 import { loadPluginFixture, loadPluginFixtureMulti } from "../../../utils/pluginFixtures";
 import { createPluginTestRunner } from "../../../utils/pluginTestRunner";
 
@@ -10,8 +10,9 @@ import { createPluginTestRunner } from "../../../utils/pluginTestRunner";
  * Each plugin implementation (Babel, TSC, SWC) runs this same suite
  * with their specific transform function.
  */
-export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig, moduleFormat: ModuleFormat) => {
+export const runCommonPluginTestSuite = (config: PluginTestRunnerConfig) => {
   const testRunner = createPluginTestRunner(config);
+  const { moduleFormat } = config;
   const formatLabel = moduleFormat === "cjs" ? "CommonJS" : "ESM";
 
   describe(`Model transformations (${formatLabel})`, () => {

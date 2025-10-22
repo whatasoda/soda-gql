@@ -15,6 +15,7 @@ describe.skip("Plugin-SWC Transformation Tests", () => {
   // Run common test suite with SWC-specific transform function
   runCommonPluginTestSuite({
     pluginName: "swc-plugin",
+    moduleFormat: "esm",
     transform: async ({ sourceCode, sourcePath, artifact, moduleFormat }) => {
       const tempDir = mkdtempSync(join(tmpdir(), "swc-plugin-test-"));
 
@@ -29,10 +30,6 @@ describe.skip("Plugin-SWC Transformation Tests", () => {
         // Create SWC plugin with config and artifact
         const sodaGqlPlugin = createSodaGqlSwcPlugin({
           configPath: exampleConfigPath,
-          artifact: {
-            useBuilder: false,
-            path: artifactPath,
-          },
         });
 
         // Transform code using SWC

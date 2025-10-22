@@ -6,11 +6,6 @@ import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
 import { babelTransformAdapterFactory } from "./internal/ast/index";
 
-/**
- * Babel plugin options.
- */
-export type BabelPluginOptions = PluginOptions;
-
 type PluginPassState = PluginPass & {
   _state?: PluginSession;
 };
@@ -24,14 +19,7 @@ const fallbackPlugin = (): PluginObj => ({
   },
 });
 
-export const createSodaGqlPlugin = (_babel: unknown, options: BabelPluginOptions = {}): PluginObj => {
-  // Create plugin session synchronously (no async pre())
-  const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
-
-  if (!pluginSession) {
-    return fallbackPlugin();
-  }
-
+export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => {
   // Create graphql system identify helper
   const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(pluginSession.config);
 
@@ -77,4 +65,11 @@ export const createSodaGqlPlugin = (_babel: unknown, options: BabelPluginOptions
       },
     },
   };
+};
+
+export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}): PluginObj => {
+  // Create plugin session synchronously (no async pre())
+  const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
+
+  return pluginSession ? createPlugin({ pluginSession }) : fallbackPlugin();
 };

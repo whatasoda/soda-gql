@@ -1,13 +1,14 @@
 import { describe } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
-import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
+import { createPlugin } from "@soda-gql/plugin-babel";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 import type { PluginTestRunnerTransformer } from "../utils/pluginTestRunner";
 import { runCommonPluginTestSuite } from "./plugins/shared/test-suite";
+import { createTestConfig } from "tests/helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -26,34 +27,15 @@ describe("Plugin-Babel Transformation Tests", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
 
     try {
-      // Write artifact to temp file
-      const artifactPath = join(tempDir, "artifact.json");
-      writeFileSync(artifactPath, JSON.stringify(artifact));
-
-      // Use examples/babel-app config as a valid config file
-      const exampleConfigPath = join(projectRoot, "examples/babel-app/soda-gql.config.ts");
-
-      const plugins: Array<[any, any]> = [
-        [
-          createSodaGqlPlugin,
-          {
-            configPath: exampleConfigPath,
-            artifact: {
-              useBuilder: false,
-              path: artifactPath,
-            },
-          },
-        ],
-      ];
-
-      // Add CJS transformation plugin if needed
-      if (moduleFormat === "cjs") {
-        plugins.push(["@babel/plugin-transform-modules-commonjs", {}]);
-      }
+      const config = createTestConfig(tempDir);
+      const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => artifact } });
 
       const result = await transformAsync(sourceCode, {
         filename: sourcePath,
-        plugins,
+        plugins: [
+          [plugin, {}],
+          ...(moduleFormat === "cjs" ? [["@babel/plugin-transform-modules-commonjs", {}]] : []),
+        ],
       });
 
       if (!result || !result.code) {
@@ -67,20 +49,16 @@ describe("Plugin-Babel Transformation Tests", () => {
   };
 
   // Run common test suite with Babel-specific transform function (ESM)
-  runCommonPluginTestSuite(
-    {
-      pluginName: "babel-plugin",
-      transform: babelTransform,
-    },
-    "esm"
-  );
+  runCommonPluginTestSuite({
+    pluginName: "babel-plugin",
+    moduleFormat: "esm",
+    transform: babelTransform,
+  });
 
   // Run common test suite with Babel-specific transform function (CJS)
-  runCommonPluginTestSuite(
-    {
-      pluginName: "babel-plugin",
-      transform: babelTransform,
-    },
-    "cjs"
-  );
+  runCommonPluginTestSuite({
+    pluginName: "babel-plugin",
+    moduleFormat: "cjs",
+    transform: babelTransform,
+  });
 });

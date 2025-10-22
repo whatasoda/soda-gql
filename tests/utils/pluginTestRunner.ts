@@ -33,6 +33,8 @@ export type PluginTestRunnerTransformer = (params: {
 export type PluginTestRunnerConfig = {
   /** Plugin name for logging */
   pluginName: string;
+  /** Module format for transformation */
+  moduleFormat: ModuleFormat;
   /** Function to transform source code using the plugin */
   transform: PluginTestRunnerTransformer;
 };

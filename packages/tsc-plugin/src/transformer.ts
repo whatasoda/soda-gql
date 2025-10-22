@@ -40,15 +40,14 @@ const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): num
 };
 
 export const createTransformer = ({
-  program,
+  compilerOptions,
   config,
   artifact,
 }: {
-  readonly program: ts.Program;
+  readonly compilerOptions: ts.CompilerOptions;
   readonly config: ResolvedSodaGqlConfig;
   readonly artifact: BuilderArtifact;
 }) => {
-  const compilerOptions = program.getCompilerOptions();
   const isCJS = tsInternals.getEmitModuleKind(compilerOptions) === ts.ModuleKind.CommonJS;
 
   // Create graphql system identify helper using builder's implementation

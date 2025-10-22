@@ -1,5 +1,5 @@
 import { describe } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTransformer } from "@soda-gql/tsc-plugin/transformer";
@@ -14,10 +14,6 @@ describe("Plugin-TSC Transformation Tests", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "tsc-plugin-test-"));
 
     try {
-      // Write source to temp file (use same filename as original to match canonical IDs)
-      const testFilePath = sourcePath;
-      writeFileSync(testFilePath, sourceCode);
-
       // Create compiler options based on module format
       const compilerOptions: ts.CompilerOptions = {
         module: moduleFormat === "esm" ? ts.ModuleKind.ES2015 : ts.ModuleKind.CommonJS,
@@ -27,71 +23,42 @@ describe("Plugin-TSC Transformation Tests", () => {
         skipLibCheck: true,
       };
 
-      // Create program
-      const program = ts.createProgram([testFilePath], compilerOptions);
-      const sourceFile = program.getSourceFile(testFilePath);
-
-      if (!sourceFile) {
-        throw new Error("Failed to get source file from program");
-      }
-
-      // Create config
       const config = createTestConfig(tempDir);
+      const transformer = createTransformer({ compilerOptions, config, artifact });
 
-      // Create transformer
-      const transformer = createTransformer({ program, config, artifact });
-
-      // Create transformation context
-      const transformationContext: ts.TransformationContext = {
-        factory: ts.factory,
-        getCompilerOptions: () => compilerOptions,
-        hoistFunctionDeclaration: () => {},
-        hoistVariableDeclaration: () => {},
-        requestEmitHelper: () => {},
-        readEmitHelpers: () => undefined,
-        enableEmitNotification: () => {},
-        enableSubstitution: () => {},
-        isEmitNotificationEnabled: () => false,
-        isSubstitutionEnabled: () => false,
-        onEmitNode: () => {},
-        onSubstituteNode: (_hint, node) => node,
-        startLexicalEnvironment: () => {},
-        suspendLexicalEnvironment: () => {},
-        resumeLexicalEnvironment: () => {},
-        endLexicalEnvironment: () => [],
+      // Create transformer factory for program.emit()
+      const transformerFactory: ts.TransformerFactory<ts.SourceFile> = (context) => {
+        return (sourceFile) => {
+          const result = transformer.transform({ sourceFile, context });
+          return result.sourceFile;
+        };
       };
 
-      // Transform using our custom transformer
-      const result = transformer.transform({
-        sourceFile,
-        context: transformationContext,
+      const result = ts.transpileModule(sourceCode, {
+        fileName: sourcePath,
+        compilerOptions,
+        transformers: {
+          before: [transformerFactory],
+        },
       });
 
-      // Print the transformed source file
-      const printer = ts.createPrinter();
-      const transformedCode = printer.printFile(result.sourceFile);
-
-      return transformedCode;
+      return result.outputText;
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
   };
 
   // Run common test suite with TSC-specific transform function (ESM)
-  runCommonPluginTestSuite(
-    {
-      pluginName: "tsc-plugin",
-      transform: tscTransform,
-    },
-    "esm"
-  );
+  runCommonPluginTestSuite({
+    pluginName: "tsc-plugin",
+    moduleFormat: "esm",
+    transform: tscTransform,
+  });
 
   // Run common test suite with TSC-specific transform function (CJS)
-  runCommonPluginTestSuite(
-    {
-      pluginName: "tsc-plugin",
-      transform: tscTransform,
-    },
-    "cjs"
-  );
+  runCommonPluginTestSuite({
+    pluginName: "tsc-plugin",
+    moduleFormat: "cjs",
+    transform: tscTransform,
+  });
 });
