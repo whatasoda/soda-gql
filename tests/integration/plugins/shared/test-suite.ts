@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
 import { loadPluginFixture, loadPluginFixtureMulti } from "../../../utils/pluginFixtures";
+import type { PluginTestRunnerConfig } from "../../../utils/pluginTestRunner";
 import { createPluginTestRunner } from "../../../utils/pluginTestRunner";
 
 /**

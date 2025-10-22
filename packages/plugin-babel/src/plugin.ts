@@ -2,9 +2,8 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
-import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
-import { babelTransformAdapterFactory } from "./internal/ast/index";
+import { createTransformer } from "./transformer";
 
 type PluginPassState = PluginPass & {
   _state?: PluginSession;
@@ -19,53 +18,37 @@ const fallbackPlugin = (): PluginObj => ({
   },
 });
 
-export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => {
-  // Create graphql system identify helper
-  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(pluginSession.config);
+export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => ({
+  name: "@soda-gql/plugin-babel",
+  visitor: {
+    Program(programPath: NodePath<t.Program>, state) {
+      const pass = state as unknown as PluginPassState;
+      const filename = pass.file?.opts?.filename;
+      if (!filename) {
+        return;
+      }
 
-  return {
-    name: "@soda-gql/plugin-babel",
-    visitor: {
-      Program(programPath: NodePath<t.Program>, state) {
-        const pass = state as unknown as PluginPassState;
-        const filename = pass.file?.opts?.filename;
-        if (!filename) {
-          return;
-        }
+      // Rebuild artifact on every compilation (like tsc-plugin)
+      const artifact = pluginSession.getArtifact();
+      if (!artifact) {
+        return;
+      }
 
-        // Rebuild artifact on every compilation (like tsc-plugin)
-        const artifact = pluginSession.getArtifact();
-        if (!artifact) {
-          return;
-        }
+      // Create Babel transformer instance
+      const transformer = createTransformer({
+        programPath,
+        types: t,
+        config: pluginSession.config,
+      });
 
-        // Create Babel adapter instance
-        const adapter = babelTransformAdapterFactory.create({
-          programPath,
-          types: t,
-          graphqlSystemIdentifyHelper,
-        });
-
-        // Transform using adapter
-        const result = adapter.transformProgram({
-          filename,
-          artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
-        });
-
-        // Insert runtime side effects if transformed
-        if (result.transformed) {
-          adapter.insertRuntimeSideEffects(
-            {
-              filename,
-              artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
-            },
-            result.runtimeArtifacts || [],
-          );
-        }
-      },
+      // Transform using single method call (matches TypeScript plugin pattern)
+      transformer.transform({
+        filename,
+        artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
+      });
     },
-  };
-};
+  },
+});
 
 export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}): PluginObj => {
   // Create plugin session synchronously (no async pre())
