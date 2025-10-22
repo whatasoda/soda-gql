@@ -69,12 +69,6 @@ export const runCodegenCli = (args: readonly string[], options?: CliOptions): Pr
   runSodaGqlCli("codegen", args, options);
 
 /**
- * Run builder CLI command
- */
-export const runBuilderCli = (args: readonly string[], options?: CliOptions): Promise<CliResult> =>
-  runSodaGqlCli("builder", args, options);
-
-/**
  * Assert CLI command succeeded
  */
 export const assertCliSuccess = (result: CliResult): void => {

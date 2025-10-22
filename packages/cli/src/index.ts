@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-import { builderCommand } from "./commands/builder";
 import { codegenCommand } from "./commands/codegen";
 import { formatError } from "./utils/format";
 
@@ -10,16 +9,11 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
     process.stdout.write(`Usage: soda-gql <command> [options]\n`);
     process.stdout.write(`\nCommands:\n`);
     process.stdout.write(`  codegen    Generate graphql-system runtime module\n`);
-    process.stdout.write(`  builder    Build GraphQL runtime artifacts from entry points\n`);
     return 0;
   }
 
   if (command === "codegen") {
     return codegenCommand(rest);
-  }
-
-  if (command === "builder") {
-    return builderCommand(rest);
   }
 
   process.stderr.write(`Unknown command: ${command}\n`);
