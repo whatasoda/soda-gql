@@ -1,32 +1,56 @@
+import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/plugin-common";
+import { err, ok, type Result } from "neverthrow";
 import * as ts from "typescript";
+
+const createUnsupportedValueTypeError = (valueType: string): PluginTransformUnsupportedValueTypeError => ({
+  type: "PluginError",
+  stage: "transform",
+  code: "SODA_GQL_TRANSFORM_UNSUPPORTED_VALUE_TYPE",
+  message: `Unsupported value type: ${valueType}`,
+  cause: { valueType },
+  valueType,
+});
 
 /**
  * Build a literal expression from a primitive value.
  * Mirrors Babel's buildLiteralFromValue.
  */
-export const buildLiteralFromValue = (factory: ts.NodeFactory, value: unknown): ts.Expression => {
+export const buildLiteralFromValue = (factory: ts.NodeFactory, value: unknown): Result<ts.Expression, PluginError> => {
   if (value === null) {
-    return factory.createNull();
+    return ok(factory.createNull());
   }
   if (typeof value === "string") {
-    return factory.createStringLiteral(value);
+    return ok(factory.createStringLiteral(value));
   }
   if (typeof value === "number") {
-    return factory.createNumericLiteral(value);
+    return ok(factory.createNumericLiteral(value));
   }
   if (typeof value === "boolean") {
-    return value ? factory.createTrue() : factory.createFalse();
+    return ok(value ? factory.createTrue() : factory.createFalse());
   }
   if (Array.isArray(value)) {
-    return factory.createArrayLiteralExpression(value.map((v) => buildLiteralFromValue(factory, v)));
+    const elements: ts.Expression[] = [];
+    for (const item of value) {
+      const result = buildLiteralFromValue(factory, item);
+      if (result.isErr()) {
+        return result;
+      }
+      elements.push(result.value);
+    }
+    return ok(factory.createArrayLiteralExpression(elements));
   }
   if (typeof value === "object") {
-    const properties = Object.entries(value).map(([key, val]) =>
-      factory.createPropertyAssignment(factory.createIdentifier(key), buildLiteralFromValue(factory, val)),
-    );
-    return factory.createObjectLiteralExpression(properties);
+    const properties: ts.PropertyAssignment[] = [];
+    for (const [key, val] of Object.entries(value)) {
+      const result = buildLiteralFromValue(factory, val);
+      if (result.isErr()) {
+        return result;
+      }
+      properties.push(factory.createPropertyAssignment(factory.createIdentifier(key), result.value));
+    }
+    return ok(factory.createObjectLiteralExpression(properties));
   }
-  throw new Error(`[INTERNAL] Unsupported value type: ${typeof value}`);
+  return err(createUnsupportedValueTypeError(typeof value));
 };
 
 /**

@@ -1,6 +1,7 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { formatPluginError } from "@soda-gql/plugin-common";
+import type { PluginError } from "@soda-gql/plugin-common";
+import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
@@ -27,10 +28,10 @@ export const transformCallExpression = ({
   filename,
   metadata,
   getArtifact,
-}: TransformCallExpressionArgs): TransformCallExpressionResult => {
+}: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
   const builderCall = findGqlBuilderCall(callPath);
   if (!builderCall) {
-    return { transformed: false };
+    return ok({ transformed: false });
   }
 
   const gqlCallResult = extractGqlCall({
@@ -42,40 +43,58 @@ export const transformCallExpression = ({
   });
 
   if (gqlCallResult.isErr()) {
-    throw new Error(formatPluginError(gqlCallResult.error));
+    return err(gqlCallResult.error);
   }
 
   const gqlCall = gqlCallResult.value;
 
-  return replaceWithRuntimeCall(callPath, gqlCall);
+  return replaceWithRuntimeCall(callPath, gqlCall, filename);
 };
 
-const replaceWithRuntimeCall = (callPath: NodePath<t.CallExpression>, gqlCall: BabelGqlCall): TransformCallExpressionResult => {
+const replaceWithRuntimeCall = (
+  callPath: NodePath<t.CallExpression>,
+  gqlCall: BabelGqlCall,
+  filename: string,
+): Result<TransformCallExpressionResult, PluginError> => {
   if (gqlCall.type === "model") {
-    const replacement = buildModelRuntimeCall(gqlCall);
-    callPath.replaceWith(replacement);
-    return { transformed: true };
+    const result = buildModelRuntimeCall({ ...gqlCall, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    callPath.replaceWith(result.value);
+    return ok({ transformed: true });
   }
 
   if (gqlCall.type === "slice") {
-    const replacement = buildSliceRuntimeCall(gqlCall);
-    callPath.replaceWith(replacement);
-    return { transformed: true };
+    const result = buildSliceRuntimeCall({ ...gqlCall, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    callPath.replaceWith(result.value);
+    return ok({ transformed: true });
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents(gqlCall);
+    const result = buildComposedOperationRuntimeComponents({ ...gqlCall, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    const { referenceCall, runtimeCall } = result.value;
     callPath.replaceWith(referenceCall);
-    return { transformed: true, runtimeCall };
+    return ok({ transformed: true, runtimeCall });
   }
 
   if (gqlCall.type === "inlineOperation") {
-    const { referenceCall, runtimeCall } = buildInlineOperationRuntimeComponents(gqlCall);
+    const result = buildInlineOperationRuntimeComponents({ ...gqlCall, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    const { referenceCall, runtimeCall } = result.value;
     callPath.replaceWith(referenceCall);
-    return { transformed: true, runtimeCall };
+    return ok({ transformed: true, runtimeCall });
   }
 
-  return { transformed: false };
+  return ok({ transformed: false });
 };
 
 export const insertRuntimeCalls = (programPath: NodePath<t.Program>, runtimeCalls: readonly t.Expression[]): void => {

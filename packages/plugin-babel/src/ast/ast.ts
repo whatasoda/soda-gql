@@ -1,27 +1,53 @@
 import type { Expression } from "@babel/types";
 import * as t from "@babel/types";
+import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/plugin-common";
+import { err, ok, type Result } from "neverthrow";
 
-export const buildLiteralFromValue = (value: unknown): Expression => {
+const createUnsupportedValueTypeError = (valueType: string): PluginTransformUnsupportedValueTypeError => ({
+  type: "PluginError",
+  stage: "transform",
+  code: "SODA_GQL_TRANSFORM_UNSUPPORTED_VALUE_TYPE",
+  message: `Unsupported value type: ${valueType}`,
+  cause: { valueType },
+  valueType,
+});
+
+export const buildLiteralFromValue = (value: unknown): Result<Expression, PluginError> => {
   if (value === null) {
-    return t.nullLiteral();
+    return ok(t.nullLiteral());
   }
   if (typeof value === "string") {
-    return t.stringLiteral(value);
+    return ok(t.stringLiteral(value));
   }
   if (typeof value === "number") {
-    return t.numericLiteral(value);
+    return ok(t.numericLiteral(value));
   }
   if (typeof value === "boolean") {
-    return t.booleanLiteral(value);
+    return ok(t.booleanLiteral(value));
   }
   if (Array.isArray(value)) {
-    return t.arrayExpression(value.map(buildLiteralFromValue));
+    const elements: Expression[] = [];
+    for (const item of value) {
+      const result = buildLiteralFromValue(item);
+      if (result.isErr()) {
+        return result;
+      }
+      elements.push(result.value);
+    }
+    return ok(t.arrayExpression(elements));
   }
   if (typeof value === "object") {
-    const properties = Object.entries(value).map(([key, val]) => t.objectProperty(t.identifier(key), buildLiteralFromValue(val)));
-    return t.objectExpression(properties);
+    const properties: t.ObjectProperty[] = [];
+    for (const [key, val] of Object.entries(value)) {
+      const result = buildLiteralFromValue(val);
+      if (result.isErr()) {
+        return result;
+      }
+      properties.push(t.objectProperty(t.identifier(key), result.value));
+    }
+    return ok(t.objectExpression(properties));
   }
-  throw new Error(`[INTERNAL] Unsupported value type: ${typeof value}`);
+  return err(createUnsupportedValueTypeError(typeof value));
 };
 
 export const clone = <T extends t.Node>(node: T): T => t.cloneNode(node, true) as T;

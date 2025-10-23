@@ -85,6 +85,30 @@ export type PluginAnalysisUnsupportedArtifactTypeError = PluginErrorBase<
   readonly artifactType: string;
 };
 
+type TransformMissingBuilderArgCause = { readonly filename: string; readonly builderType: string; readonly argName: string };
+type TransformUnsupportedValueTypeCause = { readonly valueType: string };
+type TransformAstVisitorFailedCause = { readonly filename: string; readonly reason: string };
+
+export type PluginTransformMissingBuilderArgError = PluginErrorBase<
+  "SODA_GQL_TRANSFORM_MISSING_BUILDER_ARG",
+  TransformMissingBuilderArgCause
+> & {
+  readonly stage: "transform";
+  readonly filename: string;
+  readonly builderType: string;
+  readonly argName: string;
+};
+
+export type PluginTransformUnsupportedValueTypeError = PluginErrorBase<
+  "SODA_GQL_TRANSFORM_UNSUPPORTED_VALUE_TYPE",
+  TransformUnsupportedValueTypeCause
+> & { readonly stage: "transform"; readonly valueType: string };
+
+export type PluginTransformAstVisitorFailedError = PluginErrorBase<
+  "SODA_GQL_TRANSFORM_AST_VISITOR_FAILED",
+  TransformAstVisitorFailedCause
+> & { readonly stage: "transform"; readonly filename: string; readonly reason: string };
+
 /**
  * Union of all plugin error types.
  */
@@ -98,7 +122,10 @@ export type PluginError =
   | PluginBuilderUnexpectedError
   | PluginAnalysisMetadataMissingError
   | PluginAnalysisArtifactMissingError
-  | PluginAnalysisUnsupportedArtifactTypeError;
+  | PluginAnalysisUnsupportedArtifactTypeError
+  | PluginTransformMissingBuilderArgError
+  | PluginTransformUnsupportedValueTypeError
+  | PluginTransformAstVisitorFailedError;
 
 /**
  * Format a PluginError into a human-readable message.

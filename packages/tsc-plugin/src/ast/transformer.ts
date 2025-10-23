@@ -1,4 +1,5 @@
-import { formatPluginError } from "@soda-gql/plugin-common";
+import type { PluginError } from "@soda-gql/plugin-common";
+import { err, ok, type Result } from "neverthrow";
 import * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
@@ -30,10 +31,10 @@ export const transformCallExpression = ({
   getArtifact,
   factory,
   isCJS,
-}: TransformCallExpressionArgs): TransformCallExpressionResult => {
+}: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
   const builderCall = findGqlBuilderCall(callNode, ts);
   if (!builderCall) {
-    return { transformed: false };
+    return ok({ transformed: false });
   }
 
   const gqlCallResult = extractGqlCall({
@@ -45,42 +46,58 @@ export const transformCallExpression = ({
   });
 
   if (gqlCallResult.isErr()) {
-    throw new Error(formatPluginError(gqlCallResult.error));
+    return err(gqlCallResult.error);
   }
 
   const gqlCall = gqlCallResult.value;
 
-  return replaceWithRuntimeCall({ gqlCall, factory, isCJS });
+  return replaceWithRuntimeCall({ gqlCall, factory, isCJS, filename });
 };
 
 const replaceWithRuntimeCall = ({
   gqlCall,
   factory,
   isCJS,
+  filename,
 }: {
   gqlCall: TsGqlCall;
   factory: ts.NodeFactory;
   isCJS: boolean;
-}): TransformCallExpressionResult => {
+  filename: string;
+}): Result<TransformCallExpressionResult, PluginError> => {
   if (gqlCall.type === "model") {
-    const replacement = buildModelRuntimeCall({ gqlCall, factory, isCJS });
-    return { transformed: true, replacement: replacement as ts.Expression };
+    const result = buildModelRuntimeCall({ gqlCall, factory, isCJS, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    return ok({ transformed: true, replacement: result.value as ts.Expression });
   }
 
   if (gqlCall.type === "slice") {
-    const replacement = buildSliceRuntimeCall({ gqlCall, factory, isCJS });
-    return { transformed: true, replacement };
+    const result = buildSliceRuntimeCall({ gqlCall, factory, isCJS, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    return ok({ transformed: true, replacement: result.value });
   }
 
   if (gqlCall.type === "operation") {
-    const { referenceCall, runtimeCall } = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS });
-    return { transformed: true, replacement: referenceCall, runtimeCall };
+    const result = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS, filename });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    const { referenceCall, runtimeCall } = result.value;
+    return ok({ transformed: true, replacement: referenceCall, runtimeCall });
   }
 
   if (gqlCall.type === "inlineOperation") {
-    const { referenceCall, runtimeCall } = buildInlineOperationRuntimeComponents({ gqlCall, factory, isCJS });
-    return { transformed: true, replacement: referenceCall, runtimeCall };
+    const result = buildInlineOperationRuntimeComponents({ gqlCall, factory, isCJS });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    const { referenceCall, runtimeCall } = result.value;
+    return ok({ transformed: true, replacement: referenceCall, runtimeCall });
   }
 
-  return { transformed: false };
+  return ok({ transformed: false });
 };

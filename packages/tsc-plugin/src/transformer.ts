@@ -5,6 +5,7 @@
 import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { formatPluginError } from "@soda-gql/plugin-common";
 import * as ts from "typescript";
 import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./ast/imports";
 import { collectGqlDefinitionMetadata } from "./ast/metadata";
@@ -74,14 +75,21 @@ export const createTransformer = ({
           isCJS,
         });
 
-        if (result.transformed) {
+        if (result.isErr()) {
+          // Log error and continue - don't fail the entire build for a single error
+          console.error(`[@soda-gql/tsc-plugin] ${formatPluginError(result.error)}`);
+          return node;
+        }
+
+        const transformResult = result.value;
+        if (transformResult.transformed) {
           transformed = true;
 
-          if (result.runtimeCall) {
-            runtimeCallsFromLastTransform.push(result.runtimeCall);
+          if (transformResult.runtimeCall) {
+            runtimeCallsFromLastTransform.push(transformResult.runtimeCall);
           }
 
-          return result.replacement;
+          return transformResult.replacement;
         }
       }
 
@@ -90,7 +98,8 @@ export const createTransformer = ({
 
     const visitedNode = ts.visitNode(sourceFile, visitor);
     if (!visitedNode || !ts.isSourceFile(visitedNode)) {
-      throw new Error("[TypeScriptAdapter] Failed to transform source file");
+      console.error(`[@soda-gql/tsc-plugin] Failed to transform source file: ${sourceFile.fileName}`);
+      return sourceFile;
     }
 
     if (!transformed) {

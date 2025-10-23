@@ -9,6 +9,7 @@ import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { formatPluginError } from "@soda-gql/plugin-common";
 import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./ast/imports";
 import { collectGqlDefinitionMetadata } from "./ast/metadata";
 import { transformCallExpression } from "./ast/transformer";
@@ -99,11 +100,18 @@ export const createTransformer = ({
             getArtifact: context.artifactLookup,
           });
 
-          if (result.transformed) {
+          if (result.isErr()) {
+            // Log error and continue - don't fail the entire build for a single error
+            console.error(`[@soda-gql/plugin-babel] ${formatPluginError(result.error)}`);
+            return;
+          }
+
+          const transformResult = result.value;
+          if (transformResult.transformed) {
             transformed = true;
 
-            if (result.runtimeCall) {
-              runtimeCalls.push(result.runtimeCall);
+            if (transformResult.runtimeCall) {
+              runtimeCalls.push(transformResult.runtimeCall);
             }
           }
         },

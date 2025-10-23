@@ -1,7 +1,11 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
-import { __resetRuntimeRegistry } from "@soda-gql/core/runtime";
+import {
+  __resetRuntimeRegistry,
+  __getRegisteredComposedOperations,
+  __getRegisteredInlineOperations,
+} from "@soda-gql/core/runtime";
 
 /**
  * Module format for plugin transformation tests
@@ -109,8 +113,10 @@ export const createPluginTestRunner = (config: PluginTestRunnerConfig) => {
     transformedCode: string;
     tmpDir: string;
     expectations: {
-      /** Expected operation names to be registered */
-      expectedOperations?: string[];
+      /** Expected composed operation names to be registered */
+      expectedComposedOperations?: string[];
+      /** Expected inline operation names to be registered */
+      expectedInlineOperations?: string[];
     };
   }): Promise<void> => {
     const { transformedCode, tmpDir, expectations } = params;
@@ -129,11 +135,34 @@ export const createPluginTestRunner = (config: PluginTestRunnerConfig) => {
       throw new Error(`[${pluginName}] Failed to execute transformed code: ${error}`);
     }
 
-    // Verify expectations
-    if (expectations.expectedOperations) {
-      // Note: This would need access to the runtime registry to verify
-      // For now, we just verify that the code executed without errors
-      // TODO: Implement registry inspection utilities
+    // Verify expectations for composed operations
+    if (expectations.expectedComposedOperations) {
+      const registered = __getRegisteredComposedOperations();
+      const registeredNames = Array.from(registered.keys());
+
+      for (const expected of expectations.expectedComposedOperations) {
+        if (!registeredNames.includes(expected)) {
+          throw new Error(
+            `[${pluginName}] Expected composed operation "${expected}" to be registered. ` +
+              `Registered: ${registeredNames.join(", ")}`,
+          );
+        }
+      }
+    }
+
+    // Verify expectations for inline operations
+    if (expectations.expectedInlineOperations) {
+      const registered = __getRegisteredInlineOperations();
+      const registeredNames = Array.from(registered.keys());
+
+      for (const expected of expectations.expectedInlineOperations) {
+        if (!registeredNames.includes(expected)) {
+          throw new Error(
+            `[${pluginName}] Expected inline operation "${expected}" to be registered. ` +
+              `Registered: ${registeredNames.join(", ")}`,
+          );
+        }
+      }
     }
   };
 
