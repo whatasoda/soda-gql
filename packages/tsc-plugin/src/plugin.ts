@@ -49,7 +49,7 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
 
       const artifact = buildResult.value;
       const compilerOptions = program.getCompilerOptions();
-      const beforeTransformer = createTransformer({ compilerOptions, config, artifact });
+      const transformer = createTransformer({ compilerOptions, config, artifact });
       console.log("[@soda-gql/tsc-plugin] Transforming program");
 
       return (context: ts.TransformationContext) => {
@@ -59,7 +59,7 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
             return sourceFile;
           }
 
-          const transformResult = beforeTransformer.transform({ sourceFile, context });
+          const transformResult = transformer.transform({ sourceFile, context });
           if (!transformResult.transformed) {
             return sourceFile;
           }

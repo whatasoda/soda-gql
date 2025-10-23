@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { types as t } from "@babel/core";
 import { parseSync, traverse } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { collectGqlDefinitionMetadata } from "../../../packages/plugin-babel/src/internal/ast/metadata";
+import { collectGqlDefinitionMetadata } from "../../../packages/plugin-babel/src/ast/metadata";
 
 const collectMetadata = (source: string, filename: string) => {
   const ast = parseSync(source, {

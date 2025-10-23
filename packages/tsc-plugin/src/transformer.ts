@@ -6,11 +6,11 @@ import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
-import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./internal/ast/imports";
-import { collectGqlDefinitionMetadata } from "./internal/ast/metadata";
-import { transformCallExpression } from "./internal/ast/transformer";
+import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./ast/imports";
+import { collectGqlDefinitionMetadata } from "./ast/metadata";
+import { transformCallExpression } from "./ast/transformer";
 
-export { createAfterStubTransformer } from "./internal/ast/imports";
+export { createAfterStubTransformer } from "./ast/imports";
 
 /**
  * TypeScript-specific environment required for the adapter.
@@ -18,11 +18,6 @@ export { createAfterStubTransformer } from "./internal/ast/imports";
 export type TypeScriptEnv = {
   readonly sourceFile: ts.SourceFile;
   readonly context: ts.TransformationContext;
-};
-
-const tsInternals = ts as unknown as {
-  createGetCanonicalFileName: (useCaseSensitiveFileNames: boolean) => (path: string) => string;
-  getEmitModuleKind: (compilerOptions: ts.CompilerOptions) => ts.ModuleKind.CommonJS | ts.ModuleKind.ES2015;
 };
 
 const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): number => {
@@ -48,7 +43,7 @@ export const createTransformer = ({
   readonly config: ResolvedSodaGqlConfig;
   readonly artifact: BuilderArtifact;
 }) => {
-  const isCJS = tsInternals.getEmitModuleKind(compilerOptions) === ts.ModuleKind.CommonJS;
+  const isCJS = compilerOptions.module === ts.ModuleKind.CommonJS || compilerOptions.target === ts.ScriptTarget.ES5;
 
   // Create graphql system identify helper using builder's implementation
   const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(config);

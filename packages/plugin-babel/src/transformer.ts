@@ -9,10 +9,10 @@ import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./internal/ast/imports";
-import { collectGqlDefinitionMetadata } from "./internal/ast/metadata";
-import { transformCallExpression } from "./internal/ast/transformer";
-import type { TransformPassResult, TransformProgramContext } from "./internal/types";
+import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./ast/imports";
+import { collectGqlDefinitionMetadata } from "./ast/metadata";
+import { transformCallExpression } from "./ast/transformer";
+import type { TransformPassResult, TransformProgramContext } from "./types";
 
 /**
  * Creates a Babel transformer with a single transform() method.
