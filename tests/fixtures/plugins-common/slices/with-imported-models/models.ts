@@ -11,7 +11,7 @@ export const userModel = gql.default(({ model }) =>
 export const postModel = gql.default(({ model }) =>
   model.Post(
     {},
-    ({ f }) => [f.id(), f.title(), f.content()],
-    (selection) => ({ id: selection.id, title: selection.title, content: selection.content }),
+    ({ f }) => [f.id(), f.title(), f.body()],
+    (selection) => ({ id: selection.id, title: selection.title, body: selection.body }),
   ),
 );

@@ -17,6 +17,7 @@
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
+      "@soda-gql/plugin-common/*": ["./packages/plugin-common/src/*"],
       "@soda-gql/plugin-swc/*": ["./packages/plugin-swc/src/*"],
       "@soda-gql/tsc-plugin/*": ["./packages/tsc-plugin/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
@@ -32,6 +33,7 @@
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
+    { "path": "./packages/plugin-common/tsconfig.editor.json" },
     { "path": "./packages/plugin-swc/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },

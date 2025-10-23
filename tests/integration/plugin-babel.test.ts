@@ -1,4 +1,4 @@
-import { describe } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -60,5 +60,95 @@ describe("Plugin-Babel Transformation Tests", () => {
     pluginName: "babel-plugin",
     moduleFormat: "cjs",
     transform: babelTransform,
+  });
+
+  describe("Error handling", () => {
+    it("should not transform files without gql calls", async () => {
+      await fixtureGraphqlSystemReady;
+      const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
+
+      try {
+        const config = createTestConfig(tempDir);
+        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => ({ elements: {}, report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } } }) } });
+
+        const sourceCode = `
+          const x = 1;
+          export { x };
+        `;
+
+        const result = await transformAsync(sourceCode, {
+          filename: join(tempDir, "test.ts"),
+          plugins: [[plugin, {}]],
+        });
+
+        expect(result?.code).toBeDefined();
+        expect(result?.code).toContain("const x = 1");
+        expect(result?.code).not.toContain("@soda-gql/runtime");
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("should handle empty artifact gracefully", async () => {
+      await fixtureGraphqlSystemReady;
+      const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
+
+      try {
+        const config = createTestConfig(tempDir);
+        const emptyArtifact = {
+          elements: {},
+          report: {
+            durationMs: 0,
+            warnings: [],
+            stats: { hits: 0, misses: 0, skips: 0 },
+          },
+        };
+        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => emptyArtifact } });
+
+        const sourceCode = `
+          import { gql } from "@/graphql-system";
+          const query = gql.default(() => {});
+        `;
+
+        // This should not crash, even though artifact has no elements
+        const result = await transformAsync(sourceCode, {
+          filename: join(tempDir, "test.ts"),
+          plugins: [[plugin, {}]],
+        });
+
+        expect(result).toBeDefined();
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it("should preserve code structure when no transformation needed", async () => {
+      await fixtureGraphqlSystemReady;
+      const tempDir = mkdtempSync(join(tmpdir(), "babel-plugin-test-"));
+
+      try {
+        const config = createTestConfig(tempDir);
+        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => ({ elements: {}, report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } } }) } });
+
+        const sourceCode = `
+          function add(a, b) {
+            return a + b;
+          }
+
+          export { add };
+        `;
+
+        const result = await transformAsync(sourceCode, {
+          filename: join(tempDir, "test.ts"),
+          plugins: [[plugin, {}]],
+        });
+
+        expect(result?.code).toBeDefined();
+        expect(result?.code).toContain("function add");
+        expect(result?.code).toContain("return a + b");
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
   });
 });

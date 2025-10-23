@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["development"],
-    "outDir": "../../.typecheck/plugin-babel",
-    "tsBuildInfoFile": "../../.typecheck/plugin-babel/tsconfig.tsbuildinfo",
+    "outDir": "../../.typecheck/plugin-common",
+    "tsBuildInfoFile": "../../.typecheck/plugin-common/tsconfig.tsbuildinfo",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
@@ -12,7 +12,6 @@
   "references": [
     { "path": "../builder/tsconfig.editor.json" },
     { "path": "../common/tsconfig.editor.json" },
-    { "path": "../config/tsconfig.editor.json" },
-    { "path": "../plugin-common/tsconfig.editor.json" }
+    { "path": "../config/tsconfig.editor.json" }
   ]
 }

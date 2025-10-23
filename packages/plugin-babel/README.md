@@ -1,0 +1,240 @@
+# @soda-gql/plugin-babel
+
+Babel plugin for soda-gql zero-runtime GraphQL transformations.
+
+## Features
+
+- Transforms `gql.default()` calls to runtime registrations at build time
+- Removes GraphQL system imports and injects runtime imports
+- Supports both ESM and CommonJS module formats
+- Full TypeScript support
+- HMR-ready for development workflows
+
+## Installation
+
+```bash
+bun add -D @soda-gql/plugin-babel @soda-gql/cli
+bun add @soda-gql/runtime
+```
+
+## Quick Start
+
+### Babel Configuration
+
+Add the plugin to your Babel configuration:
+
+```javascript
+// babel.config.js
+module.exports = {
+  plugins: [
+    [
+      "@soda-gql/plugin-babel",
+      {
+        configPath: "./soda-gql.config.ts",
+        artifact: {
+          useBuilder: true,
+        },
+      },
+    ],
+  ],
+};
+```
+
+### Project Setup
+
+1. Generate your GraphQL system:
+
+```bash
+bun run soda-gql codegen \
+  --schema ./schema.graphql \
+  --out ./src/graphql-system/index.ts
+```
+
+2. Write GraphQL operations:
+
+```typescript
+import { gql } from "@/graphql-system";
+
+export const userQuery = gql.default(({ query }, { $ }) =>
+  query.composed(
+    {
+      operationName: "GetUser",
+      variables: [$("id").scalar("ID:!")],
+    },
+    ({ f, $ }) => ({
+      user: f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
+    }),
+  ),
+);
+```
+
+3. The plugin transforms this to runtime calls:
+
+```typescript
+import { gqlRuntime } from "@soda-gql/runtime";
+
+export const userQuery = gqlRuntime.getComposedOperation("canonicalId");
+gqlRuntime.composedOperation("canonicalId", { /* ... */ });
+```
+
+## Configuration Options
+
+### `PluginOptions`
+
+```typescript
+interface PluginOptions {
+  /** Path to soda-gql.config.ts */
+  configPath?: string;
+
+  /** Artifact configuration */
+  artifact?: {
+    /** Use builder to generate artifacts (default: true) */
+    useBuilder?: boolean;
+    /** Path to pre-built artifact.json */
+    path?: string;
+  };
+
+  /** Development mode options */
+  dev?: {
+    /** Enable HMR support (default: false) */
+    hmr?: boolean;
+  };
+}
+```
+
+### Configuration Examples
+
+#### Production Build
+
+```javascript
+{
+  plugins: [
+    [
+      "@soda-gql/plugin-babel",
+      {
+        configPath: "./soda-gql.config.ts",
+        artifact: {
+          useBuilder: true,
+        },
+      },
+    ],
+  ],
+}
+```
+
+#### Development with HMR
+
+```javascript
+{
+  plugins: [
+    [
+      "@soda-gql/plugin-babel",
+      {
+        configPath: "./soda-gql.config.ts",
+        artifact: {
+          useBuilder: true,
+        },
+        dev: {
+          hmr: true,
+        },
+      },
+    ],
+  ],
+}
+```
+
+#### Using Pre-built Artifact
+
+```javascript
+{
+  plugins: [
+    [
+      "@soda-gql/plugin-babel",
+      {
+        artifact: {
+          useBuilder: false,
+          path: "./dist/artifact.json",
+        },
+      },
+    ],
+  ],
+}
+```
+
+## Module Format Support
+
+The plugin automatically handles both ESM and CommonJS:
+
+**Input (ESM)**:
+```typescript
+import { gql } from "@/graphql-system";
+export const model = gql.default(/* ... */);
+```
+
+**Output (ESM)**:
+```typescript
+import { gqlRuntime } from "@soda-gql/runtime";
+export const model = gqlRuntime.model("canonicalId", /* ... */);
+```
+
+**Output (CommonJS)** - when using `@babel/plugin-transform-modules-commonjs`:
+```javascript
+const { gqlRuntime } = require("@soda-gql/runtime");
+module.exports.model = gqlRuntime.model("canonicalId", /* ... */);
+```
+
+## Architecture
+
+### Transformation Pipeline
+
+1. **Metadata Collection**: Analyzes AST to identify `gql.default()` calls
+2. **Canonical ID Resolution**: Maps each call to a unique identifier (file path + AST path)
+3. **Artifact Lookup**: Retrieves build artifacts for each GraphQL element
+4. **AST Transformation**: Replaces builder calls with runtime calls
+5. **Import Management**: Removes GraphQL system imports, adds runtime imports
+
+### Supported GraphQL Elements
+
+- **Models**: Fragment definitions with data normalization
+- **Slices**: Reusable query/mutation/subscription fragments
+- **Operations**: Composed operations from multiple slices
+- **Inline Operations**: Self-contained operations
+
+## Comparison with Other Plugins
+
+| Feature | plugin-babel | plugin-swc | tsc-plugin |
+|---------|--------------|------------|------------|
+| Production Ready | ✅ | 🚧 In Development | ✅ |
+| ESM Support | ✅ | ✅ | ✅ |
+| CJS Support | ✅ | ✅ | ✅ |
+| HMR Support | ✅ | ⚠️ Planned | ✅ |
+| Build Speed | Good | Excellent | Fair |
+| Setup Complexity | Low | Low | Medium |
+
+## Troubleshooting
+
+### Plugin Not Transforming Code
+
+- Verify `configPath` points to a valid config file
+- Ensure GraphQL system is generated (`bun run soda-gql codegen`)
+- Check Babel is processing your source files
+
+### Type Errors After Transformation
+
+- Ensure `@soda-gql/runtime` is installed
+- Verify GraphQL system types are up to date
+- Check `tsconfig.json` includes transformed files
+
+### Module Not Found Errors
+
+- Confirm runtime import path is correct
+- For CJS, ensure `@babel/plugin-transform-modules-commonjs` is configured
+- Check module resolution in your bundler
+
+## Contributing
+
+See the main [CLAUDE.md](../../CLAUDE.md) for contribution guidelines.
+
+## License
+
+MIT
