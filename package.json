@@ -41,6 +41,7 @@
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@soda-gql/plugin-babel": "workspace:*",
+    "@soda-gql/plugin-next": "workspace:*",
     "@soda-gql/plugin-swc": "workspace:*",
     "@soda-gql/plugin-vite": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
