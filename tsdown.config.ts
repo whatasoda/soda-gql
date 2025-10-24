@@ -41,6 +41,7 @@ const configure = <T extends keyof typeof packageEntries>(name: T, options: Conf
       "@babel/parser",
       "@babel/traverse",
       "@babel/types",
+      "@graphql-typed-document-node/core",
       "@swc/core",
       "@swc/types",
       "esbuild",
