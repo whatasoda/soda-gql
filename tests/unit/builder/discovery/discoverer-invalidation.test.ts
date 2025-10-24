@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createAstAnalyzer } from "@soda-gql/builder/ast";
-import { createJsonCache } from "@soda-gql/builder/cache/json-cache";
+import { createMemoryCache } from "@soda-gql/builder/cache/memory-cache";
 import { createDiscoveryCache } from "@soda-gql/builder/discovery/cache";
 import { discoverModules } from "@soda-gql/builder/discovery/discoverer";
 import { clearFingerprintCache } from "@soda-gql/builder/discovery/fingerprint";
@@ -11,9 +11,9 @@ import { createTestConfig } from "../../../helpers/test-config";
 
 const fixtureRoot = join(import.meta.dir, "..", "..", "..", "fixtures", "builder", "discoverer-invalidation");
 
-const makeCache = (root: string) =>
+const makeCache = () =>
   createDiscoveryCache({
-    factory: createJsonCache({ rootDir: join(root, ".cache") }),
+    factory: createMemoryCache(),
     analyzer: "test-analyzer",
     evaluatorId: "test-evaluator",
   });
@@ -35,7 +35,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
-    const cache = makeCache(fixtureRoot);
+    const cache = makeCache();
     clearFingerprintCache();
 
     // First discovery: populate cache
@@ -90,7 +90,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
-    const cache = makeCache(fixtureRoot);
+    const cache = makeCache();
     clearFingerprintCache();
 
     // First discovery
@@ -136,7 +136,7 @@ describe.skip("discoverModules - invalidatedPaths behavior", () => {
     const testConfig = createTestConfig(fixtureRoot);
     const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
     const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
-    const cache = makeCache(fixtureRoot);
+    const cache = makeCache();
     clearFingerprintCache();
 
     // First discovery

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { ModuleAnalysis } from "@soda-gql/builder/ast/types";
-import { createJsonCache, ModuleCacheManager } from "@soda-gql/builder/cache";
+import { createMemoryCache, ModuleCacheManager } from "@soda-gql/builder/cache";
 import { createCanonicalId } from "@soda-gql/common";
 import { createTestSuite, TestSuite } from "../../utils/base";
 
@@ -16,18 +16,13 @@ class CacheManagerTestSuite extends TestSuite {
       ...overrides,
     };
   }
-
-  getTempPath(): string {
-    return this.tempDir.path;
-  }
 }
 
 describe("module cache manager", () => {
   const suite = createTestSuite(CacheManagerTestSuite);
 
   it("returns cached analysis when file hash matches", () => {
-    const factory = createJsonCache({
-      rootDir: suite.getTempPath(),
+    const factory = createMemoryCache({
       prefix: ["test"],
     });
     const cache = new ModuleCacheManager({
@@ -59,8 +54,7 @@ describe("module cache manager", () => {
   });
 
   it("misses cache when hash differs", () => {
-    const factory = createJsonCache({
-      rootDir: suite.getTempPath(),
+    const factory = createMemoryCache({
       prefix: ["test"],
     });
     const cache = new ModuleCacheManager({
@@ -81,8 +75,7 @@ describe("module cache manager", () => {
   });
 
   it("overwrites cache entries when storing newer analysis", () => {
-    const factory = createJsonCache({
-      rootDir: suite.getTempPath(),
+    const factory = createMemoryCache({
       prefix: ["test"],
     });
     const cache = new ModuleCacheManager({

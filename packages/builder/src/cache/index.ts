@@ -1,10 +1,10 @@
 export {
-  createJsonCache,
-  type JsonCacheFactory,
-  type JsonCacheFactoryOptions,
-  type JsonCacheStore,
-  type JsonCacheStoreOptions,
-} from "./json-cache";
+  type CacheFactory,
+  type CacheFactoryOptions,
+  type CacheStore,
+  type CacheStoreOptions,
+  createMemoryCache,
+} from "./memory-cache";
 export {
   createDefaultModuleCacheManager,
   createModuleCacheManager,

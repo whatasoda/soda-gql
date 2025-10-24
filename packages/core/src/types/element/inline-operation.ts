@@ -1,3 +1,4 @@
+import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
 import type {
@@ -8,7 +9,6 @@ import type {
   OperationType,
 } from "../schema";
 import { GqlElement, type GqlElementContext } from "./gql-element";
-import { TypedDocumentNode } from "@graphql-typed-document-node/core";
 
 export type AnyInlineOperation =
   | AnyInlineOperationOf<"query">

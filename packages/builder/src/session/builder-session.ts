@@ -1,10 +1,10 @@
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
 import { createAstAnalyzer, type ModuleAnalysis } from "../ast";
-import { createJsonCache } from "../cache/json-cache";
+import { createMemoryCache } from "../cache/memory-cache";
 import {
   createDiscoveryCache,
   type DiscoveryCache,
@@ -80,8 +80,7 @@ export const createBuilderSession = (options: {
   };
 
   // Reusable infrastructure
-  const cacheFactory = createJsonCache({
-    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+  const cacheFactory = createMemoryCache({
     prefix: ["builder"],
   });
 
