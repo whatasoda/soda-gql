@@ -1,5 +1,3 @@
-/** Operation composition helpers (`gql.query`, `gql.mutation`, `gql.subscription`). */
-import type { TypedQueryDocumentNode } from "graphql";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
 import type {
@@ -10,6 +8,7 @@ import type {
   OperationType,
 } from "../schema";
 import { GqlElement, type GqlElementContext } from "./gql-element";
+import { TypedDocumentNode } from "@graphql-typed-document-node/core";
 
 export type AnyInlineOperation =
   | AnyInlineOperationOf<"query">
@@ -38,7 +37,7 @@ type InlineOperationArtifact<
   readonly operationName: TOperationName;
   readonly variableNames: TVariableNames;
   readonly documentSource: () => TFields;
-  readonly document: TypedQueryDocumentNode<TData, TVariables>;
+  readonly document: TypedDocumentNode<TData, TVariables>;
 };
 
 export class InlineOperation<
@@ -92,7 +91,7 @@ export class InlineOperation<
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
       documentSource: () => TFields;
-      document: TypedQueryDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+      document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
     },
   ) {
     return new InlineOperation(define);

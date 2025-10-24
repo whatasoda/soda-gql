@@ -1,5 +1,6 @@
 /** Operation composition helpers (`gql.query`, `gql.mutation`, `gql.subscription`). */
-import type { TypedQueryDocumentNode } from "graphql";
+
+import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { Prettify } from "../../utils/prettify";
 import type { UnionToIntersection } from "../../utils/type-utils";
@@ -44,7 +45,7 @@ type ComposedOperationDefinition<
   readonly operationName: TOperationName;
   readonly variableNames: TVariableNames;
   readonly projectionPathGraph: ProjectionPathGraphNode;
-  readonly document: TypedQueryDocumentNode<TRawData, TVariables>;
+  readonly document: TypedDocumentNode<TRawData, TVariables>;
   readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData;
 };
 
@@ -131,7 +132,7 @@ export class ComposedOperation<
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
       projectionPathGraph: ProjectionPathGraphNode;
-      document: TypedQueryDocumentNode<
+      document: TypedDocumentNode<
         InferComposedOperationRawData<TSchema, TSliceFragments>,
         ConstAssignableInput<TSchema, TVariableDefinitions>
       >;

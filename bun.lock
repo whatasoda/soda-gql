@@ -130,7 +130,8 @@
       "name": "@soda-gql/core",
       "version": "0.0.1",
       "dependencies": {
-        "graphql": "16.*",
+        "@graphql-typed-document-node/core": "^3.2.0",
+        "graphql": "^16.11.0",
       },
     },
     "packages/graffle-client": {

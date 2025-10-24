@@ -1,3 +1,4 @@
+import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import {
   type ArgumentNode,
   type ConstObjectFieldNode,
@@ -9,7 +10,6 @@ import {
   type NamedTypeNode,
   type ObjectFieldNode,
   OperationTypeNode,
-  type TypedQueryDocumentNode,
   type TypeNode,
   type ValueNode,
   type VariableDefinitionNode,
@@ -250,7 +250,7 @@ export const buildDocument = <
   operationType: OperationType;
   variables: TVarDefinitions;
   fields: TFields;
-}): TypedQueryDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
+}): TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
   const { operationName, operationType, variables, fields } = options;
   return {
     kind: Kind.DOCUMENT,
@@ -267,8 +267,5 @@ export const buildDocument = <
         },
       },
     ],
-  } satisfies DocumentNode as TypedQueryDocumentNode<
-    InferFields<TSchema, TFields>,
-    ConstAssignableInput<TSchema, TVarDefinitions>
-  >;
+  } satisfies DocumentNode as TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>>;
 };
