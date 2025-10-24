@@ -2,7 +2,7 @@
  * Unit tests for @soda-gql/plugin-next configuration wrapper
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { withSodaGql } from "@soda-gql/plugin-next";
 
 describe("withSodaGql", () => {
@@ -11,10 +11,7 @@ describe("withSodaGql", () => {
 
     expect(result.experimental?.swcPlugins).toBeDefined();
     expect(result.experimental?.swcPlugins).toHaveLength(1);
-    expect(result.experimental?.swcPlugins?.[0]).toEqual([
-      "@soda-gql/plugin-swc",
-      { configPath: "./soda-gql.config.ts" },
-    ]);
+    expect(result.experimental?.swcPlugins?.[0]).toEqual(["@soda-gql/plugin-swc", { configPath: "./soda-gql.config.ts" }]);
   });
 
   it("should preserve existing Next.js config options", () => {

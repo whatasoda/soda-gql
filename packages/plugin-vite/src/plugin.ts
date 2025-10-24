@@ -9,7 +9,7 @@
 
 import { transformAsync } from "@babel/core";
 import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
-import type { Plugin, HmrContext } from "vite";
+import type { HmrContext, Plugin } from "vite";
 
 /**
  * Vite plugin options for soda-gql.

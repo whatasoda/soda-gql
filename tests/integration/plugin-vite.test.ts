@@ -2,15 +2,15 @@
  * Integration tests for @soda-gql/plugin-vite
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { sodaGqlVitePlugin } from "@soda-gql/plugin-vite";
-import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
-import { createTestConfig } from "tests/helpers/test-config";
 import type { BuilderArtifact } from "@soda-gql/builder";
+import { sodaGqlVitePlugin } from "@soda-gql/plugin-vite";
+import { createTestConfig } from "tests/helpers/test-config";
+import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -77,7 +77,8 @@ describe("Plugin-Vite Integration Tests", () => {
       });
 
       // Mock transform for CSS file
-      const result = await plugin.transform?.call(
+      const transformFn = typeof plugin.transform === "function" ? plugin.transform : plugin.transform?.handler;
+      const result = await transformFn?.call(
         {
           meta: { rollupVersion: "3.0.0" },
         } as any,
@@ -115,7 +116,8 @@ describe("Plugin-Vite Integration Tests", () => {
         export { x };
       `;
 
-      const result = await plugin.transform?.call(
+      const transformFn = typeof plugin.transform === "function" ? plugin.transform : plugin.transform?.handler;
+      const result = await transformFn?.call(
         {
           meta: { rollupVersion: "3.0.0" },
         } as any,
@@ -159,7 +161,8 @@ describe("Plugin-Vite Integration Tests", () => {
         );
       `;
 
-      const result = await plugin.transform?.call(
+      const transformFn = typeof plugin.transform === "function" ? plugin.transform : plugin.transform?.handler;
+      const result = await transformFn?.call(
         {
           meta: { rollupVersion: "3.0.0" },
         } as any,
@@ -208,7 +211,8 @@ describe("Plugin-Vite Integration Tests", () => {
       `;
 
       // First transform to mark file as having gql calls
-      await plugin.transform?.call(
+      const transformFn2 = typeof plugin.transform === "function" ? plugin.transform : plugin.transform?.handler;
+      await transformFn2?.call(
         {
           meta: { rollupVersion: "3.0.0" },
         } as any,
@@ -223,7 +227,9 @@ describe("Plugin-Vite Integration Tests", () => {
         modules: [mockModule],
       } as any;
 
-      const hmrResult = plugin.handleHotUpdate?.(hmrContext);
+      const handleHotUpdateFn =
+        typeof plugin.handleHotUpdate === "function" ? plugin.handleHotUpdate : plugin.handleHotUpdate?.handler;
+      const hmrResult = handleHotUpdateFn?.(hmrContext);
 
       expect(hmrResult).toBeDefined();
       expect(hmrResult).toEqual([mockModule]);

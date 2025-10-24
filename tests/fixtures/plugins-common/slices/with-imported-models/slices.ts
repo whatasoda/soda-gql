@@ -1,17 +1,10 @@
 import { gql } from "@/graphql-system";
-import { userModel, postModel } from "./models";
+import { postModel, userModel } from "./models";
 
 export const userWithPostsSlice = gql.default(({ query }, { $ }) =>
   query.slice(
     { variables: [$("id").scalar("ID:!")] },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(() => [
-        userModel.fragment(),
-        f.posts({})(() => [
-          postModel.fragment(),
-        ]),
-      ]),
-    ],
+    ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.fragment(), f.posts({})(() => [postModel.fragment()])])],
     ({ select }) =>
       select(["$.user"], (result) =>
         result.safeUnwrap(([user]) => ({

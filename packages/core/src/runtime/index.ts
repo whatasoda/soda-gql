@@ -9,9 +9,9 @@ export type { RuntimeInlineOperationInput } from "./inline-operation";
 export type { RuntimeModelInput } from "./model";
 export { createRuntimeAdapter } from "./runtime-adapter";
 export {
-  __resetRuntimeRegistry,
   __getRegisteredComposedOperations,
   __getRegisteredInlineOperations,
+  __resetRuntimeRegistry,
 } from "./runtime-registry";
 export type { RuntimeSliceInput } from "./slice";
 

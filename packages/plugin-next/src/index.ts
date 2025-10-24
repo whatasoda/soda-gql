@@ -77,10 +77,7 @@ export type SodaGqlNextOptions = PluginOptions;
  * });
  * ```
  */
-export function withSodaGql(
-  nextConfig: NextConfig = {},
-  sodaGqlOptions: SodaGqlNextOptions = {},
-): NextConfig {
+export function withSodaGql(nextConfig: NextConfig = {}, sodaGqlOptions: SodaGqlNextOptions = {}): NextConfig {
   return {
     ...nextConfig,
     experimental: {

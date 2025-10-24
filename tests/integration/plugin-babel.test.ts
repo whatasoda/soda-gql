@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/plugin-babel";
+import { createTestConfig } from "tests/helpers/test-config";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 import type { PluginTestRunnerTransformer } from "../utils/pluginTestRunner";
 import { runCommonPluginTestSuite } from "./plugins/shared/test-suite";
-import { createTestConfig } from "tests/helpers/test-config";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
@@ -32,10 +32,7 @@ describe("Plugin-Babel Transformation Tests", () => {
 
       const result = await transformAsync(sourceCode, {
         filename: sourcePath,
-        plugins: [
-          [plugin, {}],
-          ...(moduleFormat === "cjs" ? [["@babel/plugin-transform-modules-commonjs", {}]] : []),
-        ],
+        plugins: [[plugin, {}], ...(moduleFormat === "cjs" ? [["@babel/plugin-transform-modules-commonjs", {}]] : [])],
       });
 
       if (!result || !result.code) {
@@ -69,7 +66,16 @@ describe("Plugin-Babel Transformation Tests", () => {
 
       try {
         const config = createTestConfig(tempDir);
-        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => ({ elements: {}, report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } } }) } });
+        const plugin = () =>
+          createPlugin({
+            pluginSession: {
+              config,
+              getArtifact: () => ({
+                elements: {},
+                report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+              }),
+            },
+          });
 
         const sourceCode = `
           const x = 1;
@@ -128,7 +134,16 @@ describe("Plugin-Babel Transformation Tests", () => {
 
       try {
         const config = createTestConfig(tempDir);
-        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => ({ elements: {}, report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } } }) } });
+        const plugin = () =>
+          createPlugin({
+            pluginSession: {
+              config,
+              getArtifact: () => ({
+                elements: {},
+                report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+              }),
+            },
+          });
 
         const sourceCode = `
           function add(a, b) {

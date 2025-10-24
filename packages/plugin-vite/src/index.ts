@@ -18,5 +18,4 @@
  * ```
  */
 
-export { sodaGqlVitePlugin, type VitePluginOptions } from "./plugin";
-export { default } from "./plugin";
+export { default, sodaGqlVitePlugin, type VitePluginOptions } from "./plugin";

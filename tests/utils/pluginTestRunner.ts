@@ -2,9 +2,9 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import {
-  __resetRuntimeRegistry,
   __getRegisteredComposedOperations,
   __getRegisteredInlineOperations,
+  __resetRuntimeRegistry,
 } from "@soda-gql/core/runtime";
 
 /**
