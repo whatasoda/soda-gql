@@ -1,13 +1,22 @@
 /**
  * SWC implementation of the transform adapter for plugin-swc.
  *
- * This is a simplified version that only includes the transformation logic needed
- * for the SWC plugin, without the full TransformAdapter interface from plugin-shared.
+ * This implements the full transformation logic for soda-gql zero-runtime transformations.
  */
 
-import type { CanonicalId, GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import type { CallExpression, ExpressionStatement, Module, Span } from "@swc/types";
+import type { BuilderArtifactElement, CanonicalId, GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import { formatPluginError } from "@soda-gql/plugin-common";
+import type { CallExpression, Expression, ExpressionStatement, Module } from "@swc/types";
+import { extractGqlCall, findGqlBuilderCall } from "./analysis";
+import { makeSpan } from "./ast";
 import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./imports";
+import { collectGqlDefinitionMetadata } from "./metadata";
+import {
+  buildComposedOperationRuntimeComponents,
+  buildInlineOperationRuntimeComponents,
+  buildModelRuntimeCall,
+  buildSliceRuntimeCall,
+} from "./runtime";
 
 /**
  * SWC-specific environment required for the adapter.
@@ -23,7 +32,7 @@ export type SwcEnv = {
  */
 export type TransformContext = {
   readonly filename: string;
-  readonly artifactLookup: (canonicalId: CanonicalId) => unknown;
+  readonly artifactLookup: (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
   readonly runtimeModule: string;
 };
 
@@ -53,29 +62,35 @@ export class SwcAdapter {
   /**
    * Transform the entire program.
    *
-   * Detection-only implementation for v0.0.1:
-   * - Detects gql.default calls containing operations
-   * - Marks as transformed when detected
-   * - Returns original AST unchanged
+   * Full transformation implementation:
+   * - Collects metadata about gql definitions
+   * - Transforms gql calls to runtime calls
+   * - Collects runtime registrations for insertion
    */
-  transformProgram(_context: TransformContext): TransformResult {
+  transformProgram(context: TransformContext): TransformResult {
     this.runtimeCallsFromLastTransform = [];
     let transformed = false;
 
-    // Helper to recursively visit nodes
-    // biome-ignore lint/suspicious/noExplicitAny: SWC AST traversal
-    const visit = (node: any): any => {
+    // Collect metadata about gql definitions
+    const metadata = collectGqlDefinitionMetadata({
+      module: this.env.module,
+      filename: context.filename,
+    });
+
+    // Transform all call expressions
+    const visit = (node: unknown): unknown => {
       if (!node || typeof node !== "object") {
         return node;
       }
 
       // Handle CallExpression nodes
-      if (node.type === "CallExpression") {
-        const gqlCall = this.detectGqlOperationCall(node as CallExpression);
-        if (gqlCall) {
+      if (isCallExpression(node)) {
+        const transformResult = this.transformCallExpression(node, context, metadata);
+        if (transformResult.transformed) {
           transformed = true;
-          return node;
+          return transformResult.node;
         }
+        return node;
       }
 
       // Recursively visit children
@@ -103,6 +118,79 @@ export class SwcAdapter {
       transformed,
       runtimeArtifacts: undefined,
     };
+  }
+
+  /**
+   * Transform a single call expression.
+   */
+  private transformCallExpression(
+    callExpr: CallExpression,
+    context: TransformContext,
+    metadata: ReturnType<typeof collectGqlDefinitionMetadata>,
+  ): { transformed: boolean; node: Expression; runtimeCall?: CallExpression } {
+    const builderCall = findGqlBuilderCall(callExpr);
+    if (!builderCall) {
+      return { transformed: false, node: callExpr };
+    }
+
+    const gqlCallResult = extractGqlCall({
+      callExpr,
+      filename: context.filename,
+      metadata,
+      builderCall,
+      getArtifact: context.artifactLookup,
+    });
+
+    if (gqlCallResult.isErr()) {
+      // Log error and continue - don't fail the entire build for a single error
+      console.error(`[@soda-gql/plugin-swc] ${formatPluginError(gqlCallResult.error)}`);
+      return { transformed: false, node: callExpr };
+    }
+
+    const gqlCall = gqlCallResult.value;
+
+    // Transform based on type
+    if (gqlCall.type === "model") {
+      const result = buildModelRuntimeCall({ ...gqlCall, filename: context.filename });
+      if (result.isErr()) {
+        console.error(`[@soda-gql/plugin-swc] ${formatPluginError(result.error)}`);
+        return { transformed: false, node: callExpr };
+      }
+      return { transformed: true, node: result.value };
+    }
+
+    if (gqlCall.type === "slice") {
+      const result = buildSliceRuntimeCall({ ...gqlCall, filename: context.filename });
+      if (result.isErr()) {
+        console.error(`[@soda-gql/plugin-swc] ${formatPluginError(result.error)}`);
+        return { transformed: false, node: callExpr };
+      }
+      return { transformed: true, node: result.value };
+    }
+
+    if (gqlCall.type === "operation") {
+      const result = buildComposedOperationRuntimeComponents({ ...gqlCall, filename: context.filename });
+      if (result.isErr()) {
+        console.error(`[@soda-gql/plugin-swc] ${formatPluginError(result.error)}`);
+        return { transformed: false, node: callExpr };
+      }
+      const { referenceCall, runtimeCall } = result.value;
+      this.runtimeCallsFromLastTransform.push(runtimeCall as CallExpression);
+      return { transformed: true, node: referenceCall, runtimeCall: runtimeCall as CallExpression };
+    }
+
+    if (gqlCall.type === "inlineOperation") {
+      const result = buildInlineOperationRuntimeComponents({ ...gqlCall, filename: context.filename });
+      if (result.isErr()) {
+        console.error(`[@soda-gql/plugin-swc] ${formatPluginError(result.error)}`);
+        return { transformed: false, node: callExpr };
+      }
+      const { referenceCall, runtimeCall } = result.value;
+      this.runtimeCallsFromLastTransform.push(runtimeCall as CallExpression);
+      return { transformed: true, node: referenceCall, runtimeCall: runtimeCall as CallExpression };
+    }
+
+    return { transformed: false, node: callExpr };
   }
 
   /**
@@ -160,58 +248,6 @@ export class SwcAdapter {
   getModule(): Module {
     return this.env.module;
   }
-
-  /**
-   * Detect if a call expression is a gql.default call containing an operation.
-   */
-  private detectGqlOperationCall(node: CallExpression): string | null {
-    // Match pattern: gql.operation.<kind>(...)
-    if (node.callee.type !== "MemberExpression") {
-      return null;
-    }
-
-    const kindAccess = node.callee;
-
-    // Get the kind (query, mutation, subscription, fragment)
-    if (kindAccess.property.type !== "Identifier") {
-      return null;
-    }
-
-    const kind = kindAccess.property.value;
-
-    // Check if supported kind
-    const supportedKinds = ["query", "mutation", "subscription", "fragment"];
-    if (!supportedKinds.includes(kind)) {
-      return null;
-    }
-
-    // kindAccess.object should be MemberExpression: gql.operation
-    if (kindAccess.object.type !== "MemberExpression") {
-      return null;
-    }
-
-    const operationAccess = kindAccess.object;
-
-    // Check that property is "operation"
-    if (operationAccess.property.type !== "Identifier") {
-      return null;
-    }
-
-    if (operationAccess.property.value !== "operation") {
-      return null;
-    }
-
-    // operationAccess.object should be Identifier: gql
-    if (operationAccess.object.type !== "Identifier") {
-      return null;
-    }
-
-    if (operationAccess.object.value !== "gql") {
-      return null;
-    }
-
-    return kind;
-  }
 }
 
 /**
@@ -222,10 +258,8 @@ export const createSwcAdapter = (env: SwcEnv, graphqlSystemIdentifyHelper: Graph
 };
 
 /**
- * Helper to create placeholder span.
+ * Type guard for CallExpression.
  */
-const makeSpan = (): Span => ({
-  start: 0,
-  end: 0,
-  ctxt: 0,
-});
+const isCallExpression = (node: unknown): node is CallExpression => {
+  return typeof node === "object" && node !== null && "type" in node && node.type === "CallExpression";
+};

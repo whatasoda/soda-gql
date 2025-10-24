@@ -4,14 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSodaGqlSwcPlugin } from "@soda-gql/plugin-swc";
-import swc from "@swc/core";
+import swc, { type Module } from "@swc/core";
 import { runCommonPluginTestSuite } from "./shared/test-suite";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
-// TODO: SWC plugin integration tests are currently disabled
-// The plugin is under development and transformation is not working yet
-describe.skip("Plugin-SWC Transformation Tests", () => {
+describe("Plugin-SWC Transformation Tests", () => {
   // Run common test suite with SWC-specific transform function
   runCommonPluginTestSuite({
     pluginName: "swc-plugin",
@@ -50,7 +48,14 @@ describe.skip("Plugin-SWC Transformation Tests", () => {
           module: {
             type: moduleFormat === "esm" ? "es6" : "commonjs",
           },
-          plugin: (m) => sodaGqlPlugin(m, { filename: sourcePath, swc }),
+          plugin: (m) => {
+            // SWC plugin expects Module, but Program can be Module or Script
+            // For our use case with ES modules, we can safely cast to Module
+            if (m.type !== "Module") {
+              return m;
+            }
+            return sodaGqlPlugin(m as Module, { filename: sourcePath, swc });
+          },
         });
 
         return result.code;

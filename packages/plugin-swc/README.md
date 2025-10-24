@@ -83,12 +83,14 @@ Once complete, this plugin will provide the same zero-runtime transformation cap
 
 - [x] Package structure and dependencies
 - [x] Type definitions and shared utilities
-- [ ] AST traversal and metadata collection
-- [ ] Runtime call generation
-- [ ] Import management
-- [ ] ESM/CJS module format support
-- [ ] Integration tests
+- [x] AST traversal and metadata collection
+- [x] Runtime call generation
+- [x] Import management
+- [x] ESM/CJS module format support
+- [x] Core transformation logic
+- [ ] Integration tests (enabled but need config fixes)
 - [ ] HMR support
+- [ ] Production testing and validation
 - [ ] Documentation and examples
 
 ## Current Workaround
