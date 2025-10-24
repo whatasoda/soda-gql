@@ -2,21 +2,16 @@
  * TypeScript implementation of the TransformAdapter interface.
  */
 
-import { resolve } from "node:path";
 import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
-import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { formatPluginError } from "@soda-gql/plugin-common";
 import * as ts from "typescript";
-import {
-  ensureGqlRuntimeImport,
-  ensureGqlRuntimeRequire,
-  type GraphqlSystemIdentifyHelper,
-  removeGraphqlSystemImports,
-} from "./internal/ast/imports";
-import { collectGqlDefinitionMetadata } from "./internal/ast/metadata";
-import { transformCallExpression } from "./internal/ast/transformer";
+import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./ast/imports";
+import { collectGqlDefinitionMetadata } from "./ast/metadata";
+import { transformCallExpression } from "./ast/transformer";
 
-export { createAfterStubTransformer } from "./internal/ast/imports";
+export { createAfterStubTransformer } from "./ast/imports";
 
 /**
  * TypeScript-specific environment required for the adapter.
@@ -24,11 +19,6 @@ export { createAfterStubTransformer } from "./internal/ast/imports";
 export type TypeScriptEnv = {
   readonly sourceFile: ts.SourceFile;
   readonly context: ts.TransformationContext;
-};
-
-const tsInternals = ts as unknown as {
-  createGetCanonicalFileName: (useCaseSensitiveFileNames: boolean) => (path: string) => string;
-  getEmitModuleKind: (compilerOptions: ts.CompilerOptions) => ts.ModuleKind.CommonJS | ts.ModuleKind.ES2015;
 };
 
 const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): number => {
@@ -45,46 +35,19 @@ const findLastImportIndex = ({ sourceFile }: { sourceFile: ts.SourceFile }): num
   return lastIndex;
 };
 
-export const createBeforeTransformer = ({
-  program,
+export const createTransformer = ({
+  compilerOptions,
   config,
   artifact,
 }: {
-  readonly program: ts.Program;
+  readonly compilerOptions: ts.CompilerOptions;
   readonly config: ResolvedSodaGqlConfig;
   readonly artifact: BuilderArtifact;
 }) => {
-  const compilerOptions = program.getCompilerOptions();
-  const isCJS = tsInternals.getEmitModuleKind(compilerOptions) === ts.ModuleKind.CommonJS;
+  const isCJS = compilerOptions.module === ts.ModuleKind.CommonJS || compilerOptions.target === ts.ScriptTarget.ES5;
 
-  // Use TypeScript's canonical file name comparison to handle casing, symlinks, etc.
-  const getCanonicalFileName = tsInternals.createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames);
-  const toCanonical = (file: string): string => {
-    const resolved = ts.sys.resolvePath ? ts.sys.resolvePath(file) : resolve(file);
-    return getCanonicalFileName(resolved);
-  };
-
-  // Derive graphqlSystemPath from outdir
-  const graphqlSystemPath = resolve(config.outdir, "index.ts");
-
-  const graphqlSystemIdentifyHelper: GraphqlSystemIdentifyHelper = {
-    isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
-      return toCanonical(filePath) === toCanonical(graphqlSystemPath);
-    },
-    isGraphqlSystemImportSpecifier: ({ filePath, specifier }: { filePath: string; specifier: string }) => {
-      // Check against any alias
-      if (config.graphqlSystemAliases.some((alias) => toCanonical(specifier) === toCanonical(alias))) {
-        return true;
-      }
-
-      const resolved = resolveRelativeImportWithExistenceCheck({ filePath, specifier });
-      if (!resolved) {
-        return false;
-      }
-
-      return toCanonical(resolved) === toCanonical(graphqlSystemPath);
-    },
-  };
+  // Create graphql system identify helper using builder's implementation
+  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(config);
 
   const makeSourceFileEmpty = ({ factory, sourceFile }: { factory: ts.NodeFactory; sourceFile: ts.SourceFile }) => {
     return factory.updateSourceFile(sourceFile, [
@@ -112,14 +75,21 @@ export const createBeforeTransformer = ({
           isCJS,
         });
 
-        if (result.transformed) {
+        if (result.isErr()) {
+          // Log error and continue - don't fail the entire build for a single error
+          console.error(`[@soda-gql/tsc-plugin] ${formatPluginError(result.error)}`);
+          return node;
+        }
+
+        const transformResult = result.value;
+        if (transformResult.transformed) {
           transformed = true;
 
-          if (result.runtimeCall) {
-            runtimeCallsFromLastTransform.push(result.runtimeCall);
+          if (transformResult.runtimeCall) {
+            runtimeCallsFromLastTransform.push(transformResult.runtimeCall);
           }
 
-          return result.replacement;
+          return transformResult.replacement;
         }
       }
 
@@ -128,7 +98,8 @@ export const createBeforeTransformer = ({
 
     const visitedNode = ts.visitNode(sourceFile, visitor);
     if (!visitedNode || !ts.isSourceFile(visitedNode)) {
-      throw new Error("[TypeScriptAdapter] Failed to transform source file");
+      console.error(`[@soda-gql/tsc-plugin] Failed to transform source file: ${sourceFile.fileName}`);
+      return sourceFile;
     }
 
     if (!transformed) {

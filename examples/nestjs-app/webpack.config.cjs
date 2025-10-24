@@ -4,7 +4,6 @@ const { SodaGqlWebpackPlugin } = require("@soda-gql/plugin-webpack/plugin");
 module.exports = (options, _webpack) => {
   const sodaOptions = {
     configPath: path.resolve(__dirname, "soda-gql.config.ts"),
-    importIdentifier: "@/graphql-system",
   };
 
   return {

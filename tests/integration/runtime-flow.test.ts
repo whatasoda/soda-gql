@@ -1,60 +1,18 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { mkdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BuilderArtifact, type CanonicalId, createBuilderService } from "@soda-gql/builder";
-import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
-import { copyDefaultInject } from "../fixtures/inject-module";
 import { createTestConfig } from "../helpers/test-config";
 import { clearTransformCache, loadTransformedModule } from "../utils/moduleLoader";
 import { withOperationSpy } from "../utils/operationSpy";
 import { runBabelTransform } from "../utils/transform";
 import { typeCheckFiles } from "../utils/type-check";
+import { createWorkspace, setupGraphqlSystem } from "../utils/workspace";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
-
-const createWorkspace = () => {
-  const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-runtime-flow-"));
-  const workspaceRoot = resolve(tmpRoot, `runtime-flow-${Date.now()}`);
-  rmSync(workspaceRoot, { recursive: true, force: true });
-  cpSync(fixturesRoot, workspaceRoot, {
-    recursive: true,
-    filter: (src) => !src.includes("graphql-system"),
-  });
-
-  // Symlink node_modules so transformed modules can resolve @soda-gql packages
-  const nodeModulesSrc = join(projectRoot, "node_modules");
-  const nodeModulesDest = join(workspaceRoot, "node_modules");
-  if (!existsSync(nodeModulesDest)) {
-    symlinkSync(nodeModulesSrc, nodeModulesDest, "dir");
-  }
-
-  return workspaceRoot;
-};
-
-const setupWorkspace = async (workspace: string) => {
-  const schemaPath = join(workspace, "schema.graphql");
-  const graphqlSystemEntry = join(workspace, "graphql-system", "index.ts");
-  const injectPath = join(workspace, "graphql-inject.ts");
-
-  copyDefaultInject(injectPath);
-
-  const codegenResult = await runMultiSchemaCodegen({
-    schemas: { default: schemaPath },
-    outPath: graphqlSystemEntry,
-    format: "json",
-    injectFromPath: injectPath,
-  });
-
-  if (codegenResult.isErr()) {
-    throw new Error(`codegen failed: ${codegenResult.error.code}`);
-  }
-
-  return { tsPath: graphqlSystemEntry, cjsPath: codegenResult.value.cjsPath };
-};
 
 const buildArtifact = async (workspace: string): Promise<BuilderArtifact> => {
   const originalCwd = process.cwd();
@@ -89,8 +47,8 @@ afterEach(() => {
 describe("Runtime Flow Integration", () => {
   describe("runtime mode", () => {
     it("generates artifact with all operations, models, and slices", async () => {
-      const workspace = createWorkspace();
-      await setupWorkspace(workspace);
+      const workspace = createWorkspace({ fixtureRoot: fixturesRoot });
+      await setupGraphqlSystem(workspace);
 
       const artifact = await buildArtifact(workspace);
 
@@ -119,8 +77,8 @@ describe("Runtime Flow Integration", () => {
 
   describe("zero-runtime mode", () => {
     it("transforms and verifies runtime behavior", async () => {
-      const workspace = createWorkspace();
-      const { tsPath } = await setupWorkspace(workspace);
+      const workspace = createWorkspace({ fixtureRoot: fixturesRoot });
+      const { tsPath } = await setupGraphqlSystem(workspace);
 
       const artifact = await buildArtifact(workspace);
 

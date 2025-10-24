@@ -34,4 +34,21 @@ export const getInlineOperation = (name: string) => {
  */
 export const __resetRuntimeRegistry = () => {
   composedOperationRegistry.clear();
+  inlineOperationRegistry.clear();
+};
+
+/**
+ * Test-only function to get all registered composed operations
+ * @internal
+ */
+export const __getRegisteredComposedOperations = (): ReadonlyMap<string, AnyComposedOperationOf<OperationType>> => {
+  return composedOperationRegistry;
+};
+
+/**
+ * Test-only function to get all registered inline operations
+ * @internal
+ */
+export const __getRegisteredInlineOperations = (): ReadonlyMap<string, AnyInlineOperationOf<OperationType>> => {
+  return inlineOperationRegistry;
 };

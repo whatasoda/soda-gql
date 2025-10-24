@@ -14,8 +14,7 @@
     "dist",
     ".typecheck",
     "tests/.tmp/**/*",
-    ".tmp/**/*",
-    "tests/fixtures/plugin-babel/**/source.ts"
+    ".tmp/**/*"
   ],
   "references": [
     { "path": "./packages/builder/tsconfig.editor.json" },
@@ -26,10 +25,10 @@
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/graffle-client/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
-    { "path": "./packages/plugin-shared/tsconfig.editor.json" },
-    { "path": "./packages/plugin-swc/tsconfig.editor.json" },
-    { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
+    { "path": "./packages/plugin-common/tsconfig.editor.json" },
+    { "path": "./packages/plugin-vite/tsconfig.editor.json" },
     { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
+    { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" }
   ]
 }

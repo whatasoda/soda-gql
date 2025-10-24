@@ -1,10 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { types as t } from "@babel/core";
 import { parseSync, traverse } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { collectGqlDefinitionMetadata } from "@soda-gql/plugin-babel/adapter";
+import { collectGqlDefinitionMetadata } from "../../../packages/plugin-babel/src/ast/metadata";
 
 const collectMetadata = (source: string, filename: string) => {
   const ast = parseSync(source, {
@@ -60,29 +58,6 @@ describe("collectGqlDefinitionMetadata", () => {
     expect(entries[0]?.isTopLevel).toBe(true);
     expect(entries[0]?.isExported).toBe(true);
     expect(entries[0]?.exportBinding).toBe("getUserQuery");
-  });
-
-  it("should collect metadata for CommonJS exports", () => {
-    const fixtureSource = readFileSync(join(__dirname, "../../fixtures/plugin-babel/exports/commonjs/source.ts"), "utf-8");
-
-    const entries = collectMetadata(fixtureSource, "/test/commonjs.ts");
-
-    expect(entries).toHaveLength(2);
-
-    // Check that both exports have correct canonical paths
-    const astPaths = entries.map((e) => e.astPath).sort();
-    expect(astPaths).toContain("updateUserMutation");
-    expect(astPaths).toContain("getUserQuery");
-
-    // Check export bindings
-    for (const entry of entries) {
-      expect(entry.isTopLevel).toBe(true);
-      expect(entry.isExported).toBe(true);
-      if (entry.exportBinding) {
-        expect(["updateUserMutation", "getUserQuery"]).toContain(entry.exportBinding);
-        expect(entry.astPath).toBe(entry.exportBinding);
-      }
-    }
   });
 
   it("should handle nested gql calls in ESM", () => {

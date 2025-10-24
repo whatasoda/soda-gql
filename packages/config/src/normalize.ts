@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import type { Result } from "neverthrow";
 import { ok } from "neverthrow";
 import type { ConfigError } from "./errors";
@@ -6,8 +6,10 @@ import type { ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
 
 /**
  * Resolve and normalize config with defaults.
+ * Paths in the config are resolved relative to the config file's directory.
  */
-export function normalizeConfig(config: SodaGqlConfig): Result<ResolvedSodaGqlConfig, ConfigError> {
+export function normalizeConfig(config: SodaGqlConfig, configPath: string): Result<ResolvedSodaGqlConfig, ConfigError> {
+  const configDir = dirname(configPath);
   // Default analyzer to "ts"
   const analyzer = config.analyzer ?? "ts";
 
@@ -19,17 +21,17 @@ export function normalizeConfig(config: SodaGqlConfig): Result<ResolvedSodaGqlCo
 
   const resolved: ResolvedSodaGqlConfig = {
     analyzer,
-    outdir: resolve(config.outdir),
+    outdir: resolve(configDir, config.outdir),
     graphqlSystemAliases,
-    include: config.include.map((pattern) => resolve(pattern)),
-    exclude: exclude.map((pattern) => resolve(pattern)),
+    include: config.include.map((pattern) => resolve(configDir, pattern)),
+    exclude: exclude.map((pattern) => resolve(configDir, pattern)),
     schemas: Object.fromEntries(
       Object.entries(config.schemas).map(([name, schemaConfig]) => [
         name,
         {
-          schema: resolve(schemaConfig.schema),
-          runtimeAdapter: resolve(schemaConfig.runtimeAdapter),
-          scalars: resolve(schemaConfig.scalars),
+          schema: resolve(configDir, schemaConfig.schema),
+          runtimeAdapter: resolve(configDir, schemaConfig.runtimeAdapter),
+          scalars: resolve(configDir, schemaConfig.scalars),
         },
       ]),
     ),

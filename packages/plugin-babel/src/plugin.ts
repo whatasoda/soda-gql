@@ -2,75 +2,57 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { CanonicalId } from "@soda-gql/builder";
-import { babelTransformAdapterFactory } from "./adapter/index";
-import { type PluginOptions, type PluginState, preparePluginState } from "./internal/builder-bridge";
-import { formatPluginError } from "./internal/errors";
+import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
+import { createTransformer } from "./transformer";
 
 type PluginPassState = PluginPass & {
-  _state?: PluginState;
+  _state?: PluginSession;
 };
 
-export const createSodaGqlPlugin = (): PluginObj<PluginOptions & { _state?: PluginState }> => ({
+const fallbackPlugin = (): PluginObj => ({
   name: "@soda-gql/plugin-babel",
-  // NOTE: async pre() requires Babel async APIs (transformAsync, loadPartialConfigAsync)
-  async pre() {
-    const rawOptions = (this as unknown as { opts?: Partial<PluginOptions> }).opts ?? {};
-    const stateResult = await preparePluginState(rawOptions);
-
-    if (stateResult.isErr()) {
-      throw new Error(formatPluginError(stateResult.error));
-    }
-
-    const normalizedState = stateResult.value;
-
-    // Store state for transform
-    this._state = normalizedState;
+  visitor: {
+    Program() {
+      // No-op fallback
+    },
   },
+});
+
+export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => ({
+  name: "@soda-gql/plugin-babel",
   visitor: {
     Program(programPath: NodePath<t.Program>, state) {
       const pass = state as unknown as PluginPassState;
-      const pluginState = pass._state;
-      if (!pluginState) {
-        return;
-      }
-
       const filename = pass.file?.opts?.filename;
       if (!filename) {
         return;
       }
 
-      // Create Babel adapter instance
-      const adapter = babelTransformAdapterFactory.create({
+      // Rebuild artifact on every compilation (like tsc-plugin)
+      const artifact = pluginSession.getArtifact();
+      if (!artifact) {
+        return;
+      }
+
+      // Create Babel transformer instance
+      const transformer = createTransformer({
         programPath,
         types: t,
+        config: pluginSession.config,
       });
 
-      // Transform using adapter
-      const result = adapter.transformProgram({
+      // Transform using single method call (matches TypeScript plugin pattern)
+      transformer.transform({
         filename,
-        artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
-        runtimeModule: pluginState.options.importIdentifier,
+        artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
       });
-
-      // Insert runtime side effects if transformed
-      if (result.transformed) {
-        adapter.insertRuntimeSideEffects(
-          {
-            filename,
-            runtimeModule: pluginState.options.importIdentifier,
-            artifactLookup: (canonicalId: CanonicalId) => pluginState.allArtifacts[canonicalId],
-          },
-          result.runtimeArtifacts || [],
-        );
-      }
-
-      // Handle errors
-      if (result.errors && result.errors.length > 0) {
-        const firstError = result.errors[0];
-        if (firstError) {
-          throw new Error(formatPluginError(firstError));
-        }
-      }
     },
   },
 });
+
+export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}): PluginObj => {
+  // Create plugin session synchronously (no async pre())
+  const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
+
+  return pluginSession ? createPlugin({ pluginSession }) : fallbackPlugin();
+};

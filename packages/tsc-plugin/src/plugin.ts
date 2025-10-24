@@ -2,9 +2,9 @@ import { createBuilderService } from "@soda-gql/builder";
 import { cachedFn } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
 import type * as ts from "typescript";
-import { createBeforeTransformer } from "./transformer";
+import { createTransformer } from "./transformer";
 
-export type TscPluginConfig = {
+export type PluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
 };
@@ -15,21 +15,15 @@ const fallbackPlugin = {
       return (sourceFile: ts.SourceFile) => sourceFile;
     };
   },
-  after: (_options: unknown, _program: ts.Program): ts.TransformerFactory<ts.SourceFile> => {
-    return (_context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
-      return (sourceFile: ts.SourceFile) => sourceFile;
-    };
-  },
 };
 
-export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
-  const enabled = pluginConfig.enabled ?? true;
+export const createTscPlugin = (options: PluginOptions = {}) => {
+  const enabled = options.enabled ?? true;
   if (!enabled) {
     return fallbackPlugin;
   }
 
-  const configPath = pluginConfig.configPath ?? "./soda-gql.config.ts";
-  const configResult = loadConfig(configPath);
+  const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
     console.error(`[@soda-gql/tsc-plugin] Failed to load config: ${configResult.error.message}`);
     return fallbackPlugin;
@@ -54,7 +48,8 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
       }
 
       const artifact = buildResult.value;
-      const beforeTransformer = createBeforeTransformer({ program, config, artifact });
+      const compilerOptions = program.getCompilerOptions();
+      const transformer = createTransformer({ compilerOptions, config, artifact });
       console.log("[@soda-gql/tsc-plugin] Transforming program");
 
       return (context: ts.TransformationContext) => {
@@ -64,7 +59,7 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
             return sourceFile;
           }
 
-          const transformResult = beforeTransformer.transform({ sourceFile, context });
+          const transformResult = transformer.transform({ sourceFile, context });
           if (!transformResult.transformed) {
             return sourceFile;
           }
@@ -72,17 +67,6 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
           return transformResult.sourceFile;
         };
       };
-    },
-
-    /**
-     * TypeScript Compiler Plugin hook: after() transformer.
-     *
-     * This runs after TypeScript's own transformers (including CommonJS down transformation).
-     * It replaces require() calls for the graphql-system module with lightweight stubs
-     * to prevent the heavy module from being loaded at runtime.
-     */
-    after(_options: unknown, _program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
-      return fallbackPlugin.after(_options, _program);
     },
   };
 
@@ -95,7 +79,7 @@ export const createTscPlugin = (pluginConfig: TscPluginConfig = {}) => {
  */
 export const createSodaGqlTransformer = (
   program: ts.Program,
-  options: TscPluginConfig = {},
+  options: PluginOptions = {},
 ): ts.TransformerFactory<ts.SourceFile> => {
   const plugin = createTscPlugin(options);
   return plugin.before({}, program);

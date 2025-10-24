@@ -1,0 +1,42 @@
+{
+  "name": "@soda-gql/plugin-vite",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
+    "@babel/core": "^7.24.0",
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@babel/types": "^7.24.0",
+    "neverthrow": "^8.1.1"
+  },
+  "peerDependencies": {
+    "vite": "^4.0.0 || ^5.0.0"
+  }
+}

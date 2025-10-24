@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 import { normalizeConfig } from "@soda-gql/config/normalize";
 import type { SodaGqlConfig } from "@soda-gql/config/types";
 
@@ -17,7 +18,8 @@ describe("normalize.ts", () => {
         },
       };
 
-      const result = normalizeConfig(config);
+      const configPath = join(process.cwd(), "soda-gql.config.ts");
+      const result = normalizeConfig(config, configPath);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -39,7 +41,8 @@ describe("normalize.ts", () => {
         },
       };
 
-      const result = normalizeConfig(config);
+      const configPath = join(process.cwd(), "soda-gql.config.ts");
+      const result = normalizeConfig(config, configPath);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -63,7 +66,8 @@ describe("normalize.ts", () => {
         },
       };
 
-      const result = normalizeConfig(config);
+      const configPath = join(process.cwd(), "soda-gql.config.ts");
+      const result = normalizeConfig(config, configPath);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {

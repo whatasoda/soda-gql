@@ -23,34 +23,18 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./adapter": {
-      "development": "./src/adapter/index.ts",
-      "types": "./dist/adapter/index.d.ts",
-      "import": "./dist/adapter/index.js",
-      "require": "./dist/adapter/index.cjs",
-      "default": "./dist/adapter/index.js"
-    },
-    "./dev": {
-      "development": "./src/dev/index.ts",
-      "types": "./dist/dev/index.d.ts",
-      "import": "./dist/dev/index.js",
-      "require": "./dist/dev/index.cjs",
-      "default": "./dist/dev/index.js"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/parser": "^7.24.0",
     "@babel/traverse": "^7.24.0",
     "@babel/types": "^7.24.0",
-    "neverthrow": "^8.1.1",
-    "zod": "^4.1.11"
-  },
-  "devDependencies": {
-    "@types/babel__core": "^7.20.5"
+    "neverthrow": "^8.1.1"
   }
 }

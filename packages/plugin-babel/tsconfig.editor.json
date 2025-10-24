@@ -12,6 +12,7 @@
   "references": [
     { "path": "../builder/tsconfig.editor.json" },
     { "path": "../common/tsconfig.editor.json" },
-    { "path": "../plugin-shared/tsconfig.editor.json" }
+    { "path": "../config/tsconfig.editor.json" },
+    { "path": "../plugin-common/tsconfig.editor.json" }
   ]
 }

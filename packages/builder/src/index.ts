@@ -26,6 +26,8 @@ export type {
   DiscoveryCache,
   DiscoverySnapshot,
 } from "./discovery/types";
+export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
+export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";

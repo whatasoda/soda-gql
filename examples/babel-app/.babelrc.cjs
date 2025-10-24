@@ -5,7 +5,6 @@ module.exports = {
       require.resolve("@soda-gql/plugin-babel"),
       {
         configPath: "./soda-gql.config.ts",
-        importIdentifier: "@/graphql-system",
       },
     ],
   ],

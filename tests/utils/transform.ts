@@ -1,12 +1,13 @@
 import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { getPortableFS } from "@soda-gql/common";
 import { createTempConfigFile } from "@soda-gql/config";
-import createPlugin from "@soda-gql/plugin-babel";
-import { getProjectRoot, TestTempDir } from ".";
+import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
+import { getProjectRoot } from ".";
 import { typeCheckFiles } from "./type-check";
 
 const resolveBiomeBinary = (): string => {
@@ -61,7 +62,9 @@ export const runBabelTransform = async (
   artifact: BuilderArtifact,
   options: TransformOptions = {},
 ): Promise<string> => {
-  const tempDir = new TestTempDir("babel-transform");
+  const projectRoot = getProjectRoot();
+  const tempDirPath = join(projectRoot, "tests/.tmp/babel-transform", `${Date.now()}`);
+  mkdirSync(tempDirPath, { recursive: true });
 
   try {
     const {
@@ -72,21 +75,21 @@ export const runBabelTransform = async (
       configOverrides = {},
     } = options;
 
-    const artifactPath = tempDir.join("artifact.json");
+    const artifactPath = join(tempDirPath, "artifact.json");
     const fs = getPortableFS();
     await fs.writeFile(artifactPath, JSON.stringify(artifact));
 
     // Create temp config file that references the artifact
-    // Use overrides if provided, otherwise use defaults
-    const configPath = createTempConfigFile(tempDir.path, {
-      outdir: configOverrides.outdir ?? "./graphql-system",
-      include: configOverrides.include ?? ["**/*.ts"],
+    // Config is created in project directory so it can resolve @soda-gql/config
+    const configPath = createTempConfigFile(tempDirPath, {
+      outdir: configOverrides.outdir ?? join(projectRoot, "graphql-system"),
+      include: configOverrides.include ?? [join(projectRoot, "**/*.ts")],
       analyzer: configOverrides.analyzer ?? "ts",
       schemas: {
         default: {
-          schema: "./schema.graphql",
-          runtimeAdapter: "./runtime-adapter.ts",
-          scalars: "./scalars.ts",
+          schema: join(projectRoot, "tests/fixtures/runtime-app/schema.graphql"),
+          runtimeAdapter: join(projectRoot, "tests/fixtures/inject-module/default-runtime-adapter.ts"),
+          scalars: join(projectRoot, "tests/fixtures/inject-module/default-scalar.ts"),
         },
       },
     });
@@ -101,15 +104,13 @@ export const runBabelTransform = async (
       },
       plugins: [
         [
-          createPlugin,
+          createSodaGqlPlugin,
           {
-            mode,
             configPath,
             artifact: {
               useBuilder: false,
               path: artifactPath,
             },
-            importIdentifier,
           },
         ],
       ],
@@ -132,7 +133,7 @@ export const runBabelTransform = async (
 
     return formatted;
   } finally {
-    tempDir.cleanup();
+    rmSync(tempDirPath, { recursive: true, force: true });
   }
 };
 
