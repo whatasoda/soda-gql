@@ -88,10 +88,29 @@ Once complete, this plugin will provide the same zero-runtime transformation cap
 - [x] Import management
 - [x] ESM/CJS module format support
 - [x] Core transformation logic
-- [ ] Integration tests (enabled but need config fixes)
+- [ ] JavaScript plugin API limitations (see Technical Challenges below)
+- [ ] Integration tests (blocked by plugin API issues)
 - [ ] HMR support
 - [ ] Production testing and validation
 - [ ] Documentation and examples
+
+## Technical Challenges
+
+### JavaScript Plugin API Limitations
+
+SWC's JavaScript plugin API has significant limitations that prevent full implementation:
+
+- **AST Serialization**: Custom-generated AST nodes cause `ctxt` field deserialization errors
+- **API Deprecation**: SWC is moving away from JavaScript plugins toward Rust/WebAssembly plugins
+- **Limited Documentation**: JavaScript plugin API is not officially documented or supported
+
+**Impact**: The transformation logic is complete and correct, but cannot be executed through SWC's JavaScript plugin interface.
+
+**Recommended Alternatives**:
+1. Use [@soda-gql/plugin-babel](../plugin-babel) for production (fully functional)
+2. Use [@soda-gql/plugin-vite](../plugin-vite) for Vite projects
+3. Wait for official SWC WebAssembly plugin support
+4. Consider contributing a Rust-based SWC plugin
 
 ## Current Workaround
 

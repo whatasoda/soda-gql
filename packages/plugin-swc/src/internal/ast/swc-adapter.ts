@@ -77,52 +77,67 @@ export class SwcAdapter {
       filename: context.filename,
     });
 
-    // Transform call expressions within the body
-    const visitNode = (node: unknown): unknown => {
-      if (!node || typeof node !== "object") {
-        return node;
+    // Use mutable transformation: directly modify the AST in place
+    // This is what SWC's plugin API expects
+    for (const item of this.env.module.body) {
+      const itemTransformed = this.transformModuleItemMutably(item, context, metadata);
+      if (itemTransformed) {
+        transformed = true;
       }
-
-      // Handle CallExpression nodes
-      if (isCallExpression(node)) {
-        const transformResult = this.transformCallExpression(node, context, metadata);
-        if (transformResult.transformed) {
-          transformed = true;
-          return transformResult.node;
-        }
-        return node;
-      }
-
-      // Recursively visit arrays
-      if (Array.isArray(node)) {
-        return node.map(visitNode);
-      }
-
-      // For objects, create a shallow copy and visit each property
-      const result: Record<string, unknown> = { ...node } as Record<string, unknown>;
-      for (const [key, value] of Object.entries(result)) {
-        if (value && typeof value === "object") {
-          result[key] = visitNode(value);
-        }
-      }
-      return result;
-    };
-
-    // Transform only the body, keeping the module structure intact
-    const transformedBody = visitNode(this.env.module.body);
-
-    this.env = {
-      ...this.env,
-      module: {
-        ...this.env.module,
-        body: transformedBody as typeof this.env.module.body,
-      },
-    };
+    }
 
     return {
       transformed,
       runtimeArtifacts: undefined,
     };
+  }
+
+  /**
+   * Transform a module item (statement) mutably if it contains gql calls.
+   * Returns true if transformation occurred.
+   */
+  private transformModuleItemMutably(
+    item: (typeof this.env.module.body)[number],
+    context: TransformContext,
+    metadata: ReturnType<typeof collectGqlDefinitionMetadata>,
+  ): boolean {
+    // Handle: export const x = gql.default(...)
+    if (item.type === "ExportDeclaration" && item.declaration?.type === "VariableDeclaration") {
+      return this.transformVariableDeclarationMutably(item.declaration, context, metadata);
+    }
+
+    // Handle: const x = gql.default(...)
+    if (item.type === "VariableDeclaration") {
+      return this.transformVariableDeclarationMutably(item, context, metadata);
+    }
+
+    return false;
+  }
+
+  /**
+   * Transform a variable declaration mutably if it contains gql calls.
+   * Returns true if transformation occurred.
+   */
+  private transformVariableDeclarationMutably(
+    decl: import("@swc/types").VariableDeclaration,
+    context: TransformContext,
+    metadata: ReturnType<typeof collectGqlDefinitionMetadata>,
+  ): boolean {
+    let transformed = false;
+
+    for (let i = 0; i < decl.declarations.length; i++) {
+      const declarator = decl.declarations[i];
+      if (declarator && declarator.init && isCallExpression(declarator.init)) {
+        const transformResult = this.transformCallExpression(declarator.init, context, metadata);
+        if (transformResult.transformed) {
+          // Mutate in place
+          declarator.init = transformResult.node as typeof declarator.init;
+          transformed = true;
+        }
+      }
+    }
+
+    return transformed;
   }
 
   /**
