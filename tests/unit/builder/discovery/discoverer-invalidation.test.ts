@@ -18,7 +18,7 @@ const makeCache = () =>
     evaluatorId: "test-evaluator",
   });
 
-describe.skip("discoverModules - invalidatedPaths behavior", () => {
+describe("discoverModules - invalidatedPaths behavior", () => {
   test("cacheSkips equals invalidatedPaths.size when all invalidated files exist", () => {
     // Setup: Create temporary fixture files
     rmSync(fixtureRoot, { recursive: true, force: true });
