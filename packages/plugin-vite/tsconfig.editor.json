@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["development"],
+    "outDir": "../../.typecheck/plugin-vite",
+    "tsBuildInfoFile": "../../.typecheck/plugin-vite/tsconfig.tsbuildinfo",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../config/tsconfig.editor.json" },
+    { "path": "../plugin-common/tsconfig.editor.json" },
+    { "path": "../plugin-babel/tsconfig.editor.json" }
+  ]
+}

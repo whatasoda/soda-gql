@@ -7,16 +7,20 @@
  * Supports both development (with HMR) and production builds.
  */
 
-import { transformAsync, parseSync, traverse, type NodePath } from "@babel/core";
-import * as t from "@babel/types";
-import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import { transformAsync } from "@babel/core";
 import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
 import type { Plugin, HmrContext } from "vite";
 
 /**
  * Vite plugin options for soda-gql.
  */
-export type VitePluginOptions = PluginOptions;
+export type VitePluginOptions = PluginOptions & {
+  /**
+   * Pre-configured plugin session (for testing).
+   * If provided, configPath will be ignored.
+   */
+  pluginSession?: ReturnType<typeof createPluginSession>;
+};
 
 /**
  * Create a Vite plugin for soda-gql.
@@ -37,8 +41,8 @@ export type VitePluginOptions = PluginOptions;
  * ```
  */
 export function sodaGqlVitePlugin(options: VitePluginOptions = {}): Plugin {
-  // Create plugin session
-  const pluginSession = createPluginSession(options, "@soda-gql/plugin-vite");
+  // Create plugin session (use provided session for testing, or create new one)
+  const pluginSession = options.pluginSession ?? createPluginSession(options, "@soda-gql/plugin-vite");
 
   if (!pluginSession) {
     // Return no-op plugin if disabled or config loading failed
@@ -46,9 +50,6 @@ export function sodaGqlVitePlugin(options: VitePluginOptions = {}): Plugin {
       name: "soda-gql",
     };
   }
-
-  // Create graphql system identify helper
-  const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper(pluginSession.config);
 
   // Track which files contain gql calls for HMR
   const filesWithGqlCalls = new Set<string>();
@@ -76,48 +77,6 @@ export function sodaGqlVitePlugin(options: VitePluginOptions = {}): Plugin {
         return null;
       }
 
-      // Parse to verify if there are actual gql calls
-      let hasGqlCalls = false;
-      try {
-        const ast = parseSync(code, {
-          filename: id,
-          parserOpts: {
-            sourceType: "module",
-            plugins: ["typescript", "jsx"],
-          },
-        });
-
-        if (!ast) {
-          return null;
-        }
-
-        traverse(ast, {
-          CallExpression(path: NodePath<t.CallExpression>) {
-            const callee = path.node.callee;
-            // Check for gql.default() or similar patterns
-            if (
-              t.isMemberExpression(callee) &&
-              t.isIdentifier(callee.object) &&
-              graphqlSystemIdentifyHelper.isGqlIdentifier(callee.object.name)
-            ) {
-              hasGqlCalls = true;
-              path.stop();
-            }
-          },
-        });
-      } catch (error) {
-        // Parse error - let Vite handle it
-        return null;
-      }
-
-      if (!hasGqlCalls) {
-        filesWithGqlCalls.delete(id);
-        return null;
-      }
-
-      // Mark file as containing gql calls for HMR
-      filesWithGqlCalls.add(id);
-
       // Get artifact
       const artifact = pluginSession.getArtifact();
       if (!artifact) {
@@ -126,8 +85,17 @@ export function sodaGqlVitePlugin(options: VitePluginOptions = {}): Plugin {
       }
 
       // Transform using Babel plugin
-      // We import the Babel plugin transformer dynamically to reuse the transformation logic
+      // We import the Babel plugin dynamically to reuse the transformation logic
       const { createPlugin } = await import("@soda-gql/plugin-babel");
+
+      // Create plugin factory function
+      const plugin = () =>
+        createPlugin({
+          pluginSession: {
+            config: pluginSession.config,
+            getArtifact: () => artifact,
+          },
+        });
 
       try {
         const result = await transformAsync(code, {
@@ -139,22 +107,16 @@ export function sodaGqlVitePlugin(options: VitePluginOptions = {}): Plugin {
             sourceType: "module",
             plugins: ["typescript", "jsx"],
           },
-          plugins: [
-            [
-              createPlugin,
-              {
-                pluginSession: {
-                  config: pluginSession.config,
-                  getArtifact: () => artifact,
-                },
-              },
-            ],
-          ],
+          plugins: [[plugin, {}]],
         });
 
         if (!result || !result.code) {
+          filesWithGqlCalls.delete(id);
           return null;
         }
+
+        // Track files with gql calls for HMR
+        filesWithGqlCalls.add(id);
 
         return {
           code: result.code,
