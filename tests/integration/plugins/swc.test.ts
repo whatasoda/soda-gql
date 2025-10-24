@@ -18,16 +18,9 @@ describe("Plugin-SWC Transformation Tests", () => {
       const tempDir = mkdtempSync(join(tmpdir(), "swc-plugin-test-"));
 
       try {
-        // Write artifact to temp file
-        const artifactPath = join(tempDir, "artifact.json");
-        writeFileSync(artifactPath, JSON.stringify(artifact));
-
-        // Use examples/babel-app config as a valid config file
-        const exampleConfigPath = join(projectRoot, "examples/babel-app/soda-gql.config.ts");
-
-        // Create SWC plugin with config and artifact
+        // Create SWC plugin with pre-built artifact (no need for config in tests)
         const sodaGqlPlugin = createSodaGqlSwcPlugin({
-          configPath: exampleConfigPath,
+          artifact,
         });
 
         // Transform code using SWC

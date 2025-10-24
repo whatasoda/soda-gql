@@ -43,7 +43,7 @@ export function loadConfig(configPath: string | undefined): Result<ResolvedSodaG
   }
 
   try {
-    return normalizeConfig(executeConfigFile(resolvedPath));
+    return normalizeConfig(executeConfigFile(resolvedPath), resolvedPath);
   } catch (error) {
     return err(
       configError({

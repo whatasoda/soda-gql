@@ -77,8 +77,8 @@ export class SwcAdapter {
       filename: context.filename,
     });
 
-    // Transform all call expressions
-    const visit = (node: unknown): unknown => {
+    // Transform call expressions within the body
+    const visitNode = (node: unknown): unknown => {
       if (!node || typeof node !== "object") {
         return node;
       }
@@ -93,26 +93,31 @@ export class SwcAdapter {
         return node;
       }
 
-      // Recursively visit children
+      // Recursively visit arrays
       if (Array.isArray(node)) {
-        return node.map(visit);
+        return node.map(visitNode);
       }
 
-      const result: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(node)) {
-        if (Array.isArray(value)) {
-          result[key] = value.map(visit);
-        } else if (value && typeof value === "object") {
-          result[key] = visit(value);
-        } else {
-          result[key] = value;
+      // For objects, create a shallow copy and visit each property
+      const result: Record<string, unknown> = { ...node } as Record<string, unknown>;
+      for (const [key, value] of Object.entries(result)) {
+        if (value && typeof value === "object") {
+          result[key] = visitNode(value);
         }
       }
       return result;
     };
 
-    const transformedModule = visit(this.env.module) as Module;
-    this.env = { ...this.env, module: transformedModule };
+    // Transform only the body, keeping the module structure intact
+    const transformedBody = visitNode(this.env.module.body);
+
+    this.env = {
+      ...this.env,
+      module: {
+        ...this.env.module,
+        body: transformedBody as typeof this.env.module.body,
+      },
+    };
 
     return {
       transformed,

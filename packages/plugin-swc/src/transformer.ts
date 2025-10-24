@@ -5,6 +5,7 @@
  * into the Nest CLI build process when using `builder: "swc"`.
  */
 
+import type { BuilderArtifact } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions } from "@soda-gql/plugin-common";
 import type { Module } from "@swc/types";
@@ -13,7 +14,13 @@ import { createSwcAdapter, type SwcEnv } from "./internal/ast/swc-adapter";
 /**
  * SWC plugin options.
  */
-export type SwcPluginOptions = PluginOptions;
+export type SwcPluginOptions = PluginOptions & {
+  /**
+   * Optional pre-built artifact (for testing).
+   * If provided, the plugin will use this instead of building from config.
+   */
+  readonly artifact?: BuilderArtifact;
+};
 
 /**
  * Configuration for the soda-gql SWC transformer.
@@ -46,6 +53,57 @@ const noopTransformer = (m: Module) => m;
  * ```
  */
 export function createSodaGqlSwcPlugin(config: TransformerConfig = {}) {
+  // If artifact is provided directly (for testing), use it without creating plugin session
+  if (config.artifact) {
+    console.log("[@soda-gql/plugin-swc] Plugin initialized (with pre-built artifact)");
+
+    const artifact = config.artifact;
+    const runtimeModule = "@/graphql-system";
+    // Create minimal config for graphql system identify helper
+    const graphqlSystemIdentifyHelper = createGraphqlSystemIdentifyHelper({
+      analyzer: "ts",
+      outdir: "/tmp/graphql-system",
+      graphqlSystemAliases: [runtimeModule],
+      include: [],
+      exclude: [],
+      schemas: {},
+      plugins: {},
+    });
+
+    return (m: Module, options: { filename: string; swc: typeof import("@swc/core") }): Module => {
+      const filename = options.filename;
+
+      // Create SWC adapter environment
+      const env: SwcEnv = {
+        module: m,
+        swc: options.swc,
+        filename,
+      };
+
+      // Create SWC adapter
+      const adapter = createSwcAdapter(env, graphqlSystemIdentifyHelper);
+
+      // Transform the program
+      const transformContext = {
+        filename,
+        artifactLookup: (canonicalId: import("@soda-gql/builder").CanonicalId) => artifact.elements[canonicalId],
+        runtimeModule,
+      };
+
+      const transformResult = adapter.transformProgram(transformContext);
+
+      if (!transformResult.transformed) {
+        return m;
+      }
+
+      // Insert runtime side effects
+      adapter.insertRuntimeSideEffects(transformContext, transformResult.runtimeArtifacts ?? []);
+
+      // Return the transformed module
+      return adapter.getModule();
+    };
+  }
+
   // Create plugin session
   const pluginSession = createPluginSession(config, "@soda-gql/plugin-swc");
 
