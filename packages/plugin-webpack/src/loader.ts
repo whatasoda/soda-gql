@@ -51,7 +51,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
   // Mark this loader as cacheable
   this.cacheable(true);
 
-  const sourceCode = typeof source === "string" ? source : source.toString("utf8");
+  const sourceCode = typeof source === "string" ? source : (source as Buffer).toString("utf8");
   const filePath = this.resourcePath;
 
   // Skip .d.ts files
@@ -110,18 +110,21 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         parserPlugins.push("jsx");
       }
 
-      return transformAsync(sourceCode, {
+      type BabelConfig = NonNullable<Parameters<typeof transformAsync>[1]>;
+      const config: BabelConfig = {
         filename: filePath,
         sourceMaps: this.sourceMap,
-        inputSourceMap: sourceMap || undefined,
+        inputSourceMap: sourceMap as BabelConfig["inputSourceMap"],
         configFile: false,
         babelrc: false,
         parserOpts: {
           sourceType: "module",
-          plugins: parserPlugins,
+          plugins: parserPlugins as NonNullable<BabelConfig["parserOpts"]>["plugins"],
         },
         plugins: [[plugin, {}]],
-      });
+      };
+
+      return transformAsync(sourceCode, config);
     })
     .then((result) => {
       if (!result || !result.code) {

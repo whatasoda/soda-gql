@@ -65,6 +65,5 @@
  * ```
  */
 
-export { default } from "./loader.js";
-export { default as sodaGqlLoader } from "./loader.js";
 export type { WebpackLoaderOptions } from "./loader.js";
+export { default, default as sodaGqlLoader } from "./loader.js";
