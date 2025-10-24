@@ -1,10 +1,16 @@
-import { getPortableHasher } from "@soda-gql/common";
+import { getPortableFS, getPortableHasher } from "@soda-gql/common";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { z } from "zod";
 
 type CacheNamespace = readonly string[];
 
 export type CacheFactoryOptions = {
   readonly prefix?: CacheNamespace;
+  readonly persistence?: {
+    readonly enabled: boolean;
+    readonly filePath: string;
+  };
 };
 
 export type CacheStoreOptions<_K extends string, V> = {
@@ -25,6 +31,7 @@ export type CacheStore<K extends string, V> = {
 export type CacheFactory = {
   createStore<K extends string, V>(options: CacheStoreOptions<K, V>): CacheStore<K, V>;
   clearAll(): void;
+  save(): Promise<void>;
 };
 
 const sanitizeSegment = (segment: string): string => segment.replace(/[\\/]/g, "_");
@@ -42,9 +49,40 @@ type Envelope<V> = {
   value: V;
 };
 
-export const createMemoryCache = ({ prefix = [] }: CacheFactoryOptions = {}): CacheFactory => {
+type PersistedData = {
+  version: string;
+  storage: Record<string, Array<[string, Envelope<unknown>]>>;
+};
+
+const PERSISTENCE_VERSION = "v1";
+
+export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOptions = {}): CacheFactory => {
   // Global in-memory storage: Map<namespaceKey, Map<hashedKey, Envelope>>
   const storage = new Map<string, Map<string, Envelope<unknown>>>();
+
+  // Load from disk if persistence is enabled (synchronous on startup)
+  if (persistence?.enabled) {
+    try {
+      if (existsSync(persistence.filePath)) {
+        const content = readFileSync(persistence.filePath, "utf-8");
+        const data: PersistedData = JSON.parse(content);
+
+        if (data.version === PERSISTENCE_VERSION && data.storage) {
+          // Restore Map structure from persisted data
+          for (const [namespaceKey, entries] of Object.entries(data.storage)) {
+            const namespaceMap = new Map<string, Envelope<unknown>>();
+            for (const [hashedKey, envelope] of entries) {
+              namespaceMap.set(hashedKey, envelope);
+            }
+            storage.set(namespaceKey, namespaceMap);
+          }
+        }
+      }
+    } catch (error) {
+      // Silently continue with empty cache on load failure
+      console.warn(`[cache] Failed to load cache from ${persistence.filePath}:`, error);
+    }
+  }
 
   const getOrCreateNamespace = (namespaceKey: string): Map<string, Envelope<unknown>> => {
     let namespace = storage.get(namespaceKey);
@@ -166,6 +204,37 @@ export const createMemoryCache = ({ prefix = [] }: CacheFactoryOptions = {}): Ca
 
     clearAll: (): void => {
       storage.clear();
+    },
+
+    save: async (): Promise<void> => {
+      if (!persistence?.enabled) {
+        return;
+      }
+
+      try {
+        // Convert Map structure to plain object for JSON serialization
+        const serialized: Record<string, Array<[string, Envelope<unknown>]>> = {};
+        for (const [namespaceKey, namespaceMap] of storage.entries()) {
+          serialized[namespaceKey] = Array.from(namespaceMap.entries());
+        }
+
+        const data: PersistedData = {
+          version: PERSISTENCE_VERSION,
+          storage: serialized,
+        };
+
+        // Ensure directory exists
+        const dir = dirname(persistence.filePath);
+        if (!existsSync(dir)) {
+          mkdirSync(dir, { recursive: true });
+        }
+
+        // Write to file
+        const fs = getPortableFS();
+        await fs.writeFile(persistence.filePath, JSON.stringify(data));
+      } catch (error) {
+        console.warn(`[cache] Failed to save cache to ${persistence.filePath}:`, error);
+      }
     },
   };
 };

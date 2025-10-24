@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { cachedFn } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
@@ -54,6 +54,10 @@ export interface BuilderSession {
    * Get the current artifact.
    */
   getCurrentArtifact(): BuilderArtifact | null;
+  /**
+   * Dispose the session and save cache to disk.
+   */
+  dispose(): Promise<void>;
 }
 
 /**
@@ -82,6 +86,16 @@ export const createBuilderSession = (options: {
   // Reusable infrastructure
   const cacheFactory = createMemoryCache({
     prefix: ["builder"],
+    persistence: {
+      enabled: true,
+      filePath: join(process.cwd(), ".cache", "soda-gql", "builder", "cache.json"),
+    },
+  });
+
+  // Auto-save cache on process exit
+  process.on("beforeExit", () => {
+    // Fire-and-forget save (async but don't block exit)
+    void cacheFactory.save();
   });
 
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
@@ -192,6 +206,9 @@ export const createBuilderSession = (options: {
     build,
     getGeneration: () => state.gen,
     getCurrentArtifact: () => state.lastArtifact,
+    dispose: async () => {
+      await cacheFactory.save();
+    },
   };
 };
 

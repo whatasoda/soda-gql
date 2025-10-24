@@ -42,6 +42,12 @@ export interface BuilderService {
    * Returns null if no artifact has been built yet.
    */
   getCurrentArtifact(): BuilderArtifact | null;
+
+  /**
+   * Dispose the service and save cache to disk.
+   * Should be called when the service is no longer needed.
+   */
+  dispose(): Promise<void>;
 }
 
 /**
@@ -64,5 +70,6 @@ export const createBuilderService = ({ config, entrypointsOverride }: BuilderSer
     build: (options) => session.build(options),
     getGeneration: () => session.getGeneration(),
     getCurrentArtifact: () => session.getCurrentArtifact(),
+    dispose: () => session.dispose(),
   };
 };
