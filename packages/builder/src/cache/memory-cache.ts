@@ -1,5 +1,5 @@
-import { getPortableFS, getPortableHasher } from "@soda-gql/common";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { getPortableHasher } from "@soda-gql/common";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
 
@@ -31,7 +31,7 @@ export type CacheStore<K extends string, V> = {
 export type CacheFactory = {
   createStore<K extends string, V>(options: CacheStoreOptions<K, V>): CacheStore<K, V>;
   clearAll(): void;
-  save(): Promise<void>;
+  save(): void;
 };
 
 const sanitizeSegment = (segment: string): string => segment.replace(/[\\/]/g, "_");
@@ -206,7 +206,7 @@ export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOpti
       storage.clear();
     },
 
-    save: async (): Promise<void> => {
+    save: (): void => {
       if (!persistence?.enabled) {
         return;
       }
@@ -229,9 +229,8 @@ export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOpti
           mkdirSync(dir, { recursive: true });
         }
 
-        // Write to file
-        const fs = getPortableFS();
-        await fs.writeFile(persistence.filePath, JSON.stringify(data));
+        // Write to file synchronously
+        writeFileSync(persistence.filePath, JSON.stringify(data), "utf-8");
       } catch (error) {
         console.warn(`[cache] Failed to save cache to ${persistence.filePath}:`, error);
       }

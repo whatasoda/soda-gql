@@ -47,7 +47,7 @@ export interface BuilderService {
    * Dispose the service and save cache to disk.
    * Should be called when the service is no longer needed.
    */
-  dispose(): Promise<void>;
+  dispose(): void;
 }
 
 /**

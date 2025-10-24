@@ -57,7 +57,7 @@ export interface BuilderSession {
   /**
    * Dispose the session and save cache to disk.
    */
-  dispose(): Promise<void>;
+  dispose(): void;
 }
 
 /**
@@ -94,8 +94,7 @@ export const createBuilderSession = (options: {
 
   // Auto-save cache on process exit
   process.on("beforeExit", () => {
-    // Fire-and-forget save (async but don't block exit)
-    void cacheFactory.save();
+    cacheFactory.save();
   });
 
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
@@ -206,8 +205,8 @@ export const createBuilderSession = (options: {
     build,
     getGeneration: () => state.gen,
     getCurrentArtifact: () => state.lastArtifact,
-    dispose: async () => {
-      await cacheFactory.save();
+    dispose: () => {
+      cacheFactory.save();
     },
   };
 };
