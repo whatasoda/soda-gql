@@ -1,9 +1,9 @@
 import { normalizePath } from "@soda-gql/common";
 import type { ZodSchema } from "zod";
-import type { JsonCacheFactory, JsonCacheStore } from "./json-cache";
+import type { CacheFactory, CacheStore } from "./memory-cache";
 
-export type JsonEntityCacheOptions<V> = {
-  readonly factory: JsonCacheFactory;
+export type EntityCacheOptions<V> = {
+  readonly factory: CacheFactory;
   readonly namespace: readonly string[];
   readonly schema: ZodSchema<V>;
   readonly version: string;
@@ -11,14 +11,14 @@ export type JsonEntityCacheOptions<V> = {
 };
 
 /**
- * Abstract base class for JSON-based entity caches.
+ * Abstract base class for entity caches.
  * Provides common caching functionality with signature-based eviction.
  */
-export abstract class JsonEntityCache<K extends string, V> {
-  protected readonly cacheStore: JsonCacheStore<K, V>;
+export abstract class EntityCache<K extends string, V> {
+  protected readonly cacheStore: CacheStore<K, V>;
   private readonly keyNormalizer: (key: string) => string;
 
-  constructor(options: JsonEntityCacheOptions<V>) {
+  constructor(options: EntityCacheOptions<V>) {
     this.cacheStore = options.factory.createStore({
       namespace: [...options.namespace],
       schema: options.schema,

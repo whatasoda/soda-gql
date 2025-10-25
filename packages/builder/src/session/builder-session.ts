@@ -4,7 +4,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
 import { createAstAnalyzer, type ModuleAnalysis } from "../ast";
-import { createJsonCache } from "../cache/json-cache";
+import { createMemoryCache } from "../cache/memory-cache";
 import {
   createDiscoveryCache,
   type DiscoveryCache,
@@ -54,6 +54,10 @@ export interface BuilderSession {
    * Get the current artifact.
    */
   getCurrentArtifact(): BuilderArtifact | null;
+  /**
+   * Dispose the session and save cache to disk.
+   */
+  dispose(): void;
 }
 
 /**
@@ -80,9 +84,17 @@ export const createBuilderSession = (options: {
   };
 
   // Reusable infrastructure
-  const cacheFactory = createJsonCache({
-    rootDir: join(process.cwd(), ".cache", "soda-gql", "builder"),
+  const cacheFactory = createMemoryCache({
     prefix: ["builder"],
+    persistence: {
+      enabled: true,
+      filePath: join(process.cwd(), ".cache", "soda-gql", "builder", "cache.json"),
+    },
+  });
+
+  // Auto-save cache on process exit
+  process.on("beforeExit", () => {
+    cacheFactory.save();
   });
 
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
@@ -193,6 +205,9 @@ export const createBuilderSession = (options: {
     build,
     getGeneration: () => state.gen,
     getCurrentArtifact: () => state.lastArtifact,
+    dispose: () => {
+      cacheFactory.save();
+    },
   };
 };
 

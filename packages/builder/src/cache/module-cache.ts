@@ -3,9 +3,9 @@ import { z } from "zod";
 import type { ModuleAnalysis } from "../ast";
 import { ModuleAnalysisSchema } from "../schemas/cache";
 import type { BuilderAnalyzer } from "../types";
-import type { JsonCacheFactory } from "./json-cache";
-import { createJsonCache } from "./json-cache";
-import { JsonEntityCache } from "./json-entity-cache";
+import { EntityCache } from "./entity-cache";
+import type { CacheFactory } from "./memory-cache";
+import { createMemoryCache } from "./memory-cache";
 
 // Bumped to v3 for ModuleDefinition schema change (added astPath, isTopLevel, isExported fields)
 const MODULE_CACHE_VERSION = "module-cache/v3";
@@ -21,14 +21,14 @@ const ModuleCacheRecordSchema = z.object({
 export type ModuleCacheRecord = z.infer<typeof ModuleCacheRecordSchema>;
 
 export type ModuleCacheManagerOptions = {
-  readonly factory: JsonCacheFactory;
+  readonly factory: CacheFactory;
   readonly analyzer: BuilderAnalyzer;
   readonly evaluatorId: string;
   readonly namespacePrefix?: readonly string[];
   readonly version?: string;
 };
 
-export class ModuleCacheManager extends JsonEntityCache<string, ModuleCacheRecord> {
+export class ModuleCacheManager extends EntityCache<string, ModuleCacheRecord> {
   constructor(private readonly options: ModuleCacheManagerOptions) {
     const namespace: string[] = [...(options.namespacePrefix ?? ["modules"]), options.analyzer, options.evaluatorId];
 
@@ -91,13 +91,9 @@ export class ModuleCacheManager extends JsonEntityCache<string, ModuleCacheRecor
 export const createModuleCacheManager = (options: ModuleCacheManagerOptions): ModuleCacheManager =>
   ModuleCacheManager.create(options);
 
-export const createDefaultModuleCacheManager = (
-  rootDir: string,
-  analyzer: BuilderAnalyzer,
-  evaluatorId: string,
-): ModuleCacheManager =>
+export const createDefaultModuleCacheManager = (analyzer: BuilderAnalyzer, evaluatorId: string): ModuleCacheManager =>
   createModuleCacheManager({
-    factory: createJsonCache({ rootDir, prefix: ["builder"] }),
+    factory: createMemoryCache({ prefix: ["builder"] }),
     analyzer,
     evaluatorId,
   });

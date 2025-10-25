@@ -1,5 +1,5 @@
-import type { JsonCacheFactory } from "../cache/json-cache";
-import { JsonEntityCache } from "../cache/json-entity-cache";
+import { EntityCache } from "../cache/entity-cache";
+import type { CacheFactory } from "../cache/memory-cache";
 import { DiscoverySnapshotSchema } from "../schemas/discovery";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
@@ -7,14 +7,14 @@ import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 const DISCOVERY_CACHE_VERSION = "discovery-cache/v3";
 
 export type DiscoveryCacheOptions = {
-  readonly factory: JsonCacheFactory;
+  readonly factory: CacheFactory;
   readonly analyzer: string;
   readonly evaluatorId: string;
   readonly namespacePrefix?: readonly string[];
   readonly version?: string;
 };
 
-export class JsonDiscoveryCache extends JsonEntityCache<string, DiscoverySnapshot> implements DiscoveryCache {
+export class JsonDiscoveryCache extends EntityCache<string, DiscoverySnapshot> implements DiscoveryCache {
   constructor(options: DiscoveryCacheOptions) {
     const namespace = [...(options.namespacePrefix ?? ["discovery"]), options.analyzer, options.evaluatorId];
 
