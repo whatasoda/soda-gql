@@ -2,7 +2,7 @@
   "name": "@soda-gql/plugin-common",
   "version": "0.0.1",
   "type": "module",
-  "private": true,
+  "private": false,
   "license": "MIT",
   "files": [
     "dist"
