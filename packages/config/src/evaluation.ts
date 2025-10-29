@@ -7,6 +7,8 @@ import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import { type ConfigError, configError } from "./errors";
 import { SodaGqlConfigContainer } from "./helper";
+// TODO: split config package into definition and evaluation parts
+import * as configModule from "./index";
 import type { SodaGqlConfig } from "./types";
 
 /**
@@ -38,6 +40,10 @@ export function executeConfigFile(configPath: string): Result<SodaGqlConfig, Con
 
     const requireInner = createRequire(filePath);
     const require = (specifier: string) => {
+      if (specifier === "@soda-gql/config") {
+        return configModule;
+      }
+
       // Handle external modules normally
       if (!specifier.startsWith(".")) {
         return requireInner(specifier);
