@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/runtime",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "private": false,
   "license": "MIT",
