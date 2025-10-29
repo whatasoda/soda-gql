@@ -12,6 +12,7 @@
     "publish-npm": "bun scripts/publish.ts",
     "publish-npm:dry-run": "bun scripts/publish.ts --dry-run",
     "publish-npm:provenance": "bun scripts/publish.ts --provenance",
+    "pre-static-check": "bun fixture:setup && bun export:sync",
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
     "validate:tests": "bun run scripts/validate-tests.ts",
@@ -22,7 +23,7 @@
     "test": "bun --conditions=development test",
     "clean:dist": "find packages -name dist -type d -prune -exec rm -rf {} +",
     "soda-gql": "bun run packages/cli/src/index.ts",
-    "fixture:setup": "bun soda-gql codegen --out tests/fixtures/runtime-app/graphql-system/index.ts --schema:default tests/fixtures/runtime-app/schema.graphql --scalar:default tests/fixtures/inject-module/default-scalar.ts --runtime-adapter:default tests/fixtures/inject-module/default-runtime-adapter.ts",
+    "fixture:setup": "bun soda-gql codegen --config tests/soda-gql.config.ts",
     "examples:codegen": "cd examples/babel-app && bun run codegen && cd ../nestjs-app && bun run codegen",
     "perf:builder": "bun run scripts/perf/collect-builder-metrics.ts",
     "cleanup": "rm -rf .cache tests/.tmp"
