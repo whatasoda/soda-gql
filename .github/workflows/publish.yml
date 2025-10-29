@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Prepare quality checks
+        run: bun quality:prepares
+
       - name: Run quality checks
         run: bun quality
 
