@@ -4,14 +4,15 @@ import { dirname, resolve } from "node:path/posix";
 import { Script } from "node:vm";
 import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
 import { transformSync } from "@swc/core";
-import { configError } from "./errors";
+import { err, ok, type Result } from "neverthrow";
+import { type ConfigError, configError } from "./errors";
 import { SodaGqlConfigContainer } from "./helper";
 import type { SodaGqlConfig } from "./types";
 
 /**
  * Load and execute TypeScript config file synchronously using SWC + VM.
  */
-export function executeConfigFile(configPath: string): SodaGqlConfig {
+export function executeConfigFile(configPath: string): Result<SodaGqlConfig, ConfigError> {
   const filePath = resolve(configPath);
   try {
     // Read the config file
@@ -73,13 +74,15 @@ export function executeConfigFile(configPath: string): SodaGqlConfig {
       throw new Error("Invalid config module");
     }
 
-    return config;
+    return ok(config);
   } catch (error) {
-    throw configError({
-      code: "CONFIG_LOAD_FAILED",
-      message: `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
-      filePath: filePath,
-      cause: error,
-    });
+    return err(
+      configError({
+        code: "CONFIG_LOAD_FAILED",
+        message: `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
+        filePath: filePath,
+        cause: error,
+      }),
+    );
   }
 }
