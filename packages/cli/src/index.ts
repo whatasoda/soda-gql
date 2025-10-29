@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 import { codegenCommand } from "./commands/codegen";
 import { formatError } from "./utils/format";
 
