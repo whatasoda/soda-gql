@@ -19,13 +19,13 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: .bun-version
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Prepare quality checks
-        run: bun quality:prepares
+        run: bun quality:prepare
 
       - name: Run quality checks
         run: bun quality
