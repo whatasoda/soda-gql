@@ -77,9 +77,9 @@ export type FieldSelectionTemplateOf<
   : never;
 
 /** Resolve the data shape produced by a set of field selections. */
-export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = Prettify<{
+export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = {
   readonly [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
-}>;
+};
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
