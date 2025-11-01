@@ -1,41 +1,34 @@
 import { type FieldsBuilder, InlineOperation, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields } from "../types/fragment";
-import type { SchemaByKey, SodaGqlSchemaRegistry } from "../types/registry";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
 export const createInlineOperationComposerFactory = <
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   _TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
 >(
-  schema: NoInfer<SchemaByKey<TSchemaKey>>,
+  schema: NoInfer<TSchema>,
 ) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
-    type TTypeName = SchemaByKey<TSchemaKey>["operations"][TOperationType] &
-      keyof SchemaByKey<TSchemaKey>["object"] &
-      string;
+    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];
     if (operationTypeName === null) {
       throw new Error(`Operation type ${operationType} is not defined in schema roots`);
     }
 
-    return <
-      TOperationName extends string,
-      TFields extends AnyFields[],
-      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
-    >(
+    return <TOperationName extends string, TFields extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
       },
-      fieldBuilder: FieldsBuilder<TSchemaKey, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
+      fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
     ) => {
       return InlineOperation.create<
-        TSchemaKey,
+        TSchema,
         TOperationType,
         TOperationName,
         MergeVarDefinitions<TVarDefinitions>,

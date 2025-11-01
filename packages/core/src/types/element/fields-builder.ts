@@ -13,8 +13,8 @@ import type {
   AssignableInput,
   FieldSelectionTemplateOf,
 } from "../fragment";
-import type { SchemaByKey, SodaGqlSchemaRegistry } from "../registry";
 import type {
+  AnyGraphqlSchema,
   InputTypeSpecifiers,
   ObjectFieldRecord,
   OutputEnumSpecifier,
@@ -44,54 +44,51 @@ export type MergeFields<TFieldEntries extends AnyFields[]> = UnionToIntersection
  * while preserving the original schema information for inference.
  */
 export type FieldsBuilder<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
   TVariableDefinitions extends InputTypeSpecifiers,
   TFields extends AnyFields[],
-> = (tools: NoInfer<FieldsBuilderTools<TSchemaKey, TTypeName, TVariableDefinitions>>) => TFields;
+> = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 
 export type FieldsBuilderTools<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
   TVariableDefinitions extends InputTypeSpecifiers,
 > = {
-  f: FieldSelectionFactories<TSchemaKey, TTypeName>;
-  $: AssignableInput<TSchemaKey, TVariableDefinitions>;
+  f: FieldSelectionFactories<TSchema, TTypeName>;
+  $: AssignableInput<TSchema, TVariableDefinitions>;
 };
 
 /** Narrow builder used when a field resolves to an object and we need nested selections. */
 export type NestedObjectFieldsBuilder<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyNestedObject[],
-> = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchemaKey, TTypeName>>) => TFields;
+> = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchema, TTypeName>>) => TFields;
 
 export type NestedObjectFieldsBuilderTools<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
 > = {
-  f: FieldSelectionFactories<TSchemaKey, TTypeName>;
+  f: FieldSelectionFactories<TSchema, TTypeName>;
 };
 
 export type NestedUnionFieldsBuilder<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TMemberName extends string,
   TUnionFields extends AnyNestedUnion,
 > = {
   [TTypename in keyof TUnionFields & TMemberName]?: NestedObjectFieldsBuilder<
-    TSchemaKey,
+    TSchema,
     TTypename,
     NonNullable<TUnionFields[TTypename]>[]
   >;
 };
 
 /** Map each field to a factory capable of emitting fully-typed references. */
-export type FieldSelectionFactories<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
-> = {
-  [TFieldName in keyof ObjectFieldRecord<TSchemaKey, TTypeName>]: TFieldName extends string
-    ? FieldSelectionFactory<TSchemaKey, FieldSelectionTemplateOf<TSchemaKey, TTypeName, TFieldName>>
+export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string> = {
+  [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName>]: TFieldName extends string
+    ? FieldSelectionFactory<TSchema, FieldSelectionTemplateOf<TSchema, TTypeName, TFieldName>>
     : never;
 };
 
@@ -100,48 +97,40 @@ export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
   extras?: { alias?: TAlias; directives?: AnyDirectiveAttachments },
 ) => AnyFieldSelectionFactoryReturn<TAlias>;
 
-export type FieldSelectionFactory<TSchemaKey extends keyof SodaGqlSchemaRegistry, TSelection extends AnyFieldSelection> = <
+export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> = <
   TAlias extends string | null = null,
 >(
   fieldArgs: TSelection["args"] | IfEmpty<TSelection["args"], void | null>,
   extras?: { alias?: TAlias; directives?: TSelection["directives"] },
-) => FieldSelectionFactoryReturn<TSchemaKey, TSelection, TAlias>;
+) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
 export type AnyFieldSelectionFactoryReturn<TAlias extends string | null> =
+  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: OutputObjectSpecifier }, TAlias>
+  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: OutputUnionSpecifier }, TAlias>
   | FieldSelectionFactoryReturn<
-      keyof SodaGqlSchemaRegistry extends never ? string : keyof SodaGqlSchemaRegistry,
-      AnyFieldSelection & { type: OutputObjectSpecifier },
-      TAlias
-    >
-  | FieldSelectionFactoryReturn<
-      keyof SodaGqlSchemaRegistry extends never ? string : keyof SodaGqlSchemaRegistry,
-      AnyFieldSelection & { type: OutputUnionSpecifier },
-      TAlias
-    >
-  | FieldSelectionFactoryReturn<
-      keyof SodaGqlSchemaRegistry extends never ? string : keyof SodaGqlSchemaRegistry,
+      AnyGraphqlSchema,
       AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier },
       TAlias
     >;
 
 export type FieldSelectionFactoryReturn<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection,
   TAlias extends string | null,
 > = TSelection extends { type: OutputObjectSpecifier }
-  ? FieldSelectionFactoryObjectReturn<TSchemaKey, TSelection, TAlias>
+  ? FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>
   : TSelection extends { type: OutputUnionSpecifier }
-    ? FieldSelectionFactoryUnionReturn<TSchemaKey, TSelection, TAlias>
+    ? FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>
     : TSelection extends { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier }
       ? FieldSelectionFactoryPrimitiveReturn<TSelection, TAlias>
       : never;
 
 export type FieldSelectionFactoryObjectReturn<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection & { type: OutputObjectSpecifier },
   TAlias extends string | null,
 > = <TNested extends AnyNestedObject[]>(
-  nest: NestedObjectFieldsBuilder<TSchemaKey, TSelection["type"]["name"], TNested>,
+  nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
     TSelection["parent"],
@@ -154,11 +143,11 @@ export type FieldSelectionFactoryObjectReturn<
 };
 
 export type FieldSelectionFactoryUnionReturn<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection & { type: OutputUnionSpecifier },
   TAlias extends string | null,
 > = <TNested extends AnyNestedUnion>(
-  nest: NestedUnionFieldsBuilder<TSchemaKey, UnionMemberName<TSchemaKey, TSelection["type"]>, TNested>,
+  nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
     TSelection["parent"],

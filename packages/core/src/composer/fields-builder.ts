@@ -10,7 +10,6 @@ import {
   type NestedUnionFieldsBuilder,
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
-import type { SchemaByKey, SodaGqlSchemaRegistry } from "../types/registry";
 import type {
   AnyGraphqlSchema,
   OutputEnumSpecifier,
@@ -38,32 +37,26 @@ const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
   return cacheMap;
 };
 
-export const createFieldFactories = <
-  TSchemaKey extends keyof SodaGqlSchemaRegistry | string,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
->(
-  schema: SchemaByKey<TSchemaKey>,
+export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
+  schema: TSchema,
   typeName: TTypeName,
-): FieldSelectionFactories<TSchemaKey, TTypeName> => {
-  const cacheMap = ensureCacheMapBySchema(schema as AnyGraphqlSchema);
+): FieldSelectionFactories<TSchema, TTypeName> => {
+  const cacheMap = ensureCacheMapBySchema(schema);
   const cached = cacheMap.get(typeName);
   if (cached) {
-    return cached as unknown as FieldSelectionFactories<TSchemaKey, TTypeName>;
+    return cached as unknown as FieldSelectionFactories<TSchema, TTypeName>;
   }
 
-  const factories = createFieldFactoriesInner<TSchemaKey, TTypeName>(schema, typeName);
+  const factories = createFieldFactoriesInner(schema, typeName);
   cacheMap.set(typeName, factories as unknown as Record<string, AnyFieldSelectionFactory>);
 
   return factories;
 };
 
-const createFieldFactoriesInner = <
-  TSchemaKey extends keyof SodaGqlSchemaRegistry | string,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
->(
-  schema: SchemaByKey<TSchemaKey>,
+const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
+  schema: TSchema,
   typeName: TTypeName,
-): FieldSelectionFactories<TSchemaKey, TTypeName> => {
+): FieldSelectionFactories<TSchema, TTypeName> => {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
     throw new Error(`Type ${typeName} is not defined in schema objects`);
@@ -79,7 +72,7 @@ const createFieldFactoriesInner = <
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject[]>(
-          nest: NestedObjectFieldsBuilder<TSchemaKey, TSelection["type"]["name"], TNested>,
+          nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
         ) =>
           wrap({
             parent: typeName,
@@ -87,9 +80,9 @@ const createFieldFactoriesInner = <
             type: type,
             args: fieldArgs ?? {},
             directives: extras?.directives ?? {},
-            object: mergeFields(nest({ f: createFieldFactories<TSchemaKey, typeof type.name>(schema, type.name) })),
+            object: mergeFields(nest({ f: createFieldFactories(schema, type.name) })),
             union: null,
-          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryObjectReturn<TSchemaKey, TSelection, TAlias>;
+          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;
       }
@@ -97,7 +90,7 @@ const createFieldFactoriesInner = <
       if (type.kind === "union") {
         type TSelection = AnyFieldSelection & { type: OutputUnionSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedUnion>(
-          nest: NestedUnionFieldsBuilder<TSchemaKey, UnionMemberName<TSchemaKey, TSelection["type"]>, TNested>,
+          nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
         ) =>
           wrap({
             parent: typeName,
@@ -107,26 +100,21 @@ const createFieldFactoriesInner = <
             directives: extras?.directives ?? {},
             object: null,
             union: mapValues(
-              nest as Record<
-                string,
-                NestedObjectFieldsBuilder<TSchemaKey, string, AnyNestedObject[]> | undefined
-              >,
+              nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>,
               (builder, memberName) => {
                 if (!builder) {
                   throw new Error(`Builder is undefined for member name: ${memberName}`);
                 }
-                return mergeFields(builder({ f: createFieldFactories<TSchemaKey, string>(schema, memberName) }));
+                return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
               },
             ) as TNested,
-          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchemaKey, TSelection, TAlias>;
+          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;
       }
 
       if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
-        type TSelection = AnyFieldSelection & {
-          type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier;
-        };
+        type TSelection = AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = wrap({
           parent: typeName,
           field: fieldName,
@@ -147,5 +135,5 @@ const createFieldFactoriesInner = <
 
   const factories: Record<string, AnyFieldSelectionFactory> = Object.fromEntries(entries);
 
-  return factories as unknown as FieldSelectionFactories<TSchemaKey, TTypeName>;
+  return factories as unknown as FieldSelectionFactories<TSchema, TTypeName>;
 };

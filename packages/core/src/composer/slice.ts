@@ -7,23 +7,17 @@ import {
   Slice,
 } from "../types/element";
 import type { AnyFields } from "../types/fragment";
-import type { SchemaByKey, SodaGqlSchemaRegistry } from "../types/registry";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
-import type { InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
-export const createSliceComposerFactory = <
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
->(
-  schema: NoInfer<SchemaByKey<TSchemaKey>>,
+export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
+  schema: NoInfer<TSchema>,
 ) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
-    type TTypeName = SchemaByKey<TSchemaKey>["operations"][TOperationType] &
-      keyof SchemaByKey<TSchemaKey>["object"] &
-      string;
+    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];
     if (operationTypeName === null) {
       throw new Error(`Operation type ${operationType} is not defined in schema roots`);
@@ -37,29 +31,22 @@ export const createSliceComposerFactory = <
       options: {
         variables?: TVarDefinitions;
       },
-      fieldBuilder: FieldsBuilder<TSchemaKey, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
-      projectionBuilder: ExecutionResultProjectionsBuilder<
-        TSchemaKey,
-        TRuntimeAdapter,
-        MergeFields<TFieldEntries>,
-        TProjection
-      >,
+      fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
+      projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, MergeFields<TFieldEntries>, TProjection>,
     ) =>
-      Slice.create<TSchemaKey, TOperationType, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TProjection>(
-        () => {
-          const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-          const projection = handleProjectionBuilder(projectionBuilder);
+      Slice.create<TSchema, TOperationType, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TProjection>(() => {
+        const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
+        const projection = handleProjectionBuilder(projectionBuilder);
 
-          return {
-            operationType,
-            embed: (variables) => {
-              const f = createFieldFactories(schema, operationTypeName);
-              const $ = createVarAssignments(varDefinitions, variables);
-              const fields = mergeFields(fieldBuilder({ f, $ }));
-              return { variables, getFields: () => fields, projection };
-            },
-          };
-        },
-      );
+        return {
+          operationType,
+          embed: (variables) => {
+            const f = createFieldFactories(schema, operationTypeName);
+            const $ = createVarAssignments(varDefinitions, variables);
+            const fields = mergeFields(fieldBuilder({ f, $ }));
+            return { variables, getFields: () => fields, projection };
+          },
+        };
+      });
   };
 };

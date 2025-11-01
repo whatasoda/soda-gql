@@ -22,8 +22,7 @@ import {
   type InferFields,
   VarRef,
 } from "../types/fragment";
-import type { SodaGqlSchemaRegistry } from "../types/registry";
-import type { ConstAssignableInput, InputTypeSpecifiers, OperationType, TypeModifier } from "../types/schema";
+import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeSpecifiers, OperationType, TypeModifier } from "../types/schema";
 import type { ConstValue } from "../types/schema/const-value";
 
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
@@ -243,7 +242,7 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
 
 // Overloaded function signatures for flexible usage
 export const buildDocument = <
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TFields extends AnyFields,
   TVarDefinitions extends InputTypeSpecifiers,
 >(options: {
@@ -251,7 +250,7 @@ export const buildDocument = <
   operationType: OperationType;
   variables: TVarDefinitions;
   fields: TFields;
-}): TypedDocumentNode<InferFields<TSchemaKey, TFields>, ConstAssignableInput<TSchemaKey, TVarDefinitions>> => {
+}): TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
   const { operationName, operationType, variables, fields } = options;
   return {
     kind: Kind.DOCUMENT,
@@ -268,8 +267,5 @@ export const buildDocument = <
         },
       },
     ],
-  } satisfies DocumentNode as TypedDocumentNode<
-    InferFields<TSchemaKey, TFields>,
-    ConstAssignableInput<TSchemaKey, TVarDefinitions>
-  >;
+  } satisfies DocumentNode as TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>>;
 };

@@ -20,7 +20,7 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
 };
 
 if (import.meta.main) {
-  dispatch(process.argv.slice(2))
+  dispatch(Bun.argv.slice(2))
     .then((exitCode) => {
       process.exitCode = exitCode;
     })

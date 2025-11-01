@@ -1,9 +1,8 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
-import type { SodaGqlSchemaRegistry } from "../registry";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
-import type { InputTypeSpecifiers, OperationType } from "../schema";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../schema";
 import { GqlElement } from "./gql-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
@@ -46,7 +45,7 @@ export class Slice<
   }
 
   static create<
-    TSchemaKey extends keyof SodaGqlSchemaRegistry,
+    TSchema extends AnyGraphqlSchema,
     TOperationType extends OperationType,
     TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
@@ -55,16 +54,16 @@ export class Slice<
     define: () => {
       operationType: TOperationType;
       embed: (
-        variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchemaKey, TVariableDefinitions>>,
+        variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
       ) => SlicePayload<
-        SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchemaKey, TVariableDefinitions>>,
+        SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
         TFields,
         TProjection
       >;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };
-    type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchemaKey, TVariableDefinitions>>;
+    type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
     return new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>);
   }

@@ -1,6 +1,5 @@
-import type { SchemaByKey, SodaGqlSchemaRegistry } from "../registry";
 import type { ConstValue } from "../schema/const-value";
-import type { InferInputTypeRef, InputFieldRecord } from "../schema/schema";
+import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "../schema/schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "../schema/type-modifier";
 import type {
   InputInferrableTypeSpecifier,
@@ -23,19 +22,19 @@ export type AnyAssignableInput = {
   readonly [key: string]: AnyAssignableInputValue;
 };
 
-export type AssignableInput<TSchemaKey extends keyof SodaGqlSchemaRegistry, TRefs extends InputTypeSpecifiers> = {
-  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchemaKey, TRefs[K]>;
+export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeSpecifiers> = {
+  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
 };
-export type AssignableInputValue<TSchemaKey extends keyof SodaGqlSchemaRegistry, TRef extends InputTypeSpecifier> =
+export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeSpecifier> =
   | VarRefBy<TRef>
   | (TRef["modifier"] extends `${string}${ListTypeModifierSuffix}`
-      ? AssignableInputValue<TSchemaKey, StripTailingListFromTypeSpecifier<TRef>>[]
+      ? AssignableInputValue<TSchema, StripTailingListFromTypeSpecifier<TRef>>[]
       :
-          | (TRef extends InputInputObjectSpecifier ? AssignableInput<TSchemaKey, InputFieldRecord<TSchemaKey, TRef>> : never)
-          | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchemaKey, TRef> : never));
+          | (TRef extends InputInputObjectSpecifier ? AssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
+          | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchema, TRef> : never));
 
 export type AssignableInputByFieldName<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
-  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"],
-  TFieldName extends keyof SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"],
-> = AssignableInput<TSchemaKey, SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"][TFieldName]["arguments"]>;
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"],
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
+> = AssignableInput<TSchema, TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"]>;

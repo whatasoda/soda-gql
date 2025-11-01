@@ -1,4 +1,3 @@
-import { type SchemaByKey, type SodaGqlSchemaRegistry } from "../types/registry";
 import {
   type AnyConstDirectiveAttachments,
   type AnyGraphqlSchema,
@@ -11,12 +10,12 @@ import {
 import { wrapByKey } from "../utils/wrap-by-key";
 
 type AssignableDefaultValue<
-  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSchema extends AnyGraphqlSchema,
   TKind extends "scalar" | "enum" | "input",
-  TName extends keyof SchemaByKey<TSchemaKey>[TKind] & string,
+  TName extends keyof TSchema[TKind] & string,
   TModifier extends TypeModifier,
 > = ConstAssignableInputValue<
-  TSchemaKey,
+  TSchema,
   {
     scalar: { kind: "scalar"; name: TName; modifier: TModifier; directives: {}; defaultValue: null };
     enum: { kind: "enum"; name: TName; modifier: TModifier; directives: {}; defaultValue: null };
@@ -24,15 +23,13 @@ type AssignableDefaultValue<
   }[TKind]
 >;
 
-export const createVarBuilder = <TSchemaKey extends keyof SodaGqlSchemaRegistry>(
-  schema: SchemaByKey<TSchemaKey>,
-) => {
+export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => {
   const $ = <TVarName extends string>(varName: TVarName) => {
     const createRefBuilder = <TKind extends "scalar" | "enum" | "input">(kind: TKind) => {
       type InputRef<
-        TTypeName extends keyof SchemaByKey<TSchemaKey>[TKind] & string,
+        TTypeName extends keyof TSchema[TKind] & string,
         TModifier extends TypeModifier,
-        TDefaultFn extends (() => AssignableDefaultValue<TSchemaKey, TKind, TTypeName, TModifier>) | null,
+        TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null,
         TDirectives extends AnyConstDirectiveAttachments,
       > = {
         kind: TKind;
@@ -47,18 +44,16 @@ export const createVarBuilder = <TSchemaKey extends keyof SodaGqlSchemaRegistry>
       };
 
       return <
-        const TTypeName extends keyof SchemaByKey<TSchemaKey>[TKind] & string,
+        const TTypeName extends keyof TSchema[TKind] & string,
         const TModifier extends TypeModifier,
-        const TDefaultFn extends (() => AssignableDefaultValue<TSchemaKey, TKind, TTypeName, TModifier>) | null = null,
+        const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
         const TDirectives extends AnyConstDirectiveAttachments = {},
       >(
         type: ModifiedTypeName<string, TTypeName, TModifier>,
         extras?: {
           default?:
-            | (TDefaultFn & (() => AssignableDefaultValue<TSchemaKey, TKind, TTypeName, TModifier>))
-            | (NoInfer<TDefaultFn> extends null
-                ? () => AssignableDefaultValue<TSchemaKey, TKind, TTypeName, TModifier>
-                : never);
+            | (TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>))
+            | (NoInfer<TDefaultFn> extends null ? () => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier> : never);
           directives?: TDirectives;
         },
       ) =>
@@ -76,10 +71,9 @@ export const createVarBuilder = <TSchemaKey extends keyof SodaGqlSchemaRegistry>
       input: createRefBuilder("input"),
 
       byField: <
-        const TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
-        const TFieldName extends keyof SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"] & string,
-        const TArgName extends keyof SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"][TFieldName]["arguments"] &
-          string,
+        const TTypeName extends keyof TSchema["object"] & string,
+        const TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
+        const TArgName extends keyof TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"] & string,
       >(
         typeName: TTypeName,
         fieldName: TFieldName,
@@ -92,9 +86,7 @@ export const createVarBuilder = <TSchemaKey extends keyof SodaGqlSchemaRegistry>
         }
 
         // TODO: clone
-        return {
-          ...argTypeRef,
-        } as SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"][TFieldName]["arguments"][TArgName];
+        return { ...argTypeRef } as TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"][TArgName];
       },
     };
   };
