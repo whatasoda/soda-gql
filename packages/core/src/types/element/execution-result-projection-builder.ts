@@ -1,39 +1,39 @@
 import type { Tuple } from "../../utils/type-utils";
 import type { AnyFields, AvailableFieldPathOf, InferByFieldPath } from "../fragment";
+import type { SodaGqlSchemaRegistry } from "../registry";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection, Projection, SlicedExecutionResult } from "../runtime";
-import type { AnyGraphqlSchema } from "../schema";
 
 export type AnyExecutionResultProjectionsBuilder = ExecutionResultProjectionsBuilder<
-  AnyGraphqlSchema,
+  keyof SodaGqlSchemaRegistry extends never ? string : keyof SodaGqlSchemaRegistry,
   AnyGraphqlRuntimeAdapter,
   any,
   any
 >;
 
 export type ExecutionResultProjectionsBuilder<
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TFields extends AnyFields,
   TProjection extends AnyProjection,
-> = (tools: { select: ResultSelector<TSchema, TRuntimeAdapter, TFields> }) => TProjection;
+> = (tools: { select: ResultSelector<TSchemaKey, TRuntimeAdapter, TFields> }) => TProjection;
 
 type ResultSelector<
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
   TFields extends AnyFields,
-> = <TPaths extends Tuple<AvailableFieldPathOf<TSchema, TFields>>, TProjected>(
+> = <TPaths extends Tuple<AvailableFieldPathOf<TSchemaKey, TFields>>, TProjected>(
   paths: TPaths,
   projector: (
-    result: NoInfer<SlicedExecutionResult<InferByResultSelectorPaths<TSchema, TFields, TPaths>, TRuntimeAdapter>>,
+    result: NoInfer<SlicedExecutionResult<InferByResultSelectorPaths<TSchemaKey, TFields, TPaths>, TRuntimeAdapter>>,
   ) => TProjected,
 ) => NoInfer<Projection<TProjected>>;
 
 type InferByResultSelectorPaths<
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TFields extends AnyFields,
-  TPaths extends Tuple<AvailableFieldPathOf<TSchema, TFields>>,
+  TPaths extends Tuple<AvailableFieldPathOf<TSchemaKey, TFields>>,
 > = TPaths extends string[]
   ? {
-      [K in keyof TPaths]: TPaths[K] extends string ? InferByFieldPath<TSchema, TFields, TPaths[K]> : never;
+      [K in keyof TPaths]: TPaths[K] extends string ? InferByFieldPath<TSchemaKey, TFields, TPaths[K]> : never;
     }
   : never;

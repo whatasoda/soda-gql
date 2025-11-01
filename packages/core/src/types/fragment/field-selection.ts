@@ -1,9 +1,9 @@
 /** Canonical field selection types used by models and slices. */
 
 import type { Prettify } from "../../utils/prettify";
+import type { SchemaByKey, SodaGqlSchemaRegistry } from "../registry";
 import type {
   AnyFieldName,
-  AnyGraphqlSchema,
   AnyTypeName,
   ApplyTypeModifier,
   InferOutputTypeRef,
@@ -61,15 +61,15 @@ export type AbstractFieldSelection<
 
 /** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldSelectionTemplateOf<
-  TSchema extends AnyGraphqlSchema,
-  TTypeName extends keyof TSchema["object"] & string,
-  TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
-> = PickTypeSpecifierByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends OutputTypeSpecifier
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TTypeName extends keyof SchemaByKey<TSchemaKey>["object"] & string,
+  TFieldName extends keyof SchemaByKey<TSchemaKey>["object"][TTypeName]["fields"] & string,
+> = PickTypeSpecifierByFieldName<TSchemaKey, TTypeName, TFieldName> extends infer TRef extends OutputTypeSpecifier
   ? AbstractFieldSelection<
       TTypeName,
       TFieldName,
       TRef,
-      AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
+      AssignableInputByFieldName<TSchemaKey, TTypeName, TFieldName>,
       AnyDirectiveAttachments,
       | (TRef extends OutputObjectSpecifier ? { object: AnyNestedObject } : never)
       | (TRef extends OutputUnionSpecifier ? { union: AnyNestedUnion } : never)
@@ -77,17 +77,17 @@ export type FieldSelectionTemplateOf<
   : never;
 
 /** Resolve the data shape produced by a set of field selections. */
-export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = Prettify<{
-  readonly [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
+export type InferFields<TSchemaKey extends keyof SodaGqlSchemaRegistry, TFields extends AnyFields> = Prettify<{
+  readonly [TAliasName in keyof TFields]: InferField<TSchemaKey, TFields[TAliasName]>;
 }>;
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
-export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
+export type InferField<TSchemaKey extends keyof SodaGqlSchemaRegistry, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
       type: infer TRef extends OutputObjectSpecifier;
       object: infer TNested extends AnyNestedObject;
     }
-      ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchema, TNested>>
+      ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchemaKey, TNested>>
       : never)
   | (TSelection extends {
       type: infer TRef extends OutputUnionSpecifier;
@@ -98,12 +98,12 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
           {
             [TTypename in keyof TNested]: undefined extends TNested[TTypename]
               ? never
-              : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
+              : InferFields<TSchemaKey, NonNullable<TNested[TTypename]>>;
           }[keyof TNested]
         >
       : never)
   | (TSelection extends {
       type: infer TRef extends OutputInferrableTypeSpecifier;
     }
-      ? InferOutputTypeRef<TSchema, TRef>
+      ? InferOutputTypeRef<TSchemaKey, TRef>
       : never);

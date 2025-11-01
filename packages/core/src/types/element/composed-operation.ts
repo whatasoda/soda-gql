@@ -5,14 +5,9 @@ import type { Hidden } from "../../utils/hidden";
 import type { Prettify } from "../../utils/prettify";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
+import type { SodaGqlSchemaRegistry } from "../registry";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
-import type {
-  AnyConstAssignableInput,
-  AnyGraphqlSchema,
-  ConstAssignableInput,
-  InputTypeSpecifiers,
-  OperationType,
-} from "../schema";
+import type { AnyConstAssignableInput, ConstAssignableInput, InputTypeSpecifiers, OperationType } from "../schema";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 import type { AnySlicePayloads } from "./slice";
 
@@ -120,7 +115,7 @@ export class ComposedOperation<
   }
 
   static create<
-    TSchema extends AnyGraphqlSchema,
+    TSchemaKey extends keyof SodaGqlSchemaRegistry,
     TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
     TOperationType extends OperationType,
     TOperationName extends string,
@@ -133,11 +128,15 @@ export class ComposedOperation<
       variableNames: (keyof TVariableDefinitions & string)[];
       projectionPathGraph: ProjectionPathGraphNode;
       document: TypedDocumentNode<
-        InferComposedOperationRawData<TSchema, TSliceFragments>,
-        ConstAssignableInput<TSchema, TVariableDefinitions>
+        InferComposedOperationRawData<TSchemaKey, TSliceFragments>,
+        ConstAssignableInput<TSchemaKey, TVariableDefinitions>
       >;
       parse: (
-        result: NormalizedExecutionResult<TRuntimeAdapter, InferComposedOperationRawData<TSchema, TSliceFragments>, any>,
+        result: NormalizedExecutionResult<
+          TRuntimeAdapter,
+          InferComposedOperationRawData<TSchemaKey, TSliceFragments>,
+          any
+        >,
       ) => {
         [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
       };
@@ -163,12 +162,13 @@ export type ConcatSlicePayloads<TSlicePayloads extends AnySlicePayloads> = Prett
 > &
   AnyFields;
 
-export type InferComposedOperationRawData<TSchema extends AnyGraphqlSchema, TSlicePayloads extends AnySlicePayloads> = Prettify<
-  InferFields<TSchema, ConcatSlicePayloads<TSlicePayloads>>
->;
+export type InferComposedOperationRawData<
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TSlicePayloads extends AnySlicePayloads,
+> = Prettify<InferFields<TSchemaKey, ConcatSlicePayloads<TSlicePayloads>>>;
 
 export type ComposedOperationDefinitionBuilder<
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TVarDefinitions extends InputTypeSpecifiers,
   TSliceContents extends AnySlicePayloads,
-> = (tools: { $: NoInfer<AssignableInput<TSchema, TVarDefinitions>> }) => TSliceContents;
+> = (tools: { $: NoInfer<AssignableInput<TSchemaKey, TVarDefinitions>> }) => TSliceContents;

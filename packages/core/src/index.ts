@@ -2,6 +2,7 @@ export * from "./composer";
 export * from "./schema";
 export * from "./types/element";
 export type * from "./types/fragment";
+export type * from "./types/registry";
 export * from "./types/runtime";
 export type * from "./types/schema";
 export type * from "./types/schema/const-value";

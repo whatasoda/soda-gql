@@ -1,5 +1,6 @@
+import type { SodaGqlSchemaRegistry } from "../registry";
 import type { ConstValue } from "./const-value";
-import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "./schema";
+import type { InferInputTypeRef, InputFieldRecord } from "./schema";
 import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "./type-modifier";
 import type {
   InputInferrableTypeSpecifier,
@@ -14,15 +15,18 @@ export type AnyConstAssignableInput = {
   readonly [key: string]: AnyConstAssignableInputValue;
 };
 
-export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeSpecifiers> = {
-  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: ConstAssignableInputValue<TSchema, TRefs[K]>;
+export type ConstAssignableInput<
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
+  TRefs extends InputTypeSpecifiers,
+> = {
+  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: ConstAssignableInputValue<TSchemaKey, TRefs[K]>;
 };
 
 export type ConstAssignableInputValue<
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TRef extends InputTypeSpecifier,
 > = TRef["modifier"] extends `${string}${ListTypeModifierSuffix}`
-  ? ConstAssignableInputValue<TSchema, StripTailingListFromTypeSpecifier<TRef>>[]
+  ? ConstAssignableInputValue<TSchemaKey, StripTailingListFromTypeSpecifier<TRef>>[]
   :
-      | (TRef extends InputInputObjectSpecifier ? ConstAssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
-      | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchema, TRef> : never);
+      | (TRef extends InputInputObjectSpecifier ? ConstAssignableInput<TSchemaKey, InputFieldRecord<TSchemaKey, TRef>> : never)
+      | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchemaKey, TRef> : never);

@@ -1,6 +1,5 @@
 import type { AnyComposedOperation, AnyInlineOperation, AnyModel, AnySlice } from "../types/element";
-import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { AnyGraphqlSchema } from "../types/schema";
+import type { AdapterByKey, SchemaByKey, SodaGqlSchemaRegistry } from "../types/registry";
 import { createComposedOperationComposerFactory } from "./composed-operation";
 import { createInlineOperationComposerFactory } from "./inline-operation";
 import { createGqlModelComposers } from "./model";
@@ -13,13 +12,15 @@ export type GqlElementComposer<TComposers, THelper> = <
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
-export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
-  schema: NoInfer<TSchema>,
+export const createGqlElementComposer = <TSchemaKey extends keyof SodaGqlSchemaRegistry>(
+  schema: NoInfer<SchemaByKey<TSchemaKey>>,
 ) => {
-  const model = createGqlModelComposers<TSchema>(schema);
-  const createSliceComposer = createSliceComposerFactory<TSchema, TRuntimeAdapter>(schema);
-  const createComposedOperationFactory = createComposedOperationComposerFactory<TSchema, TRuntimeAdapter>();
-  const createInlineOperationComposer = createInlineOperationComposerFactory<TSchema, TRuntimeAdapter>(schema);
+  type TRuntimeAdapter = AdapterByKey<TSchemaKey>;
+
+  const model = createGqlModelComposers<TSchemaKey>(schema);
+  const createSliceComposer = createSliceComposerFactory<TSchemaKey, TRuntimeAdapter>(schema);
+  const createComposedOperationFactory = createComposedOperationComposerFactory<TSchemaKey, TRuntimeAdapter>();
+  const createInlineOperationComposer = createInlineOperationComposerFactory<TSchemaKey, TRuntimeAdapter>(schema);
   const composers = {
     model,
     query: {

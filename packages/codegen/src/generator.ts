@@ -600,10 +600,16 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-export type Schema_${name} = typeof ${schemaVar} & { _?: never };
-export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
+declare global {
+  interface SodaGqlSchemaRegistry {
+    ${name}: typeof ${schemaVar} & { _?: never };
+  }
+  interface SodaGqlAdapterRegistry {
+    ${name}: typeof ${adapterVar} & { _?: never };
+  }
+}`);
 
-    gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+    gqlEntries.push(`  ${name}: createGqlElementComposer<"${name}">(${schemaVar})`);
   }
 
   // Include createRuntimeAdapter import only in inline mode

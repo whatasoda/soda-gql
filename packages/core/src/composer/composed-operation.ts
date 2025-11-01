@@ -5,15 +5,16 @@ import {
   type ComposedOperationDefinitionBuilder,
   type ConcatSlicePayloads,
 } from "../types/element";
+import type { SodaGqlSchemaRegistry } from "../types/registry";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { InputTypeSpecifiers, OperationType } from "../types/schema";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
 export const createComposedOperationComposerFactory = <
-  TSchema extends AnyGraphqlSchema,
+  TSchemaKey extends keyof SodaGqlSchemaRegistry,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
 >() => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
@@ -26,10 +27,10 @@ export const createComposedOperationComposerFactory = <
         operationName: TOperationName;
         variables?: TVarDefinitions;
       },
-      builder: ComposedOperationDefinitionBuilder<TSchema, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
+      builder: ComposedOperationDefinitionBuilder<TSchemaKey, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
     ) => {
       return ComposedOperation.create<
-        TSchema,
+        TSchemaKey,
         TRuntimeAdapter,
         TOperationType,
         TOperationName,

@@ -1,13 +1,8 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
-import type {
-  AnyConstAssignableInput,
-  AnyGraphqlSchema,
-  ConstAssignableInput,
-  InputTypeSpecifiers,
-  OperationType,
-} from "../schema";
+import type { SodaGqlSchemaRegistry } from "../registry";
+import type { AnyConstAssignableInput, ConstAssignableInput, InputTypeSpecifiers, OperationType } from "../schema";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
 export type AnyInlineOperation =
@@ -80,7 +75,7 @@ export class InlineOperation<
   }
 
   static create<
-    TSchema extends AnyGraphqlSchema,
+    TSchemaKey extends keyof SodaGqlSchemaRegistry,
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableDefinitions extends InputTypeSpecifiers,
@@ -91,7 +86,10 @@ export class InlineOperation<
       operationName: TOperationName;
       variableNames: (keyof TVariableDefinitions & string)[];
       documentSource: () => TFields;
-      document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+      document: TypedDocumentNode<
+        InferFields<TSchemaKey, TFields>,
+        ConstAssignableInput<TSchemaKey, TVariableDefinitions>
+      >;
     },
   ) {
     return new InlineOperation(define);
