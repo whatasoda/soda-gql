@@ -42,7 +42,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
           operationType,
           embed: (variables) => {
             const f = createFieldFactories(schema, operationTypeName);
-            const $ = createVarAssignments(varDefinitions, variables);
+            const $ = createVarAssignments<TSchema, typeof varDefinitions>(varDefinitions, variables);
             const fields = mergeFields(fieldBuilder({ f, $ }));
             return { variables, getFields: () => fields, projection };
           },

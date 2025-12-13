@@ -11,7 +11,7 @@ export type MergeVarDefinitions<TVarDefinitions extends InputTypeSpecifiers[]> =
 > extends infer TDefinitions
   ? {
       readonly [K in keyof TDefinitions]: TDefinitions[K];
-    } & {}
+    }
   : never;
 
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
@@ -32,7 +32,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
 export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
   definitions: TVarDefinitions,
 ) =>
-  mapValues(definitions as InputTypeSpecifiers, (_ref, name) => VarRef.create<typeof _ref>(name)) as AssignableInput<
+  mapValues(definitions as InputTypeSpecifiers, (_ref, name) => VarRef.createForVariable<typeof _ref>(name)) as AssignableInput<
     TSchema,
     TVarDefinitions
   >;

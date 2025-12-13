@@ -37,10 +37,19 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
   }
 
   if (value instanceof VarRef) {
-    return {
-      kind: Kind.VARIABLE,
-      name: { kind: Kind.NAME, value: value.name },
-    };
+    const inner = VarRef.getInner(value);
+    if (inner.type === "variable") {
+      return {
+        kind: Kind.VARIABLE,
+        name: { kind: Kind.NAME, value: inner.name },
+      };
+    }
+
+    if (inner.type === "const-value") {
+      return buildConstValueNode(inner.value);
+    }
+
+    throw new Error(`Unknown var ref type: ${inner satisfies never}`);
   }
 
   if (Array.isArray(value)) {

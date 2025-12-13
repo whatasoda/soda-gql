@@ -1,6 +1,7 @@
-export const wrapByKey = <TName extends string, TValue>(name: TName, value: TValue) =>
-  ({
+export function wrapByKey<TName extends string, TValue>(name: TName, value: TValue) {
+  return {
     [name]: value,
-  }) as {
+  } as {
     [K in TName]: TValue;
   };
+}

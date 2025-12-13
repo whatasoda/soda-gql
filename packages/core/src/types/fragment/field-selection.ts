@@ -6,7 +6,8 @@ import type {
   AnyGraphqlSchema,
   AnyTypeName,
   ApplyTypeModifier,
-  InferOutputTypeRef,
+  GetModifiedType,
+  InferOutputProfile,
   OutputInferrableTypeSpecifier,
   OutputObjectSpecifier,
   OutputTypeSpecifier,
@@ -45,14 +46,14 @@ export type AnyFields = {
 export type AbstractFieldSelection<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
-  TRef extends OutputTypeSpecifier,
+  TSpecifier extends OutputTypeSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
   TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
 > = {
   readonly parent: TTypeName;
   readonly field: TFieldName;
-  readonly type: TRef;
+  readonly type: TSpecifier;
   readonly args: TArgs;
   readonly directives: TDirectives;
   readonly object: TExtras extends { object: infer TObject } ? TObject : null;
@@ -84,26 +85,26 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
-      type: infer TRef extends OutputObjectSpecifier;
+      type: infer TSpecifier extends OutputObjectSpecifier;
       object: infer TNested extends AnyNestedObject;
     }
-      ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchema, TNested>>
+      ? ApplyTypeModifier<InferFields<TSchema, TNested>, TSpecifier["modifier"]>
       : never)
   | (TSelection extends {
       type: infer TRef extends OutputUnionSpecifier;
       union: infer TNested extends AnyNestedUnion;
     }
       ? ApplyTypeModifier<
-          TRef["modifier"],
           {
             [TTypename in keyof TNested]: undefined extends TNested[TTypename]
               ? never
               : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
-          }[keyof TNested]
+          }[keyof TNested],
+          TRef["modifier"]
         >
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputInferrableTypeSpecifier;
+      type: infer TSpecifier extends OutputInferrableTypeSpecifier;
     }
-      ? InferOutputTypeRef<TSchema, TRef>
+      ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
       : never);

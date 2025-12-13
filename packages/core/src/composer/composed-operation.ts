@@ -38,7 +38,7 @@ export const createComposedOperationComposerFactory = <
       >(() => {
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-        const $ = createVarRefs(variables);
+        const $ = createVarRefs<TSchema, typeof variables>(variables);
         const fragments = builder({ $ });
 
         const fields = Object.fromEntries(

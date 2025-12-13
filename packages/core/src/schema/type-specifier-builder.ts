@@ -30,7 +30,7 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
     const TDefaultFactory extends (() => ConstValue) | null = null,
     const TDirectives extends AnyConstDirectiveAttachments = {},
   >(
-    type: ModifiedTypeName<string, TName, TModifier>,
+    type: ModifiedTypeName<TName, TModifier>,
     extras: {
       default?: TDefaultFactory;
       directives?: TDirectives;
@@ -51,41 +51,27 @@ export const unsafeInputType = {
 };
 
 const createUnsafeOutputTypeSpecifierFactory = <const TKind extends OutputTypeKind>(kind: TKind) => {
-  type UnsafeOutputTypeSpecifier<
-    TName extends string,
-    TModifier extends TypeModifier,
-    TArguments extends InputTypeSpecifiers,
-    TDirectives extends AnyConstDirectiveAttachments,
-  > = {
+  type UnsafeOutputTypeSpecifier<TName extends string, TModifier extends TypeModifier, TArguments extends InputTypeSpecifiers> = {
     kind: TKind;
     name: TName;
     modifier: TModifier;
     arguments: TArguments;
-    directives: TDirectives;
   };
 
-  return <
-    const TName extends string,
-    const TModifier extends TypeModifier,
-    const TArguments extends InputTypeSpecifiers = {},
-    const TDirectives extends AnyConstDirectiveAttachments = {},
-  >(
-    type: ModifiedTypeName<string, TName, TModifier>,
+  return <const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers = {}>(
+    type: ModifiedTypeName<TName, TModifier>,
     extras: {
       arguments?: TArguments;
-      directives?: TDirectives;
     },
-  ): UnsafeOutputTypeSpecifier<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments, TDirectives> =>
+  ): UnsafeOutputTypeSpecifier<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       arguments: extras.arguments ?? ({} as TArguments),
-      directives: extras.directives ?? ({} as TDirectives),
     }) satisfies AnyTypeSpecifier as UnsafeOutputTypeSpecifier<
       TName,
       TModifier,
-      InputTypeSpecifiers extends TArguments ? {} : TArguments,
-      TDirectives
+      InputTypeSpecifiers extends TArguments ? {} : TArguments
     >;
 };
 

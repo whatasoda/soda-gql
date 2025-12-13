@@ -1,4 +1,6 @@
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
-export const prettify = <T extends object>(obj: T) => obj as Prettify<T>;
+export function prettify<T extends object>(obj: T) {
+  return obj as Prettify<T>;
+}

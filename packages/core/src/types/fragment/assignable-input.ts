@@ -1,14 +1,8 @@
 import type { ConstValue } from "../schema/const-value";
-import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "../schema/schema";
-import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "../schema/type-modifier";
-import type {
-  InputInferrableTypeSpecifier,
-  InputInputObjectSpecifier,
-  InputTypeSpecifier,
-  InputTypeSpecifiers,
-  StripTailingListFromTypeSpecifier,
-} from "../schema/type-specifier";
-import type { AnyVarRef, VarRefBy } from "./var-ref";
+import type { AnyGraphqlSchema, InferInputProfile } from "../schema/schema";
+import type { GetAssignableType } from "../schema/type-modifier";
+import type { AnyDefaultValue, InputTypeSpecifier, InputTypeSpecifiers } from "../schema/type-specifier";
+import type { AnyVarRef } from "./var-ref";
 
 export type AnyAssignableInputValue =
   | ConstValue
@@ -22,16 +16,30 @@ export type AnyAssignableInput = {
   readonly [key: string]: AnyAssignableInputValue;
 };
 
-export type AssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeSpecifiers> = {
-  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: AssignableInputValue<TSchema, TRefs[K]>;
+type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] extends `${string}?`
+  ? true
+  : TSpecifier["defaultValue"] extends AnyDefaultValue
+    ? true
+    : false;
+
+export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: AssignableInputValue<
+    TSchema,
+    TSpecifiers[K]
+  >;
+} & {
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: AssignableInputValue<
+    TSchema,
+    TSpecifiers[K]
+  >;
 };
-export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TRef extends InputTypeSpecifier> =
-  | VarRefBy<TRef>
-  | (TRef["modifier"] extends `${string}${ListTypeModifierSuffix}`
-      ? AssignableInputValue<TSchema, StripTailingListFromTypeSpecifier<TRef>>[]
-      :
-          | (TRef extends InputInputObjectSpecifier ? AssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
-          | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchema, TRef> : never));
+
+export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
+  InferInputProfile<TSchema, TSpecifier>,
+  TSpecifier["modifier"],
+  InputTypeSpecifier["defaultValue"] extends AnyDefaultValue ? true : false,
+  "var"
+>;
 
 export type AssignableInputByFieldName<
   TSchema extends AnyGraphqlSchema,

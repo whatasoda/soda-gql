@@ -1,34 +1,64 @@
-import type { Hidden } from "../../utils/hidden";
-import type { Prettify } from "../../utils/prettify";
-import type { ApplyTypeModifier } from "../schema/type-modifier";
-import type { AnyDefaultValue, InputTypeSpecifier } from "../schema/type-specifier";
+import type { ConstValue } from "../schema/const-value";
+import type { ApplyTypeModifier, TypeModifier } from "../schema/type-modifier";
+import type { InputTypeSpecifier } from "../schema/type-specifier";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 export type AnyVarRef = VarRef<any>;
 
-type AnyVarRefMeta = {
+interface AnyVarRefMeta {
   readonly kind: string;
   readonly name: string;
-  readonly modifier: unknown;
-};
+  readonly signature: unknown;
+}
 
-export type VarRefBy<TRef extends InputTypeSpecifier> = VarRef<VarRefMetaBy<TRef>>;
-type VarRefMetaBy<TRef extends InputTypeSpecifier> = Prettify<{
-  readonly kind: TRef["kind"];
-  readonly name: TRef["name"];
-  readonly modifier:
-    | ApplyTypeModifier<TRef["modifier"], "_">
-    | (TRef["defaultValue"] extends AnyDefaultValue ? null | undefined : never);
-}>;
+export type VarRefBy<TSpecifier extends InputTypeSpecifier> = VarRef<VarRefMeta<TSpecifier>>;
+interface VarRefMeta<TSpecifier extends InputTypeSpecifier> {
+  readonly kind: TSpecifier["kind"];
+  readonly name: TSpecifier["name"];
+  readonly signature: ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TSpecifier["modifier"]>;
+}
+
+type VarRefInner =
+  | {
+      type: "variable";
+      name: string;
+    }
+  | {
+      type: "const-value";
+      value: ConstValue;
+    };
 
 declare const __VAR_REF_BRAND__: unique symbol;
 /** Nominal reference used to defer variable binding while carrying type info. */
 export class VarRef<TMeta extends AnyVarRefMeta> {
-  declare readonly [__VAR_REF_BRAND__]: Hidden<TMeta>;
+  declare readonly [__VAR_REF_BRAND__]: TMeta;
 
-  private constructor(public readonly name: string) {}
+  private constructor(private readonly inner: VarRefInner) {}
 
-  static create<TRef extends InputTypeSpecifier>(name: string): VarRefBy<TRef> {
-    return new VarRef<VarRefMetaBy<TRef>>(name);
+  static createForVariable<TSpecifier extends InputTypeSpecifier>(name: string): VarRef<VarRefMeta<TSpecifier>> {
+    return new VarRef<VarRefMeta<TSpecifier>>({ type: "variable", name });
+  }
+
+  static createForConstValue<TSpecifier extends InputTypeSpecifier>(value: ConstValue): VarRef<VarRefMeta<TSpecifier>> {
+    return new VarRef<VarRefMeta<TSpecifier>>({ type: "const-value", value });
+  }
+
+  static getInner(varRef: AnyVarRef): VarRefInner {
+    return varRef.inner;
+  }
+}
+
+declare module "../schema/type-modifier" {
+  export namespace TypeModifierNS {
+    interface SpecialValueFactory<TType extends TypeProfile, TModifier extends TypeModifier, TWithDefault extends boolean> {
+      var: VarRef<{
+        readonly kind: TType["kind"];
+        readonly name: TType["name"];
+        // NOTE: Allow undefined for arguments with default value
+        readonly signature:
+          | ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TModifier>
+          | (TWithDefault extends true ? undefined : never);
+      }>;
+    }
   }
 }
