@@ -8,17 +8,17 @@ import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
-type ModelArtifact<
+interface ModelArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
   TRaw extends object,
   TNormalized extends object,
-> = {
+> {
   readonly typename: TTypeName;
   readonly fragment: (variables: TVariables) => TFields;
   readonly normalize: (raw: TRaw) => TNormalized;
-};
+}
 
 declare const __MODEL_BRAND__: unique symbol;
 export class Model<

@@ -34,7 +34,7 @@ function embedEntries({ from, to }: { from: number; to: number; }) {
   }
 }
 
-const DEPTH = 3;
+const DEPTH = 2;
 const OUTPUT = "packages/core/src/types/schema/type-modifier.generated.ts";
 
 const content = `\

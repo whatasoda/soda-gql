@@ -36,7 +36,7 @@ export const createInlineOperationComposerFactory = <
       >(() => {
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-        const $ = createVarRefs(variables);
+        const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
         const f = createFieldFactories(schema, operationTypeName);
         const fields = mergeFields(fieldBuilder({ f, $ }));
 

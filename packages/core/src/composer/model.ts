@@ -36,7 +36,7 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
           typename,
           fragment: (variables) => {
             const f = createFieldFactories(schema, typename);
-            const $ = createVarAssignments(varDefinitions, variables);
+            const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
             return mergeFields(builder({ f, $ }));
           },
           normalize,

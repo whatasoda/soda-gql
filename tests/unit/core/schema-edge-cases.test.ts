@@ -14,21 +14,14 @@ describe("Schema Edge Cases", () => {
           subscription: null,
         },
         scalar: {
-          String: defineScalar("String", ({ type }) => ({
-            input: type<string>(),
-            output: type<string>(),
-            directives: {},
-          })).String,
+          String: defineScalar<"String", string, string>("String").String,
         },
         enum: {},
         input: {},
         object: {
-          Query: define("Query").object(
-            {
-              user: unsafeOutputType.scalar("String:!", { arguments: {}, directives: {} }),
-            },
-            {},
-          ),
+          Query: define("Query").object({
+            user: unsafeOutputType.scalar("String:!", { arguments: {} }),
+          }),
         },
         union: {},
       } satisfies AnyGraphqlSchema;
@@ -37,7 +30,7 @@ describe("Schema Edge Cases", () => {
 
       // Trying to get an argument that doesn't exist
       expect(() => {
-        // @ts-expect-error - Testing runtime error handling for non-existent argument
+        // @ts-expect-error - Testing runtime error for non-existent argument
         helpers.$("userVar").byField("Query", "user", "nonExistentArg");
       }).toThrow("Argument nonExistentArg not found in field user of type Query");
     });
@@ -78,19 +71,15 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          Query: define("Query").object(
-            {
-              // Create a field with an invalid kind by casting
-              weirdField: {
-                kind: "invalid" as any,
-                name: "String",
-                modifier: "!",
-                directives: {},
-                arguments: {},
-              } as any,
-            },
-            {},
-          ),
+          Query: define("Query").object({
+            // Create a field with an invalid kind by casting
+            weirdField: {
+              kind: "invalid" as any,
+              name: "String",
+              modifier: "!",
+              arguments: {},
+            } as any,
+          }),
         },
         union: {},
       } satisfies AnyGraphqlSchema;
@@ -115,20 +104,14 @@ describe("Schema Edge Cases", () => {
         enum: {},
         input: {},
         object: {
-          Query: define("Query").object(
-            {
-              result: unsafeOutputType.union("SearchResult:!", { arguments: {}, directives: {} }),
-            },
-            {},
-          ),
+          Query: define("Query").object({
+            result: unsafeOutputType.union("SearchResult:!", { arguments: {} }),
+          }),
         },
         union: {
-          SearchResult: define("SearchResult").union(
-            {
-              MissingType: true, // This type doesn't exist in objects
-            },
-            {},
-          ),
+          SearchResult: define("SearchResult").union({
+            MissingType: true, // This type doesn't exist in objects
+          }),
         },
       } satisfies AnyGraphqlSchema;
 
@@ -149,29 +132,19 @@ describe("Schema Edge Cases", () => {
           subscription: null,
         },
         scalar: {
-          ...defineScalar("String", ({ type }) => ({
-            input: type<string>(),
-            output: type<string>(),
-            directives: {},
-          })),
+          ...defineScalar<"String", string, string>("String"),
         },
         enum: {},
         input: {},
         object: {
-          Query: define("Query").object(
-            {
-              node: unsafeOutputType.object("Node:?", { arguments: {}, directives: {} }),
-            },
-            {},
-          ),
-          Node: define("Node").object(
-            {
-              id: unsafeOutputType.scalar("String:!", { arguments: {}, directives: {} }),
-              parent: unsafeOutputType.object("Node:?", { arguments: {}, directives: {} }), // Circular reference
-              children: unsafeOutputType.object("Node:![]!", { arguments: {}, directives: {} }), // Another circular reference
-            },
-            {},
-          ),
+          Query: define("Query").object({
+            node: unsafeOutputType.object("Node:?", { arguments: {} }),
+          }),
+          Node: define("Node").object({
+            id: unsafeOutputType.scalar("String:!", { arguments: {} }),
+            parent: unsafeOutputType.object("Node:?", { arguments: {} }), // Circular reference
+            children: unsafeOutputType.object("Node:![]!", { arguments: {} }), // Another circular reference
+          }),
         },
         union: {},
       } satisfies AnyGraphqlSchema;

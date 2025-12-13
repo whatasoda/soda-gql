@@ -23,24 +23,6 @@ declare module "./type-modifier" {
       "![]?[]!": Op<Modified<T>["![]?"]>["[]!"];
       "![]![]?": Op<Modified<T>["![]!"]>["[]?"];
       "![]![]!": Op<Modified<T>["![]!"]>["[]!"];
-
-      // depth = 3
-      "?[]?[]?[]?": Op<Modified<T>["?[]?[]?"]>["[]?"];
-      "?[]?[]?[]!": Op<Modified<T>["?[]?[]?"]>["[]!"];
-      "?[]?[]![]?": Op<Modified<T>["?[]?[]!"]>["[]?"];
-      "?[]?[]![]!": Op<Modified<T>["?[]?[]!"]>["[]!"];
-      "?[]![]?[]?": Op<Modified<T>["?[]![]?"]>["[]?"];
-      "?[]![]?[]!": Op<Modified<T>["?[]![]?"]>["[]!"];
-      "?[]![]![]?": Op<Modified<T>["?[]![]!"]>["[]?"];
-      "?[]![]![]!": Op<Modified<T>["?[]![]!"]>["[]!"];
-      "![]?[]?[]?": Op<Modified<T>["![]?[]?"]>["[]?"];
-      "![]?[]?[]!": Op<Modified<T>["![]?[]?"]>["[]!"];
-      "![]?[]![]?": Op<Modified<T>["![]?[]!"]>["[]?"];
-      "![]?[]![]!": Op<Modified<T>["![]?[]!"]>["[]!"];
-      "![]![]?[]?": Op<Modified<T>["![]![]?"]>["[]?"];
-      "![]![]?[]!": Op<Modified<T>["![]![]?"]>["[]!"];
-      "![]![]![]?": Op<Modified<T>["![]![]!"]>["[]?"];
-      "![]![]![]!": Op<Modified<T>["![]![]!"]>["[]!"];
     }
 
     interface Assignable<T extends TypeProfile, D extends boolean, S extends SpecialValueType> {
@@ -59,24 +41,6 @@ declare module "./type-modifier" {
       "![]?[]!": Special<T, "![]?[]!", D, S> | Op<Assignable<T, false, S>["![]?"]>["[]!"];
       "![]![]?": Special<T, "![]![]?", D, S> | Op<Assignable<T, false, S>["![]!"]>["[]?"];
       "![]![]!": Special<T, "![]![]!", D, S> | Op<Assignable<T, false, S>["![]!"]>["[]!"];
-
-      // depth = 3
-      "?[]?[]?[]?": Special<T, "?[]?[]?[]?", D, S> | Op<Assignable<T, false, S>["?[]?[]?"]>["[]?"];
-      "?[]?[]?[]!": Special<T, "?[]?[]?[]!", D, S> | Op<Assignable<T, false, S>["?[]?[]?"]>["[]!"];
-      "?[]?[]![]?": Special<T, "?[]?[]![]?", D, S> | Op<Assignable<T, false, S>["?[]?[]!"]>["[]?"];
-      "?[]?[]![]!": Special<T, "?[]?[]![]!", D, S> | Op<Assignable<T, false, S>["?[]?[]!"]>["[]!"];
-      "?[]![]?[]?": Special<T, "?[]![]?[]?", D, S> | Op<Assignable<T, false, S>["?[]![]?"]>["[]?"];
-      "?[]![]?[]!": Special<T, "?[]![]?[]!", D, S> | Op<Assignable<T, false, S>["?[]![]?"]>["[]!"];
-      "?[]![]![]?": Special<T, "?[]![]![]?", D, S> | Op<Assignable<T, false, S>["?[]![]!"]>["[]?"];
-      "?[]![]![]!": Special<T, "?[]![]![]!", D, S> | Op<Assignable<T, false, S>["?[]![]!"]>["[]!"];
-      "![]?[]?[]?": Special<T, "![]?[]?[]?", D, S> | Op<Assignable<T, false, S>["![]?[]?"]>["[]?"];
-      "![]?[]?[]!": Special<T, "![]?[]?[]!", D, S> | Op<Assignable<T, false, S>["![]?[]?"]>["[]!"];
-      "![]?[]![]?": Special<T, "![]?[]![]?", D, S> | Op<Assignable<T, false, S>["![]?[]!"]>["[]?"];
-      "![]?[]![]!": Special<T, "![]?[]![]!", D, S> | Op<Assignable<T, false, S>["![]?[]!"]>["[]!"];
-      "![]![]?[]?": Special<T, "![]![]?[]?", D, S> | Op<Assignable<T, false, S>["![]![]?"]>["[]?"];
-      "![]![]?[]!": Special<T, "![]![]?[]!", D, S> | Op<Assignable<T, false, S>["![]![]?"]>["[]!"];
-      "![]![]![]?": Special<T, "![]![]![]?", D, S> | Op<Assignable<T, false, S>["![]![]!"]>["[]?"];
-      "![]![]![]!": Special<T, "![]![]![]!", D, S> | Op<Assignable<T, false, S>["![]![]!"]>["[]!"];
     }
   }
 }

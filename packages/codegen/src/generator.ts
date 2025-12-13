@@ -275,20 +275,21 @@ const collectTypeLevels = (
 };
 
 const buildTypeModifier = (levels: TypeLevel[]): TypeModifier => {
-  let modifier: TypeModifier | "" = "";
+  let modifier: TypeModifier = "?";
 
   for (const level of levels.slice().reverse()) {
     if (level.kind === "named") {
-      modifier = level.nonNull ? "!" : "";
+      // Inner type: always explicit nullable marker
+      modifier = level.nonNull ? "!" : "?";
       continue;
     }
 
-    const rest: TypeModifier | "" = modifier;
-    const base: TypeModifier = rest.startsWith("!") ? `![]${rest.slice(1)}` : `[]${rest}`;
-    modifier = level.nonNull ? `${base}!` : base;
+    // List type: append []? or []! based on list's nullability
+    const listSuffix = level.nonNull ? "[]!" : "[]?";
+    modifier = `${modifier}${listSuffix}` as TypeModifier;
   }
 
-  return modifier || "?";
+  return modifier;
 };
 
 const parseTypeReference = (type: TypeNode): { readonly name: string; readonly modifier: string } => {
@@ -370,34 +371,28 @@ const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinit
   return renderPropertyLines({ entries, indentSize: 8 });
 };
 
-const renderOutputRef = (
-  schema: SchemaIndex,
-  type: TypeNode,
-  args: readonly InputValueDefinitionNode[] | undefined,
-  directives: readonly ConstDirectiveNode[] | undefined,
-): string => {
+const renderOutputRef = (schema: SchemaIndex, type: TypeNode, args: readonly InputValueDefinitionNode[] | undefined): string => {
   const { name, modifier } = parseTypeReference(type);
   const modifiedType = renderType(name, modifier);
   const argumentMap = renderArgumentMap(schema, args);
-  const directiveMap = renderDirectives(directives);
 
   if (isScalarName(schema, name)) {
-    return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap} })`;
   }
 
   if (isEnumName(schema, name)) {
-    return `unsafeOutputType.enum(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.enum(${modifiedType}, { arguments: ${argumentMap} })`;
   }
 
   if (isUnionName(schema, name)) {
-    return `unsafeOutputType.union(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.union(${modifiedType}, { arguments: ${argumentMap} })`;
   }
 
   if (isObjectName(schema, name)) {
-    return `unsafeOutputType.object(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+    return `unsafeOutputType.object(${modifiedType}, { arguments: ${argumentMap} })`;
   }
 
-  return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap}, directives: ${directiveMap} })`;
+  return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap} })`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -413,7 +408,7 @@ const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; inden
 const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>): string => {
   const entries = Array.from(fields.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, field.directives)}`);
+    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments)}`);
 
   return renderPropertyLines({ entries, indentSize: 6 });
 };
@@ -429,7 +424,7 @@ const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDe
 const renderScalarDefinition = (record: ScalarRecord): string => {
   const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
   const scalarType = `type<{ input: ${typeInfo.input}; output: ${typeInfo.output} }>()`;
-  return `${record.name}: define("${record.name}").scalar(${scalarType}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").scalar(${scalarType})`;
 };
 
 const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -439,7 +434,7 @@ const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string =
   }
 
   const fields = renderObjectFields(schema, record.fields);
-  return `${record.name}: define("${record.name}").object(${fields}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").object(${fields})`;
 };
 
 const renderInputDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -449,7 +444,7 @@ const renderInputDefinition = (schema: SchemaIndex, typeName: string): string =>
   }
 
   const fields = renderInputFields(schema, record.fields);
-  return `${record.name}: define("${record.name}").input(${fields}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").input(${fields})`;
 };
 
 const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -464,7 +459,7 @@ const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => 
     .join(", ");
   const body = values.length === 0 ? "{}" : `{ ${values} }`;
 
-  return `${record.name}: define("${record.name}").enum(${body}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").enum(${body})`;
 };
 
 const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -479,7 +474,7 @@ const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string =>
     .join(", ");
   const body = members.length === 0 ? "{}" : `{ ${members} }`;
 
-  return `${record.name}: define("${record.name}").union(${body}, ${renderDirectives(record.directives)})`;
+  return `${record.name}: define("${record.name}").union(${body})`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>

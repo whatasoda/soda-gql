@@ -19,40 +19,25 @@ const schema = {
     subscription: "Subscription",
   }),
   scalar: {
-    ...defineScalar("ID", ({ type }) => ({
-      input: type<string>(),
-      output: type<string>(),
-      directives: {},
-    })),
-    ...defineScalar("String", ({ type }) => ({
-      input: type<string>(),
-      output: type<string>(),
-      directives: {},
-    })),
+    ...defineScalar<"ID", string, string>("ID"),
+    ...defineScalar<"String", string, string>("String"),
   },
   enum: {},
   input: {},
   object: {
-    Query: define("Query").object(
-      {
-        user: unsafeOutputType.object("User:!", {
-          arguments: {
-            id: unsafeInputType.scalar("ID:!", {}),
-          },
-          directives: {},
-        }),
-      },
-      {},
-    ),
-    Mutation: define("Mutation").object({}, {}),
-    Subscription: define("Subscription").object({}, {}),
-    User: define("User").object(
-      {
-        id: unsafeOutputType.scalar("ID:!", { directives: {} }),
-        name: unsafeOutputType.scalar("String:!", { directives: {} }),
-      },
-      {},
-    ),
+    Query: define("Query").object({
+      user: unsafeOutputType.object("User:!", {
+        arguments: {
+          id: unsafeInputType.scalar("ID:!", {}),
+        },
+      }),
+    }),
+    Mutation: define("Mutation").object({}),
+    Subscription: define("Subscription").object({}),
+    User: define("User").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      name: unsafeOutputType.scalar("String:!", {}),
+    }),
   },
   union: {},
 } satisfies AnyGraphqlSchema;
