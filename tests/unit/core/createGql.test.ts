@@ -13,6 +13,7 @@ import {
 import { createRuntimeAdapter } from "@soda-gql/core/runtime";
 
 const schema = {
+  label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
     mutation: "Mutation",

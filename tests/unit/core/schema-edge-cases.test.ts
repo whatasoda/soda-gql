@@ -8,6 +8,7 @@ describe("Schema Edge Cases", () => {
   describe("Non-existent field arguments", () => {
     it("should throw when requesting non-existent argument", () => {
       const schema = {
+        label: "test" as const,
         operations: {
           query: "Query" as const,
           mutation: null,
@@ -39,6 +40,7 @@ describe("Schema Edge Cases", () => {
   describe("Missing object types", () => {
     it("should handle missing object type in schema", () => {
       const schema = {
+        label: "test" as const,
         operations: {
           query: "Query" as const,
           mutation: null,
@@ -62,6 +64,7 @@ describe("Schema Edge Cases", () => {
   describe("Unsupported field types", () => {
     it("should handle unsupported field kind", () => {
       const schema = {
+        label: "test" as const,
         operations: {
           query: "Query" as const,
           mutation: null,
@@ -95,6 +98,7 @@ describe("Schema Edge Cases", () => {
   describe("Union with missing member types", () => {
     it("should handle union member types gracefully", () => {
       const schema = {
+        label: "test" as const,
         operations: {
           query: "Query" as const,
           mutation: null,
@@ -126,6 +130,7 @@ describe("Schema Edge Cases", () => {
   describe("Circular reference detection", () => {
     it("should handle circular references gracefully", () => {
       const schema = {
+        label: "test" as const,
         operations: {
           query: "Query" as const,
           mutation: null,

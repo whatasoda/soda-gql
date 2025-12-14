@@ -583,6 +583,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
     schemaBlocks.push(`${adapterDefinition}
 const ${schemaVar} = {
+  label: "${name}" as const,
   operations: defineOperationRoots({
     query: "${config.queryType}",
     mutation: "${config.mutationType}",
