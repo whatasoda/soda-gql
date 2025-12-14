@@ -57,7 +57,8 @@
       "!**/dist/**/*",
       "!**/tests/.tmp/**/*",
       "!**/.typecheck/**/*",
-      "!**/.cache/**/*"
+      "!**/.cache/**/*",
+      "!**/*.generated.ts"
     ],
     "ignoreUnknown": false
   },

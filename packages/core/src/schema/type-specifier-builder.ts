@@ -30,7 +30,7 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
     const TDefaultFactory extends (() => ConstValue) | null = null,
     const TDirectives extends AnyConstDirectiveAttachments = {},
   >(
-    type: ModifiedTypeName<TName, TModifier>,
+    type: ModifiedTypeName<[string], TName, TModifier>,
     extras: {
       default?: TDefaultFactory;
       directives?: TDirectives;
@@ -59,7 +59,7 @@ const createUnsafeOutputTypeSpecifierFactory = <const TKind extends OutputTypeKi
   };
 
   return <const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers = {}>(
-    type: ModifiedTypeName<TName, TModifier>,
+    type: ModifiedTypeName<[string], TName, TModifier>,
     extras: {
       arguments?: TArguments;
     },

@@ -1,6 +1,5 @@
 /** Canonical field selection types used by models and slices. */
 
-import type { Prettify } from "../../utils/prettify";
 import type {
   AnyFieldName,
   AnyGraphqlSchema,
@@ -78,9 +77,9 @@ export type FieldSelectionTemplateOf<
   : never;
 
 /** Resolve the data shape produced by a set of field selections. */
-export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = Prettify<{
-  readonly [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
-}>;
+export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = {
+  [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
+};
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
@@ -91,7 +90,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
       ? ApplyTypeModifier<InferFields<TSchema, TNested>, TSpecifier["modifier"]>
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputUnionSpecifier;
+      type: infer TSpecifier extends OutputUnionSpecifier;
       union: infer TNested extends AnyNestedUnion;
     }
       ? ApplyTypeModifier<
@@ -100,7 +99,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
               ? never
               : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
           }[keyof TNested],
-          TRef["modifier"]
+          TSpecifier["modifier"]
         >
       : never)
   | (TSelection extends {

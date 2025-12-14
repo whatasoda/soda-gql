@@ -49,7 +49,7 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
         const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
         const TDirectives extends AnyConstDirectiveAttachments = {},
       >(
-        type: ModifiedTypeName<TTypeName, TModifier>,
+        type: ModifiedTypeName<[keyof TSchema[TKind] & string], TTypeName, TModifier>,
         extras?: {
           default?:
             | (TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>))

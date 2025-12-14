@@ -1,17 +1,20 @@
 interface Entry {
-  key: string;
+  label: string;
   inner: string;
   outer: string;
+  modifier: string;
 }
 
 function* generateEntriesForDepth (depth: number): Generator<Entry> {
   const width = depth + 1;
   for (let i = 0; i < 2 ** width; i++) {
-    const segments = i.toString(2).padStart(width, "0").split("").map((num) => num === "1" ? "!" : "?");
+    const label = i.toString(2).padStart(width, "0");
+    const segments = label.split("").map((num) => num === "1" ? "?" : "!");
     yield {
-      key: (segments.join("[]")),
-      inner: (segments.slice(0, -1).join("[]")),
-      outer: ["", segments[segments.length - 1]].join("[]"),
+      label,
+      inner: label.slice(0, -1),
+      outer: label.slice(-1),
+      modifier: segments.join("[]"),
     };
   }
 }
@@ -34,31 +37,57 @@ function embedEntries({ from, to }: { from: number; to: number; }) {
   }
 }
 
-const DEPTH = 2;
+const DEPTH = 3;
 const OUTPUT = "packages/core/src/types/schema/type-modifier.generated.ts";
 
 const content = `\
 type Maybe<T> = T | null | undefined;
 
 interface Op<T> {
-  "[]?": Maybe<T[]>;
-  "[]!": T[];
+  0: T[];
+  1: Maybe<T[]>;
 }
 
 declare module "./type-modifier" {
   export namespace TypeModifierNS {
-    interface Modified<T> {
+    namespace Modified_ {
+      // depth = 0
+      export type _0<T> = T;
+      export type _1<T> = T | null | undefined;
+
 ${embedEntries({ from: 1, to: DEPTH })`
-      ${({ key, inner, outer }) => `"${key}": Op<Modified<T>["${inner}"]>["${outer}"];`}
+      ${({ label, inner, outer }) => `export type _${label}<T> = Op<_${inner}<T>>[${outer}];`}
 `}
     }
 
-    interface Assignable<T extends TypeProfile, D extends boolean, S extends SpecialValueType> {
+    export type Modified__<T, M extends TypeModifier> =
+${embedEntries({ from: 0, to: DEPTH })`
+      ${({ label, modifier }) => `M extends "${modifier}" ? Modified_._${label}<T> :`}
+`}
+      never;
+
+    namespace Assignable_ {
+      // depth = 0
+      export type _0<T extends TypeProfile, D extends boolean, S extends SpecialValueType> = Special<T, "!", D, S> | Modified_._0<T["value"]>;
+      export type _1<T extends TypeProfile, D extends boolean, S extends SpecialValueType> = Special<T, "?", D, S> | Modified_._1<T["value"]>;
+    
 ${embedEntries({ from: 1, to: DEPTH })`
-      ${({ key, inner, outer }) => `"${key}": Special<T, "${key}", D, S> | Op<Assignable<T, false, S>["${inner}"]>["${outer}"];`}
+      ${({ label, inner, outer, modifier }) => `export type _${label}<T extends TypeProfile, D extends boolean, S extends SpecialValueType> = Special<T, "${modifier}", D, S> | Op<_${inner}<T, false, S>>[${outer}];`}
 `}
     }
+
+    export type Assignable__<T extends TypeProfile, D extends boolean, S extends SpecialValueType, M extends TypeModifier> =
+${embedEntries({ from: 0, to: DEPTH })`
+      ${({ label, modifier }) => `M extends "${modifier}" ? Assignable_._${label}<T, D, S> :`}
+`}
+      never;
+
+    export type ValidTypeModifier =
+${embedEntries({ from: 0, to: DEPTH })`
+        ${({ modifier }) => `| "${modifier}"`}
+`}
   }
+
 }
 
 export {};
