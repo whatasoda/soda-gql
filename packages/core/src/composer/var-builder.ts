@@ -34,7 +34,7 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
               default: ReturnType<NonNullable<TDefaultFn>>;
             };
         directives: TDirectives;
-      } & {};
+      };
 
       return <
         const TTypeName extends keyof TSchema[TKind] & string,

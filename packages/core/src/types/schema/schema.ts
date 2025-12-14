@@ -96,25 +96,30 @@ export type UnionDefinition = {
   readonly types: { [typename: string]: true };
 };
 
-export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = [
-  TSpecifier extends InputScalarSpecifier
-    ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
-    : TSpecifier extends InputEnumSpecifier
-      ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
-      : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-        ? {
-            [K in keyof TFields]: TFields[K] extends InputTypeSpecifier ? InferInputProfile<TSchema, TFields[K]> : never;
-          }
-        : never,
-  TSpecifier["modifier"],
-  TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
-];
+export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = {
+  [_ in TSchema["label"]]: [
+    TSpecifier extends InputScalarSpecifier
+      ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
+      : TSpecifier extends InputEnumSpecifier
+        ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
+        : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
+          ? {
+              [K in keyof TFields]: TFields[K] extends InputTypeSpecifier ? InferInputProfile<TSchema, TFields[K]> : never;
+            }
+          : never,
+    TSpecifier["modifier"],
+    TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+  ]
+}[TSchema["label"]];
 
-export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = [
+export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = 
+{
+  [_ in TSchema["label"]]: [
   (TSpecifier extends OutputScalarSpecifier
     ? TSchema["scalar"][TSpecifier["name"]]
     : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
-];
+  ]
+}[TSchema["label"]];
 
 export type PickTypeSpecifierByFieldName<
   TSchema extends AnyGraphqlSchema,

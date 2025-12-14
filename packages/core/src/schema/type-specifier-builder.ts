@@ -22,7 +22,7 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
     modifier: TModifier;
     defaultValue: TDefaultFactory extends null ? null : { default: ReturnType<NonNullable<TDefaultFactory>> };
     directives: TDirectives;
-  } & {};
+  };
 
   return <
     const TName extends string,
@@ -55,7 +55,7 @@ const createUnsafeOutputTypeSpecifierFactory = <const TKind extends OutputTypeKi
     name: TName;
     modifier: TModifier;
     arguments: TArguments;
-  } & {};
+  };
 
   return <const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers = {}>(
     type: ModifiedTypeName<[string], TName, TModifier>,
