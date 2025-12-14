@@ -1,22 +1,9 @@
-import type { TypeModifier, TypeProfile } from "./common";
 import type { ConstValue } from "./const-value";
-import type { ApplyTypeModifier } from "./type-modifier.generated";
-import type { InputTypeSpecifier } from "./type-specifier";
+import type { TypeProfile } from "./type-profile";
 
-/** Nominal reference placeholder used inside `AnyVariableAssignments`. */
-export type AnyVarRef = VarRef<any>;
-
-interface AnyVarRefMeta {
-  readonly kind: string;
-  readonly name: string;
+export interface AnyVarRefMeta {
+  readonly profile: TypeProfile;
   readonly signature: unknown;
-}
-
-export type VarRefBy<TSpecifier extends InputTypeSpecifier> = VarRef<VarRefMeta<TSpecifier>>;
-interface VarRefMeta<TSpecifier extends InputTypeSpecifier> {
-  readonly kind: TSpecifier["kind"];
-  readonly name: TSpecifier["name"];
-  readonly signature: ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TSpecifier["modifier"]>;
 }
 
 type VarRefInner =
@@ -29,31 +16,31 @@ type VarRefInner =
       value: ConstValue;
     };
 
+export type AnyVarRef = VarRef<any>;
+
 declare const __VAR_REF_BRAND__: unique symbol;
-/** Nominal reference used to defer variable binding while carrying type info. */
 export class VarRef<TMeta extends AnyVarRefMeta> {
   declare readonly [__VAR_REF_BRAND__]: TMeta;
 
-  private constructor(private readonly inner: VarRefInner) {}
-
-  static createForVariable<TSpecifier extends InputTypeSpecifier>(name: string): VarRef<VarRefMeta<TSpecifier>> {
-    return new VarRef<VarRefMeta<TSpecifier>>({ type: "variable", name });
-  }
-
-  static createForConstValue<TSpecifier extends InputTypeSpecifier>(value: ConstValue): VarRef<VarRefMeta<TSpecifier>> {
-    return new VarRef<VarRefMeta<TSpecifier>>({ type: "const-value", value });
-  }
+  constructor(private readonly inner: VarRefInner) {}
 
   static getInner(varRef: AnyVarRef): VarRefInner {
     return varRef.inner;
   }
 }
 
-export type AssignableVarRef<TType extends TypeProfile, TModifier extends TypeModifier, TWithDefault extends boolean> = VarRef<{
-  readonly kind: TType["kind"];
-  readonly name: TType["name"];
-  readonly signature:
-    | ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TModifier>
-    // NOTE: Allow undefined for arguments with default value
-    | (TWithDefault extends true ? undefined : never);
-}>;
+export const isVarRef = (value: unknown): value is AnyVarRef => {
+  return typeof value === "object" && value !== null && value instanceof VarRef;
+};
+
+export const createVarRefFromVariable = <TProfile extends TypeProfile.WithMeta>(name: string) => {
+  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "variable", name });
+};
+
+export const createVarRefFromConstValue = <TProfile extends TypeProfile.WithMeta>(value: ConstValue) => {
+  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "const-value", value });
+};
+
+export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
+  return VarRef.getInner(varRef);
+};

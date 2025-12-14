@@ -10,7 +10,7 @@ import type {
   AnyFields,
   AnyNestedObject,
   AnyNestedUnion,
-  AssignableInput,
+  AssigningInput,
   FieldSelectionTemplateOf,
 } from "../fragment";
 import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "../schema";
@@ -54,7 +54,7 @@ export type FieldsBuilderTools<
   TVariableDefinitions extends InputTypeSpecifiers,
 > = {
   f: FieldSelectionFactories<TSchema, TTypeName>;
-  $: AssignableInput<TSchema, TVariableDefinitions>;
+  $: AssigningInput<TSchema, TVariableDefinitions>;
 };
 
 /** Narrow builder used when a field resolves to an object and we need nested selections. */

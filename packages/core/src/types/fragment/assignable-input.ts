@@ -4,6 +4,7 @@ import type {
   AnyVarRef,
   ConstValue,
   GetAssignableType,
+  GetAssigningType,
   InputTypeSpecifier,
   InputTypeSpecifiers,
 } from "../type-foundation";
@@ -18,6 +19,10 @@ export type AnyAssignableInputValue =
 
 export type AnyAssignableInput = {
   readonly [key: string]: AnyAssignableInputValue;
+};
+
+export type AnyAssigningInput = {
+  readonly [key: string]: AnyVarRef;
 };
 
 type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] extends `${string}?`
@@ -39,10 +44,12 @@ export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extend
 };
 
 export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
-  InferInputProfile<TSchema, TSpecifier>,
-  TSpecifier["modifier"],
-  InputTypeSpecifier["defaultValue"] extends AnyDefaultValue ? true : false
+  InferInputProfile<TSchema, TSpecifier>
 >;
+
+export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
+  readonly [K in keyof TSpecifiers]-?: GetAssigningType<InferInputProfile<TSchema, TSpecifiers[K]>>;
+};
 
 export type AssignableInputByFieldName<
   TSchema extends AnyGraphqlSchema,

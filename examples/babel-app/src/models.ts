@@ -7,7 +7,7 @@ import { gql } from "@/graphql-system";
 export const userModel = gql.default(({ model }, { $ }) =>
   model.User(
     {
-      variables: [$("categoryId").scalar("ID:?")],
+      variables: [$("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //

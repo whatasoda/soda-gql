@@ -1,5 +1,6 @@
 import type { WithTypeMeta } from "../../utils/type-meta";
 import type {
+  AnyDefaultValue,
   InputEnumSpecifier,
   InputScalarSpecifier,
   InputTypeSpecifier,
@@ -8,6 +9,7 @@ import type {
   OutputScalarSpecifier,
   OutputTypeSpecifiers,
   OutputUnionSpecifier,
+  TypeProfile,
 } from "../type-foundation";
 
 export type OperationType = keyof OperationRoots;
@@ -19,7 +21,7 @@ export type AnyGraphqlSchema = {
   readonly operations: OperationRoots;
   readonly scalar: { readonly [name: string]: ScalarDefinition<any> };
   readonly enum: { readonly [name: string]: EnumDefinition<any> };
-  readonly input: { readonly [name: string]: InputDefinition<any> };
+  readonly input: { readonly [name: string]: InputDefinition };
   readonly object: { readonly [name: string]: ObjectDefinition };
   readonly union: { readonly [name: string]: UnionDefinition };
   // directives: {
@@ -73,21 +75,13 @@ export interface EnumDefinition<T extends { name: string; values: string }>
   readonly values: { readonly [_ in T["values"]]: true };
 }
 
-export interface InputDefinition<T extends { name: string; value: unknown }>
-  extends WithTypeMeta<{
-    value: T["value"];
-    inputProfile: {
-      kind: "input";
-      name: T["name"];
-      value: T["value"];
-    };
-  }> {
-  readonly name: T["name"];
+export interface InputDefinition {
+  readonly name: string;
+
+  readonly fields: InputTypeSpecifiers;
 
   // TODO: implement
   // oneOf: boolean;
-
-  readonly fields: InputTypeSpecifiers;
 }
 
 export type ObjectDefinition = {
@@ -102,17 +96,25 @@ export type UnionDefinition = {
   readonly types: { [typename: string]: true };
 };
 
-export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = /* */
-(TSpecifier extends InputScalarSpecifier
-  ? TSchema["scalar"][TSpecifier["name"]]
-  : TSpecifier extends InputEnumSpecifier
-    ? TSchema["enum"][TSpecifier["name"]]
-    : TSchema["input"][TSpecifier["name"]])["$type"]["inputProfile"];
+export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = [
+  TSpecifier extends InputScalarSpecifier
+    ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
+    : TSpecifier extends InputEnumSpecifier
+      ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
+      : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
+        ? {
+            [K in keyof TFields]: TFields[K] extends InputTypeSpecifier ? InferInputProfile<TSchema, TFields[K]> : never;
+          }
+        : never,
+  TSpecifier["modifier"],
+  TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+];
 
-export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = /* */
-(TSpecifier extends OutputScalarSpecifier
-  ? TSchema["scalar"][TSpecifier["name"]]
-  : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"];
+export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = [
+  (TSpecifier extends OutputScalarSpecifier
+    ? TSchema["scalar"][TSpecifier["name"]]
+    : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
+];
 
 export type PickTypeSpecifierByFieldName<
   TSchema extends AnyGraphqlSchema,

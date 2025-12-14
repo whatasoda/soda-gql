@@ -11,7 +11,7 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
       variables: [
         //
         $("userId").scalar("ID:!"),
-        $("categoryId").scalar("ID:?"),
+        $("categoryId").scalar("ID:!"),
       ],
     },
     ({ $ }) => ({

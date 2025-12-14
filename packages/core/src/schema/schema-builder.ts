@@ -6,7 +6,6 @@ import type {
   ScalarDefinition,
   UnionDefinition,
 } from "../types/schema";
-import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { withTypeMeta } from "../utils/type-meta";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { unsafeOutputType } from "./type-specifier-builder";
@@ -28,11 +27,11 @@ export const define = <const TName extends string>(name: TName) => ({
       values: Extract<keyof TValues, string>;
     }>,
 
-  input: <TInput extends object>(fields: InputTypeSpecifiers) =>
-    withTypeMeta({ name, fields }) satisfies InputDefinition<{
-      name: TName;
-      value: TInput;
-    }>,
+  input: <TFields extends InputDefinition["fields"]>(fields: TFields) =>
+    ({
+      name,
+      fields,
+    }) satisfies InputDefinition,
 
   object: <TFields extends ObjectDefinition["fields"]>(fields: TFields) =>
     ({

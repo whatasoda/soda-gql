@@ -1,5 +1,5 @@
-import type { TypeModifier } from "./common";
 import type { ConstValue } from "./const-value";
+import type { TypeModifier } from "./type-modifier-core.generated";
 
 export type AnyDefaultValue = { default: ConstValue };
 
@@ -24,6 +24,7 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
 export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier;
+export type InputInferrableTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier;
 export type InputScalarSpecifier = AbstractInputTypeSpecifier<"scalar">;
 export type InputEnumSpecifier = AbstractInputTypeSpecifier<"enum">;
 export type InputInputObjectSpecifier = AbstractInputTypeSpecifier<"input">;

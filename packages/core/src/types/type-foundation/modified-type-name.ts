@@ -1,5 +1,4 @@
-import type { TypeModifier } from "./common";
-import type { ValidTypeModifier } from "./type-modifier.generated";
+import type { TypeModifier, ValidTypeModifier } from "./type-modifier-core.generated";
 
 export type ModifiedTypeName<
   // Wrapping by array to avoid type distribution
@@ -12,7 +11,7 @@ export type ModifiedTypeName<
     ? // First, user inputs TName based on TNameCandidate
       NoInfer<`${TNameCandidate[0]}`> | (TName & NoInfer<TypeModifier extends TModifier ? never : string>)
     : // With valid TName, user can input TModifier based on TypeModifierNS.ValidTypeModifier
-      `${TName}:${TModifier & ValidTypeModifier}` | `${TName}:${Extract<ValidTypeModifier, `${TModifier}${string}`>}`;
+      `${TName}:${TModifier & ValidTypeModifier}`;
 
 export function parseModifiedTypeName<TNameCandidate extends [string], TName extends string, TModifier extends TypeModifier>(
   nameAndModifier: ModifiedTypeName<TNameCandidate, TName, TModifier>,

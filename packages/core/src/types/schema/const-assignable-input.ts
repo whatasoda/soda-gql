@@ -1,4 +1,11 @@
-import type { AnyDefaultValue, ConstValue, GetModifiedType, InputTypeSpecifier, InputTypeSpecifiers } from "../type-foundation";
+import type {
+  AnyDefaultValue,
+  ConstValue,
+  GetConstAssignableType,
+  GetModifiedType,
+  InputTypeSpecifier,
+  InputTypeSpecifiers,
+} from "../type-foundation";
 import type { AnyGraphqlSchema, InferInputProfile } from "./schema";
 
 export type AnyConstAssignableInputValue = ConstValue;
@@ -24,6 +31,7 @@ export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers e
   >;
 };
 
-export type ConstAssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> =
-  | (TSpecifier extends { defaultValue: null } ? never : undefined)
-  | GetModifiedType<InferInputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>;
+export type ConstAssignableInputValue<
+  TSchema extends AnyGraphqlSchema,
+  TSpecifier extends InputTypeSpecifier,
+> = GetConstAssignableType<InferInputProfile<TSchema, TSpecifier>> & {};
