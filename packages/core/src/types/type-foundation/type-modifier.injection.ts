@@ -1,2 +1,2 @@
-export { TypeModifier, TypeProfile } from "./common";
-export { AssignableVarRef } from "./var-ref";
+export type { TypeModifier, TypeProfile } from "./common";
+export type { AssignableVarRef } from "./var-ref";

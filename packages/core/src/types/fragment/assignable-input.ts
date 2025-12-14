@@ -1,5 +1,12 @@
-import type { ConstValue, AnyVarRef, GetAssignableType, AnyDefaultValue, InputTypeSpecifier, InputTypeSpecifiers, } from "../type-foundation";
 import type { AnyGraphqlSchema, InferInputProfile } from "../schema/schema";
+import type {
+  AnyDefaultValue,
+  AnyVarRef,
+  ConstValue,
+  GetAssignableType,
+  InputTypeSpecifier,
+  InputTypeSpecifiers,
+} from "../type-foundation";
 
 export type AnyAssignableInputValue =
   | ConstValue
