@@ -1,6 +1,7 @@
-import type { ConstValue } from "../schema/const-value";
-import type { ApplyTypeModifier, TypeModifier } from "../schema/type-modifier";
-import type { InputTypeSpecifier } from "../schema/type-specifier";
+import type { TypeModifier, TypeProfile } from "./common";
+import type { ConstValue } from "./const-value";
+import type { ApplyTypeModifier } from "./type-modifier.generated";
+import type { InputTypeSpecifier } from "./type-specifier";
 
 /** Nominal reference placeholder used inside `AnyVariableAssignments`. */
 export type AnyVarRef = VarRef<any>;
@@ -48,17 +49,11 @@ export class VarRef<TMeta extends AnyVarRefMeta> {
   }
 }
 
-declare module "../schema/type-modifier" {
-  export namespace TypeModifierNS {
-    interface SpecialValueFactory<TType extends TypeProfile, TModifier extends TypeModifier, TWithDefault extends boolean> {
-      var: VarRef<{
-        readonly kind: TType["kind"];
-        readonly name: TType["name"];
-        // NOTE: Allow undefined for arguments with default value
-        readonly signature:
-          | ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TModifier>
-          | (TWithDefault extends true ? undefined : never);
-      }>;
-    }
-  }
-}
+export type AssignableVarRef<TType extends TypeProfile, TModifier extends TypeModifier, TWithDefault extends boolean> = VarRef<{
+  readonly kind: TType["kind"];
+  readonly name: TType["name"];
+  readonly signature:
+    | ApplyTypeModifier<"[MODIFIER_SIGNATURE]", TModifier>
+    // NOTE: Allow undefined for arguments with default value
+    | (TWithDefault extends true ? undefined : never);
+}>;

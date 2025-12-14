@@ -1,6 +1,5 @@
-import type { AnyConstDirectiveAttachments } from "./const-directives";
+import type { TypeModifier } from "./common";
 import type { ConstValue } from "./const-value";
-import type { TypeModifier } from "./type-modifier";
 
 export type AnyDefaultValue = { default: ConstValue };
 
@@ -11,7 +10,7 @@ export type AnyTypeSpecifier = {
   readonly kind: string;
   readonly name: string;
   readonly modifier: TypeModifier;
-  readonly directives?: AnyConstDirectiveAttachments;
+  // readonly directives?: AnyConstDirectiveAttachments;
   readonly defaultValue?: AnyDefaultValue | null;
   readonly arguments?: InputTypeSpecifiers;
 };
@@ -20,7 +19,7 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly kind: TKind;
   readonly name: string;
   readonly modifier: TypeModifier;
-  readonly directives: AnyConstDirectiveAttachments;
+  // readonly directives: AnyConstDirectiveAttachments;
   readonly defaultValue: AnyDefaultValue | null;
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };

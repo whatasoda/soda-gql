@@ -1,13 +1,8 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
-import type {
-  AnyConstAssignableInput,
-  AnyGraphqlSchema,
-  ConstAssignableInput,
-  InputTypeSpecifiers,
-  OperationType,
-} from "../schema";
+import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
+import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
 export type AnyInlineOperation =

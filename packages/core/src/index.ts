@@ -4,7 +4,7 @@ export * from "./types/element";
 export type * from "./types/fragment";
 export * from "./types/runtime";
 export type * from "./types/schema";
-export type * from "./types/schema/const-value";
+export type * from "./types/type-foundation/const-value";
 export type * from "./utils/empty-object";
 export type * from "./utils/hidden";
 export type * from "./utils/prettify";

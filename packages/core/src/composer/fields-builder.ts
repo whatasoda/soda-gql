@@ -10,15 +10,14 @@ import {
   type NestedUnionFieldsBuilder,
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
+import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
 import type {
-  AnyGraphqlSchema,
   OutputEnumSpecifier,
   OutputObjectSpecifier,
   OutputScalarSpecifier,
   OutputTypenameSpecifier,
   OutputUnionSpecifier,
-  UnionMemberName,
-} from "../types/schema";
+} from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 

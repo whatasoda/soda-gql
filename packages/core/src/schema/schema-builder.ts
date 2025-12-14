@@ -1,12 +1,12 @@
 import type {
   EnumDefinition,
   InputDefinition,
-  InputTypeSpecifiers,
   ObjectDefinition,
   OperationRoots,
   ScalarDefinition,
   UnionDefinition,
 } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { withTypeMeta } from "../utils/type-meta";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { unsafeOutputType } from "./type-specifier-builder";

@@ -1,5 +1,6 @@
 import { type AnyAssignableInput, type AssignableInput, VarRef } from "../types/fragment";
-import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import type { UnionToIntersection } from "../utils/type-utils";
 

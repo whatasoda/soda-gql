@@ -2,17 +2,11 @@
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
-import type { Prettify } from "../../utils/prettify";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
-import type {
-  AnyConstAssignableInput,
-  AnyGraphqlSchema,
-  ConstAssignableInput,
-  InputTypeSpecifiers,
-  OperationType,
-} from "../schema";
+import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
+import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 import type { AnySlicePayloads } from "./slice";
 
@@ -152,20 +146,19 @@ export type ProjectionPathGraphNode = {
   readonly children: { readonly [segment: string]: ProjectionPathGraphNode };
 };
 
-export type ConcatSlicePayloads<TSlicePayloads extends AnySlicePayloads> = Prettify<
-  UnionToIntersection<
-    {
-      [TLabel in keyof TSlicePayloads & string]: TSlicePayloads[TLabel] extends { getFields: () => infer TFields }
-        ? { [K in keyof TFields & string as `${TLabel}_${K}`]: TFields[K] }
-        : {};
-    }[keyof TSlicePayloads & string]
-  >
+export type ConcatSlicePayloads<TSlicePayloads extends AnySlicePayloads> = UnionToIntersection<
+  {
+    [TLabel in keyof TSlicePayloads & string]: TSlicePayloads[TLabel] extends { getFields: () => infer TFields }
+      ? { [K in keyof TFields & string as `${TLabel}_${K}`]: TFields[K] }
+      : {};
+  }[keyof TSlicePayloads & string]
 > &
   AnyFields;
 
-export type InferComposedOperationRawData<TSchema extends AnyGraphqlSchema, TSlicePayloads extends AnySlicePayloads> = Prettify<
-  InferFields<TSchema, ConcatSlicePayloads<TSlicePayloads>>
->;
+export type InferComposedOperationRawData<
+  TSchema extends AnyGraphqlSchema,
+  TSlicePayloads extends AnySlicePayloads,
+> = InferFields<TSchema, ConcatSlicePayloads<TSlicePayloads>>;
 
 export type ComposedOperationDefinitionBuilder<
   TSchema extends AnyGraphqlSchema,

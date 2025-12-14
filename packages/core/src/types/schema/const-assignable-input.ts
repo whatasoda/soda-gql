@@ -1,7 +1,5 @@
-import type { ConstValue } from "./const-value";
+import type { AnyDefaultValue, ConstValue, GetModifiedType, InputTypeSpecifier, InputTypeSpecifiers } from "../type-foundation";
 import type { AnyGraphqlSchema, InferInputProfile } from "./schema";
-import type { GetModifiedType } from "./type-modifier";
-import type { AnyDefaultValue, InputTypeSpecifier, InputTypeSpecifiers } from "./type-specifier";
 
 export type AnyConstAssignableInputValue = ConstValue;
 export type AnyConstAssignableInput = {

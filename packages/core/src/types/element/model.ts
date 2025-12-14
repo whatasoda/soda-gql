@@ -3,7 +3,8 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
-import type { AnyGraphqlSchema, InputTypeSpecifiers } from "../schema";
+import type { AnyGraphqlSchema } from "../schema";
+import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;

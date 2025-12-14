@@ -8,13 +8,14 @@ import type {
   OutputScalarSpecifier,
   OutputTypeSpecifiers,
   OutputUnionSpecifier,
-} from "./type-specifier";
+} from "../type-foundation";
 
 export type OperationType = keyof OperationRoots;
 export type AnyTypeName = string;
 export type AnyFieldName = string;
 
 export type AnyGraphqlSchema = {
+  readonly label: string;
   readonly operations: OperationRoots;
   readonly scalar: { readonly [name: string]: ScalarDefinition<any> };
   readonly enum: { readonly [name: string]: EnumDefinition<any> };

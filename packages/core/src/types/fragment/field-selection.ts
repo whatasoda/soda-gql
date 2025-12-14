@@ -1,18 +1,14 @@
 /** Canonical field selection types used by models and slices. */
 
+import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputProfile, PickTypeSpecifierByFieldName } from "../schema";
 import type {
-  AnyFieldName,
-  AnyGraphqlSchema,
-  AnyTypeName,
   ApplyTypeModifier,
   GetModifiedType,
-  InferOutputProfile,
   OutputInferrableTypeSpecifier,
   OutputObjectSpecifier,
   OutputTypeSpecifier,
   OutputUnionSpecifier,
-  PickTypeSpecifierByFieldName,
-} from "../schema";
+} from "../type-foundation";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
 
@@ -78,8 +74,10 @@ export type FieldSelectionTemplateOf<
 
 /** Resolve the data shape produced by a set of field selections. */
 export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = {
-  [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
-};
+  [_ in TSchema["label"]]: {
+    [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
+  } & {};
+}[TSchema["label"]];
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =

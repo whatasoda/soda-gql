@@ -8,7 +8,8 @@ import {
 } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
-import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";

@@ -22,8 +22,8 @@ import {
   type InferFields,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeSpecifiers, OperationType, TypeModifier } from "../types/schema";
-import type { ConstValue } from "../types/schema/const-value";
+import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
+import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {

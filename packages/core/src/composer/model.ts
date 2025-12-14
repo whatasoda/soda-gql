@@ -1,6 +1,7 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
 import type { AnyFields, InferFields } from "../types/fragment";
-import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } from "./input";

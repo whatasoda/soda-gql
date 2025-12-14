@@ -1,5 +1,5 @@
+import type { AnyConstDirectiveAttachments } from "../types/schema";
 import {
-  type AnyConstDirectiveAttachments,
   type AnyTypeSpecifier,
   type InputTypeKind,
   type InputTypeSpecifiers,
@@ -7,8 +7,8 @@ import {
   type OutputTypeKind,
   parseModifiedTypeName,
   type TypeModifier,
-} from "../types/schema";
-import type { ConstValue } from "../types/schema/const-value";
+} from "../types/type-foundation";
+import type { ConstValue } from "../types/type-foundation/const-value";
 
 const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind>(kind: TKind) => {
   type UnsafeInputTypeSpecifier<
@@ -40,7 +40,6 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
       kind,
       ...parseModifiedTypeName(type),
       defaultValue: extras.default ? { default: extras.default() } : null,
-      directives: extras.directives ?? ({} as TDirectives),
     }) satisfies AnyTypeSpecifier as UnsafeInputTypeSpecifier<TName, TModifier, TDefaultFactory, TDirectives>;
 };
 
