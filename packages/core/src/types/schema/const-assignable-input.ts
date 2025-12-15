@@ -2,7 +2,6 @@ import type {
   AnyDefaultValue,
   ConstValue,
   GetConstAssignableType,
-  GetModifiedType,
   InputTypeSpecifier,
   InputTypeSpecifiers,
 } from "../type-foundation";

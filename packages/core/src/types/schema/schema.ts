@@ -109,16 +109,15 @@ export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier exten
           : never,
     TSpecifier["modifier"],
     TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
-  ]
+  ];
 }[TSchema["label"]];
 
-export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = 
-{
+export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
   [_ in TSchema["label"]]: [
-  (TSpecifier extends OutputScalarSpecifier
-    ? TSchema["scalar"][TSpecifier["name"]]
-    : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
-  ]
+    (TSpecifier extends OutputScalarSpecifier
+      ? TSchema["scalar"][TSpecifier["name"]]
+      : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
+  ];
 }[TSchema["label"]];
 
 export type PickTypeSpecifierByFieldName<

@@ -3,7 +3,7 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { UnionToIntersection } from "../../utils/type-utils";
-import type { AnyFields, AssignableInput, AssigningInput, InferFields } from "../fragment";
+import type { AnyFields, AssigningInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
