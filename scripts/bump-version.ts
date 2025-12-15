@@ -162,8 +162,7 @@ const createCommitAndPR = async (
 ## Changes
 - Updated root package.json
 - Updated all packages in packages/ directory
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)`;
+`;
 
   await $`gh pr create --title ${commitMessage} --body ${prBody} --base main`;
 };
