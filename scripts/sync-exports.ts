@@ -29,16 +29,16 @@ async function validateSourceFile(packageDir: string, sourcePath: string): Promi
   }
 }
 
-function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.ts"): string {
+function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.mts"): string {
   const withoutSrc = sourcePath.replace(/^\.\/src\//, "./dist/");
   const withoutExt = withoutSrc.replace(/\.(ts|tsx|mts|cts)$/, "");
-  return ext === "d.ts" ? `${withoutExt}.d.ts` : `${withoutExt}.${ext}`;
+  return ext === "d.mts" ? `${withoutExt}.d.mts` : `${withoutExt}.${ext}`;
 }
 
 function generateExportsEntry(sourcePath: string) {
   return {
     development: sourcePath,
-    types: sourceToDistPath(sourcePath, "d.ts"),
+    types: sourceToDistPath(sourcePath, "d.mts"),
     import: sourceToDistPath(sourcePath, "mjs"),
     require: sourceToDistPath(sourcePath, "cjs"),
     default: sourceToDistPath(sourcePath, "mjs"),
@@ -117,7 +117,7 @@ async function syncPackageExports(
   if (defaultExport) {
     packageJson.main = sourceToDistPath(defaultExport, "mjs");
     packageJson.module = sourceToDistPath(defaultExport, "mjs");
-    packageJson.types = sourceToDistPath(defaultExport, "d.ts");
+    packageJson.types = sourceToDistPath(defaultExport, "d.mts");
   }
 
   packageJson.exports = exports;

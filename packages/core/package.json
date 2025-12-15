@@ -14,18 +14,18 @@
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
     "./runtime": {
       "development": "./src/runtime/index.ts",
-      "types": "./dist/runtime/index.d.ts",
+      "types": "./dist/runtime/index.d.mts",
       "import": "./dist/runtime/index.mjs",
       "require": "./dist/runtime/index.cjs",
       "default": "./dist/runtime/index.mjs"
