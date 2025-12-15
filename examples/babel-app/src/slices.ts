@@ -7,7 +7,7 @@ import { userModel } from "./models";
 export const userSlice = gql.default(({ query }, { $ }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //

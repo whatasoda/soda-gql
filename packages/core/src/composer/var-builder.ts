@@ -1,12 +1,5 @@
-import {
-  type AnyConstDirectiveAttachments,
-  type AnyGraphqlSchema,
-  type AnyTypeSpecifier,
-  type ConstAssignableInputValue,
-  type ModifiedTypeName,
-  parseModifiedTypeName,
-  type TypeModifier,
-} from "../types/schema";
+import type { AnyConstDirectiveAttachments, AnyGraphqlSchema, ConstAssignableInputValue } from "../types/schema";
+import { type AnyTypeSpecifier, type ModifiedTypeName, parseModifiedTypeName, type TypeModifier } from "../types/type-foundation";
 import { wrapByKey } from "../utils/wrap-by-key";
 
 type AssignableDefaultValue<
@@ -25,8 +18,8 @@ type AssignableDefaultValue<
 
 export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => {
   const $ = <TVarName extends string>(varName: TVarName) => {
-    const createRefBuilder = <TKind extends "scalar" | "enum" | "input">(kind: TKind) => {
-      type InputRef<
+    const createVarSpecifierBuilder = <TKind extends "scalar" | "enum" | "input">(kind: TKind) => {
+      type VarSpecifier<
         TTypeName extends keyof TSchema[TKind] & string,
         TModifier extends TypeModifier,
         TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null,
@@ -49,7 +42,7 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
         const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
         const TDirectives extends AnyConstDirectiveAttachments = {},
       >(
-        type: ModifiedTypeName<string, TTypeName, TModifier>,
+        type: ModifiedTypeName<[keyof TSchema[TKind] & string], TTypeName, TModifier>,
         extras?: {
           default?:
             | (TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>))
@@ -61,14 +54,13 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
           kind,
           ...parseModifiedTypeName(type),
           defaultValue: extras?.default ? { default: extras.default() } : null,
-          directives: extras?.directives ?? ({} as TDirectives),
-        } satisfies AnyTypeSpecifier as InputRef<TTypeName, TModifier, TDefaultFn, TDirectives>);
+        } satisfies AnyTypeSpecifier as VarSpecifier<TTypeName, TModifier, TDefaultFn, TDirectives>);
     };
 
     return {
-      scalar: createRefBuilder("scalar"),
-      enum: createRefBuilder("enum"),
-      input: createRefBuilder("input"),
+      scalar: createVarSpecifierBuilder("scalar"),
+      enum: createVarSpecifierBuilder("enum"),
+      input: createVarSpecifierBuilder("input"),
 
       byField: <
         const TTypeName extends keyof TSchema["object"] & string,

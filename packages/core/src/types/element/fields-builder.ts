@@ -10,20 +10,18 @@ import type {
   AnyFields,
   AnyNestedObject,
   AnyNestedUnion,
-  AssignableInput,
+  AssigningInput,
   FieldSelectionTemplateOf,
 } from "../fragment";
+import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "../schema";
 import type {
-  AnyGraphqlSchema,
   InputTypeSpecifiers,
-  ObjectFieldRecord,
   OutputEnumSpecifier,
   OutputObjectSpecifier,
   OutputScalarSpecifier,
   OutputTypenameSpecifier,
   OutputUnionSpecifier,
-  UnionMemberName,
-} from "../schema";
+} from "../type-foundation";
 
 export const mergeFields = <TFieldEntries extends AnyFields[]>(fields: TFieldEntries) =>
   Object.assign({}, ...fields) as MergeFields<TFieldEntries>;
@@ -56,7 +54,7 @@ export type FieldsBuilderTools<
   TVariableDefinitions extends InputTypeSpecifiers,
 > = {
   f: FieldSelectionFactories<TSchema, TTypeName>;
-  $: AssignableInput<TSchema, TVariableDefinitions>;
+  $: AssigningInput<TSchema, TVariableDefinitions>;
 };
 
 /** Narrow builder used when a field resolves to an object and we need nested selections. */

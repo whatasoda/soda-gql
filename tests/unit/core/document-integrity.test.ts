@@ -5,8 +5,7 @@ import {
   buildDocument,
   buildWithTypeModifier,
 } from "@soda-gql/core/composer/build-document";
-import type { TypeModifier } from "@soda-gql/core/types/schema/type-modifier";
-import type { InputTypeSpecifiers } from "@soda-gql/core/types/schema/type-specifier";
+import type { InputTypeSpecifiers, TypeModifier } from "@soda-gql/core/types/type-foundation";
 import { Kind } from "graphql";
 
 describe("Document Integrity Tests", () => {
@@ -87,14 +86,15 @@ describe("Document Integrity Tests", () => {
         name: { kind: Kind.NAME as Kind.NAME, value: "String" },
       });
 
-      // "!?[]"? test actual invalid modifiers
+      // Test invalid modifiers - new format requires ? or ! followed by []? or []! pairs
       expect(() => {
         buildWithTypeModifier("???" as TypeModifier, buildType);
       }).toThrow("Unknown modifier");
 
-      // "!!" results in double non-null, which gets normalized
-      const doubleNonNull = buildWithTypeModifier("!!" as TypeModifier, buildType);
-      expect(doubleNonNull.kind).toBe(Kind.NON_NULL_TYPE);
+      // "!!" is now invalid in the new modifier format
+      expect(() => {
+        buildWithTypeModifier("!!" as TypeModifier, buildType);
+      }).toThrow("Unknown modifier");
     });
 
     it("should handle valid modifiers correctly", () => {
@@ -106,16 +106,16 @@ describe("Document Integrity Tests", () => {
       const nonNull = buildWithTypeModifier("!", buildType);
       expect(nonNull.kind).toBe(Kind.NON_NULL_TYPE);
 
-      const list = buildWithTypeModifier("[]", buildType);
+      const list = buildWithTypeModifier("?[]?", buildType);
       expect(list.kind).toBe(Kind.LIST_TYPE);
 
-      const nonNullList = buildWithTypeModifier("[]!", buildType);
+      const nonNullList = buildWithTypeModifier("?[]!", buildType);
       expect(nonNullList).toEqual({
         kind: Kind.NON_NULL_TYPE,
         type: expect.objectContaining({ kind: Kind.LIST_TYPE }),
       });
 
-      const listOfNonNull = buildWithTypeModifier("![]", buildType);
+      const listOfNonNull = buildWithTypeModifier("![]?", buildType);
       expect(listOfNonNull).toEqual({
         kind: Kind.LIST_TYPE,
         type: expect.objectContaining({ kind: Kind.NON_NULL_TYPE }),

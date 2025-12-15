@@ -1,7 +1,8 @@
 import { createVarRefs } from "../composer/input";
 import type { AnyComposedOperationOf, AnySlicePayload } from "../types/element";
 import type { AnyAssignableInput } from "../types/fragment";
-import type { AnyGraphqlSchema, InputTypeSpecifier, InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { InputTypeSpecifier, InputTypeSpecifiers } from "../types/type-foundation";
 import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 import { createExecutionResultParser } from "./parse-execution-result";
 import { registerComposedOperation } from "./runtime-registry";

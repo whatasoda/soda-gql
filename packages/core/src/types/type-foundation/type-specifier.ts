@@ -1,6 +1,5 @@
-import type { AnyConstDirectiveAttachments } from "./const-directives";
 import type { ConstValue } from "./const-value";
-import type { ListTypeModifierSuffix, StripTailingListFromTypeModifier, TypeModifier } from "./type-modifier";
+import type { TypeModifier } from "./type-modifier-core.generated";
 
 export type AnyDefaultValue = { default: ConstValue };
 
@@ -11,7 +10,7 @@ export type AnyTypeSpecifier = {
   readonly kind: string;
   readonly name: string;
   readonly modifier: TypeModifier;
-  readonly directives: AnyConstDirectiveAttachments;
+  // readonly directives?: AnyConstDirectiveAttachments;
   readonly defaultValue?: AnyDefaultValue | null;
   readonly arguments?: InputTypeSpecifiers;
 };
@@ -20,7 +19,7 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly kind: TKind;
   readonly name: string;
   readonly modifier: TypeModifier;
-  readonly directives: AnyConstDirectiveAttachments;
+  // readonly directives: AnyConstDirectiveAttachments;
   readonly defaultValue: AnyDefaultValue | null;
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
@@ -34,7 +33,6 @@ type AbstractOutputTypeSpecifier<TKind extends OutputTypeKind> = {
   readonly kind: TKind;
   readonly name: string;
   readonly modifier: TypeModifier;
-  readonly directives: AnyConstDirectiveAttachments;
   readonly arguments: InputTypeSpecifiers;
 };
 export type OutputTypeSpecifiers = { [key: string]: OutputTypeSpecifier };
@@ -50,25 +48,3 @@ export type OutputEnumSpecifier = AbstractOutputTypeSpecifier<"enum">;
 export type OutputObjectSpecifier = AbstractOutputTypeSpecifier<"object">;
 export type OutputUnionSpecifier = AbstractOutputTypeSpecifier<"union">;
 export type OutputTypenameSpecifier = AbstractOutputTypeSpecifier<"typename">;
-
-export type StripTailingListFromTypeSpecifier<TTypeSpecifier extends AnyTypeSpecifier> = TTypeSpecifier extends {
-  defaultValue: AnyDefaultValue | null;
-}
-  ? {
-      readonly kind: TTypeSpecifier["kind"];
-      readonly name: TTypeSpecifier["name"];
-      readonly modifier: StripTailingListFromTypeModifier<TTypeSpecifier["modifier"]>;
-      readonly directives: TTypeSpecifier["directives"];
-      readonly defaultValue: TTypeSpecifier["modifier"] extends `${string}${ListTypeModifierSuffix}`
-        ? null
-        : TTypeSpecifier["defaultValue"];
-    }
-  : TTypeSpecifier extends { arguments: InputTypeSpecifiers }
-    ? {
-        readonly kind: TTypeSpecifier["kind"];
-        readonly name: TTypeSpecifier["name"];
-        readonly modifier: StripTailingListFromTypeModifier<TTypeSpecifier["modifier"]>;
-        readonly directives: TTypeSpecifier["directives"];
-        readonly arguments: TTypeSpecifier["arguments"];
-      }
-    : never;

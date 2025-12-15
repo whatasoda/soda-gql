@@ -183,7 +183,7 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
 
     // Load source code for all files
     const files: LoadedPluginFixtureFile[] = [];
-    for (const [originalPath, workspacePath] of fileMapping.entries()) {
+    for (const [originalPath, _workspacePath] of fileMapping.entries()) {
       const sourceFile = Bun.file(originalPath);
       const sourceCode = await sourceFile.text();
       files.push({ sourcePath: originalPath, sourceCode });
@@ -195,6 +195,7 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
       // oldId format: /path/to/workspace/src/filename.ts::exportName
       // Find the original path by matching filename
       const workspacePath = oldId.split("::")[0];
+      // biome-ignore lint/style/noNonNullAssertion: test
       const filename = basename(workspacePath!);
       const exportName = oldId.split("::")[1];
 

@@ -37,7 +37,7 @@ describe("soda-gql codegen CLI", () => {
     const caseDir = join(tmpRoot, `case-${Date.now()}`);
     mkdirSync(caseDir, { recursive: true });
 
-    const outFile = join(caseDir, "output.ts");
+    const _outFile = join(caseDir, "output.ts");
     const injectFile = join(caseDir, "inject.ts");
     const schemaFile = join(caseDir, "does-not-exist.graphql");
 
@@ -66,7 +66,7 @@ describe("soda-gql codegen CLI", () => {
 
     const invalidSchemaPath = join(caseDir, "invalid.graphql");
     await Bun.write(invalidSchemaPath, "type Query { invalid }");
-    const outFile = join(caseDir, "output.ts");
+    const _outFile = join(caseDir, "output.ts");
     const injectFile = join(caseDir, "inject.ts");
 
     copyDefaultInject(injectFile);

@@ -68,8 +68,8 @@ export const runBabelTransform = async (
 
   try {
     const {
-      mode = "zero-runtime",
-      importIdentifier = "@/graphql-system",
+      mode: _mode = "zero-runtime",
+      importIdentifier: _importIdentifier = "@/graphql-system",
       skipTypeCheck = false,
       additionalFiles = [],
       configOverrides = {},

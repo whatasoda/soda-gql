@@ -6,7 +6,8 @@ import {
   type ConcatSlicePayloads,
 } from "../types/element";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
-import type { AnyGraphqlSchema, InputTypeSpecifiers, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -38,7 +39,7 @@ export const createComposedOperationComposerFactory = <
       >(() => {
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-        const $ = createVarRefs(variables);
+        const $ = createVarRefs<TSchema, typeof variables>(variables);
         const fragments = builder({ $ });
 
         const fields = Object.fromEntries(

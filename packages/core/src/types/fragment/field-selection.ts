@@ -1,18 +1,14 @@
 /** Canonical field selection types used by models and slices. */
 
-import type { Prettify } from "../../utils/prettify";
+import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputProfile, PickTypeSpecifierByFieldName } from "../schema";
 import type {
-  AnyFieldName,
-  AnyGraphqlSchema,
-  AnyTypeName,
   ApplyTypeModifier,
-  InferOutputTypeRef,
+  GetModifiedType,
   OutputInferrableTypeSpecifier,
   OutputObjectSpecifier,
   OutputTypeSpecifier,
   OutputUnionSpecifier,
-  PickTypeSpecifierByFieldName,
-} from "../schema";
+} from "../type-foundation";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
 
@@ -45,14 +41,14 @@ export type AnyFields = {
 export type AbstractFieldSelection<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
-  TRef extends OutputTypeSpecifier,
+  TSpecifier extends OutputTypeSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
   TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
 > = {
   readonly parent: TTypeName;
   readonly field: TFieldName;
-  readonly type: TRef;
+  readonly type: TSpecifier;
   readonly args: TArgs;
   readonly directives: TDirectives;
   readonly object: TExtras extends { object: infer TObject } ? TObject : null;
@@ -77,33 +73,35 @@ export type FieldSelectionTemplateOf<
   : never;
 
 /** Resolve the data shape produced by a set of field selections. */
-export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = Prettify<{
-  readonly [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
-}>;
+export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = {
+  [_ in TSchema["label"]]: {
+    [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
+  } & {};
+}[TSchema["label"]];
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
-      type: infer TRef extends OutputObjectSpecifier;
+      type: infer TSpecifier extends OutputObjectSpecifier;
       object: infer TNested extends AnyNestedObject;
     }
-      ? ApplyTypeModifier<TRef["modifier"], InferFields<TSchema, TNested>>
+      ? ApplyTypeModifier<InferFields<TSchema, TNested>, TSpecifier["modifier"]>
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputUnionSpecifier;
+      type: infer TSpecifier extends OutputUnionSpecifier;
       union: infer TNested extends AnyNestedUnion;
     }
       ? ApplyTypeModifier<
-          TRef["modifier"],
           {
             [TTypename in keyof TNested]: undefined extends TNested[TTypename]
               ? never
               : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
-          }[keyof TNested]
+          }[keyof TNested],
+          TSpecifier["modifier"]
         >
       : never)
   | (TSelection extends {
-      type: infer TRef extends OutputInferrableTypeSpecifier;
+      type: infer TSpecifier extends OutputInferrableTypeSpecifier;
     }
-      ? InferOutputTypeRef<TSchema, TRef>
+      ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
       : never);

@@ -1,5 +1,5 @@
+import type { AnyConstDirectiveAttachments } from "../types/schema";
 import {
-  type AnyConstDirectiveAttachments,
   type AnyTypeSpecifier,
   type InputTypeKind,
   type InputTypeSpecifiers,
@@ -7,8 +7,8 @@ import {
   type OutputTypeKind,
   parseModifiedTypeName,
   type TypeModifier,
-} from "../types/schema";
-import type { ConstValue } from "../types/schema/const-value";
+} from "../types/type-foundation";
+import type { ConstValue } from "../types/type-foundation/const-value";
 
 const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind>(kind: TKind) => {
   type UnsafeInputTypeSpecifier<
@@ -30,7 +30,7 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
     const TDefaultFactory extends (() => ConstValue) | null = null,
     const TDirectives extends AnyConstDirectiveAttachments = {},
   >(
-    type: ModifiedTypeName<string, TName, TModifier>,
+    type: ModifiedTypeName<[string], TName, TModifier>,
     extras: {
       default?: TDefaultFactory;
       directives?: TDirectives;
@@ -40,7 +40,6 @@ const createUnsafeInputTypeSpecifierFactory = <const TKind extends InputTypeKind
       kind,
       ...parseModifiedTypeName(type),
       defaultValue: extras.default ? { default: extras.default() } : null,
-      directives: extras.directives ?? ({} as TDirectives),
     }) satisfies AnyTypeSpecifier as UnsafeInputTypeSpecifier<TName, TModifier, TDefaultFactory, TDirectives>;
 };
 
@@ -51,41 +50,27 @@ export const unsafeInputType = {
 };
 
 const createUnsafeOutputTypeSpecifierFactory = <const TKind extends OutputTypeKind>(kind: TKind) => {
-  type UnsafeOutputTypeSpecifier<
-    TName extends string,
-    TModifier extends TypeModifier,
-    TArguments extends InputTypeSpecifiers,
-    TDirectives extends AnyConstDirectiveAttachments,
-  > = {
+  type UnsafeOutputTypeSpecifier<TName extends string, TModifier extends TypeModifier, TArguments extends InputTypeSpecifiers> = {
     kind: TKind;
     name: TName;
     modifier: TModifier;
     arguments: TArguments;
-    directives: TDirectives;
   };
 
-  return <
-    const TName extends string,
-    const TModifier extends TypeModifier,
-    const TArguments extends InputTypeSpecifiers = {},
-    const TDirectives extends AnyConstDirectiveAttachments = {},
-  >(
-    type: ModifiedTypeName<string, TName, TModifier>,
+  return <const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers = {}>(
+    type: ModifiedTypeName<[string], TName, TModifier>,
     extras: {
       arguments?: TArguments;
-      directives?: TDirectives;
     },
-  ): UnsafeOutputTypeSpecifier<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments, TDirectives> =>
+  ): UnsafeOutputTypeSpecifier<TName, TModifier, InputTypeSpecifiers extends TArguments ? {} : TArguments> =>
     ({
       kind,
       ...parseModifiedTypeName(type),
       arguments: extras.arguments ?? ({} as TArguments),
-      directives: extras.directives ?? ({} as TDirectives),
     }) satisfies AnyTypeSpecifier as UnsafeOutputTypeSpecifier<
       TName,
       TModifier,
-      InputTypeSpecifiers extends TArguments ? {} : TArguments,
-      TDirectives
+      InputTypeSpecifiers extends TArguments ? {} : TArguments
     >;
 };
 

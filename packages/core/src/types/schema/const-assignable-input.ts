@@ -1,28 +1,36 @@
-import type { ConstValue } from "./const-value";
-import type { AnyGraphqlSchema, InferInputTypeRef, InputFieldRecord } from "./schema";
-import type { ApplyTypeModifierToKeys, ListTypeModifierSuffix } from "./type-modifier";
 import type {
-  InputInferrableTypeSpecifier,
-  InputInputObjectSpecifier,
+  AnyDefaultValue,
+  ConstValue,
+  GetConstAssignableType,
   InputTypeSpecifier,
   InputTypeSpecifiers,
-  StripTailingListFromTypeSpecifier,
-} from "./type-specifier";
+} from "../type-foundation";
+import type { AnyGraphqlSchema, InferInputProfile } from "./schema";
 
 export type AnyConstAssignableInputValue = ConstValue;
 export type AnyConstAssignableInput = {
   readonly [key: string]: AnyConstAssignableInputValue;
 };
 
-export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TRefs extends InputTypeSpecifiers> = {
-  readonly [K in keyof ApplyTypeModifierToKeys<TRefs>]: ConstAssignableInputValue<TSchema, TRefs[K]>;
+type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] extends `${string}?`
+  ? true
+  : TSpecifier["defaultValue"] extends AnyDefaultValue
+    ? true
+    : false;
+
+export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: ConstAssignableInputValue<
+    TSchema,
+    TSpecifiers[K]
+  >;
+} & {
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: ConstAssignableInputValue<
+    TSchema,
+    TSpecifiers[K]
+  >;
 };
 
 export type ConstAssignableInputValue<
   TSchema extends AnyGraphqlSchema,
-  TRef extends InputTypeSpecifier,
-> = TRef["modifier"] extends `${string}${ListTypeModifierSuffix}`
-  ? ConstAssignableInputValue<TSchema, StripTailingListFromTypeSpecifier<TRef>>[]
-  :
-      | (TRef extends InputInputObjectSpecifier ? ConstAssignableInput<TSchema, InputFieldRecord<TSchema, TRef>> : never)
-      | (TRef extends InputInferrableTypeSpecifier ? InferInputTypeRef<TSchema, TRef> : never);
+  TSpecifier extends InputTypeSpecifier,
+> = GetConstAssignableType<InferInputProfile<TSchema, TSpecifier>> & {};

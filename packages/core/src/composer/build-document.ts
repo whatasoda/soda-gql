@@ -22,8 +22,8 @@ import {
   type InferFields,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInput, InputTypeSpecifiers, OperationType, TypeModifier } from "../types/schema";
-import type { ConstValue } from "../types/schema/const-value";
+import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
+import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {
@@ -37,10 +37,19 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
   }
 
   if (value instanceof VarRef) {
-    return {
-      kind: Kind.VARIABLE,
-      name: { kind: Kind.NAME, value: value.name },
-    };
+    const inner = VarRef.getInner(value);
+    if (inner.type === "variable") {
+      return {
+        kind: Kind.VARIABLE,
+        name: { kind: Kind.NAME, value: inner.name },
+      };
+    }
+
+    if (inner.type === "const-value") {
+      return buildConstValueNode(inner.value);
+    }
+
+    throw new Error(`Unknown var ref type: ${inner satisfies never}`);
   }
 
   if (Array.isArray(value)) {
@@ -191,21 +200,56 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
     return baseType;
   }
 
-  let curr: Readonly<{ modifier: TypeModifier | ""; type: TypeNode }> = { modifier, type: baseType };
+  if (modifier === "!") {
+    return { kind: Kind.NON_NULL_TYPE, type: baseType };
+  }
+
+  // Validate modifier format: must start with ? or !, followed by []? or []! pairs
+  // Valid patterns: "?", "!", "?[]?", "?[]!", "![]?", "![]!", "?[]?[]?", etc.
+  const validModifierPattern = /^[?!](\[\][?!])*$/;
+  if (!validModifierPattern.test(modifier)) {
+    throw new Error(`Unknown modifier: ${modifier}`);
+  }
+
+  // New format: starts with inner type modifier (? or !), then []? or []! pairs
+  // e.g., "?[]?" = nullable list of nullable, "![]!" = non-null list of non-null
+  let curr: Readonly<{ modifier: string; type: TypeNode }> = { modifier, type: baseType };
 
   while (curr.modifier.length > 0) {
-    if (curr.modifier.startsWith("!")) {
+    // Handle inner type modifier (? or !)
+    if (curr.modifier.startsWith("?")) {
+      // Nullable inner type - type stays as-is
       curr = {
-        modifier: curr.modifier.slice(1) as TypeModifier,
+        modifier: curr.modifier.slice(1),
+        type: curr.type,
+      };
+      continue;
+    }
+
+    if (curr.modifier.startsWith("!")) {
+      // Non-null inner type
+      curr = {
+        modifier: curr.modifier.slice(1),
         type: curr.type.kind === Kind.NON_NULL_TYPE ? curr.type : { kind: Kind.NON_NULL_TYPE, type: curr.type },
       };
       continue;
     }
 
-    if (curr.modifier.startsWith("[]")) {
+    // Handle list modifiers ([]? or []!)
+    if (curr.modifier.startsWith("[]?")) {
+      // Nullable list
       curr = {
-        modifier: curr.modifier.slice(2) as TypeModifier,
+        modifier: curr.modifier.slice(3),
         type: { kind: Kind.LIST_TYPE, type: curr.type },
+      };
+      continue;
+    }
+
+    if (curr.modifier.startsWith("[]!")) {
+      // Non-null list
+      curr = {
+        modifier: curr.modifier.slice(3),
+        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.LIST_TYPE, type: curr.type } },
       };
       continue;
     }
