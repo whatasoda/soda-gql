@@ -12,23 +12,23 @@
     "email": "shota.hatada@whatasoda.me",
     "url": "https://github.com/whatasoda"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
-      "default": "./dist/index.js"
+      "default": "./dist/index.mjs"
     },
     "./runtime": {
       "development": "./src/runtime/index.ts",
       "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.js",
+      "import": "./dist/runtime/index.mjs",
       "require": "./dist/runtime/index.cjs",
-      "default": "./dist/runtime/index.js"
+      "default": "./dist/runtime/index.mjs"
     },
     "./package.json": "./package.json"
   },
