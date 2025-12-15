@@ -29,7 +29,7 @@ async function validateSourceFile(packageDir: string, sourcePath: string): Promi
   }
 }
 
-function sourceToDistPath(sourcePath: string, ext: "js" | "cjs" | "d.ts"): string {
+function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.ts"): string {
   const withoutSrc = sourcePath.replace(/^\.\/src\//, "./dist/");
   const withoutExt = withoutSrc.replace(/\.(ts|tsx|mts|cts)$/, "");
   return ext === "d.ts" ? `${withoutExt}.d.ts` : `${withoutExt}.${ext}`;
@@ -39,9 +39,9 @@ function generateExportsEntry(sourcePath: string) {
   return {
     development: sourcePath,
     types: sourceToDistPath(sourcePath, "d.ts"),
-    import: sourceToDistPath(sourcePath, "js"),
+    import: sourceToDistPath(sourcePath, "mjs"),
     require: sourceToDistPath(sourcePath, "cjs"),
-    default: sourceToDistPath(sourcePath, "js"),
+    default: sourceToDistPath(sourcePath, "mjs"),
   };
 }
 
@@ -115,8 +115,8 @@ async function syncPackageExports(
   // Update main/module/types from the default export (".")
   const defaultExport = exportsJson["."];
   if (defaultExport) {
-    packageJson.main = sourceToDistPath(defaultExport, "js");
-    packageJson.module = sourceToDistPath(defaultExport, "js");
+    packageJson.main = sourceToDistPath(defaultExport, "mjs");
+    packageJson.module = sourceToDistPath(defaultExport, "mjs");
     packageJson.types = sourceToDistPath(defaultExport, "d.ts");
   }
 
