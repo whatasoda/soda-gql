@@ -1,6 +1,5 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyFields, InferFields } from "../fragment";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -49,7 +48,7 @@ export class InlineOperation<
     TFields extends Partial<AnyFields>,
     TData extends object,
   >
-  extends GqlElement<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>>
+  extends GqlElement<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>, InlineOperationInferMeta<TVariables, TData>>
   implements InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
 {
   declare readonly [__INLINE_OPERATION_BRAND__]: Hidden<{
@@ -94,17 +93,7 @@ export class InlineOperation<
       documentSource: () => TFields;
       document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
     },
-  ): Inferrable<
-    InlineOperation<
-      TOperationType,
-      TOperationName,
-      (keyof TVariableDefinitions & string)[],
-      ConstAssignableInput<TSchema, TVariableDefinitions>,
-      TFields,
-      InferFields<TSchema, TFields>
-    >,
-    InlineOperationInferMeta<ConstAssignableInput<TSchema, TVariableDefinitions>, InferFields<TSchema, TFields>>
-  > {
-    return inferrable(new InlineOperation(define));
+  ) {
+    return new InlineOperation(define);
   }
 }

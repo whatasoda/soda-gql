@@ -7,7 +7,9 @@ export type GqlElementContext = {
 
 export type GqlElementDefinitionFactory<T> = (context: GqlElementContext | null) => T;
 
-export abstract class GqlElement<TDefinition> {
+export abstract class GqlElement<TDefinition, TInfer extends object = object> {
+  declare readonly $infer: TInfer;
+
   private [GQL_ELEMENT_FACTORY]: GqlElementDefinitionFactory<TDefinition>;
   private [GQL_ELEMENT_CONTEXT]: GqlElementContext | null = null;
 
@@ -22,6 +24,12 @@ export abstract class GqlElement<TDefinition> {
       cache = { value };
       return value;
     };
+
+    Object.defineProperty(this, "$infer", {
+      get() {
+        throw new Error("This property is only for type meta. Do not access this property directly.");
+      },
+    });
   }
 
   static setContext<TElement extends GqlElement<any>>(element: TElement, context: GqlElementContext): void {

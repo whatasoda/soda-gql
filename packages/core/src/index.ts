@@ -7,6 +7,5 @@ export type * from "./types/schema";
 export type * from "./types/type-foundation";
 export type * from "./utils/empty-object";
 export type * from "./utils/hidden";
-export type * from "./utils/inferrable";
 export type * from "./utils/type-utils";
 export type * from "./utils/wrap-by-key";

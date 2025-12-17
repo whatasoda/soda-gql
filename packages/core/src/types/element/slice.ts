@@ -1,6 +1,5 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, OperationType } from "../schema";
@@ -32,7 +31,7 @@ export class Slice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyProjection,
   >
-  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>>
+  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>, SliceInferMeta<TVariables, InferExecutionResultProjection<TProjection>>>
   implements SliceDefinition<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{
@@ -68,22 +67,11 @@ export class Slice<
         TProjection
       >;
     },
-  ): Inferrable<
-    Slice<
-      TOperationType,
-      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-      TFields & { [key: symbol]: never },
-      TProjection
-    >,
-    SliceInferMeta<
-      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-      InferExecutionResultProjection<TProjection>
-    >
-  > {
+  ) {
     type Fields = TFields & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return inferrable(new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>));
+    return new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>);
   }
 }
 

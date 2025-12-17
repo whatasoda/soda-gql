@@ -2,7 +2,6 @@
 
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -35,7 +34,7 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>, ModelInferMeta<TVariables, TRaw, TNormalized>>
   implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
@@ -69,28 +68,11 @@ export class Model<
       fragment: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
       normalize: (raw: NoInfer<InferFields<TSchema, TFields>>) => TNormalized;
     },
-  ): Inferrable<
-    Model<
-      TTypeName,
-      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-      TFields & { [key: symbol]: never },
-      InferFields<TSchema, TFields> & { [key: symbol]: never },
-      TNormalized
-    >,
-    ModelInferMeta<
-      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-      InferFields<TSchema, TFields> & { [key: symbol]: never },
-      TNormalized
-    >
-  > {
+  ) {
     type Fields = TFields & { [key: symbol]: never };
     type Raw = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return inferrable(
-      new Model(
-        define as () => ModelArtifact<TTypeName, Variables, Fields, Raw, TNormalized>,
-      ),
-    );
+    return new Model(define as () => ModelArtifact<TTypeName, Variables, Fields, Raw, TNormalized>);
   }
 }
