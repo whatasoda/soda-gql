@@ -19,20 +19,19 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   return 1;
 };
 
-if (import.meta.main) {
-  dispatch(Bun.argv.slice(2))
-    .then((exitCode) => {
-      process.exitCode = exitCode;
-    })
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      const unexpectedError = {
-        code: "UNEXPECTED_ERROR",
-        message,
-      };
-      process.stderr.write(`${formatError(unexpectedError, "json")}\n`);
-      process.exitCode = 1;
-    });
-}
+// Run CLI when executed directly
+dispatch(process.argv.slice(2))
+  .then((exitCode) => {
+    process.exitCode = exitCode;
+  })
+  .catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    const unexpectedError = {
+      code: "UNEXPECTED_ERROR",
+      message,
+    };
+    process.stderr.write(`${formatError(unexpectedError, "json")}\n`);
+    process.exitCode = 1;
+  });
 
 export { dispatch };

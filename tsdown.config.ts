@@ -182,10 +182,10 @@ export default defineConfig([
     clean: true,
   },
 
-  // CLI package (needs shebang preservation)
+  // CLI package (CJS for maximum compatibility)
   {
     ...configure("@soda-gql/cli"),
-    format: ["esm"],
+    format: ["cjs"],
     platform: "node",
     target: "node18",
     banner: {
