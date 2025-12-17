@@ -31,7 +31,10 @@ export class Slice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyProjection,
   >
-  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>, SliceInferMeta<TVariables, InferExecutionResultProjection<TProjection>>>
+  extends GqlElement<
+    SliceDefinition<TOperationType, TVariables, TFields, TProjection>,
+    SliceInferMeta<TVariables, InferExecutionResultProjection<TProjection>>
+  >
   implements SliceDefinition<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{

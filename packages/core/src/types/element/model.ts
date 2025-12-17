@@ -34,7 +34,10 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>, ModelInferMeta<TVariables, TRaw, TNormalized>>
+  extends GqlElement<
+    ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>,
+    ModelInferMeta<TVariables, TRaw, TNormalized>
+  >
   implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{

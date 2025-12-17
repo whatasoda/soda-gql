@@ -13,18 +13,17 @@
     "url": "https://github.com/whatasoda"
   },
   "bin": {
-    "soda-gql": "./dist/index.js"
+    "soda-gql": "./dist/index.cjs"
   },
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.cts",
       "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
+      "default": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
   },

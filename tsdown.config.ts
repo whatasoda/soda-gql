@@ -1,7 +1,61 @@
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type UserConfig } from "tsdown";
-import { packageEntries } from "./scripts/generated/exports-manifest.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packagesDir = join(__dirname, "packages");
+
+// Auto-discover packages with exports.json
+function discoverPackages(): string[] {
+  const dirs = readdirSync(packagesDir, { withFileTypes: true });
+  return dirs
+    .filter((d) => d.isDirectory() && existsSync(join(packagesDir, d.name, "exports.json")))
+    .map((d) => {
+      const packageJsonPath = join(packagesDir, d.name, "package.json");
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+      return packageJson.name as string;
+    });
+}
+
+// Normalize exports.json entries to tsdown entry format
+function normalizeEntries(exportsJson: Record<string, string>, shortName: string): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(exportsJson).map(([key, sourcePath]) => {
+      // Convert export key to entry key:
+      // "." -> "index"
+      // "./foo" -> "foo/index" (if source ends with /index.ts)
+      // "./foo" -> "foo" (otherwise)
+      let entryKey: string;
+      if (key === ".") {
+        entryKey = "index";
+      } else {
+        entryKey = key.replace(/^\.\//, "");
+        if (sourcePath.endsWith("/index.ts")) {
+          entryKey = `${entryKey}/index`;
+        }
+      }
+      // Prepend packages/{shortName}/ to the source path (remove leading ./)
+      const fullPath = join(`packages/${shortName}`, sourcePath.replace(/^\.\//, ""));
+      return [entryKey, fullPath];
+    }),
+  );
+}
+
+// Discover all packages with exports.json
+const packageNames = discoverPackages();
+
+// Build packageEntries by reading all exports.json files
+const packageEntries: Record<string, Record<string, string>> = Object.fromEntries(
+  packageNames.map((name) => {
+    const shortName = name.replace(/^@soda-gql\//, "");
+    const exportsPath = join(packagesDir, shortName, "exports.json");
+    const exportsJson = JSON.parse(readFileSync(exportsPath, "utf-8"));
+    return [name, normalizeEntries(exportsJson, shortName)];
+  }),
+);
+
+// Build aliases for TypeScript path resolution in dts
 const aliases = Object.fromEntries(
   Object.entries(packageEntries).flatMap(([pkg, exports]) =>
     Object.entries(exports).map(([name, path]) => [
@@ -16,12 +70,16 @@ type ConfigureOptions = {
   noExternals?: readonly string[];
 };
 
-const configure = <T extends keyof typeof packageEntries>(name: T, options: ConfigureOptions = {}) => {
+const configure = (name: string, options: ConfigureOptions = {}) => {
   const shortName = name.replace(/^@soda-gql\//, "");
+  const entry = packageEntries[name];
+  if (!entry) {
+    throw new Error(`Package "${name}" not found. Make sure it has exports.json`);
+  }
   return {
     name,
     outDir: `packages/${shortName}/dist`,
-    entry: packageEntries[name],
+    entry,
     dts: {
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
@@ -119,10 +177,10 @@ export default defineConfig([
     clean: true,
   },
 
-  // CLI package (needs shebang preservation)
+  // CLI package (CJS for maximum compatibility)
   {
     ...configure("@soda-gql/cli"),
-    format: ["esm"],
+    format: ["cjs"],
     platform: "node",
     target: "node18",
     banner: {
@@ -134,6 +192,13 @@ export default defineConfig([
   // Plugin packages (externalize host bundler deps)
   {
     ...configure("@soda-gql/plugin-babel"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
+  {
+    ...configure("@soda-gql/plugin-common"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
