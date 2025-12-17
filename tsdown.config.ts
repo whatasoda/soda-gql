@@ -1,15 +1,21 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type UserConfig } from "tsdown";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const packagesDir = join(__dirname, "packages");
 
-// Read exports.json directly from each package
-function readExportsJson(packageName: string): Record<string, string> {
-  const shortName = packageName.replace(/^@soda-gql\//, "");
-  const exportsPath = join(__dirname, `packages/${shortName}/exports.json`);
-  return JSON.parse(readFileSync(exportsPath, "utf-8"));
+// Auto-discover packages with exports.json
+function discoverPackages(): string[] {
+  const dirs = readdirSync(packagesDir, { withFileTypes: true });
+  return dirs
+    .filter((d) => d.isDirectory() && existsSync(join(packagesDir, d.name, "exports.json")))
+    .map((d) => {
+      const packageJsonPath = join(packagesDir, d.name, "package.json");
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+      return packageJson.name as string;
+    });
 }
 
 // Normalize exports.json entries to tsdown entry format
@@ -36,33 +42,18 @@ function normalizeEntries(exportsJson: Record<string, string>, shortName: string
   );
 }
 
-// Package names that have exports.json
-const packageNames = [
-  "@soda-gql/core",
-  "@soda-gql/runtime",
-  "@soda-gql/graffle-client",
-  "@soda-gql/common",
-  "@soda-gql/config",
-  "@soda-gql/builder",
-  "@soda-gql/codegen",
-  "@soda-gql/cli",
-  "@soda-gql/plugin-babel",
-  "@soda-gql/plugin-common",
-  "@soda-gql/tsc-plugin",
-  "@soda-gql/plugin-vite",
-  "@soda-gql/plugin-webpack",
-] as const;
-
-type PackageName = (typeof packageNames)[number];
+// Discover all packages with exports.json
+const packageNames = discoverPackages();
 
 // Build packageEntries by reading all exports.json files
-const packageEntries = Object.fromEntries(
+const packageEntries: Record<string, Record<string, string>> = Object.fromEntries(
   packageNames.map((name) => {
     const shortName = name.replace(/^@soda-gql\//, "");
-    const exportsJson = readExportsJson(name);
+    const exportsPath = join(packagesDir, shortName, "exports.json");
+    const exportsJson = JSON.parse(readFileSync(exportsPath, "utf-8"));
     return [name, normalizeEntries(exportsJson, shortName)];
   }),
-) as Record<PackageName, Record<string, string>>;
+);
 
 // Build aliases for TypeScript path resolution in dts
 const aliases = Object.fromEntries(
@@ -79,12 +70,16 @@ type ConfigureOptions = {
   noExternals?: readonly string[];
 };
 
-const configure = <T extends PackageName>(name: T, options: ConfigureOptions = {}) => {
+const configure = (name: string, options: ConfigureOptions = {}) => {
   const shortName = name.replace(/^@soda-gql\//, "");
+  const entry = packageEntries[name];
+  if (!entry) {
+    throw new Error(`Package "${name}" not found. Make sure it has exports.json`);
+  }
   return {
     name,
     outDir: `packages/${shortName}/dist`,
-    entry: packageEntries[name],
+    entry,
     dts: {
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
