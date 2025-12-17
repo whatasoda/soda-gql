@@ -1,6 +1,6 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable, type InlineOperationInferMeta } from "../../utils/inferrable";
+import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyFields, InferFields } from "../fragment";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -18,6 +18,11 @@ export type AnyInlineOperationOf<TOperationType extends OperationType> = InlineO
   AnyFields,
   any
 >;
+
+export type InlineOperationInferMeta<TVariables, TData extends object> = {
+  readonly input: TVariables;
+  readonly output: TData;
+};
 
 declare const __INLINE_OPERATION_BRAND__: unique symbol;
 

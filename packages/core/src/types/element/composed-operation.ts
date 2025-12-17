@@ -2,7 +2,7 @@
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type ComposedOperationInferMeta, type Inferrable } from "../../utils/inferrable";
+import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssigningInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
@@ -24,6 +24,11 @@ export type AnyComposedOperationOf<TOperationType extends OperationType> = Compo
   any,
   any
 >;
+
+export type ComposedOperationInferMeta<TVariables, TRawData extends object, TProjectedData extends object> = {
+  readonly input: TVariables;
+  readonly output: { readonly raw: TRawData; readonly projected: TProjectedData };
+};
 
 declare const __COMPOSED_OPERATION_BRAND__: unique symbol;
 

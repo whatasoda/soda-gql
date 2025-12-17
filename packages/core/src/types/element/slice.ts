@@ -1,6 +1,6 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable, type SliceInferMeta } from "../../utils/inferrable";
+import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, OperationType } from "../schema";
@@ -9,6 +9,11 @@ import { GqlElement } from "./gql-element";
 
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
 export type AnySliceOf<TOperationType extends OperationType> = Slice<TOperationType, any, AnyFields, AnyProjection>;
+
+export type SliceInferMeta<TVariables, TProjected> = {
+  readonly input: TVariables;
+  readonly output: TProjected;
+};
 
 type SliceDefinition<
   TOperationType extends OperationType,

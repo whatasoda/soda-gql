@@ -2,13 +2,18 @@
 
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
-import { inferrable, type Inferrable, type ModelInferMeta } from "../../utils/inferrable";
+import { inferrable, type Inferrable } from "../../utils/inferrable";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
+
+export type ModelInferMeta<TVariables, TRaw extends object, TNormalized extends object> = {
+  readonly input: TVariables;
+  readonly output: { readonly raw: TRaw; readonly normalized: TNormalized };
+};
 
 interface ModelArtifact<
   TTypeName extends string,
