@@ -2,6 +2,7 @@
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
+import { inferrable, type ComposedOperationInferMeta, type Inferrable } from "../../utils/inferrable";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssigningInput, InferFields } from "../fragment";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
@@ -136,8 +137,23 @@ export class ComposedOperation<
         [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
       };
     },
-  ) {
-    return new ComposedOperation(define);
+  ): Inferrable<
+    ComposedOperation<
+      TRuntimeAdapter,
+      TOperationType,
+      TOperationName,
+      (keyof TVariableDefinitions & string)[],
+      ConstAssignableInput<TSchema, TVariableDefinitions>,
+      InferComposedOperationRawData<TSchema, TSliceFragments>,
+      { [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]> }
+    >,
+    ComposedOperationInferMeta<
+      ConstAssignableInput<TSchema, TVariableDefinitions>,
+      InferComposedOperationRawData<TSchema, TSliceFragments>,
+      { [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]> }
+    >
+  > {
+    return inferrable(new ComposedOperation(define));
   }
 }
 

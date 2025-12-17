@@ -1,5 +1,6 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
+import { inferrable, type Inferrable, type SliceInferMeta } from "../../utils/inferrable";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, OperationType } from "../schema";
@@ -62,11 +63,22 @@ export class Slice<
         TProjection
       >;
     },
-  ) {
+  ): Inferrable<
+    Slice<
+      TOperationType,
+      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
+      TFields & { [key: symbol]: never },
+      TProjection
+    >,
+    SliceInferMeta<
+      SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
+      InferExecutionResultProjection<TProjection>
+    >
+  > {
     type Fields = TFields & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>);
+    return inferrable(new Slice(define as () => SliceDefinition<TOperationType, Variables, Fields, TProjection>));
   }
 }
 
