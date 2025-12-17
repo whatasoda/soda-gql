@@ -24,6 +24,11 @@ export type AnyComposedOperationOf<TOperationType extends OperationType> = Compo
   any
 >;
 
+export type ComposedOperationInferMeta<TVariables, TRawData extends object, TProjectedData extends object> = {
+  readonly input: TVariables;
+  readonly output: { readonly raw: TRawData; readonly projected: TProjectedData };
+};
+
 declare const __COMPOSED_OPERATION_BRAND__: unique symbol;
 
 type ComposedOperationDefinition<
@@ -61,7 +66,8 @@ export class ComposedOperation<
       TVariables,
       TRawData,
       TProjectedData
-    >
+    >,
+    ComposedOperationInferMeta<TVariables, TRawData, TProjectedData>
   >
   implements
     ComposedOperationDefinition<

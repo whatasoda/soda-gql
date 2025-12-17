@@ -9,6 +9,11 @@ import { GqlElement } from "./gql-element";
 export type AnySlice = AnySliceOf<"query"> | AnySliceOf<"mutation"> | AnySliceOf<"subscription">;
 export type AnySliceOf<TOperationType extends OperationType> = Slice<TOperationType, any, AnyFields, AnyProjection>;
 
+export type SliceInferMeta<TVariables, TProjected> = {
+  readonly input: TVariables;
+  readonly output: TProjected;
+};
+
 type SliceDefinition<
   TOperationType extends OperationType,
   TVariables extends Partial<AnyAssignableInput> | void,
@@ -26,7 +31,7 @@ export class Slice<
     TFields extends Partial<AnyFields>,
     TProjection extends AnyProjection,
   >
-  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>>
+  extends GqlElement<SliceDefinition<TOperationType, TVariables, TFields, TProjection>, SliceInferMeta<TVariables, InferExecutionResultProjection<TProjection>>>
   implements SliceDefinition<TOperationType, TVariables, TFields, TProjection>
 {
   declare readonly [__OPERATION_SLICE_BRAND__]: Hidden<{

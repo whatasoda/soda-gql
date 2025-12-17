@@ -9,6 +9,11 @@ import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any, any>;
 
+export type ModelInferMeta<TVariables, TRaw extends object, TNormalized extends object> = {
+  readonly input: TVariables;
+  readonly output: { readonly raw: TRaw; readonly normalized: TNormalized };
+};
+
 interface ModelArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
@@ -29,7 +34,7 @@ export class Model<
     TRaw extends object,
     TNormalized extends object,
   >
-  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>>
+  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>, ModelInferMeta<TVariables, TRaw, TNormalized>>
   implements ModelArtifact<TTypeName, TVariables, TFields, TRaw, TNormalized>
 {
   declare readonly [__MODEL_BRAND__]: Hidden<{
@@ -66,15 +71,8 @@ export class Model<
   ) {
     type Fields = TFields & { [key: symbol]: never };
     type Raw = InferFields<TSchema, TFields> & { [key: symbol]: never };
+    type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Model(
-      define as () => ModelArtifact<
-        TTypeName,
-        SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>,
-        Fields,
-        Raw,
-        TNormalized
-      >,
-    );
+    return new Model(define as () => ModelArtifact<TTypeName, Variables, Fields, Raw, TNormalized>);
   }
 }

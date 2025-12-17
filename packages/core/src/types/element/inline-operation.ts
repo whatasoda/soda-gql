@@ -18,6 +18,11 @@ export type AnyInlineOperationOf<TOperationType extends OperationType> = InlineO
   any
 >;
 
+export type InlineOperationInferMeta<TVariables, TData extends object> = {
+  readonly input: TVariables;
+  readonly output: TData;
+};
+
 declare const __INLINE_OPERATION_BRAND__: unique symbol;
 
 type InlineOperationArtifact<
@@ -43,7 +48,7 @@ export class InlineOperation<
     TFields extends Partial<AnyFields>,
     TData extends object,
   >
-  extends GqlElement<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>>
+  extends GqlElement<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>, InlineOperationInferMeta<TVariables, TData>>
   implements InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
 {
   declare readonly [__INLINE_OPERATION_BRAND__]: Hidden<{
