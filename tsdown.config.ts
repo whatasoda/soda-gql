@@ -1,7 +1,70 @@
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type UserConfig } from "tsdown";
-import { packageEntries } from "./scripts/generated/exports-manifest.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Read exports.json directly from each package
+function readExportsJson(packageName: string): Record<string, string> {
+  const shortName = packageName.replace(/^@soda-gql\//, "");
+  const exportsPath = join(__dirname, `packages/${shortName}/exports.json`);
+  return JSON.parse(readFileSync(exportsPath, "utf-8"));
+}
+
+// Normalize exports.json entries to tsdown entry format
+function normalizeEntries(exportsJson: Record<string, string>, shortName: string): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(exportsJson).map(([key, sourcePath]) => {
+      // Convert export key to entry key:
+      // "." -> "index"
+      // "./foo" -> "foo/index" (if source ends with /index.ts)
+      // "./foo" -> "foo" (otherwise)
+      let entryKey: string;
+      if (key === ".") {
+        entryKey = "index";
+      } else {
+        entryKey = key.replace(/^\.\//, "");
+        if (sourcePath.endsWith("/index.ts")) {
+          entryKey = `${entryKey}/index`;
+        }
+      }
+      // Prepend packages/{shortName}/ to the source path (remove leading ./)
+      const fullPath = join(`packages/${shortName}`, sourcePath.replace(/^\.\//, ""));
+      return [entryKey, fullPath];
+    }),
+  );
+}
+
+// Package names that have exports.json
+const packageNames = [
+  "@soda-gql/core",
+  "@soda-gql/runtime",
+  "@soda-gql/graffle-client",
+  "@soda-gql/common",
+  "@soda-gql/config",
+  "@soda-gql/builder",
+  "@soda-gql/codegen",
+  "@soda-gql/cli",
+  "@soda-gql/plugin-babel",
+  "@soda-gql/plugin-common",
+  "@soda-gql/tsc-plugin",
+  "@soda-gql/plugin-vite",
+  "@soda-gql/plugin-webpack",
+] as const;
+
+type PackageName = (typeof packageNames)[number];
+
+// Build packageEntries by reading all exports.json files
+const packageEntries = Object.fromEntries(
+  packageNames.map((name) => {
+    const shortName = name.replace(/^@soda-gql\//, "");
+    const exportsJson = readExportsJson(name);
+    return [name, normalizeEntries(exportsJson, shortName)];
+  }),
+) as Record<PackageName, Record<string, string>>;
+
+// Build aliases for TypeScript path resolution in dts
 const aliases = Object.fromEntries(
   Object.entries(packageEntries).flatMap(([pkg, exports]) =>
     Object.entries(exports).map(([name, path]) => [
@@ -16,7 +79,7 @@ type ConfigureOptions = {
   noExternals?: readonly string[];
 };
 
-const configure = <T extends keyof typeof packageEntries>(name: T, options: ConfigureOptions = {}) => {
+const configure = <T extends PackageName>(name: T, options: ConfigureOptions = {}) => {
   const shortName = name.replace(/^@soda-gql\//, "");
   return {
     name,
@@ -134,6 +197,13 @@ export default defineConfig([
   // Plugin packages (externalize host bundler deps)
   {
     ...configure("@soda-gql/plugin-babel"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
+  {
+    ...configure("@soda-gql/plugin-common"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",

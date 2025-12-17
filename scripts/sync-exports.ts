@@ -1,15 +1,9 @@
-import { readdir, readFile, writeFile, access, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { constants } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { join, dirname, basename } from "node:path";
 
 const REPO_ROOT = join(import.meta.dir, "..");
 const PACKAGES_DIR = join(REPO_ROOT, "packages");
-const GENERATED_DIR = join(REPO_ROOT, "scripts/generated");
 const STATIC_EXPORTS = ["./package.json"];
-
-interface ExportsJson {
-  [key: string]: string;
-}
 
 interface PackageJson {
   name: string;
@@ -20,73 +14,80 @@ interface PackageJson {
   [key: string]: unknown;
 }
 
-async function validateSourceFile(packageDir: string, sourcePath: string): Promise<void> {
-  const absolutePath = join(packageDir, sourcePath);
-  try {
-    await access(absolutePath, constants.F_OK);
-  } catch {
-    throw new Error(`Source file does not exist: ${sourcePath}`);
-  }
+interface TsdownConfig {
+  name: string;
+  entry: Record<string, string>;
+  format?: readonly ("esm" | "cjs")[];
+}
+
+async function loadTsdownConfigs(): Promise<TsdownConfig[]> {
+  const configPath = join(REPO_ROOT, "tsdown.config.ts");
+  const module = await import(configPath);
+  // tsdown config exports an array wrapped in defineConfig
+  return module.default;
 }
 
 function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.mts"): string {
-  const withoutSrc = sourcePath.replace(/^\.\/src\//, "./dist/");
-  const withoutExt = withoutSrc.replace(/\.(ts|tsx|mts|cts)$/, "");
+  // sourcePath is like "packages/core/src/index.ts"
+  // We need to convert to "./dist/index.{ext}"
+  const parts = sourcePath.split("/");
+  // Find the "src" part and replace with "dist"
+  const srcIndex = parts.indexOf("src");
+  if (srcIndex === -1) {
+    throw new Error(`Source path does not contain 'src': ${sourcePath}`);
+  }
+  const distParts = [".", "dist", ...parts.slice(srcIndex + 1)];
+  const withoutExt = distParts.join("/").replace(/\.(ts|tsx|mts|cts)$/, "");
   return ext === "d.mts" ? `${withoutExt}.d.mts` : `${withoutExt}.${ext}`;
 }
 
-function generateExportsEntry(sourcePath: string) {
-  return {
-    development: sourcePath,
+function entryKeyToExportKey(entryKey: string): string {
+  // Convert entry key to export key:
+  // "index" -> "."
+  // "foo/index" -> "./foo"
+  // "foo" -> "./foo"
+  if (entryKey === "index") {
+    return ".";
+  }
+  const withoutIndex = entryKey.replace(/\/index$/, "");
+  return `./${withoutIndex}`;
+}
+
+function generateExportsEntry(sourcePath: string, format: readonly ("esm" | "cjs")[]) {
+  const hasEsm = format.includes("esm");
+  const hasCjs = format.includes("cjs");
+
+  // Convert full path to relative source path for "development" field
+  // e.g., "packages/core/src/index.ts" -> "./src/index.ts"
+  const parts = sourcePath.split("/");
+  const srcIndex = parts.indexOf("src");
+  const relativeSrc = "./" + parts.slice(srcIndex).join("/");
+
+  const entry: Record<string, string> = {
+    development: relativeSrc,
     types: sourceToDistPath(sourcePath, "d.mts"),
-    import: sourceToDistPath(sourcePath, "mjs"),
-    require: sourceToDistPath(sourcePath, "cjs"),
-    default: sourceToDistPath(sourcePath, "mjs"),
   };
-}
 
-function normalizeEntryKey(exportKey: string, sourcePath: string): string {
-  if (exportKey === ".") {
-    return "index";
+  if (hasEsm) {
+    entry.import = sourceToDistPath(sourcePath, "mjs");
+  }
+  if (hasCjs) {
+    entry.require = sourceToDistPath(sourcePath, "cjs");
   }
 
-  let entryKey = exportKey.replace(/^\.\//, "");
+  // Set default based on available formats (ESM preferred)
+  entry.default = hasEsm ? sourceToDistPath(sourcePath, "mjs") : sourceToDistPath(sourcePath, "cjs");
 
-  // If the source path ends with /index.ts, add /index to the entry key
-  if (sourcePath.endsWith("/index.ts")) {
-    entryKey = entryKey + "/index";
-  }
-
-  return entryKey;
+  return entry;
 }
 
-interface PackageManifest {
-  name: string;
-  entries: Record<string, string>;
-}
-
-async function syncPackageExports(
-  packageName: string,
-  aggregate: Record<string, Record<string, string>>
-): Promise<void> {
-  const packageDir = join(PACKAGES_DIR, packageName);
-  const exportsJsonPath = join(packageDir, "exports.json");
+async function syncPackageExports(config: TsdownConfig): Promise<void> {
+  const packageName = config.name;
+  const shortName = packageName.replace(/^@soda-gql\//, "");
+  const packageDir = join(PACKAGES_DIR, shortName);
   const packageJsonPath = join(packageDir, "package.json");
 
-  // Check if exports.json exists
-  let exportsJson: ExportsJson;
-  try {
-    const content = await readFile(exportsJsonPath, "utf-8");
-    exportsJson = JSON.parse(content);
-  } catch {
-    console.log(`  ⚠ Skipping ${packageName}: no exports.json found`);
-    return;
-  }
-
-  // Validate all source files exist
-  for (const [key, sourcePath] of Object.entries(exportsJson)) {
-    await validateSourceFile(packageDir, sourcePath);
-  }
+  const format = config.format ?? (["esm", "cjs"] as const);
 
   // Read existing package.json
   const packageJsonContent = await readFile(packageJsonPath, "utf-8");
@@ -95,16 +96,9 @@ async function syncPackageExports(
   // Generate exports object
   const exports: Record<string, unknown> = {};
 
-  // Build aggregate for tsdown manifest
-  aggregate[packageJson.name] = {};
-
-  for (const [key, sourcePath] of Object.entries(exportsJson)) {
-    exports[key] = generateExportsEntry(sourcePath);
-
-    // Add to aggregate with normalized entry key
-    const entryKey = normalizeEntryKey(key, sourcePath);
-    // @ts-expect-error - aggregate[packageJson.name] is initialized above
-    aggregate[packageJson.name][entryKey] = join("packages", packageName, sourcePath);
+  for (const [entryKey, sourcePath] of Object.entries(config.entry)) {
+    const exportKey = entryKeyToExportKey(entryKey);
+    exports[exportKey] = generateExportsEntry(sourcePath, format);
   }
 
   // Add static exports
@@ -113,11 +107,12 @@ async function syncPackageExports(
   }
 
   // Update main/module/types from the default export (".")
-  const defaultExport = exportsJson["."];
-  if (defaultExport) {
-    packageJson.main = sourceToDistPath(defaultExport, "mjs");
-    packageJson.module = sourceToDistPath(defaultExport, "mjs");
-    packageJson.types = sourceToDistPath(defaultExport, "d.mts");
+  const defaultExportEntry = exports["."];
+  if (defaultExportEntry && typeof defaultExportEntry === "object") {
+    const entry = defaultExportEntry as Record<string, string>;
+    packageJson.main = entry.default;
+    packageJson.module = entry.import ?? entry.default;
+    packageJson.types = entry.types;
   }
 
   packageJson.exports = exports;
@@ -125,56 +120,27 @@ async function syncPackageExports(
   // Write updated package.json
   await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
 
-  const exportCount = Object.keys(exportsJson).length;
-  console.log(`  ✓ ${packageName}: ${exportCount} export${exportCount === 1 ? "" : "s"}`);
+  const exportCount = Object.keys(config.entry).length;
+  const formatStr = format.join("+");
+  console.log(`  ✓ ${shortName}: ${exportCount} export${exportCount === 1 ? "" : "s"} (${formatStr})`);
 }
 
 async function main() {
-  console.log("Syncing package exports...\n");
+  console.log("Syncing package exports from tsdown.config.ts...\n");
 
-  const packages = await readdir(PACKAGES_DIR, { withFileTypes: true });
-  const packageDirs = packages
-    .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => dirent.name);
+  const configs = await loadTsdownConfigs();
 
-  const aggregate: Record<string, Record<string, string>> = {};
-
-  for (const packageName of packageDirs) {
+  for (const config of configs) {
     try {
-      await syncPackageExports(packageName, aggregate);
+      await syncPackageExports(config);
     } catch (error) {
-      console.error(`  ✗ ${packageName}: ${error instanceof Error ? error.message : String(error)}`);
+      const shortName = config.name.replace(/^@soda-gql\//, "");
+      console.error(`  ✗ ${shortName}: ${error instanceof Error ? error.message : String(error)}`);
       process.exit(1);
     }
   }
 
-  // Generate exports manifest for tsdown
-  await mkdir(GENERATED_DIR, { recursive: true });
-  const manifestTsContent = `// Auto-generated by scripts/sync-exports.ts
-// Do not edit this file manually
-
-export const packageEntries = ${JSON.stringify(aggregate, null, 2)} as const;
-
-export function getPackageEntries(name: keyof typeof packageEntries): Record<string, string> {
-  return packageEntries[name] ?? {};
-}
-`;
-
-  const manifestJsContent = `// Auto-generated by scripts/sync-exports.ts
-// Do not edit this file manually
-
-export const packageEntries = ${JSON.stringify(aggregate, null, 2)};
-
-export function getPackageEntries(name) {
-  return packageEntries[name] ?? {};
-}
-`;
-
-  await writeFile(join(GENERATED_DIR, "exports-manifest.ts"), manifestTsContent);
-  await writeFile(join(GENERATED_DIR, "exports-manifest.js"), manifestJsContent);
-
   console.log("\n✓ All packages synchronized");
-  console.log(`✓ Generated exports manifest: scripts/generated/exports-manifest.{ts,js}`);
 }
 
 main();

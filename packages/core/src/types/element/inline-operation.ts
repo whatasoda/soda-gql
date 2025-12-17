@@ -48,7 +48,10 @@ export class InlineOperation<
     TFields extends Partial<AnyFields>,
     TData extends object,
   >
-  extends GqlElement<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>, InlineOperationInferMeta<TVariables, TData>>
+  extends GqlElement<
+    InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>,
+    InlineOperationInferMeta<TVariables, TData>
+  >
   implements InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
 {
   declare readonly [__INLINE_OPERATION_BRAND__]: Hidden<{
