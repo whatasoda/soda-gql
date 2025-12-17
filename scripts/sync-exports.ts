@@ -18,6 +18,7 @@ interface TsdownConfig {
   name: string;
   entry: Record<string, string>;
   format?: readonly ("esm" | "cjs")[];
+  platform?: "node" | "neutral";
 }
 
 async function loadTsdownConfigs(): Promise<TsdownConfig[]> {
@@ -27,7 +28,9 @@ async function loadTsdownConfigs(): Promise<TsdownConfig[]> {
   return module.default;
 }
 
-function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.mts"): string {
+type DistExt = "esm-js" | "esm-dts" | "cjs-js" | "cjs-dts";
+
+function sourceToDistPath(sourcePath: string, ext: DistExt, platform: "node" | "neutral"): string {
   // sourcePath is like "packages/core/src/index.ts"
   // We need to convert to "./dist/index.{ext}"
   const parts = sourcePath.split("/");
@@ -38,7 +41,26 @@ function sourceToDistPath(sourcePath: string, ext: "mjs" | "cjs" | "d.mts"): str
   }
   const distParts = [".", "dist", ...parts.slice(srcIndex + 1)];
   const withoutExt = distParts.join("/").replace(/\.(ts|tsx|mts|cts)$/, "");
-  return ext === "d.mts" ? `${withoutExt}.d.mts` : `${withoutExt}.${ext}`;
+
+  // Extension mapping based on platform:
+  // - neutral: ESM uses .js/.d.ts, CJS uses .cjs/.d.cts
+  // - node: ESM uses .mjs/.d.mts, CJS uses .cjs/.d.cts
+  const extMap: Record<"node" | "neutral", Record<DistExt, string>> = {
+    neutral: {
+      "esm-js": ".js",
+      "esm-dts": ".d.ts",
+      "cjs-js": ".cjs",
+      "cjs-dts": ".d.cts",
+    },
+    node: {
+      "esm-js": ".mjs",
+      "esm-dts": ".d.mts",
+      "cjs-js": ".cjs",
+      "cjs-dts": ".d.cts",
+    },
+  };
+
+  return `${withoutExt}${extMap[platform][ext]}`;
 }
 
 function entryKeyToExportKey(entryKey: string): string {
@@ -53,7 +75,11 @@ function entryKeyToExportKey(entryKey: string): string {
   return `./${withoutIndex}`;
 }
 
-function generateExportsEntry(sourcePath: string, format: readonly ("esm" | "cjs")[]) {
+function generateExportsEntry(
+  sourcePath: string,
+  format: readonly ("esm" | "cjs")[],
+  platform: "node" | "neutral",
+) {
   const hasEsm = format.includes("esm");
   const hasCjs = format.includes("cjs");
 
@@ -65,18 +91,20 @@ function generateExportsEntry(sourcePath: string, format: readonly ("esm" | "cjs
 
   const entry: Record<string, string> = {
     development: relativeSrc,
-    types: sourceToDistPath(sourcePath, "d.mts"),
+    types: sourceToDistPath(sourcePath, hasEsm ? "esm-dts" : "cjs-dts", platform),
   };
 
   if (hasEsm) {
-    entry.import = sourceToDistPath(sourcePath, "mjs");
+    entry.import = sourceToDistPath(sourcePath, "esm-js", platform);
   }
   if (hasCjs) {
-    entry.require = sourceToDistPath(sourcePath, "cjs");
+    entry.require = sourceToDistPath(sourcePath, "cjs-js", platform);
   }
 
   // Set default based on available formats (ESM preferred)
-  entry.default = hasEsm ? sourceToDistPath(sourcePath, "mjs") : sourceToDistPath(sourcePath, "cjs");
+  entry.default = hasEsm
+    ? sourceToDistPath(sourcePath, "esm-js", platform)
+    : sourceToDistPath(sourcePath, "cjs-js", platform);
 
   return entry;
 }
@@ -88,6 +116,7 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
   const packageJsonPath = join(packageDir, "package.json");
 
   const format = config.format ?? (["esm", "cjs"] as const);
+  const platform = config.platform ?? "node";
 
   // Read existing package.json
   const packageJsonContent = await readFile(packageJsonPath, "utf-8");
@@ -98,7 +127,7 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
 
   for (const [entryKey, sourcePath] of Object.entries(config.entry)) {
     const exportKey = entryKeyToExportKey(entryKey);
-    exports[exportKey] = generateExportsEntry(sourcePath, format);
+    exports[exportKey] = generateExportsEntry(sourcePath, format, platform);
   }
 
   // Add static exports
@@ -122,7 +151,7 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
 
   const exportCount = Object.keys(config.entry).length;
   const formatStr = format.join("+");
-  console.log(`  ✓ ${shortName}: ${exportCount} export${exportCount === 1 ? "" : "s"} (${formatStr})`);
+  console.log(`  ✓ ${shortName}: ${exportCount} export${exportCount === 1 ? "" : "s"} (${formatStr}, ${platform})`);
 }
 
 async function main() {
