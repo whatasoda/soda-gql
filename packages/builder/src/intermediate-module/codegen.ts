@@ -241,12 +241,12 @@ const renderImportStatements = ({
     const namespaceImport = imports.find((imp) => imp.kind === "namespace");
 
     if (namespaceImport) {
-      // Namespace import: const foo = registry.importModule("path");
-      importLines.push(`    const ${namespaceImport.local} = registry.importModule("${filePath}");`);
+      // Namespace import: const foo = yield registry.requestImport("path");
+      importLines.push(`    const ${namespaceImport.local} = yield registry.requestImport("${filePath}");`);
       namespaceImports.add(namespaceImport.local);
       importedRootNames.add(namespaceImport.local);
     } else {
-      // Named imports: const { a, b } = registry.importModule("path");
+      // Named imports: const { a, b } = yield registry.requestImport("path");
       const rootNames = new Set<string>();
 
       imports.forEach((imp) => {
@@ -258,7 +258,7 @@ const renderImportStatements = ({
 
       if (rootNames.size > 0) {
         const destructured = Array.from(rootNames).sort().join(", ");
-        importLines.push(`    const { ${destructured} } = registry.importModule("${filePath}");`);
+        importLines.push(`    const { ${destructured} } = yield registry.requestImport("${filePath}");`);
       }
     }
   });
@@ -281,5 +281,5 @@ export const renderRegistryBlock = ({
 }): string => {
   const { imports } = renderImportStatements({ filePath, analysis, analyses });
 
-  return [`registry.setModule("${filePath}", () => {`, imports, "", buildNestedObject(analysis.definitions), "});"].join("\n");
+  return [`registry.setModule("${filePath}", function*() {`, imports, "", buildNestedObject(analysis.definitions), "});"].join("\n");
 };
