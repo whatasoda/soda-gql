@@ -8,13 +8,16 @@
     "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
-  "include": ["package.json", "tests/**/*", "scripts/**/*", "tsdown.config.ts"],
+  "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*", "tsdown.config.ts"],
   "exclude": [
     "node_modules",
     "dist",
     ".typecheck",
     "tests/.tmp/**/*",
-    ".tmp/**/*"
+    ".tmp/**/*",
+    "perf-measures/type-check/client.ts",
+    "perf-measures/**/generated/**/*",
+    "perf-measures/**/fixtures/**/*"
   ],
   "references": [
     { "path": "./packages/builder/tsconfig.editor.json" },

@@ -49,7 +49,7 @@ function parseArgs(): RunOptions {
         const key = arg.replace("--", "") as keyof RunOptions;
         const value = parseInt(args[++i] ?? "", 10);
         if (!isNaN(value)) {
-          (options as Record<string, number | boolean>)[key] = value;
+          (options as unknown as Record<string, number | boolean>)[key] = value;
         }
         break;
       }
