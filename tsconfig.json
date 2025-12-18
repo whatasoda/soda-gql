@@ -4,7 +4,7 @@
     "composite": true,
     "noEmit": true,
     "baseUrl": ".",
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     // NOTE: These paths are only available on `tests` and `scripts` directories.
     // In order to make bun test pass, we need to put these paths here, as well.
     // To avoid duplicated management, tsconfig.editor.json is extended with this file.

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     "outDir": ".typecheck/root",
     "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."

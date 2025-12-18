@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     "outDir": "../../.typecheck/examples/babel-app",
     "tsBuildInfoFile": "../../.typecheck/examples/babel-app/tsconfig.tsbuildinfo",
     "rootDir": ".",
