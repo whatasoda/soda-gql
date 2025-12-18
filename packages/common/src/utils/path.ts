@@ -3,9 +3,10 @@ import { dirname, join, normalize, resolve } from "node:path";
 
 /**
  * File extensions to try when resolving module specifiers.
- * Ordered by precedence: TypeScript, then JavaScript.
+ * Ordered to match TypeScript's module resolution order.
+ * @see https://www.typescriptlang.org/docs/handbook/module-resolution.html
  */
-export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"] as const;
+export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs", ".jsx"] as const;
 
 /**
  * Normalize path to use forward slashes (cross-platform).
