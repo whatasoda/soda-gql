@@ -203,10 +203,12 @@ const renderImportStatements = ({
   filePath,
   analysis,
   analyses,
+  graphqlSystemPath,
 }: {
   filePath: string;
   analysis: ModuleAnalysis;
   analyses: Map<string, ModuleAnalysis>;
+  graphqlSystemPath: string;
 }): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
   const importLines: string[] = [];
   const importedRootNames = new Set<string>();
@@ -227,6 +229,11 @@ const renderImportStatements = ({
 
     const resolvedPath = resolveRelativeImportWithReferences({ filePath, specifier: imp.source, references: analyses });
     if (!resolvedPath) {
+      return;
+    }
+
+    // Skip graphql-system imports - gql is provided via VM context
+    if (resolvedPath === graphqlSystemPath) {
       return;
     }
 
@@ -274,12 +281,14 @@ export const renderRegistryBlock = ({
   filePath,
   analysis,
   analyses,
+  graphqlSystemPath,
 }: {
   filePath: string;
   analysis: ModuleAnalysis;
   analyses: Map<string, ModuleAnalysis>;
+  graphqlSystemPath: string;
 }): string => {
-  const { imports } = renderImportStatements({ filePath, analysis, analyses });
+  const { imports } = renderImportStatements({ filePath, analysis, analyses, graphqlSystemPath });
 
   return [`registry.setModule("${filePath}", function*() {`, imports, "", buildNestedObject(analysis.definitions), "});"].join(
     "\n",

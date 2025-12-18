@@ -4,6 +4,9 @@ import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import { generateIntermediateModules } from "@soda-gql/builder/intermediate-module/evaluation";
 import { createCanonicalId } from "@soda-gql/common";
 
+// Test graphql-system path that won't match any test module paths
+const TEST_GRAPHQL_SYSTEM_PATH = "/test/graphql-system/index.ts";
+
 const createTestAnalysis = (
   filePath: string,
   definitions: Array<{ localPath: string; expression: string; dependencies?: string[] }>,
@@ -37,6 +40,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result.set(module.filePath, module);
     }
@@ -63,6 +67,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts", "/src/b.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result.set(module.filePath, module);
     }
@@ -87,6 +92,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result.set(module.filePath, module);
     }
@@ -108,6 +114,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result1.set(module.filePath, module);
     }
@@ -116,6 +123,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result2.set(module.filePath, module);
     }
@@ -139,6 +147,7 @@ describe("generateIntermediateModules", () => {
     for (const module of generateIntermediateModules({
       analyses,
       targetFiles: new Set(["/src/a.ts"]),
+      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
     })) {
       result.set(module.filePath, module);
     }

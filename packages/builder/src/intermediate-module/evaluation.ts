@@ -15,6 +15,7 @@ import type { IntermediateModule } from "./types";
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
   readonly targetFiles: Set<string>;
+  readonly graphqlSystemPath: string;
 };
 
 const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: string }): Result<string, BuilderError> => {
@@ -146,6 +147,7 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
 export const generateIntermediateModules = function* ({
   analyses,
   targetFiles,
+  graphqlSystemPath,
 }: BuildIntermediateModulesInput): Generator<IntermediateModule, void, undefined> {
   for (const filePath of targetFiles) {
     const analysis = analyses.get(filePath);
@@ -154,7 +156,7 @@ export const generateIntermediateModules = function* ({
     }
 
     // Generate source code for this intermediate module
-    const sourceCode = renderRegistryBlock({ filePath, analysis, analyses });
+    const sourceCode = renderRegistryBlock({ filePath, analysis, analyses, graphqlSystemPath });
 
     // Transpile TypeScript to JavaScript using SWC
     const transpiledCodeResult = transpile({ filePath, sourceCode });

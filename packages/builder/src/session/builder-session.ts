@@ -329,7 +329,7 @@ const buildDiscovered = ({
   }
 
   // Build and write affected intermediate modules
-  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles })) {
+  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles, graphqlSystemPath })) {
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
