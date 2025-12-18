@@ -28,6 +28,8 @@
     "examples:codegen:babel": "bun soda-gql codegen --config examples/babel-app/soda-gql.config.ts",
     "examples:codegen:nestjs-tsc": "bun soda-gql codegen --config examples/nestjs-compiler-tsc/soda-gql.config.ts",
     "perf:builder": "bun run scripts/perf/collect-builder-metrics.ts",
+    "perf:typecheck": "bun run perf-measures/type-check/scripts/run.ts",
+    "perf:typecheck:generate": "bun run perf-measures/type-check/scripts/run.ts --generate",
     "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {
