@@ -1,11 +1,12 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { dirname, join, normalize, resolve } from "node:path";
 
 /**
  * File extensions to try when resolving module specifiers.
- * Ordered by precedence: TypeScript, then JavaScript.
+ * Ordered to match TypeScript's module resolution order.
+ * @see https://www.typescriptlang.org/docs/handbook/module-resolution.html
  */
-export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"] as const;
+export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs", ".jsx"] as const;
 
 /**
  * Normalize path to use forward slashes (cross-platform).
@@ -30,12 +31,9 @@ export const resolveRelativeImportWithExistenceCheck = ({
 }): string | null => {
   const base = resolve(dirname(filePath), specifier);
 
-  // Try exact path first
-  if (existsSync(base)) {
-    return normalizePath(base);
-  }
-
-  // Try with extensions
+  // Try with extensions first (most common case)
+  // This handles cases like "./constants" resolving to "./constants.ts"
+  // even when a "./constants" directory exists
   for (const ext of MODULE_EXTENSION_CANDIDATES) {
     const candidate = `${base}${ext}`;
     if (existsSync(candidate)) {
@@ -48,6 +46,18 @@ export const resolveRelativeImportWithExistenceCheck = ({
     const candidate = join(base, `index${ext}`);
     if (existsSync(candidate)) {
       return normalizePath(candidate);
+    }
+  }
+
+  // Try exact path last (only if it's a file, not directory)
+  if (existsSync(base)) {
+    try {
+      const stat = statSync(base);
+      if (stat.isFile()) {
+        return normalizePath(base);
+      }
+    } catch {
+      // Ignore stat errors
     }
   }
 
