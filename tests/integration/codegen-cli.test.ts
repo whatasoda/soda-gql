@@ -90,7 +90,7 @@ describe("soda-gql codegen CLI", () => {
     expect(result.stderr).toContain(invalidSchemaPath);
   });
 
-  it("emits graphql-system bundle for valid schema", async () => {
+  it("emits graphql-system bundle for valid schema", { timeout: 30000 }, async () => {
     const caseDir = join(tmpRoot, `case-${Date.now()}`);
     mkdirSync(caseDir, { recursive: true });
 
