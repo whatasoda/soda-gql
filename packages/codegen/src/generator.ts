@@ -552,15 +552,37 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const scalarAliases = new Map<string, string>();
 
   if ($$.injection.mode === "inject") {
-    // Generate per-schema imports
+    // Group imports by file path
+    const importsByPath = new Map<string, string[]>();
+
     for (const [schemaName, injection] of $$.injection.perSchema) {
       const adapterAlias = `adapter_${schemaName}`;
       const scalarAlias = `scalar_${schemaName}`;
       adapterAliases.set(schemaName, adapterAlias);
       scalarAliases.set(schemaName, scalarAlias);
 
-      imports.push(`import { adapter as ${adapterAlias} } from "${injection.adapterImportPath}";`);
-      imports.push(`import { scalar as ${scalarAlias} } from "${injection.scalarImportPath}";`);
+      // Group adapter import
+      const adapterSpecifiers = importsByPath.get(injection.adapterImportPath) ?? [];
+      if (!importsByPath.has(injection.adapterImportPath)) {
+        importsByPath.set(injection.adapterImportPath, adapterSpecifiers);
+      }
+      adapterSpecifiers.push(`adapter as ${adapterAlias}`);
+
+      // Group scalar import (may be same file as adapter)
+      const scalarSpecifiers = importsByPath.get(injection.scalarImportPath) ?? [];
+      if (!importsByPath.has(injection.scalarImportPath)) {
+        importsByPath.set(injection.scalarImportPath, scalarSpecifiers);
+      }
+      scalarSpecifiers.push(`scalar as ${scalarAlias}`);
+    }
+
+    // Generate grouped imports
+    for (const [path, specifiers] of importsByPath) {
+      if (specifiers.length === 1) {
+        imports.push(`import { ${specifiers[0]} } from "${path}";`);
+      } else {
+        imports.push(`import {\n  ${specifiers.join(",\n  ")},\n} from "${path}";`);
+      }
     }
   }
 

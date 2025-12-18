@@ -2,7 +2,7 @@ import { defineSchemaFor } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import z from "zod";
 import { type ConfigError, configError } from "./errors";
-import type { SchemaConfig, SodaGqlConfig } from "./types";
+import type { SchemaConfig, SodaGqlConfig, StylesConfig } from "./types";
 
 /**
  * Thin wrapper class to simplify the validation of exported value from config file.
@@ -69,6 +69,10 @@ const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   scalars: z.string().min(1),
 });
 
+const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
+  importExtension: z.boolean().optional(),
+});
+
 const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   analyzer: z.enum(["ts", "swc"]).optional(),
   outdir: z.string().min(1),
@@ -76,6 +80,7 @@ const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   include: z.array(z.string().min(1)),
   exclude: z.array(z.string().min(1)).optional(),
   schemas: z.record(z.string(), SchemaConfigSchema),
+  styles: StylesConfigSchema.optional(),
   plugins: z.record(z.string(), z.unknown()).optional(),
 });
 

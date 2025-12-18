@@ -21,5 +21,8 @@ export const createTestConfig = (
       scalars: join(workspaceRoot, "inject/scalars.ts"),
     },
   },
+  styles: {
+    importExtension: false,
+  },
   plugins: {},
 });

@@ -35,6 +35,9 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
         },
       ]),
     ),
+    styles: {
+      importExtension: config.styles?.importExtension ?? false,
+    },
     plugins: config.plugins ?? {},
   };
 

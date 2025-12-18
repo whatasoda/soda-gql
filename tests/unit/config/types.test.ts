@@ -79,6 +79,9 @@ describe("types.ts", () => {
           scalars: "/abs/path/to/scalars.ts",
         },
       },
+      styles: {
+        importExtension: false,
+      },
       plugins: {},
     };
 
@@ -100,6 +103,9 @@ describe("types.ts", () => {
           runtimeAdapter: "/abs/path/to/runtime-adapter.ts",
           scalars: "/abs/path/to/scalars.ts",
         },
+      },
+      styles: {
+        importExtension: false,
       },
       plugins: {},
     };

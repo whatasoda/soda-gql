@@ -20,6 +20,7 @@ type ParsedCommand =
       format: CodegenFormat;
       runtimeAdapters: Record<string, string>;
       scalars: Record<string, string>;
+      importExtension: boolean;
     };
 
 const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, CodegenError> => {
@@ -86,6 +87,7 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     format: (args.format ?? "human") as CodegenFormat,
     runtimeAdapters,
     scalars,
+    importExtension: config.styles.importExtension,
   });
 };
 
@@ -143,6 +145,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       format: command.format,
       runtimeAdapters: Object.fromEntries(Object.entries(command.runtimeAdapters).map(([name, path]) => [name, resolve(path)])),
       scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
+      importExtension: command.importExtension,
     });
 
     if (result.isErr()) {
