@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     "outDir": "../../.typecheck/builder",
     "tsBuildInfoFile": "../../.typecheck/builder/tsconfig.tsbuildinfo",
     "rootDir": "./src",

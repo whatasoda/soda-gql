@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     "outDir": "../../.typecheck/graffle-client",
     "tsBuildInfoFile": "../../.typecheck/graffle-client/tsconfig.tsbuildinfo",
     "rootDir": "./src",

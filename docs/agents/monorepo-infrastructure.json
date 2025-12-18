@@ -31,7 +31,7 @@
         "Creates manifest for tsdown configuration"
       ],
       "exportConditions": {
-        "development": "Points to ./src/ source files (used by tests/examples)",
+        "@soda-gql": "Points to ./src/ source files (used by tests/examples)",
         "types": "TypeScript declaration files (./dist/*.d.ts)",
         "import": "ESM output (./dist/*.js)",
         "require": "CommonJS output (./dist/*.cjs)",
@@ -98,7 +98,7 @@
         "compilerOptions": {
           "composite": true,
           "baseUrl": ".",
-          "customConditions": ["development"],
+          "customConditions": ["@soda-gql"],
           "paths": "Maps all packages to source files"
         },
         "references": "All packages and examples"
@@ -126,7 +126,7 @@
     },
     "moduleResolution": {
       "development": {
-        "trigger": "customConditions: ['development']",
+        "trigger": "customConditions: ['@soda-gql']",
         "behavior": "Resolves to ./src/ source files",
         "usedBy": ["tests", "scripts", "examples"],
         "benefit": "No rebuild required for changes"
@@ -168,7 +168,7 @@
           "@/graphql-system": ["./graphql-system/index.ts"]
         }
       },
-      "moduleResolution": "Workspace dependencies + development condition"
+      "moduleResolution": "Workspace dependencies + @soda-gql condition"
     },
     "nestjsApp": {
       "location": "examples/nestjs-app/",
@@ -260,7 +260,7 @@
     "commands": {
       "runAll": "bun test",
       "runSpecific": "bun test tests/unit/<name>/<file>.test.ts",
-      "withDev": "bun --conditions=development test",
+      "withDev": "bun --conditions=@soda-gql test",
       "validate": "bun run validate:tests"
     }
   },
@@ -314,7 +314,7 @@
     },
     "troubleshooting": {
       "typeErrors": "rm -rf .typecheck && bun typecheck",
-      "moduleResolution": "Verify customConditions: ['development'] and bun run exports:sync",
+      "moduleResolution": "Verify customConditions: ['@soda-gql'] and bun run exports:sync",
       "buildFailures": "bun run clean:dist && bun run exports:sync && bun run build"
     }
   },
@@ -415,7 +415,7 @@
     "test": {
       "all": "bun test",
       "specific": "bun test <path>",
-      "dev": "bun --conditions=development test",
+      "dev": "bun --conditions=@soda-gql test",
       "validate": "bun run validate:tests"
     },
     "quality": {
@@ -469,7 +469,7 @@
     ],
     "whenEditingCode": [
       "Edit source files (./src/), not dist",
-      "Tests run against source via development condition",
+      "Tests run against source via @soda-gql condition",
       "No build needed for testing during development",
       "Run quality checks before committing"
     ],
@@ -483,7 +483,7 @@
       "typeErrors": "Check .typecheck/ output, verify project references",
       "moduleResolution": "Verify customConditions and path mappings",
       "buildErrors": "Check tsdown.config.ts and external dependencies",
-      "testFailures": "Verify fixture paths and development condition"
+      "testFailures": "Verify fixture paths and @soda-gql condition"
     }
   }
 }

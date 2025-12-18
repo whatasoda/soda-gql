@@ -83,14 +83,14 @@ function generateExportsEntry(
   const hasEsm = format.includes("esm");
   const hasCjs = format.includes("cjs");
 
-  // Convert full path to relative source path for "development" field
+  // Convert full path to relative source path for "@soda-gql" field
   // e.g., "packages/core/src/index.ts" -> "./src/index.ts"
   const parts = sourcePath.split("/");
   const srcIndex = parts.indexOf("src");
   const relativeSrc = "./" + parts.slice(srcIndex).join("/");
 
   const entry: Record<string, string> = {
-    development: relativeSrc,
+    "@soda-gql": relativeSrc,
     types: sourceToDistPath(sourcePath, hasEsm ? "esm-dts" : "cjs-dts", platform),
   };
 

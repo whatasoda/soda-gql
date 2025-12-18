@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "customConditions": ["development"],
+    "customConditions": ["@soda-gql"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

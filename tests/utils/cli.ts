@@ -40,11 +40,11 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
     }, timeout);
   });
 
-  // Ensure development condition is set for module resolution in spawned processes
-  const nodeOptions = [process.env.NODE_OPTIONS, "--conditions=development"].filter(Boolean).join(" ");
+  // Ensure "@soda-gql" condition is set for module resolution in spawned processes
+  const nodeOptions = [process.env.NODE_OPTIONS, "--conditions=@soda-gql"].filter(Boolean).join(" ");
 
   const spawnPromise = spawn({
-    cmd: ["bun", "--conditions=development", cliEntryPoint, command, ...args],
+    cmd: ["bun", "--conditions=@soda-gql", cliEntryPoint, command, ...args],
     cwd,
     env: {
       ...process.env,

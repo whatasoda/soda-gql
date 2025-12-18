@@ -15,7 +15,7 @@
   },
   "exports": {
     ".": {
-      "development": "./src/index.ts",
+      "@soda-gql": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
