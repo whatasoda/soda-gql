@@ -64,14 +64,11 @@ export const createIntermediateRegistry = () => {
    * Evaluate a single module and its dependencies using trampoline.
    * Returns the cached result or evaluates and caches if not yet evaluated.
    */
-  const evaluateModule = (
-    filePath: string,
-    evaluated: Map<string, ArtifactModule>,
-    inProgress: Set<string>,
-  ): ArtifactModule => {
+  const evaluateModule = (filePath: string, evaluated: Map<string, ArtifactModule>, inProgress: Set<string>): ArtifactModule => {
     // Already evaluated - return cached
-    if (evaluated.has(filePath)) {
-      return evaluated.get(filePath)!;
+    const cached = evaluated.get(filePath);
+    if (cached) {
+      return cached;
     }
 
     const stack: EvaluationFrame[] = [];
@@ -84,17 +81,14 @@ export const createIntermediateRegistry = () => {
     stack.push({ filePath, generator: factory() });
 
     // Trampoline loop - process generators without deep recursion
-    while (stack.length > 0) {
-      const frame = stack[stack.length - 1]!;
-
+    let frame: EvaluationFrame | undefined;
+    while ((frame = stack[stack.length - 1])) {
       // Mark as in progress (for circular dependency detection)
       inProgress.add(frame.filePath);
 
       // Advance the generator
       const result =
-        frame.resolvedDependency !== undefined
-          ? frame.generator.next(frame.resolvedDependency)
-          : frame.generator.next();
+        frame.resolvedDependency !== undefined ? frame.generator.next(frame.resolvedDependency) : frame.generator.next();
 
       // Clear the resolved dependency after use
       frame.resolvedDependency = undefined;
@@ -106,8 +100,9 @@ export const createIntermediateRegistry = () => {
         stack.pop();
 
         // If there's a parent frame waiting for this result, provide it
-        if (stack.length > 0) {
-          stack[stack.length - 1]!.resolvedDependency = result.value;
+        const parentFrame = stack[stack.length - 1];
+        if (parentFrame) {
+          parentFrame.resolvedDependency = result.value;
         }
       } else {
         // Generator yielded - it needs a dependency
@@ -117,9 +112,10 @@ export const createIntermediateRegistry = () => {
           const depPath = request.filePath;
 
           // Check if already evaluated (cached)
-          if (evaluated.has(depPath)) {
+          const depCached = evaluated.get(depPath);
+          if (depCached) {
             // Provide cached result without pushing new frame
-            frame.resolvedDependency = evaluated.get(depPath);
+            frame.resolvedDependency = depCached;
           } else {
             // Check for circular dependency
             if (inProgress.has(depPath)) {
@@ -142,7 +138,11 @@ export const createIntermediateRegistry = () => {
       }
     }
 
-    return evaluated.get(filePath)!;
+    const result = evaluated.get(filePath);
+    if (!result) {
+      throw new Error(`Module evaluation failed: ${filePath}`);
+    }
+    return result;
   };
 
   const evaluate = (): Record<string, IntermediateArtifactElement> => {

@@ -6,6 +6,8 @@ describe("createIntermediateRegistry", () => {
     test("should evaluate single module without dependencies", () => {
       const registry = createIntermediateRegistry();
 
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
       registry.setModule("/src/a.ts", function* () {
         return { value: "a" };
       });
@@ -19,6 +21,8 @@ describe("createIntermediateRegistry", () => {
       const evalOrder: string[] = [];
 
       // Module C (no dependencies)
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
       registry.setModule("/src/c.ts", function* () {
         evalOrder.push("c-start");
         const result = { c: "value-c" };
@@ -27,6 +31,7 @@ describe("createIntermediateRegistry", () => {
       });
 
       // Module B depends on C
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/b.ts", function* () {
         evalOrder.push("b-start");
         const { c } = yield registry.requestImport("/src/c.ts");
@@ -36,6 +41,7 @@ describe("createIntermediateRegistry", () => {
       });
 
       // Module A depends on B
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/a.ts", function* () {
         evalOrder.push("a-start");
         const { b } = yield registry.requestImport("/src/b.ts");
@@ -60,24 +66,29 @@ describe("createIntermediateRegistry", () => {
       let dEvalCount = 0;
 
       // D is shared dependency
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
       registry.setModule("/src/d.ts", function* () {
         dEvalCount++;
         return { d: "value-d" };
       });
 
       // B depends on D
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/b.ts", function* () {
         const { d } = yield registry.requestImport("/src/d.ts");
         return { b: `b-${d}` };
       });
 
       // C depends on D
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/c.ts", function* () {
         const { d } = yield registry.requestImport("/src/d.ts");
         return { c: `c-${d}` };
       });
 
       // A depends on B and C
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/a.ts", function* () {
         const { b } = yield registry.requestImport("/src/b.ts");
         const { c } = yield registry.requestImport("/src/c.ts");
@@ -94,12 +105,14 @@ describe("createIntermediateRegistry", () => {
       const registry = createIntermediateRegistry();
 
       // A depends on B
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/a.ts", function* () {
         const { b } = yield registry.requestImport("/src/b.ts");
         return { a: b };
       });
 
       // B depends on A (circular)
+      // @ts-expect-error - test uses simplified return type
       registry.setModule("/src/b.ts", function* () {
         const { a } = yield registry.requestImport("/src/a.ts");
         return { b: a };
@@ -119,12 +132,15 @@ describe("createIntermediateRegistry", () => {
 
         if (i === CHAIN_LENGTH - 1) {
           // Last module - no dependencies
+          // @ts-expect-error - test uses simplified return type
+          // biome-ignore lint/correctness/useYield: generator without dependencies for testing
           registry.setModule(currentPath, function* () {
             return { value: `module_${i}` };
           });
         } else {
           // Intermediate module - depends on next
           const currentIndex = i;
+          // @ts-expect-error - test uses simplified return type
           registry.setModule(currentPath, function* () {
             const dep = yield registry.requestImport(nextPath);
             return { value: `module_${currentIndex}->${dep.value}` };
