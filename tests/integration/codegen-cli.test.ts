@@ -90,7 +90,7 @@ describe("soda-gql codegen CLI", () => {
     expect(result.stderr).toContain(invalidSchemaPath);
   });
 
-  it("emits graphql-system bundle for valid schema", { timeout: 30000 }, async () => {
+  it("emits graphql-system bundle for valid schema", async () => {
     const caseDir = join(tmpRoot, `case-${Date.now()}`);
     mkdirSync(caseDir, { recursive: true });
 
@@ -167,7 +167,7 @@ describe("soda-gql codegen CLI", () => {
     await runTypecheck(tsconfigPath);
     // Skip typecheck assertion for now - bun types issue unrelated to this refactoring
     // expect(typecheckResult.exitCode).toBe(0);
-  });
+  }, { timeout: 30000 });
 
   it("creates inject module template", async () => {
     const templatePath = join(tmpRoot, `inject-template-${Date.now()}.ts`);

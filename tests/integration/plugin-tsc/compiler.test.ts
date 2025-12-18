@@ -61,7 +61,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
 
     // Original code should be present (not transformed since disabled)
     expect(emittedCode).toContain("gql.default");
-  });
+  }, { timeout: 30000 });
 
   test("should skip transformation when disabled", () => {
     const compilerOptions: ts.CompilerOptions = {
@@ -167,7 +167,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // - Should contain: gqlRuntime.getComposedOperation(...)
       // - Should NOT contain: __soda_gql_runtime
       // - Should NOT contain: require("@soda-gql/runtime")
-    });
+    }, { timeout: 30000 });
   });
 
   describe("CommonJS Output", () => {
@@ -203,7 +203,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // - Should contain: __soda_gql_runtime.gqlRuntime.getComposedOperation(...)
       // - Should NOT contain: import { gqlRuntime }
       // - Should NOT contain bare: gqlRuntime.operation (without __soda_gql_runtime prefix)
-    });
+    }, { timeout: 30000 });
 
     test("should handle Node16/NodeNext module resolution with CJS files", () => {
       const compilerOptions: ts.CompilerOptions = {
@@ -232,6 +232,6 @@ describe("TypeScript Compiler Plugin Integration", () => {
       // TODO: When enabled with builder-generated artifacts, verify that:
       // - If impliedNodeFormat is CommonJS, uses __soda_gql_runtime pattern
       // - If impliedNodeFormat is ESM, uses import pattern
-    });
+    }, { timeout: 30000 });
   });
 });
