@@ -9,6 +9,7 @@ import {
   Model,
   Slice,
 } from "@soda-gql/core";
+import type { ModuleAnalysis } from "../ast";
 import type { EvaluationRequest, IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
@@ -35,7 +36,7 @@ type EvaluationFrame = {
   resolvedDependency?: ArtifactModule;
 };
 
-export const createIntermediateRegistry = () => {
+export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string, ModuleAnalysis> } = {}) => {
   const modules = new Map<string, GeneratorFactory>();
   const elements = new Map<string, AcceptableArtifact>();
 
@@ -119,6 +120,20 @@ export const createIntermediateRegistry = () => {
           } else {
             // Check for circular dependency
             if (inProgress.has(depPath)) {
+              // If analyses is available, check if both modules have gql definitions
+              // Only throw if both import source and target have gql definitions
+              if (analyses) {
+                const currentAnalysis = analyses.get(frame.filePath);
+                const targetAnalysis = analyses.get(depPath);
+                const currentHasGql = currentAnalysis && currentAnalysis.definitions.length > 0;
+                const targetHasGql = targetAnalysis && targetAnalysis.definitions.length > 0;
+
+                if (!currentHasGql || !targetHasGql) {
+                  // One or both modules have no gql definitions - allow circular import
+                  frame.resolvedDependency = {};
+                  continue;
+                }
+              }
               throw new Error(`Circular dependency detected: ${depPath}`);
             }
 

@@ -281,5 +281,7 @@ export const renderRegistryBlock = ({
 }): string => {
   const { imports } = renderImportStatements({ filePath, analysis, analyses });
 
-  return [`registry.setModule("${filePath}", function*() {`, imports, "", buildNestedObject(analysis.definitions), "});"].join("\n");
+  return [`registry.setModule("${filePath}", function*() {`, imports, "", buildNestedObject(analysis.definitions), "});"].join(
+    "\n",
+  );
 };
