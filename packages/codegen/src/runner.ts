@@ -17,10 +17,26 @@ const extensionMap: Record<string, string> = {
   ".cjs": ".cjs",
 };
 
-const toImportSpecifier = (fromPath: string, targetPath: string): string => {
+type ImportSpecifierOptions = {
+  includeExtension?: boolean;
+};
+
+const toImportSpecifier = (fromPath: string, targetPath: string, options?: ImportSpecifierOptions): string => {
   const fromDir = dirname(fromPath);
   const normalized = relative(fromDir, targetPath).replace(/\\/g, "/");
   const sourceExt = extname(targetPath);
+
+  // When includeExtension is false (default), strip the extension entirely
+  if (!options?.includeExtension) {
+    if (normalized.length === 0) {
+      return `./${basename(targetPath, sourceExt)}`;
+    }
+    const withPrefix = normalized.startsWith(".") ? normalized : `./${normalized}`;
+    const currentExt = extname(withPrefix);
+    return currentExt ? withPrefix.slice(0, -currentExt.length) : withPrefix;
+  }
+
+  // When includeExtension is true, convert to runtime extension
   const runtimeExt = extensionMap[sourceExt] ?? sourceExt;
 
   if (normalized.length === 0) {
@@ -107,9 +123,10 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
       });
     }
 
+    const importSpecifierOptions = { includeExtension: options.importExtension };
     injectionConfig.set(schemaName, {
-      adapterImportPath: toImportSpecifier(outPath, adapterPath),
-      scalarImportPath: toImportSpecifier(outPath, scalarPath),
+      adapterImportPath: toImportSpecifier(outPath, adapterPath, importSpecifierOptions),
+      scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
     });
   }
 

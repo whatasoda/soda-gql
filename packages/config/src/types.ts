@@ -5,6 +5,22 @@ export type SchemaConfig = {
   readonly scalars: string;
 };
 
+// Output styles configuration for codegen
+export type StylesConfig = {
+  /**
+   * Whether to include file extensions in import paths.
+   * When true, imports will have extensions like `.js`.
+   * When false (default), imports will have no extension.
+   * @default false
+   */
+  readonly importExtension?: boolean;
+};
+
+// Resolved output styles configuration
+export type ResolvedStylesConfig = {
+  readonly importExtension: boolean;
+};
+
 // Plugin-specific config (extensible)
 export type PluginConfig = Record<string, unknown>;
 
@@ -48,6 +64,10 @@ export type SodaGqlConfig = {
    */
   readonly schemas: Readonly<Record<string, SchemaConfig>>;
   /**
+   * Output styles configuration for generated code.
+   */
+  readonly styles?: StylesConfig;
+  /**
    * The plugins to use for the project.
    */
   readonly plugins?: PluginConfig;
@@ -61,5 +81,6 @@ export type ResolvedSodaGqlConfig = {
   readonly include: readonly string[];
   readonly exclude: readonly string[];
   readonly schemas: Readonly<Record<string, SchemaConfig>>;
+  readonly styles: ResolvedStylesConfig;
   readonly plugins: PluginConfig;
 };
