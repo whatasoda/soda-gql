@@ -185,12 +185,14 @@ export const generateIntermediateModules = function* ({
 export const evaluateIntermediateModules = ({
   intermediateModules,
   graphqlSystemPath,
+  analyses,
 }: {
   intermediateModules: Map<string, IntermediateModule>;
   graphqlSystemPath: string;
+  analyses: Map<string, ModuleAnalysis>;
 }) => {
   // Determine import paths from config
-  const registry = createIntermediateRegistry();
+  const registry = createIntermediateRegistry({ analyses });
   const gqlImportPath = resolveGraphqlSystemPath(graphqlSystemPath);
 
   const { gql } = executeGraphqlSystemModule(gqlImportPath);

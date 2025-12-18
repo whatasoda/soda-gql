@@ -9,7 +9,8 @@ import {
   Model,
   Slice,
 } from "@soda-gql/core";
-import type { IntermediateArtifactElement } from "./types";
+import type { ModuleAnalysis } from "../ast";
+import type { EvaluationRequest, IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
 
@@ -19,22 +20,38 @@ type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
 };
 
-export const createIntermediateRegistry = () => {
-  const modules = new Map<string, () => ArtifactModule>();
+/**
+ * Generator factory type for module evaluation.
+ * The generator yields EvaluationRequest when it needs to import a dependency,
+ * receives the resolved module as the yield result, and returns the final ArtifactModule.
+ */
+type GeneratorFactory = () => Generator<EvaluationRequest, ArtifactModule, ArtifactModule>;
+
+/**
+ * Internal frame type for the evaluation stack.
+ */
+type EvaluationFrame = {
+  readonly filePath: string;
+  readonly generator: Generator<EvaluationRequest, ArtifactModule, ArtifactModule>;
+  resolvedDependency?: ArtifactModule;
+};
+
+export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string, ModuleAnalysis> } = {}) => {
+  const modules = new Map<string, GeneratorFactory>();
   const elements = new Map<string, AcceptableArtifact>();
 
-  const setModule = (filePath: string, factory: () => ArtifactModule) => {
-    let cached: ArtifactModule | undefined;
-    modules.set(filePath, () => (cached ??= factory()));
+  const setModule = (filePath: string, factory: GeneratorFactory) => {
+    modules.set(filePath, factory);
   };
 
-  const importModule = (filePath: string) => {
-    const factory = modules.get(filePath);
-    if (!factory) {
-      throw new Error(`Module not found or yet to be registered: ${filePath}`);
-    }
-    return factory();
-  };
+  /**
+   * Creates an import request to be yielded by module generators.
+   * Usage: `const { foo } = yield registry.requestImport("/path/to/module");`
+   */
+  const requestImport = (filePath: string): EvaluationRequest => ({
+    kind: "import",
+    filePath,
+  });
 
   const addElement = <TArtifact extends AcceptableArtifact>(canonicalId: string, factory: () => TArtifact) => {
     const builder = factory();
@@ -43,10 +60,115 @@ export const createIntermediateRegistry = () => {
     elements.set(canonicalId, builder);
     return builder;
   };
+
+  /**
+   * Evaluate a single module and its dependencies using trampoline.
+   * Returns the cached result or evaluates and caches if not yet evaluated.
+   */
+  const evaluateModule = (filePath: string, evaluated: Map<string, ArtifactModule>, inProgress: Set<string>): ArtifactModule => {
+    // Already evaluated - return cached
+    const cached = evaluated.get(filePath);
+    if (cached) {
+      return cached;
+    }
+
+    const stack: EvaluationFrame[] = [];
+
+    // Start with the requested module
+    const factory = modules.get(filePath);
+    if (!factory) {
+      throw new Error(`Module not found or yet to be registered: ${filePath}`);
+    }
+    stack.push({ filePath, generator: factory() });
+
+    // Trampoline loop - process generators without deep recursion
+    let frame: EvaluationFrame | undefined;
+    while ((frame = stack[stack.length - 1])) {
+      // Mark as in progress (for circular dependency detection)
+      inProgress.add(frame.filePath);
+
+      // Advance the generator
+      const result =
+        frame.resolvedDependency !== undefined ? frame.generator.next(frame.resolvedDependency) : frame.generator.next();
+
+      // Clear the resolved dependency after use
+      frame.resolvedDependency = undefined;
+
+      if (result.done) {
+        // Generator completed - cache result and pop frame
+        evaluated.set(frame.filePath, result.value);
+        inProgress.delete(frame.filePath);
+        stack.pop();
+
+        // If there's a parent frame waiting for this result, provide it
+        const parentFrame = stack[stack.length - 1];
+        if (parentFrame) {
+          parentFrame.resolvedDependency = result.value;
+        }
+      } else {
+        // Generator yielded - it needs a dependency
+        const request = result.value;
+
+        if (request.kind === "import") {
+          const depPath = request.filePath;
+
+          // Check if already evaluated (cached)
+          const depCached = evaluated.get(depPath);
+          if (depCached) {
+            // Provide cached result without pushing new frame
+            frame.resolvedDependency = depCached;
+          } else {
+            // Check for circular dependency
+            if (inProgress.has(depPath)) {
+              // If analyses is available, check if both modules have gql definitions
+              // Only throw if both import source and target have gql definitions
+              if (analyses) {
+                const currentAnalysis = analyses.get(frame.filePath);
+                const targetAnalysis = analyses.get(depPath);
+                const currentHasGql = currentAnalysis && currentAnalysis.definitions.length > 0;
+                const targetHasGql = targetAnalysis && targetAnalysis.definitions.length > 0;
+
+                if (!currentHasGql || !targetHasGql) {
+                  // One or both modules have no gql definitions - allow circular import
+                  frame.resolvedDependency = {};
+                  continue;
+                }
+              }
+              throw new Error(`Circular dependency detected: ${depPath}`);
+            }
+
+            // Need to evaluate dependency first
+            const depFactory = modules.get(depPath);
+            if (!depFactory) {
+              throw new Error(`Module not found or yet to be registered: ${depPath}`);
+            }
+
+            // Push new frame for dependency
+            stack.push({
+              filePath: depPath,
+              generator: depFactory(),
+            });
+          }
+        }
+      }
+    }
+
+    const result = evaluated.get(filePath);
+    if (!result) {
+      throw new Error(`Module evaluation failed: ${filePath}`);
+    }
+    return result;
+  };
+
   const evaluate = (): Record<string, IntermediateArtifactElement> => {
-    // First, register all modules by calling their factories
-    for (const mod of modules.values()) {
-      mod();
+    const evaluated = new Map<string, ArtifactModule>();
+    const inProgress = new Set<string>();
+
+    // Evaluate all modules (each evaluation handles its own dependencies)
+    for (const filePath of modules.keys()) {
+      if (!evaluated.has(filePath)) {
+        evaluateModule(filePath, evaluated, inProgress);
+      }
     }
 
     // Then, evaluate all builders after registration
@@ -78,7 +200,7 @@ export const createIntermediateRegistry = () => {
 
   return {
     setModule,
-    importModule,
+    requestImport,
     addElement,
     evaluate,
     clear,

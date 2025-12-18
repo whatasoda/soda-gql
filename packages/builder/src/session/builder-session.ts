@@ -333,7 +333,7 @@ const buildDiscovered = ({
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
-  const elements = evaluateIntermediateModules({ intermediateModules, graphqlSystemPath });
+  const elements = evaluateIntermediateModules({ intermediateModules, graphqlSystemPath, analyses });
 
   // Build artifact from all intermediate modules
   const artifactResult = buildArtifact({
