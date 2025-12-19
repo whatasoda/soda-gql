@@ -25,7 +25,6 @@ describe("module analysis (swc)", () => {
     const analysis = analyzeModule({ filePath, source });
     const names = analysis.definitions.map((item) => item.astPath);
     expect(names).toContain("user_remoteModel.forIterate");
-    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("collects nested definitions inside functions", () => {
@@ -36,7 +35,6 @@ describe("module analysis (swc)", () => {
     const [definition] = analysis.definitions;
     expect(definition?.isTopLevel).toBe(false);
     expect(definition?.isExported).toBe(false);
-    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("captures references to properties on imported bindings", () => {

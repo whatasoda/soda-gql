@@ -10,7 +10,6 @@ export type {
   AnalyzeModuleInput,
   ModuleAnalysis,
   ModuleDefinition,
-  ModuleDiagnostic,
   ModuleExport,
   ModuleImport,
   SourceLocation,

@@ -23,7 +23,6 @@ const createMockAnalysis = (filePath: string, hasGqlDefinitions: boolean): Modul
     filePath,
     signature: "test-sig",
     definitions,
-    diagnostics: [],
     imports: [],
     exports: [],
   };

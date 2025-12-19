@@ -10,7 +10,6 @@ class CacheManagerTestSuite extends TestSuite {
       filePath: "/dev/null",
       signature: "",
       definitions: [],
-      diagnostics: [],
       imports: [],
       exports: [],
       ...overrides,

@@ -36,9 +36,6 @@ describe("Module analyzer - TypeScript", () => {
     expect(definition?.isTopLevel).toBe(false);
     expect(definition?.isExported).toBe(false);
     expect(definition?.exportBinding).toBeUndefined();
-
-    // No diagnostics emitted for nested definitions
-    expect(analysis.diagnostics).toHaveLength(0);
   });
 
   it("captures references to imported slices and models", () => {

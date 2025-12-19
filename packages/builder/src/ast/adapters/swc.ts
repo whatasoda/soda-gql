@@ -18,7 +18,6 @@ type SwcModule = Module & { __filePath: string };
 import type {
   AnalyzeModuleInput,
   ModuleDefinition,
-  ModuleDiagnostic,
   ModuleExport,
   ModuleImport,
   SourceLocation,
@@ -558,15 +557,6 @@ const collectAllDefinitions = ({
 };
 
 /**
- * Collect diagnostics (now empty since we support all definition types)
- */
-const collectDiagnostics = (): ModuleDiagnostic[] => {
-  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
-  // All gql definitions are now supported
-  return [];
-};
-
-/**
  * SWC adapter implementation.
  * The analyze method parses and collects all data in one pass,
  * ensuring the AST (Module) is released after analysis.
@@ -605,14 +595,11 @@ export const swcAdapter: AnalyzerAdapter = {
       source: input.source,
     });
 
-    const diagnostics = collectDiagnostics();
-
     // Return results - swcModule goes out of scope and becomes eligible for GC
     return {
       imports,
       exports,
       definitions,
-      diagnostics,
     };
   },
 };

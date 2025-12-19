@@ -24,7 +24,6 @@ const createTestAnalysis = (
     filePath,
     signature: "test-sig",
     definitions: defs,
-    diagnostics: [],
     imports: [],
     exports: [],
   };

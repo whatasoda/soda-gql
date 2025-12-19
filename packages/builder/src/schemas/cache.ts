@@ -21,12 +21,6 @@ export const ModuleDefinitionSchema = z.object({
   expression: z.string(),
 });
 
-export const ModuleDiagnosticSchema = z.object({
-  code: z.literal("NON_TOP_LEVEL_DEFINITION"),
-  message: z.string(),
-  loc: SourceLocationSchema,
-});
-
 export const ModuleImportSchema = z.object({
   source: z.string(),
   imported: z.string(),
@@ -56,7 +50,6 @@ export const ModuleAnalysisSchema = z.object({
   filePath: z.string(),
   signature: z.string(),
   definitions: z.array(ModuleDefinitionSchema).readonly(),
-  diagnostics: z.array(ModuleDiagnosticSchema).readonly(),
   imports: z.array(ModuleImportSchema).readonly(),
   exports: z.array(ModuleExportSchema).readonly(),
 });

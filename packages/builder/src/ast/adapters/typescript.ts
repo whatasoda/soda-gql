@@ -12,7 +12,6 @@ import type { AnalyzerAdapter, AnalyzerResult } from "../core";
 import type {
   AnalyzeModuleInput,
   ModuleDefinition,
-  ModuleDiagnostic,
   ModuleExport,
   ModuleImport,
   SourceLocation,
@@ -431,19 +430,6 @@ const collectAllDefinitions = ({
 };
 
 /**
- * Collect diagnostics (now empty since we support all definition types)
- */
-const collectDiagnostics = (
-  _sourceFile: ts.SourceFile,
-  _identifiers: ReadonlySet<string>,
-  _handledCalls: readonly ts.CallExpression[],
-): ModuleDiagnostic[] => {
-  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
-  // All gql definitions are now supported
-  return [];
-};
-
-/**
  * TypeScript adapter implementation.
  * The analyze method parses and collects all data in one pass,
  * ensuring the AST (ts.SourceFile) is released after analysis.
@@ -458,20 +444,17 @@ export const typescriptAdapter: AnalyzerAdapter = {
     const imports = collectImports(sourceFile);
     const exports = collectExports(sourceFile);
 
-    const { definitions, handledCalls } = collectAllDefinitions({
+    const { definitions } = collectAllDefinitions({
       sourceFile,
       identifiers: gqlIdentifiers,
       exports,
     });
-
-    const diagnostics = collectDiagnostics(sourceFile, gqlIdentifiers, handledCalls);
 
     // Return results - sourceFile goes out of scope and becomes eligible for GC
     return {
       imports,
       exports,
       definitions,
-      diagnostics,
     };
   },
 };
