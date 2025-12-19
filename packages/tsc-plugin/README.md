@@ -160,9 +160,9 @@ Update `nest-cli.json`:
 }
 ```
 
-### 4. Configure TypeScript Paths
+### 4. Configure TypeScript Paths (Optional)
 
-Update `tsconfig.json`:
+If you're using path aliases like `@/graphql-system`, update `tsconfig.json`:
 
 ```json
 {

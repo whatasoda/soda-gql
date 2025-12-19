@@ -44,18 +44,15 @@ export const userQuery = gqlRuntime.getComposedOperation("canonicalId");
 
 ### Runtime Adapter
 
-For custom client integrations, create a runtime adapter:
+For custom client integrations, create a runtime adapter that defines error types:
 
 ```typescript
 import { createRuntimeAdapter } from "@soda-gql/runtime";
 
-export const runtimeAdapter = createRuntimeAdapter({
-  // Custom error types for your client
-  errorTypes: {
-    network: (message, cause) => ({ code: "NETWORK_ERROR", message, cause }),
-    unknown: (message, cause) => ({ code: "UNKNOWN_ERROR", message, cause }),
-  },
-});
+export const adapter = createRuntimeAdapter(({ type }) => ({
+  // Define the shape of non-GraphQL errors (network errors, etc.)
+  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
+}));
 ```
 
 ## API Reference
