@@ -5,64 +5,50 @@
  *
  * @example Sync usage
  * ```typescript
- * import { createSyncScheduler, Effect } from "@soda-gql/common";
+ * import { createSyncScheduler, PureEffect } from "@soda-gql/common";
  *
  * const scheduler = createSyncScheduler();
  * const result = scheduler.run(function* () {
- *   const a = yield Effect.pure(1);
- *   const b = yield Effect.pure(2);
- *   return a + b;
+ *   const a = new PureEffect(1);
+ *   yield a;
+ *   const b = new PureEffect(2);
+ *   yield b;
+ *   return a.value + b.value;
  * });
  * ```
  *
  * @example Async usage
  * ```typescript
- * import { createAsyncScheduler, Effect } from "@soda-gql/common";
+ * import { createAsyncScheduler, DeferEffect, YieldEffect } from "@soda-gql/common";
  *
  * const scheduler = createAsyncScheduler();
  * const result = await scheduler.run(function* () {
- *   const data = yield Effect.defer(fetchData());
- *   yield Effect.yield(); // Yield to event loop
- *   return processData(data);
+ *   const fetchEffect = new DeferEffect(fetchData());
+ *   yield fetchEffect;
+ *
+ *   const yieldEffect = new YieldEffect();
+ *   yield yieldEffect; // Yield to event loop
+ *
+ *   return processData(fetchEffect.value);
  * });
  * ```
  */
 
-// Types
-export type {
-  AnyEffect,
-  AsyncScheduler,
-  BaseEffect,
-  DeferEffect,
-  Effect,
-  EffectGenerator,
-  EffectGeneratorFn,
-  EffectHandler,
-  EffectResult,
-  ParallelEffect,
-  PureEffect,
-  SchedulerError,
-  SchedulerOptions,
-  SyncScheduler,
-  YieldEffect,
-} from "./types";
+export { createAsyncScheduler } from "./async-scheduler";
 
-export { createSchedulerError } from "./types";
-
-// Effect constructors and type guards
-export { Effects, isDeferEffect, isEffect, isParallelEffect, isPureEffect, isYieldEffect } from "./effect";
+// Effect classes and factory
+export { DeferEffect, Effects, ParallelEffect, PureEffect, YieldEffect } from "./effect";
 
 // Scheduler implementations
 export { createSyncScheduler } from "./sync-scheduler";
-export { createAsyncScheduler } from "./async-scheduler";
-
-// Handlers (for extension)
+// Types and base class
 export {
-  coreAsyncHandlers,
-  coreSyncHandlers,
-  createParallelHandler,
-  createSyncParallelHandler,
-  deferHandler,
-  pureHandler,
-  yieldHandler,
-} from "./handlers/core";
+  type AsyncScheduler,
+  createSchedulerError,
+  Effect,
+  type EffectGenerator,
+  type EffectGeneratorFn,
+  type EffectResult,
+  type SchedulerError,
+  type SyncScheduler,
+} from "./types";

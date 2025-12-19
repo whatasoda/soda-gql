@@ -1,48 +1,43 @@
 /**
  * Builder scheduler module
  *
- * Provides builder-specific effects and handlers for file I/O operations.
+ * Provides builder-specific effects for file I/O operations.
  *
  * @example Sync usage
  * ```typescript
  * import { createSyncScheduler } from "@soda-gql/common";
- * import { BuilderEffects, syncBuilderHandlers } from "@soda-gql/builder";
+ * import { FileReadEffect } from "@soda-gql/builder";
  *
- * const scheduler = createSyncScheduler({ handlers: syncBuilderHandlers });
+ * const scheduler = createSyncScheduler();
  * const result = scheduler.run(function* () {
- *   const content = yield BuilderEffects.readFile('/path/to/file');
- *   return content;
+ *   const readEffect = new FileReadEffect('/path/to/file');
+ *   yield readEffect;
+ *   return readEffect.value;
  * });
  * ```
  *
  * @example Async usage with parallel file reads
  * ```typescript
- * import { createAsyncScheduler, Effects } from "@soda-gql/common";
- * import { BuilderEffects, asyncBuilderHandlers } from "@soda-gql/builder";
+ * import { createAsyncScheduler, ParallelEffect } from "@soda-gql/common";
+ * import { FileReadEffect } from "@soda-gql/builder";
  *
- * const scheduler = createAsyncScheduler({ handlers: asyncBuilderHandlers });
+ * const scheduler = createAsyncScheduler();
  * const result = await scheduler.run(function* () {
- *   const contents = yield Effects.parallel([
- *     BuilderEffects.readFile('/path/to/file1'),
- *     BuilderEffects.readFile('/path/to/file2'),
- *   ]);
- *   return contents;
+ *   const read1 = new FileReadEffect('/path/to/file1');
+ *   const read2 = new FileReadEffect('/path/to/file2');
+ *   const parallel = new ParallelEffect([read1, read2]);
+ *   yield parallel;
+ *   return [read1.value, read2.value];
  * });
  * ```
  */
 
-// Effect types
-export type { BuilderEffect, FileReadEffect, FileStatEffect, FileStats } from "./effects";
-
-// Effect constructors and type guards
-export { BuilderEffects, isFileReadEffect, isFileStatEffect } from "./effects";
-
-// Handlers
+// Effect classes and factory
 export {
-  asyncBuilderHandlers,
-  asyncFileReadHandler,
-  asyncFileStatHandler,
-  syncBuilderHandlers,
-  syncFileReadHandler,
-  syncFileStatHandler,
-} from "./handlers";
+  BuilderEffects,
+  FileReadEffect,
+  FileStatEffect,
+  type FileStats,
+  OptionalFileReadEffect,
+  OptionalFileStatEffect,
+} from "./effects";

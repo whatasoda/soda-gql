@@ -1,14 +1,31 @@
 import { describe, expect, it } from "bun:test";
-import { createSyncScheduler, Effects } from "@soda-gql/common";
+import { createSyncScheduler, Effect, Effects, PureEffect } from "@soda-gql/common";
 
 describe("createSyncScheduler", () => {
   it("should execute pure effects and return the final value", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const a = yield Effects.pure(1);
-      const b = yield Effects.pure(2);
-      return (a as number) + (b as number);
+      const a = new PureEffect(1);
+      yield a;
+      const b = new PureEffect(2);
+      yield b;
+      return a.value + b.value;
+    });
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toBe(3);
+  });
+
+  it("should also work with Effects factory", () => {
+    const scheduler = createSyncScheduler();
+
+    const result = scheduler.run(function* () {
+      const a = Effects.pure(1);
+      yield a;
+      const b = Effects.pure(2);
+      yield b;
+      return a.value + b.value;
     });
 
     expect(result.isOk()).toBe(true);
@@ -17,11 +34,11 @@ describe("createSyncScheduler", () => {
 
   it("should handle parallel effects sequentially", () => {
     const scheduler = createSyncScheduler();
-    const order: number[] = [];
 
     const result = scheduler.run(function* () {
-      const results = yield Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]);
-      return results;
+      const parallel = Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]);
+      yield parallel;
+      return parallel.value;
     });
 
     expect(result.isOk()).toBe(true);
@@ -56,15 +73,16 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const outer = yield Effects.parallel([
-        Effects.pure([1, 2]),
-        Effects.parallel([Effects.pure(3), Effects.pure(4)]),
-      ]);
-      return outer;
+      const outer = Effects.parallel([Effects.pure([1, 2]), Effects.parallel([Effects.pure(3), Effects.pure(4)])]);
+      yield outer;
+      return outer.value;
     });
 
     expect(result.isOk()).toBe(true);
-    expect(result._unsafeUnwrap()).toEqual([[1, 2], [3, 4]]);
+    expect(result._unsafeUnwrap()).toEqual([
+      [1, 2],
+      [3, 4],
+    ]);
   });
 
   it("should catch and return errors thrown in generator", () => {
@@ -79,43 +97,49 @@ describe("createSyncScheduler", () => {
     expect(result._unsafeUnwrapErr().message).toBe("Test error");
   });
 
-  it("should support custom effect handlers", () => {
-    type CustomEffect = { readonly kind: "custom"; readonly value: string };
+  it("should support custom effect classes", () => {
+    class CustomEffect extends Effect<string> {
+      constructor(readonly customValue: string) {
+        super();
+      }
+      protected _executeSync(): string {
+        return `processed: ${this.customValue}`;
+      }
+      protected _executeAsync(): Promise<string> {
+        return Promise.resolve(`processed: ${this.customValue}`);
+      }
+    }
 
-    const customHandler = {
-      canHandle: (effect: { readonly kind: string }): effect is CustomEffect =>
-        effect.kind === "custom",
-      handle: (effect: CustomEffect) => `processed: ${effect.value}`,
-    };
-
-    const scheduler = createSyncScheduler({ handlers: [customHandler] });
+    const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const result = yield { kind: "custom", value: "test" } satisfies CustomEffect;
-      return result;
+      const effect = new CustomEffect("test");
+      yield effect;
+      return effect.value;
     });
 
     expect(result.isOk()).toBe(true);
     expect(result._unsafeUnwrap()).toBe("processed: test");
   });
 
-  it("should reject custom handler that returns Promise", () => {
-    type AsyncCustomEffect = { readonly kind: "async-custom" };
+  it("should reject custom effect that returns Promise in executeSync", () => {
+    class AsyncOnlyEffect extends Effect<number> {
+      protected _executeSync(): number {
+        throw new Error("AsyncOnlyEffect requires async scheduler");
+      }
+      protected _executeAsync(): Promise<number> {
+        return Promise.resolve(42);
+      }
+    }
 
-    const asyncHandler = {
-      canHandle: (effect: { readonly kind: string }): effect is AsyncCustomEffect =>
-        effect.kind === "async-custom",
-      handle: (_effect: AsyncCustomEffect) => Promise.resolve(42),
-    };
-
-    const scheduler = createSyncScheduler({ handlers: [asyncHandler] });
+    const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      yield { kind: "async-custom" } satisfies AsyncCustomEffect;
+      yield new AsyncOnlyEffect();
       return 0;
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain("returned a Promise in sync scheduler");
+    expect(result._unsafeUnwrapErr().message).toContain("AsyncOnlyEffect requires async scheduler");
   });
 });

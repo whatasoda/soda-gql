@@ -1,10 +1,8 @@
-import { readFile, stat } from "node:fs/promises";
-import { readFileSync, statSync } from "node:fs";
-import { createAsyncScheduler, createSyncScheduler, normalizePath, type AnyEffect, type SchedulerError } from "@soda-gql/common";
+import { createAsyncScheduler, createSyncScheduler, type Effect, normalizePath } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { createAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
-import { BuilderEffects, type FileStats, syncBuilderHandlers } from "../scheduler";
+import { type FileStats, OptionalFileReadEffect, OptionalFileStatEffect } from "../scheduler";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprintFromContent, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
@@ -36,7 +34,7 @@ export function* discoverModulesGen({
   entryPaths,
   astAnalyzer,
   incremental,
-}: DiscoverModulesOptions): Generator<AnyEffect, DiscoverModulesResult, unknown> {
+}: DiscoverModulesOptions): Generator<Effect<unknown>, DiscoverModulesResult, unknown> {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   const changedFiles = incremental?.changedFiles ?? new Set<string>();
@@ -79,7 +77,9 @@ export function* discoverModulesGen({
 
       if (cached) {
         // Fast path: check fingerprint without reading file content
-        const stats = (yield BuilderEffects.stat(filePath)) as FileStats | null;
+        const statEffect = new OptionalFileStatEffect(filePath);
+        yield statEffect;
+        const stats = statEffect.value;
 
         if (stats) {
           const mtimeMs = stats.mtimeMs;
@@ -107,7 +107,9 @@ export function* discoverModulesGen({
     }
 
     // Read source and compute signature
-    const source = (yield BuilderEffects.readFile(filePath)) as string | null;
+    const readEffect = new OptionalFileReadEffect(filePath);
+    yield readEffect;
+    const source = readEffect.value;
 
     if (source === null) {
       // Handle deleted files gracefully - they may be in cache but removed from disk
@@ -133,7 +135,9 @@ export function* discoverModulesGen({
     }
 
     // Get stats for fingerprint (we may already have them from cache check)
-    const stats = (yield BuilderEffects.stat(filePath)) as FileStats;
+    const statEffect = new OptionalFileStatEffect(filePath);
+    yield statEffect;
+    const stats = statEffect.value as FileStats;
 
     // Compute fingerprint from content (avoids re-reading the file)
     const fingerprint = computeFingerprintFromContent(filePath, stats, source);
@@ -175,45 +179,7 @@ export function* discoverModulesGen({
  * For async execution with parallel file I/O, use discoverModulesGen with an async scheduler.
  */
 export const discoverModules = (options: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
-  // Create sync scheduler with builder handlers that handle file not found gracefully
-  const scheduler = createSyncScheduler({
-    handlers: [
-      // File read handler that returns null on ENOENT
-      {
-        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.readFile> => effect.kind === "file:read",
-        handle: (effect: ReturnType<typeof BuilderEffects.readFile>): string | null => {
-          try {
-            return readFileSync(effect.path, "utf8");
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-              return null;
-            }
-            throw error;
-          }
-        },
-      },
-      // File stat handler that returns null on ENOENT
-      {
-        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.stat> => effect.kind === "file:stat",
-        handle: (effect: ReturnType<typeof BuilderEffects.stat>): FileStats | null => {
-          try {
-            const stats = statSync(effect.path);
-            return {
-              mtimeMs: stats.mtimeMs,
-              size: stats.size,
-              isFile: stats.isFile(),
-            };
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-              return null;
-            }
-            throw error;
-          }
-        },
-      },
-    ],
-  });
-
+  const scheduler = createSyncScheduler();
   const result = scheduler.run(() => discoverModulesGen(options));
 
   if (result.isErr()) {
@@ -231,48 +197,8 @@ export const discoverModules = (options: DiscoverModulesOptions): BuilderResult<
  *
  * This is useful for large codebases where parallel file operations can improve performance.
  */
-export const discoverModulesAsync = async (
-  options: DiscoverModulesOptions,
-): Promise<BuilderResult<DiscoverModulesResult>> => {
-  // Create async scheduler with builder handlers that handle file not found gracefully
-  const scheduler = createAsyncScheduler({
-    handlers: [
-      // File read handler that returns null on ENOENT
-      {
-        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.readFile> => effect.kind === "file:read",
-        handle: async (effect: ReturnType<typeof BuilderEffects.readFile>): Promise<string | null> => {
-          try {
-            return await readFile(effect.path, "utf8");
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-              return null;
-            }
-            throw error;
-          }
-        },
-      },
-      // File stat handler that returns null on ENOENT
-      {
-        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.stat> => effect.kind === "file:stat",
-        handle: async (effect: ReturnType<typeof BuilderEffects.stat>): Promise<FileStats | null> => {
-          try {
-            const stats = await stat(effect.path);
-            return {
-              mtimeMs: stats.mtimeMs,
-              size: stats.size,
-              isFile: stats.isFile(),
-            };
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-              return null;
-            }
-            throw error;
-          }
-        },
-      },
-    ],
-  });
-
+export const discoverModulesAsync = async (options: DiscoverModulesOptions): Promise<BuilderResult<DiscoverModulesResult>> => {
+  const scheduler = createAsyncScheduler();
   const result = await scheduler.run(() => discoverModulesGen(options));
 
   if (result.isErr()) {
