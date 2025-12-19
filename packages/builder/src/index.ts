@@ -41,3 +41,17 @@ export type {
   BuilderMode,
   BuilderOptions,
 } from "./types";
+
+// Scheduler
+export type { BuilderEffect, FileReadEffect, FileStatEffect, FileStats } from "./scheduler";
+export {
+  asyncBuilderHandlers,
+  asyncFileReadHandler,
+  asyncFileStatHandler,
+  BuilderEffects,
+  isFileReadEffect,
+  isFileStatEffect,
+  syncBuilderHandlers,
+  syncFileReadHandler,
+  syncFileStatHandler,
+} from "./scheduler";
