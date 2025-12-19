@@ -7,6 +7,7 @@ import {
   Slice,
 } from "../types/element";
 import type { AnyFields } from "../types/fragment";
+import type { SliceMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -31,6 +32,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
     >(
       options: {
         variables?: TVarDefinitions;
+        metadata?: SliceMetadata;
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
       projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, MergeFields<TFieldEntries>, TProjection>,
@@ -38,6 +40,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
       Slice.create<TSchema, TOperationType, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TProjection>(() => {
         const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const projection = handleProjectionBuilder(projectionBuilder);
+        const { metadata } = options;
 
         return {
           operationType,
@@ -45,7 +48,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
             const f = createFieldFactories(schema, operationTypeName);
             const $ = createVarAssignments<TSchema, typeof varDefinitions>(varDefinitions, variables);
             const fields = mergeFields(fieldBuilder({ f, $ }));
-            return { variables, getFields: () => fields, projection };
+            return { variables, getFields: () => fields, projection, metadata };
           },
         };
       });

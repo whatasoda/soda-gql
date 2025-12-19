@@ -16,6 +16,7 @@ export const createRuntimeInlineOperation = (input: RuntimeInlineOperationInput)
     variableNames: input.prebuild.variableNames,
     documentSource: hidden(),
     document: input.prebuild.document,
+    metadata: input.prebuild.metadata,
   } satisfies StripSymbols<AnyInlineOperationOf<OperationType>> as AnyInlineOperationOf<OperationType>;
 
   registerInlineOperation(operation);

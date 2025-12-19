@@ -3,6 +3,12 @@ export type SchemaConfig = {
   readonly schema: string;
   readonly runtimeAdapter: string;
   readonly scalars: string;
+  /**
+   * Optional path to the metadata adapter module.
+   * The module should export a `metadataAdapter` created with `createMetadataAdapter()`.
+   * Used for setting HTTP headers, GraphQL extensions, and other operation metadata.
+   */
+  readonly metadataAdapter?: string;
 };
 
 // Output styles configuration for codegen

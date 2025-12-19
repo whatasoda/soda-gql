@@ -1,3 +1,4 @@
+import { defaultMergeSliceMetadata } from "../metadata/merge";
 import { createExecutionResultParser } from "../runtime/parse-execution-result";
 import {
   type AnySlicePayloads,
@@ -5,6 +6,7 @@ import {
   type ComposedOperationDefinitionBuilder,
   type ConcatSlicePayloads,
 } from "../types/element";
+import type { OperationMetadata, SliceMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -26,6 +28,7 @@ export const createComposedOperationComposerFactory = <
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
+        metadata?: OperationMetadata;
       },
       builder: ComposedOperationDefinitionBuilder<TSchema, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
     ) => {
@@ -37,7 +40,7 @@ export const createComposedOperationComposerFactory = <
         MergeVarDefinitions<TVarDefinitions>,
         TSliceFragments
       >(() => {
-        const { operationName } = options;
+        const { operationName, metadata: operationMetadata } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, typeof variables>(variables);
         const fragments = builder({ $ });
@@ -48,6 +51,12 @@ export const createComposedOperationComposerFactory = <
           ),
         ) as ConcatSlicePayloads<TSliceFragments>;
         const projectionPathGraph = createPathGraphFromSliceEntries(fragments);
+
+        // Collect metadata from all slices and merge with operation metadata
+        const sliceMetadataList: SliceMetadata[] = Object.values(fragments)
+          .map((fragment) => fragment.metadata)
+          .filter((m) => m != null);
+        const metadata = defaultMergeSliceMetadata(operationMetadata ?? {}, sliceMetadataList);
 
         return {
           operationType,
@@ -61,6 +70,7 @@ export const createComposedOperationComposerFactory = <
             fields,
           }),
           parse: createExecutionResultParser({ fragments, projectionPathGraph }),
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         };
       });
     };

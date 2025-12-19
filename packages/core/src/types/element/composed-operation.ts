@@ -4,6 +4,7 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { UnionToIntersection } from "../../utils/type-utils";
 import type { AnyFields, AssigningInput, InferFields } from "../fragment";
+import type { OperationMetadata } from "../metadata";
 import type { AnyGraphqlRuntimeAdapter, InferExecutionResultProjection, NormalizedExecutionResult } from "../runtime";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -46,6 +47,7 @@ type ComposedOperationDefinition<
   readonly projectionPathGraph: ProjectionPathGraphNode;
   readonly document: TypedDocumentNode<TRawData, TVariables>;
   readonly parse: (result: NormalizedExecutionResult<TRuntimeAdapter, TRawData, any>) => TProjectedData;
+  readonly metadata?: OperationMetadata;
 };
 
 export class ComposedOperation<
@@ -118,6 +120,9 @@ export class ComposedOperation<
   public get parse() {
     return GqlElement.get(this).parse;
   }
+  public get metadata() {
+    return GqlElement.get(this).metadata;
+  }
 
   static create<
     TSchema extends AnyGraphqlSchema,
@@ -141,6 +146,7 @@ export class ComposedOperation<
       ) => {
         [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
       };
+      metadata?: OperationMetadata;
     },
   ) {
     return new ComposedOperation(define);

@@ -77,6 +77,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
           document: element.element.document,
           variableNames: element.element.variableNames,
           projectionPathGraph: element.element.projectionPathGraph,
+          metadata: element.element.metadata,
         };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
@@ -93,6 +94,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
           operationName: element.element.operationName,
           document: element.element.document,
           variableNames: element.element.variableNames,
+          metadata: element.element.metadata,
         };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
