@@ -1,10 +1,11 @@
 import { readFileSync, statSync } from "node:fs";
-import { normalizePath } from "@soda-gql/common";
+import { createSyncScheduler, normalizePath, type AnyEffect, type SchedulerError } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { createAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
+import { BuilderEffects, type FileStats, syncBuilderHandlers } from "../scheduler";
 import { createSourceHash, extractModuleDependencies } from "./common";
-import { computeFingerprint, invalidateFingerprint } from "./fingerprint";
+import { computeFingerprintFromContent, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
 
 export type DiscoverModulesOptions = {
@@ -27,15 +28,14 @@ export type DiscoverModulesResult = {
 };
 
 /**
- * Discover and analyze all modules starting from entry points.
- * Uses AST parsing instead of RegExp for reliable dependency extraction.
- * Supports caching with fingerprint-based invalidation to skip re-parsing unchanged files.
+ * Generator-based module discovery that yields effects for file I/O.
+ * This allows the discovery process to be executed with either sync or async schedulers.
  */
-export const discoverModules = ({
+export function* discoverModulesGen({
   entryPaths,
   astAnalyzer,
   incremental,
-}: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
+}: DiscoverModulesOptions): Generator<AnyEffect, DiscoverModulesResult, unknown> {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   const changedFiles = incremental?.changedFiles ?? new Set<string>();
@@ -67,6 +67,7 @@ export const discoverModules = ({
     }
 
     // Check if explicitly invalidated
+    let shouldReadFile = true;
     if (invalidatedSet.has(filePath)) {
       invalidateFingerprint(filePath);
       cacheSkips++;
@@ -76,9 +77,10 @@ export const discoverModules = ({
       const cached = incremental.cache.peek(filePath);
 
       if (cached) {
-        try {
-          // Fast path: check fingerprint without reading file content
-          const stats = statSync(filePath);
+        // Fast path: check fingerprint without reading file content
+        const stats = (yield BuilderEffects.stat(filePath)) as FileStats | null;
+
+        if (stats) {
           const mtimeMs = stats.mtimeMs;
           const sizeBytes = stats.size;
 
@@ -92,29 +94,27 @@ export const discoverModules = ({
                 stack.push(dep.resolvedPath);
               }
             }
-            continue;
+            shouldReadFile = false;
           }
-        } catch {
-          // File may have been deleted or inaccessible, fall through to re-read
         }
+        // If stats is null (file deleted), fall through to read attempt
       }
     }
 
-    // Read source and compute signature
-    let source: string;
-    try {
-      source = readFileSync(filePath, "utf8");
-    } catch (error) {
-      // Handle deleted files gracefully - they may be in cache but removed from disk
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        // Delete from cache and invalidate fingerprint
-        incremental?.cache.delete(filePath);
-        invalidateFingerprint(filePath);
-        continue;
-      }
-      // Return other IO errors
-      return err(builderErrors.discoveryIOError(filePath, error instanceof Error ? error.message : String(error)));
+    if (!shouldReadFile) {
+      continue;
     }
+
+    // Read source and compute signature
+    const source = (yield BuilderEffects.readFile(filePath)) as string | null;
+
+    if (source === null) {
+      // Handle deleted files gracefully - they may be in cache but removed from disk
+      incremental?.cache.delete(filePath);
+      invalidateFingerprint(filePath);
+      continue;
+    }
+
     const signature = createSourceHash(source);
 
     // Parse module
@@ -131,12 +131,11 @@ export const discoverModules = ({
       }
     }
 
-    // Compute fingerprint
-    const fingerprintResult = computeFingerprint(filePath);
-    if (fingerprintResult.isErr()) {
-      return err(builderErrors.discoveryIOError(filePath, `Failed to compute fingerprint: ${fingerprintResult.error.message}`));
-    }
-    const fingerprint = fingerprintResult.value;
+    // Get stats for fingerprint (we may already have them from cache check)
+    const stats = (yield BuilderEffects.stat(filePath)) as FileStats;
+
+    // Compute fingerprint from content (avoids re-reading the file)
+    const fingerprint = computeFingerprintFromContent(filePath, stats, source);
 
     // Create snapshot
     const snapshot: DiscoverySnapshot = {
@@ -158,10 +157,69 @@ export const discoverModules = ({
     }
   }
 
-  return ok({
+  return {
     snapshots: Array.from(snapshots.values()),
     cacheHits,
     cacheMisses,
     cacheSkips,
+  };
+}
+
+/**
+ * Discover and analyze all modules starting from entry points.
+ * Uses AST parsing instead of RegExp for reliable dependency extraction.
+ * Supports caching with fingerprint-based invalidation to skip re-parsing unchanged files.
+ *
+ * This function uses the synchronous scheduler internally for backward compatibility.
+ * For async execution with parallel file I/O, use discoverModulesGen with an async scheduler.
+ */
+export const discoverModules = (options: DiscoverModulesOptions): BuilderResult<DiscoverModulesResult> => {
+  // Create sync scheduler with builder handlers that handle file not found gracefully
+  const scheduler = createSyncScheduler({
+    handlers: [
+      // File read handler that returns null on ENOENT
+      {
+        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.readFile> => effect.kind === "file:read",
+        handle: (effect: ReturnType<typeof BuilderEffects.readFile>): string | null => {
+          try {
+            return readFileSync(effect.path, "utf8");
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+              return null;
+            }
+            throw error;
+          }
+        },
+      },
+      // File stat handler that returns null on ENOENT
+      {
+        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.stat> => effect.kind === "file:stat",
+        handle: (effect: ReturnType<typeof BuilderEffects.stat>): FileStats | null => {
+          try {
+            const stats = statSync(effect.path);
+            return {
+              mtimeMs: stats.mtimeMs,
+              size: stats.size,
+              isFile: stats.isFile(),
+            };
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+              return null;
+            }
+            throw error;
+          }
+        },
+      },
+    ],
   });
+
+  const result = scheduler.run(() => discoverModulesGen(options));
+
+  if (result.isErr()) {
+    const error = result.error;
+    // Convert scheduler error to builder error
+    return err(builderErrors.discoveryIOError("unknown", error.message));
+  }
+
+  return ok(result.value);
 };

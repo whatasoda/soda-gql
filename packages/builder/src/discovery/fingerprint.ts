@@ -137,6 +137,40 @@ function simpleHash(buffer: Buffer): string {
 }
 
 /**
+ * Compute fingerprint from pre-read file content and stats.
+ * This is used by the generator-based discoverer which already has the content.
+ *
+ * @param path - Absolute path to file (for caching)
+ * @param stats - File stats (mtimeMs, size)
+ * @param content - File content as string
+ * @returns FileFingerprint
+ */
+export function computeFingerprintFromContent(
+  path: string,
+  stats: { readonly mtimeMs: number; readonly size: number },
+  content: string,
+): FileFingerprint {
+  // Check cache first by mtime
+  const cached = fingerprintCache.get(path);
+  if (cached && cached.mtimeMs === stats.mtimeMs) {
+    return cached;
+  }
+
+  // Convert string to buffer for hashing
+  const buffer = Buffer.from(content, "utf-8");
+  const hash = computeHashSync(buffer);
+
+  const fingerprint: FileFingerprint = {
+    hash,
+    sizeBytes: stats.size,
+    mtimeMs: stats.mtimeMs,
+  };
+
+  fingerprintCache.set(path, fingerprint);
+  return fingerprint;
+}
+
+/**
  * Invalidate cached fingerprint for a specific path
  *
  * @param path - Absolute path to invalidate
