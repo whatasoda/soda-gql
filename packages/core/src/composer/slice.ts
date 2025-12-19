@@ -7,7 +7,7 @@ import {
   Slice,
 } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
-import type { SliceMetadata, SliceMetadataBuilder } from "../types/metadata";
+import type { SliceMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter, AnyProjection } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -32,7 +32,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
     >(
       options: {
         variables?: TVarDefinitions;
-        metadata?: SliceMetadata | SliceMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>>;
+        metadata?: SliceMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>>;
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
       projectionBuilder: ExecutionResultProjectionsBuilder<TSchema, TRuntimeAdapter, MergeFields<TFieldEntries>, TProjection>,
@@ -48,7 +48,7 @@ export const createSliceComposerFactory = <TSchema extends AnyGraphqlSchema, TRu
             const f = createFieldFactories(schema, operationTypeName);
             const $ = createVarAssignments<TSchema, typeof varDefinitions>(varDefinitions, variables);
             const fields = mergeFields(fieldBuilder({ f, $ }));
-            const metadata = typeof metadataOption === "function" ? metadataOption({ $ }) : metadataOption;
+            const metadata = metadataOption?.({ $ });
             return { variables, getFields: () => fields, projection, metadata };
           },
         };

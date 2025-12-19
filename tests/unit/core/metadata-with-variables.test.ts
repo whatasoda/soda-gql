@@ -338,15 +338,15 @@ describe("metadata with variable access", () => {
       expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "opUserId" }]);
     });
 
-    it("static metadata still works", () => {
+    it("metadata factory without variables still works", () => {
       const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
       const userSlice = gql(({ query }) =>
         query.slice(
           {
-            metadata: {
+            metadata: () => ({
               custom: { requiresAuth: true, cacheTtl: 300 },
-            },
+            }),
           },
           ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
           ({ select }) => select(["$.user"], (user) => user),
