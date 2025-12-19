@@ -6,7 +6,7 @@ import {
   type ComposedOperationDefinitionBuilder,
   type ConcatSlicePayloads,
 } from "../types/element";
-import type { OperationMetadata, SliceMetadata } from "../types/metadata";
+import type { AnyMetadataAdapter, OperationMetadata, SliceMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -15,10 +15,17 @@ import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
+export type ComposedOperationComposerOptions = {
+  metadataAdapter?: AnyMetadataAdapter;
+};
+
 export const createComposedOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
   TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
->() => {
+>(
+  options: ComposedOperationComposerOptions = {},
+) => {
+  const { metadataAdapter } = options;
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     return <
       TOperationName extends string,
@@ -56,7 +63,8 @@ export const createComposedOperationComposerFactory = <
         const sliceMetadataList: SliceMetadata[] = Object.values(fragments)
           .map((fragment) => fragment.metadata)
           .filter((m) => m != null);
-        const metadata = defaultMergeSliceMetadata(operationMetadata ?? {}, sliceMetadataList);
+        const mergeSliceMetadata = metadataAdapter?.mergeSliceMetadata ?? defaultMergeSliceMetadata;
+        const metadata = mergeSliceMetadata(operationMetadata ?? {}, sliceMetadataList);
 
         return {
           operationType,

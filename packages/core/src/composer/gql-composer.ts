@@ -1,4 +1,5 @@
 import type { AnyComposedOperation, AnyInlineOperation, AnyModel, AnySlice } from "../types/element";
+import type { AnyMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createComposedOperationComposerFactory } from "./composed-operation";
@@ -13,12 +14,20 @@ export type GqlElementComposer<TComposers, THelper> = <
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
+export type GqlElementComposerOptions = {
+  metadataAdapter?: AnyMetadataAdapter;
+};
+
 export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
   schema: NoInfer<TSchema>,
+  options: GqlElementComposerOptions = {},
 ) => {
+  const { metadataAdapter } = options;
   const model = createGqlModelComposers<TSchema>(schema);
   const createSliceComposer = createSliceComposerFactory<TSchema, TRuntimeAdapter>(schema);
-  const createComposedOperationFactory = createComposedOperationComposerFactory<TSchema, TRuntimeAdapter>();
+  const createComposedOperationFactory = createComposedOperationComposerFactory<TSchema, TRuntimeAdapter>({
+    metadataAdapter,
+  });
   const createInlineOperationComposer = createInlineOperationComposerFactory<TSchema, TRuntimeAdapter>(schema);
   const composers = {
     model,
