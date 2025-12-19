@@ -205,10 +205,10 @@ function generateSliceFile(index: number, entityIndex: number): string {
     return `// Auto-generated slice for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const slice${index} = gql.default(({ query }, { $ }) =>
+export const slice${index} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("limit").scalar("Int:?"), $("offset").scalar("Int:?")],
+      variables: [$var("limit").scalar("Int:?"), $var("offset").scalar("Int:?")],
     },
     ({ f, $ }) => [
       f.${entityName}List({ limit: $.limit, offset: $.offset })(({ f }) => [
@@ -228,10 +228,10 @@ export const slice${index} = gql.default(({ query }, { $ }) =>
   return `// Auto-generated slice for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const slice${index} = gql.default(({ query }, { $ }) =>
+export const slice${index} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       f.${entityName}({ id: $.id })(({ f }) => [
@@ -267,11 +267,11 @@ function generateOperationFile(index: number, sliceCount: number): string {
 
     if (isListSlice) {
       sliceEmbeds.push(`      result${j}: slice${sliceIndex}.embed({ limit: $.limit${j}, offset: $.offset${j} }),`);
-      sliceVars.push(`$("limit${j}").scalar("Int:?")`);
-      sliceVars.push(`$("offset${j}").scalar("Int:?")`);
+      sliceVars.push(`$var("limit${j}").scalar("Int:?")`);
+      sliceVars.push(`$var("offset${j}").scalar("Int:?")`);
     } else {
       sliceEmbeds.push(`      result${j}: slice${sliceIndex}.embed({ id: $.id${j} }),`);
-      sliceVars.push(`$("id${j}").scalar("ID:!")`);
+      sliceVars.push(`$var("id${j}").scalar("ID:!")`);
     }
   }
 
@@ -282,7 +282,7 @@ function generateOperationFile(index: number, sliceCount: number): string {
 import { gql } from "../../graphql-system";
 ${individualImports}
 
-export const operation${index} = gql.default(({ query }, { $ }) =>
+export const operation${index} = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "Operation${index}",
