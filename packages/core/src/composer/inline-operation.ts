@@ -52,16 +52,22 @@ export const createInlineOperationComposerFactory = <
           variables,
           fields,
         });
-        const metadata = options.metadata?.({ $, document });
+        const metadataResult = options.metadata?.({ $, document });
 
-        return {
+        const createDefinition = (metadata: OperationMetadata | undefined) => ({
           operationType,
           operationName,
           variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
           documentSource: () => fields,
           document,
           metadata,
-        };
+        });
+
+        if (metadataResult instanceof Promise) {
+          return metadataResult.then(createDefinition);
+        }
+
+        return createDefinition(metadataResult);
       });
     };
   };

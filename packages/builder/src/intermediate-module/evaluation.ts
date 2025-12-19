@@ -184,16 +184,21 @@ export const generateIntermediateModules = function* ({
   }
 };
 
-export const evaluateIntermediateModules = ({
-  intermediateModules,
-  graphqlSystemPath,
-  analyses,
-}: {
+type EvaluateIntermediateModulesInput = {
   intermediateModules: Map<string, IntermediateModule>;
   graphqlSystemPath: string;
   analyses: Map<string, ModuleAnalysis>;
-}) => {
-  // Determine import paths from config
+};
+
+/**
+ * Set up VM context and run intermediate module scripts.
+ * Returns the registry for evaluation.
+ */
+const setupIntermediateModulesContext = ({
+  intermediateModules,
+  graphqlSystemPath,
+  analyses,
+}: EvaluateIntermediateModulesInput) => {
   const registry = createIntermediateRegistry({ analyses });
   const gqlImportPath = resolveGraphqlSystemPath(graphqlSystemPath);
 
@@ -210,8 +215,27 @@ export const evaluateIntermediateModules = ({
     }
   }
 
+  return registry;
+};
+
+/**
+ * Synchronous evaluation of intermediate modules.
+ * Throws if any element requires async operations (e.g., async metadata factory).
+ */
+export const evaluateIntermediateModules = (input: EvaluateIntermediateModulesInput) => {
+  const registry = setupIntermediateModulesContext(input);
   const elements = registry.evaluate();
   registry.clear();
+  return elements;
+};
 
+/**
+ * Asynchronous evaluation of intermediate modules.
+ * Supports async metadata factories and other async operations.
+ */
+export const evaluateIntermediateModulesAsync = async (input: EvaluateIntermediateModulesInput) => {
+  const registry = setupIntermediateModulesContext(input);
+  const elements = await registry.evaluateAsync();
+  registry.clear();
   return elements;
 };

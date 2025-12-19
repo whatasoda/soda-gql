@@ -63,7 +63,9 @@ export class InlineOperation<
   private constructor(
     define: (
       context: GqlElementContext | null,
-    ) => InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>,
+    ) =>
+      | InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
+      | Promise<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>>,
   ) {
     super(define);
   }
@@ -94,14 +96,23 @@ export class InlineOperation<
     TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
   >(
-    define: (context: GqlElementContext | null) => {
-      operationType: TOperationType;
-      operationName: TOperationName;
-      variableNames: (keyof TVariableDefinitions & string)[];
-      documentSource: () => TFields;
-      document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
-      metadata?: OperationMetadata;
-    },
+    define: (context: GqlElementContext | null) =>
+      | {
+          operationType: TOperationType;
+          operationName: TOperationName;
+          variableNames: (keyof TVariableDefinitions & string)[];
+          documentSource: () => TFields;
+          document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+          metadata?: OperationMetadata;
+        }
+      | Promise<{
+          operationType: TOperationType;
+          operationName: TOperationName;
+          variableNames: (keyof TVariableDefinitions & string)[];
+          documentSource: () => TFields;
+          document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+          metadata?: OperationMetadata;
+        }>,
   ) {
     return new InlineOperation(define);
   }
