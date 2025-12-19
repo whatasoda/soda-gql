@@ -9,6 +9,7 @@ export default defineConfig({
       schema: "./schema.graphql",
       runtimeAdapter: "./inject-module/runtime-adapter.ts",
       scalars: "./inject-module/runtime-adapter.ts",
+      helpers: "./inject-module/helpers.ts",
     },
   },
 });

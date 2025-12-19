@@ -1,9 +1,9 @@
 import { gql } from "@/graphql-system";
 
-const userUpdatedSlice = gql.default(({ subscription }, { $ }) =>
+const userUpdatedSlice = gql.default(({ subscription }, { $var }) =>
   subscription.slice(
     {
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -17,11 +17,11 @@ const userUpdatedSlice = gql.default(({ subscription }, { $ }) =>
   ),
 );
 
-export const userUpdatedSubscription = gql.default(({ subscription }, { $ }) =>
+export const userUpdatedSubscription = gql.default(({ subscription }, { $var }) =>
   subscription.composed(
     {
       operationName: "UserUpdated",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userUpdatedSlice.embed({ userId: $.userId }),

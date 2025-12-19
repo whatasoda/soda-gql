@@ -1,20 +1,20 @@
 import { gql } from "@/graphql-system";
 
 // Define slices
-const userSlice = gql.default(({ query }, { $ }) =>
+const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
     ({ select }) => select(["$.user"], (result) => result),
   ),
 );
 
-const updateUserSlice = gql.default(({ mutation }, { $ }) =>
+const updateUserSlice = gql.default(({ mutation }, { $var }) =>
   mutation.slice(
     {
-      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
+      variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     ({ f, $ }) => [f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id(), f.name()])],
     ({ select }) => select(["$.updateUser"], (result) => result),
@@ -22,11 +22,11 @@ const updateUserSlice = gql.default(({ mutation }, { $ }) =>
 );
 
 // Define operations
-export const userQuery = gql.default(({ query }, { $ }) =>
+export const userQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "UserQuery",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userSlice.embed({ id: $.userId }),
@@ -34,11 +34,11 @@ export const userQuery = gql.default(({ query }, { $ }) =>
   ),
 );
 
-export const updateUserMutation = gql.default(({ mutation }, { $ }) =>
+export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.composed(
     {
       operationName: "UpdateUser",
-      variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
+      variables: [$var("userId").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     ({ $ }) => ({
       result: updateUserSlice.embed({ id: $.userId, name: $.name }),

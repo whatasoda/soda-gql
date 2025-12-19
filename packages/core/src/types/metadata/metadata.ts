@@ -1,3 +1,5 @@
+import type { AnyVarRef } from "../type-foundation/var-ref";
+
 /**
  * Base metadata types that can be attached to operations.
  * These are consumed at runtime by GraphQL clients for HTTP headers,
@@ -11,6 +13,23 @@ export type OperationMetadata = {
   /** Custom arbitrary metadata values for application-specific use */
   readonly custom?: Record<string, unknown>;
 };
+
+/**
+ * Tools available inside metadata builder callbacks.
+ * Access utilities via $var.getName(), $var.getValue(), $var.getInner().
+ */
+export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
+  /** Variable references created from the operation's variable definitions */
+  readonly $: TVarRefs;
+};
+
+/**
+ * Metadata builder callback that receives variable tools.
+ * Allows metadata to reference operation variables.
+ */
+export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata> = (
+  tools: MetadataBuilderTools<TVarRefs>,
+) => TMetadata;
 
 /**
  * Slice-specific metadata that can contribute to operation metadata.

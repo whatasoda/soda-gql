@@ -4,10 +4,10 @@ import { userModel } from "./models";
 /**
  * Query slice to fetch a single user
  */
-export const userSlice = gql.default(({ query }, { $ }) =>
+export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -23,10 +23,10 @@ export const userSlice = gql.default(({ query }, { $ }) =>
 /**
  * Query slice to fetch multiple users
  */
-export const usersSlice = gql.default(({ query }, { $ }) =>
+export const usersSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("categoryId").scalar("ID:?")],
+      variables: [$var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       f.users({ categoryId: $.categoryId })(({ f }) => [
@@ -43,13 +43,13 @@ export const usersSlice = gql.default(({ query }, { $ }) =>
 /**
  * Mutation slice to update user
  */
-export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
+export const updateUserSlice = gql.default(({ mutation }, { $var }) =>
   mutation.slice(
     {
       variables: [
         //
-        $("id").scalar("ID:!"),
-        $("name").scalar("String:!"),
+        $var("id").scalar("ID:!"),
+        $var("name").scalar("String:!"),
       ],
     },
     ({ f, $ }) => [
@@ -67,10 +67,10 @@ export const updateUserSlice = gql.default(({ mutation }, { $ }) =>
 /**
  * Subscription slice for user updates
  */
-export const userUpdatesSlice = gql.default(({ subscription }, { $ }) =>
+export const userUpdatesSlice = gql.default(({ subscription }, { $var }) =>
   subscription.slice(
     {
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [f.userUpdated({ userId: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
     ({ select }) => select(["$.userUpdated"], (result) => result),

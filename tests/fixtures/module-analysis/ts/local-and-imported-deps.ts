@@ -2,10 +2,10 @@ import { gql } from "@/graphql-system";
 // @ts-expect-error - This is a test
 import { userSlice } from "../entities/user";
 
-export const postSlice = gql.default(({ query }, { $ }) =>
+export const postSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("postId").scalar("ID:!")],
+      variables: [$var("postId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -18,11 +18,11 @@ export const postSlice = gql.default(({ query }, { $ }) =>
   ),
 );
 
-export const pageQuery = gql.default(({ query }, { $ }) =>
+export const pageQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "PageQuery",
-      variables: [$("userId").scalar("ID:!"), $("postId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!"), $var("postId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userSlice.embed({ id: $.userId }),

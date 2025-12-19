@@ -1,10 +1,10 @@
 import { gql } from "@/graphql-system";
 
 // Define slice outside operation
-const userByIdSlice = gql.default(({ query }, { $ }) =>
+const userByIdSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -17,11 +17,11 @@ const userByIdSlice = gql.default(({ query }, { $ }) =>
   ),
 );
 
-export const pageQuery = gql.default(({ query }, { $ }) =>
+export const pageQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "ProfilePageQuery",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userByIdSlice.embed({ userId: $.userId }),

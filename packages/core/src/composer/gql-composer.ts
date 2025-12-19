@@ -14,15 +14,20 @@ export type GqlElementComposer<TComposers, THelper> = <
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
-export type GqlElementComposerOptions = {
+export type GqlElementComposerOptions<THelpers extends object = object> = {
   metadataAdapter?: AnyMetadataAdapter;
+  helpers?: THelpers;
 };
 
-export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TRuntimeAdapter extends AnyGraphqlRuntimeAdapter>(
+export const createGqlElementComposer = <
+  TSchema extends AnyGraphqlSchema,
+  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
+  THelpers extends object = object,
+>(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions = {},
+  options: GqlElementComposerOptions<NoInfer<THelpers>> = {} as GqlElementComposerOptions<THelpers>,
 ) => {
-  const { metadataAdapter } = options;
+  const { metadataAdapter, helpers } = options;
   const model = createGqlModelComposers<TSchema>(schema);
   const createSliceComposer = createSliceComposerFactory<TSchema, TRuntimeAdapter>(schema);
   const createComposedOperationFactory = createComposedOperationComposerFactory<TSchema, TRuntimeAdapter>({
@@ -50,6 +55,7 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TRunt
 
   const helper = {
     ...createVarBuilder(schema),
+    ...(helpers ?? ({} as THelpers)),
   };
 
   const elementComposer: GqlElementComposer<typeof composers, typeof helper> = (composeElement) =>

@@ -67,6 +67,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   // Validate that all adapter and scalar files exist
   const adapterPaths = new Map<string, string>();
   const scalarPaths = new Map<string, string>();
+  const metadataAdapterPaths = new Map<string, string>();
+  const helpersPaths = new Map<string, string>();
 
   for (const [schemaName, adapterPath] of Object.entries(runtimeAdapters)) {
     const resolvedPath = resolve(adapterPath);
@@ -92,6 +94,36 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     scalarPaths.set(schemaName, resolvedPath);
   }
 
+  // Validate optional metadataAdapters
+  if (options.metadataAdapters) {
+    for (const [schemaName, metadataAdapterPath] of Object.entries(options.metadataAdapters)) {
+      const resolvedPath = resolve(metadataAdapterPath);
+      if (!existsSync(resolvedPath)) {
+        return err({
+          code: "INJECT_MODULE_NOT_FOUND",
+          message: `Metadata adapter module not found for schema '${schemaName}': ${resolvedPath}`,
+          injectPath: resolvedPath,
+        });
+      }
+      metadataAdapterPaths.set(schemaName, resolvedPath);
+    }
+  }
+
+  // Validate optional helpers
+  if (options.helpers) {
+    for (const [schemaName, helpersPath] of Object.entries(options.helpers)) {
+      const resolvedPath = resolve(helpersPath);
+      if (!existsSync(resolvedPath)) {
+        return err({
+          code: "INJECT_MODULE_NOT_FOUND",
+          message: `Helpers module not found for schema '${schemaName}': ${resolvedPath}`,
+          injectPath: resolvedPath,
+        });
+      }
+      helpersPaths.set(schemaName, resolvedPath);
+    }
+  }
+
   // Load all schemas
   const schemas = new Map<string, import("graphql").DocumentNode>();
   const schemaHashes: Record<string, { schemaHash: string; objects: number; enums: number; inputs: number; unions: number }> = {};
@@ -110,7 +142,15 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   }
 
   // Build injection config for each schema
-  const injectionConfig = new Map<string, { adapterImportPath: string; scalarImportPath: string }>();
+  const injectionConfig = new Map<
+    string,
+    {
+      adapterImportPath: string;
+      scalarImportPath: string;
+      metadataAdapterImportPath?: string;
+      helpersImportPath?: string;
+    }
+  >();
 
   for (const schemaName of schemas.keys()) {
     const adapterPath = adapterPaths.get(schemaName);
@@ -124,9 +164,16 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     }
 
     const importSpecifierOptions = { includeExtension: options.importExtension };
+    const metadataAdapterPath = metadataAdapterPaths.get(schemaName);
+    const helpersPath = helpersPaths.get(schemaName);
+
     injectionConfig.set(schemaName, {
       adapterImportPath: toImportSpecifier(outPath, adapterPath, importSpecifierOptions),
       scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
+      ...(metadataAdapterPath
+        ? { metadataAdapterImportPath: toImportSpecifier(outPath, metadataAdapterPath, importSpecifierOptions) }
+        : {}),
+      ...(helpersPath ? { helpersImportPath: toImportSpecifier(outPath, helpersPath, importSpecifierOptions) } : {}),
     });
   }
 

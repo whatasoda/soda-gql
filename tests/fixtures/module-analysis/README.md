@@ -94,11 +94,11 @@ bun typecheck
 Operations compose slices and define variables at the top level:
 
 ```typescript
-export const createPostMutation = gql.default(({ operation }, { $ }) =>
+export const createPostMutation = gql.default(({ operation }, { $var }) =>
   operation.mutation(
     {
       operationName: "CreatePost",
-      variables: [$("title").scalar("String:!")],
+      variables: [$var("title").scalar("String:!")],
     },
     ({ $ }) => ({
       post: createPostSlice.build({ title: $.title }),
@@ -112,10 +112,10 @@ export const createPostMutation = gql.default(({ operation }, { $ }) =>
 Slices provide field access and return arrays of field selections:
 
 ```typescript
-const createPostSlice = gql.default(({ slice }, { $ }) =>
+const createPostSlice = gql.default(({ slice }, { $var }) =>
   slice.mutation(
     {
-      variables: [$("title").scalar("String:!")],
+      variables: [$var("title").scalar("String:!")],
     },
     ({ f, $ }) => [
       f.createPost({ title: $.title })(({ f }) => [
@@ -133,5 +133,5 @@ const createPostSlice = gql.default(({ slice }, { $ }) =>
 
 - Use array syntax for field selections: `[f.id(), f.name()]`
 - Field factories are curried: `f.user({ id: 1 })(({ f }) => [...])`
-- Variables defined as arrays: `variables: [$("id").scalar("ID:!")]`
+- Variables defined as arrays: `variables: [$var("id").scalar("ID:!")]`
 - Use array for select paths: `select(["$.field"], ...)`

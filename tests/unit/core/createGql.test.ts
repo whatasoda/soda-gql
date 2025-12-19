@@ -56,9 +56,9 @@ describe("createGqlInvoker", () => {
     let idVarRef: Record<string, any> | undefined;
     let fieldArgRef: any;
 
-    const userModel = gql(({ model }, { $ }) => {
-      idVarRef = $("id").scalar("ID:!");
-      fieldArgRef = $("id").byField("Query", "user", "id");
+    const userModel = gql(({ model }, { $var }) => {
+      idVarRef = $var("id").scalar("ID:!");
+      fieldArgRef = $var("id").byField("Query", "user", "id");
 
       return model.User(
         {},
@@ -125,9 +125,9 @@ describe("createGqlInvoker", () => {
       ),
     );
 
-    const userSlice = gql(({ query }, { $ }) =>
+    const userSlice = gql(({ query }, { $var }) =>
       query.slice(
-        { variables: [$("id").scalar("ID:!")] },
+        { variables: [$var("id").scalar("ID:!")] },
         ({ f, $ }) => [
           //
           f.user({ id: $.id })(() => [
@@ -142,11 +142,11 @@ describe("createGqlInvoker", () => {
     const sliceFragment = userSlice.embed({ id: "1" });
     expect(sliceFragment.projection).toBeInstanceOf(Projection);
 
-    const profileQuery = gql(({ query }, { $ }) =>
+    const profileQuery = gql(({ query }, { $var }) =>
       query.composed(
         {
           operationName: "ProfilePageQuery",
-          variables: [$("userId").scalar("ID:!")],
+          variables: [$var("userId").scalar("ID:!")],
         },
         ({ $ }) => ({
           user: userSlice.embed({ id: $.userId }),

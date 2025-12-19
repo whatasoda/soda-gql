@@ -68,6 +68,7 @@ const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   runtimeAdapter: z.string().min(1),
   scalars: z.string().min(1),
   metadataAdapter: z.string().min(1).optional(),
+  helpers: z.string().min(1).optional(),
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
