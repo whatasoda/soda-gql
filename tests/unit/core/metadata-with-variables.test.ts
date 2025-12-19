@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { print } from "graphql";
+import { createHash } from "node:crypto";
 import {
   type AnyGraphqlRuntimeAdapter,
   type AnyGraphqlSchema,
@@ -150,6 +152,53 @@ describe("metadata with variable access", () => {
 
       expect(operation.metadata).toBeUndefined();
     });
+
+    it("metadata callback receives document as DocumentNode", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const operation = gql(({ query }, { $var }) =>
+        query.inline(
+          {
+            operationName: "GetUser",
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ document }) => ({
+              extensions: {
+                documentHash: createHash("sha256").update(print(document)).digest("hex"),
+              },
+            }),
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        ),
+      );
+
+      expect(operation.metadata).toBeDefined();
+      expect(operation.metadata?.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it("metadata callback can access both $ and document", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const operation = gql(({ query }, { $var }) =>
+        query.inline(
+          {
+            operationName: "GetUser",
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $, document }) => ({
+              headers: {
+                "X-Variable-Name": $var.getName($.userId),
+              },
+              extensions: {
+                hasDocument: document.kind === "Document",
+              },
+            }),
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        ),
+      );
+
+      expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
+      expect(operation.metadata?.extensions?.hasDocument).toBe(true);
+    });
   });
 
   describe("composed operation", () => {
@@ -183,6 +232,73 @@ describe("metadata with variable access", () => {
 
       expect(operation.metadata).toBeDefined();
       expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
+    });
+
+    it("metadata callback receives document as DocumentNode", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }) =>
+        query.slice(
+          {},
+          ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }, { $var }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ document }) => ({
+              extensions: {
+                documentHash: createHash("sha256").update(print(document)).digest("hex"),
+              },
+            }),
+          },
+          () => ({
+            user: userSlice.embed(),
+          }),
+        ),
+      );
+
+      expect(operation.metadata).toBeDefined();
+      expect(operation.metadata?.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it("metadata callback can access both $ and document", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }) =>
+        query.slice(
+          {},
+          ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }, { $var }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $, document }) => ({
+              headers: {
+                "X-Variable-Name": $var.getName($.userId),
+              },
+              extensions: {
+                hasDocument: document.kind === "Document",
+              },
+            }),
+          },
+          () => ({
+            user: userSlice.embed(),
+          }),
+        ),
+      );
+
+      expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
+      expect(operation.metadata?.extensions?.hasDocument).toBe(true);
     });
   });
 });
