@@ -77,12 +77,13 @@ export const getProtectedUserQuery = gql.default(({ query }, { $, auth, cache })
     {
       operationName: "GetProtectedUser",
       variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:!")],
-      metadata: {
+      metadata: ({ $, getVarRefName }) => ({
         custom: {
           ...auth.requiresLogin(),
           ...cache.ttl(300),
+          trackedVariables: [getVarRefName($.userId)],
         },
-      },
+      }),
     },
     ({ $ }) => ({
       user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),

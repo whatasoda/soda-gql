@@ -1,9 +1,10 @@
 import { type FieldsBuilder, InlineOperation, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields } from "../types/fragment";
-import type { OperationMetadata } from "../types/metadata";
+import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
+import { getVarRefInner, getVarRefName } from "../types/type-foundation/var-ref";
 
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
@@ -26,7 +27,10 @@ export const createInlineOperationComposerFactory = <
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
-        metadata?: OperationMetadata;
+        metadata?: MetadataBuilder<
+          ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+          OperationMetadata
+        >;
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
     ) => {
@@ -37,11 +41,13 @@ export const createInlineOperationComposerFactory = <
         MergeVarDefinitions<TVarDefinitions>,
         MergeFields<TFields>
       >(() => {
-        const { operationName, metadata } = options;
+        const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
         const f = createFieldFactories(schema, operationTypeName);
         const fields = mergeFields(fieldBuilder({ f, $ }));
+
+        const metadata = options.metadata?.({ $, getVarRefInner, getVarRefName });
 
         return {
           operationType,

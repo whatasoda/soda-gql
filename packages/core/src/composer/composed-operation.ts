@@ -6,10 +6,11 @@ import {
   type ComposedOperationDefinitionBuilder,
   type ConcatSlicePayloads,
 } from "../types/element";
-import type { AnyMetadataAdapter, OperationMetadata, SliceMetadata } from "../types/metadata";
+import type { AnyMetadataAdapter, MetadataBuilder, OperationMetadata, SliceMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
+import { getVarRefInner, getVarRefName } from "../types/type-foundation/var-ref";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -35,7 +36,10 @@ export const createComposedOperationComposerFactory = <
       options: {
         operationName: TOperationName;
         variables?: TVarDefinitions;
-        metadata?: OperationMetadata;
+        metadata?: MetadataBuilder<
+          ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+          OperationMetadata
+        >;
       },
       builder: ComposedOperationDefinitionBuilder<TSchema, MergeVarDefinitions<TVarDefinitions>, TSliceFragments>,
     ) => {
@@ -47,9 +51,10 @@ export const createComposedOperationComposerFactory = <
         MergeVarDefinitions<TVarDefinitions>,
         TSliceFragments
       >(() => {
-        const { operationName, metadata: operationMetadata } = options;
+        const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, typeof variables>(variables);
+        const operationMetadata = options.metadata?.({ $, getVarRefInner, getVarRefName });
         const fragments = builder({ $ });
 
         const fields = Object.fromEntries(

@@ -6,7 +6,7 @@ export interface AnyVarRefMeta {
   readonly signature: unknown;
 }
 
-type VarRefInner =
+export type VarRefInner =
   | {
       type: "variable";
       name: string;
@@ -43,4 +43,16 @@ export const createVarRefFromConstValue = <TProfile extends TypeProfile.WithMeta
 
 export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
   return VarRef.getInner(varRef);
+};
+
+/**
+ * Get the variable name from a VarRef.
+ * Throws if the VarRef contains a const-value instead of a variable reference.
+ */
+export const getVarRefName = (varRef: AnyVarRef): string => {
+  const inner = VarRef.getInner(varRef);
+  if (inner.type !== "variable") {
+    throw new Error("Expected variable reference, got const-value");
+  }
+  return inner.name;
 };

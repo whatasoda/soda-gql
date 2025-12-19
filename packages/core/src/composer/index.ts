@@ -8,3 +8,4 @@ export * from "./model";
 export * from "./projection-path-graph";
 export * from "./slice";
 export * from "./var-builder";
+export { getVarRefInner, getVarRefName } from "../types/type-foundation/var-ref";
