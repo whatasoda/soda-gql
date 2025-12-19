@@ -1,5 +1,7 @@
 # @soda-gql/plugin-webpack
 
+> **Note**: This package is not yet published to npm. It is under active development and will be available in a future release.
+
 Webpack loader for soda-gql zero-runtime GraphQL transformations.
 
 ## Features
@@ -100,9 +102,7 @@ module.exports = {
 1. Generate your GraphQL system:
 
 ```bash
-bun run soda-gql codegen \
-  --schema ./schema.graphql \
-  --out ./src/graphql-system/index.ts
+bun run soda-gql codegen
 ```
 
 2. Write GraphQL operations:

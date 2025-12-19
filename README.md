@@ -28,20 +28,39 @@ packages/
 
 ```bash
 # Install packages
-bun add @soda-gql/core
-bun add -D @soda-gql/cli @soda-gql/plugin-babel
+bun add @soda-gql/core @soda-gql/runtime
+bun add -D @soda-gql/cli @soda-gql/config
+```
 
-# Scaffold scalar + adapter definitions for the runtime
+Create a `soda-gql.config.ts` file in your project root:
+
+```typescript
+import { defineConfig } from "@soda-gql/config";
+
+export default defineConfig({
+  outdir: "./src/graphql-system",
+  include: ["./src/**/*.ts"],
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
+      scalars: "./src/graphql-system/scalars.ts",
+    },
+  },
+});
+```
+
+Generate the GraphQL system:
+
+```bash
+# Scaffold scalar and runtime adapter templates (first-time setup)
 bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
 
 # Generate GraphQL system from schema
-bun run soda-gql codegen \
-  --schema ./schema.graphql \
-  --out ./src/graphql-system/index.ts \
-  --inject-from ./src/graphql-system/inject.ts
+bun run soda-gql codegen
 ```
 
-The generated runtime module imports your scalar and adapter implementations from `inject.ts`. Keep that file under version control so custom scalar behavior stays explicit. Declare each scalar with the `defineScalar()` helper exported by `@soda-gql/core`—for example `defineScalar("DateTime", ({ type }) => ({ input: type<string>(), output: type<Date>(), directives: {} }))`—so both input and output shapes stay typed.
+The generated runtime module imports your scalar and adapter implementations. Keep the `scalars.ts` and `runtime-adapter.ts` files under version control so custom scalar behavior stays explicit. Declare each scalar with the `defineScalar()` helper exported by `@soda-gql/core`—for example `defineScalar("DateTime", ({ type }) => ({ input: type<string>(), output: type<Date>(), directives: {} }))`—so both input and output shapes stay typed.
 
 ### Basic Example
 

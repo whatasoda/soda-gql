@@ -165,3 +165,12 @@ const result = analyze(source);
 const { filePath, source } = loadFixture("model-definition");
 const result = analyze({ filePath, source });
 ```
+
+### Pull Request Guidelines
+
+**README Updates**:
+- When creating PRs that change public APIs or add features, update relevant README files
+- Main README.md for user-facing changes
+- Package READMEs for package-specific changes
+- Keep documentation in sync with implementation
+- Update examples and code snippets when APIs change
