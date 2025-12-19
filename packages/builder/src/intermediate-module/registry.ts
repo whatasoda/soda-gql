@@ -173,7 +173,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
 
     // Then, evaluate all builders after registration
     for (const element of elements.values()) {
-      GqlElement.evaluate(element);
+      GqlElement.evaluateSync(element);
     }
 
     // Build a single record with discriminated union entries
