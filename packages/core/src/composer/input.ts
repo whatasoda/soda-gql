@@ -25,17 +25,18 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
   definitions: TVariableDefinitions,
   providedValues: AnyAssignableInput | void,
 ): AssigningInput<TSchema, TVariableDefinitions> => {
-  return mapValues(definitions, (definition, _): AnyVarRef => {
-    if (!providedValues || providedValues[definition.name] === undefined) {
-      return createVarRefFromConstValue<InferInputProfile<TSchema, typeof definition>>(undefined);
+  return mapValues(definitions, (_definition, key): AnyVarRef => {
+    const varName = key as string;
+    if (!providedValues || providedValues[varName] === undefined) {
+      return createVarRefFromConstValue<InferInputProfile<TSchema, typeof _definition>>(undefined);
     }
 
-    const provided = providedValues[definition.name];
+    const provided = providedValues[varName];
     if (isVarRef(provided)) {
       return provided;
     }
 
-    return createVarRefFromConstValue<InferInputProfile<TSchema, typeof definition>>(provided as ConstValue);
+    return createVarRefFromConstValue<InferInputProfile<TSchema, typeof _definition>>(provided as ConstValue);
   }) as AssigningInput<TSchema, TVariableDefinitions>;
 };
 
