@@ -8,22 +8,14 @@ import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
-import type { AnalyzerAdapter } from "../core";
+import type { AnalyzerAdapter, AnalyzerResult } from "../core";
 
 /**
  * Extended SWC Module with filePath attached (similar to ts.SourceFile.fileName)
  */
 type SwcModule = Module & { __filePath: string };
 
-import type {
-  AnalyzeModuleInput,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-  SourcePosition,
-} from "../types";
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation, SourcePosition } from "../types";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
@@ -558,19 +550,13 @@ const collectAllDefinitions = ({
 };
 
 /**
- * Collect diagnostics (now empty since we support all definition types)
+ * SWC adapter implementation.
+ * The analyze method parses and collects all data in one pass,
+ * ensuring the AST (Module) is released after analysis.
  */
-const collectDiagnostics = (): ModuleDiagnostic[] => {
-  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
-  // All gql definitions are now supported
-  return [];
-};
-
-/**
- * SWC adapter implementation
- */
-export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
-  parse(input: AnalyzeModuleInput): Module | null {
+export const swcAdapter: AnalyzerAdapter = {
+  analyze(input: AnalyzeModuleInput, helper: GraphqlSystemIdentifyHelper): AnalyzerResult | null {
+    // Parse source - AST is local to this function
     const program = parseSync(input.source, {
       syntax: "typescript",
       tsx: input.filePath.endsWith(".tsx"),
@@ -586,53 +572,27 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;
     swcModule.__filePath = input.filePath;
-    return swcModule;
-  },
 
-  collectGqlIdentifiers(file: Module, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
-    return collectGqlIdentifiers(file as SwcModule, helper);
-  },
+    // Collect all data in one pass
+    const gqlIdentifiers = collectGqlIdentifiers(swcModule, helper);
+    const imports = collectImports(swcModule);
+    const exports = collectExports(swcModule);
 
-  collectImports(file: Module): readonly ModuleImport[] {
-    return collectImports(file);
-  },
-
-  collectExports(file: Module): readonly ModuleExport[] {
-    return collectExports(file);
-  },
-
-  collectDefinitions(
-    file: Module,
-    context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly imports: readonly ModuleImport[];
-      readonly exports: readonly ModuleExport[];
-      readonly source: string;
-    },
-  ): {
-    readonly definitions: readonly ModuleDefinition[];
-    readonly handles: readonly CallExpression[];
-  } {
-    const resolvePosition = toPositionResolver(context.source);
-    const { definitions, handledCalls } = collectAllDefinitions({
-      module: file as SwcModule,
-      gqlIdentifiers: context.gqlIdentifiers,
-      imports: context.imports,
-      exports: context.exports,
+    const resolvePosition = toPositionResolver(input.source);
+    const { definitions } = collectAllDefinitions({
+      module: swcModule,
+      gqlIdentifiers,
+      imports,
+      exports,
       resolvePosition,
-      source: context.source,
+      source: input.source,
     });
-    return { definitions, handles: handledCalls };
-  },
 
-  collectDiagnostics(
-    _file: Module,
-    _context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly handledCalls: readonly CallExpression[];
-      readonly source: string;
-    },
-  ): readonly ModuleDiagnostic[] {
-    return collectDiagnostics();
+    // Return results - swcModule goes out of scope and becomes eligible for GC
+    return {
+      imports,
+      exports,
+      definitions,
+    };
   },
 };

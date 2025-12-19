@@ -28,12 +28,6 @@ export type ModuleDefinition = {
   readonly expression: string;
 };
 
-export type ModuleDiagnostic = {
-  readonly code: "NON_TOP_LEVEL_DEFINITION";
-  readonly message: string;
-  readonly loc: SourceLocation;
-};
-
 export type ModuleImport = {
   readonly source: string;
   readonly imported: string;
@@ -62,7 +56,6 @@ export type ModuleAnalysis = {
   readonly filePath: string;
   readonly signature: string;
   readonly definitions: readonly ModuleDefinition[];
-  readonly diagnostics: readonly ModuleDiagnostic[];
   readonly imports: readonly ModuleImport[];
   readonly exports: readonly ModuleExport[];
 };

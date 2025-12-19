@@ -23,7 +23,6 @@ const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): 
   filePath,
   signature: "test-sig",
   definitions,
-  diagnostics: [],
   imports: [],
   exports: [],
 });

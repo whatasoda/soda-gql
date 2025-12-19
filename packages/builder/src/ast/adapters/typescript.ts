@@ -8,15 +8,8 @@ import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
-import type { AnalyzerAdapter } from "../core";
-import type {
-  AnalyzeModuleInput,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-} from "../types";
+import type { AnalyzerAdapter, AnalyzerResult } from "../core";
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation } from "../types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -431,66 +424,31 @@ const collectAllDefinitions = ({
 };
 
 /**
- * Collect diagnostics (now empty since we support all definition types)
+ * TypeScript adapter implementation.
+ * The analyze method parses and collects all data in one pass,
+ * ensuring the AST (ts.SourceFile) is released after analysis.
  */
-const collectDiagnostics = (
-  _sourceFile: ts.SourceFile,
-  _identifiers: ReadonlySet<string>,
-  _handledCalls: readonly ts.CallExpression[],
-): ModuleDiagnostic[] => {
-  // No longer emit NON_TOP_LEVEL_DEFINITION diagnostics
-  // All gql definitions are now supported
-  return [];
-};
+export const typescriptAdapter: AnalyzerAdapter = {
+  analyze(input: AnalyzeModuleInput, helper: GraphqlSystemIdentifyHelper): AnalyzerResult | null {
+    // Parse source - AST is local to this function
+    const sourceFile = createSourceFile(input.filePath, input.source);
 
-/**
- * TypeScript adapter implementation
- */
-export const typescriptAdapter: AnalyzerAdapter<ts.SourceFile, ts.CallExpression> = {
-  parse(input: AnalyzeModuleInput): ts.SourceFile | null {
-    return createSourceFile(input.filePath, input.source);
-  },
+    // Collect all data in one pass
+    const gqlIdentifiers = collectGqlImports(sourceFile, helper);
+    const imports = collectImports(sourceFile);
+    const exports = collectExports(sourceFile);
 
-  collectGqlIdentifiers(file: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
-    return collectGqlImports(file, helper);
-  },
-
-  collectImports(file: ts.SourceFile): readonly ModuleImport[] {
-    return collectImports(file);
-  },
-
-  collectExports(file: ts.SourceFile): readonly ModuleExport[] {
-    return collectExports(file);
-  },
-
-  collectDefinitions(
-    file: ts.SourceFile,
-    context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly imports: readonly ModuleImport[];
-      readonly exports: readonly ModuleExport[];
-      readonly source: string;
-    },
-  ): {
-    readonly definitions: readonly ModuleDefinition[];
-    readonly handles: readonly ts.CallExpression[];
-  } {
-    const { definitions, handledCalls } = collectAllDefinitions({
-      sourceFile: file,
-      identifiers: context.gqlIdentifiers,
-      exports: context.exports,
+    const { definitions } = collectAllDefinitions({
+      sourceFile,
+      identifiers: gqlIdentifiers,
+      exports,
     });
-    return { definitions, handles: handledCalls };
-  },
 
-  collectDiagnostics(
-    file: ts.SourceFile,
-    context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly handledCalls: readonly ts.CallExpression[];
-      readonly source: string;
-    },
-  ): readonly ModuleDiagnostic[] {
-    return collectDiagnostics(file, context.gqlIdentifiers, context.handledCalls);
+    // Return results - sourceFile goes out of scope and becomes eligible for GC
+    return {
+      imports,
+      exports,
+      definitions,
+    };
   },
 };

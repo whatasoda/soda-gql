@@ -25,7 +25,6 @@ const createMockSnapshot = (
     filePath,
     signature: `sig-${filePath}`,
     definitions: [definition],
-    diagnostics: [],
     imports: imports.map((imp) => ({
       source: imp.source,
       imported: imp.imported,
