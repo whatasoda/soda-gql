@@ -1,5 +1,7 @@
 # @soda-gql/plugin-vite
 
+> **Note**: This package is not yet published to npm. It is under active development and will be available in a future release.
+
 Vite plugin for soda-gql zero-runtime GraphQL transformations.
 
 ## Installation

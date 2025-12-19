@@ -1,5 +1,7 @@
 # @soda-gql/graffle-client
 
+> **Note**: This package is not yet published to npm. It is under active development and will be available in a future release.
+
 GraphQL client integration for soda-gql, providing seamless execution of generated operations with type-safe error handling.
 
 ## Features
