@@ -68,3 +68,24 @@ export const userUpdatesSubscription = gql.default(({ subscription }, { $ }) =>
     }),
   ),
 );
+
+/**
+ * Query operation with helpers (auth + cache metadata)
+ */
+export const getProtectedUserQuery = gql.default(({ query }, { $, auth, cache }) =>
+  query.composed(
+    {
+      operationName: "GetProtectedUser",
+      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:!")],
+      metadata: {
+        custom: {
+          ...auth.requiresLogin(),
+          ...cache.ttl(300),
+        },
+      },
+    },
+    ({ $ }) => ({
+      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
+    }),
+  ),
+);
