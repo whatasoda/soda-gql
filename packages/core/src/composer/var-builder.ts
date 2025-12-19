@@ -1,5 +1,6 @@
 import type { AnyConstDirectiveAttachments, AnyGraphqlSchema, ConstAssignableInputValue } from "../types/schema";
 import { type AnyTypeSpecifier, type ModifiedTypeName, parseModifiedTypeName, type TypeModifier } from "../types/type-foundation";
+import { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 
 type AssignableDefaultValue<
@@ -17,7 +18,7 @@ type AssignableDefaultValue<
 >;
 
 export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSchema) => {
-  const $ = <TVarName extends string>(varName: TVarName) => {
+  const varBuilder = <TVarName extends string>(varName: TVarName) => {
     const createVarSpecifierBuilder = <TKind extends "scalar" | "enum" | "input">(kind: TKind) => {
       type VarSpecifier<
         TTypeName extends keyof TSchema[TKind] & string,
@@ -83,5 +84,11 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
     };
   };
 
-  return { $ };
+  const $var = Object.assign(varBuilder, {
+    getName: getVarRefName,
+    getValue: getVarRefValue,
+    getInner: getVarRefInner,
+  });
+
+  return { $var };
 };

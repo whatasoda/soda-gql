@@ -10,7 +10,6 @@ import type { AnyMetadataAdapter, MetadataBuilder, OperationMetadata, SliceMetad
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
-import { getVarRefInner, getVarRefName } from "../types/type-foundation/var-ref";
 
 import { buildDocument } from "./build-document";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
@@ -54,7 +53,7 @@ export const createComposedOperationComposerFactory = <
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, typeof variables>(variables);
-        const operationMetadata = options.metadata?.({ $, getVarRefInner, getVarRefName });
+        const operationMetadata = options.metadata?.({ $ });
         const fragments = builder({ $ });
 
         const fields = Object.fromEntries(

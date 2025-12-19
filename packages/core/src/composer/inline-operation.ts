@@ -4,7 +4,6 @@ import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
-import { getVarRefInner, getVarRefName } from "../types/type-foundation/var-ref";
 
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
@@ -47,7 +46,7 @@ export const createInlineOperationComposerFactory = <
         const f = createFieldFactories(schema, operationTypeName);
         const fields = mergeFields(fieldBuilder({ f, $ }));
 
-        const metadata = options.metadata?.({ $, getVarRefInner, getVarRefName });
+        const metadata = options.metadata?.({ $ });
 
         return {
           operationType,

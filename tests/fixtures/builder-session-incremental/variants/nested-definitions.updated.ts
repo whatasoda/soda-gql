@@ -46,10 +46,10 @@ export const userWithPostsModel = gql.default(({ model }) =>
 // - filePath::createUserQueries.userById
 // - filePath::createUserQueries.userList
 export function createUserQueries() {
-  const userById = gql.default(({ query }, { $ }) =>
+  const userById = gql.default(({ query }, { $var }) =>
     query.slice(
       {
-        variables: [$("id").scalar("ID:!")],
+        variables: [$var("id").scalar("ID:!")],
       },
       ({ f, $ }) => [
         //
@@ -63,10 +63,10 @@ export function createUserQueries() {
     ),
   );
 
-  const userList = gql.default(({ query }, { $ }) =>
+  const userList = gql.default(({ query }, { $var }) =>
     query.slice(
       {
-        variables: [$("limit").scalar("Int:?")],
+        variables: [$var("limit").scalar("Int:?")],
       },
       ({ f, $ }) => [
         //
@@ -107,10 +107,10 @@ export const queryFactory = () => {
 // - filePath::nestedQueries.users.byId
 export const nestedQueries = {
   users: {
-    list: gql.default(({ query }, { $ }) =>
+    list: gql.default(({ query }, { $var }) =>
       query.slice(
         {
-          variables: [$("limit").scalar("Int:?")],
+          variables: [$var("limit").scalar("Int:?")],
         },
         ({ f, $ }) => [
           //
@@ -124,10 +124,10 @@ export const nestedQueries = {
         ({ select }) => select(["$.users"], (result) => result),
       ),
     ),
-    byId: gql.default(({ query }, { $ }) =>
+    byId: gql.default(({ query }, { $var }) =>
       query.slice(
         {
-          variables: [$("id").scalar("ID:!")],
+          variables: [$var("id").scalar("ID:!")],
         },
         ({ f, $ }) => [
           //
@@ -147,11 +147,11 @@ export const nestedQueries = {
 // Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
 // Uses the previously defined nestedQueries.users.byId slice
 export function createUserOperation() {
-  const getUserOperation = gql.default(({ query }, { $ }) =>
+  const getUserOperation = gql.default(({ query }, { $var }) =>
     query.composed(
       {
         operationName: "GetUserById",
-        variables: [$("id").scalar("ID:!")],
+        variables: [$var("id").scalar("ID:!")],
       },
       ({ $ }) => ({
         user: nestedQueries.users.byId.embed({ id: $.id }),
@@ -166,11 +166,11 @@ export function createUserOperation() {
 // Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
 // Uses the previously defined nestedQueries.users.list slice
 export const operationFactory = () => {
-  const listUsersOperation = gql.default(({ query }, { $ }) =>
+  const listUsersOperation = gql.default(({ query }, { $var }) =>
     query.composed(
       {
         operationName: "ListUsers",
-        variables: [$("limit").scalar("Int:?")],
+        variables: [$var("limit").scalar("Int:?")],
       },
       ({ $ }) => ({
         users: nestedQueries.users.list.embed({ limit: $.limit }),
@@ -187,22 +187,22 @@ export const operationFactory = () => {
 // - filePath::nestedOperations.users.listUsers
 export const nestedOperations = {
   users: {
-    getUser: gql.default(({ query }, { $ }) =>
+    getUser: gql.default(({ query }, { $var }) =>
       query.composed(
         {
           operationName: "NestedGetUser",
-          variables: [$("id").scalar("ID:!")],
+          variables: [$var("id").scalar("ID:!")],
         },
         ({ $ }) => ({
           user: nestedQueries.users.byId.embed({ id: $.id }),
         }),
       ),
     ),
-    listUsers: gql.default(({ query }, { $ }) =>
+    listUsers: gql.default(({ query }, { $var }) =>
       query.composed(
         {
           operationName: "NestedListUsers",
-          variables: [$("limit").scalar("Int:?")],
+          variables: [$var("limit").scalar("Int:?")],
         },
         ({ $ }) => ({
           users: nestedQueries.users.list.embed({ limit: $.limit }),

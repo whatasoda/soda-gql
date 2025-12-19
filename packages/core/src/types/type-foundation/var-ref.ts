@@ -56,3 +56,15 @@ export const getVarRefName = (varRef: AnyVarRef): string => {
   }
   return inner.name;
 };
+
+/**
+ * Get the const value from a VarRef.
+ * Throws if the VarRef contains a variable reference instead of a const-value.
+ */
+export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
+  const inner = VarRef.getInner(varRef);
+  if (inner.type !== "const-value") {
+    throw new Error("Expected const-value, got variable reference");
+  }
+  return inner.value;
+};

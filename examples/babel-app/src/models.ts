@@ -4,10 +4,10 @@ import { gql } from "@/graphql-system";
  * User model with nested posts
  * Demonstrates model definition with variables and nested field selections
  */
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel = gql.default(({ model }, { $var }) =>
   model.User(
     {
-      variables: [$("categoryId").scalar("ID:!")],
+      variables: [$var("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //

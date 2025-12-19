@@ -1,4 +1,4 @@
-import type { AnyVarRef, getVarRefInner, getVarRefName } from "../type-foundation/var-ref";
+import type { AnyVarRef } from "../type-foundation/var-ref";
 
 /**
  * Base metadata types that can be attached to operations.
@@ -16,14 +16,11 @@ export type OperationMetadata = {
 
 /**
  * Tools available inside metadata builder callbacks.
+ * Access utilities via $var.getName(), $var.getValue(), $var.getInner().
  */
 export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
   /** Variable references created from the operation's variable definitions */
   readonly $: TVarRefs;
-  /** Extract internal representation from a variable reference */
-  readonly getVarRefInner: typeof getVarRefInner;
-  /** Get the variable name from a VarRef (throws if const-value) */
-  readonly getVarRefName: typeof getVarRefName;
 };
 
 /**

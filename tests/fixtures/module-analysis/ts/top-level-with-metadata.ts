@@ -11,10 +11,10 @@ export const userModel = gql.default(({ model }) =>
   ),
 );
 
-export const userSlice = gql.default(({ query }, { $ }) =>
+export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -27,11 +27,11 @@ export const userSlice = gql.default(({ query }, { $ }) =>
   ),
 );
 
-export const pageQuery = gql.default(({ query }, { $ }) =>
+export const pageQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "ProfilePageQuery",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       users: userSlice.embed({ id: $.userId }),

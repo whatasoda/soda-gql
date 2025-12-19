@@ -3,11 +3,11 @@ import { gql } from "@/graphql-system";
 // Note: We don't use these in the operation itself due to builder evaluation limitations
 import { postsSlice, userSlice } from "./slices";
 
-export const getUserAndPosts = gql.default(({ query }, { $ }) =>
+export const getUserAndPosts = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "GetUserAndPosts",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userSlice.embed({ id: $.userId }),

@@ -2,10 +2,10 @@ import { gql } from "@/graphql-system";
 import { userRemote } from "./user";
 
 export const collections = {
-  byCategory: gql.default(({ query }, { $ }) =>
+  byCategory: gql.default(({ query }, { $var }) =>
     query.slice(
       {
-        variables: [$("categoryId").scalar("ID:?")],
+        variables: [$var("categoryId").scalar("ID:?")],
       },
       ({ f, $ }) => [
         //

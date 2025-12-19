@@ -1,20 +1,20 @@
 import { gql } from "@/graphql-system";
 
-export const profileQuery = gql.default(({ query }, { $ }) =>
+export const profileQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "ProfileQuery",
-      variables: [$("userId").scalar("ID:!")],
+      variables: [$var("userId").scalar("ID:!")],
     },
     () => ({}),
   ),
 );
 
-export const updateProfileMutation = gql.default(({ mutation }, { $ }) =>
+export const updateProfileMutation = gql.default(({ mutation }, { $var }) =>
   mutation.composed(
     {
       operationName: "UpdateProfile",
-      variables: [$("userId").scalar("ID:!"), $("name").scalar("String:!")],
+      variables: [$var("userId").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     () => ({}),
   ),

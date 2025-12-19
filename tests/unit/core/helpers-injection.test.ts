@@ -102,7 +102,7 @@ describe("helpers injection", () => {
     expect(capturedCacheTTL).toBe(300);
   });
 
-  it("preserves $ (var builder) alongside custom helpers", () => {
+  it("preserves $var (var builder) alongside custom helpers", () => {
     const gql = createGqlElementComposer<Schema, typeof adapter, { custom: () => string }>(schema, {
       helpers: { custom: () => "test" },
     });
@@ -110,11 +110,11 @@ describe("helpers injection", () => {
     let varBuilderAvailable = false;
     let customAvailable = false;
 
-    gql(({ query }, { $, custom }) => {
-      varBuilderAvailable = typeof $ === "function";
+    gql(({ query }, { $var, custom }) => {
+      varBuilderAvailable = typeof $var === "function";
       customAvailable = custom() === "test";
 
-      return query.inline({ operationName: "Test", variables: [$("id").scalar("ID:!")] }, ({ f, $ }) => [
+      return query.inline({ operationName: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
         f.user({ id: $.id })(() => []),
       ]);
     });
@@ -128,8 +128,8 @@ describe("helpers injection", () => {
 
     let varBuilderAvailable = false;
 
-    gql(({ model }, { $ }) => {
-      varBuilderAvailable = typeof $ === "function";
+    gql(({ model }, { $var }) => {
+      varBuilderAvailable = typeof $var === "function";
       return model.User(
         {},
         ({ f }) => [f.id(), f.name()],

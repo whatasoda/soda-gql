@@ -6,7 +6,7 @@ import { gql } from "@/graphql-system";
 export const userSlice = gql.default(({ query }, { $ }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.email()])],
     ({ select }) => select(["$.user"], (result) => result),

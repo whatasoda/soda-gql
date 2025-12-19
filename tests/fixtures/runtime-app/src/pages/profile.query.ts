@@ -7,11 +7,11 @@ type ProfileQueryVariables = {
   readonly categoryId?: string;
 };
 
-export const profileQuery = gql.default(({ query }, { $ }) =>
+export const profileQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "ProfilePageQuery",
-      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
       users: userSlice.embed({

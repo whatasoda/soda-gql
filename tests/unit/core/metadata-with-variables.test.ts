@@ -6,8 +6,6 @@ import {
   define,
   defineOperationRoots,
   defineScalar,
-  getVarRefInner,
-  getVarRefName,
   unsafeInputType,
   unsafeOutputType,
 } from "@soda-gql/core";
@@ -69,14 +67,14 @@ describe("metadata with variable access", () => {
     it("metadata callback receives $ with variable refs", () => {
       const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
-      const operation = gql(({ query }, { $ }) =>
+      const operation = gql(({ query }, { $var }) =>
         query.inline(
           {
             operationName: "GetUser",
-            variables: [$("userId").scalar("ID:!")],
+            variables: [$var("userId").scalar("ID:!")],
             metadata: ({ $ }) => ({
               extensions: {
-                trackedVariables: [getVarRefInner($.userId)],
+                trackedVariables: [$var.getInner($.userId)],
               },
             }),
           },
@@ -88,17 +86,17 @@ describe("metadata with variable access", () => {
       expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
     });
 
-    it("metadata callback can access getVarRefName from tools", () => {
+    it("$var.getName extracts variable name", () => {
       const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
-      const operation = gql(({ query }, { $ }) =>
+      const operation = gql(({ query }, { $var }) =>
         query.inline(
           {
             operationName: "GetUser",
-            variables: [$("userId").scalar("ID:!")],
-            metadata: ({ $, getVarRefName }) => ({
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $ }) => ({
               custom: {
-                variableNames: [getVarRefName($.userId)],
+                variableNames: [$var.getName($.userId)],
               },
             }),
           },
@@ -113,16 +111,16 @@ describe("metadata with variable access", () => {
     it("works with multiple variables", () => {
       const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
-      const operation = gql(({ mutation }, { $ }) =>
+      const operation = gql(({ mutation }, { $var }) =>
         mutation.inline(
           {
             operationName: "UpdateUser",
-            variables: [$("userId").scalar("ID:!"), $("userName").scalar("String:!")],
-            metadata: ({ $, getVarRefName }) => ({
+            variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
+            metadata: ({ $ }) => ({
               extensions: {
                 trackedVars: {
-                  userId: getVarRefName($.userId),
-                  userName: getVarRefName($.userName),
+                  userId: $var.getName($.userId),
+                  userName: $var.getName($.userName),
                 },
               },
             }),
@@ -140,11 +138,11 @@ describe("metadata with variable access", () => {
     it("metadata is undefined when not provided", () => {
       const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
 
-      const operation = gql(({ query }, { $ }) =>
+      const operation = gql(({ query }, { $var }) =>
         query.inline(
           {
             operationName: "GetUser",
-            variables: [$("userId").scalar("ID:!")],
+            variables: [$var("userId").scalar("ID:!")],
           },
           ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
         ),
@@ -166,14 +164,14 @@ describe("metadata with variable access", () => {
         ),
       );
 
-      const operation = gql(({ query }, { $ }) =>
+      const operation = gql(({ query }, { $var }) =>
         query.composed(
           {
             operationName: "GetUser",
-            variables: [$("userId").scalar("ID:!")],
-            metadata: ({ $, getVarRefName }) => ({
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $ }) => ({
               headers: {
-                "X-Variable-Name": getVarRefName($.userId),
+                "X-Variable-Name": $var.getName($.userId),
               },
             }),
           },

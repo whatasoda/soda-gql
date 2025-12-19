@@ -11,10 +11,10 @@ type UserModel = {
   readonly posts: readonly PostModel[];
 };
 
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel = gql.default(({ model }, { $var }) =>
   model.User(
     {
-      variables: [$("categoryId").scalar("ID:?")],
+      variables: [$var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -54,10 +54,10 @@ export const userRemote = {
   ),
 };
 
-export const userSlice = gql.default(({ query }, { $ }) =>
+export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -74,10 +74,10 @@ export const userSlice = gql.default(({ query }, { $ }) =>
 );
 
 export const userSliceCatalog = {
-  byId: gql.default(({ query }, { $ }) =>
+  byId: gql.default(({ query }, { $var }) =>
     query.slice(
       {
-        variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+        variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
       },
       ({ f, $ }) => [
         //

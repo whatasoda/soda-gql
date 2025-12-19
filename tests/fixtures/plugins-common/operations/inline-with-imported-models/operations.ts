@@ -1,11 +1,11 @@
 import { gql } from "@/graphql-system";
 import { userModel } from "./models";
 
-export const getUserById = gql.default(({ query }, { $ }) =>
+export const getUserById = gql.default(({ query }, { $var }) =>
   query.inline(
     {
       operationName: "GetUserById",
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
