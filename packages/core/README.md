@@ -123,13 +123,13 @@ export const getUserInline = gql.default(({ query }, { $ }) =>
 
 Variables are declared using a string-based type syntax:
 
-| Syntax | Meaning |
-|--------|---------|
-| `"ID:!"` | Required ID |
-| `"String:?"` | Optional String |
-| `"[Int]:!"` | Required list of Int |
-| `"[String:!]:?"` | Optional list of required Strings |
-| `"MyInput:!"` | Required custom input type |
+| Syntax | Meaning | GraphQL Equivalent |
+|--------|---------|-------------------|
+| `"ID:!"` | Required ID | `ID!` |
+| `"String:?"` | Optional String | `String` |
+| `"Int:![]!"` | Required list of required Int | `[Int!]!` |
+| `"String:![]?"` | Optional list of required Strings | `[String!]` |
+| `"MyInput:!"` | Required custom input type | `MyInput!` |
 
 ## Field Selection Patterns
 
