@@ -1,6 +1,7 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
+import type { OperationMetadata } from "../metadata";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
@@ -38,6 +39,7 @@ type InlineOperationArtifact<
   readonly variableNames: TVariableNames;
   readonly documentSource: () => TFields;
   readonly document: TypedDocumentNode<TData, TVariables>;
+  readonly metadata?: OperationMetadata;
 };
 
 export class InlineOperation<
@@ -81,6 +83,9 @@ export class InlineOperation<
   public get document() {
     return GqlElement.get(this).document;
   }
+  public get metadata() {
+    return GqlElement.get(this).metadata;
+  }
 
   static create<
     TSchema extends AnyGraphqlSchema,
@@ -95,6 +100,7 @@ export class InlineOperation<
       variableNames: (keyof TVariableDefinitions & string)[];
       documentSource: () => TFields;
       document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+      metadata?: OperationMetadata;
     },
   ) {
     return new InlineOperation(define);

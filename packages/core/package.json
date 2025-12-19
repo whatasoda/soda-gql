@@ -30,6 +30,13 @@
       "require": "./dist/runtime/index.cjs",
       "default": "./dist/runtime/index.js"
     },
+    "./metadata": {
+      "@soda-gql": "./src/metadata/index.ts",
+      "types": "./dist/metadata/index.d.ts",
+      "import": "./dist/metadata/index.js",
+      "require": "./dist/metadata/index.cjs",
+      "default": "./dist/metadata/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

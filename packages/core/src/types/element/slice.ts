@@ -1,6 +1,7 @@
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput } from "../fragment";
+import type { SliceMetadata } from "../metadata";
 import type { AnyProjection, InferExecutionResultProjection } from "../runtime";
 import type { AnyGraphqlSchema, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -89,6 +90,7 @@ export type SlicePayload<
   variables: TVariables;
   getFields: () => TFields;
   projection: TProjection;
+  metadata?: SliceMetadata;
 };
 
 export type InferOutputOfSlice<TSlice extends AnySliceOf<any>> = ReturnType<TSlice[typeof __OPERATION_SLICE_BRAND__]>["output"];

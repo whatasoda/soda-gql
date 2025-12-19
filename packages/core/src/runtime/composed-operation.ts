@@ -29,6 +29,7 @@ export const createRuntimeComposedOperation = (input: RuntimeComposedOperationIn
       }),
       projectionPathGraph: input.prebuild.projectionPathGraph,
     }),
+    metadata: input.prebuild.metadata,
   } satisfies StripSymbols<AnyComposedOperationOf<OperationType>> as AnyComposedOperationOf<OperationType>;
 
   registerComposedOperation(operation);
