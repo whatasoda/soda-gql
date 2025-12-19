@@ -8,7 +8,7 @@ import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
-import type { AnalyzerAdapter } from "../core";
+import type { AnalyzerAdapter, AnalyzerResult } from "../core";
 
 /**
  * Extended SWC Module with filePath attached (similar to ts.SourceFile.fileName)
@@ -567,10 +567,13 @@ const collectDiagnostics = (): ModuleDiagnostic[] => {
 };
 
 /**
- * SWC adapter implementation
+ * SWC adapter implementation.
+ * The analyze method parses and collects all data in one pass,
+ * ensuring the AST (Module) is released after analysis.
  */
-export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
-  parse(input: AnalyzeModuleInput): Module | null {
+export const swcAdapter: AnalyzerAdapter = {
+  analyze(input: AnalyzeModuleInput, helper: GraphqlSystemIdentifyHelper): AnalyzerResult | null {
+    // Parse source - AST is local to this function
     const program = parseSync(input.source, {
       syntax: "typescript",
       tsx: input.filePath.endsWith(".tsx"),
@@ -586,53 +589,30 @@ export const swcAdapter: AnalyzerAdapter<Module, CallExpression> = {
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;
     swcModule.__filePath = input.filePath;
-    return swcModule;
-  },
 
-  collectGqlIdentifiers(file: Module, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> {
-    return collectGqlIdentifiers(file as SwcModule, helper);
-  },
+    // Collect all data in one pass
+    const gqlIdentifiers = collectGqlIdentifiers(swcModule, helper);
+    const imports = collectImports(swcModule);
+    const exports = collectExports(swcModule);
 
-  collectImports(file: Module): readonly ModuleImport[] {
-    return collectImports(file);
-  },
-
-  collectExports(file: Module): readonly ModuleExport[] {
-    return collectExports(file);
-  },
-
-  collectDefinitions(
-    file: Module,
-    context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly imports: readonly ModuleImport[];
-      readonly exports: readonly ModuleExport[];
-      readonly source: string;
-    },
-  ): {
-    readonly definitions: readonly ModuleDefinition[];
-    readonly handles: readonly CallExpression[];
-  } {
-    const resolvePosition = toPositionResolver(context.source);
-    const { definitions, handledCalls } = collectAllDefinitions({
-      module: file as SwcModule,
-      gqlIdentifiers: context.gqlIdentifiers,
-      imports: context.imports,
-      exports: context.exports,
+    const resolvePosition = toPositionResolver(input.source);
+    const { definitions } = collectAllDefinitions({
+      module: swcModule,
+      gqlIdentifiers,
+      imports,
+      exports,
       resolvePosition,
-      source: context.source,
+      source: input.source,
     });
-    return { definitions, handles: handledCalls };
-  },
 
-  collectDiagnostics(
-    _file: Module,
-    _context: {
-      readonly gqlIdentifiers: ReadonlySet<string>;
-      readonly handledCalls: readonly CallExpression[];
-      readonly source: string;
-    },
-  ): readonly ModuleDiagnostic[] {
-    return collectDiagnostics();
+    const diagnostics = collectDiagnostics();
+
+    // Return results - swcModule goes out of scope and becomes eligible for GC
+    return {
+      imports,
+      exports,
+      definitions,
+      diagnostics,
+    };
   },
 };
