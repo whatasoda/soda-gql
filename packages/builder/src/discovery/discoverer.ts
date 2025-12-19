@@ -1,5 +1,6 @@
+import { readFile, stat } from "node:fs/promises";
 import { readFileSync, statSync } from "node:fs";
-import { createSyncScheduler, normalizePath, type AnyEffect, type SchedulerError } from "@soda-gql/common";
+import { createAsyncScheduler, createSyncScheduler, normalizePath, type AnyEffect, type SchedulerError } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { createAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
@@ -214,6 +215,65 @@ export const discoverModules = (options: DiscoverModulesOptions): BuilderResult<
   });
 
   const result = scheduler.run(() => discoverModulesGen(options));
+
+  if (result.isErr()) {
+    const error = result.error;
+    // Convert scheduler error to builder error
+    return err(builderErrors.discoveryIOError("unknown", error.message));
+  }
+
+  return ok(result.value);
+};
+
+/**
+ * Asynchronous version of discoverModules.
+ * Uses async scheduler for parallel file I/O operations.
+ *
+ * This is useful for large codebases where parallel file operations can improve performance.
+ */
+export const discoverModulesAsync = async (
+  options: DiscoverModulesOptions,
+): Promise<BuilderResult<DiscoverModulesResult>> => {
+  // Create async scheduler with builder handlers that handle file not found gracefully
+  const scheduler = createAsyncScheduler({
+    handlers: [
+      // File read handler that returns null on ENOENT
+      {
+        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.readFile> => effect.kind === "file:read",
+        handle: async (effect: ReturnType<typeof BuilderEffects.readFile>): Promise<string | null> => {
+          try {
+            return await readFile(effect.path, "utf8");
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+              return null;
+            }
+            throw error;
+          }
+        },
+      },
+      // File stat handler that returns null on ENOENT
+      {
+        canHandle: (effect): effect is ReturnType<typeof BuilderEffects.stat> => effect.kind === "file:stat",
+        handle: async (effect: ReturnType<typeof BuilderEffects.stat>): Promise<FileStats | null> => {
+          try {
+            const stats = await stat(effect.path);
+            return {
+              mtimeMs: stats.mtimeMs,
+              size: stats.size,
+              isFile: stats.isFile(),
+            };
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+              return null;
+            }
+            throw error;
+          }
+        },
+      },
+    ],
+  });
+
+  const result = await scheduler.run(() => discoverModulesGen(options));
 
   if (result.isErr()) {
     const error = result.error;
