@@ -47,6 +47,23 @@ export type SliceMetadata = OperationMetadata & {
 };
 
 /**
+ * Tools available inside slice metadata builder callbacks.
+ * Only $ is available (no document, since slices don't have their own document).
+ */
+export type SliceMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
+  /** Variable references created from the slice's variable definitions */
+  readonly $: TVarRefs;
+};
+
+/**
+ * Slice metadata builder callback that receives variable tools.
+ * Allows slice metadata to reference slice variables.
+ */
+export type SliceMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = SliceMetadata> = (
+  tools: SliceMetadataBuilderTools<TVarRefs>,
+) => TMetadata;
+
+/**
  * Utility type to extract the metadata type from an operation or slice.
  */
 export type ExtractMetadata<T> = T extends { metadata: infer M } ? M : OperationMetadata;

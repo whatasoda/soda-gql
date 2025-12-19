@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { print } from "graphql";
 import { createHash } from "node:crypto";
 import {
   type AnyGraphqlRuntimeAdapter,
@@ -12,6 +11,7 @@ import {
   unsafeOutputType,
 } from "@soda-gql/core";
 import { createRuntimeAdapter } from "@soda-gql/core/runtime";
+import { print } from "graphql";
 
 const schema = {
   label: "test" as const,
@@ -299,6 +299,214 @@ describe("metadata with variable access", () => {
 
       expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
       expect(operation.metadata?.extensions?.hasDocument).toBe(true);
+    });
+  });
+
+  describe("slice metadata factory", () => {
+    it("metadata callback receives $ with variable assignments", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }, { $var }) =>
+        query.slice(
+          {
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $ }) => ({
+              extensions: {
+                trackedVariables: [$var.getInner($.userId)],
+              },
+            }),
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      // Embed with a variable reference from operation
+      const operation = gql(({ query }, { $var }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+            variables: [$var("opUserId").scalar("ID:!")],
+          },
+          ({ $ }) => ({
+            user: userSlice.embed({ userId: $.opUserId }),
+          }),
+        ),
+      );
+
+      expect(operation.metadata).toBeDefined();
+      expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "opUserId" }]);
+    });
+
+    it("metadata factory without variables still works", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }) =>
+        query.slice(
+          {
+            metadata: () => ({
+              custom: { requiresAuth: true, cacheTtl: 300 },
+            }),
+          },
+          ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+          },
+          () => ({
+            user: userSlice.embed(),
+          }),
+        ),
+      );
+
+      expect(operation.metadata?.custom?.requiresAuth).toBe(true);
+      expect(operation.metadata?.custom?.cacheTtl).toBe(300);
+    });
+
+    it("metadata callback receives const value when embedded with literal", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }, { $var }) =>
+        query.slice(
+          {
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $ }) => ({
+              custom: {
+                varInner: $var.getInner($.userId),
+              },
+            }),
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+          },
+          () => ({
+            user: userSlice.embed({ userId: "literal-id" }),
+          }),
+        ),
+      );
+
+      expect(operation.metadata?.custom?.varInner).toEqual({
+        type: "const-value",
+        value: "literal-id",
+      });
+    });
+
+    it("$var.getName extracts variable name from slice variables", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }, { $var }) =>
+        query.slice(
+          {
+            variables: [$var("userId").scalar("ID:!")],
+            metadata: ({ $ }) => ({
+              headers: {
+                "X-Slice-Variable": $var.getName($.userId),
+              },
+            }),
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }, { $var }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+            variables: [$var("opUserId").scalar("ID:!")],
+          },
+          ({ $ }) => ({
+            user: userSlice.embed({ userId: $.opUserId }),
+          }),
+        ),
+      );
+
+      expect(operation.metadata?.headers?.["X-Slice-Variable"]).toBe("opUserId");
+    });
+
+    it("works with multiple slice variables", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ mutation }, { $var }) =>
+        mutation.slice(
+          {
+            variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
+            metadata: ({ $ }) => ({
+              extensions: {
+                trackedVars: {
+                  id: $var.getName($.id),
+                  name: $var.getName($.name),
+                },
+              },
+            }),
+          },
+          ({ f, $ }) => [f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.updateUser"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ mutation }, { $var }) =>
+        mutation.composed(
+          {
+            operationName: "UpdateUser",
+            variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
+          },
+          ({ $ }) => ({
+            result: userSlice.embed({ id: $.userId, name: $.userName }),
+          }),
+        ),
+      );
+
+      expect(operation.metadata?.extensions?.trackedVars).toEqual({
+        id: "userId",
+        name: "userName",
+      });
+    });
+
+    it("metadata is empty object when not provided", () => {
+      const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+
+      const userSlice = gql(({ query }, { $var }) =>
+        query.slice(
+          {
+            variables: [$var("userId").scalar("ID:!")],
+          },
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
+      );
+
+      const operation = gql(({ query }, { $var }) =>
+        query.composed(
+          {
+            operationName: "GetUser",
+            variables: [$var("opUserId").scalar("ID:!")],
+          },
+          ({ $ }) => ({
+            user: userSlice.embed({ userId: $.opUserId }),
+          }),
+        ),
+      );
+
+      // When no metadata is provided, composed operations return empty nested objects
+      // due to the merge logic
+      expect(operation.metadata).toEqual({
+        headers: {},
+        extensions: {},
+        custom: {},
+      });
     });
   });
 });

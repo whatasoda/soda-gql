@@ -1,3 +1,4 @@
+export { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
 export * from "./build-document";
 export * from "./composed-operation";
 export * from "./fields-builder";
@@ -8,4 +9,3 @@ export * from "./model";
 export * from "./projection-path-graph";
 export * from "./slice";
 export * from "./var-builder";
-export { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
