@@ -9,13 +9,7 @@ import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter, AnalyzerResult } from "../core";
-import type {
-  AnalyzeModuleInput,
-  ModuleDefinition,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-} from "../types";
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation } from "../types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;

@@ -15,14 +15,7 @@ import type { AnalyzerAdapter, AnalyzerResult } from "../core";
  */
 type SwcModule = Module & { __filePath: string };
 
-import type {
-  AnalyzeModuleInput,
-  ModuleDefinition,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-  SourcePosition,
-} from "../types";
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation, SourcePosition } from "../types";
 
 const getLineStarts = (source: string): readonly number[] => {
   const starts: number[] = [0];
