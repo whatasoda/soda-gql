@@ -515,6 +515,8 @@ export type GeneratedModule = {
 type PerSchemaInjection = {
   readonly adapterImportPath: string;
   readonly scalarImportPath: string;
+  readonly metadataAdapterImportPath?: string;
+  readonly helpersImportPath?: string;
 };
 
 type RuntimeTemplateInjection =
@@ -550,6 +552,8 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const imports: string[] = [];
   const adapterAliases = new Map<string, string>();
   const scalarAliases = new Map<string, string>();
+  const metadataAdapterAliases = new Map<string, string>();
+  const helpersAliases = new Map<string, string>();
 
   if ($$.injection.mode === "inject") {
     // Group imports by file path
@@ -574,6 +578,28 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         importsByPath.set(injection.scalarImportPath, scalarSpecifiers);
       }
       scalarSpecifiers.push(`scalar as ${scalarAlias}`);
+
+      // Group metadataAdapter import (optional)
+      if (injection.metadataAdapterImportPath) {
+        const metadataAdapterAlias = `metadataAdapter_${schemaName}`;
+        metadataAdapterAliases.set(schemaName, metadataAdapterAlias);
+        const metadataAdapterSpecifiers = importsByPath.get(injection.metadataAdapterImportPath) ?? [];
+        if (!importsByPath.has(injection.metadataAdapterImportPath)) {
+          importsByPath.set(injection.metadataAdapterImportPath, metadataAdapterSpecifiers);
+        }
+        metadataAdapterSpecifiers.push(`metadataAdapter as ${metadataAdapterAlias}`);
+      }
+
+      // Group helpers import (optional)
+      if (injection.helpersImportPath) {
+        const helpersAlias = `helpers_${schemaName}`;
+        helpersAliases.set(schemaName, helpersAlias);
+        const helpersSpecifiers = importsByPath.get(injection.helpersImportPath) ?? [];
+        if (!importsByPath.has(injection.helpersImportPath)) {
+          importsByPath.set(injection.helpersImportPath, helpersSpecifiers);
+        }
+        helpersSpecifiers.push(`helpers as ${helpersAlias}`);
+      }
     }
 
     // Generate grouped imports
@@ -603,6 +629,19 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? ""
         : `const ${adapterVar} = createRuntimeAdapter(({ type }) => ({\n  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),\n}));\n`;
 
+    // Get optional adapters
+    const metadataAdapterVar = metadataAdapterAliases.get(name);
+    const helpersVar = helpersAliases.get(name);
+
+    // Build type exports
+    const typeExports = [
+      `export type Schema_${name} = typeof ${schemaVar} & { _?: never };`,
+      `export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`,
+    ];
+    if (helpersVar) {
+      typeExports.push(`export type Helpers_${name} = typeof ${helpersVar} & { _?: never };`);
+    }
+
     schemaBlocks.push(`${adapterDefinition}
 const ${schemaVar} = {
   label: "${name}" as const,
@@ -618,10 +657,25 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-export type Schema_${name} = typeof ${schemaVar} & { _?: never };
-export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
+${typeExports.join("\n")}`);
 
-    gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+    // Build gql entry with options if needed
+    const hasOptions = metadataAdapterVar || helpersVar;
+    if (hasOptions) {
+      const optionsEntries: string[] = [];
+      if (metadataAdapterVar) {
+        optionsEntries.push(`metadataAdapter: ${metadataAdapterVar}`);
+      }
+      if (helpersVar) {
+        optionsEntries.push(`helpers: ${helpersVar}`);
+      }
+      const helpersGeneric = helpersVar ? `, Helpers_${name}` : "";
+      gqlEntries.push(
+        `  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}${helpersGeneric}>(${schemaVar}, { ${optionsEntries.join(", ")} })`,
+      );
+    } else {
+      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+    }
   }
 
   // Include createRuntimeAdapter import only in inline mode

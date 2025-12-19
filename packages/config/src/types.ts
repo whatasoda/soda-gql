@@ -9,6 +9,12 @@ export type SchemaConfig = {
    * Used for setting HTTP headers, GraphQL extensions, and other operation metadata.
    */
   readonly metadataAdapter?: string;
+  /**
+   * Optional path to the helpers module.
+   * The module should export a `helpers` object with typed utility functions.
+   * These helpers are injected into the gql composer callback alongside `$`.
+   */
+  readonly helpers?: string;
 };
 
 // Output styles configuration for codegen

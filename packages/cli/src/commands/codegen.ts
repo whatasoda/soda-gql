@@ -20,6 +20,8 @@ type ParsedCommand =
       format: CodegenFormat;
       runtimeAdapters: Record<string, string>;
       scalars: Record<string, string>;
+      metadataAdapters: Record<string, string>;
+      helpers: Record<string, string>;
       importExtension: boolean;
     };
 
@@ -66,15 +68,23 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  // Extract schemas, runtimeAdapters, and scalars from config
+  // Extract schemas, runtimeAdapters, scalars, metadataAdapters, and helpers from config
   const schemas: Record<string, string> = {};
   const runtimeAdapters: Record<string, string> = {};
   const scalars: Record<string, string> = {};
+  const metadataAdapters: Record<string, string> = {};
+  const helpers: Record<string, string> = {};
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
     schemas[name] = schemaConfig.schema;
     runtimeAdapters[name] = schemaConfig.runtimeAdapter;
     scalars[name] = schemaConfig.scalars;
+    if (schemaConfig.metadataAdapter) {
+      metadataAdapters[name] = schemaConfig.metadataAdapter;
+    }
+    if (schemaConfig.helpers) {
+      helpers[name] = schemaConfig.helpers;
+    }
   }
 
   // Derive output path from outdir (default to index.ts)
@@ -87,6 +97,8 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     format: (args.format ?? "human") as CodegenFormat,
     runtimeAdapters,
     scalars,
+    metadataAdapters,
+    helpers,
     importExtension: config.styles.importExtension,
   });
 };
@@ -145,6 +157,14 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       format: command.format,
       runtimeAdapters: Object.fromEntries(Object.entries(command.runtimeAdapters).map(([name, path]) => [name, resolve(path)])),
       scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
+      metadataAdapters:
+        Object.keys(command.metadataAdapters).length > 0
+          ? Object.fromEntries(Object.entries(command.metadataAdapters).map(([name, path]) => [name, resolve(path)]))
+          : undefined,
+      helpers:
+        Object.keys(command.helpers).length > 0
+          ? Object.fromEntries(Object.entries(command.helpers).map(([name, path]) => [name, resolve(path)]))
+          : undefined,
       importExtension: command.importExtension,
     });
 

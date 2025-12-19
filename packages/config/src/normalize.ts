@@ -33,6 +33,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
           runtimeAdapter: resolve(configDir, schemaConfig.runtimeAdapter),
           scalars: resolve(configDir, schemaConfig.scalars),
           ...(schemaConfig.metadataAdapter ? { metadataAdapter: resolve(configDir, schemaConfig.metadataAdapter) } : {}),
+          ...(schemaConfig.helpers ? { helpers: resolve(configDir, schemaConfig.helpers) } : {}),
         },
       ]),
     ),

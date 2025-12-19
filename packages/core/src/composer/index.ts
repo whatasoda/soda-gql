@@ -2,6 +2,7 @@ export * from "./build-document";
 export * from "./composed-operation";
 export * from "./fields-builder";
 export * from "./gql-composer";
+export * from "./helpers";
 export * from "./input";
 export * from "./model";
 export * from "./projection-path-graph";
