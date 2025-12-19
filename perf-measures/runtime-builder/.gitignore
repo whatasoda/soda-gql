@@ -1,0 +1,8 @@
+# Generated fixtures
+fixtures/
+
+# Generated graphql-system directories within fixtures
+**/graphql-system/
+
+# Soda-gql cache
+**/.soda-gql/

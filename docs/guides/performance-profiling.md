@@ -5,257 +5,238 @@ This guide covers how to profile and benchmark the soda-gql builder for performa
 ## Table of Contents
 
 - [Quick Start](#quick-start)
-- [Benchmark Fixtures](#benchmark-fixtures)
-- [Running Benchmarks](#running-benchmarks)
-- [Analyzing Results](#analyzing-results)
-- [CPU Profiling with Node.js](#cpu-profiling-with-nodejs)
-- [Flame Graphs with Clinic.js](#flame-graphs-with-clinicjs)
+- [Type-check Benchmarks](#type-check-benchmarks)
+- [Runtime Builder Benchmarks](#runtime-builder-benchmarks)
+- [Interpreting Results](#interpreting-results)
+- [CPU Profiling](#cpu-profiling)
 - [Memory Profiling](#memory-profiling)
-- [Interpreting Metrics](#interpreting-metrics)
-- [CI Integration](#ci-integration)
+- [Best Practices](#best-practices)
 
 ## Quick Start
 
-Run a basic performance benchmark:
+```bash
+# Type-check benchmark (TypeScript compiler performance)
+bun run perf:typecheck
+
+# Runtime builder benchmark (builder execution performance)
+bun run perf:builder --fixture small
+
+# With multiple iterations for more accurate averages
+bun run perf:builder --fixture medium --iterations 5
+```
+
+## Type-check Benchmarks
+
+Type-check benchmarks measure TypeScript compiler performance when type-checking soda-gql generated types.
+
+**Location:** `perf-measures/type-check/`
+
+### Running Type-check Benchmarks
 
 ```bash
-# Run benchmark for small fixture (single iteration)
-bun run perf:builder --fixture small-app
+# Basic run with default fixtures
+bun run perf:typecheck
 
-# Run multiple iterations for more accurate averages
-bun run perf:builder --fixture medium-app --iterations 5
+# Generate new fixtures with custom sizes
+bun run perf:typecheck --generate --objectTypes 20 --models 15
 
-# Run large-scale benchmark
-bun run perf:builder --fixture large-app --iterations 3
+# JSON output for CI/scripting
+bun run perf:typecheck --json
+
+# Generate TypeScript trace files for analysis
+bun run perf:typecheck --trace
 ```
 
-## Benchmark Fixtures
+### Analyzing Trace Files
 
-Three deterministic fixtures are available in `benchmarks/runtime-builder/`:
-
-### Small App
-- **Scale:** 1 entity, 3 types, 2 operations
-- **Files:** 6 total (1 schema, 1 entity, 2 operations, 2 configs)
-- **Schema:** ~15 LOC
-- **Use case:** Baseline performance testing, quick iterations
-
-### Medium App
-- **Scale:** 3 entities, 12 types, 6 operations
-- **Files:** 13 total (1 schema, 3 entities, 6 operations, 2 configs)
-- **Schema:** ~110 LOC
-- **Use case:** Intermediate complexity testing, typical small project
-
-### Large App
-- **Scale:** 6 entities, 28 types, 15 operations
-- **Files:** 25 total (1 schema, 6 entities, 15 operations, 2 configs)
-- **Schema:** ~350 LOC
-- **Use case:** Real-world complexity testing, performance stress testing
-
-## Running Benchmarks
-
-### Basic Usage
+When run with `--trace`, TypeScript trace files are saved to `perf-measures/type-check/.traces/`.
 
 ```bash
-# Single run
-bun run perf:builder --fixture small-app
-
-# Multiple iterations (recommended for stability)
-bun run perf:builder --fixture medium-app --iterations 10
+# Analyze with @typescript/analyze-trace
+npx @typescript/analyze-trace perf-measures/type-check/.traces/trace-<timestamp>
 ```
 
-### Output
+## Runtime Builder Benchmarks
 
-Metrics are saved to `.cache/perf/<timestamp>/<fixture>/metrics.json`:
+Runtime builder benchmarks measure the actual builder execution time, memory usage, and cache performance.
 
-```json
-{
-  "fixture": "medium-app",
-  "timestamp": "2025-10-03T12:34:56.789Z",
-  "wallTime": 1234.56,
-  "cpuTime": 1100.23,
-  "peakMemoryMB": 128.45,
-  "gcCount": 12,
-  "gcDurationMs": 45.67,
-  "iterations": 5,
-  "averageWallTime": 1250.34
-}
+**Location:** `perf-measures/runtime-builder/`
+
+### Fixture Presets
+
+The benchmarks simulate realistic applications with varying scales:
+
+| Preset | Total Files | GQL Files | Description |
+|--------|-------------|-----------|-------------|
+| small | 50 | 10 | Quick baseline testing |
+| medium | 200 | 30 | Typical small project |
+| large | 500 | 60 | Real-world complexity |
+| xlarge | 1000 | 100 | Stress testing |
+
+Fixtures include noise files (components, utils, hooks, types) that don't contain gql calls, simulating realistic codebases where most files are unrelated to GraphQL.
+
+### Running Builder Benchmarks
+
+```bash
+# Small fixture (quick test)
+bun run perf:builder --fixture small
+
+# Medium fixture with multiple iterations
+bun run perf:builder --fixture medium --iterations 5
+
+# Large fixture with warm (incremental) builds
+bun run perf:builder --fixture large --warm
+
+# Extra-large fixture for stress testing
+bun run perf:builder --fixture xlarge --iterations 3
+
+# Custom fixture configuration
+bun run perf:builder --fixture custom \
+  --total-files 300 \
+  --gql-ratio 0.1 \
+  --object-types 40 \
+  --models 20 \
+  --slices 20 \
+  --operations 20
+
+# Force GC for accurate memory measurements
+bun run perf:builder --fixture large --gc
+
+# JSON output
+bun run perf:builder --fixture medium --json
 ```
 
-## Analyzing Results
+### Output Metrics
 
-### Key Metrics
+Builder benchmarks report:
 
-- **Wall Time:** Total elapsed time (includes I/O, GC, etc.)
-- **CPU Time:** Actual CPU computation time
-- **Peak Memory:** Maximum heap usage during execution
-- **GC Count:** Number of garbage collection cycles
-- **GC Duration:** Total time spent in garbage collection
+**Timing:**
+- Wall time: Total elapsed time
+- CPU time: Actual CPU computation time
+- Builder duration: Time reported by BuilderArtifact
 
-### Performance Targets (from optimization plan)
+**Memory:**
+- Heap used (start/peak/end/delta)
+- Heap total (start/peak/end/delta)
+- RSS (start/peak/end/delta)
 
-**Strategy 1 (Long-Lived Incremental Service):**
-- Cold build: ≥25% improvement in wall time
-- Peak RSS: ≥20% reduction
-- Repeat build: ≤40% of cold build time
+**Discovery:**
+- Hits: Files found in cache
+- Misses: Files requiring analysis
+- Skips: Files not matching criteria
 
-**Strategy 2 (Smarter Discovery & Cache Invalidation):**
-- Discovery CPU: ≥40% reduction vs Strategy 1
-- Cache hit ratio: ≥85% on unchanged reruns
+**Files:**
+- Total files scanned
+- GQL files found
+- Elements generated
 
-**Strategy 3 (Dependency Graph Pruning & Incremental Codegen):**
-- Targeted rebuild (≤5% of documents): ≤35% of Strategy 1 cold build time
+## Interpreting Results
 
-## CPU Profiling with Node.js
+### Key Metrics to Watch
 
-Generate CPU profiles using Node's built-in profiler:
+**For cold builds:**
+- Wall time: Primary performance indicator
+- Memory peak: Maximum memory usage
+- Discovery misses: Files requiring full analysis
+
+**For warm builds:**
+- Wall time vs cold: Should be significantly faster
+- Discovery hits: Should be high (good caching)
+- Memory delta: Memory growth per build
+
+### Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| Cold build (medium) | < 500ms |
+| Warm build (medium) | < 50ms |
+| Memory peak (medium) | < 200MB |
+| Discovery hit rate (warm) | > 90% |
+
+### Variance Considerations
+
+- Run at least 5 iterations for averages
+- First iteration may be slower (JIT warmup)
+- Use `--gc` flag for consistent memory measurements
+
+## CPU Profiling
+
+### Using Node.js Profiler
 
 ```bash
 # Run with CPU profiling
 node --cpu-prof --cpu-prof-dir=.cache/perf/profiles \
-  scripts/perf/collect-builder-metrics.ts --fixture large-app
+  scripts/perf/collect-builder-metrics.ts --fixture large
 ```
 
 ### Analyzing CPU Profiles
 
-1. Install `speedscope`:
 ```bash
+# Install speedscope
 npm install -g speedscope
-```
 
-2. Open profile:
-```bash
+# Open profile
 speedscope .cache/perf/profiles/CPU.*.cpuprofile
 ```
 
-3. Look for:
-   - Hot paths (functions taking most time)
-   - Unexpected call stacks
-   - Synchronous I/O blocking
-
-## Flame Graphs with Clinic.js
-
-For advanced profiling, use Clinic.js:
-
-### Installation
-
-```bash
-npm install -g clinic
-```
-
-### Flame Graph Generation
-
-```bash
-# Generate flame graph
-clinic flame --collect-only -- bun run perf:builder --fixture medium-app
-
-# View results
-clinic flame --visualize-only <pid>.clinic-flame
-```
-
-### Interpreting Flame Graphs
-
-- **Width:** Time spent in function (wider = more time)
-- **Height:** Call stack depth
-- **Color:** Different modules/packages
-- Look for:
-  - Wide plateaus (optimization targets)
-  - Unexpected deep stacks
-  - Repeated patterns (potential for caching)
-
-### Bubble Graph (for async operations)
-
-```bash
-clinic bubbleprof --collect-only -- bun run perf:builder --fixture large-app
-clinic bubbleprof --visualize-only <pid>.clinic-bubbleprof
-```
+**What to look for:**
+- Wide plateaus indicate optimization targets
+- Deep stacks suggest complex call chains
+- Repeated patterns may benefit from caching
 
 ## Memory Profiling
 
 ### Heap Snapshots
 
 ```bash
-# Run with heap snapshots
+# Run with heap profiling
 node --expose-gc --heap-prof --heap-prof-dir=.cache/perf/heap \
-  scripts/perf/collect-builder-metrics.ts --fixture large-app
+  scripts/perf/collect-builder-metrics.ts --fixture large
 ```
 
-### Chrome DevTools
+### Chrome DevTools Analysis
 
-1. Generate heap snapshot:
-```bash
-bun run perf:builder --fixture large-app
-```
-
-2. Open Chrome DevTools > Memory > Load snapshot
+1. Open Chrome DevTools > Memory
+2. Load heap snapshot from `.cache/perf/heap/`
 3. Look for:
    - Retained size (memory not being freed)
-   - Shallow size (direct object size)
-   - Memory leaks (objects growing over iterations)
-
-## Interpreting Metrics
-
-### Baseline Comparison
-
-Before optimization:
-```bash
-bun run perf:builder --fixture large-app --iterations 5 > baseline.txt
-```
-
-After changes:
-```bash
-bun run perf:builder --fixture large-app --iterations 5 > optimized.txt
-diff baseline.txt optimized.txt
-```
-
-### Regression Detection
-
-Acceptable variance: ±5% wall time
-Warning threshold: >5% regression
-Failure threshold: >10% regression
-
-### Statistical Significance
-
-Run at least 5 iterations to account for:
-- JIT warm-up effects
-- System load variance
-- GC timing variations
-
-## CI Integration
-
-Automated benchmarks run nightly via `.github/workflows/builder-benchmarks.yml`:
-
-- **Platforms:** macOS, Ubuntu
-- **Fixtures:** All three scales
-- **Iterations:** 5 per fixture
-- **Regression checks:** Compares against previous baseline
-- **Notifications:** Slack alerts on >5% regression
-
-### Manual CI Run
-
-```bash
-# Trigger via GitHub Actions
-gh workflow run builder-benchmarks.yml
-```
-
-### Accessing CI Results
-
-Benchmark artifacts are uploaded as JSON:
-```bash
-gh run download <run-id> --name benchmark-results
-```
+   - Object growth across iterations
+   - Unexpected large allocations
 
 ## Best Practices
 
-1. **Warm-up runs:** First iteration may be slower (JIT compilation)
-2. **Multiple iterations:** Use `--iterations 5` minimum for averages
-3. **Consistent environment:** Run on same hardware for comparisons
+### Benchmarking
+
+1. **Warm-up runs:** First iteration may be slower
+2. **Multiple iterations:** Use `--iterations 5` minimum
+3. **Consistent environment:** Same hardware for comparisons
 4. **Isolate changes:** Benchmark one optimization at a time
-5. **Document baselines:** Save metrics before major refactors
-6. **Monitor trends:** Track metrics over time, not just point-in-time
+5. **Document baselines:** Save metrics before refactors
+
+### Memory Measurements
+
+1. **Use `--gc` flag:** Forces GC before each iteration
+2. **Watch delta values:** Shows memory growth per build
+3. **Compare cold vs warm:** Warm builds should have minimal memory growth
+
+### Regression Detection
+
+- Acceptable variance: ±5% wall time
+- Warning threshold: >5% regression
+- Failure threshold: >10% regression
+
+## Output Locations
+
+| Output | Location |
+|--------|----------|
+| Type-check traces | `perf-measures/type-check/.traces/` |
+| Builder metrics | `.cache/perf/<timestamp>/<fixture>/metrics.json` |
+| CPU profiles | `.cache/perf/profiles/` |
+| Heap snapshots | `.cache/perf/heap/` |
 
 ## Troubleshooting
 
-### High GC Time (>10% of wall time)
+### High GC Time
 
 - Check for excessive object allocation
 - Review string concatenation patterns
@@ -270,18 +251,10 @@ gh run download <run-id> --name benchmark-results
 ### CPU Time Much Lower Than Wall Time
 
 - Indicates I/O or await blocking
-- Profile async operations with bubbleprof
+- Profile async operations
 - Consider parallelizing independent tasks
 
 ## Related Documentation
 
-- [Builder Incremental Guide](./builder-incremental.md) - Incremental build architecture
-- [Optimization Roadmap](../plans/builder-performance/roadmap.md) - Strategic overview and timeline
-- [Current Status](../plans/builder-performance/status.md) - Live progress tracking
-
-## References
-
-- [Node.js CPU Profiling](https://nodejs.org/en/docs/guides/simple-profiling/)
-- [Clinic.js Documentation](https://clinicjs.org/documentation/)
-- [Chrome DevTools Memory Profiler](https://developer.chrome.com/docs/devtools/memory-problems/)
-- [speedscope](https://www.speedscope.app/)
+- [Performance Measurement Reference](../reference/perf-measures.md) - Quick reference for benchmark commands
+- [Builder Flow](./builder-flow.md) - Builder architecture overview

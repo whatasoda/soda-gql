@@ -324,7 +324,7 @@ if (import.meta.main) {
     const key = args[i]?.replace("--", "");
     const value = parseInt(args[i + 1] ?? "", 10);
     if (key && !isNaN(value) && key in config) {
-      (config as Record<string, number>)[key] = value;
+      (config as unknown as Record<string, number>)[key] = value;
     }
   }
 
