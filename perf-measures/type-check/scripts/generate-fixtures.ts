@@ -191,10 +191,10 @@ function generateSlices(config: FixtureConfig): string {
     if (i % 2 === 0) {
       slices.push(`
 // Slice ${i}: Get single ${typeName} by ID
-export const slice${i} = gql.default(({ query }, { $ }) =>
+export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       f.${typeName.toLowerCase()}({ id: $.id })(({ f }) => [
@@ -213,10 +213,10 @@ export const slice${i} = gql.default(({ query }, { $ }) =>
     } else {
       slices.push(`
 // Slice ${i}: Get list of ${typeName}
-export const slice${i} = gql.default(({ query }, { $ }) =>
+export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("limit").scalar("Int:?"), $("offset").scalar("Int:?")],
+      variables: [$var("limit").scalar("Int:?"), $var("offset").scalar("Int:?")],
     },
     ({ f, $ }) => [
       f.${typeName.toLowerCase()}List({ limit: $.limit, offset: $.offset })(({ f }) => [
@@ -256,17 +256,17 @@ function generateOperations(config: FixtureConfig): string {
 
       if (isListSlice) {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ limit: $.limit${j}, offset: $.offset${j} }),`);
-        sliceVars.push(`$("limit${j}").scalar("Int:?")`);
-        sliceVars.push(`$("offset${j}").scalar("Int:?")`);
+        sliceVars.push(`$var("limit${j}").scalar("Int:?")`);
+        sliceVars.push(`$var("offset${j}").scalar("Int:?")`);
       } else {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ id: $.id${j} }),`);
-        sliceVars.push(`$("id${j}").scalar("ID:!")`);
+        sliceVars.push(`$var("id${j}").scalar("ID:!")`);
       }
     }
 
     operations.push(`
 // Operation ${i}: Composed operation with ${sliceCount} slices
-export const operation${i} = gql.default(({ query }, { $ }) =>
+export const operation${i} = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "Operation${i}",
