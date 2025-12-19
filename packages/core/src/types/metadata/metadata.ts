@@ -1,3 +1,4 @@
+import type { DocumentNode } from "graphql";
 import type { AnyVarRef } from "../type-foundation/var-ref";
 
 /**
@@ -21,6 +22,8 @@ export type OperationMetadata = {
 export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
   /** Variable references created from the operation's variable definitions */
   readonly $: TVarRefs;
+  /** The GraphQL DocumentNode (AST) for this operation */
+  readonly document: DocumentNode;
 };
 
 /**

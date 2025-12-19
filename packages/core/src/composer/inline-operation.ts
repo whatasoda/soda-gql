@@ -46,19 +46,20 @@ export const createInlineOperationComposerFactory = <
         const f = createFieldFactories(schema, operationTypeName);
         const fields = mergeFields(fieldBuilder({ f, $ }));
 
-        const metadata = options.metadata?.({ $ });
+        const document = buildDocument({
+          operationName,
+          operationType,
+          variables,
+          fields,
+        });
+        const metadata = options.metadata?.({ $, document });
 
         return {
           operationType,
           operationName,
           variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
           documentSource: () => fields,
-          document: buildDocument({
-            operationName,
-            operationType,
-            variables,
-            fields,
-          }),
+          document,
           metadata,
         };
       });

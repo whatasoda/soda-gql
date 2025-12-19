@@ -53,7 +53,6 @@ export const createComposedOperationComposerFactory = <
         const { operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, typeof variables>(variables);
-        const operationMetadata = options.metadata?.({ $ });
         const fragments = builder({ $ });
 
         const fields = Object.fromEntries(
@@ -62,6 +61,14 @@ export const createComposedOperationComposerFactory = <
           ),
         ) as ConcatSlicePayloads<TSliceFragments>;
         const projectionPathGraph = createPathGraphFromSliceEntries(fragments);
+
+        const document = buildDocument({
+          operationName,
+          operationType,
+          variables,
+          fields,
+        });
+        const operationMetadata = options.metadata?.({ $, document });
 
         // Collect metadata from all slices and merge with operation metadata
         const sliceMetadataList: SliceMetadata[] = Object.values(fragments)
@@ -75,12 +82,7 @@ export const createComposedOperationComposerFactory = <
           operationName,
           variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
           projectionPathGraph,
-          document: buildDocument({
-            operationName,
-            operationType,
-            variables,
-            fields,
-          }),
+          document,
           parse: createExecutionResultParser({ fragments, projectionPathGraph }),
           metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         };
