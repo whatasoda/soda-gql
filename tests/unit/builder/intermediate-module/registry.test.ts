@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import { createIntermediateRegistry } from "@soda-gql/builder/intermediate-module/registry";
 import { createCanonicalId } from "@soda-gql/common";
-import { GqlElement, Model } from "@soda-gql/core";
+import { Model } from "@soda-gql/core";
 
 /**
  * Helper to create a mock ModuleAnalysis with specified definitions count
@@ -374,7 +374,7 @@ describe("createIntermediateRegistry", () => {
 
       expect(result["test:element"]).toBeDefined();
       expect(result["test:element"]?.type).toBe("model");
-      expect(GqlElement.get(element).typename).toBe("TestType");
+      expect(element.typename).toBe("TestType");
     });
 
     test("should evaluate elements with async define functions", async () => {
@@ -402,7 +402,7 @@ describe("createIntermediateRegistry", () => {
 
       expect(result["test:async-element"]).toBeDefined();
       expect(result["test:async-element"]?.type).toBe("model");
-      expect(GqlElement.get(element).typename).toBe("AsyncType");
+      expect(element.typename).toBe("AsyncType");
     });
 
     test("should evaluate multiple elements in parallel", async () => {
