@@ -20,6 +20,7 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "tests",
-    "examples"
+    "examples",
+    "__tests__/**/*"
   ]
 }

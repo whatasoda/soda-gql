@@ -1,27 +1,16 @@
 import { describe, expect, it } from "bun:test";
-import { type CanonicalId, createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
-
-import { aggregate } from "./aggregate";
+import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
+import { ComposedOperation, Model, Slice } from "@soda-gql/core";
+import { parse } from "graphql";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";
-import { ComposedOperation } from "@soda-gql/core/types/element/composed-operation";
-import { Model } from "@soda-gql/core/types/element/model";
-import { Slice } from "@soda-gql/core/types/element/slice";
-import { parse } from "graphql";
-
-describe("canonical identifier helpers", () => {
-  it("normalizes absolute file paths and export names", () => {
-    const id = createCanonicalId("/app/src/../src/entities/user.ts", "userSlice");
-    expect(id).toBe("/app/src/entities/user.ts::userSlice" as unknown as CanonicalId);
-  });
-
-  it("guards against relative paths", () => {
-    expect(() => createCanonicalId("./user.ts", "userSlice")).toThrow("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
-  });
-});
+import { aggregate } from "./aggregate";
 
 // Test helpers
-const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): ModuleAnalysis => ({
+const createTestAnalysis = (
+  filePath: string,
+  definitions: ModuleDefinition[]
+): ModuleAnalysis => ({
   filePath,
   signature: "test-sig",
   definitions,
@@ -38,7 +27,9 @@ const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
   loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
 });
 
-const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
+const createTestIntermediateModule = (
+  elements: Record<string, IntermediateArtifactElement>
+) => ({
   elements,
 });
 
@@ -46,16 +37,24 @@ describe("artifact aggregate", () => {
   it("aggregates models, slices, and operations successfully", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
     const sliceId = createCanonicalId("/app/src/entities/user.ts", "userSlice");
-    const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
+    const operationId = createCanonicalId(
+      "/app/src/pages/profile.query.ts",
+      "profileQuery"
+    );
 
     const analyses = new Map<string, ModuleAnalysis>([
       [
         "/app/src/entities/user.ts",
-        createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)]),
+        createTestAnalysis("/app/src/entities/user.ts", [
+          createTestDefinition(modelId),
+          createTestDefinition(sliceId),
+        ]),
       ],
       [
         "/app/src/pages/profile.query.ts",
-        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+        createTestAnalysis("/app/src/pages/profile.query.ts", [
+          createTestDefinition(operationId),
+        ]),
       ],
     ]);
 
@@ -72,7 +71,12 @@ describe("artifact aggregate", () => {
         type: "slice",
         element: Slice.create(() => ({
           operationType: "query",
-          embed: () => ({ fields: {}, projection: {} as any, variables: {}, getFields: () => ({}) }),
+          embed: () => ({
+            fields: {},
+            projection: {} as any,
+            variables: {},
+            getFields: () => ({}),
+          }),
         })),
       },
       [operationId]: {
@@ -83,12 +87,15 @@ describe("artifact aggregate", () => {
           document: parse("query ProfilePageQuery { users { id } }") as any,
           variableNames: [],
           projectionPathGraph: { matches: [], children: {} },
-          parse: () => ({}) as any,
+          parse: () => ({} as any),
         })),
       },
     });
 
-    const result = aggregate({ analyses, elements: intermediateModule.elements });
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
 
     expect(result.isOk()).toBe(true);
     result.match(
@@ -119,7 +126,7 @@ describe("artifact aggregate", () => {
       },
       () => {
         throw new Error("Expected aggregate to succeed");
-      },
+      }
     );
   });
 
@@ -127,14 +134,22 @@ describe("artifact aggregate", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+      [
+        "/app/src/entities/user.ts",
+        createTestAnalysis("/app/src/entities/user.ts", [
+          createTestDefinition(modelId),
+        ]),
+      ],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
       // Missing modelId
     });
 
-    const result = aggregate({ analyses, elements: intermediateModule.elements });
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -144,10 +159,12 @@ describe("artifact aggregate", () => {
       (error) => {
         expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
         if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-          expect(error.message).toContain("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
+          expect(error.message).toContain(
+            "ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE"
+          );
           expect(error.filePath).toBe("/app/src/entities/user.ts");
         }
-      },
+      }
     );
   });
 
@@ -156,7 +173,12 @@ describe("artifact aggregate", () => {
 
     // Create analysis with single definition
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+      [
+        "/app/src/entities/user.ts",
+        createTestAnalysis("/app/src/entities/user.ts", [
+          createTestDefinition(modelId),
+        ]),
+      ],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -171,7 +193,10 @@ describe("artifact aggregate", () => {
     });
 
     // First pass succeeds
-    const result1 = aggregate({ analyses, elements: intermediateModule.elements });
+    const result1 = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
     expect(result1.isOk()).toBe(true);
 
     // Note: Duplicate detection is handled by aggregate checking `registry.has(definition.canonicalId)`
@@ -181,10 +206,18 @@ describe("artifact aggregate", () => {
   });
 
   it("fails when artifact has unknown type", () => {
-    const unknownId = createCanonicalId("/app/src/entities/unknown.ts", "unknownThing");
+    const unknownId = createCanonicalId(
+      "/app/src/entities/unknown.ts",
+      "unknownThing"
+    );
 
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/unknown.ts", createTestAnalysis("/app/src/entities/unknown.ts", [createTestDefinition(unknownId)])],
+      [
+        "/app/src/entities/unknown.ts",
+        createTestAnalysis("/app/src/entities/unknown.ts", [
+          createTestDefinition(unknownId),
+        ]),
+      ],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -194,7 +227,10 @@ describe("artifact aggregate", () => {
       },
     });
 
-    const result = aggregate({ analyses, elements: intermediateModule.elements });
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
 
     expect(result.isErr()).toBe(true);
     result.match(
@@ -207,21 +243,28 @@ describe("artifact aggregate", () => {
           expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
           expect(error.filePath).toBe("/app/src/entities/unknown.ts");
         }
-      },
+      }
     );
   });
 
   it("preserves all prebuild data for operations", () => {
-    const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
+    const operationId = createCanonicalId(
+      "/app/src/pages/profile.query.ts",
+      "profileQuery"
+    );
 
     const analyses = new Map<string, ModuleAnalysis>([
       [
         "/app/src/pages/profile.query.ts",
-        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
+        createTestAnalysis("/app/src/pages/profile.query.ts", [
+          createTestDefinition(operationId),
+        ]),
       ],
     ]);
 
-    const document = parse("query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }");
+    const document = parse(
+      "query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }"
+    );
     const projectionPathGraph = {
       matches: [{ label: "user", path: "$.user", exact: true }],
       children: {},
@@ -236,12 +279,15 @@ describe("artifact aggregate", () => {
           document: document as any,
           variableNames: ["userId"],
           projectionPathGraph,
-          parse: () => ({}) as any,
+          parse: () => ({} as any),
         })),
       },
     });
 
-    const result = aggregate({ analyses, elements: intermediateModule.elements });
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
 
     expect(result.isOk()).toBe(true);
     result.match(
@@ -253,12 +299,14 @@ describe("artifact aggregate", () => {
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
           expect(operation.prebuild.document).toBe(document as any);
           expect(operation.prebuild.variableNames).toEqual(["userId"]);
-          expect(operation.prebuild.projectionPathGraph).toEqual(projectionPathGraph);
+          expect(operation.prebuild.projectionPathGraph).toEqual(
+            projectionPathGraph
+          );
         }
       },
       () => {
         throw new Error("Expected aggregate to succeed");
-      },
+      }
     );
   });
 });

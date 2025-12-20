@@ -22,10 +22,20 @@ import {
   type InferFields,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
-import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import type {
+  AnyGraphqlSchema,
+  ConstAssignableInput,
+  OperationType,
+} from "../types/schema";
+import type {
+  ConstValue,
+  InputTypeSpecifiers,
+  TypeModifier,
+} from "../types/type-foundation";
 
-export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
+export const buildArgumentValue = (
+  value: AnyAssignableInputValue
+): ValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -55,7 +65,9 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
   if (Array.isArray(value)) {
     return {
       kind: Kind.LIST,
-      values: value.map((item) => buildArgumentValue(item)).filter((item) => item !== null),
+      values: value
+        .map((item) => buildArgumentValue(item))
+        .filter((item) => item !== null),
     };
   }
 
@@ -107,7 +119,13 @@ const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
       const valueNode = buildArgumentValue(value);
-      return valueNode ? { kind: Kind.ARGUMENT, name: { kind: Kind.NAME, value: name }, value: valueNode } : null;
+      return valueNode
+        ? {
+            kind: Kind.ARGUMENT,
+            name: { kind: Kind.NAME, value: name },
+            value: valueNode,
+          }
+        : null;
     })
     .filter((item) => item !== null);
 
@@ -117,8 +135,14 @@ const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
       return object
         ? {
             kind: Kind.INLINE_FRAGMENT,
-            typeCondition: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: typeName } },
-            selectionSet: { kind: Kind.SELECTION_SET, selections: buildField(object) },
+            typeCondition: {
+              kind: Kind.NAMED_TYPE,
+              name: { kind: Kind.NAME, value: typeName },
+            },
+            selectionSet: {
+              kind: Kind.SELECTION_SET,
+              selections: buildField(object),
+            },
           }
         : null;
     })
@@ -137,15 +161,17 @@ const buildField = (field: AnyFields): FieldNode[] =>
             selections: buildField(object),
           }
         : union
-          ? {
-              kind: Kind.SELECTION_SET,
-              selections: buildUnionSelection(union),
-            }
-          : undefined,
-    }),
+        ? {
+            kind: Kind.SELECTION_SET,
+            selections: buildUnionSelection(union),
+          }
+        : undefined,
+    })
   );
 
-export const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
+export const buildConstValueNode = (
+  value: ConstValue
+): ConstValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -169,7 +195,12 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
   }
 
   if (Array.isArray(value)) {
-    return { kind: Kind.LIST, values: value.map((item) => buildConstValueNode(item)).filter((item) => item !== null) };
+    return {
+      kind: Kind.LIST,
+      values: value
+        .map((item) => buildConstValueNode(item))
+        .filter((item) => item !== null),
+    };
   }
 
   if (typeof value === "object") {
@@ -193,7 +224,10 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
 };
 
-export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => NamedTypeNode): TypeNode => {
+export const buildWithTypeModifier = (
+  modifier: TypeModifier,
+  buildType: () => NamedTypeNode
+): TypeNode => {
   const baseType = buildType();
 
   if (modifier === "?") {
@@ -213,7 +247,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
 
   // New format: starts with inner type modifier (? or !), then []? or []! pairs
   // e.g., "?[]?" = nullable list of nullable, "![]!" = non-null list of non-null
-  let curr: Readonly<{ modifier: string; type: TypeNode }> = { modifier, type: baseType };
+  let curr: Readonly<{ modifier: string; type: TypeNode }> = {
+    modifier,
+    type: baseType,
+  };
 
   while (curr.modifier.length > 0) {
     // Handle inner type modifier (? or !)
@@ -230,7 +267,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
       // Non-null inner type
       curr = {
         modifier: curr.modifier.slice(1),
-        type: curr.type.kind === Kind.NON_NULL_TYPE ? curr.type : { kind: Kind.NON_NULL_TYPE, type: curr.type },
+        type:
+          curr.type.kind === Kind.NON_NULL_TYPE
+            ? curr.type
+            : { kind: Kind.NON_NULL_TYPE, type: curr.type },
       };
       continue;
     }
@@ -249,7 +289,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
       // Non-null list
       curr = {
         modifier: curr.modifier.slice(3),
-        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.LIST_TYPE, type: curr.type } },
+        type: {
+          kind: Kind.NON_NULL_TYPE,
+          type: { kind: Kind.LIST_TYPE, type: curr.type },
+        },
       };
       continue;
     }
@@ -260,18 +303,27 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
   return curr.type;
 };
 
-const buildVariables = (variables: InputTypeSpecifiers): VariableDefinitionNode[] => {
+const buildVariables = (
+  variables: InputTypeSpecifiers
+): VariableDefinitionNode[] => {
   return Object.entries(variables).map(
     ([name, ref]): VariableDefinitionNode => ({
       kind: Kind.VARIABLE_DEFINITION,
       variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
-      defaultValue: (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) || undefined,
-      type: buildWithTypeModifier(ref.modifier, () => ({ kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: ref.name } })),
-    }),
+      defaultValue:
+        (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) ||
+        undefined,
+      type: buildWithTypeModifier(ref.modifier, () => ({
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: ref.name },
+      })),
+    })
   );
 };
 
-export const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => {
+export const buildOperationTypeNode = (
+  operation: OperationType
+): OperationTypeNode => {
   switch (operation) {
     case "query":
       return OperationTypeNode.QUERY;
@@ -288,13 +340,16 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
 export const buildDocument = <
   TSchema extends AnyGraphqlSchema,
   TFields extends AnyFields,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends InputTypeSpecifiers
 >(options: {
   operationName: string;
   operationType: OperationType;
   variables: TVarDefinitions;
   fields: TFields;
-}): TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
+}): TypedDocumentNode<
+  InferFields<TSchema, TFields>,
+  ConstAssignableInput<TSchema, TVarDefinitions>
+> => {
   const { operationName, operationType, variables, fields } = options;
   return {
     kind: Kind.DOCUMENT,
@@ -311,5 +366,8 @@ export const buildDocument = <
         },
       },
     ],
-  } satisfies DocumentNode as TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>>;
+  } satisfies DocumentNode as TypedDocumentNode<
+    InferFields<TSchema, TFields>,
+    ConstAssignableInput<TSchema, TVarDefinitions>
+  >;
 };

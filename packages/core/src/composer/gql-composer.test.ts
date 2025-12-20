@@ -1,11 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import type { AnyGraphqlRuntimeAdapter } from "../types/runtime/runtime-adapter";
-import type { AnyGraphqlSchema } from "../types/schema/schema";
-import { Projection } from "../types/runtime/projection";
+import { createRuntimeAdapter } from "../runtime";
+import {
+  define,
+  defineOperationRoots,
+  defineScalar,
+  unsafeInputType,
+  unsafeOutputType,
+} from "../schema";
+import { type AnyGraphqlRuntimeAdapter, Projection } from "../types/runtime";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createGqlElementComposer } from "./gql-composer";
-import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
-import { createRuntimeAdapter } from "../runtime/runtime-adapter";
 
 const schema = {
   label: "test" as const,
@@ -65,7 +69,7 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           label: selected.name,
-        }),
+        })
       );
     });
 
@@ -90,8 +94,8 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           label: selected.name,
-        }),
-      ),
+        })
+      )
     );
 
     expect(userModel.typename).toBe("User");
@@ -116,8 +120,8 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           name: selected.name,
-        }),
-      ),
+        })
+      )
     );
 
     const userSlice = gql(({ query }, { $var }) =>
@@ -130,8 +134,11 @@ describe("createGqlInvoker", () => {
             userModel.fragment(),
           ]),
         ],
-        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.normalize(data))),
-      ),
+        ({ select }) =>
+          select(["$.user"], (result) =>
+            result.safeUnwrap(([data]) => userModel.normalize(data))
+          )
+      )
     );
 
     const sliceFragment = userSlice.embed({ id: "1" });
@@ -145,8 +152,8 @@ describe("createGqlInvoker", () => {
         },
         ({ $ }) => ({
           user: userSlice.embed({ id: $.userId }),
-        }),
-      ),
+        })
+      )
     );
 
     expect(profileQuery.operationName).toBe("ProfilePageQuery");

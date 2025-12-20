@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { createSyncScheduler, Effect, Effects, PureEffect } from ".";
+import { Effects, PureEffect } from "./effect";
+import { createSyncScheduler } from "./sync-scheduler";
+import { Effect } from "./types";
 
 describe("createSyncScheduler", () => {
   it("should execute pure effects and return the final value", () => {
@@ -32,7 +34,11 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const results = yield* Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]).run();
+      const results = yield* Effects.parallel([
+        Effects.pure(1),
+        Effects.pure(2),
+        Effects.pure(3),
+      ]).run();
       return results;
     });
 
@@ -49,7 +55,9 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain("DeferEffect is not supported in sync scheduler");
+    expect(result._unsafeUnwrapErr().message).toContain(
+      "DeferEffect is not supported in sync scheduler"
+    );
   });
 
   it("should throw error for yield effects", () => {
@@ -61,7 +69,9 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain("YieldEffect is not supported in sync scheduler");
+    expect(result._unsafeUnwrapErr().message).toContain(
+      "YieldEffect is not supported in sync scheduler"
+    );
   });
 
   it("should handle nested parallel effects", () => {
@@ -136,6 +146,8 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain("AsyncOnlyEffect requires async scheduler");
+    expect(result._unsafeUnwrapErr().message).toContain(
+      "AsyncOnlyEffect requires async scheduler"
+    );
   });
 });

@@ -1,11 +1,18 @@
 import { describe, expect, it } from "bun:test";
+import { createRuntimeAdapter } from "../runtime/runtime-adapter";
+import {
+  define,
+  defineOperationRoots,
+  defineScalar,
+} from "../schema/schema-builder";
+import {
+  unsafeInputType,
+  unsafeOutputType,
+} from "../schema/type-specifier-builder";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime/runtime-adapter";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import { createGqlElementComposer } from "./gql-composer";
 import { defineHelpers } from "./helpers";
-import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
-import { createRuntimeAdapter } from "../runtime/runtime-adapter";
 
 const schema = {
   label: "test" as const,
@@ -50,10 +57,17 @@ describe("helpers injection", () => {
   it("allows custom helpers to be injected via options", () => {
     const authHelper = {
       requiresLogin: () => ({ requiresAuth: true as const }),
-      adminOnly: () => ({ requiresAuth: true as const, role: "admin" as const }),
+      adminOnly: () => ({
+        requiresAuth: true as const,
+        role: "admin" as const,
+      }),
     };
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, { auth: typeof authHelper }>(schema, {
+    const gql = createGqlElementComposer<
+      Schema,
+      typeof adapter,
+      { auth: typeof authHelper }
+    >(schema, {
       helpers: { auth: authHelper },
     });
 
@@ -64,13 +78,16 @@ describe("helpers injection", () => {
       return model.User(
         {},
         ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
+        (selected) => selected
       );
     });
 
     expect(capturedAuth).toBeDefined();
     expect(capturedAuth?.requiresLogin()).toEqual({ requiresAuth: true });
-    expect(capturedAuth?.adminOnly()).toEqual({ requiresAuth: true, role: "admin" });
+    expect(capturedAuth?.adminOnly()).toEqual({
+      requiresAuth: true,
+      role: "admin",
+    });
   });
 
   it("works with defineHelpers for type inference", () => {
@@ -81,7 +98,11 @@ describe("helpers injection", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<
+      Schema,
+      typeof adapter,
+      typeof helpers
+    >(schema, { helpers });
 
     let capturedCacheTTL: number | undefined;
 
@@ -90,7 +111,7 @@ describe("helpers injection", () => {
       return model.User(
         {},
         ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
+        (selected) => selected
       );
     });
 
@@ -98,7 +119,11 @@ describe("helpers injection", () => {
   });
 
   it("preserves $var (var builder) alongside custom helpers", () => {
-    const gql = createGqlElementComposer<Schema, typeof adapter, { custom: () => string }>(schema, {
+    const gql = createGqlElementComposer<
+      Schema,
+      typeof adapter,
+      { custom: () => string }
+    >(schema, {
       helpers: { custom: () => "test" },
     });
 
@@ -109,9 +134,10 @@ describe("helpers injection", () => {
       varBuilderAvailable = typeof $var === "function";
       customAvailable = custom() === "test";
 
-      return query.inline({ operationName: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
-        f.user({ id: $.id })(() => []),
-      ]);
+      return query.inline(
+        { operationName: "Test", variables: [$var("id").scalar("ID:!")] },
+        ({ f, $ }) => [f.user({ id: $.id })(() => [])]
+      );
     });
 
     expect(varBuilderAvailable).toBe(true);
@@ -128,7 +154,7 @@ describe("helpers injection", () => {
       return model.User(
         {},
         ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
+        (selected) => selected
       );
     });
 
@@ -152,7 +178,11 @@ describe("helpers injection", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<
+      Schema,
+      typeof adapter,
+      typeof helpers
+    >(schema, { helpers });
 
     let capturedRole: string | undefined;
     let capturedEvent: string | undefined;
@@ -163,7 +193,7 @@ describe("helpers injection", () => {
       return model.User(
         {},
         ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
+        (selected) => selected
       );
     });
 

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { normalizePath } from "@soda-gql/common";
 import { createFileTracker, isEmptyDiff } from "./file-tracker";
-import { normalizePath } from "@soda-gql/common/utils/path";
 
 describe("FileTracker", () => {
   const testRoot = join(process.cwd(), ".cache", "test", "file-tracker");
@@ -229,7 +229,7 @@ describe("FileTracker", () => {
         added: new Set(),
         updated: new Set(),
         removed: new Set(),
-      }),
+      })
     ).toBe(true);
 
     expect(
@@ -237,7 +237,7 @@ describe("FileTracker", () => {
         added: new Set(["file1.ts"]),
         updated: new Set(),
         removed: new Set(),
-      }),
+      })
     ).toBe(false);
 
     expect(
@@ -245,7 +245,7 @@ describe("FileTracker", () => {
         added: new Set(),
         updated: new Set(["file1.ts"]),
         removed: new Set(),
-      }),
+      })
     ).toBe(false);
 
     expect(
@@ -253,7 +253,7 @@ describe("FileTracker", () => {
         added: new Set(),
         updated: new Set(),
         removed: new Set(["file1.ts"]),
-      }),
+      })
     ).toBe(false);
   });
 

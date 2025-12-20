@@ -1,24 +1,30 @@
 import { describe, expect, test } from "bun:test";
 import { Script } from "node:vm";
+import { createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { generateIntermediateModules } from "./evaluation";
-import { createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
 
 // Test graphql-system path that won't match any test module paths
 const TEST_GRAPHQL_SYSTEM_PATH = "/test/graphql-system/index.ts";
 
 const createTestAnalysis = (
   filePath: string,
-  definitions: Array<{ localPath: string; expression: string; dependencies?: string[] }>,
+  definitions: Array<{
+    localPath: string;
+    expression: string;
+    dependencies?: string[];
+  }>
 ): ModuleAnalysis => {
-  const defs: ModuleDefinition[] = definitions.map(({ localPath, expression }) => ({
-    canonicalId: createCanonicalId(filePath, localPath),
-    astPath: localPath,
-    isTopLevel: true,
-    isExported: true,
-    expression,
-    loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
-  }));
+  const defs: ModuleDefinition[] = definitions.map(
+    ({ localPath, expression }) => ({
+      canonicalId: createCanonicalId(filePath, localPath),
+      astPath: localPath,
+      isTopLevel: true,
+      isExported: true,
+      expression,
+      loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
+    })
+  );
 
   return {
     filePath,
@@ -32,7 +38,12 @@ const createTestAnalysis = (
 describe("generateIntermediateModules", () => {
   test("should create single module for single file", () => {
     const analyses = new Map([
-      ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
+      [
+        "/src/a.ts",
+        createTestAnalysis("/src/a.ts", [
+          { localPath: "foo", expression: "gql.default({ name: 'Foo' })" },
+        ]),
+      ],
     ]);
 
     const result = new Map();
@@ -58,8 +69,18 @@ describe("generateIntermediateModules", () => {
 
   test("should create multiple modules for multiple files", () => {
     const analyses = new Map([
-      ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
-      ["/src/b.ts", createTestAnalysis("/src/b.ts", [{ localPath: "bar", expression: "gql.default({ name: 'Bar' })" }])],
+      [
+        "/src/a.ts",
+        createTestAnalysis("/src/a.ts", [
+          { localPath: "foo", expression: "gql.default({ name: 'Foo' })" },
+        ]),
+      ],
+      [
+        "/src/b.ts",
+        createTestAnalysis("/src/b.ts", [
+          { localPath: "bar", expression: "gql.default({ name: 'Bar' })" },
+        ]),
+      ],
     ]);
 
     const result = new Map();
@@ -106,7 +127,12 @@ describe("generateIntermediateModules", () => {
 
   test("should compute stable content hashes for unchanged modules", () => {
     const analyses = new Map([
-      ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
+      [
+        "/src/a.ts",
+        createTestAnalysis("/src/a.ts", [
+          { localPath: "foo", expression: "gql.default({ name: 'Foo' })" },
+        ]),
+      ],
     ]);
 
     const result1 = new Map();
@@ -139,7 +165,12 @@ describe("generateIntermediateModules", () => {
 
   test("should generate valid transpiled code", () => {
     const analyses = new Map([
-      ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
+      [
+        "/src/a.ts",
+        createTestAnalysis("/src/a.ts", [
+          { localPath: "foo", expression: "gql.default({ name: 'Foo' })" },
+        ]),
+      ],
     ]);
 
     const result = new Map();

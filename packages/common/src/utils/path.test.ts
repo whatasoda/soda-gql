@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveRelativeImportWithExistenceCheck } from "../utils/path";
+import { resolveRelativeImportWithExistenceCheck } from "./path";
 
 describe("resolveRelativeImportWithExistenceCheck", () => {
   let testDir: string;

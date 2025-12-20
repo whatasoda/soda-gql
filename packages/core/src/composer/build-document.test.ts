@@ -1,12 +1,15 @@
 import { describe, expect, it } from "bun:test";
+import { Kind } from "graphql";
+import type {
+  InputTypeSpecifiers,
+  TypeModifier,
+} from "../types/type-foundation";
 import {
   buildArgumentValue,
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
 } from "./build-document";
-import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
-import { Kind } from "graphql";
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -182,7 +185,7 @@ describe("Document Integrity Tests", () => {
         expect.objectContaining({
           kind: Kind.OPERATION_DEFINITION,
           operation: "query",
-        }),
+        })
       );
 
       const mutationDoc = buildDocument({
@@ -195,7 +198,7 @@ describe("Document Integrity Tests", () => {
         expect.objectContaining({
           kind: Kind.OPERATION_DEFINITION,
           operation: "mutation",
-        }),
+        })
       );
 
       const subscriptionDoc = buildDocument({
@@ -208,7 +211,7 @@ describe("Document Integrity Tests", () => {
         expect.objectContaining({
           kind: Kind.OPERATION_DEFINITION,
           operation: "subscription",
-        }),
+        })
       );
     });
   });

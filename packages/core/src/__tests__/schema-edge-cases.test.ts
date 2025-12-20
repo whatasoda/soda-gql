@@ -1,9 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar } from "./schema/schema-builder";
-import { unsafeOutputType } from "./schema/type-specifier-builder";
-import { createFieldFactories } from "./composer/fields-builder";
-import { createVarBuilder } from "./composer/var-builder";
-import type { AnyGraphqlSchema } from "./types/schema/schema";
+import { createFieldFactories, createVarBuilder } from "../composer";
+import { define, defineScalar, unsafeOutputType } from "../schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Non-existent field arguments", () => {
@@ -34,7 +32,9 @@ describe("Schema Edge Cases", () => {
       expect(() => {
         // @ts-expect-error - Testing runtime error for non-existent argument
         helpers.$var("userVar").byField("Query", "user", "nonExistentArg");
-      }).toThrow("Argument nonExistentArg not found in field user of type Query");
+      }).toThrow(
+        "Argument nonExistentArg not found in field user of type Query"
+      );
     });
   });
 
