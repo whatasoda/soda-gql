@@ -454,6 +454,12 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
 
 /**
  * Convert scheduler error to builder error.
+ * If the cause is already a BuilderError, return it directly to preserve error codes.
  */
-const convertSchedulerError = (error: SchedulerError): BuilderError =>
-  builderErrors.internalInvariant(error.message, "scheduler", error.cause);
+const convertSchedulerError = (error: SchedulerError): BuilderError => {
+  // If the cause is a BuilderError, return it directly
+  if (error.cause && typeof error.cause === "object" && "code" in error.cause) {
+    return error.cause as BuilderError;
+  }
+  return builderErrors.internalInvariant(error.message, "scheduler", error.cause);
+};
