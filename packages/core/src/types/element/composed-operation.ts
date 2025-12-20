@@ -89,15 +89,27 @@ export class ComposedOperation<
   private constructor(
     define: (
       context: GqlElementContext | null,
-    ) => ComposedOperationDefinition<
-      TRuntimeAdapter,
-      TOperationType,
-      TOperationName,
-      TVariableNames,
-      TVariables,
-      TRawData,
-      TProjectedData
-    >,
+    ) =>
+      | ComposedOperationDefinition<
+          TRuntimeAdapter,
+          TOperationType,
+          TOperationName,
+          TVariableNames,
+          TVariables,
+          TRawData,
+          TProjectedData
+        >
+      | Promise<
+          ComposedOperationDefinition<
+            TRuntimeAdapter,
+            TOperationType,
+            TOperationName,
+            TVariableNames,
+            TVariables,
+            TRawData,
+            TProjectedData
+          >
+        >,
   ) {
     super(define);
   }
@@ -132,22 +144,39 @@ export class ComposedOperation<
     TVariableDefinitions extends InputTypeSpecifiers,
     TSliceFragments extends AnySlicePayloads,
   >(
-    define: (context: import("./gql-element").GqlElementContext | null) => {
-      operationType: TOperationType;
-      operationName: TOperationName;
-      variableNames: (keyof TVariableDefinitions & string)[];
-      projectionPathGraph: ProjectionPathGraphNode;
-      document: TypedDocumentNode<
-        InferComposedOperationRawData<TSchema, TSliceFragments>,
-        ConstAssignableInput<TSchema, TVariableDefinitions>
-      >;
-      parse: (
-        result: NormalizedExecutionResult<TRuntimeAdapter, InferComposedOperationRawData<TSchema, TSliceFragments>, any>,
-      ) => {
-        [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
-      };
-      metadata?: OperationMetadata;
-    },
+    define: (context: import("./gql-element").GqlElementContext | null) =>
+      | {
+          operationType: TOperationType;
+          operationName: TOperationName;
+          variableNames: (keyof TVariableDefinitions & string)[];
+          projectionPathGraph: ProjectionPathGraphNode;
+          document: TypedDocumentNode<
+            InferComposedOperationRawData<TSchema, TSliceFragments>,
+            ConstAssignableInput<TSchema, TVariableDefinitions>
+          >;
+          parse: (
+            result: NormalizedExecutionResult<TRuntimeAdapter, InferComposedOperationRawData<TSchema, TSliceFragments>, any>,
+          ) => {
+            [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
+          };
+          metadata?: OperationMetadata;
+        }
+      | Promise<{
+          operationType: TOperationType;
+          operationName: TOperationName;
+          variableNames: (keyof TVariableDefinitions & string)[];
+          projectionPathGraph: ProjectionPathGraphNode;
+          document: TypedDocumentNode<
+            InferComposedOperationRawData<TSchema, TSliceFragments>,
+            ConstAssignableInput<TSchema, TVariableDefinitions>
+          >;
+          parse: (
+            result: NormalizedExecutionResult<TRuntimeAdapter, InferComposedOperationRawData<TSchema, TSliceFragments>, any>,
+          ) => {
+            [K in keyof TSliceFragments]: InferExecutionResultProjection<TSliceFragments[K]["projection"]>;
+          };
+          metadata?: OperationMetadata;
+        }>,
   ) {
     return new ComposedOperation(define);
   }

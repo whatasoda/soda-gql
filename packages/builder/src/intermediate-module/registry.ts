@@ -1,3 +1,4 @@
+import { createAsyncScheduler, createSyncScheduler, type Effect, ParallelEffect } from "@soda-gql/common";
 import {
   type AnyComposedOperation,
   type AnyInlineOperation,
@@ -10,6 +11,7 @@ import {
   Slice,
 } from "@soda-gql/core";
 import type { ModuleAnalysis } from "../ast";
+import { ElementEvaluationEffect } from "../scheduler";
 import type { EvaluationRequest, IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
@@ -160,23 +162,10 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     return result;
   };
 
-  const evaluate = (): Record<string, IntermediateArtifactElement> => {
-    const evaluated = new Map<string, ArtifactModule>();
-    const inProgress = new Set<string>();
-
-    // Evaluate all modules (each evaluation handles its own dependencies)
-    for (const filePath of modules.keys()) {
-      if (!evaluated.has(filePath)) {
-        evaluateModule(filePath, evaluated, inProgress);
-      }
-    }
-
-    // Then, evaluate all builders after registration
-    for (const element of elements.values()) {
-      GqlElement.evaluate(element);
-    }
-
-    // Build a single record with discriminated union entries
+  /**
+   * Build artifacts record from evaluated elements.
+   */
+  const buildArtifacts = (): Record<string, IntermediateArtifactElement> => {
     const artifacts: Record<string, IntermediateArtifactElement> = {};
     for (const [canonicalId, element] of elements.entries()) {
       if (element instanceof Model) {
@@ -189,8 +178,71 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
         artifacts[canonicalId] = { type: "inlineOperation", element };
       }
     }
-
     return artifacts;
+  };
+
+  /**
+   * Generator that evaluates all elements using the effect system.
+   * Uses ParallelEffect to enable parallel evaluation in async mode.
+   * In sync mode, ParallelEffect executes effects sequentially.
+   */
+  function* evaluateElementsGen(): Generator<Effect<unknown>, void, unknown> {
+    const effects = Array.from(elements.values(), (element) => new ElementEvaluationEffect(element));
+    if (effects.length > 0) {
+      yield new ParallelEffect(effects);
+    }
+  }
+
+  /**
+   * Synchronous evaluation - evaluates all modules and elements synchronously.
+   * Throws if any element requires async operations (e.g., async metadata factory).
+   */
+  const evaluate = (): Record<string, IntermediateArtifactElement> => {
+    const evaluated = new Map<string, ArtifactModule>();
+    const inProgress = new Set<string>();
+
+    // Evaluate all modules (each evaluation handles its own dependencies)
+    for (const filePath of modules.keys()) {
+      if (!evaluated.has(filePath)) {
+        evaluateModule(filePath, evaluated, inProgress);
+      }
+    }
+
+    // Then, evaluate all elements using sync scheduler
+    const scheduler = createSyncScheduler();
+    const result = scheduler.run(() => evaluateElementsGen());
+
+    if (result.isErr()) {
+      throw new Error(`Element evaluation failed: ${result.error.message}`);
+    }
+
+    return buildArtifacts();
+  };
+
+  /**
+   * Asynchronous evaluation - evaluates all modules and elements with async support.
+   * Supports async metadata factories and other async operations.
+   */
+  const evaluateAsync = async (): Promise<Record<string, IntermediateArtifactElement>> => {
+    const evaluated = new Map<string, ArtifactModule>();
+    const inProgress = new Set<string>();
+
+    // Evaluate all modules (module evaluation is synchronous - no I/O operations)
+    for (const filePath of modules.keys()) {
+      if (!evaluated.has(filePath)) {
+        evaluateModule(filePath, evaluated, inProgress);
+      }
+    }
+
+    // Then, evaluate all elements using async scheduler
+    const scheduler = createAsyncScheduler();
+    const result = await scheduler.run(() => evaluateElementsGen());
+
+    if (result.isErr()) {
+      throw new Error(`Element evaluation failed: ${result.error.message}`);
+    }
+
+    return buildArtifacts();
   };
 
   const clear = () => {
@@ -203,6 +255,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     requestImport,
     addElement,
     evaluate,
+    evaluateAsync,
     clear,
   };
 };

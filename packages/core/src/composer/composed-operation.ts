@@ -68,24 +68,41 @@ export const createComposedOperationComposerFactory = <
           variables,
           fields,
         });
-        const operationMetadata = options.metadata?.({ $, document });
+        const operationMetadataResult = options.metadata?.({ $, document });
 
-        // Collect metadata from all slices and merge with operation metadata
-        const sliceMetadataList: SliceMetadata[] = Object.values(fragments)
+        // Collect metadata from all slices
+        const sliceMetadataResults = Object.values(fragments)
           .map((fragment) => fragment.metadata)
-          .filter((m) => m != null);
-        const mergeSliceMetadata = metadataAdapter?.mergeSliceMetadata ?? defaultMergeSliceMetadata;
-        const metadata = mergeSliceMetadata(operationMetadata ?? {}, sliceMetadataList);
+          .filter((m): m is SliceMetadata | Promise<SliceMetadata> => m != null);
 
-        return {
-          operationType,
-          operationName,
-          variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
-          projectionPathGraph,
-          document,
-          parse: createExecutionResultParser({ fragments, projectionPathGraph }),
-          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+        const mergeSliceMetadata = metadataAdapter?.mergeSliceMetadata ?? defaultMergeSliceMetadata;
+
+        const createDefinition = (operationMetadata: OperationMetadata | undefined, sliceMetadataList: SliceMetadata[]) => {
+          const metadata = mergeSliceMetadata(operationMetadata ?? {}, sliceMetadataList);
+          return {
+            operationType,
+            operationName,
+            variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
+            projectionPathGraph,
+            document,
+            parse: createExecutionResultParser({ fragments, projectionPathGraph }),
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+          };
         };
+
+        // Check if any metadata is a Promise
+        const hasAsyncOperationMetadata = operationMetadataResult instanceof Promise;
+        const hasAsyncSliceMetadata = sliceMetadataResults.some((m) => m instanceof Promise);
+
+        if (hasAsyncOperationMetadata || hasAsyncSliceMetadata) {
+          // Resolve all promises and create definition
+          return Promise.all([
+            hasAsyncOperationMetadata ? operationMetadataResult : Promise.resolve(operationMetadataResult),
+            Promise.all(sliceMetadataResults.map((m) => (m instanceof Promise ? m : Promise.resolve(m)))),
+          ]).then(([operationMetadata, sliceMetadataList]) => createDefinition(operationMetadata, sliceMetadataList));
+        }
+
+        return createDefinition(operationMetadataResult, sliceMetadataResults as SliceMetadata[]);
       });
     };
   };

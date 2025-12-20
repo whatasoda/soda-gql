@@ -90,7 +90,7 @@ export type SlicePayload<
   variables: TVariables;
   getFields: () => TFields;
   projection: TProjection;
-  metadata?: SliceMetadata;
+  metadata?: SliceMetadata | Promise<SliceMetadata>;
 };
 
 export type InferOutputOfSlice<TSlice extends AnySliceOf<any>> = ReturnType<TSlice[typeof __OPERATION_SLICE_BRAND__]>["output"];

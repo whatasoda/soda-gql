@@ -35,6 +35,7 @@
 // Effect classes and factory
 export {
   BuilderEffects,
+  ElementEvaluationEffect,
   FileReadEffect,
   FileStatEffect,
   type FileStats,

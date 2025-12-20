@@ -32,7 +32,7 @@ export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
  */
 export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata> = (
   tools: MetadataBuilderTools<TVarRefs>,
-) => TMetadata;
+) => TMetadata | Promise<TMetadata>;
 
 /**
  * Slice-specific metadata that can contribute to operation metadata.
@@ -61,7 +61,7 @@ export type SliceMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>
  */
 export type SliceMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = SliceMetadata> = (
   tools: SliceMetadataBuilderTools<TVarRefs>,
-) => TMetadata;
+) => TMetadata | Promise<TMetadata>;
 
 /**
  * Utility type to extract the metadata type from an operation or slice.
