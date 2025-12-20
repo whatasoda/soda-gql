@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { FormattedExecutionResult } from "graphql";
-import { normalizeGraphQLResponse } from "../../../packages/graffle-client/src/normalizer";
+import { normalizeGraphQLResponse } from "./normalizer";
 
 describe("normalizeGraphQLResponse", () => {
   it("should normalize a successful GraphQL response", () => {
