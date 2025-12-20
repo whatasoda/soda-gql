@@ -2,7 +2,37 @@ import { describe, expect, test } from "bun:test";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import { createIntermediateRegistry } from "@soda-gql/builder/intermediate-module/registry";
 import { createCanonicalId } from "@soda-gql/common";
-import { Model } from "@soda-gql/core";
+import { GqlElement, Model } from "@soda-gql/core";
+
+/**
+ * Test-only GqlElement subclass that supports async define functions.
+ * Used to test async evaluation without depending on specific element types.
+ */
+class TestElement extends GqlElement<{ value: string }> {
+  private constructor(define: () => { value: string } | Promise<{ value: string }>) {
+    super(define);
+  }
+
+  get value(): string {
+    return (GqlElement.get(this) as { value: string }).value;
+  }
+
+  static create(define: () => { value: string } | Promise<{ value: string }>) {
+    return new TestElement(define);
+  }
+}
+
+type AcceptableArtifact = Model<string, any, any, any, any>;
+
+/**
+ * Helper function to cast TestElement to AcceptableArtifact for use with registry.addElement.
+ */
+const asAcceptable = (element: TestElement): AcceptableArtifact => element as unknown as AcceptableArtifact;
+
+/**
+ * Helper function to cast AcceptableArtifact back to TestElement for accessing .value.
+ */
+const asTestElement = (element: AcceptableArtifact): TestElement => element as unknown as TestElement;
 
 /**
  * Helper to create a mock ModuleAnalysis with specified definitions count
@@ -363,10 +393,10 @@ describe("createIntermediateRegistry", () => {
 
       // Add a simple element with sync define
       const element = registry.addElement("test:element", () =>
-        // @ts-expect-error - test uses simplified return type
         Model.create(() => ({
-          typeName: "TestType",
-          getFragmentFields: () => ({}),
+          typename: "TestType",
+          fragment: () => ({}),
+          normalize: () => ({}),
         })),
       );
 
@@ -386,23 +416,21 @@ describe("createIntermediateRegistry", () => {
       });
 
       // Add element with async define (simulating async metadata factory)
+      // Using TestElement which supports async define
       const element = registry.addElement("test:async-element", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          // Simulate async operation (e.g., async metadata factory)
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          return {
-            typeName: "AsyncType",
-            getFragmentFields: () => ({}),
-          };
-        }),
+        asAcceptable(
+          TestElement.create(async () => {
+            // Simulate async operation (e.g., async metadata factory)
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            return { value: "AsyncValue" };
+          }),
+        ),
       );
 
-      const result = await registry.evaluateAsync();
+      await registry.evaluateAsync();
 
-      expect(result["test:async-element"]).toBeDefined();
-      expect(result["test:async-element"]?.type).toBe("model");
-      expect(element.typename).toBe("AsyncType");
+      // Verify element was evaluated with async define
+      expect(asTestElement(element).value).toBe("AsyncValue");
     });
 
     test("should evaluate multiple elements in parallel", async () => {
@@ -416,45 +444,47 @@ describe("createIntermediateRegistry", () => {
       });
 
       // Add multiple elements with async define that track timing
-      registry.addElement("test:element-1", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          startTimes["element-1"] = Date.now();
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          evaluationOrder.push("element-1");
-          return { typeName: "Type1", getFragmentFields: () => ({}) };
-        }),
+      const element1 = registry.addElement("test:element-1", () =>
+        asAcceptable(
+          TestElement.create(async () => {
+            startTimes["element-1"] = Date.now();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            evaluationOrder.push("element-1");
+            return { value: "Value1" };
+          }),
+        ),
       );
 
-      registry.addElement("test:element-2", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          startTimes["element-2"] = Date.now();
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          evaluationOrder.push("element-2");
-          return { typeName: "Type2", getFragmentFields: () => ({}) };
-        }),
+      const element2 = registry.addElement("test:element-2", () =>
+        asAcceptable(
+          TestElement.create(async () => {
+            startTimes["element-2"] = Date.now();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            evaluationOrder.push("element-2");
+            return { value: "Value2" };
+          }),
+        ),
       );
 
-      registry.addElement("test:element-3", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          startTimes["element-3"] = Date.now();
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          evaluationOrder.push("element-3");
-          return { typeName: "Type3", getFragmentFields: () => ({}) };
-        }),
+      const element3 = registry.addElement("test:element-3", () =>
+        asAcceptable(
+          TestElement.create(async () => {
+            startTimes["element-3"] = Date.now();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            evaluationOrder.push("element-3");
+            return { value: "Value3" };
+          }),
+        ),
       );
 
       const startTime = Date.now();
-      const result = await registry.evaluateAsync();
+      await registry.evaluateAsync();
       const totalTime = Date.now() - startTime;
 
       // All elements should be evaluated
-      expect(Object.keys(result)).toHaveLength(3);
-      expect(result["test:element-1"]).toBeDefined();
-      expect(result["test:element-2"]).toBeDefined();
-      expect(result["test:element-3"]).toBeDefined();
+      expect(asTestElement(element1).value).toBe("Value1");
+      expect(asTestElement(element2).value).toBe("Value2");
+      expect(asTestElement(element3).value).toBe("Value3");
 
       // Parallel execution: total time should be much less than sequential (3 * 50ms = 150ms)
       // Allow some margin for timing variance
@@ -475,33 +505,34 @@ describe("createIntermediateRegistry", () => {
         return {};
       });
 
-      // Sync element
-      registry.addElement("test:sync", () =>
-        // @ts-expect-error - test uses simplified return type
+      // Sync element (using Model)
+      const syncElement = registry.addElement("test:sync", () =>
         Model.create(() => ({
-          typeName: "SyncType",
-          getFragmentFields: () => ({}),
+          typename: "SyncType",
+          fragment: () => ({}),
+          normalize: () => ({}),
         })),
       );
 
-      // Async element
-      registry.addElement("test:async", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          return {
-            typeName: "AsyncType",
-            getFragmentFields: () => ({}),
-          };
-        }),
+      // Async element (using TestElement)
+      const asyncElement = registry.addElement("test:async", () =>
+        asAcceptable(
+          TestElement.create(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            return { value: "AsyncValue" };
+          }),
+        ),
       );
 
       const result = await registry.evaluateAsync();
 
+      // Verify both elements are evaluated
+      expect(syncElement.typename).toBe("SyncType");
+      expect(asTestElement(asyncElement).value).toBe("AsyncValue");
+
+      // Verify sync element appears in artifacts (Model is recognized)
       expect(result["test:sync"]).toBeDefined();
-      expect(result["test:async"]).toBeDefined();
       expect(result["test:sync"]?.type).toBe("model");
-      expect(result["test:async"]?.type).toBe("model");
     });
 
     test("should handle module dependencies with async element evaluation", async () => {
@@ -525,22 +556,24 @@ describe("createIntermediateRegistry", () => {
         return { a: "value-a" };
       });
 
-      // Add async element
-      registry.addElement("test:element", () =>
-        // @ts-expect-error - test uses simplified return type
-        Model.create(async () => {
-          evalOrder.push("element-start");
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          evalOrder.push("element-end");
-          return { typeName: "TestType", getFragmentFields: () => ({}) };
-        }),
+      // Add async element (using TestElement)
+      const element = registry.addElement("test:element", () =>
+        asAcceptable(
+          TestElement.create(async () => {
+            evalOrder.push("element-start");
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            evalOrder.push("element-end");
+            return { value: "TestValue" };
+          }),
+        ),
       );
 
-      const result = await registry.evaluateAsync();
+      await registry.evaluateAsync();
 
       // Modules should be evaluated before elements
       expect(evalOrder.indexOf("module-a-end")).toBeLessThan(evalOrder.indexOf("element-start"));
-      expect(result["test:element"]).toBeDefined();
+      // Verify element was evaluated
+      expect(asTestElement(element).value).toBe("TestValue");
     });
   });
 });
