@@ -1,4 +1,4 @@
-import { createAsyncScheduler, createSyncScheduler, type Effect, normalizePath } from "@soda-gql/common";
+import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, normalizePath } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import type { createAstAnalyzer } from "../ast";
 import { type BuilderResult, builderErrors } from "../errors";
@@ -34,7 +34,7 @@ export function* discoverModulesGen({
   entryPaths,
   astAnalyzer,
   incremental,
-}: DiscoverModulesOptions): Generator<Effect<unknown>, DiscoverModulesResult, unknown> {
+}: DiscoverModulesOptions): EffectGenerator<DiscoverModulesResult> {
   const snapshots = new Map<string, DiscoverySnapshot>();
   const stack = [...entryPaths];
   const changedFiles = incremental?.changedFiles ?? new Set<string>();

@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import type { AsyncScheduler, Effect, EffectGeneratorFn, SchedulerError } from "./types";
-import { createSchedulerError } from "./types";
+import { createSchedulerError, EffectReturn } from "./types";
 
 /**
  * Create an asynchronous scheduler.
@@ -27,7 +27,7 @@ export const createAsyncScheduler = (): AsyncScheduler => {
       while (!result.done) {
         const effect = result.value as Effect<unknown>;
         const effectResult = await effect.executeAsync();
-        result = generator.next(effectResult);
+        result = generator.next(EffectReturn.wrap(effectResult));
       }
 
       return ok(result.value);

@@ -14,7 +14,7 @@ import type { Result } from "neverthrow";
  * }
  * ```
  */
-export abstract class Effect<TResult> {
+export abstract class Effect<TResult = unknown> {
   /**
    * Execute the effect synchronously and return the result.
    */
@@ -38,8 +38,8 @@ export abstract class Effect<TResult> {
    * const value = yield* effect.run();
    * ```
    */
-  *run(): Generator<Effect<TResult>, TResult, unknown> {
-    return (yield this) as TResult;
+  *run(): Generator<Effect<TResult>, TResult, EffectReturn> {
+    return EffectReturn.unwrap((yield this) as EffectReturn<TResult>);
   }
 
   /**
@@ -55,6 +55,23 @@ export abstract class Effect<TResult> {
   protected abstract _executeAsync(): Promise<TResult>;
 }
 
+const EFFECT_RETURN = Symbol("EffectReturn");
+export class EffectReturn<TResult = unknown> {
+  private readonly [EFFECT_RETURN]: TResult;
+
+  private constructor(value: TResult) {
+    this[EFFECT_RETURN] = value;
+  }
+
+  static wrap<TResult>(value: TResult): EffectReturn<TResult> {
+    return new EffectReturn(value);
+  }
+
+  static unwrap<TResult>(value: EffectReturn<TResult>): TResult {
+    return value[EFFECT_RETURN];
+  }
+}
+
 /**
  * Extract the result type from an Effect.
  */
@@ -63,7 +80,7 @@ export type EffectResult<E> = E extends Effect<infer T> ? T : never;
 /**
  * Generator type that yields Effects.
  */
-export type EffectGenerator<TReturn> = Generator<Effect<unknown>, TReturn, unknown>;
+export type EffectGenerator<TReturn> = Generator<Effect, TReturn, EffectReturn>;
 
 /**
  * Generator function type that creates an EffectGenerator.
