@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../.typecheck/core",
-    "tsBuildInfoFile": "../../.typecheck/core/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/core",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/core/tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "paths": {}
   },

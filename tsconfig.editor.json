@@ -4,15 +4,15 @@
     "composite": true,
     "noEmit": false,
     "customConditions": ["@soda-gql"],
-    "outDir": ".typecheck/root",
-    "tsBuildInfoFile": ".typecheck/root/tsconfig.tsbuildinfo",
+    "outDir": "node_modules/.soda-gql/.typecheck/root",
+    "tsBuildInfoFile": "node_modules/.soda-gql/.typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
   "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*", "tsdown.config.ts"],
   "exclude": [
     "node_modules",
     "dist",
-    ".typecheck",
+    "node_modules/.soda-gql/.typecheck",
     "tests/.tmp/**/*",
     ".tmp/**/*",
     "perf-measures/type-check/client.ts",

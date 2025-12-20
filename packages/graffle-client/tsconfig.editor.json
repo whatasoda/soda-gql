@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../.typecheck/graffle-client",
-    "tsBuildInfoFile": "../../.typecheck/graffle-client/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/graffle-client",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/graffle-client/tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "paths": {}
   },

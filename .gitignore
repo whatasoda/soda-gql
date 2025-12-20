@@ -141,7 +141,6 @@ vite.config.ts.timestamp-*
 # Build directories
 build/
 dist/
-.typecheck/
 
 # IDE files
 .idea/
