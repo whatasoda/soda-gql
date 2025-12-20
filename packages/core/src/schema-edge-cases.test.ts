@@ -1,8 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeOutputType } from "@soda-gql/core/";
-import { createFieldFactories } from "@soda-gql/core/composer/fields-builder";
-import { createVarBuilder } from "@soda-gql/core/composer/var-builder";
-import type { AnyGraphqlSchema } from "@soda-gql/core/types/schema";
+import { define, defineScalar } from "./schema/schema-builder";
+import { unsafeOutputType } from "./schema/type-specifier-builder";
+import { createFieldFactories } from "./composer/fields-builder";
+import { createVarBuilder } from "./composer/var-builder";
+import type { AnyGraphqlSchema } from "./types/schema/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Non-existent field arguments", () => {

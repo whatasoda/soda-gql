@@ -4,8 +4,8 @@ import {
   buildConstValueNode,
   buildDocument,
   buildWithTypeModifier,
-} from "@soda-gql/core/composer/build-document";
-import type { InputTypeSpecifiers, TypeModifier } from "@soda-gql/core/types/type-foundation";
+} from "./build-document";
+import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { Kind } from "graphql";
 
 describe("Document Integrity Tests", () => {

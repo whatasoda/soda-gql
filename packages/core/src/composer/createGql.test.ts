@@ -1,16 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import {
-  type AnyGraphqlRuntimeAdapter,
-  type AnyGraphqlSchema,
-  createGqlElementComposer,
-  define,
-  defineOperationRoots,
-  defineScalar,
-  Projection,
-  unsafeInputType,
-  unsafeOutputType,
-} from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/core/runtime";
+import type { AnyGraphqlRuntimeAdapter } from "../types/runtime/runtime-adapter";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
+import { Projection } from "../types/runtime/projection";
+import { createGqlElementComposer } from "./gql-composer";
+import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
+import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
+import { createRuntimeAdapter } from "../runtime/runtime-adapter";
 
 const schema = {
   label: "test" as const,

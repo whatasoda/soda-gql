@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { type CanonicalId, createCanonicalId } from "@soda-gql/builder";
+import { type CanonicalId, createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
 
-import { aggregate } from "@soda-gql/builder/artifact/aggregate";
-import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import type { IntermediateArtifactElement } from "@soda-gql/builder/intermediate-module";
-import { ComposedOperation, Model, Slice } from "@soda-gql/core/types/element";
+import { aggregate } from "./aggregate";
+import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import type { IntermediateArtifactElement } from "../intermediate-module";
+import { ComposedOperation } from "@soda-gql/core/types/element/composed-operation";
+import { Model } from "@soda-gql/core/types/element/model";
+import { Slice } from "@soda-gql/core/types/element/slice";
 import { parse } from "graphql";
 
 describe("canonical identifier helpers", () => {

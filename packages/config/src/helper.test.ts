@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { defineConfig, validateConfig } from "@soda-gql/config/helper";
-import type { SodaGqlConfig } from "@soda-gql/config/types";
+import { defineConfig, validateConfig } from "./helper";
+import type { SodaGqlConfig } from "./types";
 
 describe("helper.ts", () => {
   describe("defineConfig", () => {

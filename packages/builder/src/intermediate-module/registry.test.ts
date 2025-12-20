@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import { createIntermediateRegistry } from "@soda-gql/builder/intermediate-module/registry";
-import { createCanonicalId } from "@soda-gql/common";
-import { GqlElement, Model } from "@soda-gql/core";
+import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import { createIntermediateRegistry } from "./registry";
+import { createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
+import { GqlElement } from "@soda-gql/core/types/element/gql-element";
+import { Model } from "@soda-gql/core/types/element/model";
 
 /**
  * Test-only GqlElement subclass that supports async define functions.

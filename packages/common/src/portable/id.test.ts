@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateId } from "@soda-gql/common";
+import { generateId } from "./id";
 
 describe("generateId", () => {
   test("generates unique IDs", () => {

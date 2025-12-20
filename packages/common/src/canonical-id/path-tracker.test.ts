@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { type CanonicalId, createCanonicalTracker } from "@soda-gql/builder";
+import type { CanonicalId } from "./canonical-id";
+import { createCanonicalTracker } from "./path-tracker";
 
 describe("CanonicalPathTracker", () => {
   const filePath = "/test/src/test.ts";
@@ -8,10 +9,18 @@ describe("CanonicalPathTracker", () => {
     it("enters and exits scopes correctly", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      const handle1 = tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
+      const handle1 = tracker.enterScope({
+        segment: "foo",
+        kind: "function",
+        stableKey: "func:foo",
+      });
       expect(tracker.currentDepth()).toBe(1);
 
-      const handle2 = tracker.enterScope({ segment: "bar", kind: "variable", stableKey: "var:bar" });
+      const handle2 = tracker.enterScope({
+        segment: "bar",
+        kind: "variable",
+        stableKey: "var:bar",
+      });
       expect(tracker.currentDepth()).toBe(2);
 
       tracker.exitScope(handle2);
@@ -24,8 +33,16 @@ describe("CanonicalPathTracker", () => {
     it("validates scope exit order", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      const handle1 = tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
-      const _handle2 = tracker.enterScope({ segment: "bar", kind: "variable", stableKey: "var:bar" });
+      const handle1 = tracker.enterScope({
+        segment: "foo",
+        kind: "function",
+        stableKey: "func:foo",
+      });
+      const _handle2 = tracker.enterScope({
+        segment: "bar",
+        kind: "variable",
+        stableKey: "var:bar",
+      });
 
       // Try to exit handle1 before handle2 (invalid order)
       expect(() => tracker.exitScope(handle1)).toThrow("Invalid scope exit");
@@ -46,7 +63,11 @@ describe("CanonicalPathTracker", () => {
     it("registers nested definitions", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "MyComponent", kind: "function", stableKey: "func:MyComponent" });
+      tracker.enterScope({
+        segment: "MyComponent",
+        kind: "function",
+        stableKey: "func:MyComponent",
+      });
       const def = tracker.registerDefinition();
 
       expect(def.astPath).toBe("MyComponent");
@@ -56,8 +77,16 @@ describe("CanonicalPathTracker", () => {
     it("builds astPath from scope stack", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "outer", kind: "function", stableKey: "func:outer" });
-      tracker.enterScope({ segment: "inner", kind: "function", stableKey: "func:inner" });
+      tracker.enterScope({
+        segment: "outer",
+        kind: "function",
+        stableKey: "func:outer",
+      });
+      tracker.enterScope({
+        segment: "inner",
+        kind: "function",
+        stableKey: "func:inner",
+      });
       const def = tracker.registerDefinition();
 
       expect(def.astPath).toBe("outer.inner");
@@ -80,7 +109,11 @@ describe("CanonicalPathTracker", () => {
     it("ensures unique paths for nested duplicates", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
+      tracker.enterScope({
+        segment: "foo",
+        kind: "function",
+        stableKey: "func:foo",
+      });
 
       const def1 = tracker.registerDefinition();
       const def2 = tracker.registerDefinition();
@@ -94,10 +127,18 @@ describe("CanonicalPathTracker", () => {
     it("tracks occurrences for duplicate scope names", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      const handle1 = tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
+      const handle1 = tracker.enterScope({
+        segment: "foo",
+        kind: "function",
+        stableKey: "func:foo",
+      });
       tracker.exitScope(handle1);
 
-      const handle2 = tracker.enterScope({ segment: "foo", kind: "function", stableKey: "func:foo" });
+      const handle2 = tracker.enterScope({
+        segment: "foo",
+        kind: "function",
+        stableKey: "func:foo",
+      });
       tracker.exitScope(handle2);
 
       // Both should enter successfully (tracker manages occurrences)
@@ -108,16 +149,28 @@ describe("CanonicalPathTracker", () => {
       const tracker = createCanonicalTracker({ filePath });
 
       // Same stableKey should increment occurrence
-      const handle1 = tracker.enterScope({ segment: "foo1", kind: "function", stableKey: "same-key" });
+      const handle1 = tracker.enterScope({
+        segment: "foo1",
+        kind: "function",
+        stableKey: "same-key",
+      });
       expect(handle1.depth).toBe(0);
       tracker.exitScope(handle1);
 
-      const handle2 = tracker.enterScope({ segment: "foo2", kind: "function", stableKey: "same-key" });
+      const handle2 = tracker.enterScope({
+        segment: "foo2",
+        kind: "function",
+        stableKey: "same-key",
+      });
       expect(handle2.depth).toBe(0);
       tracker.exitScope(handle2);
 
       // Different stableKey should start at 0
-      const handle3 = tracker.enterScope({ segment: "bar", kind: "function", stableKey: "different-key" });
+      const handle3 = tracker.enterScope({
+        segment: "bar",
+        kind: "function",
+        stableKey: "different-key",
+      });
       expect(handle3.depth).toBe(0);
     });
   });
@@ -170,7 +223,11 @@ describe("CanonicalPathTracker", () => {
     it("handles special characters in segments", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "foo$bar", kind: "function", stableKey: "func:foo$bar" });
+      tracker.enterScope({
+        segment: "foo$bar",
+        kind: "function",
+        stableKey: "func:foo$bar",
+      });
       const def = tracker.registerDefinition();
 
       expect(def.astPath).toBe("foo$bar");
@@ -179,7 +236,11 @@ describe("CanonicalPathTracker", () => {
     it("handles numeric segments", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "123", kind: "property", stableKey: "prop:123" });
+      tracker.enterScope({
+        segment: "123",
+        kind: "property",
+        stableKey: "prop:123",
+      });
       const def = tracker.registerDefinition();
 
       expect(def.astPath).toBe("123");
@@ -190,11 +251,19 @@ describe("CanonicalPathTracker", () => {
 
       const handles = [];
       for (let i = 0; i < 10; i++) {
-        handles.push(tracker.enterScope({ segment: `level${i}`, kind: "function", stableKey: `func:level${i}` }));
+        handles.push(
+          tracker.enterScope({
+            segment: `level${i}`,
+            kind: "function",
+            stableKey: `func:level${i}`,
+          })
+        );
       }
 
       const def = tracker.registerDefinition();
-      expect(def.astPath).toBe("level0.level1.level2.level3.level4.level5.level6.level7.level8.level9");
+      expect(def.astPath).toBe(
+        "level0.level1.level2.level3.level4.level5.level6.level7.level8.level9"
+      );
       expect(def.isTopLevel).toBe(false);
 
       // Clean up
@@ -208,9 +277,21 @@ describe("CanonicalPathTracker", () => {
     it("handles mixed scope kinds", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "MyClass", kind: "class", stableKey: "class:MyClass" });
-      tracker.enterScope({ segment: "myMethod", kind: "method", stableKey: "member:MyClass.myMethod" });
-      tracker.enterScope({ segment: "localVar", kind: "variable", stableKey: "var:localVar" });
+      tracker.enterScope({
+        segment: "MyClass",
+        kind: "class",
+        stableKey: "class:MyClass",
+      });
+      tracker.enterScope({
+        segment: "myMethod",
+        kind: "method",
+        stableKey: "member:MyClass.myMethod",
+      });
+      tracker.enterScope({
+        segment: "localVar",
+        kind: "variable",
+        stableKey: "var:localVar",
+      });
 
       const def = tracker.registerDefinition();
 
@@ -220,9 +301,21 @@ describe("CanonicalPathTracker", () => {
     it("handles property scopes", () => {
       const tracker = createCanonicalTracker({ filePath });
 
-      tracker.enterScope({ segment: "config", kind: "variable", stableKey: "var:config" });
-      tracker.enterScope({ segment: "database", kind: "property", stableKey: "prop:database" });
-      tracker.enterScope({ segment: "host", kind: "property", stableKey: "prop:host" });
+      tracker.enterScope({
+        segment: "config",
+        kind: "variable",
+        stableKey: "var:config",
+      });
+      tracker.enterScope({
+        segment: "database",
+        kind: "property",
+        stableKey: "prop:database",
+      });
+      tracker.enterScope({
+        segment: "host",
+        kind: "property",
+        stableKey: "prop:host",
+      });
 
       const def = tracker.registerDefinition();
 

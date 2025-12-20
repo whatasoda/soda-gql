@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { Script } from "node:vm";
-import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import { generateIntermediateModules } from "@soda-gql/builder/intermediate-module/evaluation";
-import { createCanonicalId } from "@soda-gql/common";
+import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import { generateIntermediateModules } from "./evaluation";
+import { createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
 
 // Test graphql-system path that won't match any test module paths
 const TEST_GRAPHQL_SYSTEM_PATH = "/test/graphql-system/index.ts";

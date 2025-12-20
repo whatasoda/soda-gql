@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
-import type { DiscoverySnapshot } from "@soda-gql/builder/discovery/types";
-import { collectAffectedFiles, extractModuleAdjacency } from "@soda-gql/builder/session";
-import type { CanonicalId } from "@soda-gql/common";
-import { createCanonicalId } from "@soda-gql/common";
+import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import type { DiscoverySnapshot } from "../discovery/types";
+import { collectAffectedFiles, extractModuleAdjacency } from ".";
+import type { CanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
+import { createCanonicalId } from "@soda-gql/common/canonical-id/canonical-id";
 
 // Helper: create mock DiscoverySnapshot
 const createMockSnapshot = (

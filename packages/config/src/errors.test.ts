@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ConfigErrorCode } from "@soda-gql/config/errors";
-import { configError } from "@soda-gql/config/errors";
+import type { ConfigErrorCode } from "./errors";
+import { configError } from "./errors";
 
 describe("errors.ts", () => {
   test("configError creates error with code and message", () => {

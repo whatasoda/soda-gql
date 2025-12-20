@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createAsyncScheduler, DeferEffect, Effect, Effects, PureEffect, YieldEffect } from "@soda-gql/common";
+import { createAsyncScheduler, DeferEffect, Effect, Effects, PureEffect, YieldEffect } from ".";
 
 describe("createAsyncScheduler", () => {
   it("should execute pure effects and return the final value", async () => {

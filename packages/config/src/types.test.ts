@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { PluginConfig, ResolvedSodaGqlConfig, SchemaConfig, SodaGqlConfig } from "@soda-gql/config/types";
+import type { PluginConfig, ResolvedSodaGqlConfig, SchemaConfig, SodaGqlConfig } from "./types";
 
 describe("types.ts", () => {
   test("SchemaConfig accepts valid configuration", () => {

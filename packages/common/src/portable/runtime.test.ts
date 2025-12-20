@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { once, runtime } from "@soda-gql/common";
+import { once, runtime } from "./runtime";
 
 describe("runtime", () => {
   test("detects runtime correctly", () => {

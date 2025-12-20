@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { normalizeConfig } from "@soda-gql/config/normalize";
-import type { SodaGqlConfig } from "@soda-gql/config/types";
+import { normalizeConfig } from "./normalize";
+import type { SodaGqlConfig } from "./types";
 
 describe("normalize.ts", () => {
   describe("normalizeConfig", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { spawn } from "@soda-gql/common";
+import { spawn } from "./spawn";
 
 describe("spawn", () => {
   test("executes command and captures stdout", async () => {

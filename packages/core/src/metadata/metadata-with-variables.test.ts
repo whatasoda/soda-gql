@@ -1,16 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
-import {
-  type AnyGraphqlRuntimeAdapter,
-  type AnyGraphqlSchema,
-  createGqlElementComposer,
-  define,
-  defineOperationRoots,
-  defineScalar,
-  unsafeInputType,
-  unsafeOutputType,
-} from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/core/runtime";
+import type { AnyGraphqlRuntimeAdapter } from "../types/runtime/runtime-adapter";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
+import { createGqlElementComposer } from "../composer/gql-composer";
+import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
+import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
+import { createRuntimeAdapter } from "../runtime/runtime-adapter";
 import { print } from "graphql";
 
 const schema = {

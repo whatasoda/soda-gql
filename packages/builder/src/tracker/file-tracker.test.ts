@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createFileTracker, isEmptyDiff } from "@soda-gql/builder/tracker/file-tracker";
-import { normalizePath } from "@soda-gql/common";
+import { createFileTracker, isEmptyDiff } from "./file-tracker";
+import { normalizePath } from "@soda-gql/common/utils/path";
 
 describe("FileTracker", () => {
   const testRoot = join(process.cwd(), ".cache", "test", "file-tracker");

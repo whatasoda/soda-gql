@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { __resetPortableHasherForTests, createPortableHasher } from "@soda-gql/common";
+import { __resetPortableHasherForTests, createPortableHasher } from "./hash";
 
 describe("PortableHasher", () => {
   beforeEach(() => {
