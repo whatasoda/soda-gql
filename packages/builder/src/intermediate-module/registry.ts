@@ -189,7 +189,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
   function* evaluateElementsGen(): Generator<Effect<unknown>, void, unknown> {
     const effects = Array.from(elements.values(), (element) => new ElementEvaluationEffect(element));
     if (effects.length > 0) {
-      yield new ParallelEffect(effects);
+      yield* new ParallelEffect(effects).run();
     }
   }
 

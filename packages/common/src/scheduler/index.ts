@@ -9,11 +9,9 @@
  *
  * const scheduler = createSyncScheduler();
  * const result = scheduler.run(function* () {
- *   const a = new PureEffect(1);
- *   yield a;
- *   const b = new PureEffect(2);
- *   yield b;
- *   return a.value + b.value;
+ *   const a = yield* new PureEffect(1).run();
+ *   const b = yield* new PureEffect(2).run();
+ *   return a + b;
  * });
  * ```
  *
@@ -23,13 +21,9 @@
  *
  * const scheduler = createAsyncScheduler();
  * const result = await scheduler.run(function* () {
- *   const fetchEffect = new DeferEffect(fetchData());
- *   yield fetchEffect;
- *
- *   const yieldEffect = new YieldEffect();
- *   yield yieldEffect; // Yield to event loop
- *
- *   return processData(fetchEffect.value);
+ *   const data = yield* new DeferEffect(fetchData()).run();
+ *   yield* new YieldEffect().run(); // Yield to event loop
+ *   return processData(data);
  * });
  * ```
  */

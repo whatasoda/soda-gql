@@ -77,9 +77,7 @@ export function* discoverModulesGen({
 
       if (cached) {
         // Fast path: check fingerprint without reading file content
-        const statEffect = new OptionalFileStatEffect(filePath);
-        yield statEffect;
-        const stats = statEffect.value;
+        const stats = yield* new OptionalFileStatEffect(filePath).run();
 
         if (stats) {
           const mtimeMs = stats.mtimeMs;
@@ -107,9 +105,7 @@ export function* discoverModulesGen({
     }
 
     // Read source and compute signature
-    const readEffect = new OptionalFileReadEffect(filePath);
-    yield readEffect;
-    const source = readEffect.value;
+    const source = yield* new OptionalFileReadEffect(filePath).run();
 
     if (source === null) {
       // Handle deleted files gracefully - they may be in cache but removed from disk
@@ -135,9 +131,7 @@ export function* discoverModulesGen({
     }
 
     // Get stats for fingerprint (we may already have them from cache check)
-    const statEffect = new OptionalFileStatEffect(filePath);
-    yield statEffect;
-    const stats = statEffect.value as FileStats;
+    const stats = (yield* new OptionalFileStatEffect(filePath).run()) as FileStats;
 
     // Compute fingerprint from content (avoids re-reading the file)
     const fingerprint = computeFingerprintFromContent(filePath, stats, source);

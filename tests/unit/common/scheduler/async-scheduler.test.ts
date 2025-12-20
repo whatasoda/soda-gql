@@ -6,11 +6,9 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const a = new PureEffect(1);
-      yield a;
-      const b = new PureEffect(2);
-      yield b;
-      return a.value + b.value;
+      const a = yield* new PureEffect(1).run();
+      const b = yield* new PureEffect(2).run();
+      return a + b;
     });
 
     expect(result.isOk()).toBe(true);
@@ -21,11 +19,9 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const a = Effects.pure(1);
-      yield a;
-      const b = Effects.pure(2);
-      yield b;
-      return a.value + b.value;
+      const a = yield* Effects.pure(1).run();
+      const b = yield* Effects.pure(2).run();
+      return a + b;
     });
 
     expect(result.isOk()).toBe(true);
@@ -36,9 +32,8 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const defer = new DeferEffect(Promise.resolve(42));
-      yield defer;
-      return defer.value;
+      const value = yield* new DeferEffect(Promise.resolve(42)).run();
+      return value;
     });
 
     expect(result.isOk()).toBe(true);
@@ -51,7 +46,7 @@ describe("createAsyncScheduler", () => {
 
     const result = await scheduler.run(function* () {
       order.push("before");
-      yield new YieldEffect();
+      yield* new YieldEffect().run();
       order.push("after");
       return order;
     });
@@ -68,9 +63,12 @@ describe("createAsyncScheduler", () => {
     const delay = (ms: number, value: number) => new Promise<number>((resolve) => setTimeout(() => resolve(value), ms));
 
     const result = await scheduler.run(function* () {
-      const parallel = Effects.parallel([Effects.defer(delay(50, 1)), Effects.defer(delay(50, 2)), Effects.defer(delay(50, 3))]);
-      yield parallel;
-      return parallel.value;
+      const results = yield* Effects.parallel([
+        Effects.defer(delay(50, 1)),
+        Effects.defer(delay(50, 2)),
+        Effects.defer(delay(50, 3)),
+      ]).run();
+      return results;
     });
 
     const elapsed = Date.now() - startTime;
@@ -85,12 +83,11 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const outer = Effects.parallel([
+      const results = yield* Effects.parallel([
         Effects.pure([1, 2]),
         Effects.parallel([Effects.defer(Promise.resolve(3)), Effects.pure(4)]),
-      ]);
-      yield outer;
-      return outer.value;
+      ]).run();
+      return results;
     });
 
     expect(result.isOk()).toBe(true);
@@ -104,7 +101,7 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      yield Effects.defer(Promise.reject(new Error("Async error")));
+      yield* Effects.defer(Promise.reject(new Error("Async error"))).run();
       return 0;
     });
 
@@ -116,7 +113,7 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      yield Effects.pure(1);
+      yield* Effects.pure(1).run();
       throw new Error("Test error");
     });
 
@@ -141,9 +138,8 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const effect = new CustomAsyncEffect("test");
-      yield effect;
-      return effect.value;
+      const value = yield* new CustomAsyncEffect("test").run();
+      return value;
     });
 
     expect(result.isOk()).toBe(true);
@@ -157,7 +153,7 @@ describe("createAsyncScheduler", () => {
     const result = await scheduler.run(function* () {
       for (let i = 0; i < 5; i++) {
         counter++;
-        yield new YieldEffect();
+        yield* new YieldEffect().run();
       }
       return counter;
     });
@@ -170,15 +166,14 @@ describe("createAsyncScheduler", () => {
     const scheduler = createAsyncScheduler();
 
     const result = await scheduler.run(function* () {
-      const a = Effects.pure(1);
-      yield a;
-      yield Effects.yield();
-      const b = Effects.defer(Promise.resolve(2));
-      yield b;
-      const parallel = Effects.parallel([Effects.pure(3), Effects.defer(Promise.resolve(4))]);
-      yield parallel;
-      const [c, d] = parallel.value as [number, number];
-      return a.value + b.value + c + d;
+      const a = yield* Effects.pure(1).run();
+      yield* Effects.yield().run();
+      const b = yield* Effects.defer(Promise.resolve(2)).run();
+      const [c, d] = (yield* Effects.parallel([Effects.pure(3), Effects.defer(Promise.resolve(4))]).run()) as [
+        number,
+        number,
+      ];
+      return a + b + c + d;
     });
 
     expect(result.isOk()).toBe(true);

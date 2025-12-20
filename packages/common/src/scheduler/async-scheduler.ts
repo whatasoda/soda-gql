@@ -13,13 +13,8 @@ import { createSchedulerError } from "./types";
  * @example
  * const scheduler = createAsyncScheduler();
  * const result = await scheduler.run(function* () {
- *   const fetchEffect = new DeferEffect(fetch('/api/data').then(r => r.json()));
- *   yield fetchEffect;
- *   const data = fetchEffect.value;
- *
- *   const yieldEffect = new YieldEffect();
- *   yield yieldEffect; // Yield to event loop
- *
+ *   const data = yield* new DeferEffect(fetch('/api/data').then(r => r.json())).run();
+ *   yield* new YieldEffect().run(); // Yield to event loop
  *   return data;
  * });
  */
@@ -31,8 +26,8 @@ export const createAsyncScheduler = (): AsyncScheduler => {
 
       while (!result.done) {
         const effect = result.value as Effect<unknown>;
-        await effect.executeAsync();
-        result = generator.next(effect.value);
+        const effectResult = await effect.executeAsync();
+        result = generator.next(effectResult);
       }
 
       return ok(result.value);

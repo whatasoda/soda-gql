@@ -5,42 +5,41 @@ import type { Result } from "neverthrow";
  * Effects encapsulate both the data and the execution logic.
  *
  * @template TResult - The type of value this effect produces when executed
+ *
+ * @example
+ * ```typescript
+ * function* myGenerator() {
+ *   const value = yield* new PureEffect(42).run();
+ *   return value; // 42
+ * }
+ * ```
  */
 export abstract class Effect<TResult> {
-  protected _value: TResult | undefined;
-  protected _executed = false;
-
   /**
-   * Type-safe result getter.
-   * @throws Error if the effect has not been executed yet
-   */
-  get value(): TResult {
-    if (!this._executed) {
-      throw new Error("Effect has not been executed yet");
-    }
-    return this._value as TResult;
-  }
-
-  /**
-   * Execute the effect synchronously.
-   * Stores the result for later retrieval via the `value` getter.
+   * Execute the effect synchronously and return the result.
    */
   executeSync(): TResult {
-    const result = this._executeSync();
-    this._value = result;
-    this._executed = true;
-    return result;
+    return this._executeSync();
   }
 
   /**
-   * Execute the effect asynchronously.
-   * Stores the result for later retrieval via the `value` getter.
+   * Execute the effect asynchronously and return the result.
    */
   async executeAsync(): Promise<TResult> {
-    const result = await this._executeAsync();
-    this._value = result;
-    this._executed = true;
-    return result;
+    return this._executeAsync();
+  }
+
+  /**
+   * Returns a generator that yields this effect and returns the result.
+   * Enables the `yield*` pattern for cleaner effect handling.
+   *
+   * @example
+   * ```typescript
+   * const value = yield* effect.run();
+   * ```
+   */
+  *run(): Generator<Effect<TResult>, TResult, unknown> {
+    return (yield this) as TResult;
   }
 
   /**

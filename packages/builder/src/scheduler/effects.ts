@@ -19,9 +19,7 @@ export type FileStats = {
  * Works in both sync and async schedulers.
  *
  * @example
- * const effect = new FileReadEffect("/path/to/file");
- * yield effect;
- * const content: string = effect.value;
+ * const content = yield* new FileReadEffect("/path/to/file").run();
  */
 export class FileReadEffect extends Effect<string> {
   constructor(readonly path: string) {
@@ -42,9 +40,7 @@ export class FileReadEffect extends Effect<string> {
  * Works in both sync and async schedulers.
  *
  * @example
- * const effect = new FileStatEffect("/path/to/file");
- * yield effect;
- * const stats: FileStats = effect.value;
+ * const stats = yield* new FileStatEffect("/path/to/file").run();
  */
 export class FileStatEffect extends Effect<FileStats> {
   constructor(readonly path: string) {
@@ -150,9 +146,7 @@ export class OptionalFileStatEffect extends Effect<FileStats | null> {
  * when using async scheduler.
  *
  * @example
- * const effect = new ElementEvaluationEffect(element);
- * yield effect;
- * // Element is now evaluated
+ * yield* new ElementEvaluationEffect(element).run();
  */
 export class ElementEvaluationEffect extends Effect<void> {
   constructor(readonly element: AcceptableArtifact) {
