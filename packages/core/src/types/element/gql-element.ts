@@ -70,7 +70,7 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     element[GQL_ELEMENT_CONTEXT] = context;
   }
 
-  static *createEvaluationGenerator<TValue extends object>(element: GqlElement<TValue>): Generator<Promise<void>, void, void> {
+  static *createEvaluationGenerator(element: GqlElement<any>): Generator<Promise<void>, void, void> {
     const context = element[GQL_ELEMENT_CONTEXT];
     yield* element[GQL_ELEMENT_FACTORY](context);
   }
