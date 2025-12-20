@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ModuleAnalysis, ModuleDefinition } from "@soda-gql/builder/ast";
 import { createIntermediateRegistry } from "@soda-gql/builder/intermediate-module/registry";
 import { createCanonicalId } from "@soda-gql/common";
+import { GqlElement, Model } from "@soda-gql/core";
 
 /**
  * Helper to create a mock ModuleAnalysis with specified definitions count
@@ -348,6 +349,194 @@ describe("createIntermediateRegistry", () => {
       expect(() => registry.evaluate()).not.toThrow();
       // B receives empty object for the circular import back to A
       expect(bReceivedFromA).toEqual({});
+    });
+  });
+
+  describe("evaluateAsync", () => {
+    test("should evaluate elements with sync define functions", async () => {
+      const registry = createIntermediateRegistry();
+
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      // Add a simple element with sync define
+      const element = registry.addElement("test:element", () =>
+        Model.create(() => ({
+          typeName: "TestType",
+          getFragmentFields: () => ({}),
+        })),
+      );
+
+      const result = await registry.evaluateAsync();
+
+      expect(result["test:element"]).toBeDefined();
+      expect(result["test:element"].type).toBe("model");
+      expect(GqlElement.get(element).typeName).toBe("TestType");
+    });
+
+    test("should evaluate elements with async define functions", async () => {
+      const registry = createIntermediateRegistry();
+
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      // Add element with async define (simulating async metadata factory)
+      const element = registry.addElement("test:async-element", () =>
+        Model.create(async () => {
+          // Simulate async operation (e.g., async metadata factory)
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return {
+            typeName: "AsyncType",
+            getFragmentFields: () => ({}),
+          };
+        }),
+      );
+
+      const result = await registry.evaluateAsync();
+
+      expect(result["test:async-element"]).toBeDefined();
+      expect(result["test:async-element"].type).toBe("model");
+      expect(GqlElement.get(element).typeName).toBe("AsyncType");
+    });
+
+    test("should evaluate multiple elements in parallel", async () => {
+      const registry = createIntermediateRegistry();
+      const evaluationOrder: string[] = [];
+      const startTimes: Record<string, number> = {};
+
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      // Add multiple elements with async define that track timing
+      registry.addElement("test:element-1", () =>
+        Model.create(async () => {
+          startTimes["element-1"] = Date.now();
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          evaluationOrder.push("element-1");
+          return { typeName: "Type1", getFragmentFields: () => ({}) };
+        }),
+      );
+
+      registry.addElement("test:element-2", () =>
+        Model.create(async () => {
+          startTimes["element-2"] = Date.now();
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          evaluationOrder.push("element-2");
+          return { typeName: "Type2", getFragmentFields: () => ({}) };
+        }),
+      );
+
+      registry.addElement("test:element-3", () =>
+        Model.create(async () => {
+          startTimes["element-3"] = Date.now();
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          evaluationOrder.push("element-3");
+          return { typeName: "Type3", getFragmentFields: () => ({}) };
+        }),
+      );
+
+      const startTime = Date.now();
+      const result = await registry.evaluateAsync();
+      const totalTime = Date.now() - startTime;
+
+      // All elements should be evaluated
+      expect(Object.keys(result)).toHaveLength(3);
+      expect(result["test:element-1"]).toBeDefined();
+      expect(result["test:element-2"]).toBeDefined();
+      expect(result["test:element-3"]).toBeDefined();
+
+      // Parallel execution: total time should be much less than sequential (3 * 50ms = 150ms)
+      // Allow some margin for timing variance
+      expect(totalTime).toBeLessThan(120);
+
+      // All elements should start at approximately the same time (within 20ms)
+      const times = Object.values(startTimes);
+      const minTime = Math.min(...times);
+      const maxTime = Math.max(...times);
+      expect(maxTime - minTime).toBeLessThan(20);
+    });
+
+    test("should handle mixed sync and async elements", async () => {
+      const registry = createIntermediateRegistry();
+
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      // Sync element
+      registry.addElement("test:sync", () =>
+        Model.create(() => ({
+          typeName: "SyncType",
+          getFragmentFields: () => ({}),
+        })),
+      );
+
+      // Async element
+      registry.addElement("test:async", () =>
+        Model.create(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return {
+            typeName: "AsyncType",
+            getFragmentFields: () => ({}),
+          };
+        }),
+      );
+
+      const result = await registry.evaluateAsync();
+
+      expect(result["test:sync"]).toBeDefined();
+      expect(result["test:async"]).toBeDefined();
+      expect(result["test:sync"].type).toBe("model");
+      expect(result["test:async"].type).toBe("model");
+    });
+
+    test("should handle module dependencies with async element evaluation", async () => {
+      const registry = createIntermediateRegistry();
+      const evalOrder: string[] = [];
+
+      // Module B (no dependencies)
+      // @ts-expect-error - test uses simplified return type
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/b.ts", function* () {
+        evalOrder.push("module-b");
+        return { b: "value-b" };
+      });
+
+      // Module A depends on B
+      // @ts-expect-error - test uses simplified return type
+      registry.setModule("/src/a.ts", function* () {
+        evalOrder.push("module-a-start");
+        yield registry.requestImport("/src/b.ts");
+        evalOrder.push("module-a-end");
+        return { a: "value-a" };
+      });
+
+      // Add async element
+      registry.addElement("test:element", () =>
+        Model.create(async () => {
+          evalOrder.push("element-start");
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          evalOrder.push("element-end");
+          return { typeName: "TestType", getFragmentFields: () => ({}) };
+        }),
+      );
+
+      const result = await registry.evaluateAsync();
+
+      // Modules should be evaluated before elements
+      expect(evalOrder.indexOf("module-a-end")).toBeLessThan(evalOrder.indexOf("element-start"));
+      expect(result["test:element"]).toBeDefined();
     });
   });
 });
