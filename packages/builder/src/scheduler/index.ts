@@ -10,9 +10,8 @@
  *
  * const scheduler = createSyncScheduler();
  * const result = scheduler.run(function* () {
- *   const readEffect = new FileReadEffect('/path/to/file');
- *   yield readEffect;
- *   return readEffect.value;
+ *   const content = yield* new FileReadEffect('/path/to/file').run();
+ *   return content;
  * });
  * ```
  *
@@ -25,9 +24,8 @@
  * const result = await scheduler.run(function* () {
  *   const read1 = new FileReadEffect('/path/to/file1');
  *   const read2 = new FileReadEffect('/path/to/file2');
- *   const parallel = new ParallelEffect([read1, read2]);
- *   yield parallel;
- *   return [read1.value, read2.value];
+ *   const [content1, content2] = yield* new ParallelEffect([read1, read2]).run();
+ *   return [content1, content2];
  * });
  * ```
  */

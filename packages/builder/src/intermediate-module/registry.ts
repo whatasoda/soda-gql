@@ -1,4 +1,4 @@
-import { createAsyncScheduler, createSyncScheduler, type Effect, ParallelEffect } from "@soda-gql/common";
+import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import {
   type AnyComposedOperation,
   type AnyInlineOperation,
@@ -186,10 +186,10 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
    * Uses ParallelEffect to enable parallel evaluation in async mode.
    * In sync mode, ParallelEffect executes effects sequentially.
    */
-  function* evaluateElementsGen(): Generator<Effect<unknown>, void, unknown> {
+  function* evaluateElementsGen(): EffectGenerator<void> {
     const effects = Array.from(elements.values(), (element) => new ElementEvaluationEffect(element));
     if (effects.length > 0) {
-      yield new ParallelEffect(effects);
+      yield* new ParallelEffect(effects).run();
     }
   }
 

@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import type { Effect, EffectGeneratorFn, SchedulerError, SyncScheduler } from "./types";
-import { createSchedulerError } from "./types";
+import { createSchedulerError, EffectReturn } from "./types";
 
 /**
  * Create a synchronous scheduler.
@@ -13,11 +13,9 @@ import { createSchedulerError } from "./types";
  * @example
  * const scheduler = createSyncScheduler();
  * const result = scheduler.run(function* () {
- *   const a = new PureEffect(1);
- *   yield a;
- *   const b = new PureEffect(2);
- *   yield b;
- *   return a.value + b.value;
+ *   const a = yield* new PureEffect(1).run();
+ *   const b = yield* new PureEffect(2).run();
+ *   return a + b;
  * });
  * // result = ok(3)
  */
@@ -29,8 +27,8 @@ export const createSyncScheduler = (): SyncScheduler => {
 
       while (!result.done) {
         const effect = result.value as Effect<unknown>;
-        effect.executeSync();
-        result = generator.next(effect.value);
+        const effectResult = effect.executeSync();
+        result = generator.next(EffectReturn.wrap(effectResult));
       }
 
       return ok(result.value);

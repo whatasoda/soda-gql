@@ -5,9 +5,7 @@ import { Effect } from "./types";
  * Works in both sync and async schedulers.
  *
  * @example
- * const effect = new PureEffect(42);
- * yield effect;
- * const result = effect.value; // 42
+ * const result = yield* new PureEffect(42).run(); // 42
  */
 export class PureEffect<T> extends Effect<T> {
   constructor(readonly pureValue: T) {
@@ -28,9 +26,7 @@ export class PureEffect<T> extends Effect<T> {
  * Only works in async schedulers; throws in sync schedulers.
  *
  * @example
- * const effect = new DeferEffect(fetch('/api/data').then(r => r.json()));
- * yield effect;
- * const data = effect.value;
+ * const data = yield* new DeferEffect(fetch('/api/data').then(r => r.json())).run();
  */
 export class DeferEffect<T> extends Effect<T> {
   constructor(readonly promise: Promise<T>) {
@@ -52,9 +48,7 @@ export class DeferEffect<T> extends Effect<T> {
  * In async schedulers, effects are executed with Promise.all.
  *
  * @example
- * const effect = new ParallelEffect([new PureEffect(1), new PureEffect(2)]);
- * yield effect;
- * const results = effect.value; // [1, 2]
+ * const results = yield* new ParallelEffect([new PureEffect(1), new PureEffect(2)]).run(); // [1, 2]
  */
 export class ParallelEffect extends Effect<readonly unknown[]> {
   constructor(readonly effects: readonly Effect<unknown>[]) {
@@ -79,8 +73,7 @@ export class ParallelEffect extends Effect<readonly unknown[]> {
  * for (let i = 0; i < 10000; i++) {
  *   doWork(i);
  *   if (i % 100 === 0) {
- *     const effect = new YieldEffect();
- *     yield effect;
+ *     yield* new YieldEffect().run();
  *   }
  * }
  */

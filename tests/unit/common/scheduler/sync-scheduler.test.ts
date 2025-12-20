@@ -6,11 +6,9 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const a = new PureEffect(1);
-      yield a;
-      const b = new PureEffect(2);
-      yield b;
-      return a.value + b.value;
+      const a = yield* new PureEffect(1).run();
+      const b = yield* new PureEffect(2).run();
+      return a + b;
     });
 
     expect(result.isOk()).toBe(true);
@@ -21,11 +19,9 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const a = Effects.pure(1);
-      yield a;
-      const b = Effects.pure(2);
-      yield b;
-      return a.value + b.value;
+      const a = yield* Effects.pure(1).run();
+      const b = yield* Effects.pure(2).run();
+      return a + b;
     });
 
     expect(result.isOk()).toBe(true);
@@ -36,9 +32,8 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const parallel = Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]);
-      yield parallel;
-      return parallel.value;
+      const results = yield* Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]).run();
+      return results;
     });
 
     expect(result.isOk()).toBe(true);
@@ -49,7 +44,7 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      yield Effects.defer(Promise.resolve(42));
+      yield* Effects.defer(Promise.resolve(42)).run();
       return 0;
     });
 
@@ -61,7 +56,7 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      yield Effects.yield();
+      yield* Effects.yield().run();
       return 0;
     });
 
@@ -73,9 +68,11 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const outer = Effects.parallel([Effects.pure([1, 2]), Effects.parallel([Effects.pure(3), Effects.pure(4)])]);
-      yield outer;
-      return outer.value;
+      const results = yield* Effects.parallel([
+        Effects.pure([1, 2]),
+        Effects.parallel([Effects.pure(3), Effects.pure(4)]),
+      ]).run();
+      return results;
     });
 
     expect(result.isOk()).toBe(true);
@@ -89,7 +86,7 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      yield Effects.pure(1);
+      yield* Effects.pure(1).run();
       throw new Error("Test error");
     });
 
@@ -113,9 +110,8 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const effect = new CustomEffect("test");
-      yield effect;
-      return effect.value;
+      const value = yield* new CustomEffect("test").run();
+      return value;
     });
 
     expect(result.isOk()).toBe(true);
@@ -135,7 +131,7 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      yield new AsyncOnlyEffect();
+      yield* new AsyncOnlyEffect().run();
       return 0;
     });
 
