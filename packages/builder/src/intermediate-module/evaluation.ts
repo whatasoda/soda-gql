@@ -2,15 +2,17 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
+import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import * as sandboxCore from "@soda-gql/core";
 import * as sandboxRuntime from "@soda-gql/runtime";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
+import { ElementEvaluationEffect } from "../scheduler";
 import { renderRegistryBlock } from "./codegen";
 import { createIntermediateRegistry } from "./registry";
-import type { IntermediateModule } from "./types";
+import type { IntermediateArtifactElement, IntermediateModule } from "./types";
 
 export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
@@ -184,7 +186,7 @@ export const generateIntermediateModules = function* ({
   }
 };
 
-type EvaluateIntermediateModulesInput = {
+export type EvaluateIntermediateModulesInput = {
   intermediateModules: Map<string, IntermediateModule>;
   graphqlSystemPath: string;
   analyses: Map<string, ModuleAnalysis>;
@@ -239,3 +241,33 @@ export const evaluateIntermediateModulesAsync = async (input: EvaluateIntermedia
   registry.clear();
   return elements;
 };
+
+/**
+ * Generator version of evaluateIntermediateModules for external scheduler control.
+ * Yields effects for element evaluation, enabling unified scheduler at the root level.
+ *
+ * This function:
+ * 1. Sets up the VM context and runs intermediate module scripts
+ * 2. Runs synchronous module evaluation (trampoline - no I/O)
+ * 3. Yields element evaluation effects via ParallelEffect
+ * 4. Returns the artifacts record
+ */
+export function* evaluateIntermediateModulesGen(
+  input: EvaluateIntermediateModulesInput,
+): EffectGenerator<Record<string, IntermediateArtifactElement>> {
+  const registry = setupIntermediateModulesContext(input);
+
+  // Run synchronous module evaluation (trampoline pattern, no I/O)
+  registry.evaluateModules();
+
+  // Yield element evaluation effects
+  const elements = registry.getElements();
+  const effects = elements.map((element) => new ElementEvaluationEffect(element));
+  if (effects.length > 0) {
+    yield* new ParallelEffect(effects).run();
+  }
+
+  const artifacts = registry.buildArtifacts();
+  registry.clear();
+  return artifacts;
+}

@@ -245,6 +245,30 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     return buildArtifacts();
   };
 
+  /**
+   * Evaluate all modules synchronously using trampoline.
+   * This runs the module dependency resolution without element evaluation.
+   * Call this before getElements() when using external scheduler control.
+   */
+  const evaluateModules = (): void => {
+    const evaluated = new Map<string, ArtifactModule>();
+    const inProgress = new Set<string>();
+
+    for (const filePath of modules.keys()) {
+      if (!evaluated.has(filePath)) {
+        evaluateModule(filePath, evaluated, inProgress);
+      }
+    }
+  };
+
+  /**
+   * Get all registered elements for external effect creation.
+   * Call evaluateModules() first to ensure all modules have been evaluated.
+   */
+  const getElements = (): AcceptableArtifact[] => {
+    return Array.from(elements.values());
+  };
+
   const clear = () => {
     modules.clear();
     elements.clear();
@@ -256,6 +280,9 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     addElement,
     evaluate,
     evaluateAsync,
+    evaluateModules,
+    getElements,
+    buildArtifacts,
     clear,
   };
 };
