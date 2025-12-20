@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../.typecheck/plugin-vite",
-    "tsBuildInfoFile": "../../.typecheck/plugin-vite/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/plugin-vite",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/plugin-vite/tsconfig.tsbuildinfo",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],

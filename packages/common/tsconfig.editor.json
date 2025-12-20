@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "outDir": "../../.typecheck/common",
-    "tsBuildInfoFile": "../../.typecheck/common/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/common",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/common/tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "paths": {}
   },
