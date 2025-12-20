@@ -160,6 +160,15 @@ function suggestAlias(
 	return null;
 }
 
+/**
+ * Extract package name from a file path.
+ * e.g., "/path/to/packages/core/src/foo.ts" -> "core"
+ */
+function getPackageFromPath(filePath: string): string | null {
+	const match = filePath.replace(/\\/g, "/").match(/\/packages\/([^/]+)\//);
+	return match ? match[1] : null;
+}
+
 async function validateTestFile(
 	filePath: string,
 	aliasMap: AliasMapping[],
@@ -176,6 +185,9 @@ async function validateTestFile(
 	const imports = extractImports(filePath, sourceFile);
 	const violations: Violation[] = [];
 
+	// Get the package this test file belongs to (if any)
+	const testFilePackage = getPackageFromPath(filePath);
+
 	for (const { specifier, line, pos, end } of imports) {
 		// Skip non-relative imports
 		if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
@@ -187,6 +199,14 @@ async function validateTestFile(
 
 		// Check if it references packages/
 		if (!normalizedPath.includes("/packages/")) {
+			continue;
+		}
+
+		// Get the package of the imported file
+		const importedPackage = getPackageFromPath(resolvedPath);
+
+		// Allow relative imports within the same package for colocated tests
+		if (testFilePackage && importedPackage === testFilePackage) {
 			continue;
 		}
 
@@ -260,8 +280,13 @@ async function main() {
 			.replace(/\\/g, "/");
 		testFiles.push(file);
 
-		// Check if test file is under tests/
-		if (!relativePath.startsWith("tests/")) {
+		// Check if test file is in an allowed location:
+		// - tests/ directory (integration tests, fixtures-dependent tests)
+		// - packages/*/src/ directory (colocated unit tests)
+		const isInTests = relativePath.startsWith("tests/");
+		const isInPackageSrc = /^packages\/[^/]+\/src\//.test(relativePath);
+
+		if (!isInTests && !isInPackageSrc) {
 			misplacedTests.push(relativePath);
 		}
 	}
