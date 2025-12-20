@@ -1,5 +1,11 @@
 import { join, resolve } from "node:path";
-import { cachedFn } from "@soda-gql/common";
+import {
+  cachedFn,
+  createAsyncScheduler,
+  createSyncScheduler,
+  type EffectGenerator,
+  type SchedulerError,
+} from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
@@ -9,14 +15,19 @@ import {
   createDiscoveryCache,
   type DiscoveryCache,
   type DiscoverySnapshot,
-  discoverModules,
+  discoverModulesGen,
   type ModuleLoadStats,
   resolveEntryPaths,
 } from "../discovery";
 import { builderErrors } from "../errors";
-import { evaluateIntermediateModules, generateIntermediateModules, type IntermediateModule } from "../intermediate-module";
+import {
+  evaluateIntermediateModulesGen,
+  generateIntermediateModules,
+  type IntermediateArtifactElement,
+  type IntermediateModule,
+} from "../intermediate-module";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
-import { createFileTracker, type FileDiff, isEmptyDiff } from "../tracker";
+import { createFileTracker, type FileDiff, type FileScan, isEmptyDiff } from "../tracker";
 import type { BuilderError } from "../types";
 import { validateModuleDependencies } from "./dependency-validation";
 import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
@@ -38,14 +49,47 @@ type SessionState = {
 };
 
 /**
+ * Input for the unified build generator.
+ */
+type BuildGenInput = {
+  readonly entryPaths: readonly string[];
+  readonly astAnalyzer: ReturnType<typeof createAstAnalyzer>;
+  readonly discoveryCache: DiscoveryCache;
+  readonly changedFiles: Set<string>;
+  readonly removedFiles: Set<string>;
+  readonly previousModuleAdjacency: Map<string, Set<string>>;
+  readonly previousIntermediateModules: ReadonlyMap<string, IntermediateModule>;
+  readonly graphqlSystemPath: string;
+};
+
+/**
+ * Result from the unified build generator.
+ */
+type BuildGenResult = {
+  readonly snapshots: Map<string, DiscoverySnapshot>;
+  readonly analyses: Map<string, ModuleAnalysis>;
+  readonly currentModuleAdjacency: Map<string, Set<string>>;
+  readonly intermediateModules: Map<string, IntermediateModule>;
+  readonly elements: Record<string, IntermediateArtifactElement>;
+  readonly stats: ModuleLoadStats;
+};
+
+/**
  * Builder session interface for incremental builds.
  */
 export interface BuilderSession {
   /**
-   * Perform build fully or incrementally.
+   * Perform build fully or incrementally (synchronous).
    * The session automatically detects file changes using the file tracker.
+   * Throws if any element requires async operations (e.g., async metadata factory).
    */
   build(options?: { force?: boolean }): Result<BuilderArtifact, BuilderError>;
+  /**
+   * Perform build fully or incrementally (asynchronous).
+   * The session automatically detects file changes using the file tracker.
+   * Supports async metadata factories and parallel element evaluation.
+   */
+  buildAsync(options?: { force?: boolean }): Promise<Result<BuilderArtifact, BuilderError>>;
   /**
    * Get the current generation number.
    */
@@ -113,9 +157,17 @@ export const createBuilderSession = (options: {
   );
   const ensureFileTracker = cachedFn(() => createFileTracker());
 
-  const build = (options?: { force?: boolean }): Result<BuilderArtifact, BuilderError> => {
-    const force = options?.force ?? false;
-
+  /**
+   * Prepare build input. Shared between sync and async builds.
+   * Returns either a skip result or the input for buildGen.
+   */
+  const prepareBuildInput = (
+    force: boolean,
+  ): Result<
+    | { type: "skip"; artifact: BuilderArtifact }
+    | { type: "build"; input: BuildGenInput; currentScan: FileScan },
+    BuilderError
+  > => {
     // 1. Resolve entry paths
     const entryPathsResult = resolveEntryPaths(Array.from(entrypoints));
     if (entryPathsResult.isErr()) {
@@ -140,7 +192,7 @@ export const createBuilderSession = (options: {
     const currentScan = scanResult.value;
     const diff = tracker.detectChanges();
 
-    // 5. Prepare for build
+    // 4. Prepare for build
     const prepareResult = prepare({
       diff,
       entryPaths,
@@ -152,57 +204,128 @@ export const createBuilderSession = (options: {
     }
 
     if (prepareResult.value.type === "should-skip") {
-      return ok(prepareResult.value.data.artifact);
+      return ok({ type: "skip", artifact: prepareResult.value.data.artifact });
     }
 
     const { changedFiles, removedFiles } = prepareResult.value.data;
 
-    // 6. Run discovery
-    const discoveryCache = ensureDiscoveryCache();
-    const astAnalyzer = ensureAstAnalyzer();
-    const discoveryResult = discover({
-      discoveryCache,
-      astAnalyzer,
-      removedFiles,
-      changedFiles,
-      entryPaths,
-      previousModuleAdjacency: state.moduleAdjacency,
+    return ok({
+      type: "build",
+      input: {
+        entryPaths,
+        astAnalyzer: ensureAstAnalyzer(),
+        discoveryCache: ensureDiscoveryCache(),
+        changedFiles,
+        removedFiles,
+        previousModuleAdjacency: state.moduleAdjacency,
+        previousIntermediateModules: state.intermediateModules,
+        graphqlSystemPath: resolve(config.outdir, "index.ts"),
+      },
+      currentScan,
     });
-    if (discoveryResult.isErr()) {
-      return err(discoveryResult.error);
-    }
+  };
 
-    const { snapshots, analyses, currentModuleAdjacency, affectedFiles, stats } = discoveryResult.value;
+  /**
+   * Finalize build and update session state.
+   */
+  const finalizeBuild = (genResult: BuildGenResult, currentScan: FileScan): Result<BuilderArtifact, BuilderError> => {
+    const { snapshots, analyses, currentModuleAdjacency, intermediateModules, elements, stats } = genResult;
 
-    // 7. Build artifact
-    const buildResult = buildDiscovered({
+    // Build artifact from all intermediate modules
+    const artifactResult = buildArtifact({
       analyses,
-      affectedFiles,
+      elements,
       stats,
-      previousIntermediateModules: state.intermediateModules,
-      graphqlSystemPath: resolve(config.outdir, "index.ts"),
     });
-    if (buildResult.isErr()) {
-      return err(buildResult.error);
+
+    if (artifactResult.isErr()) {
+      return err(artifactResult.error);
     }
 
-    const { intermediateModules, artifact } = buildResult.value;
-
-    // 8. Update session state
+    // Update session state
     state.gen++;
     state.snapshots = snapshots;
     state.moduleAdjacency = currentModuleAdjacency;
-    state.lastArtifact = artifact;
+    state.lastArtifact = artifactResult.value;
     state.intermediateModules = intermediateModules;
 
-    // 9. Persist tracker state (soft failure - don't block on cache write)
-    tracker.update(currentScan);
+    // Persist tracker state (soft failure - don't block on cache write)
+    ensureFileTracker().update(currentScan);
 
-    return ok(artifact);
+    return ok(artifactResult.value);
+  };
+
+  /**
+   * Synchronous build using SyncScheduler.
+   * Throws if any element requires async operations.
+   */
+  const build = (options?: { force?: boolean }): Result<BuilderArtifact, BuilderError> => {
+    const prepResult = prepareBuildInput(options?.force ?? false);
+    if (prepResult.isErr()) {
+      return err(prepResult.error);
+    }
+
+    if (prepResult.value.type === "skip") {
+      return ok(prepResult.value.artifact);
+    }
+
+    const { input, currentScan } = prepResult.value;
+    const scheduler = createSyncScheduler();
+
+    try {
+      const result = scheduler.run(() => buildGen(input));
+
+      if (result.isErr()) {
+        return err(convertSchedulerError(result.error));
+      }
+
+      return finalizeBuild(result.value, currentScan);
+    } catch (error) {
+      // Handle thrown BuilderError from buildGen
+      if (error && typeof error === "object" && "code" in error) {
+        return err(error as BuilderError);
+      }
+      throw error;
+    }
+  };
+
+  /**
+   * Asynchronous build using AsyncScheduler.
+   * Supports async metadata factories and parallel element evaluation.
+   */
+  const buildAsync = async (options?: { force?: boolean }): Promise<Result<BuilderArtifact, BuilderError>> => {
+    const prepResult = prepareBuildInput(options?.force ?? false);
+    if (prepResult.isErr()) {
+      return err(prepResult.error);
+    }
+
+    if (prepResult.value.type === "skip") {
+      return ok(prepResult.value.artifact);
+    }
+
+    const { input, currentScan } = prepResult.value;
+    const scheduler = createAsyncScheduler();
+
+    try {
+      const result = await scheduler.run(() => buildGen(input));
+
+      if (result.isErr()) {
+        return err(convertSchedulerError(result.error));
+      }
+
+      return finalizeBuild(result.value, currentScan);
+    } catch (error) {
+      // Handle thrown BuilderError from buildGen
+      if (error && typeof error === "object" && "code" in error) {
+        return err(error as BuilderError);
+      }
+      throw error;
+    }
   };
 
   return {
     build,
+    buildAsync,
     getGeneration: () => state.gen,
     getCurrentArtifact: () => state.lastArtifact,
     dispose: () => {
@@ -234,30 +357,31 @@ const prepare = (input: {
   return ok({ type: "should-build" as const, data: { changedFiles, removedFiles } });
 };
 
-const discover = ({
-  discoveryCache,
-  astAnalyzer,
-  removedFiles,
-  changedFiles,
-  entryPaths,
-  previousModuleAdjacency,
-}: {
-  discoveryCache: DiscoveryCache;
-  astAnalyzer: ReturnType<typeof createAstAnalyzer>;
-  removedFiles: Set<string>;
-  changedFiles: Set<string>;
-  entryPaths: readonly string[];
-  previousModuleAdjacency: Map<string, Set<string>>;
-}) => {
-  // Collect all affected modules (changed + dependents from removed + transitive)
+/**
+ * Unified build generator that yields effects for file I/O and element evaluation.
+ * This enables single scheduler control at the root level for both sync and async execution.
+ */
+function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
+  const {
+    entryPaths,
+    astAnalyzer,
+    discoveryCache,
+    changedFiles,
+    removedFiles,
+    previousModuleAdjacency,
+    previousIntermediateModules,
+    graphqlSystemPath,
+  } = input;
+
+  // Phase 1: Collect affected files
   const affectedFiles = collectAffectedFiles({
     changedFiles,
     removedFiles,
     previousModuleAdjacency,
   });
 
-  // Run discovery with invalidations
-  const discoveryResult = discoverModules({
+  // Phase 2: Discovery (yields file I/O effects)
+  const discoveryResult = yield* discoverModulesGen({
     entryPaths,
     astAnalyzer,
     incremental: {
@@ -267,19 +391,17 @@ const discover = ({
       affectedFiles,
     },
   });
-  if (discoveryResult.isErr()) {
-    return err(discoveryResult.error);
-  }
 
-  const { cacheHits, cacheMisses, cacheSkips } = discoveryResult.value;
+  const { cacheHits, cacheMisses, cacheSkips } = discoveryResult;
 
-  const snapshots = new Map(discoveryResult.value.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot]));
-  const analyses = new Map(discoveryResult.value.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot.analysis]));
+  const snapshots = new Map(discoveryResult.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot]));
+  const analyses = new Map(discoveryResult.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot.analysis]));
 
+  // Phase 3: Validate module dependencies (pure computation)
   const dependenciesValidationResult = validateModuleDependencies({ analyses });
   if (dependenciesValidationResult.isErr()) {
     const error = dependenciesValidationResult.error;
-    return err(builderErrors.graphMissingImport(error.chain[0], error.chain[1]));
+    throw builderErrors.graphMissingImport(error.chain[0], error.chain[1]);
   }
 
   const currentModuleAdjacency = extractModuleAdjacency({ snapshots });
@@ -290,23 +412,7 @@ const discover = ({
     skips: cacheSkips,
   };
 
-  return ok({ snapshots, analyses, currentModuleAdjacency, affectedFiles, stats });
-};
-
-const buildDiscovered = ({
-  analyses,
-  affectedFiles,
-  stats,
-  previousIntermediateModules,
-  graphqlSystemPath,
-}: {
-  analyses: Map<string, ModuleAnalysis>;
-  affectedFiles: Set<string>;
-  stats: ModuleLoadStats;
-  previousIntermediateModules: ReadonlyMap<string, IntermediateModule>;
-  graphqlSystemPath: string;
-}) => {
-  // Create next intermediate modules map (copy current state)
+  // Phase 4: Generate intermediate modules (pure computation)
   const intermediateModules = new Map(previousIntermediateModules);
 
   // Build target set: include affected files + any newly discovered files that haven't been built yet
@@ -333,18 +439,27 @@ const buildDiscovered = ({
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
-  const elements = evaluateIntermediateModules({ intermediateModules, graphqlSystemPath, analyses });
+  // Phase 5: Evaluate intermediate modules (yields element evaluation effects)
+  const elements = yield* evaluateIntermediateModulesGen({ intermediateModules, graphqlSystemPath, analyses });
 
-  // Build artifact from all intermediate modules
-  const artifactResult = buildArtifact({
+  return {
+    snapshots,
     analyses,
+    currentModuleAdjacency,
+    intermediateModules,
     elements,
     stats,
-  });
+  };
+}
 
-  if (artifactResult.isErr()) {
-    return err(artifactResult.error);
+/**
+ * Convert scheduler error to builder error.
+ * If the cause is already a BuilderError, return it directly to preserve error codes.
+ */
+const convertSchedulerError = (error: SchedulerError): BuilderError => {
+  // If the cause is a BuilderError, return it directly
+  if (error.cause && typeof error.cause === "object" && "code" in error.cause) {
+    return error.cause as BuilderError;
   }
-
-  return ok({ intermediateModules, artifact: artifactResult.value });
+  return builderErrors.internalInvariant(error.message, "scheduler", error.cause);
 };

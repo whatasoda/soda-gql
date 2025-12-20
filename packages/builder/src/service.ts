@@ -18,17 +18,34 @@ export type BuilderServiceConfig = {
  */
 export interface BuilderService {
   /**
-   * Generate artifacts from configured entry points.
+   * Generate artifacts from configured entry points (synchronous).
    *
    * The service automatically detects file changes using an internal file tracker.
    * On first call, performs full build. Subsequent calls perform incremental builds
    * based on detected file changes (added/updated/removed).
+   *
+   * Throws if any element requires async operations (e.g., async metadata factory).
    *
    * @param options - Optional build options
    * @param options.force - If true, bypass change detection and force full rebuild
    * @returns Result containing BuilderArtifact on success or BuilderError on failure.
    */
   build(options?: { force?: boolean }): Result<BuilderArtifact, BuilderError>;
+
+  /**
+   * Generate artifacts from configured entry points (asynchronous).
+   *
+   * The service automatically detects file changes using an internal file tracker.
+   * On first call, performs full build. Subsequent calls perform incremental builds
+   * based on detected file changes (added/updated/removed).
+   *
+   * Supports async metadata factories and parallel element evaluation.
+   *
+   * @param options - Optional build options
+   * @param options.force - If true, bypass change detection and force full rebuild
+   * @returns Promise of Result containing BuilderArtifact on success or BuilderError on failure.
+   */
+  buildAsync(options?: { force?: boolean }): Promise<Result<BuilderArtifact, BuilderError>>;
 
   /**
    * Get the current generation number of the artifact.
@@ -68,6 +85,7 @@ export const createBuilderService = ({ config, entrypointsOverride }: BuilderSer
 
   return {
     build: (options) => session.build(options),
+    buildAsync: (options) => session.buildAsync(options),
     getGeneration: () => session.getGeneration(),
     getCurrentArtifact: () => session.getCurrentArtifact(),
     dispose: () => session.dispose(),
