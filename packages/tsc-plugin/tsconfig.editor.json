@@ -9,5 +9,5 @@
     "paths": {}
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../builder/tsconfig.editor.json" }]
+  "references": [{ "path": "../builder/tsconfig.editor.json" }, { "path": "../tsc-transformer/tsconfig.editor.json" }]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@soda-gql/tsc-plugin",
+  "name": "@soda-gql/tsc-transformer",
   "version": "0.0.9",
   "type": "module",
   "private": false,
@@ -19,8 +19,13 @@
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
-    "@soda-gql/tsc-transformer": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
     "neverthrow": "^8.1.1"
+  },
+  "devDependencies": {
+    "@soda-gql/codegen": "workspace:*",
+    "prettier": "^3.4.2"
   },
   "peerDependencies": {
     "typescript": "5.*"
@@ -32,6 +37,9 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
+    },
+    "./test": {
+      "@soda-gql": "./test/export.ts"
     },
     "./package.json": "./package.json"
   }

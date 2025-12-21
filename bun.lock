@@ -7,6 +7,7 @@
         "@babel/core": "*",
         "@babel/parser": "*",
         "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+        "@babel/preset-typescript": "^7.27.1",
         "@babel/traverse": "*",
         "@babel/types": "*",
         "@biomejs/biome": "2.2.3",
@@ -19,6 +20,7 @@
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
         "@soda-gql/tsc-plugin": "workspace:*",
+        "@soda-gql/tsc-transformer": "workspace:*",
         "@soda-gql/webpack-plugin": "workspace:*",
         "@swc-node/register": "^1.11.1",
         "@swc/core": "^1.0.0",
@@ -102,6 +104,9 @@
         "@soda-gql/core": "workspace:*",
         "@soda-gql/plugin-common": "workspace:*",
         "neverthrow": "^8.1.1",
+      },
+      "devDependencies": {
+        "@soda-gql/tsc-transformer": "workspace:*",
       },
     },
     "packages/builder": {
@@ -206,9 +211,27 @@
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
+        "@soda-gql/tsc-transformer": "workspace:*",
+        "neverthrow": "^8.1.1",
+      },
+      "peerDependencies": {
+        "typescript": "5.*",
+      },
+    },
+    "packages/tsc-transformer": {
+      "name": "@soda-gql/tsc-transformer",
+      "version": "0.0.9",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/common": "workspace:*",
+        "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/plugin-common": "workspace:*",
         "neverthrow": "^8.1.1",
+      },
+      "devDependencies": {
+        "@soda-gql/codegen": "workspace:*",
+        "prettier": "^3.4.2",
       },
       "peerDependencies": {
         "typescript": "5.*",
@@ -545,6 +568,8 @@
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
 
     "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
+
+    "@soda-gql/tsc-transformer": ["@soda-gql/tsc-transformer@workspace:packages/tsc-transformer"],
 
     "@soda-gql/webpack-plugin": ["@soda-gql/webpack-plugin@workspace:packages/webpack-plugin"],
 
@@ -1189,6 +1214,8 @@
     "pluralize": ["pluralize@8.0.0", "", {}, "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="],
 
     "postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
+
+    "prettier": ["prettier@3.7.4", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA=="],
 
     "process": ["process@0.11.10", "", {}, "sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A=="],
 
