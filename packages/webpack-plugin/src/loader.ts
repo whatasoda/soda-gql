@@ -1,32 +1,32 @@
-import type { LoaderContext, LoaderDefinitionFunction } from "webpack";
+import type { LoaderDefinitionFunction } from "webpack";
 import { transformSync, type TransformOptions } from "@babel/core";
 import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
 import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import { normalizePath } from "@soda-gql/common";
 import type { WebpackLoaderOptions } from "./types";
-
-// Module-level cache for plugin session
-let pluginSession: PluginSession | null = null;
-let sessionInitialized = false;
+import { getStateKey, getSharedArtifact, getSharedPluginSession } from "./shared-state";
 
 /**
- * Ensure plugin session is initialized (singleton pattern).
+ * Ensure plugin session is initialized.
+ * First tries to use shared session from plugin, falls back to creating own.
  */
 const ensurePluginSession = (options: WebpackLoaderOptions): PluginSession | null => {
-  if (sessionInitialized) {
-    return pluginSession;
+  const stateKey = getStateKey(options.configPath);
+
+  // Try to use shared session from plugin first
+  const sharedSession = getSharedPluginSession(stateKey);
+  if (sharedSession) {
+    return sharedSession;
   }
 
-  sessionInitialized = true;
-  pluginSession = createPluginSession(
+  // Fall back to creating own session (for standalone loader usage)
+  return createPluginSession(
     {
       configPath: options.configPath,
       enabled: options.enabled,
     },
     "@soda-gql/webpack-plugin/loader",
   );
-
-  return pluginSession;
 };
 
 /**
@@ -36,6 +36,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
   const callback = this.async();
   const options = this.getOptions();
   const filename = this.resourcePath;
+  const stateKey = getStateKey(options.configPath);
 
   (async () => {
     try {
@@ -46,8 +47,14 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         return;
       }
 
-      // Get current artifact to verify we should transform this file
-      const artifact = await session.getArtifactAsync();
+      // Try to use shared artifact from plugin first (more efficient in watch mode)
+      let artifact = getSharedArtifact(stateKey);
+
+      // Fall back to fetching artifact if not shared
+      if (!artifact) {
+        artifact = await session.getArtifactAsync();
+      }
+
       if (!artifact) {
         callback(null, source, inputSourceMap as Parameters<typeof callback>[2]);
         return;
@@ -63,6 +70,17 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         // Not a soda-gql file, pass through unchanged
         callback(null, source, inputSourceMap as Parameters<typeof callback>[2]);
         return;
+      }
+
+      // Add dependencies to webpack for HMR
+      // This ensures webpack rebuilds this file when its dependencies change
+      for (const element of Object.values(artifact.elements)) {
+        const elementPath = element.metadata.sourcePath;
+        if (elementPath && elementPath !== filename) {
+          // Add all soda-gql source files as dependencies
+          // This is a conservative approach that ensures rebuilds propagate
+          this.addDependency(elementPath);
+        }
       }
 
       // Transform using Babel plugin

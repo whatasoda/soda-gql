@@ -1,9 +1,10 @@
 import type { Compiler } from "webpack";
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
-import { collectAffectedFiles } from "@soda-gql/builder";
+import { collectAffectedFiles, extractModuleAdjacency } from "@soda-gql/builder";
 import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
 import { normalizePath } from "@soda-gql/common";
 import type { WebpackPluginOptions } from "./types";
+import { getStateKey, setSharedArtifact, setSharedPluginSession, getSharedState } from "./shared-state";
 
 /**
  * Webpack plugin for soda-gql that handles incremental rebuilds
@@ -13,14 +14,15 @@ export class SodaGqlWebpackPlugin {
   static readonly pluginName = "SodaGqlWebpackPlugin";
 
   private readonly options: WebpackPluginOptions;
+  private readonly stateKey: string;
   private pluginSession: PluginSession | null = null;
   private currentArtifact: BuilderArtifact | null = null;
   private previousArtifact: BuilderArtifact | null = null;
-  private moduleAdjacency: Map<string, Set<string>> = new Map();
   private pendingInvalidations: Set<string> = new Set();
 
   constructor(options: WebpackPluginOptions = {}) {
     this.options = options;
+    this.stateKey = getStateKey(options.configPath);
   }
 
   apply(compiler: Compiler): void {
@@ -37,7 +39,7 @@ export class SodaGqlWebpackPlugin {
     // Handle watch mode
     compiler.hooks.watchRun.tapAsync(SodaGqlWebpackPlugin.pluginName, async (_compiler, callback) => {
       try {
-        await this.handleWatchRun(compiler);
+        await this.handleWatchRun();
         callback();
       } catch (error) {
         callback(error as Error);
@@ -69,15 +71,22 @@ export class SodaGqlWebpackPlugin {
       return;
     }
 
+    // Share the plugin session with loader
+    setSharedPluginSession(this.stateKey, this.pluginSession);
+
     // Initial artifact build
     this.currentArtifact = await this.pluginSession.getArtifactAsync();
+
+    // Share artifact with loader
+    setSharedArtifact(this.stateKey, this.currentArtifact);
+
     this.log(`Initial build complete: ${Object.keys(this.currentArtifact?.elements ?? {}).length} elements`);
   }
 
   /**
    * Handle watch mode run - rebuild artifact and compute affected files.
    */
-  private async handleWatchRun(compiler: Compiler): Promise<void> {
+  private async handleWatchRun(): Promise<void> {
     if (!this.pluginSession) {
       await this.initialize();
     }
@@ -90,6 +99,9 @@ export class SodaGqlWebpackPlugin {
     // Rebuild artifact (BuilderService handles change detection internally)
     this.currentArtifact = await this.pluginSession.getArtifactAsync();
 
+    // Share artifact with loader
+    setSharedArtifact(this.stateKey, this.currentArtifact);
+
     if (!this.currentArtifact) {
       this.log("Failed to build artifact");
       return;
@@ -98,7 +110,8 @@ export class SodaGqlWebpackPlugin {
     // If we have a previous artifact, compute what changed
     if (this.previousArtifact && this.hasArtifactChanged()) {
       const changedFiles = this.getChangedSodaGqlFiles();
-      const affectedFiles = this.computeAffectedFiles(changedFiles);
+      const sharedState = getSharedState(this.stateKey);
+      const affectedFiles = this.computeAffectedFiles(changedFiles, sharedState.moduleAdjacency);
 
       this.log(`Changed files: ${changedFiles.size}, Affected files: ${affectedFiles.size}`);
 
@@ -180,12 +193,12 @@ export class SodaGqlWebpackPlugin {
   /**
    * Compute all files affected by the changed files using module adjacency.
    */
-  private computeAffectedFiles(changedFiles: Set<string>): Set<string> {
+  private computeAffectedFiles(changedFiles: Set<string>, moduleAdjacency: Map<string, Set<string>>): Set<string> {
     // Use the existing collectAffectedFiles from builder
     return collectAffectedFiles({
       changedFiles,
       removedFiles: new Set(),
-      previousModuleAdjacency: this.moduleAdjacency,
+      previousModuleAdjacency: moduleAdjacency,
     });
   }
 
@@ -220,8 +233,9 @@ export class SodaGqlWebpackPlugin {
     this.pluginSession = null;
     this.currentArtifact = null;
     this.previousArtifact = null;
-    this.moduleAdjacency.clear();
     this.pendingInvalidations.clear();
+    setSharedPluginSession(this.stateKey, null);
+    setSharedArtifact(this.stateKey, null);
   }
 
   /**
