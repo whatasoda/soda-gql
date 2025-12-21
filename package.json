@@ -45,7 +45,7 @@
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "@soda-gql/plugin-babel": "workspace:*",
+    "@soda-gql/babel-plugin": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
     "@soda-gql/tsc-plugin": "workspace:*",
     "@swc-node/register": "^1.11.1",

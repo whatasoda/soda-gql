@@ -3,10 +3,10 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
+import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { getPortableFS } from "@soda-gql/common";
 import { createTempConfigFile } from "@soda-gql/config";
-import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
 import { getProjectRoot } from ".";
 import { typeCheckFiles } from "./type-check";
 

@@ -3,16 +3,16 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
+import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
-import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const schemaPath = join(fixturesRoot, "schema.graphql");
 
-describe("Plugin-Babel HMR Integration", () => {
+describe("Babel-Plugin HMR Integration", () => {
   // Ensure fixture graphql-system bundle exists before running tests
   const fixtureGraphqlSystemReady = ensureGraphqlSystemBundle({
     outFile: join(fixturesRoot, "graphql-system", "index.ts"),

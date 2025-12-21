@@ -212,7 +212,7 @@ nest start
 - [@soda-gql/cli](../cli) - Command-line interface
 - [@soda-gql/config](../config) - Configuration management
 - [@soda-gql/runtime](../runtime) - Runtime utilities
-- [@soda-gql/plugin-babel](../plugin-babel) - Babel transformation plugin
+- [@soda-gql/babel-plugin](../babel-plugin) - Babel transformation plugin
 
 ## License
 

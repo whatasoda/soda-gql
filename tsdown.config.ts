@@ -191,7 +191,7 @@ export default defineConfig([
 
   // Plugin packages (externalize host bundler deps)
   {
-    ...configure("@soda-gql/plugin-babel"),
+    ...configure("@soda-gql/babel-plugin"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",

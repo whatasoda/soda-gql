@@ -7,7 +7,7 @@ Shared utilities and types for soda-gql compiler plugins.
 This package provides common functionality used across all soda-gql compiler plugins (Babel, SWC, TypeScript). It's designed for plugin developers and is not intended for direct use by end users.
 
 If you're looking to use soda-gql in your project, see:
-- [@soda-gql/plugin-babel](../plugin-babel) - Babel plugin (production-ready)
+- [@soda-gql/babel-plugin](../babel-plugin) - Babel plugin (production-ready)
 - [@soda-gql/plugin-swc](../plugin-swc) - SWC plugin (in development)
 - [@soda-gql/tsc-plugin](../tsc-plugin) - TypeScript plugin
 
@@ -16,8 +16,8 @@ If you're looking to use soda-gql in your project, see:
 This package is automatically installed as a dependency of plugin packages. You don't need to install it directly.
 
 ```bash
-# Installed automatically with plugin-babel
-bun add -D @soda-gql/plugin-babel
+# Installed automatically with babel-plugin
+bun add -D @soda-gql/babel-plugin
 ```
 
 ## Exports
@@ -113,7 +113,7 @@ Creates a plugin session with configuration and artifact management:
 ```typescript
 import { createPluginSession } from "@soda-gql/plugin-common";
 
-const session = createPluginSession(options, "@soda-gql/plugin-babel");
+const session = createPluginSession(options, "@soda-gql/babel-plugin");
 
 if (session) {
   const artifact = session.getArtifact();

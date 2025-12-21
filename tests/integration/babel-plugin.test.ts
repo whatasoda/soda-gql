@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
-import { createPlugin } from "@soda-gql/plugin-babel";
+import { createPlugin } from "@soda-gql/babel-plugin";
 import { createTestConfig } from "tests/helpers/test-config";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 import type { PluginTestRunnerTransformer } from "../utils/pluginTestRunner";
@@ -14,7 +14,7 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
 const schemaPath = join(fixturesRoot, "schema.graphql");
 
-describe("Plugin-Babel Transformation Tests", () => {
+describe("Babel-Plugin Transformation Tests", () => {
   // Ensure fixture graphql-system bundle exists before running tests
   const fixtureGraphqlSystemReady = ensureGraphqlSystemBundle({
     outFile: join(fixturesRoot, "graphql-system", "index.ts"),
@@ -28,7 +28,8 @@ describe("Plugin-Babel Transformation Tests", () => {
 
     try {
       const config = createTestConfig(tempDir);
-      const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => artifact } });
+      const plugin = () =>
+        createPlugin({ pluginSession: { config, getArtifact: () => artifact, getArtifactAsync: async () => artifact } });
 
       const result = await transformAsync(sourceCode, {
         filename: sourcePath,
@@ -66,14 +67,16 @@ describe("Plugin-Babel Transformation Tests", () => {
 
       try {
         const config = createTestConfig(tempDir);
+        const emptyArtifactForNoGql = {
+          elements: {},
+          report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+        };
         const plugin = () =>
           createPlugin({
             pluginSession: {
               config,
-              getArtifact: () => ({
-                elements: {},
-                report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
-              }),
+              getArtifact: () => emptyArtifactForNoGql,
+              getArtifactAsync: async () => emptyArtifactForNoGql,
             },
           });
 
@@ -109,7 +112,10 @@ describe("Plugin-Babel Transformation Tests", () => {
             stats: { hits: 0, misses: 0, skips: 0 },
           },
         };
-        const plugin = () => createPlugin({ pluginSession: { config, getArtifact: () => emptyArtifact } });
+        const plugin = () =>
+          createPlugin({
+            pluginSession: { config, getArtifact: () => emptyArtifact, getArtifactAsync: async () => emptyArtifact },
+          });
 
         const sourceCode = `
           import { gql } from "@/graphql-system";
@@ -134,14 +140,16 @@ describe("Plugin-Babel Transformation Tests", () => {
 
       try {
         const config = createTestConfig(tempDir);
+        const emptyArtifactForPreserve = {
+          elements: {},
+          report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+        };
         const plugin = () =>
           createPlugin({
             pluginSession: {
               config,
-              getArtifact: () => ({
-                elements: {},
-                report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
-              }),
+              getArtifact: () => emptyArtifactForPreserve,
+              getArtifactAsync: async () => emptyArtifactForPreserve,
             },
           });
 

@@ -22,6 +22,7 @@ export type PluginOptions = {
 export type PluginSession = {
   readonly config: ResolvedSodaGqlConfig;
   readonly getArtifact: () => BuilderArtifact | null;
+  readonly getArtifactAsync: () => Promise<BuilderArtifact | null>;
 };
 
 /**
@@ -63,8 +64,23 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
     return buildResult.value;
   };
 
+  /**
+   * Async version of getArtifact.
+   * Supports async metadata factories and parallel element evaluation.
+   */
+  const getArtifactAsync = async (): Promise<BuilderArtifact | null> => {
+    const builderService = ensureBuilderService();
+    const buildResult = await builderService.buildAsync();
+    if (buildResult.isErr()) {
+      console.error(`[${pluginName}] Failed to build artifact: ${buildResult.error.message}`);
+      return null;
+    }
+    return buildResult.value;
+  };
+
   return {
     config,
     getArtifact,
+    getArtifactAsync,
   };
 };
