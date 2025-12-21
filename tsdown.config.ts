@@ -211,18 +211,4 @@ export default defineConfig([
     target: "node18",
     clean: true,
   },
-  {
-    ...configure("@soda-gql/plugin-vite"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/plugin-webpack"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
 ]);
