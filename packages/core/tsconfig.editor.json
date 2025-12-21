@@ -4,10 +4,8 @@
     "composite": true,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/core",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/core/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
-    "paths": {}
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/core/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
 }
