@@ -23,7 +23,6 @@
     "types": ["bun"],
     "baseUrl": ".",
     "paths": {
-      "@/graphql-system": ["./graphql-system/index.ts"],
       "@soda-gql/core": ["../../../packages/core/src/index.ts", "../../../../packages/core/src/index.ts"],
       "@soda-gql/core/*": ["../../../packages/core/src/*", "../../../../packages/core/src/*"]
     }

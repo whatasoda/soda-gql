@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 import { postModel, userModel } from "./models";
 
 export const userWithPostsSlice = gql.default(({ query }, { $var }) =>

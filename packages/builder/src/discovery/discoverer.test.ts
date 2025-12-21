@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { getTestConfig } from "../../test/utils/test-config";
+import { getTestConfig } from "../../test/codegen-fixture/get-config";
 import { createAstAnalyzer } from "../ast";
 import { createMemoryCache } from "../cache/memory-cache";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";

@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 import { topLevelQuery } from "../common/top-level";
 
 export const postSlice = gql.default(({ query }, { $var }) =>

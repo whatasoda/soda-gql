@@ -11,7 +11,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
 import { createTransformer } from "../../src/transformer";
 import { getSingleFileTestCases, type TestCaseDefinition } from "./definitions";
-import { loadPluginFixture } from "./utils";
+import { createTestConfig, loadPluginFixture } from "./utils";
 
 export type ModuleFormat = "esm" | "cjs";
 
@@ -49,7 +49,14 @@ export type TransformTestCase = {
 // Re-export types and utilities
 export type { TestCaseDefinition } from "./definitions";
 export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
-export { createTestConfig, loadPluginFixture, loadPluginFixtureMulti } from "./utils";
+export {
+  createTestConfig,
+  type EnsureGraphqlSystemBundleOptions,
+  type EnsureGraphqlSystemBundleResult,
+  ensureGraphqlSystemBundle,
+  loadPluginFixture,
+  loadPluginFixtureMulti,
+} from "./utils";
 
 /**
  * Transform source code using tsc-transformer.
@@ -168,27 +175,12 @@ export const generateTestCase = async ({
 };
 
 /**
- * Create a minimal config for transformation.
- * Only needs graphqlSystemAliases for the transformer to identify gql imports.
+ * Create a config for transformation using the shared codegen-fixture.
+ * Uses the pre-generated graphql-system from fixture:setup.
  */
-const createTransformConfig = (): ResolvedSodaGqlConfig => ({
-  analyzer: "ts" as const,
-  outdir: "/tmp/transform-config",
-  graphqlSystemAliases: ["@/graphql-system"],
-  include: [],
-  exclude: [],
-  schemas: {
-    default: {
-      schema: "/tmp/schema.graphql",
-      runtimeAdapter: "/tmp/runtime-adapter.ts",
-      scalars: "/tmp/scalars.ts",
-    },
-  },
-  styles: {
-    importExtension: false,
-  },
-  plugins: {},
-});
+const createTransformConfig = (): ResolvedSodaGqlConfig => {
+  return createTestConfig();
+};
 
 /**
  * Load all single-file test cases with dynamically generated expected outputs.

@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 import * as topLevel from "../common/top-level";
 
 export const pageQuery = gql.default(({ query }, { $var }) =>

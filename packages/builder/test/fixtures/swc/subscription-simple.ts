@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 
 const postCreatedSlice = gql.default(({ subscription }) =>
   subscription.slice(

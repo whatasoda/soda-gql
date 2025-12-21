@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 
 // New catalog file to test adding modules
 export const catalogSlice = gql.default(({ query }, { $var }) =>

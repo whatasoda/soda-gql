@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 
 const createPostSlice = gql.default(({ mutation }, { $var }) =>
   mutation.slice(

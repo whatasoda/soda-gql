@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { getTestConfig } from "../../test/codegen-fixture/get-config";
 import { loadModuleAnalysisFixture } from "../../test/utils/fixtures";
-import { getTestConfig } from "../../test/utils/test-config";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createAstAnalyzer } from "./index";
 

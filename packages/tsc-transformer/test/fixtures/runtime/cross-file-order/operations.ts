@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 import { userSlice } from "./slices";
 
 // Test case: Operation that imports slice from another file

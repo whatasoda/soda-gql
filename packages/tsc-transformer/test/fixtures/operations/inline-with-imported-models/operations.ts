@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 import { userModel } from "./models";
 
 export const getUserById = gql.default(({ query }, { $var }) =>

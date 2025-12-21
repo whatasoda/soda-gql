@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 import { objectWrapped } from "../common/object-wrapped";
 
 export const pageQuery = gql.default(({ query }, { $var }) =>
