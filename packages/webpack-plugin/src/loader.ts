@@ -1,10 +1,10 @@
-import type { LoaderDefinitionFunction } from "webpack";
-import { transformSync, type TransformOptions } from "@babel/core";
-import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import { type TransformOptions, transformSync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import { normalizePath } from "@soda-gql/common";
+import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import type { LoaderDefinitionFunction } from "webpack";
+import { getSharedArtifact, getSharedPluginSession, getStateKey } from "./shared-state";
 import type { WebpackLoaderOptions } from "./types";
-import { getStateKey, getSharedArtifact, getSharedPluginSession } from "./shared-state";
 
 /**
  * Ensure plugin session is initialized.

@@ -1,10 +1,10 @@
-import type { Compiler } from "webpack";
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
-import { collectAffectedFiles, extractModuleAdjacency } from "@soda-gql/builder";
-import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import { collectAffectedFiles } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
+import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import type { Compiler } from "webpack";
+import { getSharedState, getStateKey, setSharedArtifact, setSharedPluginSession } from "./shared-state";
 import type { WebpackPluginOptions } from "./types";
-import { getStateKey, setSharedArtifact, setSharedPluginSession, getSharedState } from "./shared-state";
 
 /**
  * Webpack plugin for soda-gql that handles incremental rebuilds

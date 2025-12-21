@@ -1,8 +1,8 @@
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { SodaGqlWebpackPlugin, getSharedState, getStateKey } from "@soda-gql/webpack-plugin";
+import { join } from "node:path";
+import { getSharedState, getStateKey, SodaGqlWebpackPlugin } from "@soda-gql/webpack-plugin";
 
 describe("Webpack Plugin", () => {
   let tempDir: string;
@@ -48,7 +48,7 @@ describe("Webpack Plugin", () => {
 
   describe("Shared State", () => {
     it("should initialize shared state for new key", () => {
-      const key = "test-key-" + Date.now();
+      const key = `test-key-${Date.now()}`;
       const state = getSharedState(key);
 
       expect(state).toBeDefined();
@@ -59,7 +59,7 @@ describe("Webpack Plugin", () => {
     });
 
     it("should return same state for same key", () => {
-      const key = "test-key-same-" + Date.now();
+      const key = `test-key-same-${Date.now()}`;
       const state1 = getSharedState(key);
       const state2 = getSharedState(key);
 
