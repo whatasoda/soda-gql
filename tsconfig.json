@@ -9,7 +9,6 @@
     // In order to make bun test pass, we need to put these paths here, as well.
     // To avoid duplicated management, tsconfig.editor.json is extended with this file.
     "paths": {
-      "@/graphql-system": ["./tests/fixtures/runtime-app/graphql-system/index.ts"],
       "@soda-gql/builder/*": ["./packages/builder/src/*"],
       "@soda-gql/cli/*": ["./packages/cli/src/*"],
       "@soda-gql/codegen/*": ["./packages/codegen/src/*"],
