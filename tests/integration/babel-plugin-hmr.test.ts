@@ -3,9 +3,9 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
+import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
-import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
