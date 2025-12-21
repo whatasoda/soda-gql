@@ -1,5 +1,5 @@
-import { getUserQuery } from "@/graphql/operations";
 import { NextResponse } from "next/server";
+import { getUserQuery } from "@/graphql/operations";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

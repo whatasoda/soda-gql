@@ -1,5 +1,5 @@
-import type { NextConfig } from "next";
 import { SodaGqlWebpackPlugin } from "@soda-gql/webpack-plugin";
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   webpack: (config, { dev }) => {

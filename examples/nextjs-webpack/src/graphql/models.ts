@@ -9,12 +9,7 @@ export const userModel = gql.default(({ model }, { $var }) =>
     {
       variables: [$var("categoryId").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.email(),
-      f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
-    ],
+    ({ f, $ }) => [f.id(), f.name(), f.email(), f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()])],
     (selection) => ({
       id: selection.id,
       name: selection.name,
@@ -33,12 +28,7 @@ export const userModel = gql.default(({ model }, { $var }) =>
 export const postModel = gql.default(({ model }) =>
   model.Post(
     {},
-    ({ f }) => [
-      f.id(),
-      f.title(),
-      f.content(),
-      f.author()(({ f }) => [f.id(), f.name()]),
-    ],
+    ({ f }) => [f.id(), f.title(), f.content(), f.author()(({ f }) => [f.id(), f.name()])],
     (selection) => ({
       id: selection.id,
       title: selection.title,
