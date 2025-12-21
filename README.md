@@ -17,7 +17,7 @@ packages/
 ├── core/           # Runtime GraphQL utilities
 ├── codegen/        # Schema code generation
 ├── builder/        # Static analysis & doc generation
-├── plugin-babel/   # Babel transformation plugin
+├── babel-plugin/   # Babel transformation plugin
 ├── runtime/        # Runtime execution helpers
 └── cli/            # Command-line interface
 ```

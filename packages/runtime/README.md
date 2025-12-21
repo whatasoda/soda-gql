@@ -103,7 +103,7 @@ This package is designed to have minimal impact on bundle size:
 ## Related Packages
 
 - [@soda-gql/core](../core) - Core types and utilities
-- [@soda-gql/plugin-babel](../plugin-babel) - Babel transformation plugin
+- [@soda-gql/babel-plugin](../babel-plugin) - Babel transformation plugin
 - [@soda-gql/tsc-plugin](../tsc-plugin) - TypeScript transformation plugin
 
 ## License

@@ -1,4 +1,4 @@
-# @soda-gql/plugin-babel
+# @soda-gql/babel-plugin
 
 > **Note**: This package is not yet published to npm. It is under active development and will be available in a future release.
 
@@ -15,7 +15,7 @@ Babel plugin for soda-gql zero-runtime GraphQL transformations.
 ## Installation
 
 ```bash
-bun add -D @soda-gql/plugin-babel @soda-gql/cli
+bun add -D @soda-gql/babel-plugin @soda-gql/cli
 bun add @soda-gql/runtime
 ```
 
@@ -30,7 +30,7 @@ Add the plugin to your Babel configuration:
 module.exports = {
   plugins: [
     [
-      "@soda-gql/plugin-babel",
+      "@soda-gql/babel-plugin",
       {
         configPath: "./soda-gql.config.ts",
         artifact: {
@@ -110,7 +110,7 @@ interface PluginOptions {
 {
   plugins: [
     [
-      "@soda-gql/plugin-babel",
+      "@soda-gql/babel-plugin",
       {
         configPath: "./soda-gql.config.ts",
         artifact: {
@@ -128,7 +128,7 @@ interface PluginOptions {
 {
   plugins: [
     [
-      "@soda-gql/plugin-babel",
+      "@soda-gql/babel-plugin",
       {
         configPath: "./soda-gql.config.ts",
         artifact: {
@@ -149,7 +149,7 @@ interface PluginOptions {
 {
   plugins: [
     [
-      "@soda-gql/plugin-babel",
+      "@soda-gql/babel-plugin",
       {
         artifact: {
           useBuilder: false,
@@ -202,7 +202,7 @@ module.exports.model = gqlRuntime.model("canonicalId", /* ... */);
 
 ## Comparison with Other Plugins
 
-| Feature | plugin-babel | plugin-swc | tsc-plugin |
+| Feature | babel-plugin | plugin-swc | tsc-plugin |
 |---------|--------------|------------|------------|
 | Production Ready | ✅ | 🚧 In Development | ✅ |
 | ESM Support | ✅ | ✅ | ✅ |

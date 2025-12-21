@@ -6,7 +6,7 @@ import { transformAsync } from "@babel/core";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { getPortableFS } from "@soda-gql/common";
 import { createTempConfigFile } from "@soda-gql/config";
-import { createSodaGqlPlugin } from "@soda-gql/plugin-babel";
+import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import { getProjectRoot } from ".";
 import { typeCheckFiles } from "./type-check";
 

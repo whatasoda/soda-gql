@@ -15,7 +15,7 @@
       "@soda-gql/runtime": ["packages/runtime/src/index.ts"],
       "@soda-gql/builder": ["packages/builder/src/index.ts"],
       "@soda-gql/codegen": ["packages/codegen/src/index.ts"],
-      "@soda-gql/plugin-babel": ["packages/plugin-babel/src/index.ts"],
+      "@soda-gql/babel-plugin": ["packages/babel-plugin/src/index.ts"],
       "@/graphql-runtime": ["packages/runtime/src/index.ts"],
       "@/graphql-runtime/*": ["packages/runtime/src/*"],
       "@/graphql-system": ["tests/fixtures/runtime-app/graphql-system/index.ts"],
@@ -23,5 +23,5 @@
     }
   },
   "include": ["fixtures/**/*.ts", "fixtures/**/*.tsx"],
-  "exclude": ["node_modules", "dist", "build", "../packages/**/*", "fixtures/plugin-babel/**/source.ts"]
+  "exclude": ["node_modules", "dist", "build", "../packages/**/*", "fixtures/babel-plugin/**/source.ts"]
 }

@@ -1,7 +1,7 @@
 export default {
   plugins: [
     [
-      "@soda-gql/plugin-babel",
+      "@soda-gql/babel-plugin",
       {
         mode: "runtime",
         artifactsPath: "./.cache/soda-gql/runtime.json",

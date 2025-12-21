@@ -89,7 +89,7 @@ const builder = await createBuilder({
 ## Related Packages
 
 - [@soda-gql/cli](../cli) - Command-line interface
-- [@soda-gql/plugin-babel](../plugin-babel) - Babel transformation plugin
+- [@soda-gql/babel-plugin](../babel-plugin) - Babel transformation plugin
 - [@soda-gql/tsc-plugin](../tsc-plugin) - TypeScript transformation plugin
 - [@soda-gql/plugin-common](../plugin-common) - Shared plugin utilities
 
