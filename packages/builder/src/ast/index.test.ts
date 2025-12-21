@@ -14,8 +14,7 @@ describe("Canonical path consistency", () => {
     return value;
   }
 
-  const loadFixture = (name: string) =>
-    loadModuleAnalysisFixture("shared", name);
+  const loadFixture = (name: string) => loadModuleAnalysisFixture("shared", name);
 
   describe("TypeScript and SWC adapters produce consistent astPath", () => {
     const testConfig = getTestConfig();
@@ -83,9 +82,7 @@ describe("Canonical path consistency", () => {
       // Note: SWC adapter may not fully support class method traversal
       // This test focuses on TypeScript adapter behavior
       expect(tsAnalysis.definitions).toHaveLength(1);
-      expect(tsAnalysis.definitions[0]?.astPath).toBe(
-        "UserRepository.getModels.model"
-      );
+      expect(tsAnalysis.definitions[0]?.astPath).toBe("UserRepository.getModels.model");
     });
 
     it("generates same astPath for object property definitions", () => {
@@ -143,12 +140,8 @@ describe("Canonical path consistency", () => {
 
       expect(analysis.definitions).toHaveLength(2);
 
-      const userModel = analysis.definitions.find(
-        (d) => d.astPath === "userModel"
-      );
-      const privateModel = analysis.definitions.find(
-        (d) => d.astPath === "privateModel"
-      );
+      const userModel = analysis.definitions.find((d) => d.astPath === "userModel");
+      const privateModel = analysis.definitions.find((d) => d.astPath === "privateModel");
 
       expect(userModel?.isExported).toBe(true);
       expect(userModel?.exportBinding).toBe("userModel");
@@ -183,9 +176,7 @@ describe("Canonical path consistency", () => {
       const analysis = analyzeWithTS({ filePath, source });
 
       expect(analysis.definitions).toHaveLength(1);
-      expect(analysis.definitions[0]?.astPath).toBe(
-        "Outer.method.obj.nested.deep"
-      );
+      expect(analysis.definitions[0]?.astPath).toBe("Outer.method.obj.nested.deep");
     });
 
     it("handles multiple definitions in same scope", () => {
@@ -196,11 +187,7 @@ describe("Canonical path consistency", () => {
       expect(analysis.definitions).toHaveLength(3);
 
       const astPaths = analysis.definitions.map((d) => d.astPath).sort();
-      expect(astPaths).toEqual([
-        "container.model1",
-        "container.model2",
-        "container.model3",
-      ]);
+      expect(astPaths).toEqual(["container.model1", "container.model2", "container.model3"]);
     });
   });
 });

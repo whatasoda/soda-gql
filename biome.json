@@ -79,9 +79,7 @@
       }
     },
     {
-      "includes": [
-        "**/fixtures/**/*"
-      ],
+      "includes": ["**/fixtures/**/*"],
       "linter": {
         "rules": {
           "correctness": {
@@ -92,9 +90,7 @@
       }
     },
     {
-      "includes": [
-        "examples/nestjs-compiler-tsc/**/*"
-      ],
+      "includes": ["examples/nestjs-compiler-tsc/**/*"],
       "linter": {
         "rules": {
           "style": {

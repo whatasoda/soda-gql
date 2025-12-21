@@ -44,9 +44,7 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("imported-binding-refs");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find(
-      (item) => item.astPath === "pageQuery"
-    );
+    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
     expect(definition?.astPath).toBe("pageQuery");
   });
 
@@ -54,9 +52,7 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("namespace-imports");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find(
-      (item) => item.astPath === "pageQuery"
-    );
+    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
     expect(definition?.astPath).toBe("pageQuery");
   });
 });

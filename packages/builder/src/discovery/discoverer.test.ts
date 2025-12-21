@@ -9,12 +9,7 @@ import { createDiscoveryCache } from "./cache";
 import { discoverModules, discoverModulesAsync } from "./discoverer";
 import { clearFingerprintCache } from "./fingerprint";
 
-const fixtureRoot = join(
-  process.cwd(),
-  ".cache",
-  "test",
-  "discoverer-invalidation"
-);
+const fixtureRoot = join(process.cwd(), ".cache", "test", "discoverer-invalidation");
 
 const makeCache = () =>
   createDiscoveryCache({

@@ -8,8 +8,5 @@
   },
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "test/graphql-system/**/*.cjs"],
-  "references": [
-    { "path": "../common/tsconfig.editor.json" },
-    { "path": "../core/tsconfig.editor.json" }
-  ]
+  "references": [{ "path": "../common/tsconfig.editor.json" }, { "path": "../core/tsconfig.editor.json" }]
 }

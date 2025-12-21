@@ -23,11 +23,7 @@ describe("Module analyzer - TypeScript", () => {
       astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([
-      { astPath: "userModel" },
-      { astPath: "userSlice" },
-      { astPath: "pageQuery" },
-    ]);
+    expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "userSlice" }, { astPath: "pageQuery" }]);
   });
 
   it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -72,9 +68,7 @@ describe("Module analyzer - TypeScript", () => {
 
     const analysis = analyzeModule({ filePath, source });
 
-    const pageQuery = analysis.definitions.find(
-      (def) => def.astPath === "pageQuery"
-    );
+    const pageQuery = analysis.definitions.find((def) => def.astPath === "pageQuery");
     expect(pageQuery?.astPath).toBe("pageQuery");
   });
 
@@ -87,9 +81,6 @@ describe("Module analyzer - TypeScript", () => {
       astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([
-      { astPath: "adminModel" },
-      { astPath: "defaultQuery" },
-    ]);
+    expect(summary).toEqual([{ astPath: "adminModel" }, { astPath: "defaultQuery" }]);
   });
 });
