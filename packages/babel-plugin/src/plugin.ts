@@ -2,6 +2,7 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
 import { createTransformer } from "./transformer";
 
@@ -59,3 +60,39 @@ export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}
 
   return pluginSession ? createPlugin({ pluginSession }) : fallbackPlugin();
 };
+
+/**
+ * Create a Babel plugin with an already-built artifact.
+ * Use this when the artifact is pre-built (e.g., by a bundler plugin).
+ */
+export const createPluginWithArtifact = ({
+  artifact,
+  config,
+}: {
+  artifact: BuilderArtifact;
+  config: ResolvedSodaGqlConfig;
+}): PluginObj => ({
+  name: "@soda-gql/babel-plugin",
+
+  visitor: {
+    Program(programPath: NodePath<t.Program>, state) {
+      const filename = state.file?.opts?.filename;
+      if (!filename) {
+        return;
+      }
+
+      // Create Babel transformer instance
+      const transformer = createTransformer({
+        programPath,
+        types: t,
+        config,
+      });
+
+      // Transform using single method call (matches TypeScript plugin pattern)
+      transformer.transform({
+        filename,
+        artifactLookup: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
+      });
+    },
+  },
+});
