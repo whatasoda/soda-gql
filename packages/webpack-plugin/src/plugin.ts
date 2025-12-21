@@ -1,9 +1,15 @@
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
 import { collectAffectedFiles } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
-import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import {
+  createPluginSession,
+  getSharedState,
+  getStateKey,
+  setSharedArtifact,
+  setSharedPluginSession,
+  type PluginSession,
+} from "@soda-gql/plugin-common";
 import type { Compiler } from "webpack";
-import { getSharedState, getStateKey, setSharedArtifact, setSharedPluginSession } from "./shared-state";
 import type { WebpackPluginOptions } from "./types";
 
 /**

@@ -1,9 +1,14 @@
 import { type TransformOptions, transformSync } from "@babel/core";
-import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
+import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
 import { normalizePath } from "@soda-gql/common";
-import { createPluginSession, type PluginSession } from "@soda-gql/plugin-common";
+import {
+  createPluginSession,
+  getSharedArtifact,
+  getSharedPluginSession,
+  getStateKey,
+  type PluginSession,
+} from "@soda-gql/plugin-common";
 import type { LoaderDefinitionFunction } from "webpack";
-import { getSharedArtifact, getSharedPluginSession, getStateKey } from "./shared-state";
 import type { WebpackLoaderOptions } from "./types";
 
 /**
@@ -83,12 +88,12 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         }
       }
 
-      // Transform using Babel plugin
+      // Transform using Babel plugin with direct artifact
       const babelOptions: TransformOptions = {
         filename,
         babelrc: false,
         configFile: false,
-        plugins: [[createSodaGqlPlugin, { configPath: options.configPath }]],
+        plugins: [createPluginWithArtifact({ artifact, config: session.config })],
         sourceMaps: true,
         inputSourceMap: inputSourceMap as TransformOptions["inputSourceMap"],
       };
