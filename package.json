@@ -36,6 +36,7 @@
     "@babel/core": "*",
     "@babel/parser": "*",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "@babel/traverse": "*",
     "@babel/types": "*",
     "@biomejs/biome": "2.2.3",
