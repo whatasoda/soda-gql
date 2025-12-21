@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.editor.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
+}

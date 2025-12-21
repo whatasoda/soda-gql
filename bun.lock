@@ -195,6 +195,22 @@
         "typescript": "5.*",
       },
     },
+    "packages/webpack-plugin": {
+      "name": "@soda-gql/webpack-plugin",
+      "version": "0.0.9",
+      "dependencies": {
+        "@soda-gql/babel-plugin": "workspace:*",
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/common": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@soda-gql/core": "workspace:*",
+        "@soda-gql/plugin-common": "workspace:*",
+        "neverthrow": "^8.1.1",
+      },
+      "peerDependencies": {
+        "webpack": "^5.0.0",
+      },
+    },
   },
   "patchedDependencies": {
     "@swc/core@1.13.5": "patches/@swc%2Fcore@1.13.5.patch",
@@ -442,6 +458,8 @@
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
 
     "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
+
+    "@soda-gql/webpack-plugin": ["@soda-gql/webpack-plugin@workspace:packages/webpack-plugin"],
 
     "@swc-node/core": ["@swc-node/core@1.14.1", "", { "peerDependencies": { "@swc/core": ">= 1.13.3", "@swc/types": ">= 0.1" } }, "sha512-jrt5GUaZUU6cmMS+WTJEvGvaB6j1YNKPHPzC2PUi2BjaFbtxURHj6641Az6xN7b665hNniAIdvjxWcRml5yCnw=="],
 

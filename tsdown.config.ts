@@ -211,4 +211,11 @@ export default defineConfig([
     target: "node18",
     clean: true,
   },
+  {
+    ...configure("@soda-gql/webpack-plugin"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
 ]);

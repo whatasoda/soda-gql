@@ -44,3 +44,5 @@ export type {
   BuilderMode,
   BuilderOptions,
 } from "./types";
+// Module adjacency for dependency tracking
+export { collectAffectedFiles, extractModuleAdjacency } from "./session/module-adjacency";
