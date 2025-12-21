@@ -5,9 +5,9 @@ import {
   createPluginSession,
   getSharedState,
   getStateKey,
+  type PluginSession,
   setSharedArtifact,
   setSharedPluginSession,
-  type PluginSession,
 } from "@soda-gql/plugin-common";
 import type { Compiler } from "webpack";
 import type { WebpackPluginOptions } from "./types";
