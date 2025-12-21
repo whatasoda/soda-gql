@@ -36,5 +36,8 @@
     "@babel/traverse": "^7.24.0",
     "@babel/types": "^7.24.0",
     "neverthrow": "^8.1.1"
+  },
+  "devDependencies": {
+    "@soda-gql/tsc-transformer": "workspace:*"
   }
 }

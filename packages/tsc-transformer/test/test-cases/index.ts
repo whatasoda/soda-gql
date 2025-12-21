@@ -93,17 +93,26 @@ export const transformWithTsc = async ({
 /**
  * Normalize code output for comparison using Prettier.
  * This removes formatting differences between transformers.
+ *
+ * Note: Some differences between babel and tsc output are unavoidable:
+ * - CJS export patterns differ (TypeScript uses direct assignment, Babel uses const with assignment)
+ * - Object property formatting may differ based on content length
+ *
+ * For true semantic comparison, use runtime behavior testing instead of string comparison.
  */
 export const normalizeCode = async (code: string): Promise<string> => {
   // Dynamic import to avoid bundling prettier
   const prettier = await import("prettier");
   return prettier.format(code, {
     parser: "babel",
-    printWidth: 100,
+    // Use very short printWidth to force all objects to expand consistently
+    printWidth: 40,
     tabWidth: 2,
     useTabs: false,
     semi: true,
     singleQuote: false,
+    // Force consistent trailing commas
+    trailingComma: "all",
   });
 };
 
