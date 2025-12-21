@@ -9,7 +9,7 @@
 import { describe, expect, it } from "bun:test";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel-plugin";
-import { loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test-cases";
+import { loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test";
 
 /**
  * Transform source code using babel-plugin.

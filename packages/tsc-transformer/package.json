@@ -38,11 +38,8 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./test-cases": {
-      "@soda-gql": "./test/test-cases/index.ts",
-      "types": "./dist/test-cases/index.d.mts",
-      "import": "./dist/test-cases/index.mjs",
-      "default": "./dist/test-cases/index.mjs"
+    "./test": {
+      "@soda-gql": "./test/export.ts"
     },
     "./package.json": "./package.json"
   }
