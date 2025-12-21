@@ -8,15 +8,7 @@ export const getProjectRoot = (): string => {
 };
 
 // Re-export common test utilities
-export {
-  TestTempDir,
-  assertFileContains,
-  assertFileDoesNotContain,
-  assertFileDoesNotExist,
-  assertFileExists,
-  readTestFile,
-  writeTestFile,
-} from "@soda-gql/common/test";
+export { TestTempDir } from "@soda-gql/common/test";
 
 export * from "./moduleLoader";
 export * from "./operationSpy";
