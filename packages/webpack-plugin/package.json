@@ -1,0 +1,47 @@
+{
+  "name": "@soda-gql/webpack-plugin",
+  "version": "0.0.9",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@soda-gql": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./loader": {
+      "@soda-gql": "./src/loader.ts",
+      "types": "./dist/loader.d.mts",
+      "import": "./dist/loader.mjs",
+      "require": "./dist/loader.cjs",
+      "default": "./dist/loader.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
+    "@soda-gql/babel-plugin": "workspace:*",
+    "neverthrow": "^8.1.1"
+  },
+  "peerDependencies": {
+    "webpack": "^5.0.0"
+  }
+}

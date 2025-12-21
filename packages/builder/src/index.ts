@@ -36,6 +36,8 @@ export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";
 export type { BuilderSession } from "./session";
 export { createBuilderSession } from "./session";
+// Module adjacency for dependency tracking
+export { collectAffectedFiles, extractModuleAdjacency } from "./session/module-adjacency";
 export type {
   BuilderAnalyzer,
   BuilderError,
