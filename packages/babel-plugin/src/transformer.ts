@@ -102,7 +102,7 @@ export const createTransformer = ({
 
           if (result.isErr()) {
             // Log error and continue - don't fail the entire build for a single error
-            console.error(`[@soda-gql/plugin-babel] ${formatPluginError(result.error)}`);
+            console.error(`[@soda-gql/babel-plugin] ${formatPluginError(result.error)}`);
             return;
           }
 

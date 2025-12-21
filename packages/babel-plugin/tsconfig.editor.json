@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/plugin-babel",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/plugin-babel/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/babel-plugin",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/babel-plugin/tsconfig.tsbuildinfo",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],

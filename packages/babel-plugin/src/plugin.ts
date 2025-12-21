@@ -10,7 +10,7 @@ type PluginPassState = PluginPass & {
 };
 
 const fallbackPlugin = (): PluginObj => ({
-  name: "@soda-gql/plugin-babel",
+  name: "@soda-gql/babel-plugin",
   visitor: {
     Program() {
       // No-op fallback
@@ -19,7 +19,7 @@ const fallbackPlugin = (): PluginObj => ({
 });
 
 export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => ({
-  name: "@soda-gql/plugin-babel",
+  name: "@soda-gql/babel-plugin",
   visitor: {
     Program(programPath: NodePath<t.Program>, state) {
       const pass = state as unknown as PluginPassState;
@@ -52,7 +52,7 @@ export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }
 
 export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}): PluginObj => {
   // Create plugin session synchronously (no async pre())
-  const pluginSession = createPluginSession(options, "@soda-gql/plugin-babel");
+  const pluginSession = createPluginSession(options, "@soda-gql/babel-plugin");
 
   return pluginSession ? createPlugin({ pluginSession }) : fallbackPlugin();
 };
