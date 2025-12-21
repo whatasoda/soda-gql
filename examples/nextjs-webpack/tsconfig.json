@@ -14,6 +14,7 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
+    "types": ["node", "react", "react-dom"],
     "paths": {
       "@/*": ["./src/*"],
       "@/graphql-system": ["./graphql-system"]
