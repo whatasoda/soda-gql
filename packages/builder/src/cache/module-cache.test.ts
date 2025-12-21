@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createCanonicalId } from "@soda-gql/common";
-import { createTestSuite, TestSuite } from "../../tests/utils/test-suite";
+import { createTestSuite, TestSuite } from "@soda-gql/common/test";
 import type { ModuleAnalysis } from "../ast/types";
 import { createMemoryCache } from "./memory-cache";
 import { ModuleCacheManager } from "./module-cache";

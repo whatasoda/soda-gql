@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createRuntimeAdapter } from "@soda-gql/runtime";
-import { createTestSlices } from "../../../tests/utils/slices";
+import { createTestSlices } from "../../../test/utils/slices";
 import { createExecutionResultParser } from "../../runtime/parse-execution-result";
 import type { ProjectionPathGraphNode } from "../element/composed-operation";
 import type { NormalizedExecutionResult } from "./execution-result";

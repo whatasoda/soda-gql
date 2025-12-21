@@ -65,7 +65,8 @@
       "includes": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "**/tests/**/*.ts",
+        "**/tests/**/*",
+        "**/packages/*/test/**/*",
         "packages/core/src/types/**/*.ts",
         "packages/core/src/utils/**/*.ts"
       ],

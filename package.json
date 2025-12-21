@@ -23,7 +23,7 @@
     "test": "bun --conditions=@soda-gql test",
     "clean:dist": "find packages -name dist -type d -prune -exec rm -rf {} +",
     "soda-gql": "bun --conditions=@soda-gql packages/cli/src/index.ts",
-    "fixture:setup": "bun soda-gql codegen --config tests/soda-gql.config.ts && bun soda-gql codegen --config packages/builder/tests/soda-gql.config.ts",
+    "fixture:setup": "bun soda-gql codegen --config tests/soda-gql.config.ts && bun soda-gql codegen --config packages/builder/test/soda-gql.config.ts",
     "examples:codegen": "bun run examples:codegen:babel && bun run examples:codegen:nestjs-tsc",
     "examples:codegen:babel": "bun soda-gql codegen --config examples/babel-app/soda-gql.config.ts",
     "examples:codegen:nestjs-tsc": "bun soda-gql codegen --config examples/nestjs-compiler-tsc/soda-gql.config.ts",
