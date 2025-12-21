@@ -1,12 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createRuntimeAdapter } from "../runtime";
-import {
-  define,
-  defineOperationRoots,
-  defineScalar,
-  unsafeInputType,
-  unsafeOutputType,
-} from "../schema";
+import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
 import { type AnyGraphqlRuntimeAdapter, Projection } from "../types/runtime";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createGqlElementComposer } from "./gql-composer";
@@ -69,7 +63,7 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           label: selected.name,
-        })
+        }),
       );
     });
 
@@ -94,8 +88,8 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           label: selected.name,
-        })
-      )
+        }),
+      ),
     );
 
     expect(userModel.typename).toBe("User");
@@ -120,8 +114,8 @@ describe("createGqlInvoker", () => {
         (selected) => ({
           id: selected.id,
           name: selected.name,
-        })
-      )
+        }),
+      ),
     );
 
     const userSlice = gql(({ query }, { $var }) =>
@@ -134,11 +128,8 @@ describe("createGqlInvoker", () => {
             userModel.fragment(),
           ]),
         ],
-        ({ select }) =>
-          select(["$.user"], (result) =>
-            result.safeUnwrap(([data]) => userModel.normalize(data))
-          )
-      )
+        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.normalize(data))),
+      ),
     );
 
     const sliceFragment = userSlice.embed({ id: "1" });
@@ -152,8 +143,8 @@ describe("createGqlInvoker", () => {
         },
         ({ $ }) => ({
           user: userSlice.embed({ id: $.userId }),
-        })
-      )
+        }),
+      ),
     );
 
     expect(profileQuery.operationName).toBe("ProfilePageQuery");

@@ -13,9 +13,8 @@ const postCreatedSlice = gql.default(({ subscription }) =>
         f.title(),
       ]),
     ],
-    ({ select }) =>
-      select(["$.postCreated"], (result) => result.safeUnwrap(([post]) => post))
-  )
+    ({ select }) => select(["$.postCreated"], (result) => result.safeUnwrap(([post]) => post)),
+  ),
 );
 
 export const postCreatedSubscription = gql.default(({ subscription }) =>
@@ -26,6 +25,6 @@ export const postCreatedSubscription = gql.default(({ subscription }) =>
     },
     () => ({
       post: postCreatedSlice.embed(),
-    })
-  )
+    }),
+  ),
 );

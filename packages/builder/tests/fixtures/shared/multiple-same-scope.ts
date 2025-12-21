@@ -8,8 +8,8 @@ const container = {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   ),
   model2: gql.default(({ model }) =>
     model.User(
@@ -18,8 +18,8 @@ const container = {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   ),
   model3: gql.default(({ model }) =>
     model.User(
@@ -28,7 +28,7 @@ const container = {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   ),
 };

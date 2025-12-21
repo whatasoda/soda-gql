@@ -3,15 +3,8 @@ import { createHash } from "node:crypto";
 import { print } from "graphql";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createRuntimeAdapter } from "../../src/runtime/runtime-adapter";
-import {
-  define,
-  defineOperationRoots,
-  defineScalar,
-} from "../../src/schema/schema-builder";
-import {
-  unsafeInputType,
-  unsafeOutputType,
-} from "../../src/schema/type-specifier-builder";
+import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
+import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { AnyGraphqlRuntimeAdapter } from "../../src/types/runtime";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
@@ -82,14 +75,12 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])]
-        )
+          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.trackedVariables).toEqual([
-        { type: "variable", name: "userId" },
-      ]);
+      expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
     });
 
     it("$var.getName extracts variable name", () => {
@@ -106,8 +97,8 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])]
-        )
+          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
@@ -121,10 +112,7 @@ describe("metadata with variable access", () => {
         mutation.inline(
           {
             operationName: "UpdateUser",
-            variables: [
-              $var("userId").scalar("ID:!"),
-              $var("userName").scalar("String:!"),
-            ],
+            variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
             metadata: ({ $ }) => ({
               extensions: {
                 trackedVars: {
@@ -134,10 +122,8 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [
-            f.updateUser({ id: $.userId, name: $.userName })(() => []),
-          ]
-        )
+          ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(() => [])],
+        ),
       );
 
       expect(operation.metadata?.extensions?.trackedVars).toEqual({
@@ -155,8 +141,8 @@ describe("metadata with variable access", () => {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])]
-        )
+          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+        ),
       );
 
       expect(operation.metadata).toBeUndefined();
@@ -172,20 +158,16 @@ describe("metadata with variable access", () => {
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ document }) => ({
               extensions: {
-                documentHash: createHash("sha256")
-                  .update(print(document))
-                  .digest("hex"),
+                documentHash: createHash("sha256").update(print(document)).digest("hex"),
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])]
-        )
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.documentHash).toMatch(
-        /^[a-f0-9]{64}$/
-      );
+      expect(operation.metadata?.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it("metadata callback can access both $ and document", () => {
@@ -205,8 +187,8 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])]
-        )
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        ),
       );
 
       expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
@@ -222,8 +204,8 @@ describe("metadata with variable access", () => {
         query.slice(
           {},
           ({ f }) => [f.user({ id: "test-id" })(() => [])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }, { $var }) =>
@@ -239,8 +221,8 @@ describe("metadata with variable access", () => {
           },
           () => ({
             user: userSlice.embed(),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
@@ -254,8 +236,8 @@ describe("metadata with variable access", () => {
         query.slice(
           {},
           ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }, { $var }) =>
@@ -265,22 +247,18 @@ describe("metadata with variable access", () => {
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ document }) => ({
               extensions: {
-                documentHash: createHash("sha256")
-                  .update(print(document))
-                  .digest("hex"),
+                documentHash: createHash("sha256").update(print(document)).digest("hex"),
               },
             }),
           },
           () => ({
             user: userSlice.embed(),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.documentHash).toMatch(
-        /^[a-f0-9]{64}$/
-      );
+      expect(operation.metadata?.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it("metadata callback can access both $ and document", () => {
@@ -290,8 +268,8 @@ describe("metadata with variable access", () => {
         query.slice(
           {},
           ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }, { $var }) =>
@@ -310,8 +288,8 @@ describe("metadata with variable access", () => {
           },
           () => ({
             user: userSlice.embed(),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
@@ -334,8 +312,8 @@ describe("metadata with variable access", () => {
             }),
           },
           ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       // Embed with a variable reference from operation
@@ -347,14 +325,12 @@ describe("metadata with variable access", () => {
           },
           ({ $ }) => ({
             user: userSlice.embed({ userId: $.opUserId }),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.trackedVariables).toEqual([
-        { type: "variable", name: "opUserId" },
-      ]);
+      expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "opUserId" }]);
     });
 
     it("metadata factory without variables still works", () => {
@@ -368,8 +344,8 @@ describe("metadata with variable access", () => {
             }),
           },
           ({ f }) => [f.user({ id: "test-id" })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }) =>
@@ -379,8 +355,8 @@ describe("metadata with variable access", () => {
           },
           () => ({
             user: userSlice.embed(),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata?.custom?.requiresAuth).toBe(true);
@@ -401,8 +377,8 @@ describe("metadata with variable access", () => {
             }),
           },
           ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }) =>
@@ -412,8 +388,8 @@ describe("metadata with variable access", () => {
           },
           () => ({
             user: userSlice.embed({ userId: "literal-id" }),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata?.custom?.varInner).toEqual({
@@ -436,8 +412,8 @@ describe("metadata with variable access", () => {
             }),
           },
           ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }, { $var }) =>
@@ -448,13 +424,11 @@ describe("metadata with variable access", () => {
           },
           ({ $ }) => ({
             user: userSlice.embed({ userId: $.opUserId }),
-          })
-        )
+          }),
+        ),
       );
 
-      expect(operation.metadata?.headers?.["X-Slice-Variable"]).toBe(
-        "opUserId"
-      );
+      expect(operation.metadata?.headers?.["X-Slice-Variable"]).toBe("opUserId");
     });
 
     it("works with multiple slice variables", () => {
@@ -463,10 +437,7 @@ describe("metadata with variable access", () => {
       const userSlice = gql(({ mutation }, { $var }) =>
         mutation.slice(
           {
-            variables: [
-              $var("id").scalar("ID:!"),
-              $var("name").scalar("String:!"),
-            ],
+            variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
             metadata: ({ $ }) => ({
               extensions: {
                 trackedVars: {
@@ -476,26 +447,21 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [
-            f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id()]),
-          ],
-          ({ select }) => select(["$.updateUser"], (user) => user)
-        )
+          ({ f, $ }) => [f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id()])],
+          ({ select }) => select(["$.updateUser"], (user) => user),
+        ),
       );
 
       const operation = gql(({ mutation }, { $var }) =>
         mutation.composed(
           {
             operationName: "UpdateUser",
-            variables: [
-              $var("userId").scalar("ID:!"),
-              $var("userName").scalar("String:!"),
-            ],
+            variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
           },
           ({ $ }) => ({
             result: userSlice.embed({ id: $.userId, name: $.userName }),
-          })
-        )
+          }),
+        ),
       );
 
       expect(operation.metadata?.extensions?.trackedVars).toEqual({
@@ -513,8 +479,8 @@ describe("metadata with variable access", () => {
             variables: [$var("userId").scalar("ID:!")],
           },
           ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-          ({ select }) => select(["$.user"], (user) => user)
-        )
+          ({ select }) => select(["$.user"], (user) => user),
+        ),
       );
 
       const operation = gql(({ query }, { $var }) =>
@@ -525,8 +491,8 @@ describe("metadata with variable access", () => {
           },
           ({ $ }) => ({
             user: userSlice.embed({ userId: $.opUserId }),
-          })
-        )
+          }),
+        ),
       );
 
       // When no metadata is provided, composed operations return empty nested objects

@@ -12,8 +12,8 @@ const postSlice = gql.default(({ mutation }, { $var }) =>
         f.id(),
       ]),
     ],
-    ({ select }) => select(["$.createPost"], (result) => result)
-  )
+    ({ select }) => select(["$.createPost"], (result) => result),
+  ),
 );
 
 export const pageAction = gql.default(({ mutation }, { $var }) =>
@@ -24,6 +24,6 @@ export const pageAction = gql.default(({ mutation }, { $var }) =>
     },
     ({ $ }) => ({
       post: postSlice.embed({ title: $.title }),
-    })
-  )
+    }),
+  ),
 );

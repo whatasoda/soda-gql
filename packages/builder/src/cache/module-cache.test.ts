@@ -36,10 +36,7 @@ describe("module cache manager", () => {
       signature: "hash-1",
       definitions: [
         {
-          canonicalId: createCanonicalId(
-            "/app/src/entities/user.ts",
-            "userModel"
-          ),
+          canonicalId: createCanonicalId("/app/src/entities/user.ts", "userModel"),
           astPath: "userModel",
           isTopLevel: true,
           isExported: true,
@@ -97,10 +94,7 @@ describe("module cache manager", () => {
       signature: "hash-2",
       definitions: [
         {
-          canonicalId: createCanonicalId(
-            "/app/src/entities/user.ts",
-            "profileQuery"
-          ),
+          canonicalId: createCanonicalId("/app/src/entities/user.ts", "profileQuery"),
           astPath: "profileQuery",
           isTopLevel: true,
           isExported: true,

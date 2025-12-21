@@ -4,25 +4,15 @@ import { __resetRuntimeRegistry } from "@soda-gql/core/runtime";
 import type { FormattedExecutionResult } from "graphql";
 import { parse } from "graphql";
 import { createExecutor, executeOperation } from "./executor";
-import type {
-  ExecutorConfig,
-  GraffleHeadersInit,
-  GraphQLClient,
-} from "./types";
+import type { ExecutorConfig, GraffleHeadersInit, GraphQLClient } from "./types";
 
 // Mock GraphQL client
-const createMockClient = (
-  mockResponse: FormattedExecutionResult | Error
-): GraphQLClient => ({
+const createMockClient = (mockResponse: FormattedExecutionResult | Error): GraphQLClient => ({
   async request<
     TData extends object = Record<string, unknown>,
     TVariables = Record<string, unknown>,
-    TExtensions extends object = Record<string, unknown>
-  >(
-    _doc: string,
-    _vars?: TVariables,
-    _headers?: GraffleHeadersInit
-  ): Promise<FormattedExecutionResult<TData, TExtensions>> {
+    TExtensions extends object = Record<string, unknown>,
+  >(_doc: string, _vars?: TVariables, _headers?: GraffleHeadersInit): Promise<FormattedExecutionResult<TData, TExtensions>> {
     if (mockResponse instanceof Error) {
       throw mockResponse;
     }
@@ -84,12 +74,7 @@ describe("graffle-client executor", () => {
       const config: ExecutorConfig = { client };
       const operation = createTestOperation();
 
-      const result = await executeOperation(
-        config,
-        operation,
-        { id: "1" },
-        undefined
-      );
+      const result = await executeOperation(config, operation, { id: "1" }, undefined);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -119,12 +104,7 @@ describe("graffle-client executor", () => {
       const config: ExecutorConfig = { client };
       const operation = createTestOperation();
 
-      const result = await executeOperation(
-        config,
-        operation,
-        { id: "999" },
-        undefined
-      );
+      const result = await executeOperation(config, operation, { id: "999" }, undefined);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -144,12 +124,7 @@ describe("graffle-client executor", () => {
       const config: ExecutorConfig = { client };
       const operation = createTestOperation();
 
-      const result = await executeOperation(
-        config,
-        operation,
-        { id: "1" },
-        undefined
-      );
+      const result = await executeOperation(config, operation, { id: "1" }, undefined);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -167,12 +142,8 @@ describe("graffle-client executor", () => {
         async request<
           TData extends object = Record<string, unknown>,
           TVariables = Record<string, unknown>,
-          TExtensions extends object = Record<string, unknown>
-        >(
-          _doc: string,
-          _vars?: TVariables,
-          headers?: GraffleHeadersInit
-        ): Promise<FormattedExecutionResult<TData, TExtensions>> {
+          TExtensions extends object = Record<string, unknown>,
+        >(_doc: string, _vars?: TVariables, headers?: GraffleHeadersInit): Promise<FormattedExecutionResult<TData, TExtensions>> {
           capturedHeaders = headers;
           return {
             data: { user: { id: "1", name: "Alice" } },
@@ -187,12 +158,7 @@ describe("graffle-client executor", () => {
 
       const operation = createTestOperation();
 
-      await executeOperation(
-        config,
-        operation,
-        { id: "1" },
-        { headers: { "X-Request-ID": "123" } }
-      );
+      await executeOperation(config, operation, { id: "1" }, { headers: { "X-Request-ID": "123" } });
 
       expect(capturedHeaders).toEqual({
         Authorization: "Bearer token",

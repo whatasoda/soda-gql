@@ -13,8 +13,8 @@ export const postSlice = gql.default(({ query }, { $var }) =>
         f.id(),
       ]),
     ],
-    ({ select }) => select(["$.posts"], (result) => result)
-  )
+    ({ select }) => select(["$.posts"], (result) => result),
+  ),
 );
 
 export const pageQuery = gql.default(({ query }, { $var }) =>
@@ -26,6 +26,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     ({ $ }) => ({
       user: topLevelQuery.embed({ userId: $.userId }),
       post: postSlice.embed({ postId: $.postId }),
-    })
-  )
+    }),
+  ),
 );

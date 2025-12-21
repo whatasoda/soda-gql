@@ -8,8 +8,8 @@ export function getModel() {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   );
   return model;
 }

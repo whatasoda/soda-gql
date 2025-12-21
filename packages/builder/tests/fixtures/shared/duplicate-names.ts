@@ -7,8 +7,8 @@ const model1 = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (v) => v
-  )
+    (v) => v,
+  ),
 );
 const model2 = gql.default(({ model }) =>
   model.User(
@@ -17,8 +17,8 @@ const model2 = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (v) => v
-  )
+    (v) => v,
+  ),
 );
 
 function factory() {
@@ -29,8 +29,8 @@ function factory() {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   );
   const model2 = gql.default(({ model }) =>
     model.User(
@@ -39,7 +39,7 @@ function factory() {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   );
 }

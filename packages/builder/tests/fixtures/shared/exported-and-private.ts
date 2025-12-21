@@ -7,8 +7,8 @@ export const userModel = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (v) => v
-  )
+    (v) => v,
+  ),
 );
 
 const privateModel = gql.default(({ model }) =>
@@ -18,6 +18,6 @@ const privateModel = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (v) => v
-  )
+    (v) => v,
+  ),
 );

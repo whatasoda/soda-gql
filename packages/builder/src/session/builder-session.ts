@@ -1,11 +1,5 @@
 import { join, resolve } from "node:path";
-import {
-  cachedFn,
-  createAsyncScheduler,
-  createSyncScheduler,
-  type EffectGenerator,
-  type SchedulerError,
-} from "@soda-gql/common";
+import { cachedFn, createAsyncScheduler, createSyncScheduler, type EffectGenerator, type SchedulerError } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
@@ -164,8 +158,7 @@ export const createBuilderSession = (options: {
   const prepareBuildInput = (
     force: boolean,
   ): Result<
-    | { type: "skip"; artifact: BuilderArtifact }
-    | { type: "build"; input: BuildGenInput; currentScan: FileScan },
+    { type: "skip"; artifact: BuilderArtifact } | { type: "build"; input: BuildGenInput; currentScan: FileScan },
     BuilderError
   > => {
     // 1. Resolve entry paths

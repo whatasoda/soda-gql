@@ -13,8 +13,8 @@ const userByIdSlice = gql.default(({ query }, { $var }) =>
         f.id(),
       ]),
     ],
-    ({ select }) => select(["$.user"], (result) => result)
-  )
+    ({ select }) => select(["$.user"], (result) => result),
+  ),
 );
 
 export const pageQuery = gql.default(({ query }, { $var }) =>
@@ -25,6 +25,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     },
     ({ $ }) => ({
       user: userByIdSlice.embed({ userId: $.userId }),
-    })
-  )
+    }),
+  ),
 );

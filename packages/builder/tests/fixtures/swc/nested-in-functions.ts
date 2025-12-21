@@ -7,7 +7,7 @@ export const factory = () => {
       () => [
         //
       ],
-      (value) => value
-    )
+      (value) => value,
+    ),
   );
 };

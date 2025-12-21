@@ -7,8 +7,8 @@ export const topLevelModel = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (v) => v
-  )
+    (v) => v,
+  ),
 );
 
 export const topLevelQuery = gql.default(({ query }, { $var }) =>
@@ -17,6 +17,6 @@ export const topLevelQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-    ({ select }) => select(["$.user"], (result) => result)
-  )
+    ({ select }) => select(["$.user"], (result) => result),
+  ),
 );

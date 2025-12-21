@@ -13,20 +13,18 @@ const userUpdatedSlice = gql.default(({ subscription }, { $var }) =>
         f.name(),
       ]),
     ],
-    ({ select }) =>
-      select(["$.userUpdated"], (result) => result.safeUnwrap(([user]) => user))
-  )
+    ({ select }) => select(["$.userUpdated"], (result) => result.safeUnwrap(([user]) => user)),
+  ),
 );
 
-export const userUpdatedSubscription = gql.default(
-  ({ subscription }, { $var }) =>
-    subscription.composed(
-      {
-        operationName: "UserUpdated",
-        variables: [$var("userId").scalar("ID:!")],
-      },
-      ({ $ }) => ({
-        user: userUpdatedSlice.embed({ userId: $.userId }),
-      })
-    )
+export const userUpdatedSubscription = gql.default(({ subscription }, { $var }) =>
+  subscription.composed(
+    {
+      operationName: "UserUpdated",
+      variables: [$var("userId").scalar("ID:!")],
+    },
+    ({ $ }) => ({
+      user: userUpdatedSlice.embed({ userId: $.userId }),
+    }),
+  ),
 );

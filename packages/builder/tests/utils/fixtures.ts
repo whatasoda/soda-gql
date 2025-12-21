@@ -20,10 +20,7 @@ export const getFixturePath = (category: string, name: string): string => {
  * @param name The fixture name without extension
  * @returns Object with filePath and source
  */
-export const loadFixture = (
-  category: string,
-  name: string
-): { filePath: string; source: string } => {
+export const loadFixture = (category: string, name: string): { filePath: string; source: string } => {
   const filePath = getFixturePath(category, name);
   return {
     filePath,
@@ -37,10 +34,7 @@ export const loadFixture = (
  * @param name The fixture name without extension
  * @returns Absolute path to the fixture file
  */
-export const getModuleAnalysisFixturePath = (
-  analyzer: "ts" | "swc" | "shared",
-  name: string
-): string => {
+export const getModuleAnalysisFixturePath = (analyzer: "ts" | "swc" | "shared", name: string): string => {
   return getFixturePath(analyzer, name);
 };
 
@@ -52,7 +46,7 @@ export const getModuleAnalysisFixturePath = (
  */
 export const loadModuleAnalysisFixture = (
   analyzer: "ts" | "swc" | "shared",
-  name: string
+  name: string,
 ): { filePath: string; source: string } => {
   return loadFixture(analyzer, name);
 };

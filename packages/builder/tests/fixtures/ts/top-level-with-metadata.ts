@@ -7,8 +7,8 @@ export const userModel = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (value) => value
-  )
+    (value) => value,
+  ),
 );
 
 export const userSlice = gql.default(({ query }, { $var }) =>
@@ -23,8 +23,8 @@ export const userSlice = gql.default(({ query }, { $var }) =>
         nested.id(),
       ]),
     ],
-    ({ select }) => select(["$.users"], (result) => result)
-  )
+    ({ select }) => select(["$.users"], (result) => result),
+  ),
 );
 
 export const pageQuery = gql.default(({ query }, { $var }) =>
@@ -35,6 +35,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     },
     ({ $ }) => ({
       users: userSlice.embed({ id: $.userId }),
-    })
-  )
+    }),
+  ),
 );

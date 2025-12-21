@@ -11,6 +11,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
       catalogUsers: topLevel.topLevelQuery.embed({
         userId: $.userId,
       }),
-    })
-  )
+    }),
+  ),
 );

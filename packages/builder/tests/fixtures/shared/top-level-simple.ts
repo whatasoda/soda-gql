@@ -7,6 +7,6 @@ export const userModel = gql.default(({ model }) =>
       //
       f.id(),
     ],
-    (value) => value
-  )
+    (value) => value,
+  ),
 );

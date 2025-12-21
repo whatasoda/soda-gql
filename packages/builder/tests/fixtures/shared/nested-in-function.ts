@@ -8,8 +8,8 @@ function createModels() {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   );
   return nested;
 }

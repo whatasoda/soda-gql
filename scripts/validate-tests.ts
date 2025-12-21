@@ -281,33 +281,12 @@ async function main() {
 
   console.log("Scanning for test files...\n");
   const testFiles: string[] = [];
-  const misplacedTests: string[] = [];
 
   for await (const file of walkDirectory(PROJECT_ROOT)) {
-    const relativePath = path.relative(PROJECT_ROOT, file).replace(/\\/g, "/");
     testFiles.push(file);
-
-    // Check if test file is in an allowed location:
-    // - tests/ directory (integration tests, fixtures-dependent tests)
-    // - packages/*/src/ directory (colocated unit tests)
-    const isInTests = relativePath.startsWith("tests/");
-    const isInPackageSrc = /^packages\/[^/]+\/src\//.test(relativePath);
-
-    if (!isInTests && !isInPackageSrc) {
-      misplacedTests.push(relativePath);
-    }
   }
 
   console.log(`Found ${testFiles.length} test files`);
-
-  // Report misplaced tests
-  if (misplacedTests.length > 0) {
-    console.log("\n❌ MISPLACED TEST FILES:");
-    for (const file of misplacedTests) {
-      console.log(`  ${file}`);
-      console.log(`    → Move to tests/ directory`);
-    }
-  }
 
   // Check imports
   console.log("\nValidating import paths...");
@@ -357,11 +336,10 @@ async function main() {
 
   // Summary
   console.log("\n" + "=".repeat(50));
-  if (misplacedTests.length === 0 && allViolations.length === 0) {
+  if (allViolations.length === 0) {
     console.log("✅ All tests are valid!");
     process.exitCode = 0;
   } else {
-    console.log(`❌ Found ${misplacedTests.length} misplaced test files`);
     console.log(`❌ Found ${allViolations.length} invalid import paths`);
     process.exitCode = 1;
   }

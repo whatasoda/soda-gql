@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { DiscoverySnapshot } from "../discovery";
-import {
-  collectAffectedFiles,
-  extractModuleAdjacency,
-} from "./module-adjacency";
+import { collectAffectedFiles, extractModuleAdjacency } from "./module-adjacency";
 
 // Helper: create mock DiscoverySnapshot
 const createMockSnapshot = (
@@ -20,7 +17,7 @@ const createMockSnapshot = (
     local: string;
     kind: string;
     isTypeOnly: boolean;
-  }> = []
+  }> = [],
 ): DiscoverySnapshot => {
   const canonicalId = createCanonicalId(filePath, "default");
   const definition: ModuleDefinition = {
@@ -74,18 +71,8 @@ describe("Module Adjacency", () => {
       const cCanonicalId = createCanonicalId("/src/c.ts", "default");
 
       const snapshots = new Map<string, DiscoverySnapshot>([
-        [
-          "/src/a.ts",
-          createMockSnapshot("/src/a.ts", [
-            { canonicalId: bCanonicalId, resolvedPath: "/src/b.ts" },
-          ]),
-        ],
-        [
-          "/src/b.ts",
-          createMockSnapshot("/src/b.ts", [
-            { canonicalId: cCanonicalId, resolvedPath: "/src/c.ts" },
-          ]),
-        ],
+        ["/src/a.ts", createMockSnapshot("/src/a.ts", [{ canonicalId: bCanonicalId, resolvedPath: "/src/b.ts" }])],
+        ["/src/b.ts", createMockSnapshot("/src/b.ts", [{ canonicalId: cCanonicalId, resolvedPath: "/src/c.ts" }])],
         ["/src/c.ts", createMockSnapshot("/src/c.ts", [])],
       ]);
 
@@ -100,9 +87,7 @@ describe("Module Adjacency", () => {
     });
 
     test("should include isolated modules with empty sets", () => {
-      const snapshots = new Map<string, DiscoverySnapshot>([
-        ["/src/isolated.ts", createMockSnapshot("/src/isolated.ts", [])],
-      ]);
+      const snapshots = new Map<string, DiscoverySnapshot>([["/src/isolated.ts", createMockSnapshot("/src/isolated.ts", [])]]);
 
       const adjacency = extractModuleAdjacency({ snapshots });
 
@@ -125,7 +110,7 @@ describe("Module Adjacency", () => {
                 kind: "namespace",
                 isTypeOnly: false,
               },
-            ]
+            ],
           ),
         ],
         ["/src/b.ts", createMockSnapshot("/src/b.ts", [])],
@@ -140,12 +125,7 @@ describe("Module Adjacency", () => {
     test("should skip self-imports", () => {
       const aBarId = createCanonicalId("/src/a.ts", "bar");
       const snapshots = new Map<string, DiscoverySnapshot>([
-        [
-          "/src/a.ts",
-          createMockSnapshot("/src/a.ts", [
-            { canonicalId: aBarId, resolvedPath: "/src/a.ts" },
-          ]),
-        ],
+        ["/src/a.ts", createMockSnapshot("/src/a.ts", [{ canonicalId: aBarId, resolvedPath: "/src/a.ts" }])],
       ]);
 
       const adjacency = extractModuleAdjacency({ snapshots });
@@ -175,9 +155,7 @@ describe("Module Adjacency", () => {
     });
 
     test("should handle isolated changes", () => {
-      const adjacency = new Map<string, Set<string>>([
-        ["/src/a.ts", new Set()],
-      ]);
+      const adjacency = new Map<string, Set<string>>([["/src/a.ts", new Set()]]);
 
       const changed = new Set(["/src/a.ts"]);
       const affected = collectAffectedFiles({

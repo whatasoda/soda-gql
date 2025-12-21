@@ -9,6 +9,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     },
     ({ $ }) => ({
       users: topLevelQuery.embed({ userId: $.userId }),
-    })
-  )
+    }),
+  ),
 );

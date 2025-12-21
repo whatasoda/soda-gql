@@ -9,6 +9,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     },
     ({ $ }) => ({
       profile: objectWrapped.nested.query.embed({ userId: $.userId }),
-    })
-  )
+    }),
+  ),
 );

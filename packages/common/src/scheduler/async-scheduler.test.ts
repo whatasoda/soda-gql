@@ -62,8 +62,7 @@ describe("createAsyncScheduler", () => {
     const startTime = Date.now();
 
     // Create delays to verify parallel execution
-    const delay = (ms: number, value: number) =>
-      new Promise<number>((resolve) => setTimeout(() => resolve(value), ms));
+    const delay = (ms: number, value: number) => new Promise<number>((resolve) => setTimeout(() => resolve(value), ms));
 
     const result = await scheduler.run(function* () {
       const results = yield* Effects.parallel([
@@ -172,10 +171,7 @@ describe("createAsyncScheduler", () => {
       const a = yield* Effects.pure(1).run();
       yield* Effects.yield().run();
       const b = yield* Effects.defer(Promise.resolve(2)).run();
-      const [c, d] = (yield* Effects.parallel([
-        Effects.pure(3),
-        Effects.defer(Promise.resolve(4)),
-      ]).run()) as [number, number];
+      const [c, d] = (yield* Effects.parallel([Effects.pure(3), Effects.defer(Promise.resolve(4))]).run()) as [number, number];
       return a + b + c + d;
     });
 

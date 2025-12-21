@@ -6,25 +6,17 @@ import type { ProjectionPathGraphNode } from "../element/composed-operation";
 import type { NormalizedExecutionResult } from "./execution-result";
 import { Projection } from "./projection";
 import type { AnyGraphqlRuntimeAdapter } from "./runtime-adapter";
-import {
-  SlicedExecutionResultEmpty,
-  SlicedExecutionResultError,
-  SlicedExecutionResultSuccess,
-} from "./sliced-execution-result";
+import { SlicedExecutionResultEmpty, SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 
 /**
  * Helper to build a compliant projection path graph
  */
-const buildProjectionGraph = (
-  label: string,
-  rawPath: string
-): ProjectionPathGraphNode => {
+const buildProjectionGraph = (label: string, rawPath: string): ProjectionPathGraphNode => {
   const segments = rawPath.split(".").slice(1); // Remove leading $
 
   // Root node
   const root: ProjectionPathGraphNode = {
-    matches:
-      segments.length === 0 ? [{ label, path: rawPath, exact: true }] : [],
+    matches: segments.length === 0 ? [{ label, path: rawPath, exact: true }] : [],
     children: {},
   };
 
@@ -71,20 +63,19 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "graphql",
-          body: {
-            data: { user: null },
-            errors: [
-              {
-                message: "User not found",
-                path: ["user"],
-                extensions: {},
-              },
-            ],
-          },
-        };
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "graphql",
+        body: {
+          data: { user: null },
+          errors: [
+            {
+              message: "User not found",
+              path: ["user"],
+              extensions: {},
+            },
+          ],
+        },
+      };
 
       const parsed = parse(result);
       expect(parsed.userSlice).toBeInstanceOf(SlicedExecutionResultError);
@@ -107,20 +98,19 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "graphql",
-          body: {
-            data: {
-              user: {
-                profile: {
-                  name: "John Doe",
-                  email: "john@example.com",
-                },
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "graphql",
+        body: {
+          data: {
+            user: {
+              profile: {
+                name: "John Doe",
+                email: "john@example.com",
               },
             },
           },
-        };
+        },
+      };
 
       const parsed = parse(result);
       expect(parsed.profile).toBeInstanceOf(SlicedExecutionResultSuccess);
@@ -148,17 +138,16 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "graphql",
-          body: {
-            data: {
-              user: {
-                profile: null, // Missing nested data
-              },
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "graphql",
+        body: {
+          data: {
+            user: {
+              profile: null, // Missing nested data
             },
           },
-        };
+        },
+      };
 
       const parsed = parse(result);
       expect(parsed.settings).toBeInstanceOf(SlicedExecutionResultError);
@@ -181,11 +170,10 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "non-graphql-error",
-          error: { type: "test-error", message: "Connection failed" },
-        };
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "non-graphql-error",
+        error: { type: "test-error", message: "Connection failed" },
+      };
 
       const parsed = parse(result);
       expect(parsed.data).toBeInstanceOf(SlicedExecutionResultError);
@@ -213,10 +201,9 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "empty",
-        };
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "empty",
+      };
 
       const parsed = parse(result);
       expect(parsed.data).toBeInstanceOf(SlicedExecutionResultEmpty);
@@ -258,23 +245,22 @@ describe("Runtime Operation Error Handling", () => {
         projectionPathGraph,
       });
 
-      const result: NormalizedExecutionResult<typeof adapter, object, object> =
-        {
-          type: "graphql",
-          body: {
-            data: {
-              user: { id: "1", name: "Alice" },
-              posts: null,
-            },
-            errors: [
-              {
-                message: "Posts not available",
-                path: ["posts"],
-                extensions: {},
-              },
-            ],
+      const result: NormalizedExecutionResult<typeof adapter, object, object> = {
+        type: "graphql",
+        body: {
+          data: {
+            user: { id: "1", name: "Alice" },
+            posts: null,
           },
-        };
+          errors: [
+            {
+              message: "Posts not available",
+              path: ["posts"],
+              extensions: {},
+            },
+          ],
+        },
+      };
 
       const parsed = parse(result);
 

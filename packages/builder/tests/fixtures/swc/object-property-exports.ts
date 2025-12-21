@@ -8,7 +8,7 @@ export const user_remoteModel = {
         //
         f.id(),
       ],
-      (data) => data
-    )
+      (data) => data,
+    ),
   ),
 };

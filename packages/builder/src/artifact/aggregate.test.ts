@@ -7,10 +7,7 @@ import type { IntermediateArtifactElement } from "../intermediate-module";
 import { aggregate } from "./aggregate";
 
 // Test helpers
-const createTestAnalysis = (
-  filePath: string,
-  definitions: ModuleDefinition[]
-): ModuleAnalysis => ({
+const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): ModuleAnalysis => ({
   filePath,
   signature: "test-sig",
   definitions,
@@ -27,9 +24,7 @@ const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
   loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
 });
 
-const createTestIntermediateModule = (
-  elements: Record<string, IntermediateArtifactElement>
-) => ({
+const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
   elements,
 });
 
@@ -37,24 +32,16 @@ describe("artifact aggregate", () => {
   it("aggregates models, slices, and operations successfully", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
     const sliceId = createCanonicalId("/app/src/entities/user.ts", "userSlice");
-    const operationId = createCanonicalId(
-      "/app/src/pages/profile.query.ts",
-      "profileQuery"
-    );
+    const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
       [
         "/app/src/entities/user.ts",
-        createTestAnalysis("/app/src/entities/user.ts", [
-          createTestDefinition(modelId),
-          createTestDefinition(sliceId),
-        ]),
+        createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)]),
       ],
       [
         "/app/src/pages/profile.query.ts",
-        createTestAnalysis("/app/src/pages/profile.query.ts", [
-          createTestDefinition(operationId),
-        ]),
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
       ],
     ]);
 
@@ -87,7 +74,7 @@ describe("artifact aggregate", () => {
           document: parse("query ProfilePageQuery { users { id } }") as any,
           variableNames: [],
           projectionPathGraph: { matches: [], children: {} },
-          parse: () => ({} as any),
+          parse: () => ({}) as any,
         })),
       },
     });
@@ -126,7 +113,7 @@ describe("artifact aggregate", () => {
       },
       () => {
         throw new Error("Expected aggregate to succeed");
-      }
+      },
     );
   });
 
@@ -134,12 +121,7 @@ describe("artifact aggregate", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      [
-        "/app/src/entities/user.ts",
-        createTestAnalysis("/app/src/entities/user.ts", [
-          createTestDefinition(modelId),
-        ]),
-      ],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -159,12 +141,10 @@ describe("artifact aggregate", () => {
       (error) => {
         expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
         if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
-          expect(error.message).toContain(
-            "ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE"
-          );
+          expect(error.message).toContain("ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE");
           expect(error.filePath).toBe("/app/src/entities/user.ts");
         }
-      }
+      },
     );
   });
 
@@ -173,12 +153,7 @@ describe("artifact aggregate", () => {
 
     // Create analysis with single definition
     const analyses = new Map<string, ModuleAnalysis>([
-      [
-        "/app/src/entities/user.ts",
-        createTestAnalysis("/app/src/entities/user.ts", [
-          createTestDefinition(modelId),
-        ]),
-      ],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -206,18 +181,10 @@ describe("artifact aggregate", () => {
   });
 
   it("fails when artifact has unknown type", () => {
-    const unknownId = createCanonicalId(
-      "/app/src/entities/unknown.ts",
-      "unknownThing"
-    );
+    const unknownId = createCanonicalId("/app/src/entities/unknown.ts", "unknownThing");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      [
-        "/app/src/entities/unknown.ts",
-        createTestAnalysis("/app/src/entities/unknown.ts", [
-          createTestDefinition(unknownId),
-        ]),
-      ],
+      ["/app/src/entities/unknown.ts", createTestAnalysis("/app/src/entities/unknown.ts", [createTestDefinition(unknownId)])],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
@@ -243,28 +210,21 @@ describe("artifact aggregate", () => {
           expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
           expect(error.filePath).toBe("/app/src/entities/unknown.ts");
         }
-      }
+      },
     );
   });
 
   it("preserves all prebuild data for operations", () => {
-    const operationId = createCanonicalId(
-      "/app/src/pages/profile.query.ts",
-      "profileQuery"
-    );
+    const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
       [
         "/app/src/pages/profile.query.ts",
-        createTestAnalysis("/app/src/pages/profile.query.ts", [
-          createTestDefinition(operationId),
-        ]),
+        createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
       ],
     ]);
 
-    const document = parse(
-      "query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }"
-    );
+    const document = parse("query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }");
     const projectionPathGraph = {
       matches: [{ label: "user", path: "$.user", exact: true }],
       children: {},
@@ -279,7 +239,7 @@ describe("artifact aggregate", () => {
           document: document as any,
           variableNames: ["userId"],
           projectionPathGraph,
-          parse: () => ({} as any),
+          parse: () => ({}) as any,
         })),
       },
     });
@@ -299,14 +259,12 @@ describe("artifact aggregate", () => {
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
           expect(operation.prebuild.document).toBe(document as any);
           expect(operation.prebuild.variableNames).toEqual(["userId"]);
-          expect(operation.prebuild.projectionPathGraph).toEqual(
-            projectionPathGraph
-          );
+          expect(operation.prebuild.projectionPathGraph).toEqual(projectionPathGraph);
         }
       },
       () => {
         throw new Error("Expected aggregate to succeed");
-      }
+      },
     );
   });
 });

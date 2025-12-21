@@ -8,8 +8,8 @@ export const adminModel = gql.admin(({ model }) =>
       f.id(),
       f.name(),
     ],
-    (value) => value
-  )
+    (value) => value,
+  ),
 );
 
 export const defaultQuery = gql.default(({ query }) =>
@@ -24,6 +24,6 @@ export const defaultQuery = gql.default(({ query }) =>
       return {
         users: fakeSlice.embed({}),
       };
-    }
-  )
+    },
+  ),
 );

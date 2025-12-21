@@ -34,11 +34,7 @@ describe("createSyncScheduler", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const results = yield* Effects.parallel([
-        Effects.pure(1),
-        Effects.pure(2),
-        Effects.pure(3),
-      ]).run();
+      const results = yield* Effects.parallel([Effects.pure(1), Effects.pure(2), Effects.pure(3)]).run();
       return results;
     });
 
@@ -55,9 +51,7 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain(
-      "DeferEffect is not supported in sync scheduler"
-    );
+    expect(result._unsafeUnwrapErr().message).toContain("DeferEffect is not supported in sync scheduler");
   });
 
   it("should throw error for yield effects", () => {
@@ -69,19 +63,14 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain(
-      "YieldEffect is not supported in sync scheduler"
-    );
+    expect(result._unsafeUnwrapErr().message).toContain("YieldEffect is not supported in sync scheduler");
   });
 
   it("should handle nested parallel effects", () => {
     const scheduler = createSyncScheduler();
 
     const result = scheduler.run(function* () {
-      const results = yield* Effects.parallel([
-        Effects.pure([1, 2]),
-        Effects.parallel([Effects.pure(3), Effects.pure(4)]),
-      ]).run();
+      const results = yield* Effects.parallel([Effects.pure([1, 2]), Effects.parallel([Effects.pure(3), Effects.pure(4)])]).run();
       return results;
     });
 
@@ -146,8 +135,6 @@ describe("createSyncScheduler", () => {
     });
 
     expect(result.isErr()).toBe(true);
-    expect(result._unsafeUnwrapErr().message).toContain(
-      "AsyncOnlyEffect requires async scheduler"
-    );
+    expect(result._unsafeUnwrapErr().message).toContain("AsyncOnlyEffect requires async scheduler");
   });
 });

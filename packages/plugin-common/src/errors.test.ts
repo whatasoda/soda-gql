@@ -35,8 +35,7 @@ describe("Plugin Error Types", () => {
     });
 
     test("formats artifact missing error", () => {
-      const canonicalId: CanonicalId =
-        "/test/file.ts::userQuery" as CanonicalId;
+      const canonicalId: CanonicalId = "/test/file.ts::userQuery" as CanonicalId;
       const error: PluginAnalysisArtifactMissingError = {
         type: "PluginError",
         stage: "analysis",
@@ -246,7 +245,7 @@ describe("Plugin Error Types", () => {
           type: "PluginError",
           code: "TEST",
           // missing message
-        })
+        }),
       ).toBe(false);
 
       expect(
@@ -254,7 +253,7 @@ describe("Plugin Error Types", () => {
           type: "NotPluginError",
           code: "TEST",
           message: "Test",
-        })
+        }),
       ).toBe(false);
     });
   });

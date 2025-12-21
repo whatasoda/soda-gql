@@ -8,8 +8,8 @@ export const objectWrapped = {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   ),
 
   query: gql.default(({ query }, { $var }) =>
@@ -21,8 +21,8 @@ export const objectWrapped = {
         //
         f.user({ id: $.userId })(({ f }) => [f.id()]),
       ],
-      ({ select }) => select(["$.user"], (result) => result)
-    )
+      ({ select }) => select(["$.user"], (result) => result),
+    ),
   ),
 
   nested: {
@@ -33,8 +33,8 @@ export const objectWrapped = {
           //
           f.id(),
         ],
-        (v) => v
-      )
+        (v) => v,
+      ),
     ),
 
     query: gql.default(({ query }, { $var }) =>
@@ -43,8 +43,8 @@ export const objectWrapped = {
           variables: [$var("userId").scalar("ID:!")],
         },
         ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ({ select }) => select(["$.user"], (result) => result)
-      )
+        ({ select }) => select(["$.user"], (result) => result),
+      ),
     ),
   },
 };

@@ -32,9 +32,7 @@ describe("Schema Edge Cases", () => {
       expect(() => {
         // @ts-expect-error - Testing runtime error for non-existent argument
         helpers.$var("userVar").byField("Query", "user", "nonExistentArg");
-      }).toThrow(
-        "Argument nonExistentArg not found in field user of type Query"
-      );
+      }).toThrow("Argument nonExistentArg not found in field user of type Query");
     });
   });
 

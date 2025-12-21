@@ -9,9 +9,7 @@ import { createIntermediateRegistry } from "./registry";
  * Used to test async evaluation without depending on specific element types.
  */
 class TestElement extends GqlElement<{ value: string }> {
-  private constructor(
-    define: () => { value: string } | Promise<{ value: string }>
-  ) {
+  private constructor(define: () => { value: string } | Promise<{ value: string }>) {
     super(define);
   }
 
@@ -29,22 +27,17 @@ type AcceptableArtifact = Model<string, any, any, any, any>;
 /**
  * Helper function to cast TestElement to AcceptableArtifact for use with registry.addElement.
  */
-const asAcceptable = (element: TestElement): AcceptableArtifact =>
-  element as unknown as AcceptableArtifact;
+const asAcceptable = (element: TestElement): AcceptableArtifact => element as unknown as AcceptableArtifact;
 
 /**
  * Helper function to cast AcceptableArtifact back to TestElement for accessing .value.
  */
-const asTestElement = (element: AcceptableArtifact): TestElement =>
-  element as unknown as TestElement;
+const asTestElement = (element: AcceptableArtifact): TestElement => element as unknown as TestElement;
 
 /**
  * Helper to create a mock ModuleAnalysis with specified definitions count
  */
-const createMockAnalysis = (
-  filePath: string,
-  hasGqlDefinitions: boolean
-): ModuleAnalysis => {
+const createMockAnalysis = (filePath: string, hasGqlDefinitions: boolean): ModuleAnalysis => {
   const definitions: ModuleDefinition[] = hasGqlDefinitions
     ? [
         {
@@ -225,9 +218,7 @@ describe("createIntermediateRegistry", () => {
         return { a: dep };
       });
 
-      expect(() => registry.evaluate()).toThrow(
-        "Module not found or yet to be registered"
-      );
+      expect(() => registry.evaluate()).toThrow("Module not found or yet to be registered");
     });
   });
 
@@ -406,7 +397,7 @@ describe("createIntermediateRegistry", () => {
           typename: "TestType",
           fragment: () => ({}),
           normalize: () => ({}),
-        }))
+        })),
       );
 
       const result = await registry.evaluateAsync();
@@ -432,8 +423,8 @@ describe("createIntermediateRegistry", () => {
             // Simulate async operation (e.g., async metadata factory)
             await new Promise((resolve) => setTimeout(resolve, 10));
             return { value: "AsyncValue" };
-          })
-        )
+          }),
+        ),
       );
 
       await registry.evaluateAsync();
@@ -460,8 +451,8 @@ describe("createIntermediateRegistry", () => {
             await new Promise((resolve) => setTimeout(resolve, 50));
             evaluationOrder.push("element-1");
             return { value: "Value1" };
-          })
-        )
+          }),
+        ),
       );
 
       const element2 = registry.addElement("test:element-2", () =>
@@ -471,8 +462,8 @@ describe("createIntermediateRegistry", () => {
             await new Promise((resolve) => setTimeout(resolve, 50));
             evaluationOrder.push("element-2");
             return { value: "Value2" };
-          })
-        )
+          }),
+        ),
       );
 
       const element3 = registry.addElement("test:element-3", () =>
@@ -482,8 +473,8 @@ describe("createIntermediateRegistry", () => {
             await new Promise((resolve) => setTimeout(resolve, 50));
             evaluationOrder.push("element-3");
             return { value: "Value3" };
-          })
-        )
+          }),
+        ),
       );
 
       const startTime = Date.now();
@@ -520,7 +511,7 @@ describe("createIntermediateRegistry", () => {
           typename: "SyncType",
           fragment: () => ({}),
           normalize: () => ({}),
-        }))
+        })),
       );
 
       // Async element (using TestElement)
@@ -529,8 +520,8 @@ describe("createIntermediateRegistry", () => {
           TestElement.create(async () => {
             await new Promise((resolve) => setTimeout(resolve, 10));
             return { value: "AsyncValue" };
-          })
-        )
+          }),
+        ),
       );
 
       const result = await registry.evaluateAsync();
@@ -573,16 +564,14 @@ describe("createIntermediateRegistry", () => {
             await new Promise((resolve) => setTimeout(resolve, 10));
             evalOrder.push("element-end");
             return { value: "TestValue" };
-          })
-        )
+          }),
+        ),
       );
 
       await registry.evaluateAsync();
 
       // Modules should be evaluated before elements
-      expect(evalOrder.indexOf("module-a-end")).toBeLessThan(
-        evalOrder.indexOf("element-start")
-      );
+      expect(evalOrder.indexOf("module-a-end")).toBeLessThan(evalOrder.indexOf("element-start"));
       // Verify element was evaluated
       expect(asTestElement(element).value).toBe("TestValue");
     });

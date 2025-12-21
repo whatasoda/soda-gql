@@ -8,8 +8,8 @@ const factory = () => {
         //
         f.id(),
       ],
-      (v) => v
-    )
+      (v) => v,
+    ),
   );
   return model;
 };

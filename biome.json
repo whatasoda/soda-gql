@@ -48,15 +48,13 @@
       "./tsdown.config.ts",
       "packages/**/*",
       "examples/**/*",
-      "!examples/**/graphql-system/**/*",
       "**/tests/**/*",
-      "!tests/fixtures/**/graphql-system/**/*",
       "scripts/prepublish.ts",
       "!bun.lock",
-      "!**/node_modules/**/*",
       "!**/dist/**/*",
+      "!**/node_modules/**/*",
+      "!**/graphql-system/**/*",
       "!**/tests/.tmp/**/*",
-      "!**/.typecheck/**/*",
       "!**/.cache/**/*",
       "!**/*.generated.ts"
     ],
@@ -80,9 +78,7 @@
       }
     },
     {
-      "includes": [
-        "**/fixtures/**/*"
-      ],
+      "includes": ["**/fixtures/**/*"],
       "linter": {
         "rules": {
           "correctness": {
@@ -93,9 +89,7 @@
       }
     },
     {
-      "includes": [
-        "examples/nestjs-compiler-tsc/**/*"
-      ],
+      "includes": ["examples/nestjs-compiler-tsc/**/*"],
       "linter": {
         "rules": {
           "style": {
