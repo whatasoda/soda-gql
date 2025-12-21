@@ -56,7 +56,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "operations/basic",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.composedOperation", "gqlRuntime.inlineOperation"],
+      runtimeCalls: ["gqlRuntime.composedOperation"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
