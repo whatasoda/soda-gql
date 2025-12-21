@@ -36,15 +36,11 @@ export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadat
 
 /**
  * Slice-specific metadata that can contribute to operation metadata.
- * Includes additional fields for common slice-level concerns like
- * authentication requirements and cache control.
+ * Extends OperationMetadata with no additional fields - use the `custom`
+ * property for application-specific values like authentication requirements
+ * or cache settings.
  */
-export type SliceMetadata = OperationMetadata & {
-  /** Indicates if this slice requires authentication */
-  readonly requiresAuth?: boolean;
-  /** Cache TTL in seconds for this slice's data */
-  readonly cacheTtl?: number;
-};
+export type SliceMetadata = OperationMetadata;
 
 /**
  * Tools available inside slice metadata builder callbacks.
