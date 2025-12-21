@@ -6,36 +6,29 @@ import { transformAsync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
-import { ensureGraphqlSystemBundle } from "../helpers/graphql-system";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
-const fixturesRoot = join(projectRoot, "tests", "fixtures", "runtime-app");
-const schemaPath = join(fixturesRoot, "schema.graphql");
+const codegenFixtureRoot = join(projectRoot, "tests", "codegen-fixture");
+const graphqlSystemDir = join(codegenFixtureRoot, "graphql-system");
+const schemaPath = join(codegenFixtureRoot, "schemas", "default", "schema.graphql");
 
 describe("Babel-Plugin HMR Integration", () => {
-  // Ensure fixture graphql-system bundle exists before running tests
-  const fixtureGraphqlSystemReady = ensureGraphqlSystemBundle({
-    outFile: join(fixturesRoot, "graphql-system", "index.ts"),
-    schemaPath,
-  });
-
   it("bootstraps DevManager when dev.hmr is enabled", async () => {
-    await fixtureGraphqlSystemReady; // Wait for fixture setup
     // Create temp directory
     const tempDir = join(projectRoot, "tests/.tmp/plugin-babel-hmr-test", `${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
 
     try {
-      // Create config file pointing to fixture graphql-system
+      // Create config file pointing to shared graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        outdir: join(fixturesRoot, "graphql-system"),
-        include: [join(fixturesRoot, "src", "**/*.ts")],
+        outdir: graphqlSystemDir,
+        include: [join(codegenFixtureRoot, "**/*.ts")],
         analyzer: "ts",
         schemas: {
           default: {
             schema: schemaPath,
-            runtimeAdapter: join(fixturesRoot, "runtime-adapter.ts"),
-            scalars: join(fixturesRoot, "scalars.ts"),
+            runtimeAdapter: join(codegenFixtureRoot, "schemas", "default", "runtime-adapter.ts"),
+            scalars: join(codegenFixtureRoot, "schemas", "default", "scalars.ts"),
           },
         },
       });
@@ -95,21 +88,20 @@ describe("Babel-Plugin HMR Integration", () => {
   });
 
   it("falls back to production mode when dev.hmr is false", async () => {
-    await fixtureGraphqlSystemReady; // Wait for fixture setup
     const tempDir = join(projectRoot, "tests/.tmp/plugin-babel-hmr-test", `${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
 
     try {
-      // Create config file pointing to fixture graphql-system
+      // Create config file pointing to shared graphql-system
       const configPath = createTempConfigFile(tempDir, {
-        outdir: join(fixturesRoot, "graphql-system"),
-        include: [join(fixturesRoot, "src", "**/*.ts")],
+        outdir: graphqlSystemDir,
+        include: [join(codegenFixtureRoot, "**/*.ts")],
         analyzer: "ts",
         schemas: {
           default: {
             schema: schemaPath,
-            runtimeAdapter: join(fixturesRoot, "runtime-adapter.ts"),
-            scalars: join(fixturesRoot, "scalars.ts"),
+            runtimeAdapter: join(codegenFixtureRoot, "schemas", "default", "runtime-adapter.ts"),
+            scalars: join(codegenFixtureRoot, "schemas", "default", "scalars.ts"),
           },
         },
       });
