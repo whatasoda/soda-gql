@@ -24,6 +24,7 @@
     "neverthrow": "^8.1.1"
   },
   "devDependencies": {
+    "@soda-gql/codegen": "workspace:*",
     "prettier": "^3.4.2"
   },
   "peerDependencies": {

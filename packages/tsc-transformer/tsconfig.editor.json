@@ -9,8 +9,10 @@
     "paths": {}
   },
   "include": ["src/**/*", "test/**/*"],
+  "exclude": ["test/fixtures/**/*"],
   "references": [
     { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../codegen/tsconfig.editor.json" },
     { "path": "../common/tsconfig.editor.json" },
     { "path": "../config/tsconfig.editor.json" },
     { "path": "../core/tsconfig.editor.json" },
