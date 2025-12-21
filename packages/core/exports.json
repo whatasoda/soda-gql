@@ -1,6 +1,5 @@
 {
   ".": "./src/index.ts",
   "./runtime": "./src/runtime/index.ts",
-  "./metadata": "./src/metadata/index.ts",
-  "./testing": "./src/testing/index.ts"
+  "./metadata": "./src/metadata/index.ts"
 }
