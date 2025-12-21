@@ -140,10 +140,10 @@ export const userBasic = gql.default(({ model }) =>
 );
 
 // User with nested posts selection
-export const userWithPosts = gql.default(({ model }, { $ }) =>
+export const userWithPosts = gql.default(({ model }, { $var }) =>
   model.User(
     {
-      variables: [$("categoryId").scalar("ID:?")],
+      variables: [$var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -180,10 +180,10 @@ export type UserWithPosts = ReturnType<typeof userWithPosts["normalize"]>;
 import { gql } from "@/graphql-system";
 import { userWithPosts } from "../models/user.model";
 
-export const userSlice = gql.default(({ slice }, { $ }) =>
+export const userSlice = gql.default(({ slice }, { $var }) =>
   slice.query(
     {
-      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -202,10 +202,10 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
   ),
 );
 
-export const updateUserSlice = gql.default(({ slice }, { $ }) =>
+export const updateUserSlice = gql.default(({ slice }, { $var }) =>
   slice.mutation(
     {
-      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
+      variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     ({ f, $ }) => [
       //
@@ -230,11 +230,11 @@ export const updateUserSlice = gql.default(({ slice }, { $ }) =>
 import { gql } from "@/graphql-system";
 import { userSlice } from "../slices/user.slice";
 
-export const profileQuery = gql.default(({ operation }, { $ }) =>
+export const profileQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
       operationName: "ProfilePageQuery",
-      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
       users: userSlice.build({
@@ -251,11 +251,11 @@ export const profileQuery = gql.default(({ operation }, { $ }) =>
 import { gql } from "@/graphql-system";
 import { updateUserSlice } from "../slices/user.slice";
 
-export const updateUserMutation = gql.default(({ operation }, { $ }) =>
+export const updateUserMutation = gql.default(({ operation }, { $var }) =>
   operation.mutation(
     {
       operationName: "UpdateUser",
-      variables: [$("id").scalar("ID:!"), $("name").scalar("String:!")],
+      variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     ({ $ }) => ({
       updateUser: updateUserSlice.build({
@@ -309,9 +309,9 @@ describe("userBasic model", () => {
 
 **Before (development)**
 ```typescript
-export const profileQuery = gql.default(({ operation }, { $ }) =>
+export const profileQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
-    { operationName: "ProfilePageQuery", variables: [$("userId").scalar("ID:!")] },
+    { operationName: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
     ({ $ }) => ({
       users: userSlice.build({ id: $.userId }),
     }),
@@ -360,10 +360,10 @@ import { err, ok } from "neverthrow";
 import { gql } from "@/graphql-system";
 import { userBasic } from "@/models/user.model";
 
-export const safeUserSlice = gql.default(({ slice }, { $ }) =>
+export const safeUserSlice = gql.default(({ slice }, { $var }) =>
   slice.query(
     {
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       //
@@ -386,11 +386,11 @@ export const safeUserSlice = gql.default(({ slice }, { $ }) =>
   ),
 );
 
-export const safeGetUserQuery = gql.default(({ operation }, { $ }) =>
+export const safeGetUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
       operationName: "SafeGetUser",
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: safeUserSlice.build({ id: $.id }),

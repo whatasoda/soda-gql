@@ -66,18 +66,18 @@ See the main [README](./README.md) for installation and setup instructions.
 - **Correct pattern**: Create slice with field selection, then compose in operation with `slice.build()`
   ```typescript
   // Slice with field access
-  const createProductSlice = gql.default(({ mutation }, { $ }) =>
+  const createProductSlice = gql.default(({ mutation }, { $var }) =>
     mutation.slice(
-      { variables: [$("name").scalar("String:!")] },
+      { variables: [$var("name").scalar("String:!")] },
       ({ f, $ }) => [f.createProduct({ name: $.name })(({ f }) => [f.id(), f.name()])],
       ({ select }) => select(["$.createProduct"], (result) => result),
     ),
   );
 
   // Operation composing slice
-  const createProductMutation = gql.default(({ mutation }, { $ }) =>
+  const createProductMutation = gql.default(({ mutation }, { $var }) =>
     mutation.composed(
-      { operationName: "CreateProduct", variables: [$("productName").scalar("String:!")] },
+      { operationName: "CreateProduct", variables: [$var("productName").scalar("String:!")] },
       ({ $ }) => ({ result: createProductSlice.build({ name: $.productName }) }),
     ),
   );

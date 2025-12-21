@@ -29,9 +29,9 @@ When using soda-gql with a build plugin (Babel, TypeScript, Vite, etc.), the run
 // Your source code
 import { gql } from "@/graphql-system";
 
-export const userQuery = gql.default(({ query }, { $ }) =>
+export const userQuery = gql.default(({ query }, { $var }) =>
   query.composed(
-    { operationName: "GetUser", variables: [$("id").scalar("ID:!")] },
+    { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
     ({ $ }) => ({ user: userSlice.build({ id: $.id }) }),
   ),
 );

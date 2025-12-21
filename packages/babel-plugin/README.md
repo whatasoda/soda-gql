@@ -55,11 +55,11 @@ bun run soda-gql codegen
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userQuery = gql.default(({ query }, { $ }) =>
+export const userQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "GetUser",
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => ({
       user: f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
