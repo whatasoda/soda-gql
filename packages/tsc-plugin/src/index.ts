@@ -7,6 +7,10 @@
 
 export * from "./plugin";
 
+// Re-export transformer for backwards compatibility
+export { createTransformer, createAfterStubTransformer } from "@soda-gql/tsc-transformer";
+export type { TypeScriptEnv } from "@soda-gql/tsc-transformer";
+
 import plugin from "./plugin";
 
 export const { before } = plugin;

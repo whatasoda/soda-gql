@@ -2,7 +2,7 @@ import { describe } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTransformer } from "@soda-gql/tsc-plugin/transformer";
+import { createTransformer } from "@soda-gql/tsc-transformer";
 import * as ts from "typescript";
 import { createTestConfig } from "../helpers/test-config";
 import type { PluginTestRunnerTransformer } from "../utils/pluginTestRunner";

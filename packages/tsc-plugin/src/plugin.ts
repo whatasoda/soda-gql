@@ -2,7 +2,7 @@ import { createBuilderService } from "@soda-gql/builder";
 import { cachedFn } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
 import type * as ts from "typescript";
-import { createTransformer } from "./transformer";
+import { createTransformer } from "@soda-gql/tsc-transformer";
 
 export type PluginOptions = {
   readonly configPath?: string;
