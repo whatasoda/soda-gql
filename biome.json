@@ -48,15 +48,13 @@
       "./tsdown.config.ts",
       "packages/**/*",
       "examples/**/*",
-      "!examples/**/graphql-system/**/*",
       "**/tests/**/*",
-      "!tests/fixtures/**/graphql-system/**/*",
       "scripts/prepublish.ts",
       "!bun.lock",
-      "!**/node_modules/**/*",
       "!**/dist/**/*",
+      "!**/node_modules/**/*",
+      "!**/graphql-system/**/*",
       "!**/tests/.tmp/**/*",
-      "!**/.typecheck/**/*",
       "!**/.cache/**/*",
       "!**/*.generated.ts"
     ],
@@ -67,7 +65,7 @@
       "includes": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "tests/**/*.ts",
+        "**/tests/**/*.ts",
         "packages/core/src/types/**/*.ts",
         "packages/core/src/utils/**/*.ts"
       ],
@@ -80,7 +78,7 @@
       }
     },
     {
-      "includes": ["tests/fixtures/**/*"],
+      "includes": ["**/fixtures/**/*"],
       "linter": {
         "rules": {
           "correctness": {

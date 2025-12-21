@@ -35,5 +35,8 @@
     "typescript": "^5.0.0",
     "xxhash-wasm": "^1.1.0",
     "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@soda-gql/config": "workspace:*"
   }
 }

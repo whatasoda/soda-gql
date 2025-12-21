@@ -4,11 +4,9 @@
     "composite": true,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/builder",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/builder/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
-    "paths": {}
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/builder/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "tests/graphql-system/**/*.cjs"],
   "references": [{ "path": "../common/tsconfig.editor.json" }, { "path": "../core/tsconfig.editor.json" }]
 }

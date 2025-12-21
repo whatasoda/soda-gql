@@ -1,0 +1,42 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  users(id: [ID!], categoryId: ID, limit: Int): [User!]!
+  user(id: ID!): User
+  posts(id: ID, categoryId: ID, limit: Int): [Post!]!
+  products(limit: Int): [Product!]!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String
+  posts(categoryId: ID, limit: Int): [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  body: String
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float
+}
+
+type Mutation {
+  createPost(title: String!, body: String): Post!
+  updateUser(id: ID!, name: String!): User!
+  deletePost(id: ID!): Boolean!
+}
+
+type Subscription {
+  postCreated: Post!
+  userUpdated(userId: ID!): User!
+}

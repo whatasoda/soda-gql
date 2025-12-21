@@ -107,7 +107,13 @@ const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
       const valueNode = buildArgumentValue(value);
-      return valueNode ? { kind: Kind.ARGUMENT, name: { kind: Kind.NAME, value: name }, value: valueNode } : null;
+      return valueNode
+        ? {
+            kind: Kind.ARGUMENT,
+            name: { kind: Kind.NAME, value: name },
+            value: valueNode,
+          }
+        : null;
     })
     .filter((item) => item !== null);
 
@@ -117,8 +123,14 @@ const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
       return object
         ? {
             kind: Kind.INLINE_FRAGMENT,
-            typeCondition: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: typeName } },
-            selectionSet: { kind: Kind.SELECTION_SET, selections: buildField(object) },
+            typeCondition: {
+              kind: Kind.NAMED_TYPE,
+              name: { kind: Kind.NAME, value: typeName },
+            },
+            selectionSet: {
+              kind: Kind.SELECTION_SET,
+              selections: buildField(object),
+            },
           }
         : null;
     })
@@ -169,7 +181,10 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
   }
 
   if (Array.isArray(value)) {
-    return { kind: Kind.LIST, values: value.map((item) => buildConstValueNode(item)).filter((item) => item !== null) };
+    return {
+      kind: Kind.LIST,
+      values: value.map((item) => buildConstValueNode(item)).filter((item) => item !== null),
+    };
   }
 
   if (typeof value === "object") {
@@ -213,7 +228,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
 
   // New format: starts with inner type modifier (? or !), then []? or []! pairs
   // e.g., "?[]?" = nullable list of nullable, "![]!" = non-null list of non-null
-  let curr: Readonly<{ modifier: string; type: TypeNode }> = { modifier, type: baseType };
+  let curr: Readonly<{ modifier: string; type: TypeNode }> = {
+    modifier,
+    type: baseType,
+  };
 
   while (curr.modifier.length > 0) {
     // Handle inner type modifier (? or !)
@@ -249,7 +267,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
       // Non-null list
       curr = {
         modifier: curr.modifier.slice(3),
-        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.LIST_TYPE, type: curr.type } },
+        type: {
+          kind: Kind.NON_NULL_TYPE,
+          type: { kind: Kind.LIST_TYPE, type: curr.type },
+        },
       };
       continue;
     }
@@ -266,7 +287,10 @@ const buildVariables = (variables: InputTypeSpecifiers): VariableDefinitionNode[
       kind: Kind.VARIABLE_DEFINITION,
       variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
       defaultValue: (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) || undefined,
-      type: buildWithTypeModifier(ref.modifier, () => ({ kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: ref.name } })),
+      type: buildWithTypeModifier(ref.modifier, () => ({
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: ref.name },
+      })),
     }),
   );
 };
