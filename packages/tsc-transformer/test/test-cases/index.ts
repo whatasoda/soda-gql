@@ -10,6 +10,8 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
 import { createTransformer } from "../../src/transformer";
+import { getSingleFileTestCases, type TestCaseDefinition } from "./definitions";
+import { loadPluginFixture } from "./utils";
 
 export type ModuleFormat = "esm" | "cjs";
 
@@ -40,7 +42,14 @@ export type TransformTestCase = {
     readonly esm: string;
     readonly cjs: string;
   };
+  /** Test expectations for validation */
+  readonly expectations: TestCaseDefinition["expectations"];
 };
+
+// Re-export types and utilities
+export type { TestCaseDefinition } from "./definitions";
+export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
+export { createTestConfig, loadPluginFixture, loadPluginFixtureMulti } from "./utils";
 
 /**
  * Transform source code using tsc-transformer.
@@ -122,11 +131,13 @@ export const generateTestCase = async ({
   description,
   input,
   config,
+  expectations = { runtimeCalls: [], shouldAddRuntimeImport: false, shouldTransform: true },
 }: {
   readonly id: string;
   readonly description: string;
   readonly input: TransformTestInput;
   readonly config: ResolvedSodaGqlConfig;
+  readonly expectations?: TestCaseDefinition["expectations"];
 }): Promise<TransformTestCase> => {
   const esmOutput = await transformWithTsc({
     sourceCode: input.sourceCode,
@@ -152,5 +163,64 @@ export const generateTestCase = async ({
       esm: await normalizeCode(esmOutput),
       cjs: await normalizeCode(cjsOutput),
     },
+    expectations,
   };
+};
+
+/**
+ * Create a minimal config for transformation.
+ * Only needs graphqlSystemAliases for the transformer to identify gql imports.
+ */
+const createTransformConfig = (): ResolvedSodaGqlConfig => ({
+  analyzer: "ts" as const,
+  outdir: "/tmp/transform-config",
+  graphqlSystemAliases: ["@/graphql-system"],
+  include: [],
+  exclude: [],
+  schemas: {
+    default: {
+      schema: "/tmp/schema.graphql",
+      runtimeAdapter: "/tmp/runtime-adapter.ts",
+      scalars: "/tmp/scalars.ts",
+    },
+  },
+  styles: {
+    importExtension: false,
+  },
+  plugins: {},
+});
+
+/**
+ * Load all single-file test cases with dynamically generated expected outputs.
+ *
+ * This is the main entry point for conformance testing. The returned test cases
+ * are verified by tsc-transformer's own tests, ensuring the expected outputs
+ * are correct.
+ *
+ * @returns Array of test cases with input, expected output, and expectations
+ */
+export const loadTestCases = async (): Promise<TransformTestCase[]> => {
+  const definitions = getSingleFileTestCases();
+  const testCases: TransformTestCase[] = [];
+  const config = createTransformConfig();
+
+  for (const definition of definitions) {
+    const fixture = await loadPluginFixture(definition.fixtureName);
+
+    const testCase = await generateTestCase({
+      id: definition.id,
+      description: definition.description,
+      input: {
+        sourceCode: fixture.sourceCode,
+        sourcePath: fixture.sourcePath,
+        artifact: fixture.artifact,
+      },
+      config,
+      expectations: definition.expectations,
+    });
+
+    testCases.push(testCase);
+  }
+
+  return testCases;
 };
