@@ -1,5 +1,5 @@
 import type { RuntimeModelInput } from "@soda-gql/core/runtime";
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 
 // Test case: File with gql code and existing runtime import
 // Expected: gql import removed, gqlRuntime merged into existing runtime import

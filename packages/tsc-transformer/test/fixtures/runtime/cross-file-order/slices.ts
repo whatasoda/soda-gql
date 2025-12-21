@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 
 // Test case: Slice definitions in separate file
 // Used by operations.ts to test cross-file transformation order

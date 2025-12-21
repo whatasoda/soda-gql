@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../codegen-fixture/graphql-system";
 
 // Simple slice for testing
 export const userSlice = gql.default(({ query }, { $var }) =>

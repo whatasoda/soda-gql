@@ -120,7 +120,7 @@ describe("BuilderSession incremental end-to-end", () => {
       "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
     );
     const targetPath = path.join(workspaceRoot, "src/entities/nested-definitions.ts");
-    await fs.copyFile(variantPath, targetPath);
+    await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
     // Update the file's mtime to trigger file tracker detection
     const now = new Date();
@@ -182,7 +182,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Copy new catalog file
     const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
     const targetPath = path.join(workspaceRoot, "src/entities/catalog.ts");
-    await fs.copyFile(variantPath, targetPath);
+    await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
     // Incremental update (tracker auto-detects new file)
     const updateResult = await session.build();
@@ -292,7 +292,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Add catalog.ts
     const catalogVariant = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
     const catalogTarget = path.join(workspaceRoot, "src/entities/catalog.ts");
-    await fs.copyFile(catalogVariant, catalogTarget);
+    await copyVariantFile(catalogVariant, catalogTarget, workspaceRoot);
 
     // Update nested-definitions.ts
     const nestedVariant = path.join(
@@ -300,7 +300,7 @@ describe("BuilderSession incremental end-to-end", () => {
       "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
     );
     const nestedTarget = path.join(workspaceRoot, "src/entities/nested-definitions.ts");
-    await fs.copyFile(nestedVariant, nestedTarget);
+    await copyVariantFile(nestedVariant, nestedTarget, workspaceRoot);
     const now = new Date();
     await fs.utimes(nestedTarget, now, now);
 
@@ -343,9 +343,14 @@ describe("BuilderSession incremental end-to-end", () => {
 });
 
 /**
- * Copy directory recursively
+ * Copy directory recursively and rewrite graphql-system imports.
+ * Converts relative imports like "../../../../codegen-fixture/graphql-system"
+ * to the local graphql-system path in the temp workspace.
  */
-async function copyDir(src: string, dest: string, filter?: (src: string) => boolean): Promise<void> {
+async function copyDir(src: string, dest: string, filter?: (src: string) => boolean, workspaceRoot?: string): Promise<void> {
+  // Use dest as workspace root if not provided (initial call)
+  const wsRoot = workspaceRoot ?? dest;
+
   await fs.mkdir(dest, { recursive: true });
   const entries = await fs.readdir(src, { withFileTypes: true });
 
@@ -363,9 +368,44 @@ async function copyDir(src: string, dest: string, filter?: (src: string) => bool
       if (entry.name === "node_modules" || entry.name === ".cache") {
         continue;
       }
-      await copyDir(srcPath, destPath, filter);
+      await copyDir(srcPath, destPath, filter, wsRoot);
+    } else if (entry.name.endsWith(".ts")) {
+      // For TypeScript files, rewrite graphql-system imports
+      const content = await fs.readFile(srcPath, "utf-8");
+      const rewritten = rewriteGraphqlSystemImports(content, destPath, wsRoot);
+      await fs.writeFile(destPath, rewritten, "utf-8");
     } else {
       await fs.copyFile(srcPath, destPath);
     }
   }
+}
+
+/**
+ * Rewrite graphql-system imports to use the local graphql-system in the workspace.
+ * Converts imports like "../../../../codegen-fixture/graphql-system" to relative paths
+ * that work within the temp workspace.
+ */
+function rewriteGraphqlSystemImports(content: string, filePath: string, workspaceRoot: string): string {
+  // Match imports from codegen-fixture/graphql-system
+  const importPattern = /from\s+["']([^"']*codegen-fixture\/graphql-system)["']/g;
+
+  return content.replace(importPattern, (_match, _importPath) => {
+    // Calculate relative path from file to workspace's graphql-system
+    const fileDir = path.dirname(filePath);
+    const graphqlSystemPath = path.join(workspaceRoot, "graphql-system");
+    const relativePath = path.relative(fileDir, graphqlSystemPath);
+
+    // Ensure forward slashes for import paths
+    const normalizedPath = relativePath.split(path.sep).join("/");
+    return `from "${normalizedPath}"`;
+  });
+}
+
+/**
+ * Copy a single variant file with import rewriting.
+ */
+async function copyVariantFile(srcPath: string, destPath: string, workspaceRoot: string): Promise<void> {
+  const content = await fs.readFile(srcPath, "utf-8");
+  const rewritten = rewriteGraphqlSystemImports(content, destPath, workspaceRoot);
+  await fs.writeFile(destPath, rewritten, "utf-8");
 }

@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../../codegen-fixture/graphql-system";
 import { userSlice, userSliceCatalog } from "../entities/user";
 import * as userCatalog from "../entities/user.catalog";
 

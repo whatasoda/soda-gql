@@ -3,9 +3,9 @@
  * Provides reusable workspace setup/teardown logic for integration tests.
  */
 
-import { cpSync, existsSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import { copyDefaultInject } from "../fixtures/inject-module";
@@ -22,6 +22,62 @@ export type WorkspaceConfig = {
 };
 
 /**
+ * Rewrite graphql-system imports to use the local graphql-system in the workspace.
+ * Converts imports like "../../../../codegen-fixture/graphql-system" to relative paths
+ * that work within the temp workspace.
+ */
+const rewriteGraphqlSystemImports = (content: string, filePath: string, workspaceRoot: string): string => {
+  // Match imports from codegen-fixture/graphql-system
+  const importPattern = /from\s+["']([^"']*codegen-fixture\/graphql-system)["']/g;
+
+  return content.replace(importPattern, (_match, _importPath) => {
+    // Calculate relative path from file to workspace's graphql-system
+    const fileDir = dirname(filePath);
+    const graphqlSystemPath = join(workspaceRoot, "graphql-system");
+    const relativePath = relative(fileDir, graphqlSystemPath);
+
+    // Ensure forward slashes for import paths
+    const normalizedPath = relativePath.split(sep).join("/");
+    return `from "${normalizedPath}"`;
+  });
+};
+
+/**
+ * Copy directory recursively with import rewriting for TypeScript files.
+ */
+const copyDirWithRewrite = (src: string, dest: string, workspaceRoot: string, filter?: (src: string) => boolean): void => {
+  mkdirSync(dest, { recursive: true });
+  const entries = readdirSync(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    // Apply filter
+    if (filter && !filter(srcPath)) {
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      // Skip node_modules and .cache
+      if (entry.name === "node_modules" || entry.name === ".cache") {
+        continue;
+      }
+      copyDirWithRewrite(srcPath, destPath, workspaceRoot, filter);
+    } else if (entry.name.endsWith(".ts")) {
+      // For TypeScript files, rewrite graphql-system imports
+      const content = readFileSync(srcPath, "utf-8");
+      const rewritten = rewriteGraphqlSystemImports(content, destPath, workspaceRoot);
+      writeFileSync(destPath, rewritten, "utf-8");
+    } else {
+      // Copy other files directly
+      const content = readFileSync(srcPath);
+      writeFileSync(destPath, content);
+    }
+  }
+};
+
+/**
  * Creates a temporary workspace for testing.
  * Workspace is isolated in OS temp directory with unique timestamp.
  */
@@ -31,12 +87,9 @@ export const createWorkspace = (config: WorkspaceConfig): string => {
   const tmpRoot = mkdtempSync(join(tmpdir(), "soda-gql-test-"));
   const workspaceRoot = resolve(tmpRoot, `workspace-${Date.now()}`);
 
-  // Clean and copy fixture
+  // Clean and copy fixture with import rewriting
   rmSync(workspaceRoot, { recursive: true, force: true });
-  cpSync(fixtureRoot, workspaceRoot, {
-    recursive: true,
-    filter: copyFilter,
-  });
+  copyDirWithRewrite(fixtureRoot, workspaceRoot, workspaceRoot, copyFilter);
 
   // Symlink node_modules for module resolution
   if (symlinkNodeModules) {

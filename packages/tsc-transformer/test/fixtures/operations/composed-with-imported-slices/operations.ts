@@ -1,4 +1,4 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../../../codegen-fixture/graphql-system";
 // Import slices to test that cross-file imports are preserved after transformation
 // Note: We don't use these in the operation itself due to builder evaluation limitations
 import { postsSlice, userSlice } from "./slices";
