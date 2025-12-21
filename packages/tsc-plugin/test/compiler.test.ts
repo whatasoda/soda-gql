@@ -16,7 +16,7 @@ export const createSodaGqlTransformer = (
 };
 
 describe("TypeScript Compiler Plugin Integration", () => {
-  const fixturesDir = join(import.meta.dir, "../../fixtures/plugin-tsc");
+  const fixturesDir = join(import.meta.dir, "./fixtures");
   const sourceFile = join(fixturesDir, "sample.ts");
 
   test(
