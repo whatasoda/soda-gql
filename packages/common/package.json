@@ -51,6 +51,9 @@
       "require": "./dist/zod/index.cjs",
       "default": "./dist/zod/index.mjs"
     },
+    "./test": {
+      "@soda-gql": "./test/export.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
