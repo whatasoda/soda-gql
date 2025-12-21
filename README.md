@@ -163,6 +163,48 @@ export const profileQueryInline = gql.default(({ query }, { $var }) =>
 
 **Note on API**: Variables are now declared as arrays (`variables: [$var(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
 
+### Metadata
+
+Attach runtime information to operations and slices for HTTP headers, GraphQL extensions, and application-specific values:
+
+```typescript
+// Slice with metadata
+export const userSlice = gql.default(({ query }, { $var }) =>
+  query.slice(
+    {
+      variables: [$var("userId").scalar("ID:!")],
+      metadata: ({ $ }) => ({
+        headers: { "X-Request-ID": "user-query" },
+        custom: { requiresAuth: true, cacheTtl: 300 },
+      }),
+    },
+    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+    ({ select }) => select(["$.user"], (user) => user),
+  ),
+);
+```
+
+Use `createMetadataAdapter` to set schema-level defaults and transformations:
+
+```typescript
+import { createMetadataAdapter } from "@soda-gql/core/metadata";
+
+export const metadataAdapter = createMetadataAdapter({
+  defaults: {
+    headers: { "X-GraphQL-Client": "soda-gql" },
+  },
+  transform: ({ document, metadata }) => ({
+    ...metadata,
+    extensions: {
+      ...metadata.extensions,
+      persistedQuery: { sha256Hash: createHash("sha256").update(document).digest("hex") },
+    },
+  }),
+});
+```
+
+See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure, merging behavior, and advanced usage.
+
 ### For Contributors
 
 ```bash

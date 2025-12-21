@@ -190,6 +190,101 @@ type QueryVariables = typeof getUserQuery.$infer.input;
 type QueryResult = typeof getUserQuery.$infer.output.projected;
 ```
 
+## Metadata
+
+Metadata allows you to attach runtime information to operations and slices. This is useful for HTTP headers, GraphQL extensions, and application-specific values.
+
+### Metadata Structure
+
+All metadata types share three base properties:
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `headers` | `Record<string, string>` | HTTP headers to include with the GraphQL request |
+| `extensions` | `Record<string, unknown>` | GraphQL extensions in the request payload |
+| `custom` | `Record<string, unknown>` | Application-specific values (auth requirements, cache settings, etc.) |
+
+### Defining Metadata
+
+Metadata can be defined on both slices and operations:
+
+```typescript
+// Slice with metadata
+export const userSlice = gql.default(({ query }, { $var }) =>
+  query.slice(
+    {
+      variables: [$var("userId").scalar("ID:!")],
+      metadata: ({ $ }) => ({
+        headers: { "X-Request-ID": "user-query" },
+        custom: { requiresAuth: true, cacheTtl: 300 },
+      }),
+    },
+    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+    ({ select }) => select(["$.user"], (user) => user),
+  ),
+);
+
+// Operation with metadata (can reference variables and document)
+export const getUserQuery = gql.default(({ query }, { $var }) =>
+  query.composed(
+    {
+      operationName: "GetUser",
+      variables: [$var("id").scalar("ID:!")],
+      metadata: ({ $, document }) => ({
+        extensions: {
+          trackedVariables: [$var.getInner($.id)],
+        },
+      }),
+    },
+    ({ $ }) => ({
+      user: userSlice.embed({ userId: $.id }),
+    }),
+  ),
+);
+```
+
+### MetadataAdapter
+
+Use `createMetadataAdapter` to customize metadata behavior at the schema level:
+
+```typescript
+import { createMetadataAdapter } from "@soda-gql/core/metadata";
+import { createHash } from "crypto";
+
+export const metadataAdapter = createMetadataAdapter({
+  // Default metadata applied to all operations
+  defaults: {
+    headers: { "X-GraphQL-Client": "soda-gql" },
+  },
+
+  // Transform metadata at build time (e.g., add persisted query hash)
+  transform: ({ document, metadata }) => ({
+    ...metadata,
+    extensions: {
+      ...metadata.extensions,
+      persistedQuery: {
+        version: 1,
+        sha256Hash: createHash("sha256").update(document).digest("hex"),
+      },
+    },
+  }),
+
+  // Custom merge strategy for slice metadata (optional)
+  mergeSliceMetadata: (operationMetadata, sliceMetadataList) => {
+    // Default: shallow merge where operation takes precedence
+    return { ...sliceMetadataList.reduce((acc, s) => ({ ...acc, ...s }), {}), ...operationMetadata };
+  },
+});
+```
+
+### Metadata Merging
+
+When an operation includes multiple slices, metadata is merged in this order:
+
+1. **Slice metadata** - Merged together (later slices override earlier ones)
+2. **Operation metadata** - Takes precedence over slice metadata
+3. **Schema defaults** - Applied first, overridden by operation/slice values
+
 ## Runtime Exports
 
 The `/runtime` subpath provides utilities for operation registration and retrieval:
