@@ -23,6 +23,9 @@
     "@soda-gql/plugin-common": "workspace:*",
     "neverthrow": "^8.1.1"
   },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  },
   "peerDependencies": {
     "typescript": "5.*"
   },
@@ -33,6 +36,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
+    },
+    "./test-cases": {
+      "@soda-gql": "./test/test-cases/index.ts",
+      "types": "./dist/test-cases/index.d.mts",
+      "import": "./dist/test-cases/index.mjs",
+      "default": "./dist/test-cases/index.mjs"
     },
     "./package.json": "./package.json"
   }

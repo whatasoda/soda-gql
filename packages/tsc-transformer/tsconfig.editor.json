@@ -5,10 +5,10 @@
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/tsc-transformer",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/tsc-transformer/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {}
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "references": [
     { "path": "../builder/tsconfig.editor.json" },
     { "path": "../common/tsconfig.editor.json" },
