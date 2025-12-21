@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
-import { join, dirname, basename } from "node:path";
+import { join } from "node:path";
 
 const REPO_ROOT = join(import.meta.dir, "..");
 const PACKAGES_DIR = join(REPO_ROOT, "packages");
@@ -128,6 +129,14 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
   for (const [entryKey, sourcePath] of Object.entries(config.entry)) {
     const exportKey = entryKeyToExportKey(entryKey);
     exports[exportKey] = generateExportsEntry(sourcePath, format, platform);
+  }
+
+  // Check for test/export.ts and add @soda-gql-only test entry
+  const testExportPath = join(packageDir, "test/export.ts");
+  if (existsSync(testExportPath)) {
+    exports["./test"] = {
+      "@soda-gql": "./test/export.ts",
+    };
   }
 
   // Add static exports
