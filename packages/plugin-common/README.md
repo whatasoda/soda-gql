@@ -116,10 +116,48 @@ import { createPluginSession } from "@soda-gql/plugin-common";
 const session = createPluginSession(options, "@soda-gql/babel-plugin");
 
 if (session) {
+  // Sync artifact retrieval
   const artifact = session.getArtifact();
+
+  // Async artifact retrieval (supports async metadata factories)
+  const asyncArtifact = await session.getArtifactAsync();
+
   const config = session.config;
 }
 ```
+
+### Shared State API
+
+For bundler plugins that need to share state between plugin and loader stages (e.g., Webpack):
+
+```typescript
+import {
+  getSharedState,
+  setSharedArtifact,
+  getSharedArtifact,
+  getStateKey,
+} from "@soda-gql/plugin-common";
+
+// Get state key from config path
+const key = getStateKey(configPath);
+
+// Share artifact between plugin and loader
+setSharedArtifact(key, artifact, moduleAdjacency);
+
+// Retrieve shared artifact in loader
+const sharedArtifact = getSharedArtifact(key);
+
+// Full state access
+const state = getSharedState(key);
+// state.currentArtifact
+// state.moduleAdjacency
+// state.generation
+```
+
+The shared state enables:
+- Efficient artifact sharing across build pipeline stages
+- Module adjacency tracking for dependency-aware rebuilds
+- Generation tracking for cache invalidation
 
 ## Plugin Development Guide
 

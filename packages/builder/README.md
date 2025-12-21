@@ -75,9 +75,36 @@ const builder = await createBuilder({
 
 ### Builder Methods
 
-- `analyze()` - Analyze source files and generate artifacts
-- `getArtifact()` - Retrieve the current build artifact
-- `invalidate(filePath)` - Invalidate cache for a specific file
+- `build(options?)` - Synchronously analyze source files and generate artifacts
+- `buildAsync(options?)` - Asynchronously analyze source files (supports parallel I/O)
+- `getGeneration()` - Get the current build generation number
+- `getCurrentArtifact()` - Retrieve the current build artifact
+
+### Async Build API
+
+For better performance in large codebases, use the async build API:
+
+```typescript
+import { createBuilder } from "@soda-gql/builder";
+
+const builder = await createBuilder({ config });
+
+// Async build with parallel file I/O
+const result = await builder.buildAsync();
+
+if (result.isOk()) {
+  const artifact = result.value;
+  // Use artifact for transformations
+}
+
+// Incremental rebuild (only processes changed files)
+const incrementalResult = await builder.buildAsync();
+```
+
+The async API is recommended for:
+- Large codebases with many source files
+- Build tools that benefit from parallel I/O
+- Environments where non-blocking operations are preferred
 
 ## Analyzer Options
 

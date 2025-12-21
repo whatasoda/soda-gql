@@ -131,10 +131,16 @@ bun typecheck
 
 ### Testing Conventions
 
+**Colocated Test Structure**:
+- Tests are colocated within each package: `packages/{package}/test/`
+- Shared test utilities: `@soda-gql/common/test`
+- Package-specific fixtures: `packages/{package}/test/fixtures/`
+- Package-specific schemas: `packages/{package}/test/schemas/`
+
 **Fixture-Based Testing**:
 - Store test code as `.ts` fixture files, not inline strings
-- Place fixtures in `tests/fixtures/` with descriptive subdirectories
-- Fixture files are type-checked by `tests/tsconfig.json`
+- Place fixtures in `test/fixtures/` within each package
+- Fixture files are type-checked by package's `tsconfig.editor.json`
 - Use `@ts-expect-error` for intentionally invalid test cases
 - Benefits: Type safety, editor support, refactoring tools work
 
@@ -151,9 +157,10 @@ bun typecheck
 - Dynamic imports with cache-busting: `import(\`file://\${path}?t=\${Date.now()}\`)`
 
 **Test Organization**:
-- Unit tests: `tests/unit/**/*.test.ts` - Test individual functions/modules
-- Integration tests: `tests/integration/**/*.test.ts` - Test full workflows with real dependencies
-- Fixtures: `tests/fixtures/**/*.ts` - Reusable test code samples
+- Unit tests: `packages/{package}/test/**/*.test.ts`
+- Integration tests: `packages/{package}/test/**/*.test.ts`
+- Fixtures: `packages/{package}/test/fixtures/**/*.ts`
+- Shared utilities: `@soda-gql/common/test`
 
 **Example Structure**:
 ```typescript
@@ -162,6 +169,7 @@ const source = `import { gql } from "@/graphql-system"; export const model = gql
 const result = analyze(source);
 
 // Good: Fixture-based test code
+import { loadFixture } from "@soda-gql/common/test";
 const { filePath, source } = loadFixture("model-definition");
 const result = analyze({ filePath, source });
 ```

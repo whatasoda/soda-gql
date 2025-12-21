@@ -72,6 +72,45 @@ Zod validation helpers:
 import { ... } from "@soda-gql/common/zod";
 ```
 
+### Scheduler (Effect System)
+
+Generator-based effect system for scheduling sync and async operations:
+
+```typescript
+import {
+  createSyncScheduler,
+  createAsyncScheduler,
+  PureEffect,
+  DeferEffect,
+  ParallelEffect,
+  YieldEffect,
+} from "@soda-gql/common";
+
+// Sync usage
+const syncScheduler = createSyncScheduler();
+const result = syncScheduler.run(function* () {
+  const a = yield* new PureEffect(1).run();
+  const b = yield* new PureEffect(2).run();
+  return a + b;
+});
+
+// Async usage with parallel effects
+const asyncScheduler = createAsyncScheduler();
+const asyncResult = await asyncScheduler.run(function* () {
+  const data = yield* new DeferEffect(fetchData()).run();
+  yield* new YieldEffect().run(); // Yield to event loop
+  return processData(data);
+});
+```
+
+### Test Utilities (`@soda-gql/common/test`)
+
+Shared test utilities for soda-gql packages (internal use):
+
+```typescript
+import { createTempDir, TestSuite } from "@soda-gql/common/test";
+```
+
 ## Related Packages
 
 - [@soda-gql/core](../core) - Core types and utilities

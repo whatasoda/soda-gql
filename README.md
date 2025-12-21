@@ -14,10 +14,12 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ```
 packages/
-├── core/           # Runtime GraphQL utilities
+├── core/           # Core GraphQL types and utilities
 ├── codegen/        # Schema code generation
-├── builder/        # Static analysis & doc generation
+├── builder/        # Static analysis & artifact generation
 ├── babel-plugin/   # Babel transformation plugin
+├── tsc-plugin/     # TypeScript compiler plugin
+├── webpack-plugin/ # Webpack plugin with HMR support
 ├── runtime/        # Runtime execution helpers
 └── cli/            # Command-line interface
 ```
