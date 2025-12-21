@@ -49,14 +49,7 @@ export type TransformTestCase = {
 // Re-export types and utilities
 export type { TestCaseDefinition } from "./definitions";
 export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
-export {
-  createTestConfig,
-  type EnsureGraphqlSystemBundleOptions,
-  type EnsureGraphqlSystemBundleResult,
-  ensureGraphqlSystemBundle,
-  loadPluginFixture,
-  loadPluginFixtureMulti,
-} from "./utils";
+export { createTestConfig, loadPluginFixture, loadPluginFixtureMulti } from "./utils";
 
 /**
  * Transform source code using tsc-transformer.

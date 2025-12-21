@@ -131,29 +131,3 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
     artifact,
   };
 };
-
-// Types for ensureGraphqlSystemBundle (no longer used internally, but exported for backward compatibility)
-export type EnsureGraphqlSystemBundleOptions = {
-  readonly outFile: string;
-  readonly schemaPath: string;
-  readonly runtimeAdapterPath?: string;
-  readonly scalarPath?: string;
-};
-
-export type EnsureGraphqlSystemBundleResult = {
-  readonly outPath: string;
-  readonly cjsPath: string;
-};
-
-/**
- * @deprecated Use the shared graphql-system from codegen-fixture instead.
- * This function is kept for backward compatibility but should not be used in new code.
- */
-export const ensureGraphqlSystemBundle = async (
-  _options: EnsureGraphqlSystemBundleOptions,
-): Promise<EnsureGraphqlSystemBundleResult> => {
-  throw new Error(
-    "ensureGraphqlSystemBundle is deprecated. Use the shared graphql-system from codegen-fixture instead. " +
-      "Run `bun fixture:setup` to generate the shared graphql-system.",
-  );
-};
