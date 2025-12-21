@@ -54,6 +54,7 @@ type BuildGenInput = {
   readonly previousModuleAdjacency: Map<string, Set<string>>;
   readonly previousIntermediateModules: ReadonlyMap<string, IntermediateModule>;
   readonly graphqlSystemPath: string;
+  readonly graphqlHelper: ReturnType<typeof createGraphqlSystemIdentifyHelper>;
 };
 
 /**
@@ -213,6 +214,7 @@ export const createBuilderSession = (options: {
         previousModuleAdjacency: state.moduleAdjacency,
         previousIntermediateModules: state.intermediateModules,
         graphqlSystemPath: resolve(config.outdir, "index.ts"),
+        graphqlHelper,
       },
       currentScan,
     });
@@ -364,6 +366,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
     previousModuleAdjacency,
     previousIntermediateModules,
     graphqlSystemPath,
+    graphqlHelper,
   } = input;
 
   // Phase 1: Collect affected files
@@ -391,7 +394,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   const analyses = new Map(discoveryResult.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot.analysis]));
 
   // Phase 3: Validate module dependencies (pure computation)
-  const dependenciesValidationResult = validateModuleDependencies({ analyses });
+  const dependenciesValidationResult = validateModuleDependencies({ analyses, graphqlSystemHelper: graphqlHelper });
   if (dependenciesValidationResult.isErr()) {
     const error = dependenciesValidationResult.error;
     throw builderErrors.graphMissingImport(error.chain[0], error.chain[1]);

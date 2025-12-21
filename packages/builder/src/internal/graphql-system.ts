@@ -3,6 +3,7 @@
  * Provides robust detection across symlinks, case-insensitive filesystems, and user-defined aliases.
  */
 
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
@@ -38,7 +39,13 @@ export const createGraphqlSystemIdentifyHelper = (config: ResolvedSodaGqlConfig)
 
   const toCanonical = (file: string): string => {
     const resolved = resolve(file);
-    return getCanonicalFileName(resolved);
+    // Use realpathSync to resolve symlinks for accurate comparison
+    try {
+      return getCanonicalFileName(realpathSync(resolved));
+    } catch {
+      // If realpath fails (file doesn't exist yet), fall back to resolved path
+      return getCanonicalFileName(resolved);
+    }
   };
 
   // Derive graphql system path from outdir (assume index.ts as default entry)

@@ -1,6 +1,7 @@
 import { isRelativeSpecifier, resolveRelativeImportWithReferences } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
+import type { GraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 
 export type DependencyGraphError = {
   readonly code: "MISSING_IMPORT";
@@ -9,8 +10,10 @@ export type DependencyGraphError = {
 
 export const validateModuleDependencies = ({
   analyses,
+  graphqlSystemHelper,
 }: {
   analyses: Map<string, ModuleAnalysis>;
+  graphqlSystemHelper: GraphqlSystemIdentifyHelper;
 }): Result<null, DependencyGraphError> => {
   for (const analysis of analyses.values()) {
     for (const { source, isTypeOnly } of analysis.imports) {
@@ -20,6 +23,11 @@ export const validateModuleDependencies = ({
 
       // Only check relative imports (project modules)
       if (isRelativeSpecifier(source)) {
+        // Skip graphql-system imports - they are not part of the analyzed modules
+        if (graphqlSystemHelper.isGraphqlSystemImportSpecifier({ filePath: analysis.filePath, specifier: source })) {
+          continue;
+        }
+
         const resolvedModule = resolveRelativeImportWithReferences({
           filePath: analysis.filePath,
           specifier: source,
