@@ -1,12 +1,12 @@
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
 import { createTransformer } from "./transformer";
 
 type PluginPassState = PluginPass & {
-  _state?: PluginSession;
+  _artifact?: BuilderArtifact | null;
 };
 
 const fallbackPlugin = (): PluginObj => ({
@@ -18,18 +18,21 @@ const fallbackPlugin = (): PluginObj => ({
   },
 });
 
-export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj => ({
+export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj<PluginPassState> => ({
   name: "@soda-gql/babel-plugin",
+
+  async pre() {
+    this._artifact = await pluginSession.getArtifactAsync();
+  },
+
   visitor: {
     Program(programPath: NodePath<t.Program>, state) {
-      const pass = state as unknown as PluginPassState;
-      const filename = pass.file?.opts?.filename;
+      const filename = state.file?.opts?.filename;
       if (!filename) {
         return;
       }
 
-      // Rebuild artifact on every compilation (like tsc-plugin)
-      const artifact = pluginSession.getArtifact();
+      const artifact = state._artifact;
       if (!artifact) {
         return;
       }
