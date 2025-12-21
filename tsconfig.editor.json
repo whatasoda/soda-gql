@@ -30,6 +30,7 @@
     { "path": "./packages/babel-plugin/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
-    { "path": "./packages/runtime/tsconfig.editor.json" }
+    { "path": "./packages/runtime/tsconfig.editor.json" },
+    { "path": "./packages/webpack-plugin/tsconfig.editor.json" }
   ]
 }
