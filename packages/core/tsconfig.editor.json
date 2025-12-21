@@ -6,6 +6,6 @@
     "outDir": "../../node_modules/.soda-gql/.typecheck/core",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/core/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }

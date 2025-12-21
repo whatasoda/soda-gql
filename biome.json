@@ -65,7 +65,8 @@
       "includes": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "**/tests/**/*.ts",
+        "**/tests/**/*",
+        "**/packages/*/test/**/*",
         "packages/core/src/types/**/*.ts",
         "packages/core/src/utils/**/*.ts"
       ],
@@ -78,7 +79,9 @@
       }
     },
     {
-      "includes": ["**/fixtures/**/*"],
+      "includes": [
+        "**/fixtures/**/*"
+      ],
       "linter": {
         "rules": {
           "correctness": {
@@ -89,7 +92,9 @@
       }
     },
     {
-      "includes": ["examples/nestjs-compiler-tsc/**/*"],
+      "includes": [
+        "examples/nestjs-compiler-tsc/**/*"
+      ],
       "linter": {
         "rules": {
           "style": {

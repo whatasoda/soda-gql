@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { loadModuleAnalysisFixture } from "../../tests/utils/fixtures";
-import { getTestConfig } from "../../tests/utils/test-config";
+import { loadModuleAnalysisFixture } from "../../test/utils/fixtures";
+import { getTestConfig } from "../../test/utils/test-config";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createAstAnalyzer } from ".";
 
@@ -44,7 +44,9 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("imported-binding-refs");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
+    const definition = analysis.definitions.find(
+      (item) => item.astPath === "pageQuery"
+    );
     expect(definition?.astPath).toBe("pageQuery");
   });
 
@@ -52,7 +54,9 @@ describe("module analysis (swc)", () => {
     const { filePath, source } = loadFixture("namespace-imports");
 
     const analysis = analyzeModule({ filePath, source });
-    const definition = analysis.definitions.find((item) => item.astPath === "pageQuery");
+    const definition = analysis.definitions.find(
+      (item) => item.astPath === "pageQuery"
+    );
     expect(definition?.astPath).toBe("pageQuery");
   });
 });

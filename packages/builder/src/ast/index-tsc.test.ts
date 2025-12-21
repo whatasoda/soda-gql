@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { loadModuleAnalysisFixture } from "../../tests/utils/fixtures";
-import { getTestConfig } from "../../tests/utils/test-config";
+import { loadModuleAnalysisFixture } from "../../test/utils/fixtures";
+import { getTestConfig } from "../../test/utils/test-config";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createAstAnalyzer } from "./index";
 
@@ -23,7 +23,11 @@ describe("Module analyzer - TypeScript", () => {
       astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "userSlice" }, { astPath: "pageQuery" }]);
+    expect(summary).toEqual([
+      { astPath: "userModel" },
+      { astPath: "userSlice" },
+      { astPath: "pageQuery" },
+    ]);
   });
 
   it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -68,7 +72,9 @@ describe("Module analyzer - TypeScript", () => {
 
     const analysis = analyzeModule({ filePath, source });
 
-    const pageQuery = analysis.definitions.find((def) => def.astPath === "pageQuery");
+    const pageQuery = analysis.definitions.find(
+      (def) => def.astPath === "pageQuery"
+    );
     expect(pageQuery?.astPath).toBe("pageQuery");
   });
 
@@ -81,6 +87,9 @@ describe("Module analyzer - TypeScript", () => {
       astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([{ astPath: "adminModel" }, { astPath: "defaultQuery" }]);
+    expect(summary).toEqual([
+      { astPath: "adminModel" },
+      { astPath: "defaultQuery" },
+    ]);
   });
 });
