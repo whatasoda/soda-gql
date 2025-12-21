@@ -29,8 +29,6 @@
     { "path": "./packages/graffle-client/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
-    { "path": "./packages/plugin-vite/tsconfig.editor.json" },
-    { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" }
   ]

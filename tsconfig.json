@@ -18,8 +18,6 @@
       "@soda-gql/core/*": ["./packages/core/src/*"],
       "@soda-gql/plugin-babel/*": ["./packages/plugin-babel/src/*"],
       "@soda-gql/plugin-common/*": ["./packages/plugin-common/src/*"],
-      "@soda-gql/plugin-vite/*": ["./packages/plugin-vite/src/*"],
-      "@soda-gql/plugin-webpack/*": ["./packages/plugin-webpack/src/*"],
       "@soda-gql/tsc-plugin/*": ["./packages/tsc-plugin/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"]
     }
@@ -35,8 +33,6 @@
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/plugin-babel/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
-    { "path": "./packages/plugin-vite/tsconfig.editor.json" },
-    { "path": "./packages/plugin-webpack/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./examples/babel-app/tsconfig.editor.json" }
