@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel-plugin";
-import { generateTestCase, normalizeCode } from "@soda-gql/tsc-transformer/test-cases";
+import { generateTestCase } from "@soda-gql/tsc-transformer/test-cases";
 import { createTestConfig } from "../helpers/test-config";
 import { loadPluginFixture } from "../utils/pluginFixtures";
 
@@ -111,8 +111,8 @@ describe("Babel-Plugin Conformance with TSC-Transformer", () => {
           }
 
           // Verify runtime import is present
-          expect(babelOutput).toContain('@soda-gql/runtime');
-          expect(testCase.expected.esm).toContain('@soda-gql/runtime');
+          expect(babelOutput).toContain("@soda-gql/runtime");
+          expect(testCase.expected.esm).toContain("@soda-gql/runtime");
         } finally {
           rmSync(tempDir, { recursive: true, force: true });
         }

@@ -5,11 +5,11 @@
  * when using Nest CLI with `builder: "tsc"`.
  */
 
-export * from "./plugin";
+export type { TypeScriptEnv } from "@soda-gql/tsc-transformer";
 
 // Re-export transformer for backwards compatibility
-export { createTransformer, createAfterStubTransformer } from "@soda-gql/tsc-transformer";
-export type { TypeScriptEnv } from "@soda-gql/tsc-transformer";
+export { createAfterStubTransformer, createTransformer } from "@soda-gql/tsc-transformer";
+export * from "./plugin";
 
 import plugin from "./plugin";
 

@@ -6,5 +6,5 @@
  * and provides test cases for verifying other plugin implementations.
  */
 
-export { createTransformer, createAfterStubTransformer } from "./transformer";
 export type { TypeScriptEnv } from "./transformer";
+export { createAfterStubTransformer, createTransformer } from "./transformer";
