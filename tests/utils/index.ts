@@ -18,6 +18,5 @@ export {
   writeTestFile,
 } from "@soda-gql/common/test";
 
-export * from "./fixtureHelpers";
 export * from "./moduleLoader";
 export * from "./operationSpy";
