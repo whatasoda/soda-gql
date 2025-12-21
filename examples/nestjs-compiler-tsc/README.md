@@ -162,11 +162,11 @@ Create GraphQL operations in `src/graphql/operations.ts`:
 import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
-export const getUserQuery = gql.default(({ operation }, { $ }) =>
+export const getUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
       operationName: 'GetUser',
-      variables: [$('userId').scalar('ID:!')],
+      variables: [$var('userId').scalar('ID:!')],
     },
     ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),

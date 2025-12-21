@@ -84,9 +84,9 @@ The plugin transforms `gql.default()` calls at compile time:
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userQuery = gql.default(({ query }, { $ }) =>
+export const userQuery = gql.default(({ query }, { $var }) =>
   query.composed(
-    { operationName: "GetUser", variables: [$("id").scalar("ID:!")] },
+    { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
     ({ $ }) => ({ user: userSlice.build({ id: $.id }) }),
   ),
 );

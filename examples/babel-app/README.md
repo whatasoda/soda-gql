@@ -61,9 +61,9 @@ babel-app/
 Models define reusable GraphQL fragments with data transformations:
 
 ```typescript
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel = gql.default(({ model }, { $var }) =>
   model.User(
-    { variables: [$('categoryId').scalar('ID:?')] },
+    { variables: [$var('categoryId').scalar('ID:?')] },
     ({ f, $ }) => [f.id(), f.name()],
     (selection) => ({ id: selection.id, name: selection.name }),
   ),
@@ -75,9 +75,9 @@ export const userModel = gql.default(({ model }, { $ }) =>
 Slices define domain-specific queries/mutations/subscriptions:
 
 ```typescript
-export const userSlice = gql.default(({ slice }, { $ }) =>
+export const userSlice = gql.default(({ slice }, { $var }) =>
   slice.query(
-    { variables: [$('id').scalar('ID:!')] },
+    { variables: [$var('id').scalar('ID:!')] },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
     ({ select }) => select(['$.user'], (result) => result),
   ),
@@ -89,11 +89,11 @@ export const userSlice = gql.default(({ slice }, { $ }) =>
 Operations compose multiple slices into executable GraphQL operations:
 
 ```typescript
-export const getUserQuery = gql.default(({ operation }, { $ }) =>
+export const getUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
       operationName: 'GetUser',
-      variables: [$('userId').scalar('ID:!')],
+      variables: [$var('userId').scalar('ID:!')],
     },
     ({ $ }) => ({ user: userSlice.build({ id: $.userId }) }),
   ),

@@ -42,9 +42,9 @@ import { gql } from "@/graphql-system";
 Models define reusable fragments for a specific GraphQL type:
 
 ```typescript
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel = gql.default(({ model }, { $var }) =>
   model.User(
-    { variables: [$("includeEmail").scalar("Boolean:?")] },
+    { variables: [$var("includeEmail").scalar("Boolean:?")] },
     ({ f, $ }) => [
       f.id(),
       f.name(),
@@ -64,9 +64,9 @@ export const userModel = gql.default(({ model }, { $ }) =>
 Slices define reusable operation fragments:
 
 ```typescript
-export const userSlice = gql.default(({ query }, { $ }) =>
+export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
-    { variables: [$("userId").scalar("ID:!")] },
+    { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [
       f.user({ id: $.userId })(() => [
         userModel.fragment({}),
@@ -85,11 +85,11 @@ export const userSlice = gql.default(({ query }, { $ }) =>
 Composed operations combine multiple slices:
 
 ```typescript
-export const getUserQuery = gql.default(({ query }, { $ }) =>
+export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "GetUser",
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ $ }) => ({
       user: userSlice.embed({ userId: $.id }),
@@ -103,11 +103,11 @@ export const getUserQuery = gql.default(({ query }, { $ }) =>
 Inline operations define field selections directly:
 
 ```typescript
-export const getUserInline = gql.default(({ query }, { $ }) =>
+export const getUserInline = gql.default(({ query }, { $var }) =>
   query.inline(
     {
       operationName: "GetUserInline",
-      variables: [$("id").scalar("ID:!")],
+      variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
       f.user({ id: $.id })(({ f }) => [

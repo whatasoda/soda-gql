@@ -14,10 +14,12 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ```
 packages/
-├── core/           # Runtime GraphQL utilities
+├── core/           # Core GraphQL types and utilities
 ├── codegen/        # Schema code generation
-├── builder/        # Static analysis & doc generation
+├── builder/        # Static analysis & artifact generation
 ├── babel-plugin/   # Babel transformation plugin
+├── tsc-plugin/     # TypeScript compiler plugin
+├── webpack-plugin/ # Webpack plugin with HMR support
 ├── runtime/        # Runtime execution helpers
 └── cli/            # Command-line interface
 ```
@@ -68,10 +70,10 @@ The generated runtime module imports your scalar and adapter implementations. Ke
 import { gql } from "@/graphql-system";
 
 // Define a reusable model with array-based API
-export const userModel = gql.default(({ model }, { $ }) =>
+export const userModel = gql.default(({ model }, { $var }) =>
   model.User(
     {
-      variables: [$("categoryId").scalar("ID:?")],
+      variables: [$var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -95,10 +97,10 @@ export const userModel = gql.default(({ model }, { $ }) =>
 );
 
 // Create a query slice
-export const userSlice = gql.default(({ query }, { $ }) =>
+export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$("id").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -118,11 +120,11 @@ export const userSlice = gql.default(({ query }, { $ }) =>
 );
 
 // Build a complete operation
-export const profileQuery = gql.default(({ query }, { $ }) =>
+export const profileQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       operationName: "ProfileQuery",
-      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
       users: userSlice.embed({
@@ -133,11 +135,11 @@ export const profileQuery = gql.default(({ query }, { $ }) =>
   ),
 );
 
-export const profileQueryInline = gql.default(({ query }, { $ }) =>
+export const profileQueryInline = gql.default(({ query }, { $var }) =>
   query.inline(
     {
       operationName: "ProfileQuery",
-      variables: [$("userId").scalar("ID:!"), $("categoryId").scalar("ID:?")],
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       //
@@ -159,7 +161,7 @@ export const profileQueryInline = gql.default(({ query }, { $ }) =>
 );
 ```
 
-**Note on API**: Variables are now declared as arrays (`variables: [$(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
+**Note on API**: Variables are now declared as arrays (`variables: [$var(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
 
 ### For Contributors
 
