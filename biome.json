@@ -56,7 +56,8 @@
       "!**/graphql-system/**/*",
       "!**/tests/.tmp/**/*",
       "!**/.cache/**/*",
-      "!**/*.generated.ts"
+      "!**/*.generated.ts",
+      "!packages/swc-transformer/index.js"
     ],
     "ignoreUnknown": false
   },

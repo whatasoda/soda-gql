@@ -30,7 +30,7 @@ impl RuntimeCallBuilder {
     /// For models and slices: returns just the replacement expression.
     /// For operations: returns both a reference expression and a runtime setup statement.
     pub fn build_replacement(&self, replacement: &GqlReplacement) -> Option<(Expr, Option<Stmt>)> {
-        match &replacement.artifact {
+        let result = match &replacement.artifact {
             BuilderArtifactElement::Model { prebuild, .. } => {
                 self.build_model_call(prebuild, &replacement.builder_args)
                     .map(|expr| (expr, None))
@@ -45,7 +45,23 @@ impl RuntimeCallBuilder {
             BuilderArtifactElement::InlineOperation { prebuild, .. } => {
                 self.build_inline_operation_calls(prebuild)
             }
+        };
+
+        if result.is_none() {
+            let artifact_type = match &replacement.artifact {
+                BuilderArtifactElement::Model { .. } => "Model",
+                BuilderArtifactElement::Slice { .. } => "Slice",
+                BuilderArtifactElement::Operation { .. } => "Operation",
+                BuilderArtifactElement::InlineOperation { .. } => "InlineOperation",
+            };
+            eprintln!(
+                "[swc-transformer] Warning: Failed to build replacement for {} artifact (canonical ID: '{}'). \
+                This may indicate missing or mismatched builder arguments.",
+                artifact_type, replacement.canonical_id
+            );
         }
+
+        result
     }
 
     /// Create the runtime accessor expression.

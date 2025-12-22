@@ -6,6 +6,9 @@ const REPO_ROOT = join(import.meta.dir, "..");
 const PACKAGES_DIR = join(REPO_ROOT, "packages");
 const STATIC_EXPORTS = ["./package.json"];
 
+// Packages that manage their own exports (e.g., native modules with custom build systems)
+const EXCLUDED_PACKAGES = ["@soda-gql/swc-transformer"];
+
 interface PackageJson {
   name: string;
   main?: string;
@@ -169,6 +172,11 @@ async function main() {
   const configs = await loadTsdownConfigs();
 
   for (const config of configs) {
+    if (EXCLUDED_PACKAGES.includes(config.name)) {
+      const shortName = config.name.replace(/^@soda-gql\//, "");
+      console.log(`  ⊘ ${shortName}: skipped (manages own exports)`);
+      continue;
+    }
     try {
       await syncPackageExports(config);
     } catch (error) {
