@@ -13,5 +13,16 @@ export default defineConfig({
       { text: "API Reference", link: "/api/" },
       { text: "Recipes", link: "/recipes/" },
     ],
+    sidebar: {
+      "/guide/": [
+        {
+          text: "Introduction",
+          items: [
+            { text: "What is soda-gql?", link: "/guide/" },
+            { text: "Getting Started", link: "/guide/getting-started" },
+          ],
+        },
+      ],
+    },
   },
 });
