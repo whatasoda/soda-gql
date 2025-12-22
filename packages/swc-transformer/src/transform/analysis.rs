@@ -10,7 +10,7 @@ use swc_core::common::Span;
 use swc_core::ecma::ast::*;
 use swc_core::ecma::visit::{Visit, VisitWith};
 
-use crate::types::{BuilderArtifact, BuilderArtifactElement, CanonicalId};
+use crate::types::{BuilderArtifact, BuilderArtifactElement, CanonicalId, PluginError};
 
 use super::metadata::MetadataMap;
 
@@ -45,6 +45,8 @@ pub struct GqlCallFinder<'a> {
     /// Map from call span to replacement info
     replacements: HashMap<Span, GqlReplacement>,
     has_transforms: bool,
+    /// Errors encountered during analysis
+    errors: Vec<PluginError>,
 }
 
 impl<'a> GqlCallFinder<'a> {
@@ -55,6 +57,7 @@ impl<'a> GqlCallFinder<'a> {
             source_path,
             replacements: HashMap::new(),
             has_transforms: false,
+            errors: Vec::new(),
         }
     }
 
@@ -66,6 +69,11 @@ impl<'a> GqlCallFinder<'a> {
     /// Get the replacement for a call expression if it should be transformed.
     pub fn get_replacement(&self, call: &CallExpr) -> Option<&GqlReplacement> {
         self.replacements.get(&call.span)
+    }
+
+    /// Take collected errors.
+    pub fn take_errors(&mut self) -> Vec<PluginError> {
+        std::mem::take(&mut self.errors)
     }
 
     /// Process a potential GQL call expression.
@@ -88,16 +96,14 @@ impl<'a> GqlCallFinder<'a> {
                     );
                     self.has_transforms = true;
                 } else {
-                    eprintln!(
-                        "[swc-transformer] Warning: No artifact found for canonical ID '{}' in '{}'",
-                        canonical_id, self.source_path
-                    );
+                    let error = PluginError::artifact_not_found(self.source_path, &canonical_id);
+                    eprintln!("[swc-transformer] {}", error.format());
+                    self.errors.push(error);
                 }
             } else {
-                eprintln!(
-                    "[swc-transformer] Warning: No metadata for gql call at {:?} in '{}'",
-                    call.span, self.source_path
-                );
+                let error = PluginError::metadata_not_found(self.source_path);
+                eprintln!("[swc-transformer] {}", error.format());
+                self.errors.push(error);
             }
         }
     }
