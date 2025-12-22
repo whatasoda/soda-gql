@@ -4,6 +4,8 @@
  * This module provides a TypeScript wrapper around the native Rust transformer.
  */
 
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
@@ -111,6 +113,26 @@ export type TransformInput = {
   sourcePath: string;
 };
 
+/**
+ * Normalize path separators to forward slashes (cross-platform).
+ * This matches the behavior of @soda-gql/common normalizePath.
+ */
+const normalizePath = (value: string): string => value.replace(/\\/g, "/");
+
+/**
+ * Resolve the canonical path to the graphql-system file.
+ * Uses realpath to resolve symlinks for accurate comparison.
+ */
+const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
+  const graphqlSystemPath = resolve(config.outdir, "index.ts");
+  try {
+    return normalizePath(realpathSync(graphqlSystemPath));
+  } catch {
+    // If realpath fails (file doesn't exist yet), fall back to resolved path
+    return normalizePath(resolve(graphqlSystemPath));
+  }
+};
+
 export type TransformOutput = {
   /** Whether any transformation was performed */
   transformed: boolean;
@@ -136,9 +158,13 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   const isCJS = options.compilerOptions?.module === "CommonJS";
 
+  // Resolve the graphql-system file path for stubbing
+  const graphqlSystemPath = resolveGraphqlSystemPath(options.config);
+
   const configJson = JSON.stringify({
     graphqlSystemAliases: options.config.graphqlSystemAliases,
     isCjs: isCJS,
+    graphqlSystemPath,
   });
 
   const artifactJson = JSON.stringify(options.artifact);
@@ -147,7 +173,9 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   return {
     transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
-      const resultJson = nativeTransformer.transform(sourceCode, sourcePath);
+      // Normalize path for cross-platform compatibility
+      const normalizedPath = normalizePath(sourcePath);
+      const resultJson = nativeTransformer.transform(sourceCode, normalizedPath);
       const result: TransformResult = JSON.parse(resultJson);
 
       return {
@@ -175,13 +203,20 @@ export const transform = async (
 ): Promise<TransformOutput> => {
   const native = await loadNativeModule();
 
+  // Normalize path for cross-platform compatibility
+  const normalizedPath = normalizePath(input.sourcePath);
+
+  // Resolve the graphql-system file path for stubbing
+  const graphqlSystemPath = resolveGraphqlSystemPath(input.config);
+
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
-    sourcePath: input.sourcePath,
+    sourcePath: normalizedPath,
     artifactJson: JSON.stringify(input.artifact),
     config: {
       graphqlSystemAliases: input.config.graphqlSystemAliases,
       isCjs: input.isCjs ?? false,
+      graphqlSystemPath,
     },
   });
 

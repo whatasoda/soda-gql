@@ -14,6 +14,12 @@ pub struct TransformConfig {
     /// If false, generates ESM output.
     #[serde(default)]
     pub is_cjs: bool,
+
+    /// The canonical path to the graphql-system file.
+    /// When the source file matches this path, it will be stubbed out.
+    /// This is resolved by the TypeScript wrapper and passed to Rust.
+    #[serde(default)]
+    pub graphql_system_path: Option<String>,
 }
 
 impl Default for TransformConfig {
@@ -21,6 +27,7 @@ impl Default for TransformConfig {
         Self {
             graphql_system_aliases: vec!["@/graphql-system".to_string()],
             is_cjs: false,
+            graphql_system_path: None,
         }
     }
 }

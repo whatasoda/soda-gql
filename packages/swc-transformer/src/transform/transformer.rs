@@ -23,6 +23,8 @@ use super::imports::ImportManager;
 use super::metadata::MetadataCollector;
 use super::runtime::RuntimeCallBuilder;
 
+use crate::types::PluginError;
+
 /// Result of a transformation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +34,11 @@ pub struct TransformResult {
 
     /// Whether any transformation was performed.
     pub transformed: bool,
+
+    /// Errors encountered during transformation.
+    /// These are non-fatal - transformation continues but logs issues.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub errors: Vec<PluginError>,
 }
 
 /// Transform a source file.
@@ -42,6 +49,15 @@ pub struct TransformResult {
 /// # Returns
 /// Result containing the transformed code, or an error message
 pub fn transform_source(input: &TransformInput) -> Result<TransformResult, String> {
+    // Check if this is the graphql-system file - if so, stub it out
+    if is_graphql_system_file(&input.source_path, &input.config.graphql_system_path) {
+        return Ok(TransformResult {
+            output_code: "export {};".to_string(),
+            transformed: true,
+            errors: Vec::new(),
+        });
+    }
+
     // Parse the artifact
     let artifact: BuilderArtifact = serde_json::from_str(&input.artifact_json)
         .map_err(|e| format!("Failed to parse artifact: {}", e))?;
@@ -79,17 +95,18 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
     let mut finder = GqlCallFinder::new(&artifact, &metadata, &input.source_path);
     module.visit_with(&mut finder);
 
-    // If no GQL calls found, return unchanged
+    // If no GQL calls found, return unchanged (but may have errors)
     if !finder.has_transformations() {
         return Ok(TransformResult {
             output_code: input.source_code.clone(),
             transformed: false,
+            errors: finder.take_errors(),
         });
     }
 
     // Build runtime calls and transform
     let runtime_builder = RuntimeCallBuilder::new(input.config.is_cjs);
-    let mut transformer = GqlTransformer::new(&finder, &runtime_builder);
+    let mut transformer = GqlTransformer::new(&finder, &runtime_builder, &input.source_path);
     module.visit_mut_with(&mut transformer);
 
     // Manage imports
@@ -108,9 +125,18 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
     // Emit the transformed code
     let output = emit_module(&cm, &module)?;
 
+    // Collect errors from both phases
+    // Take transformer errors first, then drop to release borrow of finder
+    let transformer_errors = transformer.take_errors();
+    drop(transformer);
+    // Now we can mutably borrow finder
+    let mut errors = finder.take_errors();
+    errors.extend(transformer_errors);
+
     Ok(TransformResult {
         output_code: output,
         transformed: true,
+        errors,
     })
 }
 
@@ -120,20 +146,28 @@ struct GqlTransformer<'a> {
     runtime_builder: &'a RuntimeCallBuilder,
     needs_runtime: bool,
     pub runtime_calls: Vec<Stmt>,
+    errors: Vec<PluginError>,
+    source_path: String,
 }
 
 impl<'a> GqlTransformer<'a> {
-    fn new(finder: &'a GqlCallFinder<'a>, runtime_builder: &'a RuntimeCallBuilder) -> Self {
+    fn new(finder: &'a GqlCallFinder<'a>, runtime_builder: &'a RuntimeCallBuilder, source_path: &str) -> Self {
         Self {
             finder,
             runtime_builder,
             needs_runtime: false,
             runtime_calls: Vec::new(),
+            errors: Vec::new(),
+            source_path: source_path.to_string(),
         }
     }
 
     fn needs_runtime_import(&self) -> bool {
         self.needs_runtime
+    }
+
+    fn take_errors(&mut self) -> Vec<PluginError> {
+        std::mem::take(&mut self.errors)
     }
 }
 
@@ -159,6 +193,21 @@ impl VisitMut for GqlTransformer<'_> {
 
                     // Replace the expression
                     *expr = reference_expr;
+                } else {
+                    // Record structured error when replacement build fails
+                    let artifact_type = match &replacement.artifact {
+                        crate::types::BuilderArtifactElement::Model { .. } => "model",
+                        crate::types::BuilderArtifactElement::Slice { .. } => "slice",
+                        crate::types::BuilderArtifactElement::Operation { .. } => "operation",
+                        crate::types::BuilderArtifactElement::InlineOperation { .. } => "inlineOperation",
+                    };
+                    let error = PluginError::missing_builder_arg(
+                        &self.source_path,
+                        artifact_type,
+                        "builder callback",
+                    );
+                    eprintln!("[swc-transformer] {}", error.format());
+                    self.errors.push(error);
                 }
             }
         }
@@ -202,4 +251,18 @@ fn emit_module(cm: &Lrc<SourceMap>, module: &Module) -> Result<String, String> {
     }
 
     String::from_utf8(buf).map_err(|e| format!("UTF-8 error: {}", e))
+}
+
+/// Check if the source file is the graphql-system file.
+/// Both paths should be normalized (forward slashes) before comparison.
+fn is_graphql_system_file(source_path: &str, graphql_system_path: &Option<String>) -> bool {
+    match graphql_system_path {
+        Some(gql_path) => {
+            // Normalize both paths for comparison (remove trailing slashes, normalize separators)
+            let normalized_source = source_path.replace('\\', "/");
+            let normalized_gql = gql_path.replace('\\', "/");
+            normalized_source == normalized_gql
+        }
+        None => false,
+    }
 }

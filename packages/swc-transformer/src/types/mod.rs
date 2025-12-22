@@ -5,6 +5,8 @@
 
 pub mod artifact;
 pub mod config;
+pub mod error;
 
 pub use artifact::*;
 pub use config::*;
+pub use error::*;
