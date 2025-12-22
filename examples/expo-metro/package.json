@@ -2,7 +2,7 @@
   "name": "expo-metro-example",
   "version": "0.0.0",
   "private": true,
-  "main": "expo/AppEntry.js",
+  "main": "./index.js",
   "scripts": {
     "start": "expo start",
     "start:clear": "expo start --clear",
