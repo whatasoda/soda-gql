@@ -110,7 +110,8 @@ export const normalizeCode = async (code: string): Promise<string> => {
   // Dynamic import to avoid bundling prettier
   const prettier = await import("prettier");
   return prettier.format(code, {
-    parser: "babel",
+    // Use babel-ts to handle TypeScript syntax like `import type`
+    parser: "babel-ts",
     // Use very short printWidth to force all objects to expand consistently
     printWidth: 40,
     tabWidth: 2,
