@@ -7,7 +7,17 @@ export default defineConfig({
   title: "soda-gql",
   description:
     "Zero-runtime GraphQL query generation - Type-safe GraphQL with build-time transformation",
+  markdown: {
+    showLineNumbers: true,
+  },
   themeConfig: {
+    socialLinks: [
+      {
+        icon: "github",
+        mode: "link",
+        content: "https://github.com/whatasoda/soda-gql",
+      },
+    ],
     nav: [
       { text: "Guide", link: "/guide/" },
       { text: "API Reference", link: "/api/" },
@@ -26,9 +36,7 @@ export default defineConfig({
       "/api/": [
         {
           text: "API Reference",
-          items: [
-            { text: "Overview", link: "/api/" },
-          ],
+          items: [{ text: "Overview", link: "/api/" }],
         },
         {
           text: "Packages",
@@ -41,11 +49,16 @@ export default defineConfig({
       "/recipes/": [
         {
           text: "Recipes",
-          items: [
-            { text: "Examples Overview", link: "/recipes/" },
-          ],
+          items: [{ text: "Examples Overview", link: "/recipes/" }],
         },
       ],
+    },
+    footer: {
+      message: "Released under the MIT License.",
+    },
+    lastUpdated: true,
+    outline: {
+      level: [2, 3],
     },
   },
 });
