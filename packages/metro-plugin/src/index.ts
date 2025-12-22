@@ -1,9 +1,8 @@
 import type { MetroConfig, MetroPluginOptions } from "./types";
 
-export type { MetroConfig, MetroPluginOptions, MetroTransformParams, MetroTransformResult, MetroTransformer } from "./types";
-
 // Re-export shared state utilities for advanced usage
 export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/plugin-common";
+export type { MetroConfig, MetroPluginOptions, MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
 /**
  * Wrap Metro configuration with soda-gql support.

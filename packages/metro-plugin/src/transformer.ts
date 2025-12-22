@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
 import { normalizePath } from "@soda-gql/common";
@@ -11,8 +12,7 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
 } from "@soda-gql/plugin-common";
-import crypto from "node:crypto";
-import type { MetroTransformParams, MetroTransformResult, MetroTransformer } from "./types";
+import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
 /**
  * Upstream transformer candidates in order of preference.
