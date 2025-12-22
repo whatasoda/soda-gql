@@ -92,7 +92,7 @@
     },
     "packages/babel-plugin": {
       "name": "@soda-gql/babel-plugin",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@babel/parser": "^7.24.0",
@@ -111,7 +111,7 @@
     },
     "packages/builder": {
       "name": "@soda-gql/builder",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
@@ -129,7 +129,7 @@
     },
     "packages/cli": {
       "name": "@soda-gql/cli",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "bin": {
         "soda-gql": "./dist/index.cjs",
       },
@@ -142,7 +142,7 @@
     },
     "packages/codegen": {
       "name": "@soda-gql/codegen",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -153,14 +153,14 @@
     },
     "packages/common": {
       "name": "@soda-gql/common",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "zod": "^4.1.11",
       },
     },
     "packages/config": {
       "name": "@soda-gql/config",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@swc/core": "^1.10.0",
@@ -170,7 +170,7 @@
     },
     "packages/core": {
       "name": "@soda-gql/core",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@graphql-typed-document-node/core": "^3.2.0",
         "graphql": "^16.11.0",
@@ -178,7 +178,7 @@
     },
     "packages/graffle-client": {
       "name": "@soda-gql/graffle-client",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -189,7 +189,7 @@
     },
     "packages/plugin-common": {
       "name": "@soda-gql/plugin-common",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -199,14 +199,33 @@
     },
     "packages/runtime": {
       "name": "@soda-gql/runtime",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
       },
     },
+    "packages/swc-transformer": {
+      "name": "@soda-gql/swc-transformer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/common": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@soda-gql/core": "workspace:*",
+        "@soda-gql/plugin-common": "workspace:*",
+      },
+      "devDependencies": {
+        "@napi-rs/cli": "^2.18.4",
+        "@soda-gql/tsc-transformer": "workspace:*",
+        "prettier": "^3.4.2",
+      },
+      "peerDependencies": {
+        "@swc/core": "^1.0.0",
+      },
+    },
     "packages/tsc-plugin": {
       "name": "@soda-gql/tsc-plugin",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -220,7 +239,7 @@
     },
     "packages/tsc-transformer": {
       "name": "@soda-gql/tsc-transformer",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -239,7 +258,7 @@
     },
     "packages/webpack-plugin": {
       "name": "@soda-gql/webpack-plugin",
-      "version": "0.0.9",
+      "version": "0.1.0",
       "dependencies": {
         "@soda-gql/babel-plugin": "workspace:*",
         "@soda-gql/builder": "workspace:*",
@@ -425,6 +444,8 @@
 
     "@mole-inc/bin-wrapper": ["@mole-inc/bin-wrapper@8.0.1", "", { "dependencies": { "bin-check": "^4.1.0", "bin-version-check": "^5.0.0", "content-disposition": "^0.5.4", "ext-name": "^5.0.0", "file-type": "^17.1.6", "filenamify": "^5.0.2", "got": "^11.8.5", "os-filter-obj": "^2.0.0" } }, "sha512-sTGoeZnjI8N4KS+sW2AN95gDBErhAguvkw/tWdCjeM8bvxpz5lqrnd0vOJABA1A+Ic3zED7PYoLP/RANLgVotA=="],
 
+    "@napi-rs/cli": ["@napi-rs/cli@2.18.4", "", { "bin": { "napi": "scripts/index.js" } }, "sha512-SgJeA4df9DE2iAEpr3M2H0OKl/yjtg1BnRI5/JyowS71tUWhrfSu2LT0V3vlHET+g1hBVlrO60PmEXwUEKp8Mg=="],
+
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.0.7", "", { "dependencies": { "@emnapi/core": "^1.5.0", "@emnapi/runtime": "^1.5.0", "@tybys/wasm-util": "^0.10.1" } }, "sha512-SeDnOO0Tk7Okiq6DbXmmBODgOAb9dp9gjlphokTUxmt8U3liIP1ZsozBahH69j/RJv+Rfs6IwUKHTgQYJ/HBAw=="],
 
     "@nestjs/cli": ["@nestjs/cli@10.4.9", "", { "dependencies": { "@angular-devkit/core": "17.3.11", "@angular-devkit/schematics": "17.3.11", "@angular-devkit/schematics-cli": "17.3.11", "@nestjs/schematics": "^10.0.1", "chalk": "4.1.2", "chokidar": "3.6.0", "cli-table3": "0.6.5", "commander": "4.1.1", "fork-ts-checker-webpack-plugin": "9.0.2", "glob": "10.4.5", "inquirer": "8.2.6", "node-emoji": "1.11.0", "ora": "5.4.1", "tree-kill": "1.2.2", "tsconfig-paths": "4.2.0", "tsconfig-paths-webpack-plugin": "4.2.0", "typescript": "5.7.2", "webpack": "5.97.1", "webpack-node-externals": "3.0.0" }, "peerDependencies": { "@swc/cli": "^0.1.62 || ^0.3.0 || ^0.4.0 || ^0.5.0", "@swc/core": "^1.3.62" }, "optionalPeers": ["@swc/cli", "@swc/core"], "bin": { "nest": "bin/nest.js" } }, "sha512-s8qYd97bggqeK7Op3iD49X2MpFtW4LVNLAwXFkfbRxKME6IYT7X0muNTJ2+QfI8hpbNx9isWkrLWIp+g5FOhiA=="],
@@ -566,6 +587,8 @@
     "@soda-gql/plugin-common": ["@soda-gql/plugin-common@workspace:packages/plugin-common"],
 
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
+
+    "@soda-gql/swc-transformer": ["@soda-gql/swc-transformer@workspace:packages/swc-transformer"],
 
     "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
 

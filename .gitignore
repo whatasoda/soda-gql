@@ -168,3 +168,13 @@ tests/fixtures/runtime-app/graphql-system/
 
 # Benchmark fixture generated files
 benchmarks/runtime-builder/*/graphql-system/
+
+# Package test fixture generated files
+packages/builder/test/graphql-system/
+packages/tsc-transformer/test/codegen-fixture/graphql-system/
+
+# Rust/napi-rs build artifacts
+packages/swc-transformer/target/
+packages/swc-transformer/*.node
+packages/swc-transformer/index.js
+packages/swc-transformer/index.d.ts
