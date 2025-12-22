@@ -8,7 +8,24 @@
 // Check if native module is available before running tests
 const nativeModuleAvailable = await (async () => {
   try {
-    await import("../src/index");
+    const { createTransformer } = await import("../src/index");
+    // Actually try to create a transformer - this will fail if native module is missing
+    await createTransformer({
+      config: {
+        analyzer: "ts",
+        outdir: "/tmp",
+        graphqlSystemAliases: [],
+        include: [],
+        exclude: [],
+        schemas: {},
+        styles: { importExtension: false },
+        plugins: {},
+      },
+      artifact: {
+        elements: {},
+        report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+      },
+    });
     return true;
   } catch {
     console.log("Skipping swc-transformer tests: native module not available");
