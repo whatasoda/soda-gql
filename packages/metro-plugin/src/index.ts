@@ -45,7 +45,8 @@ export type { MetroConfig, MetroPluginOptions, MetroTransformer, MetroTransformP
  * @returns Modified Metro configuration with soda-gql transformer
  */
 export function withSodaGql<T extends MetroConfig>(config: T, _options: MetroPluginOptions = {}): T {
-  const transformerPath = require.resolve("./transformer");
+  // Use package export path to ensure correct resolution from any location
+  const transformerPath = require.resolve("@soda-gql/metro-plugin/transformer");
 
   return {
     ...config,

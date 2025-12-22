@@ -17,7 +17,11 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
-    }
+      "output": "single"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }

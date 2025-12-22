@@ -32,6 +32,28 @@ const UPSTREAM_TRANSFORMER_CANDIDATES = [
 let upstreamTransformer: MetroTransformer | null = null;
 
 /**
+ * Try to resolve a module from multiple locations.
+ * Falls back through various resolution strategies.
+ */
+const tryResolve = (moduleName: string): string | null => {
+  // Try direct require first (same module resolution as this package)
+  try {
+    return require.resolve(moduleName);
+  } catch {
+    // Continue to fallbacks
+  }
+
+  // Try resolving from project root (for hoisted dependencies)
+  try {
+    return require.resolve(moduleName, { paths: [process.cwd()] });
+  } catch {
+    // Continue to fallbacks
+  }
+
+  return null;
+};
+
+/**
  * Detect and load the upstream Metro Babel transformer.
  * Tries multiple candidates in order of preference.
  */
@@ -41,12 +63,11 @@ const getUpstreamTransformer = (): MetroTransformer => {
   }
 
   for (const candidate of UPSTREAM_TRANSFORMER_CANDIDATES) {
-    try {
+    const resolved = tryResolve(candidate);
+    if (resolved) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      upstreamTransformer = require(candidate) as MetroTransformer;
+      upstreamTransformer = require(resolved) as MetroTransformer;
       return upstreamTransformer;
-    } catch {
-      // Continue to next candidate
     }
   }
 

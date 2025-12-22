@@ -13,12 +13,16 @@
     "@soda-gql/metro-plugin": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
     "expo": "~52.0.0",
+    "expo-asset": "~11.0.5",
+    "expo-constants": "~17.0.8",
+    "expo-font": "~13.0.4",
     "expo-status-bar": "~2.0.0",
     "react": "18.3.1",
-    "react-native": "0.76.3"
+    "react-native": "0.76.9"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@expo/metro-config": "~0.19.0",
     "@soda-gql/cli": "workspace:*",
     "@types/react": "~18.3.12",
     "typescript": "~5.3.3"
