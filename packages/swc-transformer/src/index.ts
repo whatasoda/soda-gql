@@ -4,6 +4,8 @@
  * This module provides a TypeScript wrapper around the native Rust transformer.
  */
 
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
@@ -117,6 +119,20 @@ export type TransformInput = {
  */
 const normalizePath = (value: string): string => value.replace(/\\/g, "/");
 
+/**
+ * Resolve the canonical path to the graphql-system file.
+ * Uses realpath to resolve symlinks for accurate comparison.
+ */
+const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
+  const graphqlSystemPath = resolve(config.outdir, "index.ts");
+  try {
+    return normalizePath(realpathSync(graphqlSystemPath));
+  } catch {
+    // If realpath fails (file doesn't exist yet), fall back to resolved path
+    return normalizePath(resolve(graphqlSystemPath));
+  }
+};
+
 export type TransformOutput = {
   /** Whether any transformation was performed */
   transformed: boolean;
@@ -142,9 +158,13 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   const isCJS = options.compilerOptions?.module === "CommonJS";
 
+  // Resolve the graphql-system file path for stubbing
+  const graphqlSystemPath = resolveGraphqlSystemPath(options.config);
+
   const configJson = JSON.stringify({
     graphqlSystemAliases: options.config.graphqlSystemAliases,
     isCjs: isCJS,
+    graphqlSystemPath,
   });
 
   const artifactJson = JSON.stringify(options.artifact);
@@ -186,6 +206,9 @@ export const transform = async (
   // Normalize path for cross-platform compatibility
   const normalizedPath = normalizePath(input.sourcePath);
 
+  // Resolve the graphql-system file path for stubbing
+  const graphqlSystemPath = resolveGraphqlSystemPath(input.config);
+
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
     sourcePath: normalizedPath,
@@ -193,6 +216,7 @@ export const transform = async (
     config: {
       graphqlSystemAliases: input.config.graphqlSystemAliases,
       isCjs: input.isCjs ?? false,
+      graphqlSystemPath,
     },
   });
 

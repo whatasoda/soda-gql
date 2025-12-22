@@ -42,6 +42,14 @@ pub struct TransformResult {
 /// # Returns
 /// Result containing the transformed code, or an error message
 pub fn transform_source(input: &TransformInput) -> Result<TransformResult, String> {
+    // Check if this is the graphql-system file - if so, stub it out
+    if is_graphql_system_file(&input.source_path, &input.config.graphql_system_path) {
+        return Ok(TransformResult {
+            output_code: "export {};".to_string(),
+            transformed: true,
+        });
+    }
+
     // Parse the artifact
     let artifact: BuilderArtifact = serde_json::from_str(&input.artifact_json)
         .map_err(|e| format!("Failed to parse artifact: {}", e))?;
@@ -202,4 +210,18 @@ fn emit_module(cm: &Lrc<SourceMap>, module: &Module) -> Result<String, String> {
     }
 
     String::from_utf8(buf).map_err(|e| format!("UTF-8 error: {}", e))
+}
+
+/// Check if the source file is the graphql-system file.
+/// Both paths should be normalized (forward slashes) before comparison.
+fn is_graphql_system_file(source_path: &str, graphql_system_path: &Option<String>) -> bool {
+    match graphql_system_path {
+        Some(gql_path) => {
+            // Normalize both paths for comparison (remove trailing slashes, normalize separators)
+            let normalized_source = source_path.replace('\\', "/");
+            let normalized_gql = gql_path.replace('\\', "/");
+            normalized_source == normalized_gql
+        }
+        None => false,
+    }
 }
