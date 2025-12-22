@@ -71,6 +71,7 @@
         "@expo/metro-config": "~54.0.12",
         "@soda-gql/cli": "workspace:*",
         "@types/react": "~19.1.10",
+        "babel-preset-expo": "~54.0.9",
         "typescript": "~5.3.3",
       },
     },
