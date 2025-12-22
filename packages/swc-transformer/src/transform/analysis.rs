@@ -204,7 +204,14 @@ fn extract_builder_call(arrow: &ArrowExpr) -> Option<&CallExpr> {
 }
 
 /// Resolve a canonical ID from file path and AST path.
-/// The canonical ID format is: {absPath}::{astPath}
+/// The canonical ID format is: {normalizedAbsPath}::{astPath}
+///
+/// This mirrors the TypeScript implementation in @soda-gql/common:
+/// - Normalizes path separators to forward slashes (cross-platform)
+/// - Format matches builder artifact keys exactly
 fn resolve_canonical_id(file_path: &str, ast_path: &str) -> CanonicalId {
-    format!("{}::{}", file_path, ast_path)
+    // Normalize path separators to forward slashes for cross-platform compatibility
+    // This matches the TypeScript normalizePath function behavior
+    let normalized_path = file_path.replace('\\', "/");
+    format!("{}::{}", normalized_path, ast_path)
 }

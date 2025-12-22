@@ -111,6 +111,12 @@ export type TransformInput = {
   sourcePath: string;
 };
 
+/**
+ * Normalize path separators to forward slashes (cross-platform).
+ * This matches the behavior of @soda-gql/common normalizePath.
+ */
+const normalizePath = (value: string): string => value.replace(/\\/g, "/");
+
 export type TransformOutput = {
   /** Whether any transformation was performed */
   transformed: boolean;
@@ -147,7 +153,9 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   return {
     transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
-      const resultJson = nativeTransformer.transform(sourceCode, sourcePath);
+      // Normalize path for cross-platform compatibility
+      const normalizedPath = normalizePath(sourcePath);
+      const resultJson = nativeTransformer.transform(sourceCode, normalizedPath);
       const result: TransformResult = JSON.parse(resultJson);
 
       return {
@@ -175,9 +183,12 @@ export const transform = async (
 ): Promise<TransformOutput> => {
   const native = await loadNativeModule();
 
+  // Normalize path for cross-platform compatibility
+  const normalizedPath = normalizePath(input.sourcePath);
+
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
-    sourcePath: input.sourcePath,
+    sourcePath: normalizedPath,
     artifactJson: JSON.stringify(input.artifact),
     config: {
       graphqlSystemAliases: input.config.graphqlSystemAliases,
