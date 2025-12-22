@@ -9,8 +9,10 @@
 //! 6. Emit code with SWC codegen
 
 use serde::{Deserialize, Serialize};
+use swc_core::common::comments::SingleThreadedComments;
+use swc_core::common::source_map::SourceMapGenConfig;
 use swc_core::common::sync::Lrc;
-use swc_core::common::{FileName, SourceMap};
+use swc_core::common::{BytePos, FileName, SourceMap};
 use swc_core::ecma::ast::*;
 use swc_core::ecma::codegen::{text_writer::JsWriter, Emitter};
 use swc_core::ecma::parser::{lexer::Lexer, Parser, Syntax, TsSyntax};
@@ -39,6 +41,10 @@ pub struct TransformResult {
     /// These are non-fatal - transformation continues but logs issues.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub errors: Vec<PluginError>,
+
+    /// Source map JSON, if source map generation was enabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_map: Option<String>,
 }
 
 /// Transform a source file.
@@ -55,6 +61,7 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
             output_code: "export {};".to_string(),
             transformed: true,
             errors: Vec::new(),
+            source_map: None,
         });
     }
 
@@ -72,7 +79,10 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
     // Determine if this is a TSX file
     let is_tsx = input.source_path.ends_with(".tsx");
 
-    // Create parser
+    // Create comments storage for preservation
+    let comments = SingleThreadedComments::default();
+
+    // Create parser with comments collection
     let lexer = Lexer::new(
         Syntax::Typescript(TsSyntax {
             tsx: is_tsx,
@@ -80,7 +90,7 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
         }),
         EsVersion::Es2022,
         (&*fm).into(),
-        None,
+        Some(&comments),
     );
 
     let mut parser = Parser::new_from(lexer);
@@ -101,6 +111,7 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
             output_code: input.source_code.clone(),
             transformed: false,
             errors: finder.take_errors(),
+            source_map: None,
         });
     }
 
@@ -122,8 +133,8 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
         insert_runtime_calls(&mut module, std::mem::take(&mut transformer.runtime_calls));
     }
 
-    // Emit the transformed code
-    let output = emit_module(&cm, &module)?;
+    // Emit the transformed code with preserved comments and optional source map
+    let emit_output = emit_module(&cm, &module, &comments, input.config.source_map)?;
 
     // Collect errors from both phases
     // Take transformer errors first, then drop to release borrow of finder
@@ -134,9 +145,10 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
     errors.extend(transformer_errors);
 
     Ok(TransformResult {
-        output_code: output,
+        output_code: emit_output.code,
         transformed: true,
         errors,
+        source_map: emit_output.source_map,
     })
 }
 
@@ -233,15 +245,59 @@ fn insert_runtime_calls(module: &mut Module, calls: Vec<Stmt>) {
     module.body.splice(insert_pos..insert_pos, items);
 }
 
-/// Emit the module as JavaScript code.
-fn emit_module(cm: &Lrc<SourceMap>, module: &Module) -> Result<String, String> {
+/// Output from code emission.
+struct EmitOutput {
+    code: String,
+    source_map: Option<String>,
+}
+
+/// Configuration for source map generation.
+struct SimpleSourceMapConfig;
+
+impl SourceMapGenConfig for SimpleSourceMapConfig {
+    fn file_name_to_source(&self, f: &FileName) -> String {
+        match f {
+            FileName::Real(path) => path.to_string_lossy().to_string(),
+            FileName::Custom(name) => name.clone(),
+            FileName::Url(url) => url.to_string(),
+            _ => "unknown".to_string(),
+        }
+    }
+
+    fn name_for_bytepos(&self, _bpos: BytePos) -> Option<&str> {
+        None
+    }
+
+    fn inline_sources_content(&self, _f: &FileName) -> bool {
+        true // Include source content in the source map
+    }
+}
+
+/// Emit the module as JavaScript code with preserved comments.
+fn emit_module(
+    cm: &Lrc<SourceMap>,
+    module: &Module,
+    comments: &SingleThreadedComments,
+    generate_source_map: bool,
+) -> Result<EmitOutput, String> {
     let mut buf = vec![];
+    let mut srcmap_buf = if generate_source_map {
+        Some(vec![])
+    } else {
+        None
+    };
+
     {
-        let writer = JsWriter::new(cm.clone(), "\n", &mut buf, None);
+        let writer = JsWriter::new(
+            cm.clone(),
+            "\n",
+            &mut buf,
+            srcmap_buf.as_mut(),
+        );
         let mut emitter = Emitter {
             cfg: swc_core::ecma::codegen::Config::default().with_minify(false),
             cm: cm.clone(),
-            comments: None,
+            comments: Some(comments),
             wr: writer,
         };
 
@@ -250,7 +306,21 @@ fn emit_module(cm: &Lrc<SourceMap>, module: &Module) -> Result<String, String> {
             .map_err(|e| format!("Emit error: {:?}", e))?;
     }
 
-    String::from_utf8(buf).map_err(|e| format!("UTF-8 error: {}", e))
+    let code = String::from_utf8(buf).map_err(|e| format!("UTF-8 error: {}", e))?;
+
+    let source_map = if let Some(srcmap) = srcmap_buf {
+        // Build source map from collected entries
+        let config = SimpleSourceMapConfig;
+        let map = cm.build_source_map(&srcmap, None, config);
+        let mut map_buf = vec![];
+        map.to_writer(&mut map_buf)
+            .map_err(|e| format!("Source map error: {:?}", e))?;
+        Some(String::from_utf8(map_buf).map_err(|e| format!("Source map UTF-8 error: {}", e))?)
+    } else {
+        None
+    };
+
+    Ok(EmitOutput { code, source_map })
 }
 
 /// Check if the source file is the graphql-system file.

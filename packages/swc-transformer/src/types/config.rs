@@ -20,6 +20,11 @@ pub struct TransformConfig {
     /// This is resolved by the TypeScript wrapper and passed to Rust.
     #[serde(default)]
     pub graphql_system_path: Option<String>,
+
+    /// Whether to generate source maps.
+    /// If true, a source map will be included in the output.
+    #[serde(default)]
+    pub source_map: bool,
 }
 
 impl Default for TransformConfig {
@@ -28,6 +33,7 @@ impl Default for TransformConfig {
             graphql_system_aliases: vec!["@/graphql-system".to_string()],
             is_cjs: false,
             graphql_system_path: None,
+            source_map: false,
         }
     }
 }

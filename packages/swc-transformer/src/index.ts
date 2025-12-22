@@ -25,6 +25,7 @@ interface NativeTransformer {
 interface TransformResult {
   outputCode: string;
   transformed: boolean;
+  sourceMap?: string;
 }
 
 /**
@@ -104,6 +105,8 @@ export type TransformOptions = {
   config: ResolvedSodaGqlConfig;
   /** Pre-built artifact from the builder */
   artifact: BuilderArtifact;
+  /** Whether to generate source maps */
+  sourceMap?: boolean;
 };
 
 export type TransformInput = {
@@ -138,6 +141,8 @@ export type TransformOutput = {
   transformed: boolean;
   /** The transformed source code (or original if no transformation) */
   sourceCode: string;
+  /** Source map JSON, if source map generation was enabled */
+  sourceMap?: string;
 };
 
 /**
@@ -165,6 +170,7 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
     graphqlSystemAliases: options.config.graphqlSystemAliases,
     isCjs: isCJS,
     graphqlSystemPath,
+    sourceMap: options.sourceMap ?? false,
   });
 
   const artifactJson = JSON.stringify(options.artifact);
@@ -181,6 +187,7 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
       return {
         transformed: result.transformed,
         sourceCode: result.outputCode,
+        sourceMap: result.sourceMap,
       };
     },
   };
@@ -199,6 +206,7 @@ export const transform = async (
     artifact: BuilderArtifact;
     config: ResolvedSodaGqlConfig;
     isCjs?: boolean;
+    sourceMap?: boolean;
   },
 ): Promise<TransformOutput> => {
   const native = await loadNativeModule();
@@ -217,6 +225,7 @@ export const transform = async (
       graphqlSystemAliases: input.config.graphqlSystemAliases,
       isCjs: input.isCjs ?? false,
       graphqlSystemPath,
+      sourceMap: input.sourceMap ?? false,
     },
   });
 
@@ -226,5 +235,6 @@ export const transform = async (
   return {
     transformed: result.transformed,
     sourceCode: result.outputCode,
+    sourceMap: result.sourceMap,
   };
 };
