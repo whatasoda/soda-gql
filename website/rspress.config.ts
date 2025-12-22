@@ -23,6 +23,21 @@ export default defineConfig({
           ],
         },
       ],
+      "/api/": [
+        {
+          text: "API Reference",
+          items: [
+            { text: "Overview", link: "/api/" },
+          ],
+        },
+        {
+          text: "Packages",
+          items: [
+            { text: "@soda-gql/core", link: "/api/packages/core" },
+            { text: "@soda-gql/cli", link: "/api/packages/cli" },
+          ],
+        },
+      ],
     },
   },
 });
