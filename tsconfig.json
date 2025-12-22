@@ -20,7 +20,8 @@
       "@soda-gql/tsc-plugin/*": ["./packages/tsc-plugin/src/*"],
       "@soda-gql/tsc-transformer/*": ["./packages/tsc-transformer/src/*"],
       "@soda-gql/runtime/*": ["./packages/runtime/src/*"],
-      "@soda-gql/webpack-plugin/*": ["./packages/webpack-plugin/src/*"]
+      "@soda-gql/webpack-plugin/*": ["./packages/webpack-plugin/src/*"],
+      "@soda-gql/metro-plugin/*": ["./packages/metro-plugin/src/*"]
     }
   },
   "files": [],
@@ -38,6 +39,7 @@
     { "path": "./packages/tsc-transformer/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./packages/webpack-plugin/tsconfig.editor.json" },
+    { "path": "./packages/metro-plugin/tsconfig.editor.json" },
     { "path": "./examples/babel-app/tsconfig.editor.json" }
   ]
 }

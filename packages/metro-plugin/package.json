@@ -1,0 +1,60 @@
+{
+  "name": "@soda-gql/metro-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@soda-gql": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./transformer": {
+      "@soda-gql": "./src/transformer.ts",
+      "types": "./dist/transformer.d.mts",
+      "import": "./dist/transformer.mjs",
+      "require": "./dist/transformer.cjs",
+      "default": "./dist/transformer.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/babel-plugin": "workspace:*",
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/plugin-common": "workspace:*",
+    "neverthrow": "^8.1.1"
+  },
+  "peerDependencies": {
+    "metro": ">=0.70.0"
+  },
+  "peerDependenciesMeta": {
+    "metro": {
+      "optional": true
+    },
+    "metro-react-native-babel-transformer": {
+      "optional": true
+    },
+    "@expo/metro-config": {
+      "optional": true
+    },
+    "@react-native/metro-babel-transformer": {
+      "optional": true
+    }
+  }
+}
