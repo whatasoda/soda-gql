@@ -38,6 +38,14 @@ export default defineConfig({
           ],
         },
       ],
+      "/recipes/": [
+        {
+          text: "Recipes",
+          items: [
+            { text: "Examples Overview", link: "/recipes/" },
+          ],
+        },
+      ],
     },
   },
 });
