@@ -1,0 +1,15 @@
+{
+  "name": "@soda-gql/website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rspress dev",
+    "build": "rspress build",
+    "preview": "rspress preview"
+  },
+  "devDependencies": {
+    "rspress": "^2.0.0-beta.18",
+    "typescript": "^5.9.2"
+  }
+}
