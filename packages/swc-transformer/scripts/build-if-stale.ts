@@ -2,9 +2,10 @@
  * Build native module only if it is missing or stale.
  * Uses debug builds for faster iteration during development.
  */
+
+import { spawnSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
 

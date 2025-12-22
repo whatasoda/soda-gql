@@ -5,12 +5,8 @@
  * tsc-transformer, ensuring behavioral equivalence between the two implementations.
  */
 
-import { describe, expect, it, beforeAll } from "bun:test";
-import {
-  loadTestCases,
-  normalizeCode,
-  type TransformTestCase,
-} from "../../tsc-transformer/test/test-cases";
+import { describe, expect, it } from "bun:test";
+import { loadTestCases, normalizeCode, type TransformTestCase } from "../../tsc-transformer/test/test-cases";
 
 // Check if native module is available before running tests
 // This needs to be evaluated synchronously at module load time
@@ -44,10 +40,7 @@ try {
   nativeModuleAvailable = true;
 } catch (e) {
   initError = e instanceof Error ? e.message : String(e);
-  console.warn(
-    "[swc-transformer] Native module not available - tests will be skipped:",
-    initError
-  );
+  console.warn("[swc-transformer] Native module not available - tests will be skipped:", initError);
 }
 
 /**
@@ -63,9 +56,7 @@ const transformWithSwc = async ({
   readonly sourceCode: string;
   readonly sourcePath: string;
   readonly artifact: TransformTestCase["input"]["artifact"];
-  readonly config: Awaited<ReturnType<typeof import("../src/index").createTransformer>> extends { transform: infer T }
-    ? Parameters<typeof createTransformer>[0]["config"]
-    : never;
+  readonly config: Parameters<typeof createTransformer>[0]["config"];
   readonly moduleFormat: "esm" | "cjs";
 }): Promise<string> => {
   if (!createTransformer) {
