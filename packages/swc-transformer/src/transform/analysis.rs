@@ -87,7 +87,17 @@ impl<'a> GqlCallFinder<'a> {
                         },
                     );
                     self.has_transforms = true;
+                } else {
+                    eprintln!(
+                        "[swc-transformer] Warning: No artifact found for canonical ID '{}' in '{}'",
+                        canonical_id, self.source_path
+                    );
                 }
+            } else {
+                eprintln!(
+                    "[swc-transformer] Warning: No metadata for gql call at {:?} in '{}'",
+                    call.span, self.source_path
+                );
             }
         }
     }
