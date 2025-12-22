@@ -1,0 +1,26 @@
+{
+  "name": "expo-metro-example",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "start:clear": "expo start --clear",
+    "codegen": "soda-gql codegen"
+  },
+  "dependencies": {
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/metro-plugin": "workspace:*",
+    "@soda-gql/runtime": "workspace:*",
+    "expo": "~52.0.0",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@soda-gql/cli": "workspace:*",
+    "@types/react": "~18.3.12",
+    "typescript": "~5.3.3"
+  }
+}
