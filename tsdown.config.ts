@@ -109,6 +109,7 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
       "neverthrow",
       "tsdown",
       "typescript",
+      "vite",
       "webpack",
       "xxhash-wasm",
       "zod",
@@ -220,6 +221,13 @@ export default defineConfig([
   },
   {
     ...configure("@soda-gql/metro-plugin"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
+  {
+    ...configure("@soda-gql/vite-plugin"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
