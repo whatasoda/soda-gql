@@ -63,6 +63,12 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "packages/swc-transformer -> target"
+          cache-targets: "true"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

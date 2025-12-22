@@ -27,6 +27,16 @@ swc_core = { version = "52", features = [
 [build-dependencies]
 napi-build = "2"
 
+[profile.dev]
+# Faster debug builds with minimal optimization
+opt-level = 0
+debug = 1
+incremental = true
+
+[profile.dev.package."*"]
+# Compile dependencies with optimization for faster execution
+opt-level = 2
+
 [profile.release]
 lto = true
 opt-level = 3

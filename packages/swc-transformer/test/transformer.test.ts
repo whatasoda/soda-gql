@@ -13,38 +13,42 @@ import {
 } from "../../tsc-transformer/test/test-cases";
 
 // Check if native module is available before running tests
+// This needs to be evaluated synchronously at module load time
+// because it.skipIf() evaluates its condition at test registration time
 let nativeModuleAvailable = false;
 let createTransformer: typeof import("../src/index").createTransformer;
+let initError: string | null = null;
 
-beforeAll(async () => {
-  try {
-    const mod = await import("../src/index");
-    createTransformer = mod.createTransformer;
-    // Actually try to create a transformer - this will fail if native module is missing
-    await createTransformer({
-      config: {
-        analyzer: "ts",
-        outdir: "/tmp",
-        graphqlSystemAliases: [],
-        include: [],
-        exclude: [],
-        schemas: {},
-        styles: { importExtension: false },
-        plugins: {},
-      },
-      artifact: {
-        elements: {},
-        report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
-      },
-    });
-    nativeModuleAvailable = true;
-  } catch (e) {
-    console.warn(
-      "[swc-transformer] Native module not available - tests will be skipped:",
-      e instanceof Error ? e.message : String(e)
-    );
-  }
-});
+// Synchronously check if native module can be loaded
+// We use a top-level await to ensure this runs before test registration
+try {
+  const mod = await import("../src/index");
+  createTransformer = mod.createTransformer;
+  // Actually try to create a transformer - this will fail if native module is missing
+  await createTransformer({
+    config: {
+      analyzer: "ts",
+      outdir: "/tmp",
+      graphqlSystemAliases: [],
+      include: [],
+      exclude: [],
+      schemas: {},
+      styles: { importExtension: false },
+      plugins: {},
+    },
+    artifact: {
+      elements: {},
+      report: { durationMs: 0, warnings: [], stats: { hits: 0, misses: 0, skips: 0 } },
+    },
+  });
+  nativeModuleAvailable = true;
+} catch (e) {
+  initError = e instanceof Error ? e.message : String(e);
+  console.warn(
+    "[swc-transformer] Native module not available - tests will be skipped:",
+    initError
+  );
+}
 
 /**
  * Transform source code using swc-transformer.

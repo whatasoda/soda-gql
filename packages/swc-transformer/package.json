@@ -32,8 +32,10 @@
   "scripts": {
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
+    "build:dev": "bun run scripts/build-if-stale.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
+    "pretest": "bun run build:dev",
     "test": "bun test"
   },
   "dependencies": {
