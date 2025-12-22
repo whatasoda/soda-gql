@@ -9,9 +9,10 @@
     "email": "shota.hatada@whatasoda.me",
     "url": "https://github.com/whatasoda"
   },
-  "main": "./index.js",
-  "types": "./index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "files": [
+    "src/index.ts",
     "index.js",
     "index.d.ts",
     "*.node"
@@ -53,8 +54,13 @@
   "exports": {
     ".": {
       "@soda-gql": "./src/index.ts",
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./native": {
       "types": "./index.d.ts",
-      "import": "./index.js",
+      "require": "./index.js",
       "default": "./index.js"
     },
     "./package.json": "./package.json"
