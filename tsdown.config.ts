@@ -218,4 +218,11 @@ export default defineConfig([
     target: "node18",
     clean: true,
   },
+  {
+    ...configure("@soda-gql/metro-plugin"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
 ]);

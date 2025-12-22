@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/metro-plugin",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/metro-plugin/tsconfig.tsbuildinfo",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../builder/tsconfig.editor.json" },
+    { "path": "../common/tsconfig.editor.json" },
+    { "path": "../config/tsconfig.editor.json" },
+    { "path": "../plugin-common/tsconfig.editor.json" },
+    { "path": "../babel-plugin/tsconfig.editor.json" }
+  ]
+}
