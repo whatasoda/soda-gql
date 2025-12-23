@@ -7,7 +7,7 @@ import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test-utils";
 
-const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const codegenFixtureRoot = join(projectRoot, "tests", "codegen-fixture");
 const graphqlSystemDir = join(codegenFixtureRoot, "graphql-system");
 const schemaPath = join(codegenFixtureRoot, "schemas", "default", "schema.graphql");

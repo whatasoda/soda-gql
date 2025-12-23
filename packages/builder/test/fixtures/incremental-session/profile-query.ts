@@ -1,6 +1,6 @@
-import { gql } from "../../../../codegen-fixture/graphql-system";
-import { userSlice, userSliceCatalog } from "../entities/user";
-import * as userCatalog from "../entities/user.catalog";
+import { gql } from "../../../../../tests/codegen-fixture/graphql-system";
+import { userSlice, userSliceCatalog } from "./user";
+import * as userCatalog from "./user-catalog";
 
 type ProfileQueryVariables = {
   readonly userId: string;

@@ -1,1 +1,5 @@
 graphql-system/
+schemas/**/*.js
+schemas/**/*.js.map
+schemas/**/*.d.ts
+schemas/**/*.d.ts.map

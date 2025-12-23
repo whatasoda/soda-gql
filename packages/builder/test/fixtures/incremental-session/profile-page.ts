@@ -1,4 +1,4 @@
-import { profileQuery } from "./profile.query";
+import { profileQuery } from "./profile-query";
 
 type ProfilePageDescriptor = {
   readonly query: typeof profileQuery;

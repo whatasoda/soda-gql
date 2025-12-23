@@ -6,6 +6,3 @@ import { fileURLToPath } from "node:url";
 export const getProjectRoot = (): string => {
   return fileURLToPath(new URL("../../", import.meta.url));
 };
-
-export * from "./moduleLoader";
-export * from "./operationSpy";
