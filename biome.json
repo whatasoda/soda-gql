@@ -57,7 +57,8 @@
       "!**/tests/.tmp/**/*",
       "!**/.cache/**/*",
       "!**/*.generated.ts",
-      "!packages/swc-transformer/index.js"
+      "!packages/swc-transformer/index.js",
+      "!**/target/**/*"
     ],
     "ignoreUnknown": false
   },

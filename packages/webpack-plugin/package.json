@@ -41,6 +41,9 @@
     "@soda-gql/babel-plugin": "workspace:*",
     "neverthrow": "^8.1.1"
   },
+  "devDependencies": {
+    "@soda-gql/swc-transformer": "workspace:*"
+  },
   "peerDependencies": {
     "webpack": "^5.0.0",
     "@soda-gql/swc-transformer": "workspace:*"
