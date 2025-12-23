@@ -120,6 +120,87 @@ const singleFileTestCases: TestCaseDefinition[] = [
       shouldTransform: false,
     },
   },
+  {
+    id: "errors/renamed-import",
+    description: "Skip renamed imports (gql as g) - not recognized",
+    fixtureName: "errors/renamed-import",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: [],
+      shouldAddRuntimeImport: false,
+      shouldTransform: false,
+    },
+  },
+  {
+    id: "errors/invalid-call-no-args",
+    description: "Skip gql.default() with no arguments",
+    fixtureName: "errors/invalid-call-no-args",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: [],
+      shouldAddRuntimeImport: false,
+      shouldTransform: false,
+    },
+  },
+  {
+    id: "errors/invalid-call-wrong-type",
+    description: "Skip gql.default() with non-function argument",
+    fixtureName: "errors/invalid-call-wrong-type",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: [],
+      shouldAddRuntimeImport: false,
+      shouldTransform: false,
+    },
+  },
+
+  // Import edge cases
+  {
+    id: "imports/star-import",
+    description: "Skip star import (import * as) - not supported by builder",
+    fixtureName: "imports/star-import",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: [],
+      shouldAddRuntimeImport: false,
+      shouldTransform: false,
+    },
+  },
+
+  // Scope edge cases
+  {
+    id: "scopes/deeply-nested",
+    description: "Handle deeply nested scopes (4+ levels)",
+    fixtureName: "scopes/deeply-nested",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: ["gqlRuntime.model"],
+      shouldAddRuntimeImport: true,
+      shouldTransform: true,
+    },
+  },
+  {
+    id: "scopes/duplicate-names",
+    description: "Handle duplicate variable names in different scopes",
+    fixtureName: "scopes/duplicate-names",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: ["gqlRuntime.model"],
+      shouldAddRuntimeImport: true,
+      shouldTransform: true,
+    },
+  },
+  {
+    id: "scopes/class-properties",
+    description: "Skip class properties - scope tracking differs across transformers",
+    fixtureName: "scopes/class-properties",
+    isMultiFile: false,
+    expectations: {
+      runtimeCalls: [],
+      shouldAddRuntimeImport: false,
+      shouldTransform: false,
+    },
+  },
 ];
 
 /**
