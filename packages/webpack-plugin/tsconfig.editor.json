@@ -14,6 +14,6 @@
     { "path": "../common/tsconfig.editor.json" },
     { "path": "../config/tsconfig.editor.json" },
     { "path": "../plugin-common/tsconfig.editor.json" },
-    { "path": "../babel-plugin/tsconfig.editor.json" }
+    { "path": "../babel-transformer/tsconfig.editor.json" }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@soda-gql/webpack-plugin",
+  "name": "@soda-gql/babel-transformer",
   "version": "0.1.0",
   "type": "module",
   "private": false,
@@ -23,13 +23,6 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./loader": {
-      "@soda-gql": "./src/loader.ts",
-      "types": "./dist/loader.d.mts",
-      "import": "./dist/loader.mjs",
-      "require": "./dist/loader.cjs",
-      "default": "./dist/loader.mjs"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -38,19 +31,14 @@
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@soda-gql/plugin-common": "workspace:*",
-    "@soda-gql/babel-transformer": "workspace:*",
+    "@babel/core": "^7.24.0",
+    "@babel/generator": "^7.24.0",
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@babel/types": "^7.24.0",
     "neverthrow": "^8.1.1"
   },
   "devDependencies": {
-    "@soda-gql/swc-transformer": "workspace:*"
-  },
-  "peerDependencies": {
-    "webpack": "^5.0.0",
-    "@soda-gql/swc-transformer": "workspace:*"
-  },
-  "peerDependenciesMeta": {
-    "@soda-gql/swc-transformer": {
-      "optional": true
-    }
+    "@types/babel__generator": "^7.27.0"
   }
 }

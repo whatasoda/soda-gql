@@ -1,5 +1,5 @@
 /**
- * Type definitions for plugin-babel.
+ * Type definitions for babel-transformer.
  * Simplified from plugin-shared to be self-contained.
  */
 
