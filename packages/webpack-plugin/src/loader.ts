@@ -5,6 +5,7 @@ import {
   createPluginSession,
   getSharedArtifact,
   getSharedPluginSession,
+  getSharedSwcTransformer,
   getStateKey,
   type PluginSession,
 } from "@soda-gql/plugin-common";
@@ -88,7 +89,32 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         }
       }
 
-      // Transform using Babel plugin with direct artifact
+      // Use SWC transformer if configured and available
+      if (options.transformer === "swc") {
+        const swcTransformer = getSharedSwcTransformer(stateKey);
+        if (swcTransformer) {
+          const result = swcTransformer.transform({
+            sourceCode: source,
+            sourcePath: filename,
+          });
+
+          if (result.transformed) {
+            const sourceMap = result.sourceMap ? JSON.parse(result.sourceMap) : undefined;
+            callback(null, result.sourceCode, sourceMap);
+            return;
+          }
+          // Not transformed (no soda-gql code in file), pass through
+          callback(null, source, inputSourceMap as Parameters<typeof callback>[2]);
+          return;
+        }
+        // SWC transformer not available, fall through to Babel
+        console.warn(
+          "[@soda-gql/webpack-plugin] SWC transformer not available, falling back to Babel. " +
+            "Ensure the plugin has transformer: 'swc' option set.",
+        );
+      }
+
+      // Transform using Babel plugin with direct artifact (default)
       const babelOptions: TransformOptions = {
         filename,
         babelrc: false,
