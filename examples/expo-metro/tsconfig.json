@@ -3,16 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/graphql-system": [
-        "./graphql-system/index.ts"
-      ],
-      "@/graphql-system/*": [
-        "./graphql-system/*"
-      ]
+      "@/graphql-system": ["./graphql-system/index.ts"],
+      "@/graphql-system/*": ["./graphql-system/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

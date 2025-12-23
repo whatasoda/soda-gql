@@ -1,6 +1,13 @@
 import type { PluginOptions } from "@soda-gql/plugin-common";
 
 /**
+ * Transformer type for code transformation.
+ * - 'babel': Use Babel plugin (default, wider compatibility)
+ * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc-transformer)
+ */
+export type TransformerType = "babel" | "swc";
+
+/**
  * Options for the SodaGqlWebpackPlugin.
  */
 export type WebpackPluginOptions = PluginOptions & {
@@ -19,6 +26,12 @@ export type WebpackPluginOptions = PluginOptions & {
    * Enable verbose logging for debugging.
    */
   readonly debug?: boolean;
+
+  /**
+   * Transformer to use for code transformation.
+   * @default 'babel'
+   */
+  readonly transformer?: TransformerType;
 };
 
 /**
@@ -34,4 +47,10 @@ export type WebpackLoaderOptions = {
    * Enable/disable the loader.
    */
   readonly enabled?: boolean;
+
+  /**
+   * Transformer to use for code transformation.
+   * @default 'babel'
+   */
+  readonly transformer?: TransformerType;
 };

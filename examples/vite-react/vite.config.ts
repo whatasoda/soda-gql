@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { sodaGqlPlugin } from "@soda-gql/vite-plugin";
 import { resolve } from "node:path";
+import { sodaGqlPlugin } from "@soda-gql/vite-plugin";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [sodaGqlPlugin({ debug: true }), react()],
