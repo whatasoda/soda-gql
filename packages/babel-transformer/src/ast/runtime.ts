@@ -26,22 +26,12 @@ const createMissingBuilderArgError = ({
 
 export const buildModelRuntimeCall = ({
   artifact,
-  builderCall,
-  filename,
 }: BabelGqlCallModel & { filename: string }): Result<t.Expression, PluginError> => {
-  const [, , normalize] = builderCall.arguments;
-  if (!normalize || !t.isExpression(normalize)) {
-    return err(createMissingBuilderArgError({ filename, builderType: "model", argName: "normalize" }));
-  }
-
   return ok(
     t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
       buildObjectExpression({
         prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
           typename: t.stringLiteral(artifact.prebuild.typename),
-        }),
-        runtime: buildObjectExpression<keyof RuntimeModelInput["runtime"]>({
-          normalize: clone(normalize),
         }),
       }),
     ]),

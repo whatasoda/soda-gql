@@ -51,7 +51,6 @@ describe("artifact aggregate", () => {
         element: Model.create(() => ({
           typename: "User",
           fragment: () => ({}),
-          normalize: (raw) => raw,
         })),
       },
       [sliceId]: {
@@ -162,7 +161,6 @@ describe("artifact aggregate", () => {
         element: Model.create(() => ({
           typename: "User",
           fragment: () => ({}),
-          normalize: (raw) => raw,
         })),
       },
     });

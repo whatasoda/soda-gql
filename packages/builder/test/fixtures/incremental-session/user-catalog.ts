@@ -15,10 +15,7 @@ export const collections = {
           f.name(),
         ]),
       ],
-      ({ select }) =>
-        select(["$.users"], (result) =>
-          result.safeUnwrap(([users]) => users.map((user) => userRemote.forIterate.normalize(user))),
-        ),
+      ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([users]) => users)),
     ),
   ),
 };

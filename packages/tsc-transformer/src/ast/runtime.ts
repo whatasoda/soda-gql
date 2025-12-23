@@ -41,18 +41,12 @@ export const buildModelRuntimeCall = ({
   gqlCall,
   factory,
   isCJS,
-  filename,
 }: {
   gqlCall: TsGqlCallModel;
   factory: ts.NodeFactory;
   isCJS: boolean;
   filename: string;
 }): Result<ts.Expression, PluginError> => {
-  const [, , normalize] = gqlCall.builderCall.arguments;
-  if (!normalize || !ts.isExpression(normalize)) {
-    return err(createMissingBuilderArgError({ filename, builderType: "model", argName: "normalize" }));
-  }
-
   return ok(
     factory.createCallExpression(
       factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("model")),
@@ -61,9 +55,6 @@ export const buildModelRuntimeCall = ({
         buildObjectExpression(factory, {
           prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>(factory, {
             typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
-          }),
-          runtime: buildObjectExpression<keyof RuntimeModelInput["runtime"]>(factory, {
-            normalize: clone(normalize),
           }),
         }),
       ],

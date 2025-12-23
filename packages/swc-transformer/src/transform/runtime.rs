@@ -95,22 +95,13 @@ impl RuntimeCallBuilder {
 
     /// Build a model runtime call.
     ///
-    /// Input: `model.User({}, fields, normalize)`
-    /// Output: `gqlRuntime.model({ prebuild: { typename: "User" }, runtime: { normalize } })`
-    fn build_model_call(&self, prebuild: &ModelPrebuild, builder_args: &[ExprOrSpread]) -> Option<Expr> {
-        // Get the normalize function (3rd argument)
-        let normalize = builder_args.get(2)?.clone();
-
-        let arg = self.create_object_lit(vec![
-            (
-                "prebuild",
-                self.create_object_lit(vec![("typename", self.create_string_lit(&prebuild.typename))]),
-            ),
-            (
-                "runtime",
-                self.create_object_lit(vec![("normalize", (*normalize.expr).clone())]),
-            ),
-        ]);
+    /// Input: `model.User({}, fields)`
+    /// Output: `gqlRuntime.model({ prebuild: { typename: "User" } })`
+    fn build_model_call(&self, prebuild: &ModelPrebuild, _builder_args: &[ExprOrSpread]) -> Option<Expr> {
+        let arg = self.create_object_lit(vec![(
+            "prebuild",
+            self.create_object_lit(vec![("typename", self.create_string_lit(&prebuild.typename))]),
+        )]);
 
         Some(self.create_runtime_call("model", vec![ExprOrSpread {
             spread: None,
