@@ -37,6 +37,7 @@
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/babel-plugin/tsconfig.editor.json" },
+    { "path": "./packages/babel-transformer/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/tsc-transformer/tsconfig.editor.json" },

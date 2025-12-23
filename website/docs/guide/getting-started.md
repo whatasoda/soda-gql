@@ -78,20 +78,13 @@ This generates the type-safe GraphQL system that imports your scalar and adapter
 
 ### Define a Model
 
-Models specify field selections and data transformations:
+Models specify reusable field selections:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
 export const userModel = gql.default(({ model }) =>
-  model.User(
-    {},
-    ({ f }) => [f.id(), f.name()],
-    (selected) => ({
-      id: selected.id,
-      name: selected.name,
-    }),
-  ),
+  model.User({}, ({ f }) => [f.id(), f.name()]),
 );
 ```
 
@@ -107,9 +100,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
       f.user({ id: $.id })(() => [userModel.fragment()]),
     ],
     ({ select }) =>
-      select(["$.user"], (result) =>
-        result.safeUnwrap(([user]) => userModel.normalize(user)),
-      ),
+      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
   ),
 );
 ```

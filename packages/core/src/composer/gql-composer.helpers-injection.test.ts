@@ -64,11 +64,7 @@ describe("helpers injection", () => {
 
     gql(({ model }, { auth }) => {
       capturedAuth = auth;
-      return model.User(
-        {},
-        ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
-      );
+      return model.User({}, ({ f }) => [f.id(), f.name()]);
     });
 
     expect(capturedAuth).toBeDefined();
@@ -93,11 +89,7 @@ describe("helpers injection", () => {
 
     gql(({ model }, { cache }) => {
       capturedCacheTTL = cache.ttl(300).cacheTTL;
-      return model.User(
-        {},
-        ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
-      );
+      return model.User({}, ({ f }) => [f.id(), f.name()]);
     });
 
     expect(capturedCacheTTL).toBe(300);
@@ -131,11 +123,7 @@ describe("helpers injection", () => {
 
     gql(({ model }, { $var }) => {
       varBuilderAvailable = typeof $var === "function";
-      return model.User(
-        {},
-        ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
-      );
+      return model.User({}, ({ f }) => [f.id(), f.name()]);
     });
 
     expect(varBuilderAvailable).toBe(true);
@@ -166,11 +154,7 @@ describe("helpers injection", () => {
     gql(({ model }, { auth, tracking }) => {
       capturedRole = auth.roles.admin().role;
       capturedEvent = tracking.analytics("page_view").event;
-      return model.User(
-        {},
-        ({ f }) => [f.id(), f.name()],
-        (selected) => selected,
-      );
+      return model.User({}, ({ f }) => [f.id(), f.name()]);
     });
 
     expect(capturedRole).toBe("admin");

@@ -10,7 +10,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
       variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.fragment({ categoryId: $.categoryId })])],
-    ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([user]) => (user ? userModel.normalize(user) : null))),
+    ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([user]) => user ?? null)),
   ),
 );
 

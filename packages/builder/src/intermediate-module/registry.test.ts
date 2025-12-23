@@ -22,7 +22,7 @@ class TestElement extends GqlElement<{ value: string }> {
   }
 }
 
-type AcceptableArtifact = Model<string, any, any, any, any>;
+type AcceptableArtifact = Model<string, any, any, any>;
 
 /**
  * Helper function to cast TestElement to AcceptableArtifact for use with registry.addElement.
@@ -396,7 +396,6 @@ describe("createIntermediateRegistry", () => {
         Model.create(() => ({
           typename: "TestType",
           fragment: () => ({}),
-          normalize: () => ({}),
         })),
       );
 
@@ -510,7 +509,6 @@ describe("createIntermediateRegistry", () => {
         Model.create(() => ({
           typename: "SyncType",
           fragment: () => ({}),
-          normalize: () => ({}),
         })),
       );
 

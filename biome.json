@@ -81,6 +81,16 @@
       }
     },
     {
+      "includes": ["**/*.test.ts", "**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/fixtures/**/*"],
       "linter": {
         "rules": {

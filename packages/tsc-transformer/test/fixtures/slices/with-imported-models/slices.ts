@@ -8,8 +8,8 @@ export const userWithPostsSlice = gql.default(({ query }, { $var }) =>
     ({ select }) =>
       select(["$.user"], (result) =>
         result.safeUnwrap(([user]) => ({
-          user: user ? userModel.normalize({ id: user.id, name: user.name, email: user.email }) : null,
-          posts: user?.posts.map((post) => postModel.normalize(post)) ?? [],
+          user: user ? { id: user.id, name: user.name, email: user.email } : null,
+          posts: user?.posts ?? [],
         })),
       ),
   ),

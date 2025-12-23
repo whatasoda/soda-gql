@@ -17,7 +17,7 @@ soda-gql uses three main building blocks for constructing GraphQL operations:
 
 ### Models
 
-Reusable type-safe fragments with data normalization. Models define how to select fields from a GraphQL type and optionally transform the result.
+Reusable type-safe fragments. Models define how to select fields from a GraphQL type.
 
 ### Slices
 
@@ -50,11 +50,6 @@ export const userModel = gql.default(({ model }, { $var }) =>
       f.name(),
       f.email({ if: $.includeEmail }),
     ],
-    (selection) => ({
-      id: selection.id,
-      name: selection.name,
-      email: selection.email,
-    }),
   ),
 );
 ```
@@ -73,9 +68,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
       ]),
     ],
     ({ select }) =>
-      select(["$.user"], (result) =>
-        result.safeUnwrap(([user]) => userModel.normalize(user)),
-      ),
+      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
   ),
 );
 ```
@@ -182,8 +175,7 @@ Extract TypeScript types from soda-gql elements using `$infer`:
 ```typescript
 // Model types
 type UserInput = typeof userModel.$infer.input;
-type UserOutputRaw = typeof userModel.$infer.output.raw;
-type UserOutputNormalized = typeof userModel.$infer.output.normalized;
+type UserOutput = typeof userModel.$infer.output;
 
 // Operation types
 type QueryVariables = typeof getUserQuery.$infer.input;

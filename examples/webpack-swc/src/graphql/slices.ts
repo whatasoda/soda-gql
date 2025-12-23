@@ -9,16 +9,9 @@ export const userSlice = gql.default(({ query }, { $var }) =>
     {
       variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(() => [
-        userModel.fragment({ categoryId: $.categoryId }),
-      ]),
-    ],
-    ({ select }) =>
-      select(["$.user"], (result) =>
-        result.safeUnwrap(([user]) => (user ? userModel.normalize(user) : null))
-      )
-  )
+    ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.fragment({ categoryId: $.categoryId })])],
+    ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([user]) => user ?? null)),
+  ),
 );
 
 /**
@@ -29,16 +22,9 @@ export const usersSlice = gql.default(({ query }, { $var }) =>
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => [
-      f.users({ categoryId: $.categoryId })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
-    ({ select }) =>
-      select(["$.users"], (result) => result.safeUnwrap(([users]) => users))
-  )
+    ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name(), f.email()])],
+    ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([users]) => users)),
+  ),
 );
 
 /**
@@ -49,13 +35,7 @@ export const updateUserSlice = gql.default(({ mutation }, { $var }) =>
     {
       variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
-    ({ f, $ }) => [
-      f.updateUser({ id: $.id, name: $.name })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
-    ({ select }) => select(["$.updateUser"], (result) => result)
-  )
+    ({ f, $ }) => [f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id(), f.name(), f.email()])],
+    ({ select }) => select(["$.updateUser"], (result) => result),
+  ),
 );

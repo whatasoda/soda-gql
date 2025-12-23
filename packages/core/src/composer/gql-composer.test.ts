@@ -53,18 +53,11 @@ describe("createGqlInvoker", () => {
       idVarRef = $var("id").scalar("ID:!");
       fieldArgRef = $var("id").byField("Query", "user", "id");
 
-      return model.User(
-        {},
-        ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
-        (selected) => ({
-          id: selected.id,
-          label: selected.name,
-        }),
-      );
+      return model.User({}, ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ]);
     });
 
     expect(userModel.typename).toBe("User");
@@ -76,46 +69,28 @@ describe("createGqlInvoker", () => {
     expect(fieldArgRef?.modifier).toBe("!");
   });
 
-  it("creates model descriptors with fragment + normalize wiring", () => {
+  it("creates model descriptors with fragment wiring", () => {
     const userModel = gql(({ model }) =>
-      model.User(
-        {},
-        ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
-        (selected) => ({
-          id: selected.id,
-          label: selected.name,
-        }),
-      ),
+      model.User({}, ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ]),
     );
 
     expect(userModel.typename).toBe("User");
     const fragment = userModel.fragment({} as never);
     expect(fragment).toHaveProperty("id");
     expect(fragment).toHaveProperty("name");
-    expect(userModel.normalize({ id: "1", name: "Ada" })).toEqual({
-      id: "1",
-      label: "Ada",
-    });
   });
 
   it("creates query slices and operations that reuse registered models", () => {
     const userModel = gql(({ model }) =>
-      model.User(
-        {},
-        ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
-        (selected) => ({
-          id: selected.id,
-          name: selected.name,
-        }),
-      ),
+      model.User({}, ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ]),
     );
 
     const userSlice = gql(({ query }, { $var }) =>
@@ -128,7 +103,7 @@ describe("createGqlInvoker", () => {
             userModel.fragment(),
           ]),
         ],
-        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => userModel.normalize(data))),
+        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => data)),
       ),
     );
 

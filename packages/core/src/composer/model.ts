@@ -1,5 +1,5 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
-import type { AnyFields, InferFields } from "../types/fragment";
+import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
@@ -9,29 +9,24 @@ import { createVarAssignments, type MergeVarDefinitions, mergeVarDefinitions } f
 export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
   type ModelBuilder<TTypeName extends keyof TSchema["object"] & string> = <
     TFieldEntries extends AnyFields[],
-    TNormalized extends object,
     TVarDefinitions extends InputTypeSpecifiers[] = [{}],
   >(
     options: {
       variables?: TVarDefinitions;
     },
     builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
-    normalize: (raw: NoInfer<InferFields<TSchema, MergeFields<TFieldEntries>>>) => TNormalized,
-  ) => ReturnType<
-    typeof Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TNormalized>
-  >;
+  ) => ReturnType<typeof Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>>;
 
   const createModelComposer = <TTypeName extends keyof TSchema["object"] & string>(
     typename: TTypeName,
   ): ModelBuilder<TTypeName> => {
-    return <TFieldEntries extends AnyFields[], TNormalized extends object, TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
+    return <TFieldEntries extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
-      normalize: (raw: NoInfer<InferFields<TSchema, MergeFields<TFieldEntries>>>) => TNormalized,
     ) =>
-      Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>, TNormalized>(() => {
+      Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => {
         const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         return {
           typename,
@@ -40,7 +35,6 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
             const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
             return mergeFields(builder({ f, $ }));
           },
-          normalize,
         };
       });
   };

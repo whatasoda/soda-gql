@@ -3,42 +3,26 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 // Case 1: Non-exported top-level definition (used internally only)
 // Should be collected with canonical ID: filePath::internalPostModel
 const internalPostModel = gql.default(({ model }) =>
-  model.Post(
-    {},
-    ({ f }) => [
-      //
-      f.id(),
-      f.title(),
-      f.body(),
-    ],
-    (selection) => ({
-      id: selection.id,
-      title: selection.title,
-      body: selection.body,
-    }),
-  ),
+  model.Post({}, ({ f }) => [
+    //
+    f.id(),
+    f.title(),
+    f.body(),
+  ]),
 );
 
 // Case 2: Exported model using the internal model
 // Should be collected with canonical ID: filePath::userWithPostsModel
 export const userWithPostsModel = gql.default(({ model }) =>
-  model.User(
-    {},
-    ({ f }) => [
+  model.User({}, ({ f }) => [
+    //
+    f.id(),
+    f.name(),
+    f.posts({})(() => [
       //
-      f.id(),
-      f.name(),
-      f.posts({})(() => [
-        //
-        internalPostModel.fragment(),
-      ]),
-    ],
-    (selection) => ({
-      id: selection.id,
-      name: selection.name,
-      posts: selection.posts.map((post) => internalPostModel.normalize(post)),
-    }),
-  ),
+      internalPostModel.fragment(),
+    ]),
+  ]),
 );
 
 // Case 3: Nested definitions in function scope
