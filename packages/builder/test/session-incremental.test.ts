@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBuilderSession } from "@soda-gql/builder/session";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
-import { copyDefaultInject } from "../fixtures/inject-module/index";
-import { createTestConfig } from "../helpers/test-config";
+import { copyDefaultInject } from "../../../tests/fixtures/inject-module/index";
+import { createTestConfig } from "../../../tests/helpers/test-config";
 
 /**
  * Integration tests for BuilderSession incremental rebuild flow.

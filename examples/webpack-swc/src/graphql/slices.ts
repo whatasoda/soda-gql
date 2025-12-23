@@ -8,7 +8,6 @@ export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     {
       variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
-      // metadata: () => ({ custom: { hoge: 0 } }),
     },
     ({ f, $ }) => [
       f.user({ id: $.id })(() => [
