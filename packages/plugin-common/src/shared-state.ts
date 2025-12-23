@@ -2,6 +2,18 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import type { PluginSession } from "./plugin-session";
 
 /**
+ * Minimal interface for SWC transformer.
+ * Matches the Transformer interface from @soda-gql/swc-transformer.
+ */
+export interface SwcTransformerInterface {
+  transform(input: { sourceCode: string; sourcePath: string }): {
+    transformed: boolean;
+    sourceCode: string;
+    sourceMap?: string;
+  };
+}
+
+/**
  * Shared state between bundler plugins and loaders.
  * Enables efficient artifact sharing across build pipeline stages.
  */
@@ -10,6 +22,7 @@ export type SharedState = {
   currentArtifact: BuilderArtifact | null;
   moduleAdjacency: Map<string, Set<string>>;
   generation: number;
+  swcTransformer: SwcTransformerInterface | null;
 };
 
 // Global state for sharing between plugin and loader
@@ -26,6 +39,7 @@ export const getSharedState = (key: string): SharedState => {
       currentArtifact: null,
       moduleAdjacency: new Map(),
       generation: 0,
+      swcTransformer: null,
     };
     sharedStates.set(key, state);
   }
@@ -74,4 +88,18 @@ export const setSharedPluginSession = (key: string, session: PluginSession | nul
  */
 export const getStateKey = (configPath?: string): string => {
   return configPath ?? process.cwd();
+};
+
+/**
+ * Set shared SWC transformer.
+ */
+export const setSharedSwcTransformer = (key: string, transformer: SwcTransformerInterface | null): void => {
+  getSharedState(key).swcTransformer = transformer;
+};
+
+/**
+ * Get shared SWC transformer.
+ */
+export const getSharedSwcTransformer = (key: string): SwcTransformerInterface | null => {
+  return getSharedState(key).swcTransformer;
 };
