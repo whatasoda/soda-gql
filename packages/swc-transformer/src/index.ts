@@ -123,6 +123,29 @@ export type TransformInput = {
 const normalizePath = (value: string): string => value.replace(/\\/g, "/");
 
 /**
+ * Filter artifact to only include elements for the given source file.
+ * This significantly reduces JSON serialization overhead for large codebases.
+ *
+ * Canonical IDs have the format: "filepath::astPath"
+ * We filter by matching the filepath prefix.
+ */
+const filterArtifactForFile = (artifact: BuilderArtifact, sourcePath: string): BuilderArtifact => {
+  const prefix = `${sourcePath}::`;
+
+  const filteredElements: BuilderArtifact["elements"] = {};
+  for (const [id, element] of Object.entries(artifact.elements)) {
+    if (id.startsWith(prefix)) {
+      (filteredElements as Record<string, typeof element>)[id] = element;
+    }
+  }
+
+  return {
+    elements: filteredElements,
+    report: { stats: { hits: 0, misses: 0, skips: 0 }, durationMs: 0, warnings: [] },
+  };
+};
+
+/**
  * Resolve the canonical path to the graphql-system file.
  * Uses realpath to resolve symlinks for accurate comparison.
  */
@@ -173,15 +196,22 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
     sourceMap: options.sourceMap ?? false,
   });
 
-  const artifactJson = JSON.stringify(options.artifact);
-
-  const nativeTransformer = new native.SwcTransformer(artifactJson, configJson);
+  // Store full artifact for per-file filtering
+  const fullArtifact = options.artifact;
 
   return {
     transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
       // Normalize path for cross-platform compatibility
       const normalizedPath = normalizePath(sourcePath);
-      const resultJson = nativeTransformer.transform(sourceCode, normalizedPath);
+
+      // Filter artifact to only include elements for this file
+      // This significantly reduces JSON serialization overhead for large codebases
+      const filteredArtifact = filterArtifactForFile(fullArtifact, normalizedPath);
+      const filteredArtifactJson = JSON.stringify(filteredArtifact);
+
+      // Create per-file transformer with filtered artifact
+      const fileTransformer = new native.SwcTransformer(filteredArtifactJson, configJson);
+      const resultJson = fileTransformer.transform(sourceCode, normalizedPath);
       const result: TransformResult = JSON.parse(resultJson);
 
       return {
@@ -214,13 +244,16 @@ export const transform = async (
   // Normalize path for cross-platform compatibility
   const normalizedPath = normalizePath(input.sourcePath);
 
+  // Filter artifact to only include elements for this file
+  const filteredArtifact = filterArtifactForFile(input.artifact, normalizedPath);
+
   // Resolve the graphql-system file path for stubbing
   const graphqlSystemPath = resolveGraphqlSystemPath(input.config);
 
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
     sourcePath: normalizedPath,
-    artifactJson: JSON.stringify(input.artifact),
+    artifactJson: JSON.stringify(filteredArtifact),
     config: {
       graphqlSystemAliases: input.config.graphqlSystemAliases,
       isCjs: input.isCjs ?? false,
