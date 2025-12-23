@@ -1,16 +1,17 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type UserConfig } from "tsdown";
+import { discoverExports, hasPublicExports } from "./scripts/discover-exports";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packagesDir = join(__dirname, "packages");
 
-// Auto-discover packages with exports.json
+// Auto-discover packages with @x-* export files
 function discoverPackages(): string[] {
   const dirs = readdirSync(packagesDir, { withFileTypes: true });
   return dirs
-    .filter((d) => d.isDirectory() && existsSync(join(packagesDir, d.name, "exports.json")))
+    .filter((d) => d.isDirectory() && hasPublicExports(join(packagesDir, d.name)))
     .map((d) => {
       const packageJsonPath = join(packagesDir, d.name, "package.json");
       const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
@@ -18,40 +19,42 @@ function discoverPackages(): string[] {
     });
 }
 
-// Normalize exports.json entries to tsdown entry format
-function normalizeEntries(exportsJson: Record<string, string>, shortName: string): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(exportsJson).map(([key, sourcePath]) => {
-      // Convert export key to entry key:
-      // "." -> "index"
-      // "./foo" -> "foo/index" (if source ends with /index.ts)
-      // "./foo" -> "foo" (otherwise)
-      let entryKey: string;
-      if (key === ".") {
-        entryKey = "index";
-      } else {
-        entryKey = key.replace(/^\.\//, "");
-        if (sourcePath.endsWith("/index.ts")) {
-          entryKey = `${entryKey}/index`;
-        }
-      }
-      // Prepend packages/{shortName}/ to the source path (remove leading ./)
-      const fullPath = join(`packages/${shortName}`, sourcePath.replace(/^\.\//, ""));
-      return [entryKey, fullPath];
-    }),
-  );
+// Normalize @x-* exports to tsdown entry format
+function normalizeEntries(shortName: string): Record<string, string> {
+  const packageDir = join(packagesDir, shortName);
+  const exports = discoverExports(packageDir);
+  const entries: Record<string, string> = {};
+
+  for (const [exportKey, { sourcePath, isDev }] of exports) {
+    // Skip dev exports - they aren't built
+    if (isDev) continue;
+
+    // Convert export key to entry key:
+    // "." -> "index"
+    // "./foo" -> "foo"
+    let entryKey: string;
+    if (exportKey === ".") {
+      entryKey = "index";
+    } else {
+      entryKey = exportKey.replace(/^\.\//, "");
+    }
+
+    // Prepend packages/{shortName}/ to the source path (remove leading ./)
+    const fullPath = join(`packages/${shortName}`, sourcePath.replace(/^\.\//, ""));
+    entries[entryKey] = fullPath;
+  }
+
+  return entries;
 }
 
-// Discover all packages with exports.json
+// Discover all packages with @x-* exports
 const packageNames = discoverPackages();
 
-// Build packageEntries by reading all exports.json files
+// Build packageEntries by scanning @x-* files
 const packageEntries: Record<string, Record<string, string>> = Object.fromEntries(
   packageNames.map((name) => {
     const shortName = name.replace(/^@soda-gql\//, "");
-    const exportsPath = join(packagesDir, shortName, "exports.json");
-    const exportsJson = JSON.parse(readFileSync(exportsPath, "utf-8"));
-    return [name, normalizeEntries(exportsJson, shortName)];
+    return [name, normalizeEntries(shortName)];
   }),
 );
 
@@ -74,7 +77,7 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   const shortName = name.replace(/^@soda-gql\//, "");
   const entry = packageEntries[name];
   if (!entry) {
-    throw new Error(`Package "${name}" not found. Make sure it has exports.json`);
+    throw new Error(`Package "${name}" not found. Make sure it has @x-* export files`);
   }
   return {
     name,
