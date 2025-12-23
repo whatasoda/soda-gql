@@ -18,7 +18,7 @@ use swc_core::ecma::codegen::{text_writer::JsWriter, Emitter};
 use swc_core::ecma::parser::{lexer::Lexer, Parser, Syntax, TsSyntax};
 use swc_core::ecma::visit::{VisitMut, VisitMutWith, VisitWith};
 
-use crate::types::{BuilderArtifact, TransformInput};
+use crate::types::{BuilderArtifact, TransformInput, TransformInputRef};
 
 use super::analysis::GqlCallFinder;
 use super::imports::ImportManager;
@@ -141,6 +141,108 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
     let transformer_errors = transformer.take_errors();
     drop(transformer);
     // Now we can mutably borrow finder
+    let mut errors = finder.take_errors();
+    errors.extend(transformer_errors);
+
+    Ok(TransformResult {
+        output_code: emit_output.code,
+        transformed: true,
+        errors,
+        source_map: emit_output.source_map,
+    })
+}
+
+/// Transform a source file with a pre-parsed artifact reference.
+///
+/// This is more efficient than `transform_source` when transforming multiple files
+/// with the same artifact, as it avoids repeated JSON parsing.
+///
+/// # Arguments
+/// * `input` - The transformation input containing source, path, artifact reference, and config
+///
+/// # Returns
+/// Result containing the transformed code, or an error message
+pub fn transform_source_ref(input: &TransformInputRef<'_>) -> Result<TransformResult, String> {
+    // Check if this is the graphql-system file - if so, stub it out
+    if is_graphql_system_file(&input.source_path, &input.config.graphql_system_path) {
+        return Ok(TransformResult {
+            output_code: "export {};".to_string(),
+            transformed: true,
+            errors: Vec::new(),
+            source_map: None,
+        });
+    }
+
+    // Create source map
+    let cm: Lrc<SourceMap> = Default::default();
+    let fm = cm.new_source_file(
+        Lrc::new(FileName::Custom(input.source_path.clone())),
+        input.source_code.clone(),
+    );
+
+    // Determine if this is a TSX file
+    let is_tsx = input.source_path.ends_with(".tsx");
+
+    // Create comments storage for preservation
+    let comments = SingleThreadedComments::default();
+
+    // Create parser with comments collection
+    let lexer = Lexer::new(
+        Syntax::Typescript(TsSyntax {
+            tsx: is_tsx,
+            ..Default::default()
+        }),
+        EsVersion::Es2022,
+        (&*fm).into(),
+        Some(&comments),
+    );
+
+    let mut parser = Parser::new_from(lexer);
+    let mut module = parser
+        .parse_module()
+        .map_err(|e| format!("Parse error: {:?}", e))?;
+
+    // Collect metadata about GQL definitions
+    let metadata = MetadataCollector::collect(&module, &input.source_path);
+
+    // Find and analyze GQL calls (use pre-parsed artifact reference)
+    let mut finder = GqlCallFinder::new(input.artifact, &metadata, &input.source_path);
+    module.visit_with(&mut finder);
+
+    // If no GQL calls found, return unchanged (but may have errors)
+    if !finder.has_transformations() {
+        return Ok(TransformResult {
+            output_code: input.source_code.clone(),
+            transformed: false,
+            errors: finder.take_errors(),
+            source_map: None,
+        });
+    }
+
+    // Build runtime calls and transform
+    let runtime_builder = RuntimeCallBuilder::new(input.config.is_cjs);
+    let mut transformer = GqlTransformer::new(&finder, &runtime_builder, &input.source_path);
+    module.visit_mut_with(&mut transformer);
+
+    // Manage imports
+    let mut import_manager = ImportManager::new(
+        transformer.needs_runtime_import(),
+        input.config.is_cjs,
+        &input.config.graphql_system_aliases,
+    );
+    module.visit_mut_with(&mut import_manager);
+
+    // Insert runtime calls after imports
+    if !transformer.runtime_calls.is_empty() {
+        insert_runtime_calls(&mut module, std::mem::take(&mut transformer.runtime_calls));
+    }
+
+    // Emit the transformed code with preserved comments and optional source map
+    let emit_output = emit_module(&cm, &module, &comments, input.config.source_map)?;
+
+    // Collect errors from both phases
+    let transformer_errors = transformer.take_errors();
+    drop(transformer);
     let mut errors = finder.take_errors();
     errors.extend(transformer_errors);
 
