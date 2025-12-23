@@ -1,7 +1,6 @@
 import { type TransformOptions, transformSync } from "@babel/core";
-import type { HmrContext, ModuleNode, Plugin, ViteDevServer } from "vite";
 import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
-import { collectAffectedFiles, type BuilderArtifact, type BuilderArtifactElement } from "@soda-gql/builder";
+import { type BuilderArtifact, type BuilderArtifactElement, collectAffectedFiles } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,
@@ -11,6 +10,7 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
 } from "@soda-gql/plugin-common";
+import type { HmrContext, ModuleNode, Plugin, ViteDevServer } from "vite";
 import type { VitePluginOptions } from "./types";
 
 /**

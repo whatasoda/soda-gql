@@ -6,10 +6,10 @@ import {
   getSharedState,
   getStateKey,
   type PluginSession,
+  type SwcTransformerInterface,
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-  type SwcTransformerInterface,
 } from "@soda-gql/plugin-common";
 import type { Compiler } from "webpack";
 import type { WebpackPluginOptions } from "./types";
