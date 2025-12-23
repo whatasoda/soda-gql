@@ -1,0 +1,46 @@
+---
+pageType: home
+hero:
+  name: soda-gql
+  text: Zero-runtime GraphQL Query Generation
+  tagline: Write type-safe queries in TypeScript that transform at build time into optimized GraphQL documents
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /guide/getting-started
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/whatasoda/soda-gql
+features:
+  - title: Full Type Safety
+    details: Complete TypeScript inference from schema to query results. Type errors appear immediately in your IDE.
+    icon: 🔍
+  - title: No Code Generation Loop
+    details: Unlike traditional GraphQL codegen, no constant regeneration needed. Changes reflect instantly.
+    icon: 🎯
+  - title: Transform Functions
+    details: Built-in data normalization at the model level. Define how your data should be shaped.
+    icon: 🔧
+  - title: Modular Architecture
+    details: Compose queries from reusable models and slices. Build complex operations from simple pieces.
+    icon: 📦
+---
+
+## Quick Install
+
+```bash
+# Install packages
+bun add @soda-gql/core @soda-gql/runtime
+bun add -D @soda-gql/cli @soda-gql/config
+```
+
+## How It Works
+
+soda-gql brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Instead of generating types from queries, you write type-safe queries directly in TypeScript:
+
+1. **Define models** - Reusable fragments with built-in transforms
+2. **Create slices** - Domain-specific query/mutation pieces
+3. **Compose operations** - Combine slices into complete GraphQL operations
+4. **Build** - Transform at build time into optimized GraphQL documents
+
+All with full type inference and zero runtime overhead.
