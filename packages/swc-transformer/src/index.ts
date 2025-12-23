@@ -229,8 +229,9 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   return {
     transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
-      // Normalize path for cross-platform compatibility
-      const normalizedPath = normalizePath(sourcePath);
+      // Resolve to absolute path and normalize for canonical ID consistency
+      // This ensures bundlers can pass relative paths safely
+      const normalizedPath = normalizePath(resolve(sourcePath));
 
       // Filter artifact to only include elements for this file
       // This significantly reduces JSON serialization overhead for large codebases
@@ -270,8 +271,9 @@ export const transform = async (
 ): Promise<TransformOutput> => {
   const native = await loadNativeModule();
 
-  // Normalize path for cross-platform compatibility
-  const normalizedPath = normalizePath(input.sourcePath);
+  // Resolve to absolute path and normalize for canonical ID consistency
+  // This ensures bundlers can pass relative paths safely
+  const normalizedPath = normalizePath(resolve(input.sourcePath));
 
   // Filter artifact to only include elements for this file
   const filteredArtifact = filterArtifactForFile(input.artifact, normalizedPath);
