@@ -30,7 +30,7 @@ const createTestConfig = (
   analyzer: "ts" as const,
   outdir: path.join(workspaceRoot, "graphql-system"),
   graphqlSystemAliases: options?.graphqlSystemAliases ?? ["@/graphql-system"],
-  include: [path.join(workspaceRoot, "src/**/*.ts")],
+  include: [path.join(workspaceRoot, "**/*.ts")],
   exclude: [],
   schemas: {
     default: {
@@ -57,7 +57,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
   beforeEach(async () => {
     originalCwd = process.cwd();
-    fixtureRoot = path.join(process.cwd(), "tests/fixtures/runtime-app");
+    fixtureRoot = path.join(process.cwd(), "packages/builder/test/fixtures/incremental-session");
 
     // Create temporary workspace in system temp
     tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
@@ -109,7 +109,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const evaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -134,7 +134,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -156,7 +156,7 @@ describe("BuilderSession incremental end-to-end", () => {
       originalCwd,
       "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
     );
-    const targetPath = path.join(workspaceRoot, "src/entities/nested-definitions.ts");
+    const targetPath = path.join(workspaceRoot, "nested-definitions.ts");
     await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
     // Update the file's mtime to trigger file tracker detection
@@ -183,7 +183,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -203,7 +203,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -218,7 +218,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
     // Copy new catalog file
     const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
-    const targetPath = path.join(workspaceRoot, "src/entities/catalog.ts");
+    const targetPath = path.join(workspaceRoot, "catalog.ts");
     await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
     // Incremental update (tracker auto-detects new file)
@@ -236,7 +236,7 @@ describe("BuilderSession incremental end-to-end", () => {
     // Verify incremental equals full rebuild
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -256,7 +256,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -269,11 +269,11 @@ describe("BuilderSession incremental end-to-end", () => {
     expect(initial.isOk()).toBe(true);
     const _initialArtifact = initial._unsafeUnwrap();
 
-    // Remove user.catalog.ts
-    const targetPath = path.join(workspaceRoot, "src/entities/user.catalog.ts");
+    // Remove user-catalog.ts
+    const targetPath = path.join(workspaceRoot, "user-catalog.ts");
     await fs.unlink(targetPath);
 
-    // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
+    // Incremental update should fail because profile-query.ts still imports the deleted user-catalog.ts
     // (tracker auto-detects removed file)
     const updateResult = await session.build();
 
@@ -282,15 +282,15 @@ describe("BuilderSession incremental end-to-end", () => {
       const error = updateResult.error;
       expect(error.code).toBe("GRAPH_MISSING_IMPORT");
       if (error.code === "GRAPH_MISSING_IMPORT") {
-        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
-        expect(error.importee).toBe("../entities/user.catalog");
+        expect(error.importer).toBe(path.join(workspaceRoot, "profile-query.ts"));
+        expect(error.importee).toBe("./user-catalog");
       }
     }
 
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -300,8 +300,8 @@ describe("BuilderSession incremental end-to-end", () => {
       const error = fullRebuild.error;
       expect(error.code).toBe("GRAPH_MISSING_IMPORT");
       if (error.code === "GRAPH_MISSING_IMPORT") {
-        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
-        expect(error.importee).toBe("../entities/user.catalog");
+        expect(error.importer).toBe(path.join(workspaceRoot, "profile-query.ts"));
+        expect(error.importee).toBe("./user-catalog");
       }
     }
   });
@@ -311,7 +311,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const fullRebuildEvaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
 
@@ -328,7 +328,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
     // Add catalog.ts
     const catalogVariant = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
-    const catalogTarget = path.join(workspaceRoot, "src/entities/catalog.ts");
+    const catalogTarget = path.join(workspaceRoot, "catalog.ts");
     await copyVariantFile(catalogVariant, catalogTarget, workspaceRoot);
 
     // Update nested-definitions.ts
@@ -336,16 +336,16 @@ describe("BuilderSession incremental end-to-end", () => {
       originalCwd,
       "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
     );
-    const nestedTarget = path.join(workspaceRoot, "src/entities/nested-definitions.ts");
+    const nestedTarget = path.join(workspaceRoot, "nested-definitions.ts");
     await copyVariantFile(nestedVariant, nestedTarget, workspaceRoot);
     const now = new Date();
     await fs.utimes(nestedTarget, now, now);
 
-    // Remove user.catalog.ts
-    const removeTarget = path.join(workspaceRoot, "src/entities/user.catalog.ts");
+    // Remove user-catalog.ts
+    const removeTarget = path.join(workspaceRoot, "user-catalog.ts");
     await fs.unlink(removeTarget);
 
-    // Incremental update should fail because profile.query.ts still imports the deleted user.catalog.ts
+    // Incremental update should fail because profile-query.ts still imports the deleted user-catalog.ts
     // (tracker auto-detects added/updated/removed files)
     const updateResult = await session.build();
 
@@ -354,15 +354,15 @@ describe("BuilderSession incremental end-to-end", () => {
       const error = updateResult.error;
       expect(error.code).toBe("GRAPH_MISSING_IMPORT");
       if (error.code === "GRAPH_MISSING_IMPORT") {
-        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
-        expect(error.importee).toBe("../entities/user.catalog");
+        expect(error.importer).toBe(path.join(workspaceRoot, "profile-query.ts"));
+        expect(error.importee).toBe("./user-catalog");
       }
     }
 
     // Full rebuild should also fail with the same error
     const fullRebuildSession = createBuilderSession({
       evaluatorId: fullRebuildEvaluatorId,
-      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
       config: createTestConfig(workspaceRoot),
     });
     const fullRebuild = await fullRebuildSession.build();
@@ -372,8 +372,8 @@ describe("BuilderSession incremental end-to-end", () => {
       const error = fullRebuild.error;
       expect(error.code).toBe("GRAPH_MISSING_IMPORT");
       if (error.code === "GRAPH_MISSING_IMPORT") {
-        expect(error.importer).toBe(path.join(workspaceRoot, "src/pages/profile.query.ts"));
-        expect(error.importee).toBe("../entities/user.catalog");
+        expect(error.importer).toBe(path.join(workspaceRoot, "profile-query.ts"));
+        expect(error.importee).toBe("./user-catalog");
       }
     }
   });
@@ -433,7 +433,13 @@ function rewriteGraphqlSystemImports(content: string, filePath: string, workspac
     const relativePath = path.relative(fileDir, graphqlSystemPath);
 
     // Ensure forward slashes for import paths
-    const normalizedPath = relativePath.split(path.sep).join("/");
+    let normalizedPath = relativePath.split(path.sep).join("/");
+
+    // Ensure relative path starts with ./ or ../ (not bare module)
+    if (!normalizedPath.startsWith(".")) {
+      normalizedPath = `./${normalizedPath}`;
+    }
+
     return `from "${normalizedPath}"`;
   });
 }
