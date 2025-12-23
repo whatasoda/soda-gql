@@ -38,7 +38,7 @@ impl Default for TransformConfig {
     }
 }
 
-/// Input for a single file transformation.
+/// Input for a single file transformation (JSON-based, for one-shot transform).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransformInput {
@@ -50,6 +50,22 @@ pub struct TransformInput {
 
     /// JSON-serialized BuilderArtifact.
     pub artifact_json: String,
+
+    /// Transformation configuration.
+    pub config: TransformConfig,
+}
+
+/// Input for a single file transformation with pre-parsed artifact.
+/// Used by SwcTransformer to avoid repeated JSON parsing.
+pub struct TransformInputRef<'a> {
+    /// The source code to transform.
+    pub source_code: String,
+
+    /// The file path of the source.
+    pub source_path: String,
+
+    /// Pre-parsed BuilderArtifact reference.
+    pub artifact: &'a super::BuilderArtifact,
 
     /// Transformation configuration.
     pub config: TransformConfig,

@@ -8,7 +8,8 @@ mod types;
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use types::config::TransformInput;
+use types::config::{TransformConfig, TransformInput, TransformInputRef};
+use types::BuilderArtifact;
 
 /// Transform a single source file.
 ///
@@ -30,10 +31,14 @@ pub fn transform(input_json: String) -> Result<String> {
 }
 
 /// Stateful transformer that caches artifact and config for multiple file transformations.
+///
+/// The artifact is parsed once in the constructor and reused for all subsequent
+/// transform calls, avoiding repeated JSON parsing overhead.
 #[napi]
 pub struct SwcTransformer {
-    artifact_json: String,
-    config: types::config::TransformConfig,
+    /// Pre-parsed BuilderArtifact (parsed once in constructor)
+    artifact: BuilderArtifact,
+    config: TransformConfig,
 }
 
 #[napi]
@@ -45,13 +50,14 @@ impl SwcTransformer {
     /// * `config_json` - JSON-serialized TransformConfig
     #[napi(constructor)]
     pub fn new(artifact_json: String, config_json: String) -> Result<Self> {
-        let config: types::config::TransformConfig = serde_json::from_str(&config_json)
+        let config: TransformConfig = serde_json::from_str(&config_json)
             .map_err(|e| Error::from_reason(format!("Failed to parse config: {}", e)))?;
 
-        Ok(SwcTransformer {
-            artifact_json,
-            config,
-        })
+        // Parse artifact once in constructor to avoid repeated parsing
+        let artifact: BuilderArtifact = serde_json::from_str(&artifact_json)
+            .map_err(|e| Error::from_reason(format!("Failed to parse artifact: {}", e)))?;
+
+        Ok(SwcTransformer { artifact, config })
     }
 
     /// Transform a single source file.
@@ -64,14 +70,15 @@ impl SwcTransformer {
     /// JSON-serialized TransformResult
     #[napi]
     pub fn transform(&self, source_code: String, source_path: String) -> Result<String> {
-        let input = TransformInput {
+        // Use pre-parsed artifact reference instead of re-parsing JSON
+        let input = TransformInputRef {
             source_code,
             source_path,
-            artifact_json: self.artifact_json.clone(),
+            artifact: &self.artifact,
             config: self.config.clone(),
         };
 
-        let result = transform::transformer::transform_source(&input)
+        let result = transform::transformer::transform_source_ref(&input)
             .map_err(|e| Error::from_reason(e))?;
 
         serde_json::to_string(&result)
