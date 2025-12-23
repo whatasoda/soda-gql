@@ -13,7 +13,7 @@ export const userModel = gql.default(({ model }, { $var }) =>
       id: selection.id,
       name: selection.name,
       email: selection.email,
-      posts: selection.posts.map((post) => ({
+      posts: selection.posts.map((post: { id: string; title: string }) => ({
         id: post.id,
         title: post.title,
       })),
