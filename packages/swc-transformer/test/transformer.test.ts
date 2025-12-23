@@ -75,6 +75,24 @@ const transformWithSwc = async ({
 };
 
 describe("swc-transformer", async () => {
+  // Explicit check that fails when running in the swc-transformer-specific CI job
+  // The SWC_TRANSFORMER_CI env var is set by the dedicated swc-transformer workflow job
+  // This prevents that job from silently passing when native module build is broken
+  it("should have native module available when SWC_TRANSFORMER_CI is set", () => {
+    const isSwcTransformerCi = process.env.SWC_TRANSFORMER_CI === "true" || process.env.SWC_TRANSFORMER_CI === "1";
+
+    if (isSwcTransformerCi && !nativeModuleAvailable) {
+      throw new Error(
+        `Native module required in swc-transformer CI job but not available. ` +
+          `Run 'bun run build' in packages/swc-transformer. ` +
+          `Error: ${initError}`,
+      );
+    }
+
+    // In main test suite or local dev, just pass (other tests will be skipped if needed)
+    expect(true).toBe(true);
+  });
+
   const testCases = await loadTestCases();
 
   for (const testCase of testCases) {
