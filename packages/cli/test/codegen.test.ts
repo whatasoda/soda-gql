@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { createTempConfigFile } from "@soda-gql/config/test-utils";
+import { createTempConfigFile } from "@soda-gql/config";
 import { copyDefaultInject } from "../../../tests/fixtures/inject-module/index";
 import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../../tests/utils/cli";
 
@@ -96,7 +96,7 @@ describe("soda-gql codegen CLI", () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}`);
       mkdirSync(caseDir, { recursive: true });
 
-      const schemaPath = join(projectRoot, "tests", "fixtures", "runtime-app", "schema.graphql");
+      const schemaPath = join(projectRoot, "tests", "codegen-fixture", "schemas", "default", "schema.graphql");
       const outDir = join(caseDir, "graphql-system");
       const outFile = join(outDir, "index.ts");
       const injectFile = join(caseDir, "inject.ts");
