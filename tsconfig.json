@@ -16,6 +16,7 @@
       "@soda-gql/config/*": ["./packages/config/src/*"],
       "@soda-gql/core/*": ["./packages/core/src/*"],
       "@soda-gql/babel-plugin/*": ["./packages/babel-plugin/src/*"],
+      "@soda-gql/babel-transformer/*": ["./packages/babel-transformer/src/*"],
       "@soda-gql/plugin-common/*": ["./packages/plugin-common/src/*"],
       "@soda-gql/tsc-plugin/*": ["./packages/tsc-plugin/src/*"],
       "@soda-gql/tsc-transformer/*": ["./packages/tsc-transformer/src/*"],
