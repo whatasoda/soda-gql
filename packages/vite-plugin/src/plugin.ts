@@ -35,7 +35,7 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
   let pluginSession: PluginSession | null = null;
   let currentArtifact: BuilderArtifact | null = null;
   let previousArtifact: BuilderArtifact | null = null;
-  let viteServer: ViteDevServer | null = null;
+  let _viteServer: ViteDevServer | null = null;
   let isDevMode = false;
 
   const log = (message: string): void => {
@@ -143,7 +143,7 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
     },
 
     configureServer(server) {
-      viteServer = server;
+      _viteServer = server;
       log("Dev server configured");
     },
 
