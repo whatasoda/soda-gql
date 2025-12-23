@@ -33,6 +33,8 @@
     { "path": "./packages/tsc-transformer/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./packages/webpack-plugin/tsconfig.editor.json" },
-    { "path": "./packages/metro-plugin/tsconfig.editor.json" }
+    { "path": "./packages/metro-plugin/tsconfig.editor.json" },
+    { "path": "./packages/swc-transformer/tsconfig.editor.json" },
+    { "path": "./packages/babel-transformer/tsconfig.editor.json" }
   ]
 }
