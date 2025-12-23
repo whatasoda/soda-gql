@@ -21,7 +21,8 @@ swc_core = { version = "52", features = [
     "ecma_ast",
     "ecma_visit",
     "ecma_codegen",
-    "common"
+    "common",
+    "common_sourcemap"
 ] }
 
 [build-dependencies]

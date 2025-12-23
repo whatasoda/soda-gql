@@ -1014,6 +1014,7 @@ dependencies = [
  "siphasher 0.3.11",
  "swc_atoms",
  "swc_eq_ignore_macros",
+ "swc_sourcemap",
  "swc_visit",
  "tracing",
  "unicode-width",
