@@ -8,4 +8,3 @@
 //   export const model = g.default(({ model }) => ...);
 
 export const placeholder = "renamed-import-test";
-

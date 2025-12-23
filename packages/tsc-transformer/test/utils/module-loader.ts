@@ -40,7 +40,16 @@ export const loadTransformedModule = async (
     return code;
   })();
 
-  const relativePath = filePath.slice(filePath.lastIndexOf("/src/"));
+  // Extract relative path from fixtures or src directory
+  const srcIndex = filePath.lastIndexOf("/src/");
+  const fixturesIndex = filePath.lastIndexOf("/fixtures/");
+  const startIndex = srcIndex >= 0 ? srcIndex : fixturesIndex;
+
+  if (startIndex < 0) {
+    throw new Error(`Cannot determine relative path for: ${filePath}`);
+  }
+
+  const relativePath = filePath.slice(startIndex);
   const outputPath = join(outputDir, relativePath.replace(/\.ts$/, ".mjs"));
 
   await mkdir(dirname(outputPath), { recursive: true });

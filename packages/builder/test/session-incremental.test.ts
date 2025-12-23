@@ -1,12 +1,49 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { cpSync, mkdtempSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createBuilderSession } from "@soda-gql/builder/session";
+import { fileURLToPath } from "node:url";
+import { createBuilderSession } from "@soda-gql/builder";
 import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
-import { copyDefaultInject } from "../../../tests/fixtures/inject-module/index";
-import { createTestConfig } from "../../../tests/helpers/test-config";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+
+// Project root for accessing shared test fixtures
+const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const defaultInjectPath = path.join(projectRoot, "tests/fixtures/inject-module/default-inject.ts");
+
+/**
+ * Copies the default inject module fixture to the specified destination.
+ */
+const copyDefaultInject = (destinationPath: string): void => {
+  cpSync(defaultInjectPath, destinationPath);
+};
+
+/**
+ * Create a test config for integration tests.
+ * Uses mock values suitable for temporary test workspaces.
+ */
+const createTestConfig = (
+  workspaceRoot: string,
+  options?: { graphqlSystemAliases?: readonly string[] },
+): ResolvedSodaGqlConfig => ({
+  analyzer: "ts" as const,
+  outdir: path.join(workspaceRoot, "graphql-system"),
+  graphqlSystemAliases: options?.graphqlSystemAliases ?? ["@/graphql-system"],
+  include: [path.join(workspaceRoot, "src/**/*.ts")],
+  exclude: [],
+  schemas: {
+    default: {
+      schema: path.join(workspaceRoot, "schema.graphql"),
+      runtimeAdapter: path.join(workspaceRoot, "inject/runtime-adapter.ts"),
+      scalars: path.join(workspaceRoot, "inject/scalars.ts"),
+    },
+  },
+  styles: {
+    importExtension: false,
+  },
+  plugins: {},
+});
 
 /**
  * Integration tests for BuilderSession incremental rebuild flow.
