@@ -178,3 +178,7 @@ packages/swc-transformer/target/
 packages/swc-transformer/*.node
 packages/swc-transformer/index.js
 packages/swc-transformer/index.d.ts
+
+# Rspress build output
+website/doc_build/
+website/.rspress/
