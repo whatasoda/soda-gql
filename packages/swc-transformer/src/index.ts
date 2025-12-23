@@ -22,10 +22,36 @@ interface NativeTransformer {
   transform(sourceCode: string, sourcePath: string): string;
 }
 
+/**
+ * Plugin error from the SWC transformer.
+ * This matches the Rust PluginError structure for consistent error reporting.
+ */
+export type SwcPluginError = {
+  /** Always "PluginError" for type discrimination */
+  readonly type: "PluginError";
+  /** Error code for programmatic handling (e.g., "SODA_GQL_METADATA_NOT_FOUND") */
+  readonly code: string;
+  /** Human-readable error message */
+  readonly message: string;
+  /** Stage where the error occurred */
+  readonly stage: "analysis" | "transform";
+  /** Source filename if applicable */
+  readonly filename?: string;
+  /** Canonical ID if applicable */
+  readonly canonicalId?: string;
+  /** Artifact type if applicable */
+  readonly artifactType?: string;
+  /** Builder type if applicable */
+  readonly builderType?: string;
+  /** Argument name if applicable */
+  readonly argName?: string;
+};
+
 interface TransformResult {
   outputCode: string;
   transformed: boolean;
   sourceMap?: string;
+  errors?: SwcPluginError[];
 }
 
 /**
@@ -166,6 +192,8 @@ export type TransformOutput = {
   sourceCode: string;
   /** Source map JSON, if source map generation was enabled */
   sourceMap?: string;
+  /** Errors encountered during transformation (non-fatal) */
+  errors: SwcPluginError[];
 };
 
 /**
@@ -218,6 +246,7 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
         transformed: result.transformed,
         sourceCode: result.outputCode,
         sourceMap: result.sourceMap,
+        errors: result.errors ?? [],
       };
     },
   };
@@ -269,5 +298,6 @@ export const transform = async (
     transformed: result.transformed,
     sourceCode: result.outputCode,
     sourceMap: result.sourceMap,
+    errors: result.errors ?? [],
   };
 };
