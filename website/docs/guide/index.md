@@ -19,21 +19,13 @@ This cycle creates friction: you write code in two languages, wait for generatio
 
 ### Models
 
-Models define reusable GraphQL fragments with built-in data transformation. They specify which fields to select and how to normalize the response:
+Models define reusable GraphQL fragments. They specify which fields to select from a type:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
 export const userModel = gql.default(({ model }) =>
-  model.User(
-    {},
-    ({ f }) => [f.id(), f.name(), f.email()],
-    (selected) => ({
-      id: selected.id,
-      displayName: selected.name,
-      contact: selected.email,
-    }),
-  ),
+  model.User({}, ({ f }) => [f.id(), f.name(), f.email()]),
 );
 ```
 
@@ -47,9 +39,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
     { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [f.user({ id: $.userId })(() => [userModel.fragment()])],
     ({ select }) =>
-      select(["$.user"], (result) =>
-        result.safeUnwrap(([user]) => userModel.normalize(user)),
-      ),
+      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
   ),
 );
 ```
