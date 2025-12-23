@@ -121,8 +121,11 @@ impl Visit for GqlCallFinder<'_> {
 
 /// Find the inner builder call from a gql.default() call.
 ///
-/// Given: `gql.default(({ model }) => model.User(...))`
-/// Returns: The `model.User(...)` call expression arguments
+/// Supports both arrow functions and function expressions:
+/// - `gql.default(({ model }) => model.User(...))`
+/// - `gql.default(function({ model }) { return model.User(...); })`
+///
+/// Returns: The inner builder call expression (e.g., `model.User(...)`)
 fn find_gql_builder_call(call: &CallExpr) -> Option<&CallExpr> {
     // Check if callee is gql.* pattern
     if !is_gql_member_expression(&call.callee) {
@@ -134,14 +137,15 @@ fn find_gql_builder_call(call: &CallExpr) -> Option<&CallExpr> {
         return None;
     }
 
-    // The argument should be an arrow function
+    // The argument should be an arrow function or function expression
     let arg = &call.args[0];
     if arg.spread.is_some() {
         return None;
     }
 
     match &*arg.expr {
-        Expr::Arrow(arrow) => extract_builder_call(arrow),
+        Expr::Arrow(arrow) => extract_builder_call_from_arrow(arrow),
+        Expr::Fn(fn_expr) => extract_builder_call_from_fn(fn_expr),
         _ => None,
     }
 }
@@ -184,7 +188,7 @@ fn atom_eq<T: AsRef<str>>(atom: &T, s: &str) -> bool {
 }
 
 /// Extract the builder call from an arrow function body.
-fn extract_builder_call(arrow: &ArrowExpr) -> Option<&CallExpr> {
+fn extract_builder_call_from_arrow(arrow: &ArrowExpr) -> Option<&CallExpr> {
     match &*arrow.body {
         BlockStmtOrExpr::Expr(expr) => {
             if let Expr::Call(call) = &**expr {
@@ -193,20 +197,33 @@ fn extract_builder_call(arrow: &ArrowExpr) -> Option<&CallExpr> {
                 None
             }
         }
-        BlockStmtOrExpr::BlockStmt(block) => {
-            // Look for a return statement with a call expression
-            for stmt in &block.stmts {
-                if let Stmt::Return(ret) = stmt {
-                    if let Some(arg) = &ret.arg {
-                        if let Expr::Call(call) = &**arg {
-                            return Some(call);
-                        }
-                    }
+        BlockStmtOrExpr::BlockStmt(block) => extract_call_from_block(block),
+    }
+}
+
+/// Extract the builder call from a function expression body.
+fn extract_builder_call_from_fn(fn_expr: &FnExpr) -> Option<&CallExpr> {
+    // Function body is Option<BlockStmt>
+    fn_expr
+        .function
+        .body
+        .as_ref()
+        .and_then(|block| extract_call_from_block(block))
+}
+
+/// Extract a call expression from a block statement (shared by arrow and fn).
+fn extract_call_from_block(block: &BlockStmt) -> Option<&CallExpr> {
+    // Look for a return statement with a call expression
+    for stmt in &block.stmts {
+        if let Stmt::Return(ret) = stmt {
+            if let Some(arg) = &ret.arg {
+                if let Expr::Call(call) = &**arg {
+                    return Some(call);
                 }
             }
-            None
         }
     }
+    None
 }
 
 /// Resolve a canonical ID from file path and AST path.

@@ -181,9 +181,9 @@ impl MetadataCollector {
         if let Callee::Expr(expr) = &call.callee {
             if let Expr::Member(member) = &**expr {
                 if is_gql_reference(&member.obj) {
-                    // Check if first argument is an arrow function
+                    // Check if first argument is an arrow function or function expression
                     if let Some(first_arg) = call.args.first() {
-                        return matches!(&*first_arg.expr, Expr::Arrow(_));
+                        return matches!(&*first_arg.expr, Expr::Arrow(_) | Expr::Fn(_));
                     }
                 }
             }
