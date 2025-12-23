@@ -96,6 +96,7 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
     const commonExternals = [
       //
       "@babel/core",
+      "@babel/generator",
       "@babel/parser",
       "@babel/traverse",
       "@babel/types",
@@ -187,6 +188,15 @@ export default defineConfig([
     banner: {
       js: "#!/usr/bin/env node",
     },
+    clean: true,
+  },
+
+  // Transformer packages
+  {
+    ...configure("@soda-gql/babel-transformer"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
     clean: true,
   },
 

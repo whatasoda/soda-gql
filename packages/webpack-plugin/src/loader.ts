@@ -1,5 +1,4 @@
-import { type TransformOptions, transformSync } from "@babel/core";
-import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
+import { createBabelTransformer } from "@soda-gql/babel-transformer";
 import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,
@@ -114,20 +113,21 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         );
       }
 
-      // Transform using Babel plugin with direct artifact (default)
-      const babelOptions: TransformOptions = {
-        filename,
-        babelrc: false,
-        configFile: false,
-        plugins: [createPluginWithArtifact({ artifact, config: session.config })],
-        sourceMaps: true,
-        inputSourceMap: inputSourceMap as TransformOptions["inputSourceMap"],
-      };
+      // Transform using babel-transformer directly (default)
+      const babelTransformer = createBabelTransformer({
+        artifact,
+        config: session.config,
+        sourceMap: true,
+      });
 
-      const result = transformSync(source, babelOptions);
+      const result = babelTransformer.transform({
+        sourceCode: source,
+        sourcePath: filename,
+      });
 
-      if (result?.code) {
-        callback(null, result.code, result.map as Parameters<typeof callback>[2]);
+      if (result.transformed) {
+        const sourceMap = result.sourceMap ? JSON.parse(result.sourceMap) : undefined;
+        callback(null, result.sourceCode, sourceMap);
       } else {
         callback(null, source, inputSourceMap as Parameters<typeof callback>[2]);
       }
