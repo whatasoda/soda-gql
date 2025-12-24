@@ -5,4 +5,11 @@ export type {
   MetadataAdapter,
   MetadataTransformInput,
 } from "./adapter";
-export type { ExtractMetadata, MetadataBuilder, MetadataBuilderTools, OperationMetadata } from "./metadata";
+export type {
+  ExtractMetadata,
+  MetadataBuilder,
+  MetadataBuilderTools,
+  ModelMetadataBuilder,
+  ModelMetadataBuilderTools,
+  OperationMetadata,
+} from "./metadata";

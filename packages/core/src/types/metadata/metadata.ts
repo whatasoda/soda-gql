@@ -38,3 +38,21 @@ export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadat
  * Utility type to extract the metadata type from an operation.
  */
 export type ExtractMetadata<T> = T extends { metadata: infer M } ? M : OperationMetadata;
+
+/**
+ * Tools available inside model metadata builder callbacks.
+ * Unlike operation metadata, models don't have their own document.
+ */
+export type ModelMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
+  /** Variable references created from the model's variable definitions */
+  readonly $: TVarRefs;
+};
+
+/**
+ * Metadata builder callback for models.
+ * Allows metadata to reference model variables.
+ * Supports both sync and async metadata generation.
+ */
+export type ModelMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = OperationMetadata> = (
+  tools: ModelMetadataBuilderTools<TVarRefs>,
+) => TMetadata | Promise<TMetadata>;
