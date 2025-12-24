@@ -7,7 +7,19 @@ const PACKAGES_DIR = join(REPO_ROOT, "packages");
 const STATIC_EXPORTS = ["./package.json"];
 
 // Packages that manage their own exports (e.g., native modules with custom build systems)
-const EXCLUDED_PACKAGES = ["@soda-gql/swc-transformer"];
+const EXCLUDED_PACKAGES: string[] = [];
+
+// Exports that should be preserved (not overwritten by sync) for hybrid packages
+// These are manually managed exports that coexist with auto-synced exports
+const PRESERVED_EXPORTS: Record<string, Record<string, unknown>> = {
+  "@soda-gql/swc-transformer": {
+    "./native": {
+      types: "./index.d.ts",
+      require: "./index.js",
+      default: "./index.js",
+    },
+  },
+};
 
 interface PackageJson {
   name: string;
@@ -129,6 +141,14 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
   // Add static exports
   for (const staticExport of STATIC_EXPORTS) {
     exports[staticExport] = staticExport;
+  }
+
+  // Add preserved exports for hybrid packages (e.g., native module exports)
+  const preserved = PRESERVED_EXPORTS[packageName];
+  if (preserved) {
+    for (const [key, value] of Object.entries(preserved)) {
+      exports[key] = value;
+    }
   }
 
   // Update main/module/types from the default export (".")
