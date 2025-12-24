@@ -1,81 +1,96 @@
 name: Publish to npm
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  release:
+    types: [published]
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  build-native:
-    uses: ./.github/workflows/build-native.yml
-
-  collect-artifacts:
-    needs: build-native
+  check-publishable:
     runs-on: ubuntu-latest
+    outputs:
+      can_publish: ${{ steps.check.outputs.can_publish }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: packages/swc-transformer/artifacts
+      - name: Check npm registry
+        id: check
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+          # List of packages to check
+          PACKAGES=(
+            "core" "common" "builder" "cli" "codegen" "config"
+            "runtime" "babel-plugin" "babel-transformer" "tsc-plugin"
+            "tsc-transformer" "webpack-plugin" "plugin-common"
+            "vite-plugin" "metro-plugin" "swc-transformer"
+          )
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+          # Add platform-specific packages
+          PLATFORM_PACKAGES=(
+            "swc-transformer-darwin-arm64"
+            "swc-transformer-darwin-x64"
+            "swc-transformer-linux-x64-gnu"
+            "swc-transformer-linux-x64-musl"
+            "swc-transformer-win32-x64-msvc"
+          )
 
-      - name: Collect napi artifacts
-        working-directory: packages/swc-transformer
-        run: bunx @napi-rs/cli artifacts
+          ALL_PUBLISHED=true
+          ANY_NEW=false
 
-      - name: Prepare napi packages
-        working-directory: packages/swc-transformer
-        run: bunx @napi-rs/cli prepublish -t npm
+          echo "Checking packages for version ${VERSION}..."
 
-      - name: Upload npm packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-packages
-          path: packages/swc-transformer/npm
+          for pkg in "${PACKAGES[@]}" "${PLATFORM_PACKAGES[@]}"; do
+            if npm view "@soda-gql/${pkg}@${VERSION}" version 2>/dev/null; then
+              echo "✓ @soda-gql/${pkg}@${VERSION} is already published"
+            else
+              echo "✗ @soda-gql/${pkg}@${VERSION} is NOT published"
+              ALL_PUBLISHED=false
+
+              # Check if package has ever been published
+              if ! npm view "@soda-gql/${pkg}" versions 2>/dev/null; then
+                echo "  → This package has NEVER been published (needs OTP)"
+                ANY_NEW=true
+              fi
+            fi
+          done
+
+          if [ "$ALL_PUBLISHED" = "true" ]; then
+            echo "can_publish=skip" >> $GITHUB_OUTPUT
+            echo ""
+            echo "=== All packages already published. Nothing to do. ==="
+          elif [ "$ANY_NEW" = "true" ]; then
+            echo "can_publish=local" >> $GITHUB_OUTPUT
+            echo ""
+            echo "=== Some packages need initial publish with OTP. ==="
+            echo "=== Please run locally: bun publish-local ${{ github.event.release.tag_name }} --otp <code> ==="
+          else
+            echo "can_publish=ci" >> $GITHUB_OUTPUT
+            echo ""
+            echo "=== All packages can be published via CI. ==="
+          fi
 
   publish:
-    needs: collect-artifacts
+    needs: check-publishable
+    if: needs.check-publishable.outputs.can_publish == 'ci'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download npm packages
-        uses: actions/download-artifact@v4
-        with:
-          name: npm-packages
-          path: packages/swc-transformer/npm
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Prepare quality checks
-        run: bun quality:prepare
-
-      - name: Run quality checks
-        run: bun quality
-
-      - name: Prepare for publishing
-        run: bun prepublish
+      - name: Download release artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          gh release download "${VERSION}" --pattern "publish-packages-*.tar.gz"
+          mkdir -p dist
+          tar -xzf publish-packages-*.tar.gz -C dist
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -83,7 +98,33 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish to npm with provenance
-        run: bun publish-npm:provenance
+      - name: Publish to npm
+        run: |
+          for dir in dist/*/; do
+            PKG_NAME=$(jq -r '.name' "${dir}package.json")
+            PKG_VERSION=$(jq -r '.version' "${dir}package.json")
+
+            # Skip if already published
+            if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then
+              echo "Skipping ${PKG_NAME}@${PKG_VERSION} (already published)"
+              continue
+            fi
+
+            echo "Publishing ${PKG_NAME}@${PKG_VERSION}..."
+            cd "$dir"
+            npm publish --access public --provenance
+            cd -
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  notify-local-required:
+    needs: check-publishable
+    if: needs.check-publishable.outputs.can_publish == 'local'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify local publish required
+        run: |
+          echo "::warning::Some packages require initial publish with OTP"
+          echo "::warning::Please run locally: bun publish-local ${{ github.event.release.tag_name }} --otp <code>"
+          exit 0
