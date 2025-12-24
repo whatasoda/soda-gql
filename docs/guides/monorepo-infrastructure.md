@@ -698,16 +698,23 @@ bun run biome:check
 5. Add package to root `tsconfig.json`:
    ```json
    {
-     "paths": {
-       "@soda-gql/new-package/*": ["./packages/new-package/src/*"]
-     },
      "references": [
        { "path": "./packages/new-package/tsconfig.editor.json" }
      ]
    }
    ```
 
-6. Add package to `tsdown.config.ts`:
+6. Add package to root `package.json` devDependencies:
+   ```json
+   {
+     "devDependencies": {
+       "@soda-gql/new-package": "workspace:*"
+     }
+   }
+   ```
+   Then run `bun install` to create workspace symlinks.
+
+7. Add package to `tsdown.config.ts`:
    ```typescript
    {
      ...common("@soda-gql/new-package"),
@@ -717,7 +724,7 @@ bun run biome:check
    }
    ```
 
-7. Sync exports and build:
+8. Sync exports and build:
    ```bash
    bun run exports:sync
    bun run build
