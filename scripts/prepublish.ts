@@ -53,7 +53,7 @@ type PackageEntry = {
 const prepare = async () => {
   await $`rm -rf dist`;
 
-  await $`bun run build`;
+  await $`bun run build:release`;
 
   await $`mkdir -p dist`;
 
@@ -183,9 +183,71 @@ const validate = async (packageEntries: Map<string, PackageEntry>) => {
   }
 };
 
+// Platform package schema (simpler than main packages)
+const platformPackageJsonSchema = z.object({
+  name: z.string().regex(/^@soda-gql\/swc-transformer-/),
+  version: z.string(),
+  os: z.array(z.string()),
+  cpu: z.array(z.string()),
+  main: z.string(),
+  files: z.array(z.string()),
+  license: z.literal("MIT"),
+  libc: z.array(z.string()).optional(),
+  author: z.object({
+    name: z.literal("Shota Hatada"),
+    email: z.literal("shota.hatada@whatasoda.me"),
+    url: z.literal("https://github.com/whatasoda"),
+  }),
+  repository: z.object({
+    type: z.literal("git"),
+    url: z.string(),
+    directory: z.string(),
+  }).optional(),
+});
+
+const preparePlatformPackages = async () => {
+  const platformPackagesDir = "packages/swc-transformer/npm";
+  const platformDistDir = "dist";
+
+  try {
+    const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
+
+    for (const entry of platformDirEntries) {
+      if (!entry.isDirectory()) continue;
+
+      const sourceDir = path.join(platformPackagesDir, entry.name);
+      const distDir = path.join(platformDistDir, `swc-transformer-${entry.name}`);
+
+      // Copy the platform package directory
+      await $`cp -rf ${sourceDir} ${distDir}`;
+
+      // Read and update package.json with root version
+      const packageJsonPath = path.join(distDir, "package.json");
+      const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
+
+      const parsed = platformPackageJsonSchema.safeParse(packageJson);
+      if (!parsed.success) {
+        console.error(`Invalid platform package.json: ${entry.name}`);
+        console.error(parsed.error);
+        continue;
+      }
+
+      // Update version to root version
+      packageJson.version = rootVersion;
+      await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      console.log(`Prepared platform package: ${packageJson.name}`);
+    }
+  } catch (error) {
+    // Platform packages may not exist yet (e.g., first build)
+    console.log("No platform packages found (this is expected for local builds)");
+  }
+};
+
 const main = async () => {
   const packageEntries = await prepare();
   await validate(packageEntries);
+  await preparePlatformPackages();
 };
 
 await main();

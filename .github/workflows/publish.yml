@@ -3,18 +3,62 @@ name: Publish to npm
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  publish:
+  build-native:
+    uses: ./.github/workflows/build-native.yml
+
+  collect-artifacts:
+    needs: build-native
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: packages/swc-transformer/artifacts
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Collect napi artifacts
+        working-directory: packages/swc-transformer
+        run: bunx @napi-rs/cli artifacts
+
+      - name: Prepare napi packages
+        working-directory: packages/swc-transformer
+        run: bunx @napi-rs/cli prepublish -t npm
+
+      - name: Upload npm packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages
+          path: packages/swc-transformer/npm
+
+  publish:
+    needs: collect-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download npm packages
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-packages
+          path: packages/swc-transformer/npm
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -36,8 +80,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm with provenance
         run: bun publish-npm:provenance

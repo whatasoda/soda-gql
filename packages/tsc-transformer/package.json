@@ -31,15 +31,15 @@
     "typescript": "5.*"
   },
   "exports": {
+    "./test": {
+      "@soda-gql": "./@devx-test.ts"
+    },
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
-    },
-    "./test": {
-      "@soda-gql": "./test/export.ts"
     },
     "./package.json": "./package.json"
   }
