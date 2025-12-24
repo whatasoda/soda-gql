@@ -2,18 +2,36 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": ["@soda-gql"],
+    "customConditions": [
+      "@soda-gql"
+    ],
     "outDir": "../../node_modules/.soda-gql/.typecheck/webpack-plugin",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/webpack-plugin/tsconfig.tsbuildinfo",
-    "rootDir": "./src"
+    "rootDir": "."
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
+  "include": [
+    "src/**/*",
+    "@x-*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "references": [
-    { "path": "../builder/tsconfig.editor.json" },
-    { "path": "../common/tsconfig.editor.json" },
-    { "path": "../config/tsconfig.editor.json" },
-    { "path": "../plugin-common/tsconfig.editor.json" },
-    { "path": "../babel-transformer/tsconfig.editor.json" }
+    {
+      "path": "../builder/tsconfig.editor.json"
+    },
+    {
+      "path": "../common/tsconfig.editor.json"
+    },
+    {
+      "path": "../config/tsconfig.editor.json"
+    },
+    {
+      "path": "../plugin-common/tsconfig.editor.json"
+    },
+    {
+      "path": "../babel-transformer/tsconfig.editor.json"
+    }
   ]
 }

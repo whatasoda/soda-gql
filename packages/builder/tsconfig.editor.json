@@ -2,11 +2,29 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": ["@soda-gql"],
+    "customConditions": [
+      "@soda-gql"
+    ],
     "outDir": "../../node_modules/.soda-gql/.typecheck/builder",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/builder/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist", "**/graphql-system/index.cjs", "test/fixtures/**/*"],
-  "references": [{ "path": "../common/tsconfig.editor.json" }, { "path": "../core/tsconfig.editor.json" }]
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "@x-*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/graphql-system/index.cjs",
+    "test/fixtures/**/*"
+  ],
+  "references": [
+    {
+      "path": "../common/tsconfig.editor.json"
+    },
+    {
+      "path": "../core/tsconfig.editor.json"
+    }
+  ]
 }

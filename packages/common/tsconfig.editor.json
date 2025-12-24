@@ -4,9 +4,16 @@
     "composite": true,
     "outDir": "../../node_modules/.soda-gql/.typecheck/common",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/common/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {}
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",
+    "@x-*.ts",
+    "@devx-*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
