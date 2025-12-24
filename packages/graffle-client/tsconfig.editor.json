@@ -11,8 +11,10 @@
     "paths": {}
   },
   "include": [
-    "./src/**/*",
-    "@x-*.ts"
+    "src/**/*",
+    "test/**/*",
+    "@x-*.ts",
+    "@devx-*.ts"
   ],
   "exclude": [
     "node_modules",

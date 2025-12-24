@@ -11,7 +11,8 @@
   "include": [
     "src/**/*",
     "test/**/*",
-    "@x-*.ts"
+    "@x-*.ts",
+    "@devx-*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -11,10 +11,8 @@
   "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*"],
   "exclude": [
     "node_modules",
-    "dist",
-    "node_modules/.soda-gql/.typecheck",
-    "tests/.tmp/**/*",
-    ".tmp/**/*",
+    "**/dist/**/*",
+    "**/.tmp/**/*",
     "perf-measures/type-check/client.ts",
     "perf-measures/**/generated/**/*",
     "perf-measures/**/fixtures/**/*"

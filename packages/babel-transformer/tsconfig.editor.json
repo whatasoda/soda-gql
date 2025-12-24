@@ -13,7 +13,8 @@
   "include": [
     "src/**/*",
     "test/**/*",
-    "@x-*.ts"
+    "@x-*.ts",
+    "@devx-*.ts"
   ],
   "exclude": [
     "test/fixtures/**/*"

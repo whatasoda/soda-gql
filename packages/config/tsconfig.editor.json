@@ -2,21 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": [
-      "@soda-gql"
-    ],
+    "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/config",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/config/tsconfig.tsbuildinfo"
   },
-  "include": [
-    "src/**/*",
-    "tests/**/*",
-    "@x-*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ],
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
+  "exclude": ["node_modules", "dist"],
   "references": [
     {
       "path": "../common/tsconfig.editor.json"

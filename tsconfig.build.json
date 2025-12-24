@@ -14,13 +14,15 @@
   "include": ["packages/*/src/**/*"],
   "exclude": [
     "node_modules",
-    "dist",
-    "build",
-    "coverage",
+    "**/build/**/*",
+    "**/coverage/**/*",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "tests",
-    "examples",
-    "__tests__/**/*"
+    "**/__tests__/**/*",
+    "**/test/**/*",
+    "**/tests/**/*",
+    "**/dist/**/*",
+    "**/scripts/**/*",
+    "**/examples/**/*"
   ]
 }
