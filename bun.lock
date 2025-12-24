@@ -270,6 +270,13 @@
         "neverthrow": "^8.1.2",
       },
     },
+    "packages/helpers-internal": {
+      "name": "@soda-gql/helpers-internal",
+      "version": "0.1.0",
+      "dependencies": {
+        "graphql": "^16.11.0",
+      },
+    },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
       "version": "0.1.0",
@@ -319,6 +326,13 @@
         "@napi-rs/cli": "^2.18.4",
         "@soda-gql/tsc-transformer": "workspace:*",
         "prettier": "^3.4.2",
+      },
+      "optionalDependencies": {
+        "@soda-gql/swc-transformer-darwin-arm64": "0.1.0",
+        "@soda-gql/swc-transformer-darwin-x64": "0.1.0",
+        "@soda-gql/swc-transformer-linux-x64-gnu": "0.1.0",
+        "@soda-gql/swc-transformer-linux-x64-musl": "0.1.0",
+        "@soda-gql/swc-transformer-win32-x64-msvc": "0.1.0",
       },
       "peerDependencies": {
         "@swc/core": "^1.0.0",
@@ -1155,6 +1169,8 @@
     "@soda-gql/core": ["@soda-gql/core@workspace:packages/core"],
 
     "@soda-gql/graffle-client": ["@soda-gql/graffle-client@workspace:packages/graffle-client"],
+
+    "@soda-gql/helpers-internal": ["@soda-gql/helpers-internal@workspace:packages/helpers-internal"],
 
     "@soda-gql/metro-plugin": ["@soda-gql/metro-plugin@workspace:packages/metro-plugin"],
 

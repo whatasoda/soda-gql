@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../../node_modules/.soda-gql/.typecheck/helpers-internal",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/helpers-internal/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "paths": {}
+  },
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
