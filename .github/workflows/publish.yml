@@ -16,6 +16,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            packages/*/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Collect public packages
+        id: packages
+        run: |
+          PACKAGES=()
+          for pkg_json in packages/*/package.json; do
+            if [ -f "$pkg_json" ]; then
+              IS_PRIVATE=$(jq -r '.private // false' "$pkg_json")
+              if [ "$IS_PRIVATE" = "false" ]; then
+                PKG_NAME=$(basename "$(dirname "$pkg_json")")
+                PACKAGES+=("$PKG_NAME")
+              fi
+            fi
+          done
+          echo "Found public packages: ${PACKAGES[*]}"
+          echo "packages=${PACKAGES[*]}" >> $GITHUB_OUTPUT
 
       - name: Check npm registry
         id: check
@@ -23,15 +43,10 @@ jobs:
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
 
-          # List of packages to check
-          PACKAGES=(
-            "core" "common" "builder" "cli" "codegen" "config"
-            "runtime" "babel-plugin" "babel-transformer" "tsc-plugin"
-            "tsc-transformer" "webpack-plugin" "plugin-common"
-            "vite-plugin" "metro-plugin" "swc-transformer"
-          )
+          # Get packages from previous step
+          read -ra PACKAGES <<< "${{ steps.packages.outputs.packages }}"
 
-          # Add platform-specific packages
+          # Platform-specific packages (checked separately)
           PLATFORM_PACKAGES=(
             "swc-transformer-darwin-arm64"
             "swc-transformer-darwin-x64"
@@ -80,15 +95,12 @@ jobs:
     if: needs.check-publishable.outputs.can_publish == 'ci'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download release artifact
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          gh release download "${VERSION}" --pattern "publish-packages-*.tar.gz"
+          gh release download "${VERSION}" --repo "${{ github.repository }}" --pattern "publish-packages-*.tar.gz"
           mkdir -p dist
           tar -xzf publish-packages-*.tar.gz -C dist
 
