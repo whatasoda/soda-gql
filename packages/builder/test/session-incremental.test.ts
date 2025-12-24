@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBuilderSession } from "@soda-gql/builder";
-import { runMultiSchemaCodegen } from "@soda-gql/codegen/";
+import { runMultiSchemaCodegen } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing shared test fixtures
