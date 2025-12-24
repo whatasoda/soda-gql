@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import { createSodaGqlPlugin } from "@soda-gql/babel-plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
-import { createTempConfigFile } from "@soda-gql/config/test-utils";
+import { createTempConfigFile } from "@soda-gql/config/test";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const codegenFixtureRoot = join(projectRoot, "tests", "codegen-fixture");

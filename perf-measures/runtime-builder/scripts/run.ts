@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { loadConfigFrom } from "@soda-gql/config";
-import { createBuilderSession } from "@soda-gql/builder/session";
+import { createBuilderSession } from "@soda-gql/builder";
 import { generateFixtures, FIXTURE_PRESETS, type FixtureConfig } from "./generate-fixtures";
 import {
   computeStatistics,

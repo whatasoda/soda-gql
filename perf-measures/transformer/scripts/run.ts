@@ -4,8 +4,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { loadConfigFrom, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createBuilderSession, type BuilderArtifact } from "@soda-gql/builder";
-import { createTransformer as createSwcTransformer } from "@soda-gql/swc-transformer/index";
-import { createBabelTransformer } from "@soda-gql/babel-transformer/transform";
+import { createTransformer as createSwcTransformer } from "@soda-gql/swc-transformer";
+import { createBabelTransformer } from "@soda-gql/babel-transformer";
 import { FIXTURE_PRESETS, type FixtureConfig } from "../../runtime-builder/scripts/generate-fixtures";
 import {
   computeStatistics,

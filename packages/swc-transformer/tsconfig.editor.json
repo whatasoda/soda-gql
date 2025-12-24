@@ -2,18 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "customConditions": [
-      "@soda-gql"
-    ],
+    "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/swc-transformer",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/swc-transformer/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "paths": {}
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": [],
   "references": [
     {

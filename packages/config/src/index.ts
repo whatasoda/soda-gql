@@ -7,7 +7,6 @@ export {
 } from "./helper";
 export { findConfigFile, loadConfig, loadConfigFrom } from "./loader";
 export { normalizeConfig } from "./normalize";
-export { createTempConfigFile, withTempConfig } from "./test-utils";
 export type {
   PluginConfig,
   ResolvedSodaGqlConfig,
