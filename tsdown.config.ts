@@ -202,6 +202,20 @@ export default defineConfig([
     target: "node18",
     clean: true,
   },
+  {
+    ...configure("@soda-gql/tsc-transformer"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
+  {
+    ...configure("@soda-gql/swc-transformer"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
 
   // Plugin packages (externalize host bundler deps)
   {
