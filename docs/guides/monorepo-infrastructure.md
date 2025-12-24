@@ -645,7 +645,7 @@ bun run biome:check
 2. Add the pattern to `tsconfig.editor.json` if not already present:
    ```json
    {
-     "include": ["src/**/*", "@x-*.ts"]
+     "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"]
    }
    ```
 
