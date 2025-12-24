@@ -9,6 +9,7 @@
   },
   "include": [
     "src/**/*",
+    "test/**/*",
     "@x-*.ts",
     "@devx-*.ts"
   ],

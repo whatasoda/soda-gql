@@ -16,43 +16,43 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "exports": {
+    "./utils": {
+      "@soda-gql": "./@x-utils.ts",
+      "types": "./dist/utils.d.mts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.cjs",
+      "default": "./dist/utils.mjs"
+    },
+    "./test": {
+      "@soda-gql": "./@devx-test.ts"
+    },
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./portable": {
-      "@soda-gql": "./src/portable/index.ts",
-      "types": "./dist/portable/index.d.mts",
-      "import": "./dist/portable/index.mjs",
-      "require": "./dist/portable/index.cjs",
-      "default": "./dist/portable/index.mjs"
-    },
     "./canonical-id": {
-      "@soda-gql": "./src/canonical-id/index.ts",
-      "types": "./dist/canonical-id/index.d.mts",
-      "import": "./dist/canonical-id/index.mjs",
-      "require": "./dist/canonical-id/index.cjs",
-      "default": "./dist/canonical-id/index.mjs"
+      "@soda-gql": "./@x-canonical-id.ts",
+      "types": "./dist/canonical-id.d.mts",
+      "import": "./dist/canonical-id.mjs",
+      "require": "./dist/canonical-id.cjs",
+      "default": "./dist/canonical-id.mjs"
     },
-    "./utils": {
-      "@soda-gql": "./src/utils/index.ts",
-      "types": "./dist/utils/index.d.mts",
-      "import": "./dist/utils/index.mjs",
-      "require": "./dist/utils/index.cjs",
-      "default": "./dist/utils/index.mjs"
+    "./portable": {
+      "@soda-gql": "./@x-portable.ts",
+      "types": "./dist/portable.d.mts",
+      "import": "./dist/portable.mjs",
+      "require": "./dist/portable.cjs",
+      "default": "./dist/portable.mjs"
     },
     "./zod": {
-      "@soda-gql": "./src/zod/index.ts",
-      "types": "./dist/zod/index.d.mts",
-      "import": "./dist/zod/index.mjs",
-      "require": "./dist/zod/index.cjs",
-      "default": "./dist/zod/index.mjs"
-    },
-    "./test": {
-      "@soda-gql": "./test/export.ts"
+      "@soda-gql": "./@x-zod.ts",
+      "types": "./dist/zod.d.mts",
+      "import": "./dist/zod.mjs",
+      "require": "./dist/zod.cjs",
+      "default": "./dist/zod.mjs"
     },
     "./package.json": "./package.json"
   },

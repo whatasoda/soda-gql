@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type UserConfig } from "tsdown";
-import { discoverExports, hasPublicExports } from "./scripts/discover-exports";
+import { discoverExports, hasPublicExports } from "./scripts/discover-exports.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packagesDir = join(__dirname, "packages");

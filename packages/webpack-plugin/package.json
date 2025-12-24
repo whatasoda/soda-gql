@@ -17,14 +17,14 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
     "./loader": {
-      "@soda-gql": "./src/loader.ts",
+      "@soda-gql": "./@x-loader.ts",
       "types": "./dist/loader.d.mts",
       "import": "./dist/loader.mjs",
       "require": "./dist/loader.cjs",
