@@ -27,8 +27,8 @@
     }
   },
   "scripts": {
-    "build": "napi build src/native --platform --release --js src/native/index.js --dts src/native/index.d.ts",
-    "build:debug": "napi build src/native --platform --js src/native/index.js --dts src/native/index.d.ts",
+    "build": "napi build src/native --platform --release --js index.js --dts index.d.ts && bun run scripts/patch-napi-output.ts",
+    "build:debug": "napi build src/native --platform --js index.js --dts index.d.ts && bun run scripts/patch-napi-output.ts",
     "build:dev": "bun run scripts/build-if-stale.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
