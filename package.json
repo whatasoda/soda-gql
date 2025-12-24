@@ -13,6 +13,7 @@
     "publish-npm": "bun scripts/publish.ts",
     "publish-npm:dry-run": "bun scripts/publish.ts --dry-run",
     "publish-npm:provenance": "bun scripts/publish.ts --provenance",
+    "publish-local": "bun scripts/publish-local.ts",
     "quality:prepare": "bun fixture:setup && bun exports:sync && bun run examples:codegen",
     "quality": "bun run typecheck && bun run biome:check",
     "typecheck": "tsc -b",
