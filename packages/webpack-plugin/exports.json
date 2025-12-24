@@ -1,4 +1,0 @@
-{
-  ".": "./src/index.ts",
-  "./loader": "./src/loader.ts"
-}

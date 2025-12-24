@@ -1,7 +1,0 @@
-{
-  ".": "./src/index.ts",
-  "./portable": "./src/portable/index.ts",
-  "./canonical-id": "./src/canonical-id/index.ts",
-  "./utils": "./src/utils/index.ts",
-  "./zod": "./src/zod/index.ts"
-}

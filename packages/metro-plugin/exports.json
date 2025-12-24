@@ -1,4 +1,0 @@
-{
-  ".": "./src/index.ts",
-  "./transformer": "./src/transformer.ts"
-}
