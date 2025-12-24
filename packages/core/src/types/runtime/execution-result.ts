@@ -1,10 +1,18 @@
 import type { FormattedExecutionResult, GraphQLFormattedError } from "graphql";
-import type { AnyGraphqlRuntimeAdapter } from "./runtime-adapter";
 
-export type NormalizedExecutionResult<TRuntimeAdapter extends AnyGraphqlRuntimeAdapter, TData, TExtensions> =
+/**
+ * Generic non-GraphQL error type for framework-specific errors.
+ */
+export type NonGraphqlError = unknown;
+
+/**
+ * Normalized execution result representing all possible outcomes
+ * from a GraphQL operation.
+ */
+export type NormalizedExecutionResult<TData, TExtensions> =
   | EmptyResult
   | GraphqlExecutionResult<TData, TExtensions>
-  | NonGraphqlErrorResult<TRuntimeAdapter>;
+  | NonGraphqlErrorResult;
 
 export type EmptyResult = {
   type: "empty";
@@ -15,19 +23,22 @@ export type GraphqlExecutionResult<TData, TExtensions> = {
   body: FormattedExecutionResult<TData, TExtensions>;
 };
 
-export type NonGraphqlErrorResult<TRuntimeAdapter extends AnyGraphqlRuntimeAdapter> = {
+export type NonGraphqlErrorResult = {
   type: "non-graphql-error";
-  error: ReturnType<TRuntimeAdapter["nonGraphqlErrorType"]>;
+  error: NonGraphqlError;
 };
 
-export type NormalizedError<TRuntimeAdapter extends AnyGraphqlRuntimeAdapter> =
+/**
+ * Error types that can occur during execution result processing.
+ */
+export type NormalizedError =
   | {
       type: "graphql-error";
       errors: GraphQLFormattedError[];
     }
   | {
       type: "non-graphql-error";
-      error: ReturnType<TRuntimeAdapter["nonGraphqlErrorType"]>;
+      error: NonGraphqlError;
     }
   | {
       type: "parse-error";

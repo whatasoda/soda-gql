@@ -1,7 +1,6 @@
 import { type FieldsBuilder, InlineOperation, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
-import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 
@@ -9,12 +8,7 @@ import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
-export const createInlineOperationComposerFactory = <
-  TSchema extends AnyGraphqlSchema,
-  _TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
->(
-  schema: NoInfer<TSchema>,
-) => {
+export const createInlineOperationComposerFactory = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];

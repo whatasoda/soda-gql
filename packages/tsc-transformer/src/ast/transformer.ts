@@ -4,12 +4,7 @@ import * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import {
-  buildComposedOperationRuntimeComponents,
-  buildInlineOperationRuntimeComponents,
-  buildModelRuntimeCall,
-  buildSliceRuntimeCall,
-} from "./runtime";
+import { buildInlineOperationRuntimeComponents, buildModelRuntimeCall } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;
@@ -71,23 +66,6 @@ const replaceWithRuntimeCall = ({
       return err(result.error);
     }
     return ok({ transformed: true, replacement: result.value as ts.Expression });
-  }
-
-  if (gqlCall.type === "slice") {
-    const result = buildSliceRuntimeCall({ gqlCall, factory, isCJS, filename });
-    if (result.isErr()) {
-      return err(result.error);
-    }
-    return ok({ transformed: true, replacement: result.value });
-  }
-
-  if (gqlCall.type === "operation") {
-    const result = buildComposedOperationRuntimeComponents({ gqlCall, factory, isCJS, filename });
-    if (result.isErr()) {
-      return err(result.error);
-    }
-    const { referenceCall, runtimeCall } = result.value;
-    return ok({ transformed: true, replacement: referenceCall, runtimeCall });
   }
 
   if (gqlCall.type === "inlineOperation") {

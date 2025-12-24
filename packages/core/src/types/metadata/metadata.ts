@@ -35,31 +35,6 @@ export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadat
 ) => TMetadata | Promise<TMetadata>;
 
 /**
- * Slice-specific metadata that can contribute to operation metadata.
- * Extends OperationMetadata with no additional fields - use the `custom`
- * property for application-specific values like authentication requirements
- * or cache settings.
- */
-export type SliceMetadata = OperationMetadata;
-
-/**
- * Tools available inside slice metadata builder callbacks.
- * Only $ is available (no document, since slices don't have their own document).
- */
-export type SliceMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
-  /** Variable references created from the slice's variable definitions */
-  readonly $: TVarRefs;
-};
-
-/**
- * Slice metadata builder callback that receives variable tools.
- * Allows slice metadata to reference slice variables.
- */
-export type SliceMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = SliceMetadata> = (
-  tools: SliceMetadataBuilderTools<TVarRefs>,
-) => TMetadata | Promise<TMetadata>;
-
-/**
- * Utility type to extract the metadata type from an operation or slice.
+ * Utility type to extract the metadata type from an operation.
  */
 export type ExtractMetadata<T> = T extends { metadata: infer M } ? M : OperationMetadata;

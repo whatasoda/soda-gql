@@ -59,35 +59,6 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         continue;
       }
 
-      if (element.type === "slice") {
-        const prebuild = { operationType: element.element.operationType };
-        registry.set(definition.canonicalId, {
-          id: definition.canonicalId,
-          type: "slice",
-          prebuild,
-          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
-        });
-        continue;
-      }
-
-      if (element.type === "operation") {
-        const prebuild = {
-          operationType: element.element.operationType,
-          operationName: element.element.operationName,
-          document: element.element.document,
-          variableNames: element.element.variableNames,
-          projectionPathGraph: element.element.projectionPathGraph,
-          metadata: element.element.metadata,
-        };
-        registry.set(definition.canonicalId, {
-          id: definition.canonicalId,
-          type: "operation",
-          prebuild,
-          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
-        });
-        continue;
-      }
-
       if (element.type === "inlineOperation") {
         const prebuild = {
           operationType: element.element.operationType,

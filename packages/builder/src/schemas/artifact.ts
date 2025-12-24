@@ -1,6 +1,6 @@
 import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
-import type { BuilderArtifactModel, BuilderArtifactOperation, BuilderArtifactSlice } from "../artifact/types";
+import type { BuilderArtifactInlineOperation, BuilderArtifactModel } from "../artifact/types";
 
 const BuilderArtifactElementMetadataSchema = z.object({
   sourcePath: z.string(),
@@ -8,34 +8,20 @@ const BuilderArtifactElementMetadataSchema = z.object({
   contentHash: z.string(),
 });
 
-const BuilderArtifactOperationSchema = z.object({
+const BuilderArtifactInlineOperationSchema = z.object({
   id: z.string<CanonicalId>(),
-  type: z.literal("operation"),
+  type: z.literal("inlineOperation"),
   metadata: BuilderArtifactElementMetadataSchema,
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
     operationName: z.string(),
     document: z.unknown(), // DocumentNode object
     variableNames: z.array(z.string()),
-    projectionPathGraph: z.unknown(),
   }),
 });
 
-declare function __validate_BuilderArtifactOperationSchema<
-  _ extends z.infer<typeof BuilderArtifactOperationSchema> = BuilderArtifactOperation,
->(): never;
-
-const BuilderArtifactSliceSchema = z.object({
-  id: z.string<CanonicalId>(),
-  type: z.literal("slice"),
-  metadata: BuilderArtifactElementMetadataSchema,
-  prebuild: z.object({
-    operationType: z.enum(["query", "mutation", "subscription"]),
-  }),
-});
-
-declare function __validate_BuilderArtifactSliceSchema<
-  _ extends z.infer<typeof BuilderArtifactSliceSchema> = BuilderArtifactSlice,
+declare function __validate_BuilderArtifactInlineOperationSchema<
+  _ extends z.infer<typeof BuilderArtifactInlineOperationSchema> = BuilderArtifactInlineOperation,
 >(): never;
 
 const BuilderArtifactModelSchema = z.object({
@@ -52,8 +38,7 @@ declare function __validate_BuilderArtifactModelSchema<
 >(): never;
 
 const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
-  BuilderArtifactOperationSchema,
-  BuilderArtifactSliceSchema,
+  BuilderArtifactInlineOperationSchema,
   BuilderArtifactModelSchema,
 ]);
 

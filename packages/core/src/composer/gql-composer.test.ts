@@ -1,7 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createRuntimeAdapter } from "../runtime";
 import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
-import { type AnyGraphqlRuntimeAdapter, Projection } from "../types/runtime";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createGqlElementComposer } from "./gql-composer";
 
@@ -38,12 +36,8 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-})) satisfies AnyGraphqlRuntimeAdapter;
-
 describe("createGqlInvoker", () => {
-  const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+  const gql = createGqlElementComposer<Schema>(schema);
 
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;
@@ -84,7 +78,7 @@ describe("createGqlInvoker", () => {
     expect(fragment).toHaveProperty("name");
   });
 
-  it("creates query slices and operations that reuse registered models", () => {
+  it("creates inline operations with variable references", () => {
     const userModel = gql(({ model }) =>
       model.User({}, ({ f }) => [
         //
@@ -93,36 +87,23 @@ describe("createGqlInvoker", () => {
       ]),
     );
 
-    const userSlice = gql(({ query }, { $var }) =>
-      query.slice(
-        { variables: [$var("id").scalar("ID:!")] },
-        ({ f, $ }) => [
-          //
-          f.user({ id: $.id })(() => [
-            //
-            userModel.fragment(),
-          ]),
-        ],
-        ({ select }) => select(["$.user"], (result) => result.safeUnwrap(([data]) => data)),
-      ),
-    );
-
-    const sliceFragment = userSlice.embed({ id: "1" });
-    expect(sliceFragment.projection).toBeInstanceOf(Projection);
-
     const profileQuery = gql(({ query }, { $var }) =>
-      query.composed(
+      query.inline(
         {
           operationName: "ProfilePageQuery",
           variables: [$var("userId").scalar("ID:!")],
         },
-        ({ $ }) => ({
-          user: userSlice.embed({ id: $.userId }),
-        }),
+        ({ f, $ }) => [
+          //
+          f.user({ id: $.userId })(() => [
+            //
+            userModel.fragment(),
+          ]),
+        ],
       ),
     );
 
     expect(profileQuery.operationName).toBe("ProfilePageQuery");
-    expect(typeof profileQuery.parse).toBe("function");
+    expect(profileQuery.operationType).toBe("query");
   });
 });

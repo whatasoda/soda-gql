@@ -1,5 +1,5 @@
 import type { OperationType } from "../schema";
-import type { OperationMetadata, SliceMetadata } from "./metadata";
+import type { OperationMetadata } from "./metadata";
 
 /**
  * Input provided to the metadata adapter's transform function.
@@ -9,7 +9,7 @@ export type MetadataTransformInput<TMetadata extends OperationMetadata> = {
   readonly operationType: OperationType;
   /** The name of the operation */
   readonly operationName: string;
-  /** The merged metadata from operation and slices */
+  /** The operation metadata */
   readonly metadata: TMetadata;
   /** The GraphQL document string (useful for generating hashes) */
   readonly document: string;
@@ -17,8 +17,7 @@ export type MetadataTransformInput<TMetadata extends OperationMetadata> = {
 
 /**
  * Adapter interface for processing metadata at build time.
- * Allows schema-level configuration of default metadata, transformation,
- * and custom merge strategies for slice metadata.
+ * Allows schema-level configuration of default metadata and transformation.
  *
  * @template TInputMetadata - The metadata type accepted by the adapter
  * @template TOutputMetadata - The metadata type produced after transformation
@@ -32,21 +31,10 @@ export type MetadataAdapter<
 
   /**
    * Transform/process metadata at build time.
-   * Called for each operation with merged metadata from slices.
+   * Called for each operation.
    * Use this to add computed values like persisted query hashes.
    */
   readonly transform?: (input: MetadataTransformInput<TInputMetadata>) => TOutputMetadata;
-
-  /**
-   * Custom merge strategy for combining slice metadata into operation metadata.
-   * If not provided, a default shallow merge is used where operation metadata
-   * takes precedence over slice metadata.
-   *
-   * @param operationMetadata - Metadata defined on the operation itself
-   * @param sliceMetadata - Array of metadata from all embedded slices
-   * @returns Merged metadata to be used for the operation
-   */
-  readonly mergeSliceMetadata?: (operationMetadata: TInputMetadata, sliceMetadata: readonly SliceMetadata[]) => TInputMetadata;
 };
 
 /**
