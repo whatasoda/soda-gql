@@ -11,15 +11,7 @@ const EXCLUDED_PACKAGES: string[] = [];
 
 // Exports that should be preserved (not overwritten by sync) for hybrid packages
 // These are manually managed exports that coexist with auto-synced exports
-const PRESERVED_EXPORTS: Record<string, Record<string, unknown>> = {
-  "@soda-gql/swc-transformer": {
-    "./native": {
-      types: "./index.d.ts",
-      require: "./index.js",
-      default: "./index.js",
-    },
-  },
-};
+const PRESERVED_EXPORTS: Record<string, Record<string, unknown>> = {};
 
 interface PackageJson {
   name: string;

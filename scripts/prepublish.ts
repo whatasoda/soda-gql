@@ -53,7 +53,7 @@ type PackageEntry = {
 const prepare = async () => {
   await $`rm -rf dist`;
 
-  await $`bun run build`;
+  await $`bun run build:release`;
 
   await $`mkdir -p dist`;
 

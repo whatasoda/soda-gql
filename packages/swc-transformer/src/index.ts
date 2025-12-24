@@ -9,8 +9,7 @@ import { resolve } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
-// The native module will be loaded at runtime
-// This is a placeholder for development - in production, the .node file will be loaded
+// The native module will be loaded at runtime via the napi-rs generated loader
 let nativeModule: NativeModule | null = null;
 
 interface NativeModule {
@@ -55,42 +54,8 @@ interface TransformResult {
 }
 
 /**
- * Get the platform-specific native module filename.
- */
-const getNativeModulePath = (): string => {
-  const platform = process.platform;
-  const arch = process.arch;
-
-  const platformMap: Record<string, Record<string, string>> = {
-    darwin: {
-      arm64: "../swc-transformer.darwin-arm64.node",
-      x64: "../swc-transformer.darwin-x64.node",
-    },
-    linux: {
-      x64: "../swc-transformer.linux-x64-gnu.node",
-      arm64: "../swc-transformer.linux-arm64-gnu.node",
-    },
-    win32: {
-      x64: "../swc-transformer.win32-x64-msvc.node",
-    },
-  };
-
-  const platformPaths = platformMap[platform];
-  if (!platformPaths) {
-    throw new Error(`Unsupported platform: ${platform}`);
-  }
-
-  const path = platformPaths[arch];
-  if (!path) {
-    throw new Error(`Unsupported architecture for ${platform}: ${arch}`);
-  }
-
-  return path;
-};
-
-/**
  * Load the native module.
- * This is called lazily on first use.
+ * Uses the napi-rs generated loader which handles platform detection.
  */
 const loadNativeModule = async (): Promise<NativeModule> => {
   if (nativeModule) {
@@ -98,17 +63,10 @@ const loadNativeModule = async (): Promise<NativeModule> => {
   }
 
   try {
-    // Use require() for Node-API modules (Bun doesn't support import() for .node files)
-    const modulePath = getNativeModulePath();
-    const path = await import("node:path");
-    const url = await import("node:url");
-    const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-    const absolutePath = path.resolve(__dirname, modulePath);
-
-    // Use require() for native modules
+    // Use require() for the napi-rs generated loader (CommonJS)
     const { createRequire } = await import("node:module");
     const require = createRequire(import.meta.url);
-    nativeModule = require(absolutePath) as NativeModule;
+    nativeModule = require("./native/index.js") as NativeModule;
     return nativeModule;
   } catch (error) {
     throw new Error(

@@ -2,7 +2,7 @@
   "name": "@soda-gql/swc-transformer",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
+  "private": false,
   "license": "MIT",
   "author": {
     "name": "Shota Hatada",
@@ -13,9 +13,7 @@
   "types": "./dist/index.d.mts",
   "files": [
     "dist",
-    "src/index.ts",
-    "index.js",
-    "index.d.ts",
+    "src",
     "*.node"
   ],
   "napi": {
@@ -31,8 +29,8 @@
     }
   },
   "scripts": {
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
+    "build": "napi build --platform --release --js src/native/index.js --dts src/native/index.d.ts",
+    "build:debug": "napi build --platform --js src/native/index.js --dts src/native/index.d.ts",
     "build:dev": "bun run scripts/build-if-stale.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
@@ -55,6 +53,13 @@
     "@swc/core": "^1.0.0"
   },
   "exports": {
+    "./native": {
+      "@soda-gql": "./@x-native.ts",
+      "types": "./dist/native.d.mts",
+      "import": "./dist/native.mjs",
+      "require": "./dist/native.cjs",
+      "default": "./dist/native.mjs"
+    },
     ".": {
       "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
@@ -62,12 +67,7 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./package.json": "./package.json",
-    "./native": {
-      "types": "./index.d.ts",
-      "require": "./index.js",
-      "default": "./index.js"
-    }
+    "./package.json": "./package.json"
   },
   "module": "./dist/index.mjs"
 }
