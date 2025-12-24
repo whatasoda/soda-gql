@@ -3,6 +3,7 @@ import type { AnyMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createComposedOperationComposerFactory } from "./composed-operation";
+import { createPrefixHelper } from "./field-prefix";
 import { createInlineOperationComposerFactory } from "./inline-operation";
 import { createGqlModelComposers } from "./model";
 import { createSliceComposerFactory } from "./slice";
@@ -55,6 +56,7 @@ export const createGqlElementComposer = <
 
   const helper = {
     ...createVarBuilder(schema),
+    $prefix: createPrefixHelper(),
     ...(helpers ?? ({} as THelpers)),
   };
 
