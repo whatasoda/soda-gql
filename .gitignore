@@ -184,3 +184,6 @@ packages/swc-transformer/npm/*/*.node
 # Rspress build output
 website/doc_build/
 website/.rspress/
+
+# Local publish artifacts
+.publish/

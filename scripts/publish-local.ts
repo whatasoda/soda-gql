@@ -1,24 +1,34 @@
 import { $ } from "bun";
-import { readdir, rm, mkdir, access } from "node:fs/promises";
+import { readdir, rm, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 interface PublishOptions {
   version: string;
+  publishDir: string;
   dryRun: boolean;
   otp?: string;
 }
 
 /**
+ * Get the publish directory for a specific version
+ */
+const getPublishDir = (version: string): string => {
+  const tag = version.startsWith("v") ? version : `v${version}`;
+  return path.join(".publish", tag);
+};
+
+/**
  * Download release artifacts from GitHub
  */
-const downloadArtifacts = async (version: string): Promise<void> => {
+const downloadArtifacts = async (version: string): Promise<string> => {
   const tag = version.startsWith("v") ? version : `v${version}`;
+  const publishDir = getPublishDir(version);
 
   console.log(`Downloading artifacts for ${tag}...`);
 
-  // Clean up existing dist directory
-  await rm("dist", { recursive: true, force: true });
-  await mkdir("dist", { recursive: true });
+  // Clean up existing version directory
+  await rm(publishDir, { recursive: true, force: true });
+  await mkdir(publishDir, { recursive: true });
 
   // Download release asset
   try {
@@ -29,13 +39,14 @@ const downloadArtifacts = async (version: string): Promise<void> => {
     throw error;
   }
 
-  // Extract to dist
-  await $`tar -xzf publish-packages-${tag}.tar.gz -C dist`;
+  // Extract to version-specific directory
+  await $`tar -xzf publish-packages-${tag}.tar.gz -C ${publishDir}`;
 
   // Cleanup tar file
   await $`rm -f publish-packages-${tag}.tar.gz`;
 
-  console.log("Artifacts downloaded and extracted to dist/");
+  console.log(`Artifacts downloaded and extracted to ${publishDir}/`);
+  return publishDir;
 };
 
 /**
@@ -43,6 +54,7 @@ const downloadArtifacts = async (version: string): Promise<void> => {
  */
 const checkPublishStatus = async (
   version: string,
+  publishDir: string,
 ): Promise<{
   needsPublish: string[];
   alreadyPublished: string[];
@@ -54,7 +66,7 @@ const checkPublishStatus = async (
     needsOtp: [] as string[],
   };
 
-  const packages = await readdir("dist", { withFileTypes: true });
+  const packages = await readdir(publishDir, { withFileTypes: true });
 
   for (const pkg of packages) {
     if (!pkg.isDirectory()) continue;
@@ -83,8 +95,8 @@ const checkPublishStatus = async (
 /**
  * Publish packages to npm
  */
-const publishPackages = async ({ version, dryRun, otp }: PublishOptions): Promise<void> => {
-  const status = await checkPublishStatus(version);
+const publishPackages = async ({ version, publishDir, dryRun, otp }: PublishOptions): Promise<void> => {
+  const status = await checkPublishStatus(version, publishDir);
 
   console.log("\n=== Publish Status ===");
   console.log(`Already published: ${status.alreadyPublished.length}`);
@@ -111,13 +123,13 @@ const publishPackages = async ({ version, dryRun, otp }: PublishOptions): Promis
 
   console.log("\n=== Publishing ===");
 
-  const packages = await readdir("dist", { withFileTypes: true });
+  const packages = await readdir(publishDir, { withFileTypes: true });
 
   for (const pkg of packages) {
     if (!pkg.isDirectory()) continue;
 
     const pkgName = `@soda-gql/${pkg.name}`;
-    const pkgDir = path.join("dist", pkg.name);
+    const pkgDir = path.join(publishDir, pkg.name);
 
     if (status.alreadyPublished.includes(pkgName)) {
       console.log(`Skipping ${pkgName} (already published)`);
@@ -155,13 +167,13 @@ const main = async () => {
 Options:
   --dry-run        Run without actually publishing
   --otp <code>     Provide OTP code for first-time publish
-  --skip-download  Skip downloading artifacts (use existing dist/)
   --help, -h       Show this help message
 
 Examples:
   bun scripts/publish-local.ts v0.2.0 --dry-run
   bun scripts/publish-local.ts v0.2.0 --otp 123456
-  bun scripts/publish-local.ts v0.2.0 --skip-download`);
+
+Artifacts are downloaded to .publish/<version>/ directory.`);
     process.exit(0);
   }
 
@@ -171,11 +183,10 @@ Examples:
   const dryRun = args.includes("--dry-run");
   const otpIndex = args.indexOf("--otp");
   const otp = otpIndex >= 0 ? args[otpIndex + 1] : undefined;
-  const skipDownload = args.includes("--skip-download");
 
   if (!version) {
     console.error("Error: Version is required");
-    console.error("Usage: bun scripts/publish-local.ts <version> [--dry-run] [--otp <code>] [--skip-download]");
+    console.error("Usage: bun scripts/publish-local.ts <version> [--dry-run] [--otp <code>]");
     process.exit(1);
   }
 
@@ -188,22 +199,13 @@ Examples:
     process.exit(1);
   }
 
-  // Download artifacts (unless skipped)
-  if (!skipDownload) {
-    await downloadArtifacts(version);
-  } else {
-    // Verify dist directory exists
-    try {
-      await access("dist");
-    } catch {
-      console.error("Error: dist/ directory not found. Run without --skip-download first.");
-      process.exit(1);
-    }
-  }
+  // Download artifacts to version-specific directory
+  const publishDir = await downloadArtifacts(version);
 
   // Publish packages
   await publishPackages({
     version: version.replace(/^v/, ""),
+    publishDir,
     dryRun,
     otp,
   });
