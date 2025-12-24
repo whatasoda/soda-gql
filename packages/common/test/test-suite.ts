@@ -1,5 +1,5 @@
 import { afterEach, beforeEach } from "bun:test";
-import { getPortableFS } from "@soda-gql/common";
+import { getPortableFS } from "../src/portable";
 import { TestTempDir } from "./temp-dir";
 
 /**
