@@ -9,6 +9,15 @@ interface PublishOptions {
   otp?: string;
 }
 
+interface PublishStatus {
+  /** Packages that need a new version published (already exist on npm) */
+  needsPublish: string[];
+  /** Packages that are already published at this version */
+  alreadyPublished: string[];
+  /** Packages that have never been published (first-time publish) */
+  needsInitialPublish: string[];
+}
+
 /**
  * Get the publish directory for a specific version
  */
@@ -52,18 +61,11 @@ const downloadArtifacts = async (version: string): Promise<string> => {
 /**
  * Check which packages need publishing
  */
-const checkPublishStatus = async (
-  version: string,
-  publishDir: string,
-): Promise<{
-  needsPublish: string[];
-  alreadyPublished: string[];
-  needsOtp: string[];
-}> => {
-  const result = {
-    needsPublish: [] as string[],
-    alreadyPublished: [] as string[],
-    needsOtp: [] as string[],
+const checkPublishStatus = async (version: string, publishDir: string): Promise<PublishStatus> => {
+  const result: PublishStatus = {
+    needsPublish: [],
+    alreadyPublished: [],
+    needsInitialPublish: [],
   };
 
   const packages = await readdir(publishDir, { withFileTypes: true });
@@ -78,13 +80,14 @@ const checkPublishStatus = async (
       await $`npm view ${pkgName}@${version} version`.quiet();
       result.alreadyPublished.push(pkgName);
     } catch {
-      result.needsPublish.push(pkgName);
-
       // Check if package has ever been published
       try {
         await $`npm view ${pkgName} versions`.quiet();
+        // Package exists but this version is not published
+        result.needsPublish.push(pkgName);
       } catch {
-        result.needsOtp.push(pkgName);
+        // Package has never been published
+        result.needsInitialPublish.push(pkgName);
       }
     }
   }
@@ -98,25 +101,35 @@ const checkPublishStatus = async (
 const publishPackages = async ({ version, publishDir, dryRun, otp }: PublishOptions): Promise<void> => {
   const status = await checkPublishStatus(version, publishDir);
 
+  const totalNeedsPublish = status.needsPublish.length + status.needsInitialPublish.length;
+
   console.log("\n=== Publish Status ===");
   console.log(`Already published: ${status.alreadyPublished.length}`);
-  console.log(`Needs publish: ${status.needsPublish.length}`);
-  console.log(`Needs OTP (first publish): ${status.needsOtp.length}`);
+  console.log(`Needs publish (existing packages): ${status.needsPublish.length}`);
+  console.log(`Needs initial publish (new packages): ${status.needsInitialPublish.length}`);
 
-  if (status.needsOtp.length > 0) {
-    console.log("\nPackages needing OTP (first-time publish):");
-    for (const pkg of status.needsOtp) {
+  if (status.needsInitialPublish.length > 0) {
+    console.log("\nNew packages (first-time publish):");
+    for (const pkg of status.needsInitialPublish) {
       console.log(`  - ${pkg}`);
     }
   }
 
-  if (status.needsOtp.length > 0 && !otp && !dryRun) {
-    console.error("\nError: Some packages need OTP for first publish.");
+  if (status.needsPublish.length > 0) {
+    console.log("\nExisting packages (new version):");
+    for (const pkg of status.needsPublish) {
+      console.log(`  - ${pkg}`);
+    }
+  }
+
+  // OTP is always required for local publish
+  if (totalNeedsPublish > 0 && !otp && !dryRun) {
+    console.error("\nError: OTP is required for local publish.");
     console.error("Run with --otp <code>");
     process.exit(1);
   }
 
-  if (status.needsPublish.length === 0) {
+  if (totalNeedsPublish === 0) {
     console.log("\nAll packages already published!");
     return;
   }
@@ -136,7 +149,8 @@ const publishPackages = async ({ version, publishDir, dryRun, otp }: PublishOpti
       continue;
     }
 
-    console.log(`Publishing ${pkgName}...`);
+    const isInitial = status.needsInitialPublish.includes(pkgName);
+    console.log(`Publishing ${pkgName}${isInitial ? " (initial)" : ""}...`);
 
     const args = ["--access", "public"];
     if (dryRun) args.push("--dry-run");
@@ -166,7 +180,7 @@ const main = async () => {
 
 Options:
   --dry-run        Run without actually publishing
-  --otp <code>     Provide OTP code for first-time publish
+  --otp <code>     Provide OTP code (required for publishing)
   --help, -h       Show this help message
 
 Examples:
