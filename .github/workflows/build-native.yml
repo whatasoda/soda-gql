@@ -1,0 +1,80 @@
+name: Build Native Modules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/swc-transformer/**"
+      - ".github/workflows/build-native.yml"
+  pull_request:
+    paths:
+      - "packages/swc-transformer/**"
+      - ".github/workflows/build-native.yml"
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: darwin-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: darwin-arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x64-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            name: linux-x64-musl
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: win32-x64-msvc
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: packages/swc-transformer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/swc-transformer -> target
+
+      - name: Setup musl
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: .
+
+      - name: Build native module
+        run: bunx @napi-rs/cli build --platform --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.name }}
+          path: packages/swc-transformer/*.node
+          if-no-files-found: error

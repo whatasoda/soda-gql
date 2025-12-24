@@ -84,9 +84,39 @@ const getPackagePaths = async (): Promise<Result<string[], string>> => {
     // Add root package.json
     paths.unshift("package.json");
 
+    // Add platform-specific packages for swc-transformer
+    try {
+      const platformDirs = await readdir("packages/swc-transformer/npm", { withFileTypes: true });
+      for (const entry of platformDirs) {
+        if (entry.isDirectory()) {
+          paths.push(path.join("packages/swc-transformer/npm", entry.name, "package.json"));
+        }
+      }
+    } catch {
+      // Platform packages may not exist yet
+    }
+
     return ok(paths);
   } catch (error) {
     return err(`Failed to read packages directory: ${String(error)}`);
+  }
+};
+
+/**
+ * Update optionalDependencies versions for platform packages
+ */
+const updateOptionalDependencies = (
+  packageJson: PackageJson,
+  newVersion: string,
+): void => {
+  const optionalDeps = packageJson.optionalDependencies as Record<string, string> | undefined;
+  if (optionalDeps) {
+    for (const dep of Object.keys(optionalDeps)) {
+      // Update @soda-gql/swc-transformer-* platform package versions
+      if (dep.startsWith("@soda-gql/swc-transformer-")) {
+        optionalDeps[dep] = newVersion;
+      }
+    }
   }
 };
 
@@ -113,6 +143,9 @@ const bumpPackageVersion = async (
   const newVersion = newVersionResult.value;
   packageJson.version = newVersion;
 
+  // Also update optionalDependencies for platform packages
+  updateOptionalDependencies(packageJson, newVersion);
+
   const writeResult = await writePackageJson(filePath, packageJson);
   if (writeResult.isErr()) {
     return err(writeResult.error);
@@ -135,7 +168,7 @@ const createCommitAndPR = async (
   if (dryRun) {
     console.log("\n[DRY RUN] Would execute the following git commands:");
     console.log(`  git checkout -b ${branchName}`);
-    console.log(`  git add package.json packages/*/package.json`);
+    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json`);
     console.log(`  git commit -m "${commitMessage}"`);
     console.log(`  git push -u origin ${branchName}`);
     console.log(`  gh pr create --title "${commitMessage}" --base main`);
@@ -145,8 +178,13 @@ const createCommitAndPR = async (
   // Create and checkout new branch
   await $`git checkout -b ${branchName}`;
 
-  // Stage all package.json changes
+  // Stage all package.json changes (including platform packages)
   await $`git add package.json packages/*/package.json`;
+  try {
+    await $`git add packages/swc-transformer/npm/*/package.json`;
+  } catch {
+    // Platform packages may not exist yet
+  }
 
   // Create commit
   await $`git commit -m ${commitMessage}`;

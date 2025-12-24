@@ -1,0 +1,20 @@
+{
+  "name": "@soda-gql/swc-transformer-linux-x64-gnu",
+  "version": "0.1.0",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "main": "swc-transformer.linux-x64-gnu.node",
+  "files": ["swc-transformer.linux-x64-gnu.node"],
+  "license": "MIT",
+  "libc": ["glibc"],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/swc-transformer"
+  }
+}
