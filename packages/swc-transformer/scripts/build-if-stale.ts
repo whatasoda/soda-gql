@@ -12,21 +12,21 @@ const PACKAGE_ROOT = join(import.meta.dirname, "..");
 /**
  * Get the platform-specific native module filename.
  */
-const getNativeModuleName = (): string | null => {
+const getNativeModulePath = (): string | null => {
   const platform = process.platform;
   const arch = process.arch;
 
   const platformMap: Record<string, Record<string, string>> = {
     darwin: {
-      arm64: "swc-transformer.darwin-arm64.node",
-      x64: "swc-transformer.darwin-x64.node",
+      arm64: "src/native/swc-transformer.darwin-arm64.node",
+      x64: "src/native/swc-transformer.darwin-x64.node",
     },
     linux: {
-      x64: "swc-transformer.linux-x64-gnu.node",
-      arm64: "swc-transformer.linux-arm64-gnu.node",
+      x64: "src/native/swc-transformer.linux-x64-gnu.node",
+      arm64: "src/native/swc-transformer.linux-arm64-gnu.node",
     },
     win32: {
-      x64: "swc-transformer.win32-x64-msvc.node",
+      x64: "src/native/swc-transformer.win32-x64-msvc.node",
     },
   };
 
@@ -68,13 +68,13 @@ const getSourceMtime = (): number => {
 };
 
 const main = () => {
-  const moduleName = getNativeModuleName();
-  if (!moduleName) {
+  const moduleRelativePath = getNativeModulePath();
+  if (!moduleRelativePath) {
     console.log("[build-if-stale] Unsupported platform, skipping build");
     process.exit(0);
   }
 
-  const modulePath = join(PACKAGE_ROOT, moduleName);
+  const modulePath = join(PACKAGE_ROOT, moduleRelativePath);
   const sourceMtime = getSourceMtime();
 
   // Check if module exists

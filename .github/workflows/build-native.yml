@@ -70,11 +70,11 @@ jobs:
         working-directory: .
 
       - name: Build native module
-        run: bunx @napi-rs/cli build --platform --release --target ${{ matrix.target }}
+        run: bunx @napi-rs/cli build --output-dir src/native --platform --release --target ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.name }}
-          path: packages/swc-transformer/*.node
+          path: packages/swc-transformer/src/native/*.node
           if-no-files-found: error

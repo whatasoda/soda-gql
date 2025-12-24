@@ -175,7 +175,7 @@ packages/tsc-transformer/test/codegen-fixture/graphql-system/
 
 # Rust/napi-rs build artifacts
 packages/swc-transformer/target/
-packages/swc-transformer/*.node
+packages/swc-transformer/src/native/*.node
 
 # napi-rs CI artifacts (downloaded during publish)
 packages/swc-transformer/artifacts/
