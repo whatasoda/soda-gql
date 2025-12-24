@@ -2,7 +2,7 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 import type {
-  GqlCallInlineOperation,
+  GqlCallOperation,
   GqlCallModel,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
@@ -17,11 +17,11 @@ export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElemen
 
 // Babel-specific GqlCall types
 export type BabelGqlCallModel = GqlCallModel<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
-export type BabelGqlCallInlineOperation = GqlCallInlineOperation<t.CallExpression> & {
+export type BabelGqlCallOperation = GqlCallOperation<t.CallExpression> & {
   readonly nodePath: NodePath<t.CallExpression>;
 };
 
-export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallInlineOperation;
+export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -56,8 +56,8 @@ export const extractGqlCall = ({
     return ok({ nodePath, canonicalId, builderCall, type: "model", artifact });
   }
 
-  if (artifact.type === "inlineOperation") {
-    return ok({ nodePath, canonicalId, builderCall, type: "inlineOperation", artifact });
+  if (artifact.type === "operation") {
+    return ok({ nodePath, canonicalId, builderCall, type: "operation", artifact });
   }
 
   return err(
@@ -174,3 +174,7 @@ const extractBuilderCall = (factory: t.ArrowFunctionExpression): t.CallExpressio
 
   return null;
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `BabelGqlCallOperation` instead */
+export type BabelGqlCallInlineOperation = BabelGqlCallOperation;

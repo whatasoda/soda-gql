@@ -3,7 +3,7 @@
  * Generic over the AST node type to support Babel, TypeScript, and SWC.
  */
 
-import type { BuilderArtifactInlineOperation, BuilderArtifactModel, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactOperation, BuilderArtifactModel, CanonicalId } from "@soda-gql/builder";
 
 /**
  * Base interface for all GraphQL call types.
@@ -23,14 +23,18 @@ export interface GqlCallModel<TCallNode> extends GqlCallBase<TCallNode> {
 }
 
 /**
- * GraphQL inline operation call.
+ * GraphQL operation call.
  */
-export interface GqlCallInlineOperation<TCallNode> extends GqlCallBase<TCallNode> {
-  readonly type: "inlineOperation";
-  readonly artifact: BuilderArtifactInlineOperation;
+export interface GqlCallOperation<TCallNode> extends GqlCallBase<TCallNode> {
+  readonly type: "operation";
+  readonly artifact: BuilderArtifactOperation;
 }
 
 /**
  * Union of all GraphQL call types.
  */
-export type GqlCall<TCallNode> = GqlCallModel<TCallNode> | GqlCallInlineOperation<TCallNode>;
+export type GqlCall<TCallNode> = GqlCallModel<TCallNode> | GqlCallOperation<TCallNode>;
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `GqlCallOperation` instead */
+export type GqlCallInlineOperation<TCallNode> = GqlCallOperation<TCallNode>;

@@ -4,7 +4,7 @@ export * from "./field-prefix";
 export * from "./fields-builder";
 export * from "./gql-composer";
 export * from "./helpers";
-export * from "./inline-operation";
 export * from "./input";
 export * from "./model";
+export * from "./operation";
 export * from "./var-builder";

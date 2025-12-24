@@ -8,7 +8,7 @@ export const checkIssues = ({ elements }: { elements: IntermediateElements }): R
   const operationNames = new Set<string>();
 
   for (const [canonicalId, { type, element }] of Object.entries(elements)) {
-    if (type !== "inlineOperation") {
+    if (type !== "operation") {
       continue;
     }
 

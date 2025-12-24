@@ -1,5 +1,5 @@
 import type { Script } from "node:vm";
-import type { AnyInlineOperation, AnyModel } from "@soda-gql/core";
+import type { AnyOperation, AnyModel } from "@soda-gql/core";
 
 /**
  * Request type yielded by module generators to import dependencies.
@@ -20,4 +20,4 @@ export type IntermediateModule = {
 
 export type IntermediateArtifactElement =
   | { readonly type: "model"; readonly element: AnyModel }
-  | { readonly type: "inlineOperation"; readonly element: AnyInlineOperation };
+  | { readonly type: "operation"; readonly element: AnyOperation };

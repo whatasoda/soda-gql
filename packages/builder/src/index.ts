@@ -16,6 +16,7 @@ export type {
   BuilderArtifact,
   BuilderArtifactElement,
   BuilderArtifactElementMetadata,
+  BuilderArtifactOperation,
   BuilderArtifactInlineOperation,
   BuilderArtifactModel,
 } from "./artifact/types";

@@ -1,6 +1,6 @@
 import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
-import type { BuilderArtifactInlineOperation, BuilderArtifactModel } from "../artifact/types";
+import type { BuilderArtifactOperation, BuilderArtifactModel } from "../artifact/types";
 
 const BuilderArtifactElementMetadataSchema = z.object({
   sourcePath: z.string(),
@@ -8,9 +8,9 @@ const BuilderArtifactElementMetadataSchema = z.object({
   contentHash: z.string(),
 });
 
-const BuilderArtifactInlineOperationSchema = z.object({
+const BuilderArtifactOperationSchema = z.object({
   id: z.string<CanonicalId>(),
-  type: z.literal("inlineOperation"),
+  type: z.literal("operation"),
   metadata: BuilderArtifactElementMetadataSchema,
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
@@ -20,8 +20,8 @@ const BuilderArtifactInlineOperationSchema = z.object({
   }),
 });
 
-declare function __validate_BuilderArtifactInlineOperationSchema<
-  _ extends z.infer<typeof BuilderArtifactInlineOperationSchema> = BuilderArtifactInlineOperation,
+declare function __validate_BuilderArtifactOperationSchema<
+  _ extends z.infer<typeof BuilderArtifactOperationSchema> = BuilderArtifactOperation,
 >(): never;
 
 const BuilderArtifactModelSchema = z.object({
@@ -38,7 +38,7 @@ declare function __validate_BuilderArtifactModelSchema<
 >(): never;
 
 const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
-  BuilderArtifactInlineOperationSchema,
+  BuilderArtifactOperationSchema,
   BuilderArtifactModelSchema,
 ]);
 

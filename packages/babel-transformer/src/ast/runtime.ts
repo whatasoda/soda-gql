@@ -1,8 +1,8 @@
 import { types as t } from "@babel/core";
-import type { RuntimeInlineOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
-import type { BabelGqlCallInlineOperation, BabelGqlCallModel } from "./analysis";
+import type { BabelGqlCallOperation, BabelGqlCallModel } from "./analysis";
 import { buildObjectExpression } from "./ast";
 
 export const buildModelRuntimeCall = ({
@@ -19,13 +19,13 @@ export const buildModelRuntimeCall = ({
   );
 };
 
-export const buildInlineOperationRuntimeComponents = ({
+export const buildOperationRuntimeComponents = ({
   artifact,
-}: BabelGqlCallInlineOperation & { filename: string }): Result<
+}: BabelGqlCallOperation & { filename: string }): Result<
   { referenceCall: t.Expression; runtimeCall: t.Expression },
   PluginError
 > => {
-  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("inlineOperation")), [
+  const runtimeCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("operation")), [
     buildObjectExpression({
       prebuild: t.callExpression(t.memberExpression(t.identifier("JSON"), t.identifier("parse")), [
         t.stringLiteral(JSON.stringify(artifact.prebuild)),
@@ -34,7 +34,7 @@ export const buildInlineOperationRuntimeComponents = ({
     }),
   ]);
 
-  const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getInlineOperation")), [
+  const referenceCall = t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("getOperation")), [
     t.stringLiteral(artifact.prebuild.operationName),
   ]);
 
@@ -43,3 +43,7 @@ export const buildInlineOperationRuntimeComponents = ({
     runtimeCall,
   });
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `buildOperationRuntimeComponents` instead */
+export const buildInlineOperationRuntimeComponents = buildOperationRuntimeComponents;

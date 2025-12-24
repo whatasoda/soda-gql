@@ -1,14 +1,14 @@
-import type { AnyInlineOperationOf } from "../types/element";
+import type { AnyOperationOf } from "../types/element";
 import type { OperationType } from "../types/schema";
 
-const inlineOperationRegistry = new Map<string, AnyInlineOperationOf<OperationType>>();
+const operationRegistry = new Map<string, AnyOperationOf<OperationType>>();
 
-export const registerInlineOperation = (operation: AnyInlineOperationOf<OperationType>) => {
-  inlineOperationRegistry.set(operation.operationName, operation);
+export const registerOperation = (operation: AnyOperationOf<OperationType>) => {
+  operationRegistry.set(operation.operationName, operation);
 };
 
-export const getInlineOperation = (name: string) => {
-  const operation = inlineOperationRegistry.get(name);
+export const getOperation = (name: string) => {
+  const operation = operationRegistry.get(name);
   if (!operation) {
     throw new Error(`Operation ${name} not found`);
   }
@@ -20,13 +20,21 @@ export const getInlineOperation = (name: string) => {
  * @internal
  */
 export const __resetRuntimeRegistry = () => {
-  inlineOperationRegistry.clear();
+  operationRegistry.clear();
 };
 
 /**
- * Test-only function to get all registered inline operations
+ * Test-only function to get all registered operations
  * @internal
  */
-export const __getRegisteredInlineOperations = (): ReadonlyMap<string, AnyInlineOperationOf<OperationType>> => {
-  return inlineOperationRegistry;
+export const __getRegisteredOperations = (): ReadonlyMap<string, AnyOperationOf<OperationType>> => {
+  return operationRegistry;
 };
+
+// Re-export old names for backwards compatibility during transition
+/** @deprecated Use `registerOperation` instead */
+export const registerInlineOperation = registerOperation;
+/** @deprecated Use `getOperation` instead */
+export const getInlineOperation = getOperation;
+/** @deprecated Use `__getRegisteredOperations` instead */
+export const __getRegisteredInlineOperations = __getRegisteredOperations;

@@ -1,6 +1,6 @@
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 import type {
-  GqlCallInlineOperation,
+  GqlCallOperation,
   GqlCallModel,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
@@ -16,9 +16,9 @@ export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElemen
 
 // TypeScript-specific GqlCall types
 export type TsGqlCallModel = GqlCallModel<ts.CallExpression> & { readonly callNode: ts.CallExpression };
-export type TsGqlCallInlineOperation = GqlCallInlineOperation<ts.CallExpression> & { readonly callNode: ts.CallExpression };
+export type TsGqlCallOperation = GqlCallOperation<ts.CallExpression> & { readonly callNode: ts.CallExpression };
 
-export type TsGqlCall = TsGqlCallModel | TsGqlCallInlineOperation;
+export type TsGqlCall = TsGqlCallModel | TsGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly callNode: ts.CallExpression;
@@ -51,8 +51,8 @@ export const extractGqlCall = ({
     return ok({ callNode, canonicalId, builderCall, type: "model", artifact });
   }
 
-  if (artifact.type === "inlineOperation") {
-    return ok({ callNode, canonicalId, builderCall, type: "inlineOperation", artifact });
+  if (artifact.type === "operation") {
+    return ok({ callNode, canonicalId, builderCall, type: "operation", artifact });
   }
 
   return err(
@@ -169,3 +169,7 @@ const extractBuilderCall = (factory: ts.ArrowFunction, typescript: typeof ts): t
 
   return null;
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `TsGqlCallOperation` instead */
+export type TsGqlCallInlineOperation = TsGqlCallOperation;

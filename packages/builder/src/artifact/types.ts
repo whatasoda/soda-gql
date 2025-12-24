@@ -1,5 +1,5 @@
 import type { CanonicalId } from "@soda-gql/common";
-import type { RuntimeInlineOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
 export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;
@@ -15,9 +15,9 @@ type BuilderArtifactElementBase = {
   readonly metadata: BuilderArtifactElementMetadata;
 };
 
-export type BuilderArtifactInlineOperation = BuilderArtifactElementBase & {
-  readonly type: "inlineOperation";
-  readonly prebuild: RuntimeInlineOperationInput["prebuild"];
+export type BuilderArtifactOperation = BuilderArtifactElementBase & {
+  readonly type: "operation";
+  readonly prebuild: RuntimeOperationInput["prebuild"];
 };
 
 export type BuilderArtifactModel = BuilderArtifactElementBase & {
@@ -25,7 +25,7 @@ export type BuilderArtifactModel = BuilderArtifactElementBase & {
   readonly prebuild: RuntimeModelInput["prebuild"];
 };
 
-export type BuilderArtifactElement = BuilderArtifactInlineOperation | BuilderArtifactModel;
+export type BuilderArtifactElement = BuilderArtifactOperation | BuilderArtifactModel;
 
 export type BuilderArtifact = {
   readonly elements: Record<CanonicalId, BuilderArtifactElement>;
@@ -40,3 +40,7 @@ export type BuilderArtifact = {
     };
   };
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `BuilderArtifactOperation` instead */
+export type BuilderArtifactInlineOperation = BuilderArtifactOperation;

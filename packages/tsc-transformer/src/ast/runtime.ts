@@ -1,8 +1,8 @@
-import type { RuntimeInlineOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
 import * as ts from "typescript";
-import type { TsGqlCallInlineOperation, TsGqlCallModel } from "./analysis";
+import type { TsGqlCallOperation, TsGqlCallModel } from "./analysis";
 import { buildJsonParseExpression, buildObjectExpression } from "./ast";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
@@ -38,24 +38,24 @@ export const buildModelRuntimeCall = ({
   );
 };
 
-export const buildInlineOperationRuntimeComponents = ({
+export const buildOperationRuntimeComponents = ({
   gqlCall,
   factory,
   isCJS,
 }: {
-  gqlCall: TsGqlCallInlineOperation;
+  gqlCall: TsGqlCallOperation;
   factory: ts.NodeFactory;
   isCJS: boolean;
 }): Result<{ referenceCall: ts.Expression; runtimeCall: ts.Expression }, PluginError> => {
   const runtimeCall = factory.createCallExpression(
     factory.createPropertyAccessExpression(
       createRuntimeAccessor({ isCJS, factory }),
-      factory.createIdentifier("inlineOperation"),
+      factory.createIdentifier("operation"),
     ),
     undefined,
     [
       buildObjectExpression(factory, {
-        prebuild: buildJsonParseExpression<RuntimeInlineOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
+        prebuild: buildJsonParseExpression<RuntimeOperationInput["prebuild"]>(factory, gqlCall.artifact.prebuild),
         runtime: buildObjectExpression(factory, {}),
       }),
     ],
@@ -64,7 +64,7 @@ export const buildInlineOperationRuntimeComponents = ({
   const referenceCall = factory.createCallExpression(
     factory.createPropertyAccessExpression(
       createRuntimeAccessor({ isCJS, factory }),
-      factory.createIdentifier("getInlineOperation"),
+      factory.createIdentifier("getOperation"),
     ),
     undefined,
     [factory.createStringLiteral(gqlCall.artifact.prebuild.operationName)],
@@ -75,3 +75,7 @@ export const buildInlineOperationRuntimeComponents = ({
     runtimeCall,
   });
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `buildOperationRuntimeComponents` instead */
+export const buildInlineOperationRuntimeComponents = buildOperationRuntimeComponents;

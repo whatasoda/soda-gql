@@ -59,7 +59,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         continue;
       }
 
-      if (element.type === "inlineOperation") {
+      if (element.type === "operation") {
         const prebuild = {
           operationType: element.element.operationType,
           operationName: element.element.operationName,
@@ -69,7 +69,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
-          type: "inlineOperation",
+          type: "operation",
           prebuild,
           metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });

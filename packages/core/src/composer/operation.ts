@@ -1,4 +1,4 @@
-import { type FieldsBuilder, InlineOperation, type MergeFields, mergeFields } from "../types/element";
+import { type FieldsBuilder, Operation, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
@@ -8,7 +8,7 @@ import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
-export const createInlineOperationComposerFactory = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
+export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];
@@ -27,7 +27,7 @@ export const createInlineOperationComposerFactory = <TSchema extends AnyGraphqlS
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
     ) => {
-      return InlineOperation.create<
+      return Operation.create<
         TSchema,
         TOperationType,
         TOperationName,
@@ -66,3 +66,7 @@ export const createInlineOperationComposerFactory = <TSchema extends AnyGraphqlS
     };
   };
 };
+
+// Re-export old name for backwards compatibility during transition
+/** @deprecated Use `createOperationComposerFactory` instead */
+export const createInlineOperationComposerFactory = createOperationComposerFactory;

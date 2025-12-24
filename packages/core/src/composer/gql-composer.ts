@@ -1,11 +1,11 @@
-import type { AnyInlineOperation, AnyModel } from "../types/element";
+import type { AnyModel, AnyOperation } from "../types/element";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createPrefixHelper } from "./field-prefix";
-import { createInlineOperationComposerFactory } from "./inline-operation";
+import { createOperationComposerFactory } from "./operation";
 import { createGqlModelComposers } from "./model";
 import { createVarBuilder } from "./var-builder";
 
-export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnyInlineOperation>(
+export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnyOperation>(
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
@@ -19,18 +19,12 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, THelp
 ) => {
   const { helpers } = options;
   const model = createGqlModelComposers<TSchema>(schema);
-  const createInlineOperationComposer = createInlineOperationComposerFactory<TSchema>(schema);
+  const createOperationComposer = createOperationComposerFactory<TSchema>(schema);
   const composers = {
     model,
-    query: {
-      inline: createInlineOperationComposer("query"),
-    },
-    mutation: {
-      inline: createInlineOperationComposer("mutation"),
-    },
-    subscription: {
-      inline: createInlineOperationComposer("subscription"),
-    },
+    query: createOperationComposer("query"),
+    mutation: createOperationComposer("mutation"),
+    subscription: createOperationComposer("subscription"),
   };
 
   const helper = {

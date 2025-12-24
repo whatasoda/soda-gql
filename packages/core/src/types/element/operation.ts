@@ -6,11 +6,11 @@ import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, O
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
-export type AnyInlineOperation =
-  | AnyInlineOperationOf<"query">
-  | AnyInlineOperationOf<"mutation">
-  | AnyInlineOperationOf<"subscription">;
-export type AnyInlineOperationOf<TOperationType extends OperationType> = InlineOperation<
+export type AnyOperation =
+  | AnyOperationOf<"query">
+  | AnyOperationOf<"mutation">
+  | AnyOperationOf<"subscription">;
+export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   TOperationType,
   string,
   string[],
@@ -19,14 +19,14 @@ export type AnyInlineOperationOf<TOperationType extends OperationType> = InlineO
   any
 >;
 
-export type InlineOperationInferMeta<TVariables, TData extends object> = {
+export type OperationInferMeta<TVariables, TData extends object> = {
   readonly input: TVariables;
   readonly output: TData;
 };
 
-declare const __INLINE_OPERATION_BRAND__: unique symbol;
+declare const __OPERATION_BRAND__: unique symbol;
 
-type InlineOperationArtifact<
+type OperationArtifact<
   TOperationType extends OperationType,
   TOperationName extends string,
   TVariableNames extends string[],
@@ -42,7 +42,7 @@ type InlineOperationArtifact<
   readonly metadata?: OperationMetadata;
 };
 
-export class InlineOperation<
+export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableNames extends string[],
@@ -51,12 +51,12 @@ export class InlineOperation<
     TData extends object,
   >
   extends GqlElement<
-    InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>,
-    InlineOperationInferMeta<TVariables, TData>
+    OperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>,
+    OperationInferMeta<TVariables, TData>
   >
-  implements InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
+  implements OperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
 {
-  declare readonly [__INLINE_OPERATION_BRAND__]: Hidden<{
+  declare readonly [__OPERATION_BRAND__]: Hidden<{
     operationType: TOperationType;
   }>;
 
@@ -64,8 +64,8 @@ export class InlineOperation<
     define: (
       context: GqlElementContext | null,
     ) =>
-      | InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
-      | Promise<InlineOperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>>,
+      | OperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
+      | Promise<OperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>>,
   ) {
     super(define);
   }
@@ -114,6 +114,23 @@ export class InlineOperation<
           metadata?: OperationMetadata;
         }>,
   ) {
-    return new InlineOperation(define);
+    return new Operation(define);
   }
 }
+
+// Re-export old names for backwards compatibility during transition
+/** @deprecated Use `Operation` instead */
+export type InlineOperation<
+  TOperationType extends OperationType,
+  TOperationName extends string,
+  TVariableNames extends string[],
+  TVariables extends AnyConstAssignableInput,
+  TFields extends Partial<AnyFields>,
+  TData extends object,
+> = Operation<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>;
+/** @deprecated Use `AnyOperation` instead */
+export type AnyInlineOperation = AnyOperation;
+/** @deprecated Use `AnyOperationOf` instead */
+export type AnyInlineOperationOf<TOperationType extends OperationType> = AnyOperationOf<TOperationType>;
+/** @deprecated Use `OperationInferMeta` instead */
+export type InlineOperationInferMeta<TVariables, TData extends object> = OperationInferMeta<TVariables, TData>;
