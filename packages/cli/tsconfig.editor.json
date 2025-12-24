@@ -5,9 +5,16 @@
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/cli",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/cli/tsconfig.tsbuildinfo",
-    "rootDir": "./src"
+    "rootDir": "."
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../codegen/tsconfig.editor.json" }, { "path": "../builder/tsconfig.editor.json" }]
+  "references": [
+    {
+      "path": "../codegen/tsconfig.editor.json"
+    },
+    {
+      "path": "../builder/tsconfig.editor.json"
+    }
+  ]
 }

@@ -5,10 +5,14 @@
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/runtime",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/runtime/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {}
   },
-  "include": ["./src/**/*"],
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core/tsconfig.editor.json" }]
+  "references": [
+    {
+      "path": "../core/tsconfig.editor.json"
+    }
+  ]
 }

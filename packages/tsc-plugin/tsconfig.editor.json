@@ -5,9 +5,16 @@
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/tsc-plugin",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/tsc-plugin/tsconfig.tsbuildinfo",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {}
   },
-  "include": ["src/**/*"],
-  "references": [{ "path": "../builder/tsconfig.editor.json" }, { "path": "../tsc-transformer/tsconfig.editor.json" }]
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
+  "references": [
+    {
+      "path": "../builder/tsconfig.editor.json"
+    },
+    {
+      "path": "../tsc-transformer/tsconfig.editor.json"
+    }
+  ]
 }

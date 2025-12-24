@@ -5,15 +5,25 @@
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/babel-plugin",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/babel-plugin/tsconfig.tsbuildinfo",
-    "rootDir": "./src"
+    "rootDir": "."
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": ["node_modules", "dist"],
   "references": [
-    { "path": "../babel-transformer/tsconfig.editor.json" },
-    { "path": "../builder/tsconfig.editor.json" },
-    { "path": "../config/tsconfig.editor.json" },
-    { "path": "../plugin-common/tsconfig.editor.json" },
-    { "path": "../tsc-transformer/tsconfig.editor.json" }
+    {
+      "path": "../babel-transformer/tsconfig.editor.json"
+    },
+    {
+      "path": "../builder/tsconfig.editor.json"
+    },
+    {
+      "path": "../config/tsconfig.editor.json"
+    },
+    {
+      "path": "../plugin-common/tsconfig.editor.json"
+    },
+    {
+      "path": "../tsc-transformer/tsconfig.editor.json"
+    }
   ]
 }

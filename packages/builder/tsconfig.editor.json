@@ -6,7 +6,14 @@
     "outDir": "../../node_modules/.soda-gql/.typecheck/builder",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/builder/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": ["node_modules", "dist", "**/graphql-system/index.cjs", "test/fixtures/**/*"],
-  "references": [{ "path": "../common/tsconfig.editor.json" }, { "path": "../core/tsconfig.editor.json" }]
+  "references": [
+    {
+      "path": "../common/tsconfig.editor.json"
+    },
+    {
+      "path": "../core/tsconfig.editor.json"
+    }
+  ]
 }

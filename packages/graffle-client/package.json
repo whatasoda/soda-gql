@@ -17,7 +17,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",

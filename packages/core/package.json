@@ -16,26 +16,26 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./metadata": {
+      "@soda-gql": "./@x-metadata.ts",
+      "types": "./dist/metadata.d.ts",
+      "import": "./dist/metadata.js",
+      "require": "./dist/metadata.cjs",
+      "default": "./dist/metadata.js"
+    },
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./runtime": {
-      "@soda-gql": "./src/runtime/index.ts",
-      "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.js",
-      "require": "./dist/runtime/index.cjs",
-      "default": "./dist/runtime/index.js"
-    },
-    "./metadata": {
-      "@soda-gql": "./src/metadata/index.ts",
-      "types": "./dist/metadata/index.d.ts",
-      "import": "./dist/metadata/index.js",
-      "require": "./dist/metadata/index.cjs",
-      "default": "./dist/metadata/index.js"
+      "@soda-gql": "./@x-runtime.ts",
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js",
+      "require": "./dist/runtime.cjs",
+      "default": "./dist/runtime.js"
     },
     "./package.json": "./package.json"
   },

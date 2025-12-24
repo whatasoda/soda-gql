@@ -55,7 +55,7 @@
   },
   "exports": {
     ".": {
-      "@soda-gql": "./src/index.ts",
+      "@soda-gql": "./@x-index.ts",
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"

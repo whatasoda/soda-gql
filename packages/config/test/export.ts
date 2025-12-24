@@ -1,11 +1,11 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SodaGqlConfig } from "./types";
+import type { SodaGqlConfig } from "../src/types";
 
 /**
  * Get project root from this package location.
- * packages/config/src/test-utils.ts -> project root
+ * packages/config/test/export.ts -> project root
  */
 const getProjectRoot = (): string => {
   return fileURLToPath(new URL("../../../", import.meta.url));

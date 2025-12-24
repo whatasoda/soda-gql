@@ -70,58 +70,80 @@ Each package follows a consistent structure:
 packages/<package-name>/
 ├── src/                   # Source code
 ├── dist/                  # Build output (generated)
+├── @x-*.ts                # Public export files (e.g., @x-index.ts, @x-runtime.ts)
+├── @devx-*.ts             # Dev-only export files (e.g., @devx-test.ts)
 ├── package.json           # Package manifest
-├── exports.json           # Export definitions (source of truth)
 └── tsconfig.editor.json   # TypeScript configuration
 ```
 
 ### Export Management System
 
-The project uses a **custom export synchronization system** to maintain consistency between source definitions and package manifests.
+The project uses a **file-based export convention** with `@x-*` and `@devx-*` files at each package root.
 
-#### `exports.json` - Source of Truth
+#### File-Based Export Convention
 
-Each package defines its exports in `exports.json`:
+Each package defines its exports using specially-named files at the package root:
 
-**Example: `packages/plugin-nestjs/exports.json`**
-```json
-{
-  ".": "./src/index.ts",
-  "./webpack": "./src/webpack/index.ts",
-  "./webpack/plugin": "./src/webpack/plugin.ts",
-  "./webpack/loader": "./src/webpack/loader.ts"
-}
+| Pattern | Export Type | Example |
+|---------|-------------|---------|
+| `@x-index.ts` | Root export (`.`) | `export * from "./src/index"` |
+| `@x-{name}.ts` | Sub-export (`./name`) | `@x-runtime.ts` → `./runtime` |
+| `@x-{name}/index.ts` | Directory export | `@x-runtime/index.ts` → `./runtime` |
+| `@devx-{name}.ts` | Dev-only export | `@devx-test.ts` → `./test` (only `@soda-gql` condition) |
+
+**Example: `packages/core/`**
+```
+packages/core/
+├── @x-index.ts      # export * from "./src/index"      → "."
+├── @x-runtime.ts    # export * from "./src/runtime"    → "./runtime"
+├── @x-metadata.ts   # export * from "./src/metadata"   → "./metadata"
+└── src/
+    ├── index.ts
+    ├── runtime/
+    └── metadata/
+```
+
+**Example: `packages/common/`** (with dev export)
+```
+packages/common/
+├── @x-index.ts      # Public export → "."
+├── @x-portable.ts   # Public export → "./portable"
+├── @devx-test.ts    # Dev-only export → "./test" (@soda-gql condition only)
+└── src/
 ```
 
 #### Synchronization Script
 
 The `scripts/sync-exports.ts` script:
 
-1. **Reads** `exports.json` from each package
-2. **Validates** that all source files exist
-3. **Generates** package.json exports with proper conditions:
+1. **Discovers** `@x-*` and `@devx-*` files from each package root
+2. **Generates** package.json exports with proper conditions:
    ```json
    {
      "exports": {
        ".": {
-         "development": "./src/index.ts",
+         "@soda-gql": "./@x-index.ts",
          "types": "./dist/index.d.ts",
          "import": "./dist/index.js",
          "require": "./dist/index.cjs",
          "default": "./dist/index.js"
+       },
+       "./test": {
+         "@soda-gql": "./@devx-test.ts"
        }
      }
    }
    ```
-4. **Creates** `scripts/generated/exports-manifest.{ts,js}` for tsdown configuration
 
 #### Export Conditions
 
-- **`development`**: Points to source files (used by tests and examples)
+- **`@soda-gql`**: Points to source files (used by tests and examples via `--conditions=@soda-gql`)
 - **`types`**: TypeScript declaration files
 - **`import`**: ESM output
 - **`require`**: CommonJS output
 - **`default`**: Fallback to ESM
+
+Dev-only exports (`@devx-*`) only include the `@soda-gql` condition.
 
 ### Running Export Sync
 
@@ -133,7 +155,7 @@ bun scripts/sync-exports.ts
 
 This must be run:
 - Before building packages
-- After adding/removing exports
+- After adding/removing `@x-*` or `@devx-*` files
 - When creating new packages
 
 ---
@@ -614,19 +636,23 @@ bun run biome:check
 
 #### Adding a New Export
 
-1. Add entry to `packages/<name>/exports.json`:
+1. Create an `@x-*` file at the package root:
+   ```typescript
+   // packages/<name>/@x-new-export.ts
+   export * from "./src/new-export";
+   ```
+
+2. Add the pattern to `tsconfig.editor.json` if not already present:
    ```json
    {
-     "./new-export": "./src/new-export.ts"
+     "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"]
    }
    ```
 
-2. Sync exports:
+3. Sync exports:
    ```bash
    bun run exports:sync
    ```
-
-3. Update package `tsconfig.editor.json` if needed
 
 4. Build and verify:
    ```bash
@@ -650,11 +676,9 @@ bun run biome:check
    }
    ```
 
-3. Create `exports.json`:
-   ```json
-   {
-     ".": "./src/index.ts"
-   }
+3. Create `@x-index.ts` (root export):
+   ```typescript
+   export * from "./src/index";
    ```
 
 4. Create `tsconfig.editor.json`:
@@ -663,27 +687,34 @@ bun run biome:check
      "extends": "../../tsconfig.base.json",
      "compilerOptions": {
        "composite": true,
-       "outDir": "../../.typecheck/packages/new-package",
-       "tsBuildInfoFile": "../../.typecheck/packages/new-package/tsconfig.tsbuildinfo",
+       "outDir": "../../node_modules/.soda-gql/.typecheck/new-package",
+       "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/new-package/tsconfig.tsbuildinfo",
        "rootDir": "."
      },
-     "include": ["src/**/*"]
+     "include": ["src/**/*", "@x-*.ts"]
    }
    ```
 
 5. Add package to root `tsconfig.json`:
    ```json
    {
-     "paths": {
-       "@soda-gql/new-package/*": ["./packages/new-package/src/*"]
-     },
      "references": [
        { "path": "./packages/new-package/tsconfig.editor.json" }
      ]
    }
    ```
 
-6. Add package to `tsdown.config.ts`:
+6. Add package to root `package.json` devDependencies:
+   ```json
+   {
+     "devDependencies": {
+       "@soda-gql/new-package": "workspace:*"
+     }
+   }
+   ```
+   Then run `bun install` to create workspace symlinks.
+
+7. Add package to `tsdown.config.ts`:
    ```typescript
    {
      ...common("@soda-gql/new-package"),
@@ -693,7 +724,7 @@ bun run biome:check
    }
    ```
 
-7. Sync exports and build:
+8. Sync exports and build:
    ```bash
    bun run exports:sync
    bun run build
@@ -755,7 +786,7 @@ bun run build
 The soda-gql monorepo infrastructure provides:
 
 1. **Workspace Management**: Bun workspaces with unified dependency management
-2. **Export System**: Custom `exports.json` with automated synchronization
+2. **Export System**: File-based `@x-*` / `@devx-*` convention with automated synchronization
 3. **Build Pipeline**: tsdown-based bundling with dual ESM/CJS output
 4. **Type System**: TypeScript project references with development/production conditions
 5. **Module Resolution**: Source-based (dev) and dist-based (prod) resolution

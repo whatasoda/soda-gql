@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { createTempConfigFile } from "@soda-gql/config";
+import { createTempConfigFile } from "@soda-gql/config/test";
 import { copyDefaultInject } from "../../../tests/fixtures/inject-module/index";
 import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../../tests/utils/cli";
 
