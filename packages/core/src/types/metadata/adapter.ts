@@ -12,7 +12,7 @@ export type ModelMetaInfo<TModelMetadata> = {
 };
 
 /**
- * Flexible metadata adapter that defines how model metadata is aggregated
+ * Metadata adapter that defines how model metadata is aggregated
  * and provides schema-level configuration.
  *
  * This adapter allows complete customization of:
@@ -26,7 +26,7 @@ export type ModelMetaInfo<TModelMetadata> = {
  * @template TAggregatedModelMetadata - The type returned by aggregateModelMetadata
  * @template TSchemaLevel - The type of schema-level configuration values
  */
-export type FlexibleMetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata = unknown, TSchemaLevel = unknown> = {
+export type MetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata = unknown, TSchemaLevel = unknown> = {
   /**
    * Aggregates metadata from all embedded models in an operation.
    * Called with the metadata from each embedded model.
@@ -41,9 +41,9 @@ export type FlexibleMetadataAdapter<TModelMetadata = unknown, TAggregatedModelMe
 };
 
 /**
- * Extracts the type parameters from a FlexibleMetadataAdapter.
+ * Extracts the type parameters from a MetadataAdapter.
  */
-export type ExtractAdapterTypes<T> = T extends FlexibleMetadataAdapter<infer TModel, infer TAggregated, infer TSchemaLevel>
+export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TModel, infer TAggregated, infer TSchemaLevel>
   ? {
       modelMetadata: TModel;
       aggregatedModelMetadata: TAggregated;
@@ -52,28 +52,25 @@ export type ExtractAdapterTypes<T> = T extends FlexibleMetadataAdapter<infer TMo
   : never;
 
 /**
- * Generic type for any flexible metadata adapter.
+ * Generic type for any metadata adapter.
  */
-export type AnyFlexibleMetadataAdapter = FlexibleMetadataAdapter<any, any, any>;
+export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
  * Default adapter that maintains backwards compatibility with the original behavior.
  * Uses OperationMetadata for model metadata and aggregates by collecting metadata into a readonly array.
  */
-export type DefaultFlexibleMetadataAdapter = FlexibleMetadataAdapter<
-  OperationMetadata,
-  readonly (OperationMetadata | undefined)[]
->;
+export type DefaultMetadataAdapter = MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]>;
 
 /**
  * Creates the default adapter instance.
  * @internal
  */
-export const createDefaultAdapter = (): DefaultFlexibleMetadataAdapter => ({
+export const createDefaultAdapter = (): DefaultMetadataAdapter => ({
   aggregateModelMetadata: (models) => models.map((m) => m.metadata),
 });
 
 /**
  * The default adapter instance.
  */
-export const defaultFlexibleMetadataAdapter: DefaultFlexibleMetadataAdapter = createDefaultAdapter();
+export const defaultMetadataAdapter: DefaultMetadataAdapter = createDefaultAdapter();

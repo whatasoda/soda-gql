@@ -1,13 +1,13 @@
 import { type FieldsBuilder, type MergeFields, mergeFields, Operation } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type {
-  AnyFlexibleMetadataAdapter,
-  DefaultFlexibleMetadataAdapter,
+  AnyMetadataAdapter,
+  DefaultMetadataAdapter,
   ExtractAdapterTypes,
   MetadataBuilder,
   ModelMetaInfo,
 } from "../types/metadata";
-import { defaultFlexibleMetadataAdapter } from "../types/metadata";
+import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 
@@ -18,12 +18,12 @@ import { withModelUsageCollection } from "./model-usage-context";
 
 export const createOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
-  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 >(
   schema: NoInfer<TSchema>,
   adapter?: TAdapter,
 ) => {
-  const resolvedAdapter = adapter ?? (defaultFlexibleMetadataAdapter as TAdapter);
+  const resolvedAdapter = adapter ?? (defaultMetadataAdapter as TAdapter);
 
   type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
   type TAggregatedModelMetadata = ExtractAdapterTypes<TAdapter>["aggregatedModelMetadata"];

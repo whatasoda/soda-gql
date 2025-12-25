@@ -38,7 +38,7 @@ export type SodaGqlConfig = {
   readonly analyzer?: "ts" | "swc";
   /**
    * Path to the metadata adapter module.
-   * The module should export an `adapter` object matching FlexibleMetadataAdapter.
+   * The module should export an `adapter` object matching MetadataAdapter.
    * If not specified, a default adapter is generated at {outdir}/metadata-adapter.ts
    */
   readonly metadata?: string;
