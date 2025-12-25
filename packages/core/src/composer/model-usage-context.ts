@@ -6,16 +6,17 @@
  * Similar to field-path-context, uses a shared mutable container.
  */
 
-import type { OperationMetadata } from "../types/metadata";
 import type { FieldPath } from "./field-path-context";
 
 /**
  * Record of a model being embedded in an operation.
  * Stores metadata builder (not model reference) since model cannot reference itself.
+ *
+ * @template TModelMetadata - The type of metadata produced by the model's metadata builder
  */
-export type ModelUsageRecord = {
+export type ModelUsageRecord<TModelMetadata = unknown> = {
   /** Metadata builder factory from the model, if defined */
-  readonly metadataBuilder: (() => OperationMetadata | Promise<OperationMetadata>) | null;
+  readonly metadataBuilder: (() => TModelMetadata | Promise<TModelMetadata>) | null;
   /** Field path where the model was embedded */
   readonly path: FieldPath | null;
 };
