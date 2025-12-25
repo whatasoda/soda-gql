@@ -3,9 +3,7 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 /**
  * Base post model
  */
-export const postModel = gql.default(({ model }) =>
-  model.Post({}, ({ f }) => [f.id(), f.title()]),
-);
+export const postModel = gql.default(({ model }) => model.Post({}, ({ f }) => [f.id(), f.title()]));
 
 /**
  * User model that embeds the post model in its nested field
@@ -15,11 +13,7 @@ export const userWithPostsModel = gql.default(({ model }, { $var }) =>
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.posts({ categoryId: $.categoryId })(() => [postModel.embed()]),
-    ],
+    ({ f, $ }) => [f.id(), f.name(), f.posts({ categoryId: $.categoryId })(() => [postModel.embed()])],
   ),
 );
 
@@ -32,8 +26,6 @@ export const getUserWithPostsQuery = gql.default(({ query }, { $var }) =>
       name: "GetUserWithPosts",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => [
-      f.user({ id: $.userId })(() => [userWithPostsModel.embed({ categoryId: $.categoryId })]),
-    ],
+    ({ f, $ }) => [f.user({ id: $.userId })(() => [userWithPostsModel.embed({ categoryId: $.categoryId })])],
   ),
 );

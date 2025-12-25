@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/nextjs-webpack",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/nextjs-webpack/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"],
+      "@/graphql/*": ["./src/graphql/*"]
+    }
+  },
+  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.editor.json" },
+    { "path": "../../packages/runtime/tsconfig.editor.json" }
+  ]
+}

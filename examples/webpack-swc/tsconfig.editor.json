@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/webpack-swc",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/webpack-swc/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.editor.json" },
+    { "path": "../../packages/runtime/tsconfig.editor.json" }
+  ]
+}

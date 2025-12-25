@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/expo-metro",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/expo-metro/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.editor.json" },
+    { "path": "../../packages/runtime/tsconfig.editor.json" }
+  ]
+}

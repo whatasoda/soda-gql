@@ -1,5 +1,4 @@
 import { defineScalar } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
 
 export const scalar = {
   ...defineScalar<"ID", string, string>("ID"),
@@ -8,7 +7,3 @@ export const scalar = {
   ...defineScalar<"Float", number, number>("Float"),
   ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
 } as const;
-
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));

@@ -1,4 +1,4 @@
-import { gql } from "../../../../../tests/codegen-fixture/graphql-system";
+import { gql } from "../../codegen-fixture/graphql-system";
 
 export const collections = {
   byCategory: gql.default(({ query }, { $var }) =>

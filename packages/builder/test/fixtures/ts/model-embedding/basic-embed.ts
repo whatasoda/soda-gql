@@ -3,9 +3,7 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 /**
  * Basic model definition
  */
-export const userModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name(), f.email()]),
-);
+export const userModel = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.name(), f.email()]));
 
 /**
  * Operation that embeds the model
