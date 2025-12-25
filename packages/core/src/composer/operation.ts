@@ -70,11 +70,8 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         }
 
         // Evaluate model metadata first (sync or async)
-        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata | undefined>)[] =
-          modelUsages.map((usage) => {
-            if (!usage.metadataBuilder) return undefined;
-            return usage.metadataBuilder({ $: usage.$ });
-          });
+        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata>)[] =
+          modelUsages.map((usage) => usage.metadataBuilder ? usage.metadataBuilder() : undefined);
 
         // Check if any model metadata is async
         const hasAsyncModelMetadata = modelMetadataResults.some((r) => r instanceof Promise);

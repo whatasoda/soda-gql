@@ -396,6 +396,7 @@ describe("createIntermediateRegistry", () => {
         Model.create(() => ({
           typename: "TestType",
           embed: () => ({}),
+          metadata: null,
         })),
       );
 
@@ -509,6 +510,7 @@ describe("createIntermediateRegistry", () => {
         Model.create(() => ({
           typename: "SyncType",
           embed: () => ({}),
+          metadata: null,
         })),
       );
 

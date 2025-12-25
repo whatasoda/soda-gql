@@ -1,5 +1,5 @@
 import { types as t } from "@babel/core";
-import type { RuntimeModelInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
+import type { RuntimeModelInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
 import type { BabelGqlCallModel, BabelGqlCallOperation } from "./analysis";
@@ -13,7 +13,6 @@ export const buildModelRuntimeCall = ({
       buildObjectExpression({
         prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
           typename: t.stringLiteral(artifact.prebuild.typename),
-          metadata: t.identifier("undefined"),
         }),
       }),
     ]),

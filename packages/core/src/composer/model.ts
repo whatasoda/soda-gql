@@ -1,5 +1,5 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
-import type { AnyFields, AssignableInput } from "../types/fragment";
+import type { AnyFields, AssigningInput } from "../types/fragment";
 import type { ModelMetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -31,35 +31,33 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
       options: {
         variables?: TVarDefinitions;
         metadata?: ModelMetadataBuilder<
-          ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+          AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>,
           OperationMetadata
         >;
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
-    ) =>
-      // biome-ignore lint/suspicious/noExplicitAny: Type variance issue with ModelMetadataBuilder generics - safe cast
-      Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(((): any => {
-        const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-        return {
-          typename,
-          embed: (variables: AssignableInput<TSchema, MergeVarDefinitions<TVarDefinitions>>) => {
-            const f = createFieldFactories(schema, typename);
-            const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
+    ) => {
+      const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
+      const { metadata } = options;
 
-            // Record model usage for metadata aggregation (after $ is created)
-            // biome-ignore lint/suspicious/noExplicitAny: Type variance issue with metadata builder generics
-            recordModelUsage({
-              metadataBuilder: options.metadata as any,
-              path: getCurrentFieldPath(),
-              variables,
-              $,
-            });
+      return Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(
+        () =>
+          ({
+            typename,
+            embed: (variables) => {
+              const f = createFieldFactories(schema, typename);
+              const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
 
-            return mergeFields(builder({ f, $ }));
-          },
-          ...(options.metadata && { metadata: options.metadata }),
-        };
-      }) as never);
+              recordModelUsage({
+                metadataBuilder: metadata ? () => metadata({ $ }) : null,
+                path: getCurrentFieldPath(),
+              });
+
+              return mergeFields(builder({ f, $ }));
+            },
+          })
+      );
+    };
   };
 
   type ModelBuildersAll = {

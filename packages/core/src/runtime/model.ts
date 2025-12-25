@@ -10,5 +10,4 @@ export const createRuntimeModel = (input: RuntimeModelInput): AnyModel =>
   ({
     typename: input.prebuild.typename,
     embed: hidden(),
-    metadata: undefined,
   }) satisfies StripSymbols<AnyModel> as unknown as AnyModel;

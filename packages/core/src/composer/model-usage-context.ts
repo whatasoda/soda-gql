@@ -6,9 +6,8 @@
  * Similar to field-path-context, uses a shared mutable container.
  */
 
+import type { OperationMetadata } from "../types/metadata";
 import type { FieldPath } from "./field-path-context";
-import type { ModelMetadataBuilder, OperationMetadata } from "../types/metadata";
-import type { AnyVarRef } from "../types/type-foundation/var-ref";
 
 /**
  * Record of a model being embedded in an operation.
@@ -16,13 +15,9 @@ import type { AnyVarRef } from "../types/type-foundation/var-ref";
  */
 export type ModelUsageRecord = {
   /** Metadata builder factory from the model, if defined */
-  readonly metadataBuilder: ModelMetadataBuilder<Record<string, AnyVarRef>, OperationMetadata> | undefined;
+  readonly metadataBuilder: (() => OperationMetadata | Promise<OperationMetadata>) | null;
   /** Field path where the model was embedded */
   readonly path: FieldPath | null;
-  /** Variable assignments passed to the model's embed() */
-  readonly variables: unknown;
-  /** Variable refs created for this model, used when evaluating metadata */
-  readonly $: Record<string, AnyVarRef>;
 };
 
 /**
