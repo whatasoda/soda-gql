@@ -187,34 +187,6 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 );
 ```
 
-### MetadataAdapter
-
-Use `createMetadataAdapter` to customize metadata behavior at the schema level:
-
-```typescript
-import { createMetadataAdapter } from "@soda-gql/core/adapter";
-import { createHash } from "crypto";
-
-export const metadataAdapter = createMetadataAdapter({
-  // Default metadata applied to all operations
-  defaults: {
-    headers: { "X-GraphQL-Client": "soda-gql" },
-  },
-
-  // Transform metadata at build time (e.g., add persisted query hash)
-  transform: ({ document, metadata }) => ({
-    ...metadata,
-    extensions: {
-      ...metadata.extensions,
-      persistedQuery: {
-        version: 1,
-        sha256Hash: createHash("sha256").update(document).digest("hex"),
-      },
-    },
-  }),
-});
-```
-
 ## Runtime Exports
 
 The `/runtime` subpath provides utilities for operation registration and retrieval:

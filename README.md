@@ -156,26 +156,7 @@ export const userQuery = gql.default(({ query }, { $var }) =>
 );
 ```
 
-Use `createMetadataAdapter` to set schema-level defaults and transformations:
-
-```typescript
-import { createMetadataAdapter } from "@soda-gql/core/adapter";
-
-export const metadataAdapter = createMetadataAdapter({
-  defaults: {
-    headers: { "X-GraphQL-Client": "soda-gql" },
-  },
-  transform: ({ document, metadata }) => ({
-    ...metadata,
-    extensions: {
-      ...metadata.extensions,
-      persistedQuery: { sha256Hash: createHash("sha256").update(document).digest("hex") },
-    },
-  }),
-});
-```
-
-See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure, merging behavior, and advanced usage.
+See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure and advanced usage.
 
 ### For Contributors
 
