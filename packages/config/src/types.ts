@@ -8,6 +8,12 @@ export type SchemaConfig = {
    * These helpers are injected into the gql composer callback alongside `$`.
    */
   readonly helpers?: string;
+  /**
+   * Optional path to the metadata adapter module.
+   * The module should export a `metadata` object matching MetadataAdapter.
+   * If not specified, a default adapter is generated.
+   */
+  readonly metadata?: string;
 };
 
 // Output styles configuration for codegen
@@ -36,12 +42,6 @@ export type SodaGqlConfig = {
    * @default "ts"
    */
   readonly analyzer?: "ts" | "swc";
-  /**
-   * Path to the metadata adapter module.
-   * The module should export an `adapter` object matching MetadataAdapter.
-   * If not specified, a default adapter is generated at {outdir}/metadata-adapter.ts
-   */
-  readonly metadata?: string;
   /**
    * The directory for the graphql system.
    * This is where the graphql system will be generated, and where the builder/plugin will reference the graphql system.
@@ -84,16 +84,22 @@ export type SodaGqlConfig = {
   readonly plugins?: PluginConfig;
 };
 
+// Resolved schema config with absolute paths
+export type ResolvedSchemaConfig = {
+  readonly schema: string;
+  readonly scalars: string;
+  readonly helpers?: string;
+  readonly metadata?: string;
+};
+
 // Resolved config (normalized and validated)
 export type ResolvedSodaGqlConfig = {
   readonly analyzer: "ts" | "swc";
-  /** Resolved absolute path to metadata adapter, or null to generate default */
-  readonly metadata: string | null;
   readonly outdir: string;
   readonly graphqlSystemAliases: readonly string[];
   readonly include: readonly string[];
   readonly exclude: readonly string[];
-  readonly schemas: Readonly<Record<string, SchemaConfig>>;
+  readonly schemas: Readonly<Record<string, ResolvedSchemaConfig>>;
   readonly styles: ResolvedStylesConfig;
   readonly plugins: PluginConfig;
 };
