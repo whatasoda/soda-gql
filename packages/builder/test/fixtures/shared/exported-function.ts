@@ -1,15 +1,6 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
 export function getModel() {
-  const model = gql.default(({ model }) =>
-    model.User(
-      {},
-      ({ f }) => [
-        //
-        f.id(),
-      ],
-      (v) => v,
-    ),
-  );
+  const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
   return model;
 }
