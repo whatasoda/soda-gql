@@ -1,29 +1,11 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-const postSlice = gql.default(({ mutation }, { $var }) =>
-  mutation.slice(
-    {
-      variables: [$var("title").scalar("String:!")],
-    },
-    ({ f, $ }) => [
-      //
-      f.createPost({ title: $.title })(({ f }) => [
-        //
-        f.id(),
-      ]),
-    ],
-    ({ select }) => select(["$.createPost"], (result) => result),
-  ),
-);
-
 export const pageAction = gql.default(({ mutation }, { $var }) =>
-  mutation.composed(
+  mutation.operation(
     {
       name: "PageAction",
       variables: [$var("title").scalar("String:!")],
     },
-    ({ $ }) => ({
-      post: postSlice.embed({ title: $.title }),
-    }),
+    ({ f, $ }) => [f.createPost({ title: $.title })(({ f }) => [f.id()])],
   ),
 );
