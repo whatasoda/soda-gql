@@ -4,7 +4,6 @@ import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import { defaultMetadataAdapterTemplate } from "./templates/metadata-adapter.template";
 import { bundleGraphqlSystem } from "./tsdown-bundle";
 import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
 
@@ -112,34 +111,22 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas.set(name, result.value);
   }
 
-  // Handle metadata adapter
   const importSpecifierOptions = { includeExtension: options.importExtension };
-  let adapterImportPath: string;
 
-  if (options.metadataAdapterPath) {
-    // User provided custom adapter
-    const resolvedAdapterPath = resolve(options.metadataAdapterPath);
-    if (!existsSync(resolvedAdapterPath)) {
-      return err({
-        code: "INJECT_MODULE_NOT_FOUND",
-        message: `Metadata adapter not found: ${resolvedAdapterPath}`,
-        injectPath: resolvedAdapterPath,
-      });
+  // Validate optional per-schema metadata
+  const metadataPaths = new Map<string, string>();
+  if (options.metadata) {
+    for (const [schemaName, metadataPath] of Object.entries(options.metadata)) {
+      const resolvedPath = resolve(metadataPath);
+      if (!existsSync(resolvedPath)) {
+        return err({
+          code: "INJECT_MODULE_NOT_FOUND",
+          message: `Metadata module not found for schema '${schemaName}': ${resolvedPath}`,
+          injectPath: resolvedPath,
+        });
+      }
+      metadataPaths.set(schemaName, resolvedPath);
     }
-    adapterImportPath = toImportSpecifier(outPath, resolvedAdapterPath, importSpecifierOptions);
-  } else {
-    // Generate default adapter
-    const defaultAdapterPath = resolve(dirname(outPath), "metadata-adapter.ts");
-    const adapterWriteResult = await writeModule(defaultAdapterPath, defaultMetadataAdapterTemplate).match(
-      () => Promise.resolve(ok(undefined)),
-      (error) => Promise.resolve(err(error)),
-    );
-
-    if (adapterWriteResult.isErr()) {
-      return err(adapterWriteResult.error);
-    }
-
-    adapterImportPath = toImportSpecifier(outPath, defaultAdapterPath, importSpecifierOptions);
   }
 
   // Build injection config for each schema
@@ -148,6 +135,7 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     {
       scalarImportPath: string;
       helpersImportPath?: string;
+      metadataImportPath?: string;
     }
   >();
 
@@ -162,17 +150,18 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     }
 
     const helpersPath = helpersPaths.get(schemaName);
+    const metadataPath = metadataPaths.get(schemaName);
 
     injectionConfig.set(schemaName, {
       scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
       ...(helpersPath ? { helpersImportPath: toImportSpecifier(outPath, helpersPath, importSpecifierOptions) } : {}),
+      ...(metadataPath ? { metadataImportPath: toImportSpecifier(outPath, metadataPath, importSpecifierOptions) } : {}),
     });
   }
 
   // Generate multi-schema module
   const { code } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
-    adapterImportPath,
   });
 
   // Calculate individual schema stats and hashes
