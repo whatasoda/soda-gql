@@ -123,7 +123,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "ProfileQuery",
+      name: "ProfileQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
@@ -138,7 +138,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 export const profileQueryInline = gql.default(({ query }, { $var }) =>
   query.inline(
     {
-      operationName: "ProfileQuery",
+      name: "ProfileQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [

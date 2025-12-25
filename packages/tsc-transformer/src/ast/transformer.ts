@@ -4,7 +4,7 @@ import * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import { buildOperationRuntimeComponents, buildModelRuntimeCall } from "./runtime";
+import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;

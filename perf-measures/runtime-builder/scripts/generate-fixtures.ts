@@ -285,7 +285,7 @@ ${individualImports}
 export const operation${index} = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "Operation${index}",
+      name: "Operation${index}",
       variables: [${sliceVars.join(", ")}],
     },
     ({ $ }) => ({

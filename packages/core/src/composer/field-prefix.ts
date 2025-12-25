@@ -18,7 +18,7 @@ export type PrefixedFields<TLabel extends string, TFields extends AnyFields> = {
  * @example
  * ```typescript
  * gql.default(({ query }, { $var, $prefix }) =>
- *   query({ operationName: "GetData", ... }, ({ f, $ }) => [
+ *   query.operation({ name: "GetData", ... }, ({ f, $ }) => [
  *     ...$prefix("user", [f.user(...)(...)]),
  *     ...$prefix("posts", [f.posts(...)(...)]),
  *   ]),
@@ -29,9 +29,10 @@ export const prefixFields = <TLabel extends string, TFields extends AnyFields>(
   label: TLabel,
   fields: TFields,
 ): PrefixedFields<TLabel, TFields> => {
-  return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [`${label}_${key}`, value]),
-  ) as PrefixedFields<TLabel, TFields>;
+  return Object.fromEntries(Object.entries(fields).map(([key, value]) => [`${label}_${key}`, value])) as PrefixedFields<
+    TLabel,
+    TFields
+  >;
 };
 
 /**

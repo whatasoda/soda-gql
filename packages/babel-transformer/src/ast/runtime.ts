@@ -1,8 +1,8 @@
 import { types as t } from "@babel/core";
-import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeModelInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
-import type { BabelGqlCallOperation, BabelGqlCallModel } from "./analysis";
+import type { BabelGqlCallModel, BabelGqlCallOperation } from "./analysis";
 import { buildObjectExpression } from "./ast";
 
 export const buildModelRuntimeCall = ({

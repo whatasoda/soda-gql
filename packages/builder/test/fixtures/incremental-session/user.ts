@@ -5,30 +5,18 @@ export const userModel = gql.default(({ model }, { $var }) =>
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.posts({ categoryId: $.categoryId })(({ f }) => [
-        f.id(),
-        f.title(),
-      ]),
-    ],
+    ({ f, $ }) => [f.id(), f.name(), f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()])],
   ),
 );
 
 export const userRemote = {
-  forIterate: gql.default(({ model }) =>
-    model.User({}, ({ f }) => [
-      f.id(),
-      f.name(),
-    ]),
-  ),
+  forIterate: gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.name()])),
 };
 
 export const usersQuery = gql.default(({ query }, { $var }) =>
   query.operation(
     {
-      operationName: "GetUsers",
+      name: "GetUsers",
       variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
@@ -44,7 +32,7 @@ export const usersQueryCatalog = {
   byId: gql.default(({ query }, { $var }) =>
     query.operation(
       {
-        operationName: "GetUsersById",
+        name: "GetUsersById",
         variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
       },
       ({ f, $ }) => [

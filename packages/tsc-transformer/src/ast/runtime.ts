@@ -1,8 +1,8 @@
-import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeModelInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
-import * as ts from "typescript";
-import type { TsGqlCallOperation, TsGqlCallModel } from "./analysis";
+import type * as ts from "typescript";
+import type { TsGqlCallModel, TsGqlCallOperation } from "./analysis";
 import { buildJsonParseExpression, buildObjectExpression } from "./ast";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
@@ -49,10 +49,7 @@ export const buildOperationRuntimeComponents = ({
   isCJS: boolean;
 }): Result<{ referenceCall: ts.Expression; runtimeCall: ts.Expression }, PluginError> => {
   const runtimeCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(
-      createRuntimeAccessor({ isCJS, factory }),
-      factory.createIdentifier("operation"),
-    ),
+    factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("operation")),
     undefined,
     [
       buildObjectExpression(factory, {
@@ -63,10 +60,7 @@ export const buildOperationRuntimeComponents = ({
   );
 
   const referenceCall = factory.createCallExpression(
-    factory.createPropertyAccessExpression(
-      createRuntimeAccessor({ isCJS, factory }),
-      factory.createIdentifier("getOperation"),
-    ),
+    factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("getOperation")),
     undefined,
     [factory.createStringLiteral(gqlCall.artifact.prebuild.operationName)],
   );

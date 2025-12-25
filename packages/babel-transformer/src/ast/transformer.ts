@@ -5,7 +5,7 @@ import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import { buildOperationRuntimeComponents, buildModelRuntimeCall } from "./runtime";
+import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callPath: NodePath<t.CallExpression>;

@@ -4,7 +4,7 @@ export const collections = {
   byCategory: gql.default(({ query }, { $var }) =>
     query.operation(
       {
-        operationName: "UsersByCategory",
+        name: "UsersByCategory",
         variables: [$var("categoryId").scalar("ID:?")],
       },
       ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name()])],

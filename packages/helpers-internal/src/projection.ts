@@ -1,6 +1,6 @@
+import type { AnySlicedExecutionResult } from "./sliced-execution-result";
 import type { Hidden } from "./utils/hidden";
 import type { Tuple } from "./utils/type-utils";
-import type { AnySlicedExecutionResult } from "./sliced-execution-result";
 
 /** Shape of a single selection slice projection. */
 export type AnyProjection = Projection<any>;

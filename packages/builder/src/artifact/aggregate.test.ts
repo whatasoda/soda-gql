@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
-import { Operation, Model } from "@soda-gql/core";
+import { Model, Operation } from "@soda-gql/core";
 import { parse } from "graphql";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";

@@ -6,21 +6,15 @@ import { gql } from "@/graphql-system";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation(
     {
-      operationName: "GetUser",
-      variables: [
-        $var("userId").scalar("ID:!"),
-        $var("categoryId").scalar("ID:!"),
-      ],
+      name: "GetUser",
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
     ({ f, $ }) => [
       f.user({ id: $.userId })(({ f }) => [
         f.id(),
         f.name(),
         f.email(),
-        f.posts({ categoryId: $.categoryId })(({ f }) => [
-          f.id(),
-          f.title(),
-        ]),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
       ]),
     ],
   ),
@@ -32,16 +26,10 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const listUsersQuery = gql.default(({ query }, { $var }) =>
   query.operation(
     {
-      operationName: "ListUsers",
+      name: "ListUsers",
       variables: [$var("categoryId").scalar("ID:?")],
     },
-    ({ f, $ }) => [
-      f.users({ categoryId: $.categoryId })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -51,19 +39,10 @@ export const listUsersQuery = gql.default(({ query }, { $var }) =>
 export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation(
     {
-      operationName: "UpdateUser",
-      variables: [
-        $var("userId").scalar("ID:!"),
-        $var("name").scalar("String:!"),
-      ],
+      name: "UpdateUser",
+      variables: [$var("userId").scalar("ID:!"), $var("name").scalar("String:!")],
     },
-    ({ f, $ }) => [
-      f.updateUser({ id: $.userId, name: $.name })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.name })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -73,16 +52,10 @@ export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
 export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) =>
   subscription.operation(
     {
-      operationName: "UserUpdates",
+      name: "UserUpdates",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.userUpdated({ userId: $.userId })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f, $ }) => [f.userUpdated({ userId: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -92,7 +65,7 @@ export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) 
 export const getProtectedUserQuery = gql.default(({ query }, { $var, auth, cache }) =>
   query.operation(
     {
-      operationName: "GetProtectedUser",
+      name: "GetProtectedUser",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
       metadata: ({ $ }) => ({
         custom: {
@@ -107,10 +80,7 @@ export const getProtectedUserQuery = gql.default(({ query }, { $var, auth, cache
         f.id(),
         f.name(),
         f.email(),
-        f.posts({ categoryId: $.categoryId })(({ f }) => [
-          f.id(),
-          f.title(),
-        ]),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
       ]),
     ],
   ),

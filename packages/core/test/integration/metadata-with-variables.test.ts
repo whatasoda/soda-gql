@@ -61,7 +61,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
-            operationName: "GetUser",
+            name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ $ }) => ({
               extensions: {
@@ -83,7 +83,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
-            operationName: "GetUser",
+            name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ $ }) => ({
               custom: {
@@ -105,7 +105,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ mutation }, { $var }) =>
         mutation.operation(
           {
-            operationName: "UpdateUser",
+            name: "UpdateUser",
             variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
             metadata: ({ $ }) => ({
               extensions: {
@@ -132,7 +132,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
-            operationName: "GetUser",
+            name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
           },
           ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
@@ -148,7 +148,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
-            operationName: "GetUser",
+            name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ document }) => ({
               extensions: {
@@ -170,7 +170,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
-            operationName: "GetUser",
+            name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ $, document }) => ({
               headers: {

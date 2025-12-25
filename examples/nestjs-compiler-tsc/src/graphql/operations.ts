@@ -9,7 +9,7 @@ import { userSlice, usersSlice } from "./slices";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({
@@ -26,7 +26,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const getUsersQuery = gql.default(({ query }) =>
   query.composed(
     {
-      operationName: "GetUsers",
+      name: "GetUsers",
     },
     () => ({
       users: usersSlice.embed(),
@@ -37,7 +37,7 @@ export const getUsersQuery = gql.default(({ query }) =>
 export const inline = gql.default(({ query }) =>
   query.inline(
     {
-      operationName: "InlineTest",
+      name: "InlineTest",
     },
     ({ f }) => [
       //

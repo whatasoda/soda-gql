@@ -1,12 +1,12 @@
-import { createRuntimeOperation, createRuntimeInlineOperation } from "./operation";
 import { createRuntimeModel } from "./model";
-import { getOperation, getInlineOperation } from "./runtime-registry";
+import { createRuntimeInlineOperation, createRuntimeOperation } from "./operation";
+import { getInlineOperation, getOperation } from "./runtime-registry";
 
-export type { RuntimeOperationInput, RuntimeInlineOperationInput } from "./operation";
 export type { RuntimeModelInput } from "./model";
+export type { RuntimeInlineOperationInput, RuntimeOperationInput } from "./operation";
 export {
-  __getRegisteredOperations,
   __getRegisteredInlineOperations,
+  __getRegisteredOperations,
   __resetRuntimeRegistry,
 } from "./runtime-registry";
 

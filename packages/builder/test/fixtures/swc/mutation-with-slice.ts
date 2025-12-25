@@ -19,7 +19,7 @@ const postSlice = gql.default(({ mutation }, { $var }) =>
 export const pageAction = gql.default(({ mutation }, { $var }) =>
   mutation.composed(
     {
-      operationName: "PageAction",
+      name: "PageAction",
       variables: [$var("title").scalar("String:!")],
     },
     ({ $ }) => ({

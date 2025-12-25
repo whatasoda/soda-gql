@@ -1,6 +1,6 @@
 import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
-import type { BuilderArtifactOperation, BuilderArtifactModel } from "../artifact/types";
+import type { BuilderArtifactModel, BuilderArtifactOperation } from "../artifact/types";
 
 const BuilderArtifactElementMetadataSchema = z.object({
   sourcePath: z.string(),
@@ -37,10 +37,7 @@ declare function __validate_BuilderArtifactModelSchema<
   _ extends z.infer<typeof BuilderArtifactModelSchema> = BuilderArtifactModel,
 >(): never;
 
-const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
-  BuilderArtifactOperationSchema,
-  BuilderArtifactModelSchema,
-]);
+const BuilderArtifactElementSchema = z.discriminatedUnion("type", [BuilderArtifactOperationSchema, BuilderArtifactModelSchema]);
 
 export const BuilderArtifactSchema = z.object({
   elements: z.record(z.string<CanonicalId>(), BuilderArtifactElementSchema),

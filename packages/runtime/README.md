@@ -31,7 +31,7 @@ import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
   query(
-    { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
+    { name: "GetUser", variables: [$var("id").scalar("ID:!")] },
     ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
   ),
 );

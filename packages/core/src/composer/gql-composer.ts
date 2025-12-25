@@ -1,8 +1,8 @@
 import type { AnyModel, AnyOperation } from "../types/element";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createPrefixHelper } from "./field-prefix";
-import { createOperationComposerFactory } from "./operation";
 import { createGqlModelComposers } from "./model";
+import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder } from "./var-builder";
 
 export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnyOperation>(

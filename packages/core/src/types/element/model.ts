@@ -74,6 +74,8 @@ export class Model<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Model<TTypeName, Variables, Fields, Output, TVarRefs>(define as () => ModelArtifact<TTypeName, Variables, Fields, TVarRefs>);
+    return new Model<TTypeName, Variables, Fields, Output, TVarRefs>(
+      define as () => ModelArtifact<TTypeName, Variables, Fields, TVarRefs>,
+    );
   }
 }

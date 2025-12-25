@@ -52,7 +52,7 @@ Operations compose slices into complete GraphQL queries or mutations:
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "ProfileQuery",
+      name: "ProfileQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({

@@ -81,7 +81,7 @@ Composed operations combine multiple slices:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("id").scalar("ID:!")],
     },
     ({ $ }) => ({
@@ -99,7 +99,7 @@ Inline operations define field selections directly:
 export const getUserInline = gql.default(({ query }, { $var }) =>
   query.inline(
     {
-      operationName: "GetUserInline",
+      name: "GetUserInline",
       variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
@@ -220,7 +220,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("id").scalar("ID:!")],
       metadata: ({ $, document }) => ({
         extensions: {

@@ -113,7 +113,7 @@ Operations compose slices into complete GraphQL queries:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({

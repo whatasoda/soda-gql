@@ -2,8 +2,8 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 import type {
-  GqlCallOperation,
   GqlCallModel,
+  GqlCallOperation,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,

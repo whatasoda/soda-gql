@@ -4,7 +4,7 @@ import { objectWrapped } from "../common/object-wrapped";
 export const pageQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "ProfilePageQuery",
+      name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({

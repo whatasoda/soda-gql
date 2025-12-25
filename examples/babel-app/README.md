@@ -92,7 +92,7 @@ Operations compose multiple slices into executable GraphQL operations:
 export const getUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
-      operationName: 'GetUser',
+      name: 'GetUser',
       variables: [$var('userId').scalar('ID:!')],
     },
     ({ $ }) => ({ user: userSlice.build({ id: $.userId }) }),

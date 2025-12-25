@@ -16,9 +16,9 @@ export type {
   BuilderArtifact,
   BuilderArtifactElement,
   BuilderArtifactElementMetadata,
-  BuilderArtifactOperation,
   BuilderArtifactInlineOperation,
   BuilderArtifactModel,
+  BuilderArtifactOperation,
 } from "./artifact/types";
 export type {
   DiscoveredDependency,

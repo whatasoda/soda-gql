@@ -1,5 +1,5 @@
 import type { CanonicalId } from "@soda-gql/common";
-import type { RuntimeOperationInput, RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeModelInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
 export type IntermediateElements = Record<CanonicalId, IntermediateArtifactElement>;

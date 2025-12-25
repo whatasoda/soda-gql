@@ -1,7 +1,7 @@
 import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
 import type {
-  GqlCallOperation,
   GqlCallModel,
+  GqlCallOperation,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,

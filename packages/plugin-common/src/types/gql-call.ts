@@ -3,7 +3,7 @@
  * Generic over the AST node type to support Babel, TypeScript, and SWC.
  */
 
-import type { BuilderArtifactOperation, BuilderArtifactModel, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactModel, BuilderArtifactOperation, CanonicalId } from "@soda-gql/builder";
 
 /**
  * Base interface for all GraphQL call types.

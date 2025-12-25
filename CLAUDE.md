@@ -77,7 +77,7 @@ See the main [README](./README.md) for installation and setup instructions.
   // Operation composing slice
   const createProductMutation = gql.default(({ mutation }, { $var }) =>
     mutation.composed(
-      { operationName: "CreateProduct", variables: [$var("productName").scalar("String:!")] },
+      { name: "CreateProduct", variables: [$var("productName").scalar("String:!")] },
       ({ $ }) => ({ result: createProductSlice.build({ name: $.productName }) }),
     ),
   );

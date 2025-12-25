@@ -233,7 +233,7 @@ import { userSlice } from "../slices/user.slice";
 export const profileQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
-      operationName: "ProfilePageQuery",
+      name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ $ }) => ({
@@ -254,7 +254,7 @@ import { updateUserSlice } from "../slices/user.slice";
 export const updateUserMutation = gql.default(({ operation }, { $var }) =>
   operation.mutation(
     {
-      operationName: "UpdateUser",
+      name: "UpdateUser",
       variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
     ({ $ }) => ({
@@ -311,7 +311,7 @@ describe("userBasic model", () => {
 ```typescript
 export const profileQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
-    { operationName: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
+    { name: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
     ({ $ }) => ({
       users: userSlice.build({ id: $.userId }),
     }),
@@ -389,7 +389,7 @@ export const safeUserSlice = gql.default(({ slice }, { $var }) =>
 export const safeGetUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
-      operationName: "SafeGetUser",
+      name: "SafeGetUser",
       variables: [$var("id").scalar("ID:!")],
     },
     ({ $ }) => ({

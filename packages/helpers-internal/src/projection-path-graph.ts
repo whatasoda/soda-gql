@@ -1,5 +1,5 @@
-import { mapValues } from "./utils/map-values";
 import type { AnyProjection } from "./projection";
+import { mapValues } from "./utils/map-values";
 
 /**
  * Node in the projection path graph tree.

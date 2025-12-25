@@ -269,7 +269,7 @@ function generateOperations(config: FixtureConfig): string {
 export const operation${i} = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "Operation${i}",
+      name: "Operation${i}",
       variables: [${sliceVars.join(", ")}],
     },
     ({ $ }) => ({

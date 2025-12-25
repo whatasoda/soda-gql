@@ -198,11 +198,13 @@ const platformPackageJsonSchema = z.object({
     email: z.literal("shota.hatada@whatasoda.me"),
     url: z.literal("https://github.com/whatasoda"),
   }),
-  repository: z.object({
-    type: z.literal("git"),
-    url: z.string(),
-    directory: z.string(),
-  }).optional(),
+  repository: z
+    .object({
+      type: z.literal("git"),
+      url: z.string(),
+      directory: z.string(),
+    })
+    .optional(),
 });
 
 const preparePlatformPackages = async () => {

@@ -1,4 +1,4 @@
-import { type FieldsBuilder, Operation, type MergeFields, mergeFields } from "../types/element";
+import { type FieldsBuilder, type MergeFields, mergeFields, Operation } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
@@ -18,7 +18,7 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
 
     return <TOperationName extends string, TFields extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
-        operationName: TOperationName;
+        name: TOperationName;
         variables?: TVarDefinitions;
         metadata?: MetadataBuilder<
           ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
@@ -34,7 +34,7 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         MergeVarDefinitions<TVarDefinitions>,
         MergeFields<TFields>
       >(() => {
-        const { operationName } = options;
+        const { name: operationName } = options;
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
         const f = createFieldFactories(schema, operationTypeName);

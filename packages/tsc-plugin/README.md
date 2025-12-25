@@ -86,7 +86,7 @@ import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
   query.composed(
-    { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
+    { name: "GetUser", variables: [$var("id").scalar("ID:!")] },
     ({ $ }) => ({ user: userSlice.build({ id: $.id }) }),
   ),
 );

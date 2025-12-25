@@ -1,10 +1,6 @@
 import type { GraphQLFormattedError } from "graphql";
 import type { AnySlicePayloads, ProjectionPathGraphNode } from "./projection-path-graph";
-import {
-  SlicedExecutionResultEmpty,
-  SlicedExecutionResultError,
-  SlicedExecutionResultSuccess,
-} from "./sliced-execution-result";
+import { SlicedExecutionResultEmpty, SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 import type { NormalizedExecutionResult } from "./types";
 
 function* generateErrorMapEntries(errors: readonly GraphQLFormattedError[], projectionPathGraph: ProjectionPathGraphNode) {

@@ -1,5 +1,5 @@
 import type { Script } from "node:vm";
-import type { AnyOperation, AnyModel } from "@soda-gql/core";
+import type { AnyModel, AnyOperation } from "@soda-gql/core";
 
 /**
  * Request type yielded by module generators to import dependencies.

@@ -6,10 +6,7 @@ import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, O
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
-export type AnyOperation =
-  | AnyOperationOf<"query">
-  | AnyOperationOf<"mutation">
-  | AnyOperationOf<"subscription">;
+export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
 export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   TOperationType,
   string,

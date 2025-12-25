@@ -20,7 +20,7 @@ const postCreatedSlice = gql.default(({ subscription }) =>
 export const postCreatedSubscription = gql.default(({ subscription }) =>
   subscription.composed(
     {
-      operationName: "PostCreated",
+      name: "PostCreated",
       variables: [],
     },
     () => ({
