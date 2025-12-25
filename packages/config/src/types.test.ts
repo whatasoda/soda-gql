@@ -2,14 +2,24 @@ import { describe, expect, test } from "bun:test";
 import type { PluginConfig, ResolvedSodaGqlConfig, SchemaConfig, SodaGqlConfig } from "./types";
 
 describe("types.ts", () => {
-  test("SchemaConfig accepts valid configuration", () => {
+  test("SchemaConfig accepts valid configuration with object inject", () => {
     const config: SchemaConfig = {
       schema: "./schema.graphql",
-      scalars: "./scalars.ts",
+      inject: { scalars: "./scalars.ts" },
     };
 
     expect(config.schema).toBe("./schema.graphql");
-    expect(config.scalars).toBe("./scalars.ts");
+    expect(config.inject).toEqual({ scalars: "./scalars.ts" });
+  });
+
+  test("SchemaConfig accepts valid configuration with string inject", () => {
+    const config: SchemaConfig = {
+      schema: "./schema.graphql",
+      inject: "./inject.ts",
+    };
+
+    expect(config.schema).toBe("./schema.graphql");
+    expect(config.inject).toBe("./inject.ts");
   });
 
   test("PluginConfig accepts arbitrary key-value pairs", () => {
@@ -29,7 +39,7 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "./schema.graphql",
-          scalars: "./scalars.ts",
+          inject: { scalars: "./scalars.ts" },
         },
       },
     };
@@ -49,7 +59,7 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "./schema.graphql",
-          scalars: "./scalars.ts",
+          inject: { scalars: "./scalars.ts", helpers: "./helpers.ts" },
         },
       },
       plugins: { babel: { enabled: true } },
@@ -71,7 +81,7 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "/abs/path/to/schema.graphql",
-          scalars: "/abs/path/to/scalars.ts",
+          inject: { scalars: "/abs/path/to/scalars.ts" },
         },
       },
       styles: {
@@ -95,7 +105,7 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "/abs/path/to/schema.graphql",
-          scalars: "/abs/path/to/scalars.ts",
+          inject: { scalars: "/abs/path/to/scalars.ts" },
         },
       },
       styles: {

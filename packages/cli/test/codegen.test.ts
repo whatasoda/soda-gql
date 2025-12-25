@@ -52,7 +52,7 @@ describe("soda-gql codegen CLI", () => {
       schemas: {
         default: {
           schema: schemaFile,
-          scalars: injectFile,
+          inject: { scalars: injectFile },
         },
       },
     });
@@ -79,7 +79,7 @@ describe("soda-gql codegen CLI", () => {
       schemas: {
         default: {
           schema: invalidSchemaPath,
-          scalars: injectFile,
+          inject: { scalars: injectFile },
         },
       },
     });
@@ -110,7 +110,7 @@ describe("soda-gql codegen CLI", () => {
         schemas: {
           default: {
             schema: schemaPath,
-            scalars: injectFile,
+            inject: { scalars: injectFile },
           },
         },
       });

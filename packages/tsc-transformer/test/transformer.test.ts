@@ -29,7 +29,7 @@ describe("tsc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },
@@ -67,7 +67,7 @@ describe("tsc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },
@@ -100,7 +100,7 @@ describe("tsc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },

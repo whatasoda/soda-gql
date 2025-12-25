@@ -28,7 +28,6 @@ const createTestConfig = (
   options?: { graphqlSystemAliases?: readonly string[] },
 ): ResolvedSodaGqlConfig => ({
   analyzer: "ts" as const,
-  metadata: null,
   outdir: path.join(workspaceRoot, "graphql-system"),
   graphqlSystemAliases: options?.graphqlSystemAliases ?? ["@/graphql-system"],
   include: [path.join(workspaceRoot, "**/*.ts")],
@@ -36,7 +35,7 @@ const createTestConfig = (
   schemas: {
     default: {
       schema: path.join(workspaceRoot, "schema.graphql"),
-      scalars: path.join(workspaceRoot, "inject/scalars.ts"),
+      inject: { scalars: path.join(workspaceRoot, "inject/scalars.ts") },
     },
   },
   styles: {

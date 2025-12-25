@@ -11,7 +11,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };
@@ -24,7 +24,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       });
@@ -37,7 +37,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       });
@@ -50,7 +50,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       });
@@ -63,7 +63,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };
@@ -93,7 +93,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };
@@ -116,7 +116,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
         plugins: {},
@@ -138,7 +138,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };
@@ -154,7 +154,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };
@@ -170,7 +170,7 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            scalars: "./scalars.ts",
+            inject: { scalars: "./scalars.ts" },
           },
         },
       };

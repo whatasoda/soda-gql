@@ -7,11 +7,11 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schemas/default/schema.graphql",
-      scalars: "./schemas/default/scalars.ts",
+      inject: { scalars: "./schemas/default/scalars.ts" },
     },
     admin: {
       schema: "./schemas/admin/schema.graphql",
-      scalars: "./schemas/admin/scalars.ts",
+      inject: { scalars: "./schemas/admin/scalars.ts" },
     },
   },
 });
