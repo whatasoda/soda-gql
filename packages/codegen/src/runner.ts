@@ -5,7 +5,7 @@ import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import { bundleGraphqlSystem } from "./tsdown-bundle";
-import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
+import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
 const extensionMap: Record<string, string> = {
   ".ts": ".js",
@@ -57,16 +57,13 @@ const toImportSpecifier = (fromPath: string, targetPath: string, options?: Impor
   return `${withoutExt}${runtimeExt}`;
 };
 
-export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
+export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult> => {
   const outPath = resolve(options.outPath);
   const importSpecifierOptions = { includeExtension: options.importExtension };
 
-  // Handle legacy injectFromPath for backward compatibility
-  const inject = options.inject ?? (options.injectFromPath ? { default: { scalars: options.injectFromPath } } : {});
-
-  // Validate that all inject files exist
-  for (const [schemaName, injectConfig] of Object.entries(inject)) {
-    const scalarPath = resolve(injectConfig.scalars);
+  // Validate that all schema and inject files exist
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    const scalarPath = resolve(schemaConfig.inject.scalars);
     if (!existsSync(scalarPath)) {
       return err({
         code: "INJECT_MODULE_NOT_FOUND",
@@ -75,8 +72,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
       });
     }
 
-    if (injectConfig.helpers) {
-      const helpersPath = resolve(injectConfig.helpers);
+    if (schemaConfig.inject.helpers) {
+      const helpersPath = resolve(schemaConfig.inject.helpers);
       if (!existsSync(helpersPath)) {
         return err({
           code: "INJECT_MODULE_NOT_FOUND",
@@ -86,8 +83,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
       }
     }
 
-    if (injectConfig.metadata) {
-      const metadataPath = resolve(injectConfig.metadata);
+    if (schemaConfig.inject.metadata) {
+      const metadataPath = resolve(schemaConfig.inject.metadata);
       if (!existsSync(metadataPath)) {
         return err({
           code: "INJECT_MODULE_NOT_FOUND",
@@ -102,8 +99,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   const schemas = new Map<string, import("graphql").DocumentNode>();
   const schemaHashes: Record<string, { schemaHash: string; objects: number; enums: number; inputs: number; unions: number }> = {};
 
-  for (const [name, schemaPath] of Object.entries(options.schemas)) {
-    const result = await loadSchema(schemaPath).match(
+  for (const [name, schemaConfig] of Object.entries(options.schemas)) {
+    const result = await loadSchema(schemaConfig.schema).match(
       (doc) => Promise.resolve(ok(doc)),
       (error) => Promise.resolve(err(error)),
     );
@@ -125,15 +122,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     }
   >();
 
-  for (const schemaName of schemas.keys()) {
-    const injectConfig = inject[schemaName];
-
-    if (!injectConfig) {
-      return err({
-        code: "INJECT_MODULE_REQUIRED",
-        message: `Missing inject configuration for schema '${schemaName}'`,
-      });
-    }
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    const injectConfig = schemaConfig.inject;
 
     injectionConfig.set(schemaName, {
       scalarImportPath: toImportSpecifier(outPath, resolve(injectConfig.scalars), importSpecifierOptions),
@@ -193,5 +183,5 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas: schemaHashes,
     outPath,
     cjsPath: bundleResult.value.cjsPath,
-  } satisfies MultiSchemaCodegenSuccess);
+  } satisfies CodegenSuccess);
 };

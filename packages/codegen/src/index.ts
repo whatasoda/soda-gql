@@ -1,11 +1,13 @@
 export { writeInjectTemplate } from "./inject-template";
-export { runMultiSchemaCodegen } from "./runner";
+export { runCodegen } from "./runner";
 export { hashSchema, loadSchema } from "./schema";
 export type {
   CodegenCliCommand,
   CodegenError,
   CodegenFormat,
-  MultiSchemaCodegenOptions,
-  MultiSchemaCodegenResult,
-  MultiSchemaCodegenSuccess,
+  CodegenInjectConfig,
+  CodegenOptions,
+  CodegenResult,
+  CodegenSchemaConfig,
+  CodegenSuccess,
 } from "./types";

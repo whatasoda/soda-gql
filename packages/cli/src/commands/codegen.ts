@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import type { CodegenError, CodegenFormat, MultiSchemaCodegenSuccess } from "@soda-gql/codegen";
-import { runMultiSchemaCodegen, writeInjectTemplate } from "@soda-gql/codegen";
+import type { CodegenError, CodegenFormat, CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
+import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { CodegenArgsSchema } from "../schemas/args";
@@ -14,11 +14,10 @@ type ParsedCommand =
       format: CodegenFormat;
     }
   | {
-      kind: "multi";
-      schemas: Record<string, string>;
+      kind: "generate";
+      schemas: Record<string, CodegenSchemaConfig>;
       outPath: string;
       format: CodegenFormat;
-      inject: Record<string, { scalars: string; helpers?: string; metadata?: string }>;
       importExtension: boolean;
     };
 
@@ -65,37 +64,34 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  // Extract schemas and inject from config
-  const schemas: Record<string, string> = {};
-  const inject: Record<string, { scalars: string; helpers?: string; metadata?: string }> = {};
+  // Build schemas config with resolved paths
+  const schemas: Record<string, CodegenSchemaConfig> = {};
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
-    schemas[name] = schemaConfig.schema;
-    inject[name] = schemaConfig.inject;
+    schemas[name] = {
+      schema: schemaConfig.schema,
+      inject: schemaConfig.inject,
+    };
   }
 
   // Derive output path from outdir (default to index.ts)
   const outPath = resolve(config.outdir, "index.ts");
 
   return ok<ParsedCommand, CodegenError>({
-    kind: "multi",
+    kind: "generate",
     schemas,
     outPath,
     format: (args.format ?? "human") as CodegenFormat,
-    inject,
     importExtension: config.styles.importExtension,
   });
 };
 
-const formatMultiSchemaSuccess = (format: OutputFormat, success: MultiSchemaCodegenSuccess) => {
+const formatSuccess = (format: OutputFormat, success: CodegenSuccess) => {
   if (format === "json") {
     return formatOutput(success, "json");
   }
   const schemaNames = Object.keys(success.schemas).join(", ");
-  const totalObjects = Object.values(success.schemas).reduce((sum, s) => {
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion needed for schema stats
-    return sum + (s as any).objects;
-  }, 0);
+  const totalObjects = Object.values(success.schemas).reduce((sum, s) => sum + s.objects, 0);
   return `Generated ${totalObjects} objects from schemas: ${schemaNames}\n  TypeScript: ${success.outPath}\n  CommonJS: ${success.cjsPath}`;
 };
 
@@ -135,20 +131,23 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       return 0;
     }
 
-    const result = await runMultiSchemaCodegen({
-      schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
+    // Resolve all paths in schemas config
+    const resolvedSchemas: Record<string, CodegenSchemaConfig> = {};
+    for (const [name, schemaConfig] of Object.entries(command.schemas)) {
+      resolvedSchemas[name] = {
+        schema: resolve(schemaConfig.schema),
+        inject: {
+          scalars: resolve(schemaConfig.inject.scalars),
+          ...(schemaConfig.inject.helpers ? { helpers: resolve(schemaConfig.inject.helpers) } : {}),
+          ...(schemaConfig.inject.metadata ? { metadata: resolve(schemaConfig.inject.metadata) } : {}),
+        },
+      };
+    }
+
+    const result = await runCodegen({
+      schemas: resolvedSchemas,
       outPath: resolve(command.outPath),
       format: command.format,
-      inject: Object.fromEntries(
-        Object.entries(command.inject).map(([name, injectConfig]) => [
-          name,
-          {
-            scalars: resolve(injectConfig.scalars),
-            ...(injectConfig.helpers ? { helpers: resolve(injectConfig.helpers) } : {}),
-            ...(injectConfig.metadata ? { metadata: resolve(injectConfig.metadata) } : {}),
-          },
-        ]),
-      ),
       importExtension: command.importExtension,
     });
 
@@ -157,7 +156,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       return 1;
     }
 
-    process.stdout.write(`${formatMultiSchemaSuccess(command.format, result.value)}\n`);
+    process.stdout.write(`${formatSuccess(command.format, result.value)}\n`);
     return 0;
   } catch (error) {
     // Catch unexpected errors and convert to structured format

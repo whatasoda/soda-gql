@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBuilderSession } from "@soda-gql/builder";
-import { runMultiSchemaCodegen } from "@soda-gql/codegen";
+import { runCodegen } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing shared test fixtures
@@ -76,11 +76,15 @@ describe("BuilderSession incremental end-to-end", () => {
     copyDefaultInject(injectPath);
 
     const outPath = path.join(workspaceRoot, "graphql-system", "index.ts");
-    const codegenResult = await runMultiSchemaCodegen({
-      schemas: { default: schemaPath },
+    const codegenResult = await runCodegen({
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectPath },
+        },
+      },
       outPath,
       format: "json",
-      injectFromPath: injectPath,
     });
 
     if (codegenResult.isErr()) {
