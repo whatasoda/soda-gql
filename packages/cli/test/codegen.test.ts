@@ -7,7 +7,7 @@ import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from ".
 const projectRoot = getProjectRoot();
 
 const copyDefaultInject = (destinationPath: string): void => {
-  cpSync(join(projectRoot, "tests/fixtures/inject-module/default-inject.ts"), destinationPath);
+  cpSync(join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts"), destinationPath);
 };
 
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {

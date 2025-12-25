@@ -10,7 +10,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing shared test fixtures
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const defaultInjectPath = path.join(projectRoot, "tests/fixtures/inject-module/default-inject.ts");
+const defaultInjectPath = path.join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts");
 
 /**
  * Copies the default inject module fixture to the specified destination.
