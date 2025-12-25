@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { createRuntimeAdapter } from "../runtime/runtime-adapter";
 import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
-import type { AnyGraphqlRuntimeAdapter } from "../types/runtime/runtime-adapter";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import { createGqlElementComposer } from "./gql-composer";
 import { defineHelpers } from "./helpers";
@@ -42,10 +40,6 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-})) satisfies AnyGraphqlRuntimeAdapter;
-
 describe("helpers injection", () => {
   it("allows custom helpers to be injected via options", () => {
     const authHelper = {
@@ -56,7 +50,7 @@ describe("helpers injection", () => {
       }),
     };
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, { auth: typeof authHelper }>(schema, {
+    const gql = createGqlElementComposer<Schema, { auth: typeof authHelper }>(schema, {
       helpers: { auth: authHelper },
     });
 
@@ -83,7 +77,7 @@ describe("helpers injection", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<Schema, typeof helpers>(schema, { helpers });
 
     let capturedCacheTTL: number | undefined;
 
@@ -96,7 +90,7 @@ describe("helpers injection", () => {
   });
 
   it("preserves $var (var builder) alongside custom helpers", () => {
-    const gql = createGqlElementComposer<Schema, typeof adapter, { custom: () => string }>(schema, {
+    const gql = createGqlElementComposer<Schema, { custom: () => string }>(schema, {
       helpers: { custom: () => "test" },
     });
 
@@ -107,8 +101,8 @@ describe("helpers injection", () => {
       varBuilderAvailable = typeof $var === "function";
       customAvailable = custom() === "test";
 
-      return query.inline({ operationName: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
-        f.user({ id: $.id })(() => []),
+      return query.operation({ name: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
+        f.user({ id: $.id })(({ f }) => [f.id()]),
       ]);
     });
 
@@ -117,7 +111,7 @@ describe("helpers injection", () => {
   });
 
   it("works without helpers option (backward compatible)", () => {
-    const gql = createGqlElementComposer<Schema, typeof adapter>(schema);
+    const gql = createGqlElementComposer<Schema>(schema);
 
     let varBuilderAvailable = false;
 
@@ -146,7 +140,7 @@ describe("helpers injection", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<Schema, typeof helpers>(schema, { helpers });
 
     let capturedRole: string | undefined;
     let capturedEvent: string | undefined;

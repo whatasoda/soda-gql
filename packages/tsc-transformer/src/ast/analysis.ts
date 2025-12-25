@@ -1,9 +1,8 @@
-import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import type {
-  GqlCallInlineOperation,
   GqlCallModel,
   GqlCallOperation,
-  GqlCallSlice,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
@@ -18,11 +17,9 @@ export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElemen
 
 // TypeScript-specific GqlCall types
 export type TsGqlCallModel = GqlCallModel<ts.CallExpression> & { readonly callNode: ts.CallExpression };
-export type TsGqlCallSlice = GqlCallSlice<ts.CallExpression> & { readonly callNode: ts.CallExpression };
 export type TsGqlCallOperation = GqlCallOperation<ts.CallExpression> & { readonly callNode: ts.CallExpression };
-export type TsGqlCallInlineOperation = GqlCallInlineOperation<ts.CallExpression> & { readonly callNode: ts.CallExpression };
 
-export type TsGqlCall = TsGqlCallModel | TsGqlCallSlice | TsGqlCallOperation | TsGqlCallInlineOperation;
+export type TsGqlCall = TsGqlCallModel | TsGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly callNode: ts.CallExpression;
@@ -55,16 +52,8 @@ export const extractGqlCall = ({
     return ok({ callNode, canonicalId, builderCall, type: "model", artifact });
   }
 
-  if (artifact.type === "slice") {
-    return ok({ callNode, canonicalId, builderCall, type: "slice", artifact });
-  }
-
   if (artifact.type === "operation") {
     return ok({ callNode, canonicalId, builderCall, type: "operation", artifact });
-  }
-
-  if (artifact.type === "inlineOperation") {
-    return ok({ callNode, canonicalId, builderCall, type: "inlineOperation", artifact });
   }
 
   return err(

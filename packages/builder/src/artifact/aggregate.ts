@@ -49,21 +49,10 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
       };
 
       if (element.type === "model") {
-        const prebuild = { typename: element.element.typename };
+        const prebuild = { typename: element.element.typename, metadata: null };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "model",
-          prebuild,
-          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
-        });
-        continue;
-      }
-
-      if (element.type === "slice") {
-        const prebuild = { operationType: element.element.operationType };
-        registry.set(definition.canonicalId, {
-          id: definition.canonicalId,
-          type: "slice",
           prebuild,
           metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });
@@ -76,29 +65,11 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
           operationName: element.element.operationName,
           document: element.element.document,
           variableNames: element.element.variableNames,
-          projectionPathGraph: element.element.projectionPathGraph,
           metadata: element.element.metadata,
         };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "operation",
-          prebuild,
-          metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
-        });
-        continue;
-      }
-
-      if (element.type === "inlineOperation") {
-        const prebuild = {
-          operationType: element.element.operationType,
-          operationName: element.element.operationName,
-          document: element.element.document,
-          variableNames: element.element.variableNames,
-          metadata: element.element.metadata,
-        };
-        registry.set(definition.canonicalId, {
-          id: definition.canonicalId,
-          type: "inlineOperation",
           prebuild,
           metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });

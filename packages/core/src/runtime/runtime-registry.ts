@@ -1,27 +1,14 @@
-import type { AnyComposedOperationOf, AnyInlineOperationOf } from "../types/element";
+import type { AnyOperationOf } from "../types/element";
 import type { OperationType } from "../types/schema";
 
-const composedOperationRegistry = new Map<string, AnyComposedOperationOf<OperationType>>();
-const inlineOperationRegistry = new Map<string, AnyInlineOperationOf<OperationType>>();
+const operationRegistry = new Map<string, AnyOperationOf<OperationType>>();
 
-export const registerComposedOperation = (operation: AnyComposedOperationOf<OperationType>) => {
-  composedOperationRegistry.set(operation.operationName, operation);
+export const registerOperation = (operation: AnyOperationOf<OperationType>) => {
+  operationRegistry.set(operation.operationName, operation);
 };
 
-export const registerInlineOperation = (operation: AnyInlineOperationOf<OperationType>) => {
-  inlineOperationRegistry.set(operation.operationName, operation);
-};
-
-export const getComposedOperation = (name: string) => {
-  const operation = composedOperationRegistry.get(name);
-  if (!operation) {
-    throw new Error(`Operation ${name} not found`);
-  }
-  return operation;
-};
-
-export const getInlineOperation = (name: string) => {
-  const operation = inlineOperationRegistry.get(name);
+export const getOperation = (name: string) => {
+  const operation = operationRegistry.get(name);
   if (!operation) {
     throw new Error(`Operation ${name} not found`);
   }
@@ -33,22 +20,13 @@ export const getInlineOperation = (name: string) => {
  * @internal
  */
 export const __resetRuntimeRegistry = () => {
-  composedOperationRegistry.clear();
-  inlineOperationRegistry.clear();
+  operationRegistry.clear();
 };
 
 /**
- * Test-only function to get all registered composed operations
+ * Test-only function to get all registered operations
  * @internal
  */
-export const __getRegisteredComposedOperations = (): ReadonlyMap<string, AnyComposedOperationOf<OperationType>> => {
-  return composedOperationRegistry;
-};
-
-/**
- * Test-only function to get all registered inline operations
- * @internal
- */
-export const __getRegisteredInlineOperations = (): ReadonlyMap<string, AnyInlineOperationOf<OperationType>> => {
-  return inlineOperationRegistry;
+export const __getRegisteredOperations = (): ReadonlyMap<string, AnyOperationOf<OperationType>> => {
+  return operationRegistry;
 };

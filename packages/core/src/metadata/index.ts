@@ -1,2 +1,2 @@
 export { createMetadataAdapter, createNoopMetadataAdapter, processMetadata } from "./adapter";
-export { defaultMergeSliceMetadata, mergeWithDefaults } from "./merge";
+export { mergeWithDefaults } from "./merge";

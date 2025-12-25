@@ -103,7 +103,7 @@ import { userSlice } from './slices';
 export const userQuery = gql.default(({ operation }) =>
   operation.query(
     {
-      operationName: 'UserQuery',
+      name: 'UserQuery',
     },
     () => ({
       user: userSlice.build(),
@@ -165,7 +165,7 @@ import { userSlice } from './slices';
 export const getUserQuery = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
-      operationName: 'GetUser',
+      name: 'GetUser',
       variables: [$var('userId').scalar('ID:!')],
     },
     ({ $ }) => ({

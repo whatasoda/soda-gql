@@ -1,21 +1,13 @@
 import { gql } from "../../../../../tests/codegen-fixture/graphql-system";
-import { userRemote } from "./user";
 
 export const collections = {
   byCategory: gql.default(({ query }, { $var }) =>
-    query.slice(
+    query.operation(
       {
+        name: "UsersByCategory",
         variables: [$var("categoryId").scalar("ID:?")],
       },
-      ({ f, $ }) => [
-        //
-        f.users({ categoryId: $.categoryId })(({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ]),
-      ],
-      ({ select }) => select(["$.users"], (result) => result.safeUnwrap(([users]) => users)),
+      ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name()])],
     ),
   ),
 };

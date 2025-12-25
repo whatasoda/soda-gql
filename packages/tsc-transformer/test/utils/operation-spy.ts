@@ -1,9 +1,8 @@
-import type { AnyComposedOperationOf, AnyInlineOperationOf, OperationType } from "@soda-gql/core";
+import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { gqlRuntime } from "@soda-gql/core/runtime";
 
 export interface OperationSpy {
-  composedOperations: Array<AnyComposedOperationOf<OperationType>>;
-  inlineOperations: Array<AnyInlineOperationOf<OperationType>>;
+  operations: Array<AnyOperationOf<OperationType>>;
   restore: () => void;
 }
 
@@ -12,29 +11,19 @@ export interface OperationSpy {
  * @returns An object with recorded operations and a restore function
  */
 export const createOperationSpy = (): OperationSpy => {
-  const composedOperations: Array<AnyComposedOperationOf<OperationType>> = [];
-  const inlineOperations: Array<AnyInlineOperationOf<OperationType>> = [];
-  const originalComposedOperation = gqlRuntime.composedOperation;
-  const originalInlineOperation = gqlRuntime.inlineOperation;
+  const operations: Array<AnyOperationOf<OperationType>> = [];
+  const originalOperation = gqlRuntime.operation;
 
-  gqlRuntime.composedOperation = (input: any) => {
-    const operation = originalComposedOperation(input);
-    composedOperations.push(operation);
-    return operation;
-  };
-
-  gqlRuntime.inlineOperation = (input: any) => {
-    const operation = originalInlineOperation(input);
-    inlineOperations.push(operation);
+  gqlRuntime.operation = (input: any) => {
+    const operation = originalOperation(input);
+    operations.push(operation);
     return operation;
   };
 
   return {
-    composedOperations,
-    inlineOperations,
+    operations,
     restore: () => {
-      gqlRuntime.composedOperation = originalComposedOperation;
-      gqlRuntime.inlineOperation = originalInlineOperation;
+      gqlRuntime.operation = originalOperation;
     },
   };
 };
@@ -47,8 +36,7 @@ export const withOperationSpy = async <R>(fn: (spy: Omit<OperationSpy, "restore"
   const spy = createOperationSpy();
   try {
     return await fn({
-      composedOperations: spy.composedOperations,
-      inlineOperations: spy.inlineOperations,
+      operations: spy.operations,
     });
   } finally {
     spy.restore();

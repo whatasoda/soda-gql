@@ -20,7 +20,7 @@ const userUpdatedSlice = gql.default(({ subscription }, { $var }) =>
 export const userUpdatedSubscription = gql.default(({ subscription }, { $var }) =>
   subscription.composed(
     {
-      operationName: "UserUpdated",
+      name: "UserUpdated",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({

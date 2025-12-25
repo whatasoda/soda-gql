@@ -1,11 +1,12 @@
 export { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
 export * from "./build-document";
-export * from "./composed-operation";
+export * from "./field-path-context";
+export * from "./field-prefix";
 export * from "./fields-builder";
 export * from "./gql-composer";
 export * from "./helpers";
 export * from "./input";
 export * from "./model";
-export * from "./projection-path-graph";
-export * from "./slice";
+export * from "./model-usage-context";
+export * from "./operation";
 export * from "./var-builder";

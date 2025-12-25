@@ -1,11 +1,10 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import type {
-  GqlCallInlineOperation,
   GqlCallModel,
   GqlCallOperation,
-  GqlCallSlice,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
@@ -19,13 +18,11 @@ export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElemen
 
 // Babel-specific GqlCall types
 export type BabelGqlCallModel = GqlCallModel<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
-export type BabelGqlCallSlice = GqlCallSlice<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
-export type BabelGqlCallOperation = GqlCallOperation<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
-export type BabelGqlCallInlineOperation = GqlCallInlineOperation<t.CallExpression> & {
+export type BabelGqlCallOperation = GqlCallOperation<t.CallExpression> & {
   readonly nodePath: NodePath<t.CallExpression>;
 };
 
-export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallSlice | BabelGqlCallOperation | BabelGqlCallInlineOperation;
+export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -60,16 +57,8 @@ export const extractGqlCall = ({
     return ok({ nodePath, canonicalId, builderCall, type: "model", artifact });
   }
 
-  if (artifact.type === "slice") {
-    return ok({ nodePath, canonicalId, builderCall, type: "slice", artifact });
-  }
-
   if (artifact.type === "operation") {
     return ok({ nodePath, canonicalId, builderCall, type: "operation", artifact });
-  }
-
-  if (artifact.type === "inlineOperation") {
-    return ok({ nodePath, canonicalId, builderCall, type: "inlineOperation", artifact });
   }
 
   return err(

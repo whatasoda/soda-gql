@@ -29,35 +29,20 @@ export const userModel = gql.default(({ model }) =>
 );
 ```
 
-### Slices
-
-Slices are domain-specific query or mutation pieces. They define variables, field selections, and result projections:
-
-```typescript
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [f.user({ id: $.userId })(() => [userModel.fragment()])],
-    ({ select }) =>
-      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
-  ),
-);
-```
-
 ### Operations
 
-Operations compose slices into complete GraphQL queries or mutations:
+Operations define complete GraphQL queries, mutations, or subscriptions with field selections:
 
 ```typescript
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "ProfileQuery",
+      name: "ProfileQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.build({ userId: $.userId }),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+    ],
   ),
 );
 ```

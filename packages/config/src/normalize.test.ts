@@ -12,7 +12,6 @@ describe("normalize.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -35,7 +34,6 @@ describe("normalize.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -60,7 +58,6 @@ describe("normalize.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -75,7 +72,6 @@ describe("normalize.ts", () => {
         expect(defaultSchema).toBeDefined();
         expect(defaultSchema?.schema).toContain("schema.graphql");
         expect(defaultSchema?.schema).toMatch(/^[/\\]/); // absolute path
-        expect(defaultSchema?.runtimeAdapter).toContain("runtime-adapter.ts");
         expect(defaultSchema?.scalars).toContain("scalars.ts");
       }
     });

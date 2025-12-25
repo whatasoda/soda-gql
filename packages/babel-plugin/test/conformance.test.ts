@@ -61,7 +61,6 @@ const createTransformConfig = (): import("@soda-gql/config").ResolvedSodaGqlConf
   schemas: {
     default: {
       schema: "/tmp/schema.graphql",
-      runtimeAdapter: "/tmp/runtime-adapter.ts",
       scalars: "/tmp/scalars.ts",
     },
   },

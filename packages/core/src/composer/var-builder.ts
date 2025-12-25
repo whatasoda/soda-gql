@@ -84,11 +84,9 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(schema: TSche
     };
   };
 
-  const $var = Object.assign(varBuilder, {
-    getName: getVarRefName,
-    getValue: getVarRefValue,
-    getInner: getVarRefInner,
-  });
+  varBuilder.getName = getVarRefName;
+  varBuilder.getValue = getVarRefValue;
+  varBuilder.getInner = getVarRefInner;
 
-  return { $var };
+  return varBuilder;
 };

@@ -26,31 +26,10 @@ pub struct ModelPrebuild {
     pub typename: String,
 }
 
-/// Prebuild data for a Slice artifact.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SlicePrebuild {
-    pub operation_type: String,
-}
-
-/// Prebuild data for a composed Operation artifact.
+/// Prebuild data for an Operation artifact.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationPrebuild {
-    pub operation_type: String,
-    pub operation_name: String,
-    pub variable_names: Vec<String>,
-    pub projection_path_graph: serde_json::Value,
-    /// GraphQL document AST (complex object, not a string)
-    pub document: serde_json::Value,
-    #[serde(default)]
-    pub metadata: Option<serde_json::Value>,
-}
-
-/// Prebuild data for an InlineOperation artifact.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InlineOperationPrebuild {
     pub operation_type: String,
     pub operation_name: String,
     pub variable_names: Vec<String>,
@@ -70,23 +49,11 @@ pub enum BuilderArtifactElement {
         metadata: BuilderArtifactElementMetadata,
         prebuild: ModelPrebuild,
     },
-    #[serde(rename = "slice")]
-    Slice {
-        id: CanonicalId,
-        metadata: BuilderArtifactElementMetadata,
-        prebuild: SlicePrebuild,
-    },
     #[serde(rename = "operation")]
     Operation {
         id: CanonicalId,
         metadata: BuilderArtifactElementMetadata,
         prebuild: OperationPrebuild,
-    },
-    #[serde(rename = "inlineOperation")]
-    InlineOperation {
-        id: CanonicalId,
-        metadata: BuilderArtifactElementMetadata,
-        prebuild: InlineOperationPrebuild,
     },
 }
 
@@ -96,9 +63,7 @@ impl BuilderArtifactElement {
     pub fn id(&self) -> &str {
         match self {
             Self::Model { id, .. } => id,
-            Self::Slice { id, .. } => id,
             Self::Operation { id, .. } => id,
-            Self::InlineOperation { id, .. } => id,
         }
     }
 
@@ -106,9 +71,7 @@ impl BuilderArtifactElement {
     pub fn element_type(&self) -> &'static str {
         match self {
             Self::Model { .. } => "model",
-            Self::Slice { .. } => "slice",
             Self::Operation { .. } => "operation",
-            Self::InlineOperation { .. } => "inlineOperation",
         }
     }
 }

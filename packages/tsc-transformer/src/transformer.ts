@@ -2,8 +2,9 @@
  * TypeScript implementation of the TransformAdapter interface.
  */
 
-import type { BuilderArtifact, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifact } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { formatPluginError } from "@soda-gql/plugin-common";
 import * as ts from "typescript";

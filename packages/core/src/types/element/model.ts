@@ -5,6 +5,7 @@ import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
+import type { AnyVarRef } from "../type-foundation/var-ref";
 import { GqlElement } from "./gql-element";
 
 export type AnyModel = Model<string, any, AnyFields, any>;
@@ -20,7 +21,7 @@ interface ModelArtifact<
   TFields extends Partial<AnyFields>,
 > {
   readonly typename: TTypeName;
-  readonly fragment: (variables: TVariables) => TFields;
+  readonly embed: (variables: TVariables) => TFields;
 }
 
 declare const __MODEL_BRAND__: unique symbol;
@@ -29,6 +30,7 @@ export class Model<
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
+    _TVarRefs extends Record<string, AnyVarRef> = Record<string, AnyVarRef>,
   >
   extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields>, ModelInferMeta<TVariables, TOutput>>
   implements ModelArtifact<TTypeName, TVariables, TFields>
@@ -45,8 +47,8 @@ export class Model<
   public get typename() {
     return GqlElement.get(this).typename;
   }
-  public get fragment() {
-    return GqlElement.get(this).fragment;
+  public get embed() {
+    return GqlElement.get(this).embed;
   }
 
   static create<
@@ -57,7 +59,7 @@ export class Model<
   >(
     define: () => {
       typename: TTypeName;
-      fragment: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
+      embed: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };

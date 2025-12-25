@@ -35,7 +35,6 @@ const createTestConfig = (
   schemas: {
     default: {
       schema: path.join(workspaceRoot, "schema.graphql"),
-      runtimeAdapter: path.join(workspaceRoot, "inject/runtime-adapter.ts"),
       scalars: path.join(workspaceRoot, "inject/scalars.ts"),
     },
   },

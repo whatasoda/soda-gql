@@ -1,22 +1,22 @@
 import { gql } from "@/graphql-system";
-import { updateUserSlice, userSlice, usersSlice, userUpdatesSlice } from "./slices";
 
 /**
  * Query operation to fetch a single user
  */
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "GetUser",
-      variables: [
-        //
-        $var("userId").scalar("ID:!"),
-        $var("categoryId").scalar("ID:!"),
-      ],
+      name: "GetUser",
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [
+        f.id(),
+        f.name(),
+        f.email(),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
+      ]),
+    ],
   ),
 );
 
@@ -24,14 +24,12 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
  * Query operation to fetch multiple users
  */
 export const listUsersQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "ListUsers",
+      name: "ListUsers",
       variables: [$var("categoryId").scalar("ID:?")],
     },
-    ({ $ }) => ({
-      users: usersSlice.embed({ categoryId: $.categoryId }),
-    }),
+    ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -39,18 +37,12 @@ export const listUsersQuery = gql.default(({ query }, { $var }) =>
  * Mutation operation to update user
  */
 export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
-  mutation.composed(
+  mutation.operation(
     {
-      operationName: "UpdateUser",
-      variables: [
-        //
-        $var("userId").scalar("ID:!"),
-        $var("name").scalar("String:!"),
-      ],
+      name: "UpdateUser",
+      variables: [$var("userId").scalar("ID:!"), $var("name").scalar("String:!")],
     },
-    ({ $ }) => ({
-      result: updateUserSlice.embed({ id: $.userId, name: $.name }),
-    }),
+    ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.name })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -58,14 +50,12 @@ export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
  * Subscription operation for user updates
  */
 export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) =>
-  subscription.composed(
+  subscription.operation(
     {
-      operationName: "UserUpdates",
+      name: "UserUpdates",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      updates: userUpdatesSlice.embed({ userId: $.userId }),
-    }),
+    ({ f, $ }) => [f.userUpdated({ userId: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -73,9 +63,9 @@ export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) 
  * Query operation with helpers (auth + cache metadata)
  */
 export const getProtectedUserQuery = gql.default(({ query }, { $var, auth, cache }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "GetProtectedUser",
+      name: "GetProtectedUser",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
       metadata: ({ $ }) => ({
         custom: {
@@ -85,8 +75,13 @@ export const getProtectedUserQuery = gql.default(({ query }, { $var, auth, cache
         },
       }),
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId, categoryId: $.categoryId }),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [
+        f.id(),
+        f.name(),
+        f.email(),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
+      ]),
+    ],
   ),
 );

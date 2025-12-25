@@ -1,5 +1,5 @@
-import type { MetadataAdapter, MetadataTransformInput, OperationMetadata, SliceMetadata } from "../types/metadata";
-import { defaultMergeSliceMetadata, mergeWithDefaults } from "./merge";
+import type { MetadataAdapter, MetadataTransformInput, OperationMetadata } from "../types/metadata";
+import { mergeWithDefaults } from "./merge";
 
 /**
  * Creates a type-safe metadata adapter for a schema.
@@ -36,29 +36,23 @@ export const createMetadataAdapter = <
 ): MetadataAdapter<TInputMetadata, TOutputMetadata> => adapter;
 
 /**
- * Processes metadata through an adapter, applying defaults, merging slice metadata,
- * and running the transform function.
+ * Processes metadata through an adapter, applying defaults and
+ * running the transform function.
  *
  * @param adapter - The metadata adapter to use
  * @param operationMetadata - Metadata defined on the operation
- * @param sliceMetadataList - Metadata from embedded slices
  * @param transformInput - Additional input for the transform function
  * @returns Processed metadata ready for runtime use
  */
 export const processMetadata = <TInputMetadata extends OperationMetadata, TOutputMetadata extends OperationMetadata>(
   adapter: MetadataAdapter<TInputMetadata, TOutputMetadata>,
   operationMetadata: TInputMetadata | undefined,
-  sliceMetadataList: readonly SliceMetadata[],
   transformInput: Omit<MetadataTransformInput<TInputMetadata>, "metadata">,
 ): TOutputMetadata => {
-  // Step 1: Merge slice metadata with operation metadata
-  const mergeSliceMetadata = adapter.mergeSliceMetadata ?? defaultMergeSliceMetadata;
-  const mergedFromSlices = mergeSliceMetadata(operationMetadata ?? ({} as TInputMetadata), sliceMetadataList);
+  // Step 1: Merge with schema defaults
+  const withDefaults = mergeWithDefaults(adapter.defaults, operationMetadata ?? ({} as TInputMetadata));
 
-  // Step 2: Merge with schema defaults
-  const withDefaults = mergeWithDefaults(adapter.defaults, mergedFromSlices);
-
-  // Step 3: Apply transform if provided
+  // Step 2: Apply transform if provided
   if (adapter.transform) {
     return adapter.transform({
       ...transformInput,

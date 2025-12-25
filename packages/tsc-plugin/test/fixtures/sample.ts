@@ -1,25 +1,15 @@
 import { gql } from "../codegen-fixture/graphql-system";
 
-// Simple slice for testing
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    {
-      variables: [$var("id").scalar("ID:!")],
-    },
-    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.email()])],
-    ({ select }) => select(["$.user"], (result) => result),
-  ),
-);
+// Simple model for testing
+export const userModel = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.email()]));
 
 // Simple operation for testing
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId }),
-    }),
+    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.email()])],
   ),
 );

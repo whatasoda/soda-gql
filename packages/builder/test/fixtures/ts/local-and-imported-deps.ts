@@ -20,7 +20,7 @@ export const postSlice = gql.default(({ query }, { $var }) =>
 export const pageQuery = gql.default(({ query }, { $var }) =>
   query.composed(
     {
-      operationName: "PageQuery",
+      name: "PageQuery",
       variables: [$var("userId").scalar("ID:!"), $var("postId").scalar("ID:!")],
     },
     ({ $ }) => ({

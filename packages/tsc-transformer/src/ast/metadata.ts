@@ -1,5 +1,5 @@
-import type { CanonicalPathTracker } from "@soda-gql/builder";
-import { createCanonicalTracker } from "@soda-gql/builder";
+import type { CanonicalPathTracker } from "@soda-gql/common";
+import { createCanonicalTracker } from "@soda-gql/common";
 import type { GqlDefinitionMetadata } from "@soda-gql/plugin-common";
 import * as ts from "typescript";
 

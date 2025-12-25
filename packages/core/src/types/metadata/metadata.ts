@@ -24,6 +24,8 @@ export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
   readonly $: TVarRefs;
   /** The GraphQL DocumentNode (AST) for this operation */
   readonly document: DocumentNode;
+  /** Metadata results from embedded models, evaluated before operation metadata */
+  readonly modelMetadata?: readonly (OperationMetadata | undefined)[];
 };
 
 /**
@@ -35,31 +37,24 @@ export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadat
 ) => TMetadata | Promise<TMetadata>;
 
 /**
- * Slice-specific metadata that can contribute to operation metadata.
- * Extends OperationMetadata with no additional fields - use the `custom`
- * property for application-specific values like authentication requirements
- * or cache settings.
+ * Utility type to extract the metadata type from an operation.
  */
-export type SliceMetadata = OperationMetadata;
+export type ExtractMetadata<T> = T extends { metadata: infer M } ? M : OperationMetadata;
 
 /**
- * Tools available inside slice metadata builder callbacks.
- * Only $ is available (no document, since slices don't have their own document).
+ * Tools available inside model metadata builder callbacks.
+ * Unlike operation metadata, models don't have their own document.
  */
-export type SliceMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
-  /** Variable references created from the slice's variable definitions */
+export type ModelMetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
+  /** Variable references created from the model's variable definitions */
   readonly $: TVarRefs;
 };
 
 /**
- * Slice metadata builder callback that receives variable tools.
- * Allows slice metadata to reference slice variables.
+ * Metadata builder callback for models.
+ * Allows metadata to reference model variables.
+ * Supports both sync and async metadata generation.
  */
-export type SliceMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = SliceMetadata> = (
-  tools: SliceMetadataBuilderTools<TVarRefs>,
+export type ModelMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = OperationMetadata> = (
+  tools: ModelMetadataBuilderTools<TVarRefs>,
 ) => TMetadata | Promise<TMetadata>;
-
-/**
- * Utility type to extract the metadata type from an operation or slice.
- */
-export type ExtractMetadata<T> = T extends { metadata: infer M } ? M : OperationMetadata;

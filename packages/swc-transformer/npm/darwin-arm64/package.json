@@ -1,10 +1,16 @@
 {
   "name": "@soda-gql/swc-transformer-darwin-arm64",
   "version": "0.1.0",
-  "os": ["darwin"],
-  "cpu": ["arm64"],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "main": "swc-transformer.darwin-arm64.node",
-  "files": ["swc-transformer.darwin-arm64.node"],
+  "files": [
+    "swc-transformer.darwin-arm64.node"
+  ],
   "license": "MIT",
   "author": {
     "name": "Shota Hatada",

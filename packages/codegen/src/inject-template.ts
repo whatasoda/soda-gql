@@ -6,39 +6,14 @@ import type { CodegenError } from "./types";
 
 const templateContents = `\
 import { defineScalar } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
 
 export const scalar = {
-  ...defineScalar("ID", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("String", ({ type }) => ({
-    input: type<string>(),
-    output: type<string>(),
-    directives: {},
-  })),
-  ...defineScalar("Int", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Float", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
-  ...defineScalar("Boolean", ({ type }) => ({
-    input: type<boolean>(),
-    output: type<boolean>(),
-    directives: {},
-  })),
+  ...defineScalar<"ID", string, string>("ID"),
+  ...defineScalar<"String", string, string>("String"),
+  ...defineScalar<"Int", number, number>("Int"),
+  ...defineScalar<"Float", number, number>("Float"),
+  ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
 } as const;
-
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));
 `;
 
 export const writeInjectTemplate = (outPath: string) => {

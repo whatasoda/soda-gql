@@ -9,8 +9,7 @@ export type {
   ExtractMetadata,
   MetadataBuilder,
   MetadataBuilderTools,
+  ModelMetadataBuilder,
+  ModelMetadataBuilderTools,
   OperationMetadata,
-  SliceMetadata,
-  SliceMetadataBuilder,
-  SliceMetadataBuilderTools,
 } from "./metadata";

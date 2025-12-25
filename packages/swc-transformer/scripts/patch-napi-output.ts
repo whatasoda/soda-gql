@@ -32,10 +32,7 @@ const main = () => {
 
   // Patch local requires: require('./swc-transformer.xxx.node')
   // → require('./swc-transformer.'.slice(0) + 'xxx.node')
-  content = content.replace(
-    /require\('\.\/swc-transformer\.([^']+)'\)/g,
-    "require('./swc-transformer.'.slice(0) + '$1')",
-  );
+  content = content.replace(/require\('\.\/swc-transformer\.([^']+)'\)/g, "require('./swc-transformer.'.slice(0) + '$1')");
 
   if (content === originalContent) {
     console.log("[patch-napi-output] No changes needed");

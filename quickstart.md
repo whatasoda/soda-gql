@@ -171,103 +171,49 @@ export type UserBasic = ReturnType<typeof userBasic["normalize"]>;
 export type UserWithPosts = ReturnType<typeof userWithPosts["normalize"]>;
 ```
 
-### Step 2: Compose slices with projections
+### Step 2: Build queries and mutations
 
-`slice.query`/`slice.mutation` wrap reusable field selections using array-based builders. Provide variable definitions as arrays, build fields returning arrays, and map execution results through `select`.
+`query.operation` / `mutation.operation` define complete GraphQL operations. The options object takes `name` and (optionally) `variables`.
 
 ```typescript
-// src/slices/user.slice.ts
+// src/operations/profile.query.ts
 import { gql } from "@/graphql-system";
 import { userWithPosts } from "../models/user.model";
 
-export const userSlice = gql.default(({ slice }, { $var }) =>
-  slice.query(
+export const profileQuery = gql.default(({ query }, { $var }) =>
+  query.operation(
     {
-      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
-      //
-      f.users({
-        id: [$.id],
-        categoryId: $.categoryId,
-      })(() => [
-        //
-        userWithPosts.fragment({ categoryId: $.categoryId }),
-      ]),
-    ],
-    ({ select }) =>
-      select(["$.users"], (result) =>
-        result.safeUnwrap(([users]) => users.map((user) => userWithPosts.normalize(user))),
-      ),
-  ),
-);
-
-export const updateUserSlice = gql.default(({ slice }, { $var }) =>
-  slice.mutation(
-    {
-      variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
-    },
-    ({ f, $ }) => [
-      //
-      f.updateUser({ id: $.id, name: $.name })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      })),
-    }),
-    ({ select }) =>
-      select(["$.updateUser"], (result) => result.safeUnwrap(([payload]) => payload)),
-  ),
-);
-```
-
-### Step 3: Build queries and mutations
-
-`operation.query` / `operation.mutation` stitch slices together behind a single operation name. The options object always takes `operationName` and (optionally) `variables`.
-
-```typescript
-// src/queries/profile.query.ts
-import { gql } from "@/graphql-system";
-import { userSlice } from "../slices/user.slice";
-
-export const profileQuery = gql.default(({ operation }, { $var }) =>
-  operation.query(
-    {
-      operationName: "ProfilePageQuery",
+      name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
-    ({ $ }) => ({
-      users: userSlice.build({
-        id: $.userId,
+    ({ f, $ }) => [
+      f.users({
+        id: [$.userId],
         categoryId: $.categoryId,
-      }),
-    }),
+      })(({ f }) => [userWithPosts.embed({ categoryId: $.categoryId })]),
+    ],
   ),
 );
 ```
 
 ```typescript
-// src/mutations/update-user.mutation.ts
+// src/operations/update-user.mutation.ts
 import { gql } from "@/graphql-system";
-import { updateUserSlice } from "../slices/user.slice";
 
-export const updateUserMutation = gql.default(({ operation }, { $var }) =>
-  operation.mutation(
+export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
+  mutation.operation(
     {
-      operationName: "UpdateUser",
+      name: "UpdateUser",
       variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
     },
-    ({ $ }) => ({
-      updateUser: updateUserSlice.build({
-        id: $.id,
-        name: $.name,
-      }),
-    }),
+    ({ f, $ }) => [
+      f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id(), f.name()]),
+    ],
   ),
 );
 ```
 
-### Step 4: Execute and parse responses
+### Step 3: Execute and parse responses
 
 Use the generated document and parser to run operations. After the Babel transform runs, the runtime replaces this call with `gqlRuntime.getOperation(...)` while preserving metadata.
 
@@ -297,7 +243,7 @@ describe("userBasic model", () => {
   });
 
   test("builds fragments", () => {
-    const fragment = userBasic.fragment();
+    const fragment = userBasic.embed();
     expect(fragment.id).toBeDefined();
     expect(fragment.name).toBeDefined();
   });
@@ -309,12 +255,12 @@ describe("userBasic model", () => {
 
 **Before (development)**
 ```typescript
-export const profileQuery = gql.default(({ operation }, { $var }) =>
-  operation.query(
-    { operationName: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
-    ({ $ }) => ({
-      users: userSlice.build({ id: $.userId }),
-    }),
+export const profileQuery = gql.default(({ query }, { $var }) =>
+  query.operation(
+    { name: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
+    ({ f, $ }) => [
+      f.users({ id: [$.userId] })(({ f }) => [f.id(), f.name()]),
+    ],
   ),
 );
 ```
@@ -324,15 +270,6 @@ export const profileQuery = gql.default(({ operation }, { $var }) =>
 import { gqlRuntime } from "@soda-gql/runtime";
 
 export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery");
-
-gqlRuntime.operation({
-  prebuild: JSON.parse("/* serialized metadata */"),
-  runtime: {
-    getSlices: ({ $ }) => ({
-      users: userSlice.build({ id: $.userId }),
-    }),
-  },
-});
 ```
 
 ## Common Patterns
@@ -341,12 +278,12 @@ gqlRuntime.operation({
 src/
 ├── entities/
 │   └── user/
-│       ├── models/user.model.ts
-│       └── slices/user.slice.ts
+│       └── models/user.model.ts
 ├── features/
 │   └── profile/
-│       ├── queries/profile.query.ts
-│       └── mutations/update-user.mutation.ts
+│       └── operations/
+│           ├── profile.query.ts
+│           └── update-user.mutation.ts
 └── pages/
     └── profile/
         └── profile.page.ts
@@ -355,48 +292,35 @@ src/
 ## Error Handling with neverthrow
 
 ```typescript
-// src/slices/safe-user.slice.ts
+// src/operations/safe-user.query.ts
 import { err, ok } from "neverthrow";
 import { gql } from "@/graphql-system";
 import { userBasic } from "@/models/user.model";
 
-export const safeUserSlice = gql.default(({ slice }, { $var }) =>
-  slice.query(
+export const safeGetUserQuery = gql.default(({ query }, { $var }) =>
+  query.operation(
     {
+      name: "SafeGetUser",
       variables: [$var("id").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      //
-      f.user({ id: $.id })(() => [
-        //
-        userBasic.fragment(),
-      ]),
+      f.user({ id: $.id })(({ f }) => [userBasic.embed()]),
     ],
-    ({ select }) =>
-      select(["$.user"], (result) => {
-        const outcome = result.safeUnwrap(([user]) => userBasic.normalize(user));
-        if (outcome.error) {
-          return err(outcome.error);
-        }
-        if (!outcome.data) {
-          return err(new Error("User not found"));
-        }
-        return ok(outcome.data);
-      }),
   ),
 );
 
-export const safeGetUserQuery = gql.default(({ operation }, { $var }) =>
-  operation.query(
-    {
-      operationName: "SafeGetUser",
-      variables: [$var("id").scalar("ID:!")],
-    },
-    ({ $ }) => ({
-      user: safeUserSlice.build({ id: $.id }),
-    }),
-  ),
-);
+// Usage with neverthrow
+async function getUser(id: string) {
+  const result = await executeQuery(safeGetUserQuery, { id });
+  if (result.isErr()) {
+    return err(result.error);
+  }
+  const user = result.value.user;
+  if (!user) {
+    return err(new Error("User not found"));
+  }
+  return ok(userBasic.normalize(user));
+}
 ```
 
 ## Troubleshooting

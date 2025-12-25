@@ -1,60 +1,38 @@
-import type { AnyComposedOperation, AnyInlineOperation, AnyModel, AnySlice } from "../types/element";
-import type { AnyMetadataAdapter } from "../types/metadata";
-import type { AnyGraphqlRuntimeAdapter } from "../types/runtime";
+import type { AnyModel, AnyOperation } from "../types/element";
 import type { AnyGraphqlSchema } from "../types/schema";
-import { createComposedOperationComposerFactory } from "./composed-operation";
-import { createInlineOperationComposerFactory } from "./inline-operation";
+import { createPrefixHelper } from "./field-prefix";
 import { createGqlModelComposers } from "./model";
-import { createSliceComposerFactory } from "./slice";
+import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder } from "./var-builder";
 
-export type GqlElementComposer<TComposers, THelper> = <
-  TResult extends AnyModel | AnySlice | AnyComposedOperation | AnyInlineOperation,
->(
+export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnyOperation>(
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
 export type GqlElementComposerOptions<THelpers extends object = object> = {
-  metadataAdapter?: AnyMetadataAdapter;
   helpers?: THelpers;
 };
 
-export const createGqlElementComposer = <
-  TSchema extends AnyGraphqlSchema,
-  TRuntimeAdapter extends AnyGraphqlRuntimeAdapter,
-  THelpers extends object = object,
->(
+export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, THelpers extends object = object>(
   schema: NoInfer<TSchema>,
   options: GqlElementComposerOptions<NoInfer<THelpers>> = {} as GqlElementComposerOptions<THelpers>,
 ) => {
-  const { metadataAdapter, helpers } = options;
+  const { helpers } = options;
   const model = createGqlModelComposers<TSchema>(schema);
-  const createSliceComposer = createSliceComposerFactory<TSchema, TRuntimeAdapter>(schema);
-  const createComposedOperationFactory = createComposedOperationComposerFactory<TSchema, TRuntimeAdapter>({
-    metadataAdapter,
-  });
-  const createInlineOperationComposer = createInlineOperationComposerFactory<TSchema, TRuntimeAdapter>(schema);
+  const createOperationComposer = createOperationComposerFactory<TSchema>(schema);
+
+  // Wrap operation composers in objects with an `operation` method for extensibility
+  // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
   const composers = {
     model,
-    query: {
-      slice: createSliceComposer("query"),
-      composed: createComposedOperationFactory("query"),
-      inline: createInlineOperationComposer("query"),
-    },
-    mutation: {
-      slice: createSliceComposer("mutation"),
-      composed: createComposedOperationFactory("mutation"),
-      inline: createInlineOperationComposer("mutation"),
-    },
-    subscription: {
-      slice: createSliceComposer("subscription"),
-      composed: createComposedOperationFactory("subscription"),
-      inline: createInlineOperationComposer("subscription"),
-    },
+    query: { operation: createOperationComposer("query") },
+    mutation: { operation: createOperationComposer("mutation") },
+    subscription: { operation: createOperationComposer("subscription") },
   };
 
   const helper = {
-    ...createVarBuilder(schema),
+    $var: createVarBuilder(schema),
+    $prefix: createPrefixHelper(),
     ...(helpers ?? ({} as THelpers)),
   };
 

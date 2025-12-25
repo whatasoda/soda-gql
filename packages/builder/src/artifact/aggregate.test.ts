@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
-import { ComposedOperation, Model, Slice } from "@soda-gql/core";
+import { Model, Operation } from "@soda-gql/core";
 import { parse } from "graphql";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";
@@ -29,16 +29,12 @@ const createTestIntermediateModule = (elements: Record<string, IntermediateArtif
 });
 
 describe("artifact aggregate", () => {
-  it("aggregates models, slices, and operations successfully", () => {
+  it("aggregates models and operations successfully", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
-    const sliceId = createCanonicalId("/app/src/entities/user.ts", "userSlice");
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      [
-        "/app/src/entities/user.ts",
-        createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId), createTestDefinition(sliceId)]),
-      ],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
       [
         "/app/src/pages/profile.query.ts",
         createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
@@ -50,30 +46,18 @@ describe("artifact aggregate", () => {
         type: "model",
         element: Model.create(() => ({
           typename: "User",
-          fragment: () => ({}),
-        })),
-      },
-      [sliceId]: {
-        type: "slice",
-        element: Slice.create(() => ({
-          operationType: "query",
-          embed: () => ({
-            fields: {},
-            projection: {} as any,
-            variables: {},
-            getFields: () => ({}),
-          }),
+          embed: () => ({}),
+          metadata: null,
         })),
       },
       [operationId]: {
         type: "operation",
-        element: ComposedOperation.create(() => ({
+        element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
-          document: parse("query ProfilePageQuery { users { id } }") as any,
+          document: parse("query ProfilePageQuery { users { id } }"),
           variableNames: [],
-          projectionPathGraph: { matches: [], children: {} },
-          parse: () => ({}) as any,
+          documentSource: () => ({}),
         })),
       },
     });
@@ -86,20 +70,13 @@ describe("artifact aggregate", () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (registry) => {
-        expect(registry.size).toBe(3);
+        expect(registry.size).toBe(2);
 
         const model = registry.get(modelId);
         expect(model).toBeDefined();
         expect(model?.type).toBe("model");
         if (model?.type === "model") {
           expect(model.prebuild.typename).toBe("User");
-        }
-
-        const slice = registry.get(sliceId);
-        expect(slice).toBeDefined();
-        expect(slice?.type).toBe("slice");
-        if (slice?.type === "slice") {
-          expect(slice.prebuild.operationType).toBe("query");
         }
 
         const operation = registry.get(operationId);
@@ -160,7 +137,8 @@ describe("artifact aggregate", () => {
         type: "model",
         element: Model.create(() => ({
           typename: "User",
-          fragment: () => ({}),
+          embed: () => ({}),
+          metadata: null,
         })),
       },
     });
@@ -223,21 +201,16 @@ describe("artifact aggregate", () => {
     ]);
 
     const document = parse("query ProfilePageQuery($userId: ID!) { user(id: $userId) { id name } }");
-    const projectionPathGraph = {
-      matches: [{ label: "user", path: "$.user", exact: true }],
-      children: {},
-    };
 
     const intermediateModule = createTestIntermediateModule({
       [operationId]: {
         type: "operation",
-        element: ComposedOperation.create(() => ({
+        element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
-          document: document as any,
+          document: document,
           variableNames: ["userId"],
-          projectionPathGraph,
-          parse: () => ({}) as any,
+          documentSource: () => ({}),
         })),
       },
     });
@@ -255,9 +228,8 @@ describe("artifact aggregate", () => {
         if (operation?.type === "operation") {
           expect(operation.prebuild.operationType).toBe("query");
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
-          expect(operation.prebuild.document).toBe(document as any);
+          expect(operation.prebuild.document).toBe(document);
           expect(operation.prebuild.variableNames).toEqual(["userId"]);
-          expect(operation.prebuild.projectionPathGraph).toEqual(projectionPathGraph);
         }
       },
       () => {

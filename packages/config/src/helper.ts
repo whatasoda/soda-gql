@@ -31,7 +31,6 @@ export class SodaGqlConfigContainer {
  *   schemas: {
  *     default: {
  *       schema: "./schema.graphql",
- *       runtimeAdapter: "./runtime-adapter.ts",
  *       scalars: "./scalars.ts",
  *     },
  *   },
@@ -46,7 +45,6 @@ export class SodaGqlConfigContainer {
  *   schemas: {
  *     default: {
  *       schema: "./schema.graphql",
- *       runtimeAdapter: "./runtime-adapter.ts",
  *       scalars: "./scalars.ts",
  *     },
  *   },
@@ -65,9 +63,7 @@ export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): Sod
 
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: z.string().min(1),
-  runtimeAdapter: z.string().min(1),
   scalars: z.string().min(1),
-  metadataAdapter: z.string().min(1).optional(),
   helpers: z.string().min(1).optional(),
 });
 

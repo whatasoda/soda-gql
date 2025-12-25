@@ -14,7 +14,7 @@ bun add @soda-gql/core
 
 ## Overview
 
-`@soda-gql/core` provides the foundational types and utilities for defining GraphQL models, slices, and operations.
+`@soda-gql/core` provides the foundational types and utilities for defining GraphQL models and operations.
 
 ## Key Exports
 
@@ -37,9 +37,9 @@ const DateTimeScalar = defineScalar("DateTime", ({ type }) => ({
 The `gql` object is generated per-schema and provides builders for:
 
 - `model.<TypeName>()` - Define reusable fragments
-- `query.slice()` / `mutation.slice()` - Define reusable slices
-- `query.composed()` / `mutation.composed()` - Compose operations from slices
-- `query.inline()` / `mutation.inline()` - Define inline operations
+- `query.operation()` - Define query operations
+- `mutation.operation()` - Define mutation operations
+- `subscription.operation()` - Define subscription operations
 
 ## Type Utilities
 

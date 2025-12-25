@@ -85,9 +85,9 @@ The plugin transforms `gql.default()` calls at compile time:
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
-    { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
-    ({ $ }) => ({ user: userSlice.build({ id: $.id }) }),
+  query.operation(
+    { name: "GetUser", variables: [$var("id").scalar("ID:!")] },
+    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
   ),
 );
 ```
@@ -96,8 +96,7 @@ export const userQuery = gql.default(({ query }, { $var }) =>
 ```typescript
 import { gqlRuntime } from "@soda-gql/runtime";
 
-export const userQuery = gqlRuntime.getComposedOperation("canonicalId");
-gqlRuntime.composedOperation("canonicalId", { /* compiled operation */ });
+export const userQuery = gqlRuntime.getOperation("canonicalId");
 ```
 
 ## Complete NestJS Example

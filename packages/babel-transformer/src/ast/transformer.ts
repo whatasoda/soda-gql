@@ -5,12 +5,7 @@ import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall, findGqlBuilderCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import {
-  buildComposedOperationRuntimeComponents,
-  buildInlineOperationRuntimeComponents,
-  buildModelRuntimeCall,
-  buildSliceRuntimeCall,
-} from "./runtime";
+import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callPath: NodePath<t.CallExpression>;
@@ -65,27 +60,8 @@ const replaceWithRuntimeCall = (
     return ok({ transformed: true });
   }
 
-  if (gqlCall.type === "slice") {
-    const result = buildSliceRuntimeCall({ ...gqlCall, filename });
-    if (result.isErr()) {
-      return err(result.error);
-    }
-    callPath.replaceWith(result.value);
-    return ok({ transformed: true });
-  }
-
   if (gqlCall.type === "operation") {
-    const result = buildComposedOperationRuntimeComponents({ ...gqlCall, filename });
-    if (result.isErr()) {
-      return err(result.error);
-    }
-    const { referenceCall, runtimeCall } = result.value;
-    callPath.replaceWith(referenceCall);
-    return ok({ transformed: true, runtimeCall });
-  }
-
-  if (gqlCall.type === "inlineOperation") {
-    const result = buildInlineOperationRuntimeComponents({ ...gqlCall, filename });
+    const result = buildOperationRuntimeComponents({ ...gqlCall, filename });
     if (result.isErr()) {
       return err(result.error);
     }

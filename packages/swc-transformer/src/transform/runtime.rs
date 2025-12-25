@@ -5,10 +5,7 @@
 use swc_core::common::{SyntaxContext, DUMMY_SP};
 use swc_core::ecma::ast::*;
 
-use crate::types::{
-    BuilderArtifactElement, InlineOperationPrebuild, ModelPrebuild, OperationPrebuild,
-    SlicePrebuild,
-};
+use crate::types::{BuilderArtifactElement, ModelPrebuild, OperationPrebuild};
 
 use super::analysis::GqlReplacement;
 
@@ -27,32 +24,22 @@ impl RuntimeCallBuilder {
 
     /// Build replacement expression and optional runtime statement.
     ///
-    /// For models and slices: returns just the replacement expression.
+    /// For models: returns just the replacement expression.
     /// For operations: returns both a reference expression and a runtime setup statement.
     pub fn build_replacement(&self, replacement: &GqlReplacement) -> Option<(Expr, Option<Stmt>)> {
         let result = match &replacement.artifact {
-            BuilderArtifactElement::Model { prebuild, .. } => {
-                self.build_model_call(prebuild, &replacement.builder_args)
-                    .map(|expr| (expr, None))
-            }
-            BuilderArtifactElement::Slice { prebuild, .. } => {
-                self.build_slice_call(prebuild, &replacement.builder_args)
-                    .map(|expr| (expr, None))
-            }
+            BuilderArtifactElement::Model { prebuild, .. } => self
+                .build_model_call(prebuild, &replacement.builder_args)
+                .map(|expr| (expr, None)),
             BuilderArtifactElement::Operation { prebuild, .. } => {
-                self.build_composed_operation_calls(prebuild, &replacement.builder_args)
-            }
-            BuilderArtifactElement::InlineOperation { prebuild, .. } => {
-                self.build_inline_operation_calls(prebuild)
+                self.build_operation_calls(prebuild)
             }
         };
 
         if result.is_none() {
             let artifact_type = match &replacement.artifact {
                 BuilderArtifactElement::Model { .. } => "Model",
-                BuilderArtifactElement::Slice { .. } => "Slice",
                 BuilderArtifactElement::Operation { .. } => "Operation",
-                BuilderArtifactElement::InlineOperation { .. } => "InlineOperation",
             };
             eprintln!(
                 "[swc-transformer] Warning: Failed to build replacement for {} artifact (canonical ID: '{}'). \
@@ -70,11 +57,19 @@ impl RuntimeCallBuilder {
             // __soda_gql_runtime.gqlRuntime
             Expr::Member(MemberExpr {
                 span: DUMMY_SP,
-                obj: Box::new(Expr::Ident(Ident::new(CJS_RUNTIME_NAME.into(), DUMMY_SP, Default::default()))),
+                obj: Box::new(Expr::Ident(Ident::new(
+                    CJS_RUNTIME_NAME.into(),
+                    DUMMY_SP,
+                    Default::default(),
+                ))),
                 prop: MemberProp::Ident(IdentName::new(RUNTIME_IMPORT_NAME.into(), DUMMY_SP)),
             })
         } else {
-            Expr::Ident(Ident::new(RUNTIME_IMPORT_NAME.into(), DUMMY_SP, Default::default()))
+            Expr::Ident(Ident::new(
+                RUNTIME_IMPORT_NAME.into(),
+                DUMMY_SP,
+                Default::default(),
+            ))
         }
     }
 
@@ -97,100 +92,35 @@ impl RuntimeCallBuilder {
     ///
     /// Input: `model.User({}, fields)`
     /// Output: `gqlRuntime.model({ prebuild: { typename: "User" } })`
-    fn build_model_call(&self, prebuild: &ModelPrebuild, _builder_args: &[ExprOrSpread]) -> Option<Expr> {
+    fn build_model_call(
+        &self,
+        prebuild: &ModelPrebuild,
+        _builder_args: &[ExprOrSpread],
+    ) -> Option<Expr> {
         let arg = self.create_object_lit(vec![(
             "prebuild",
             self.create_object_lit(vec![("typename", self.create_string_lit(&prebuild.typename))]),
         )]);
 
-        Some(self.create_runtime_call("model", vec![ExprOrSpread {
-            spread: None,
-            expr: Box::new(arg),
-        }]))
+        Some(self.create_runtime_call(
+            "model",
+            vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(arg),
+            }],
+        ))
     }
 
-    /// Build a slice runtime call.
-    ///
-    /// Input: `query.slice({}, fields, projectionBuilder)`
-    /// Output: `gqlRuntime.slice({ prebuild: { operationType: "query" }, runtime: { buildProjection } })`
-    fn build_slice_call(&self, prebuild: &SlicePrebuild, builder_args: &[ExprOrSpread]) -> Option<Expr> {
-        // Get the projection builder function (3rd argument)
-        let projection_builder = builder_args.get(2)?.clone();
-
-        let arg = self.create_object_lit(vec![
-            (
-                "prebuild",
-                self.create_object_lit(vec![("operationType", self.create_string_lit(&prebuild.operation_type))]),
-            ),
-            (
-                "runtime",
-                self.create_object_lit(vec![("buildProjection", (*projection_builder.expr).clone())]),
-            ),
-        ]);
-
-        Some(self.create_runtime_call("slice", vec![ExprOrSpread {
-            spread: None,
-            expr: Box::new(arg),
-        }]))
-    }
-
-    /// Build composed operation runtime calls.
+    /// Build operation runtime calls.
     ///
     /// Returns (reference_call, runtime_call) where:
-    /// - runtime_call: `gqlRuntime.composedOperation({ prebuild: JSON.parse(...), runtime: { getSlices } })`
-    /// - reference_call: `gqlRuntime.getComposedOperation("OperationName")`
-    fn build_composed_operation_calls(
-        &self,
-        prebuild: &OperationPrebuild,
-        builder_args: &[ExprOrSpread],
-    ) -> Option<(Expr, Option<Stmt>)> {
-        // Get the slices builder function (2nd argument)
-        let slices_builder = builder_args.get(1)?.clone();
-
+    /// - runtime_call: `gqlRuntime.operation({ prebuild: JSON.parse(...), runtime: {} })`
+    /// - reference_call: `gqlRuntime.getOperation("OperationName")`
+    fn build_operation_calls(&self, prebuild: &OperationPrebuild) -> Option<(Expr, Option<Stmt>)> {
         // Build the runtime call
         let prebuild_json = serde_json::to_string(prebuild).ok()?;
         let runtime_call_expr = self.create_runtime_call(
-            "composedOperation",
-            vec![ExprOrSpread {
-                spread: None,
-                expr: Box::new(self.create_object_lit(vec![
-                    ("prebuild", self.create_json_parse(&prebuild_json)),
-                    (
-                        "runtime",
-                        self.create_object_lit(vec![("getSlices", (*slices_builder.expr).clone())]),
-                    ),
-                ])),
-            }],
-        );
-
-        // Wrap in an expression statement
-        let runtime_stmt = Stmt::Expr(ExprStmt {
-            span: DUMMY_SP,
-            expr: Box::new(runtime_call_expr),
-        });
-
-        // Build the reference call
-        let reference_call = self.create_runtime_call(
-            "getComposedOperation",
-            vec![ExprOrSpread {
-                spread: None,
-                expr: Box::new(self.create_string_lit(&prebuild.operation_name)),
-            }],
-        );
-
-        Some((reference_call, Some(runtime_stmt)))
-    }
-
-    /// Build inline operation runtime calls.
-    ///
-    /// Returns (reference_call, runtime_call) where:
-    /// - runtime_call: `gqlRuntime.inlineOperation({ prebuild: JSON.parse(...), runtime: {} })`
-    /// - reference_call: `gqlRuntime.getInlineOperation("OperationName")`
-    fn build_inline_operation_calls(&self, prebuild: &InlineOperationPrebuild) -> Option<(Expr, Option<Stmt>)> {
-        // Build the runtime call
-        let prebuild_json = serde_json::to_string(prebuild).ok()?;
-        let runtime_call_expr = self.create_runtime_call(
-            "inlineOperation",
+            "operation",
             vec![ExprOrSpread {
                 spread: None,
                 expr: Box::new(self.create_object_lit(vec![
@@ -208,7 +138,7 @@ impl RuntimeCallBuilder {
 
         // Build the reference call
         let reference_call = self.create_runtime_call(
-            "getInlineOperation",
+            "getOperation",
             vec![ExprOrSpread {
                 spread: None,
                 expr: Box::new(self.create_string_lit(&prebuild.operation_name)),
@@ -250,7 +180,11 @@ impl RuntimeCallBuilder {
             ctxt: SyntaxContext::empty(),
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
                 span: DUMMY_SP,
-                obj: Box::new(Expr::Ident(Ident::new("JSON".into(), DUMMY_SP, Default::default()))),
+                obj: Box::new(Expr::Ident(Ident::new(
+                    "JSON".into(),
+                    DUMMY_SP,
+                    Default::default(),
+                ))),
                 prop: MemberProp::Ident(IdentName::new("parse".into(), DUMMY_SP)),
             }))),
             args: vec![ExprOrSpread {

@@ -36,19 +36,6 @@ const singleFileTestCases: TestCaseDefinition[] = [
     },
   },
 
-  // Slices
-  {
-    id: "slices/basic",
-    description: "Basic slice definition transformation",
-    fixtureName: "slices/basic",
-    isMultiFile: false,
-    expectations: {
-      runtimeCalls: ["gqlRuntime.slice"],
-      shouldAddRuntimeImport: true,
-      shouldTransform: true,
-    },
-  },
-
   // Operations
   {
     id: "operations/basic",
@@ -56,7 +43,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "operations/basic",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.composedOperation"],
+      runtimeCalls: ["gqlRuntime.operation"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -219,45 +206,12 @@ const multiFileTestCases: TestCaseDefinition[] = [
     },
   },
   {
-    id: "slices/with-imported-models",
-    description: "Slices importing models from other files",
-    fixtureName: "slices/with-imported-models",
-    isMultiFile: true,
-    expectations: {
-      runtimeCalls: ["gqlRuntime.model", "gqlRuntime.slice"],
-      shouldAddRuntimeImport: true,
-      shouldTransform: true,
-    },
-  },
-  {
-    id: "operations/composed-with-imported-slices",
-    description: "Composed operations with imported slices",
-    fixtureName: "operations/composed-with-imported-slices",
-    isMultiFile: true,
-    expectations: {
-      runtimeCalls: ["gqlRuntime.slice", "gqlRuntime.composedOperation"],
-      shouldAddRuntimeImport: true,
-      shouldTransform: true,
-    },
-  },
-  {
     id: "operations/inline-with-imported-models",
-    description: "Inline operations with imported models",
+    description: "Operations with imported models",
     fixtureName: "operations/inline-with-imported-models",
     isMultiFile: true,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model", "gqlRuntime.inlineOperation"],
-      shouldAddRuntimeImport: true,
-      shouldTransform: true,
-    },
-  },
-  {
-    id: "mixed/full-app",
-    description: "Full application with models, slices, and operations",
-    fixtureName: "mixed/full-app",
-    isMultiFile: true,
-    expectations: {
-      runtimeCalls: ["gqlRuntime.model", "gqlRuntime.slice", "gqlRuntime.composedOperation"],
+      runtimeCalls: ["gqlRuntime.model", "gqlRuntime.operation"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },

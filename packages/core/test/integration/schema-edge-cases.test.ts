@@ -26,12 +26,12 @@ describe("Schema Edge Cases", () => {
         union: {},
       } satisfies AnyGraphqlSchema;
 
-      const helpers = createVarBuilder(schema);
+      const $var = createVarBuilder(schema);
 
       // Trying to get an argument that doesn't exist
       expect(() => {
         // @ts-expect-error - Testing runtime error for non-existent argument
-        helpers.$var("userVar").byField("Query", "user", "nonExistentArg");
+        $var("userVar").byField("Query", "user", "nonExistentArg");
       }).toThrow("Argument nonExistentArg not found in field user of type Query");
     });
   });

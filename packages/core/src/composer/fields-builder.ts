@@ -20,6 +20,7 @@ import type {
 } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
+import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
 
 // Cache is schema-scoped to avoid cross-schema contamination when multiple schemas share type names
 type CacheMap = Map<string, Record<string, AnyFieldSelectionFactory>>;
@@ -72,16 +73,28 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject[]>(
           nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
-        ) =>
-          wrap({
+        ) => {
+          // Build new path for this field
+          const currentPath = getCurrentFieldPath();
+          const newPath = appendToPath(currentPath, {
+            field: fieldName,
+            parentType: typeName,
+            isList: isListType(type.modifier),
+          });
+
+          // Run nested builder with updated path context
+          const nestedFields = withFieldPath(newPath, () => mergeFields(nest({ f: createFieldFactories(schema, type.name) })));
+
+          return wrap({
             parent: typeName,
             field: fieldName,
             type: type,
             args: fieldArgs ?? {},
             directives: extras?.directives ?? {},
-            object: mergeFields(nest({ f: createFieldFactories(schema, type.name) })),
+            object: nestedFields,
             union: null,
-          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>;
+          } satisfies AnyFieldSelection);
+        }) satisfies FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;
       }
@@ -90,15 +103,18 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         type TSelection = AnyFieldSelection & { type: OutputUnionSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedUnion>(
           nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
-        ) =>
-          wrap({
-            parent: typeName,
+        ) => {
+          // Build new path for this field
+          const currentPath = getCurrentFieldPath();
+          const newPath = appendToPath(currentPath, {
             field: fieldName,
-            type: type,
-            args: fieldArgs ?? {},
-            directives: extras?.directives ?? {},
-            object: null,
-            union: mapValues(
+            parentType: typeName,
+            isList: isListType(type.modifier),
+          });
+
+          // Run nested builders with updated path context
+          const nestedUnion = withFieldPath(newPath, () =>
+            mapValues(
               nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>,
               (builder, memberName) => {
                 if (!builder) {
@@ -106,8 +122,19 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
                 }
                 return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
               },
-            ) as TNested,
-          } satisfies AnyFieldSelection)) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
+            ),
+          ) as TNested;
+
+          return wrap({
+            parent: typeName,
+            field: fieldName,
+            type: type,
+            args: fieldArgs ?? {},
+            directives: extras?.directives ?? {},
+            object: null,
+            union: nestedUnion,
+          } satisfies AnyFieldSelection);
+        }) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
 
         return factoryReturn;
       }

@@ -49,7 +49,6 @@ describe("soda-gql codegen CLI", () => {
       schemas: {
         default: {
           schema: schemaFile,
-          runtimeAdapter: injectFile,
           scalars: injectFile,
         },
       },
@@ -77,7 +76,6 @@ describe("soda-gql codegen CLI", () => {
       schemas: {
         default: {
           schema: invalidSchemaPath,
-          runtimeAdapter: injectFile,
           scalars: injectFile,
         },
       },
@@ -109,7 +107,6 @@ describe("soda-gql codegen CLI", () => {
         schemas: {
           default: {
             schema: schemaPath,
-            runtimeAdapter: injectFile,
             scalars: injectFile,
           },
         },
@@ -122,8 +119,7 @@ describe("soda-gql codegen CLI", () => {
       expect(generatedExists).toBe(true);
       const moduleContents = await Bun.file(outFile).text();
       expect(moduleContents).toContain("export const gql");
-      // When adapter and scalar come from the same file, they are grouped in a single import
-      expect(moduleContents).toContain("adapter as adapter_default");
+      // Scalar import should be present
       expect(moduleContents).toContain("scalar as scalar_default");
 
       // Multi-schema format has nested structure
@@ -184,7 +180,6 @@ describe("soda-gql codegen CLI", () => {
     expect(templateExists).toBe(true);
     const contents = await Bun.file(templatePath).text();
     expect(contents).toContain("export const scalar");
-    expect(contents).toContain("export const adapter");
   });
 
   afterAll(() => {

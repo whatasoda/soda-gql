@@ -56,14 +56,14 @@ bun run soda-gql codegen
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "GetUser",
+      name: "GetUser",
       variables: [$var("id").scalar("ID:!")],
     },
-    ({ f, $ }) => ({
-      user: f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
+    ],
   ),
 );
 ```
@@ -73,8 +73,7 @@ export const userQuery = gql.default(({ query }, { $var }) =>
 ```typescript
 import { gqlRuntime } from "@soda-gql/runtime";
 
-export const userQuery = gqlRuntime.getComposedOperation("canonicalId");
-gqlRuntime.composedOperation("canonicalId", { /* ... */ });
+export const userQuery = gqlRuntime.getOperation("canonicalId");
 ```
 
 ## Configuration Options
@@ -196,9 +195,7 @@ module.exports.model = gqlRuntime.model("canonicalId", /* ... */);
 ### Supported GraphQL Elements
 
 - **Models**: Fragment definitions with data normalization
-- **Slices**: Reusable query/mutation/subscription fragments
-- **Operations**: Composed operations from multiple slices
-- **Inline Operations**: Self-contained operations
+- **Operations**: Query/mutation/subscription operations with field selections
 
 ## Comparison with Other Plugins
 

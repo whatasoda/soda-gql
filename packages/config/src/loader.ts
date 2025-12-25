@@ -52,7 +52,7 @@ export function loadConfig(configPath: string | undefined): Result<ResolvedSodaG
     return err(
       configError({
         code: "CONFIG_LOAD_FAILED",
-        message: `Failed to load config: ${error}`,
+        message: `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
         filePath: resolvedPath,
         cause: error,
       }),

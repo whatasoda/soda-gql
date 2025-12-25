@@ -528,7 +528,7 @@ import { userSlice } from "./slices";
 export const query = gql.default(({ operation }, { $var }) =>
   operation.query(
     {
-      operationName: "MyTestQuery",
+      name: "MyTestQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => ({

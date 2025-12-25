@@ -1,5 +1,5 @@
 import { gql } from "../../../../../tests/codegen-fixture/graphql-system";
-import { userSlice, userSliceCatalog } from "./user";
+import { usersQuery, usersQueryCatalog } from "./user";
 import * as userCatalog from "./user-catalog";
 
 type ProfileQueryVariables = {
@@ -8,24 +8,17 @@ type ProfileQueryVariables = {
 };
 
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
-      operationName: "ProfilePageQuery",
+      name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
-    ({ $ }) => ({
-      users: userSlice.embed({
-        id: $.userId,
+    ({ f, $ }) => [
+      f.users({
+        id: [$.userId],
         categoryId: $.categoryId,
-      }),
-      remoteUsers: userSliceCatalog.byId.embed({
-        id: $.userId,
-        categoryId: $.categoryId,
-      }),
-      catalogUsers: userCatalog.collections.byCategory.embed({
-        categoryId: $.categoryId,
-      }),
-    }),
+      })(({ f }) => [f.id(), f.name()]),
+    ],
   ),
 );
 
