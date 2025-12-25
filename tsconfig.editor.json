@@ -33,6 +33,12 @@
     { "path": "./packages/webpack-plugin/tsconfig.editor.json" },
     { "path": "./packages/metro-plugin/tsconfig.editor.json" },
     { "path": "./packages/swc-transformer/tsconfig.editor.json" },
-    { "path": "./packages/babel-transformer/tsconfig.editor.json" }
+    { "path": "./packages/babel-transformer/tsconfig.editor.json" },
+    { "path": "./examples/babel-app/tsconfig.editor.json" },
+    { "path": "./examples/nestjs-compiler-tsc/tsconfig.json" },
+    { "path": "./examples/nextjs-webpack/tsconfig.json" },
+    { "path": "./examples/vite-react/tsconfig.json" },
+    { "path": "./examples/expo-metro/tsconfig.json" },
+    { "path": "./examples/webpack-swc/tsconfig.json" }
   ]
 }
