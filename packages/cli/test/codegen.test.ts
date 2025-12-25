@@ -1,11 +1,14 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test";
-import { copyDefaultInject } from "../../../tests/fixtures/inject-module/index";
-import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "../../../tests/utils/cli";
+import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "./utils/cli";
 
 const projectRoot = getProjectRoot();
+
+const copyDefaultInject = (destinationPath: string): void => {
+  cpSync(join(projectRoot, "tests/fixtures/inject-module/default-inject.ts"), destinationPath);
+};
 
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
   const subprocess = Bun.spawn({

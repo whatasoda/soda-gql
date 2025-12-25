@@ -1,7 +1,7 @@
 import { expect } from "bun:test";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "@soda-gql/common";
-import { getProjectRoot } from ".";
 
 export type CliResult = {
   readonly stdout: string;
@@ -14,11 +14,6 @@ export type CliOptions = {
   readonly env?: Record<string, string>;
   readonly cwd?: string;
 };
-
-/**
- * Get the project root directory
- */
-export { getProjectRoot } from ".";
 
 /**
  * Run the soda-gql CLI with timeout and proper cleanup
@@ -112,4 +107,11 @@ export const parseCliJsonOutput = <T>(result: CliResult): T => {
   } catch (error) {
     throw new Error(`Failed to parse CLI JSON output: ${(error as Error).message}\nOutput: ${result.stdout}`);
   }
+};
+/**
+ * Get the project root directory
+ */
+
+export const getProjectRoot = (): string => {
+  return fileURLToPath(new URL("../../", import.meta.url));
 };

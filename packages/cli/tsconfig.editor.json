@@ -7,7 +7,7 @@
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/cli/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
-  "include": ["src/**/*", "@x-*.ts", "@devx-*.ts"],
+  "include": ["src/**/*", "@x-*.ts", "@devx-*.ts", "test/**/*"],
   "exclude": ["node_modules", "dist"],
   "references": [
     {
