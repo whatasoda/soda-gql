@@ -1,14 +1,12 @@
 import { gql } from "../../codegen-fixture/graphql-system";
-import { topLevelQuery } from "../common/top-level";
+import { topLevelModel } from "../common/top-level";
 
 export const pageQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
       name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      users: topLevelQuery.embed({ userId: $.userId }),
-    }),
+    ({ f, $ }) => [f.user({ id: $.userId })(() => [topLevelModel.embed()])],
   ),
 );
