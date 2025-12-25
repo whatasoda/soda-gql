@@ -263,6 +263,7 @@
       "name": "@soda-gql/helpers-internal",
       "version": "0.1.0",
       "dependencies": {
+        "@soda-gql/core": "workspace:*",
         "graphql": "^16.11.0",
       },
     },
