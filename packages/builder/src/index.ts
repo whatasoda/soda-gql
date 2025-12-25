@@ -10,6 +10,8 @@ export type {
   DiscoveryCache,
   DiscoverySnapshot,
 } from "./discovery/types";
+// Internal utility for testing - clears gql module cache between test runs
+export { __clearGqlCache } from "./intermediate-module";
 export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 // Scheduler

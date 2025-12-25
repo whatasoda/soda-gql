@@ -1,5 +1,6 @@
 export type { EvaluateIntermediateModulesInput } from "./evaluation";
 export {
+  __clearGqlCache,
   evaluateIntermediateModules,
   evaluateIntermediateModulesAsync,
   evaluateIntermediateModulesGen,

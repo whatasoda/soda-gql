@@ -9,7 +9,7 @@
 import { describe, expect, it } from "bun:test";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel-plugin";
-import { loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test";
+import { type AnalyzerType, loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test";
 
 /**
  * Transform source code using babel-plugin.
@@ -71,69 +71,76 @@ const createTransformConfig = (): import("@soda-gql/config").ResolvedSodaGqlConf
   plugins: {},
 });
 
+const analyzers: AnalyzerType[] = ["ts", "swc"];
+
 describe("Babel-Plugin Conformance with TSC-Transformer", async () => {
-  const testCases = await loadTestCases();
   const config = createTransformConfig();
 
-  for (const testCase of testCases) {
-    describe(testCase.id, () => {
-      if (testCase.expectations.shouldTransform) {
-        it("should produce ESM output with same runtime calls as tsc-transformer", async () => {
-          const babelOutput = await transformWithBabel({
-            sourceCode: testCase.input.sourceCode,
-            sourcePath: testCase.input.sourcePath,
-            artifact: testCase.input.artifact,
-            config,
-            moduleFormat: "esm",
-          });
-          const normalized = await normalizeCode(babelOutput);
+  for (const analyzer of analyzers) {
+    describe(`analyzer: ${analyzer}`, async () => {
+      const testCases = await loadTestCases(analyzer);
 
-          // Verify expected runtime calls are present (same expectations as tsc-transformer)
-          for (const call of testCase.expectations.runtimeCalls) {
-            expect(normalized).toContain(call);
+      for (const testCase of testCases) {
+        describe(testCase.id, () => {
+          if (testCase.expectations.shouldTransform) {
+            it("should produce ESM output with same runtime calls as tsc-transformer", async () => {
+              const babelOutput = await transformWithBabel({
+                sourceCode: testCase.input.sourceCode,
+                sourcePath: testCase.input.sourcePath,
+                artifact: testCase.input.artifact,
+                config,
+                moduleFormat: "esm",
+              });
+              const normalized = await normalizeCode(babelOutput);
+
+              // Verify expected runtime calls are present (same expectations as tsc-transformer)
+              for (const call of testCase.expectations.runtimeCalls) {
+                expect(normalized).toContain(call);
+              }
+
+              // Verify runtime import is added when expected
+              if (testCase.expectations.shouldAddRuntimeImport) {
+                expect(normalized).toContain("@soda-gql/runtime");
+              }
+
+              // Verify gql.default import is removed
+              expect(normalized).not.toContain("gql.default");
+            });
+
+            it("should produce CJS output with same runtime calls as tsc-transformer", async () => {
+              const babelOutput = await transformWithBabel({
+                sourceCode: testCase.input.sourceCode,
+                sourcePath: testCase.input.sourcePath,
+                artifact: testCase.input.artifact,
+                config,
+                moduleFormat: "cjs",
+              });
+              const normalized = await normalizeCode(babelOutput);
+
+              // Verify expected runtime calls are present
+              for (const call of testCase.expectations.runtimeCalls) {
+                expect(normalized).toContain(call);
+              }
+
+              // Verify gql.default call is removed
+              expect(normalized).not.toContain("gql.default");
+            });
+          } else {
+            it("should not transform the source", async () => {
+              const babelOutput = await transformWithBabel({
+                sourceCode: testCase.input.sourceCode,
+                sourcePath: testCase.input.sourcePath,
+                artifact: testCase.input.artifact,
+                config,
+                moduleFormat: "esm",
+              });
+
+              // Verify no runtime calls are added
+              expect(babelOutput).not.toContain("gqlRuntime.");
+              // Verify no runtime import is added
+              expect(babelOutput).not.toContain("@soda-gql/runtime");
+            });
           }
-
-          // Verify runtime import is added when expected
-          if (testCase.expectations.shouldAddRuntimeImport) {
-            expect(normalized).toContain("@soda-gql/runtime");
-          }
-
-          // Verify gql.default import is removed
-          expect(normalized).not.toContain("gql.default");
-        });
-
-        it("should produce CJS output with same runtime calls as tsc-transformer", async () => {
-          const babelOutput = await transformWithBabel({
-            sourceCode: testCase.input.sourceCode,
-            sourcePath: testCase.input.sourcePath,
-            artifact: testCase.input.artifact,
-            config,
-            moduleFormat: "cjs",
-          });
-          const normalized = await normalizeCode(babelOutput);
-
-          // Verify expected runtime calls are present
-          for (const call of testCase.expectations.runtimeCalls) {
-            expect(normalized).toContain(call);
-          }
-
-          // Verify gql.default call is removed
-          expect(normalized).not.toContain("gql.default");
-        });
-      } else {
-        it("should not transform the source", async () => {
-          const babelOutput = await transformWithBabel({
-            sourceCode: testCase.input.sourceCode,
-            sourcePath: testCase.input.sourcePath,
-            artifact: testCase.input.artifact,
-            config,
-            moduleFormat: "esm",
-          });
-
-          // Verify no runtime calls are added
-          expect(babelOutput).not.toContain("gqlRuntime.");
-          // Verify no runtime import is added
-          expect(babelOutput).not.toContain("@soda-gql/runtime");
         });
       }
     });
