@@ -7,6 +7,7 @@ import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
+import { withModelUsageCollection } from "./model-usage-context";
 
 export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
@@ -38,7 +39,11 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
         const f = createFieldFactories(schema, operationTypeName);
-        const fields = mergeFields(fieldBuilder({ f, $ }));
+
+        // Collect model usages during field building
+        const { result: fields, usages: modelUsages } = withModelUsageCollection(() =>
+          mergeFields(fieldBuilder({ f, $ })),
+        );
 
         const document = buildDocument({
           operationName,
@@ -46,7 +51,6 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
           variables,
           fields,
         });
-        const metadataResult = options.metadata?.({ $, document });
 
         const createDefinition = (metadata: OperationMetadata | undefined) => ({
           operationType,
@@ -57,11 +61,41 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
           metadata,
         });
 
-        if (metadataResult instanceof Promise) {
-          return metadataResult.then(createDefinition);
+        // Check if any model has a metadata builder
+        const hasModelMetadata = modelUsages.some((u) => u.metadataBuilder);
+
+        if (!hasModelMetadata && !options.metadata) {
+          // No metadata to evaluate
+          return createDefinition(undefined);
         }
 
-        return createDefinition(metadataResult);
+        // Evaluate model metadata first (sync or async)
+        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata | undefined>)[] =
+          modelUsages.map((usage) => {
+            if (!usage.metadataBuilder) return undefined;
+            return usage.metadataBuilder({ $: usage.$ });
+          });
+
+        // Check if any model metadata is async
+        const hasAsyncModelMetadata = modelMetadataResults.some((r) => r instanceof Promise);
+
+        if (hasAsyncModelMetadata) {
+          // Handle async model metadata
+          return Promise.all(modelMetadataResults).then(async (resolvedModelMetadata) => {
+            const operationMetadata = await options.metadata?.({ $, document, modelMetadata: resolvedModelMetadata });
+            return createDefinition(operationMetadata);
+          });
+        }
+
+        // All model metadata is sync, evaluate operation metadata
+        const syncModelMetadata = modelMetadataResults as (OperationMetadata | undefined)[];
+        const operationMetadataResult = options.metadata?.({ $, document, modelMetadata: syncModelMetadata });
+
+        if (operationMetadataResult instanceof Promise) {
+          return operationMetadataResult.then(createDefinition);
+        }
+
+        return createDefinition(operationMetadataResult);
       });
     };
   };

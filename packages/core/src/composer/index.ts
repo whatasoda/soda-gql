@@ -7,5 +7,6 @@ export * from "./gql-composer";
 export * from "./helpers";
 export * from "./input";
 export * from "./model";
+export * from "./model-usage-context";
 export * from "./operation";
 export * from "./var-builder";

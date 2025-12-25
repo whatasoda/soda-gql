@@ -24,6 +24,8 @@ export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
   readonly $: TVarRefs;
   /** The GraphQL DocumentNode (AST) for this operation */
   readonly document: DocumentNode;
+  /** Metadata results from embedded models, evaluated before operation metadata */
+  readonly modelMetadata?: readonly (OperationMetadata | undefined)[];
 };
 
 /**

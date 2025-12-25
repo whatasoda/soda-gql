@@ -4,8 +4,10 @@ import type { ModelMetadataBuilder, OperationMetadata } from "../types/metadata"
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
+import { getCurrentFieldPath } from "./field-path-context";
 import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
+import { recordModelUsage } from "./model-usage-context";
 
 export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
   type ModelBuilder<TTypeName extends keyof TSchema["object"] & string> = <
@@ -43,6 +45,16 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
           fragment: (variables: any) => {
             const f = createFieldFactories(schema, typename);
             const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
+
+            // Record model usage for metadata aggregation (after $ is created)
+            // biome-ignore lint/suspicious/noExplicitAny: Type variance issue with metadata builder generics
+            recordModelUsage({
+              metadataBuilder: options.metadata as any,
+              path: getCurrentFieldPath(),
+              variables,
+              $,
+            });
+
             return mergeFields(builder({ f, $ }));
           },
           ...(options.metadata && { metadata: options.metadata }),
