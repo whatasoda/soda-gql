@@ -16,6 +16,4 @@ export const userModel = gql.default(({ model }, { $var }) =>
 /**
  * Simple post model without variables
  */
-export const postModel = gql.default(({ model }) =>
-  model.Post({}, ({ f }) => [f.id(), f.title(), f.content(), f.author()(({ f }) => [f.id(), f.name()])]),
-);
+export const postModel = gql.default(({ model }) => model.Post({}, ({ f }) => [f.id(), f.title(), f.body()]));

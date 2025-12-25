@@ -9,13 +9,12 @@
     "baseUrl": ".",
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [],
     "paths": {
-      "@/graphql-system": ["./graphql-system/index.ts"],
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"],
       "@/graphql/*": ["./src/graphql/*"]
     }
   },
-  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "include": ["src/**/*", "codegen-fixture/**/*"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" }
