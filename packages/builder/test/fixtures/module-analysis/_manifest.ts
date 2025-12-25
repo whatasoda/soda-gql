@@ -1,71 +1,48 @@
 /**
  * Fixture manifest for module analysis tests.
  *
- * Each fixture is tested by both TypeScript and SWC analyzers.
- * Fixtures with `skipSwc: true` are skipped when running SWC analyzer tests
- * (planned for future SWC implementation).
+ * All fixtures are tested by both TypeScript and SWC analyzers
+ * to ensure consistent behavior across implementations.
  */
-
-export interface FixtureEntry {
-  readonly name: string;
-  readonly skipSwc: boolean;
-}
 
 export const fixtures = [
-  // From shared/ - both analyzers produce consistent results
-  { name: "arrow-function", skipSwc: false },
-  { name: "class-method", skipSwc: false },
-  { name: "deeply-nested", skipSwc: false },
-  { name: "duplicate-names", skipSwc: false },
-  { name: "exported-and-private", skipSwc: false },
-  { name: "exported-function", skipSwc: false },
-  { name: "multiple-same-scope", skipSwc: false },
-  { name: "nested-in-function", skipSwc: false },
-  { name: "object-property", skipSwc: false },
-  { name: "top-level-simple", skipSwc: false },
+  // Core patterns - both analyzers produce consistent results
+  "arrow-function",
+  "class-method",
+  "deeply-nested",
+  "duplicate-names",
+  "exported-and-private",
+  "exported-function",
+  "multiple-same-scope",
+  "nested-in-function",
+  "object-property",
+  "top-level-simple",
 
-  // Consolidated from ts/ and swc/ (identical tests)
-  { name: "mutation-simple", skipSwc: false },
-  { name: "mutation-with-slice", skipSwc: false },
-  { name: "subscription-simple", skipSwc: false },
-  { name: "subscription-with-variables", skipSwc: false },
+  // Operation types
+  "mutation-simple",
+  "mutation-with-slice",
+  "subscription-simple",
+  "subscription-with-variables",
 
-  // From swc/ - SWC-specific patterns
-  { name: "imported-binding-refs", skipSwc: false },
-  { name: "namespace-imports", skipSwc: false },
-  { name: "nested-in-functions", skipSwc: false },
-  { name: "object-property-exports", skipSwc: false },
-  { name: "top-level-definitions", skipSwc: false },
+  // Import/export patterns
+  "imported-binding-refs",
+  "imported-slice-refs",
+  "local-and-imported-deps",
+  "namespace-imports",
+  "nested-namespace-deps",
+  "object-property-exports",
+  "top-level-definitions",
 
-  // From ts/ - TS-specific features
-  { name: "imported-slice-refs", skipSwc: false },
-  { name: "local-and-imported-deps", skipSwc: false },
-  { name: "multiple-schemas", skipSwc: false },
-  { name: "nested-namespace-deps", skipSwc: false },
-  { name: "nested-non-top-level", skipSwc: false },
-  { name: "top-level-with-metadata", skipSwc: false },
+  // Advanced patterns
+  "multiple-schemas",
+  "nested-in-functions",
+  "nested-non-top-level",
+  "top-level-with-metadata",
 
-  // Model embedding fixtures
-  { name: "model-embedding/basic-embed", skipSwc: false },
-  { name: "model-embedding/model-in-model", skipSwc: false },
-  { name: "model-embedding/multiple-models", skipSwc: false },
-] as const satisfies readonly FixtureEntry[];
+  // Model embedding
+  "model-embedding/basic-embed",
+  "model-embedding/model-in-model",
+  "model-embedding/multiple-models",
+] as const;
 
-export type FixtureName = (typeof fixtures)[number]["name"];
-
-/**
- * Get fixtures that should run for a given analyzer.
- */
-export const getFixturesForAnalyzer = (analyzer: "ts" | "swc"): readonly FixtureEntry[] => {
-  if (analyzer === "ts") {
-    return fixtures;
-  }
-  return fixtures.filter((f) => !f.skipSwc);
-};
-
-/**
- * Get fixtures that are skipped for SWC analyzer.
- */
-export const getSkippedFixturesForSwc = (): readonly FixtureEntry[] => {
-  return fixtures.filter((f) => f.skipSwc);
-};
+export type FixtureName = (typeof fixtures)[number];
