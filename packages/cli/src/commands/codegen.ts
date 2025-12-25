@@ -20,6 +20,7 @@ type ParsedCommand =
       format: CodegenFormat;
       scalars: Record<string, string>;
       helpers: Record<string, string>;
+      metadata: Record<string, string>;
       importExtension: boolean;
     };
 
@@ -66,16 +67,20 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  // Extract schemas, scalars, and helpers from config
+  // Extract schemas, scalars, helpers, and metadata from config
   const schemas: Record<string, string> = {};
   const scalars: Record<string, string> = {};
   const helpers: Record<string, string> = {};
+  const metadata: Record<string, string> = {};
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
     schemas[name] = schemaConfig.schema;
     scalars[name] = schemaConfig.scalars;
     if (schemaConfig.helpers) {
       helpers[name] = schemaConfig.helpers;
+    }
+    if (schemaConfig.metadata) {
+      metadata[name] = schemaConfig.metadata;
     }
   }
 
@@ -89,6 +94,7 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     format: (args.format ?? "human") as CodegenFormat,
     scalars,
     helpers,
+    metadata,
     importExtension: config.styles.importExtension,
   });
 };
@@ -149,6 +155,10 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       helpers:
         Object.keys(command.helpers).length > 0
           ? Object.fromEntries(Object.entries(command.helpers).map(([name, path]) => [name, resolve(path)]))
+          : undefined,
+      metadata:
+        Object.keys(command.metadata).length > 0
+          ? Object.fromEntries(Object.entries(command.metadata).map(([name, path]) => [name, resolve(path)]))
           : undefined,
       importExtension: command.importExtension,
     });
