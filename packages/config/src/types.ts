@@ -1,19 +1,33 @@
+/**
+ * Injection configuration for a schema.
+ * Can be a string (single file) or an object with separate paths.
+ *
+ * When a string is provided, it should be a path to a file that exports:
+ * - `scalar` (required): Scalar type definitions
+ * - `helpers` (optional): Helper functions for gql composer
+ * - `metadata` (optional): Metadata adapter
+ *
+ * When an object is provided, each property is a path to a separate file.
+ */
+export type InjectConfig =
+  | string
+  | {
+      readonly scalars: string;
+      readonly helpers?: string;
+      readonly metadata?: string;
+    };
+
 // Schema configuration for codegen
 export type SchemaConfig = {
   readonly schema: string;
-  readonly scalars: string;
   /**
-   * Optional path to the helpers module.
-   * The module should export a `helpers` object with typed utility functions.
-   * These helpers are injected into the gql composer callback alongside `$`.
+   * Injection configuration for scalars, helpers, and metadata.
+   * Can be a single file path or an object with separate paths.
+   *
+   * @example Single file: "./inject.ts" (exports scalar, helpers?, metadata?)
+   * @example Object: { scalars: "./scalars.ts", helpers: "./helpers.ts", metadata: "./metadata.ts" }
    */
-  readonly helpers?: string;
-  /**
-   * Optional path to the metadata adapter module.
-   * The module should export a `metadata` object matching MetadataAdapter.
-   * If not specified, a default adapter is generated.
-   */
-  readonly metadata?: string;
+  readonly inject: InjectConfig;
 };
 
 // Output styles configuration for codegen
@@ -84,12 +98,17 @@ export type SodaGqlConfig = {
   readonly plugins?: PluginConfig;
 };
 
-// Resolved schema config with absolute paths
-export type ResolvedSchemaConfig = {
-  readonly schema: string;
+// Resolved inject config with absolute paths (always object form)
+export type ResolvedInjectConfig = {
   readonly scalars: string;
   readonly helpers?: string;
   readonly metadata?: string;
+};
+
+// Resolved schema config with absolute paths
+export type ResolvedSchemaConfig = {
+  readonly schema: string;
+  readonly inject: ResolvedInjectConfig;
 };
 
 // Resolved config (normalized and validated)
