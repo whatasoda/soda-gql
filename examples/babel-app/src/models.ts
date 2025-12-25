@@ -31,11 +31,6 @@ export const postModel = gql.default(({ model }) =>
     //
     f.id(),
     f.title(),
-    f.content(),
-    f.author()(({ f }) => [
-      //
-      f.id(),
-      f.name(),
-    ]),
+    f.body(),
   ]),
 );
