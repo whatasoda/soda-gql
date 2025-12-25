@@ -25,6 +25,6 @@ export const getUsersQuery = gql.default(({ query }) =>
     {
       name: "GetUsers",
     },
-    ({ f }) => [f.users()(({ f }) => [f.id(), f.name(), f.email()])],
+    ({ f }) => [f.users({})(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );

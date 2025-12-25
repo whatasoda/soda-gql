@@ -8,7 +8,7 @@
     "tsBuildInfoFile": "node_modules/.soda-gql/.typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
-  "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*"],
+  "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*", "packages/cli/test/utils/cli.ts"],
   "exclude": [
     "node_modules",
     "**/dist/**/*",

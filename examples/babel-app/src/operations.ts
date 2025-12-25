@@ -59,29 +59,3 @@ export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) 
   ),
 );
 
-/**
- * Query operation with helpers (auth + cache metadata)
- */
-export const getProtectedUserQuery = gql.default(({ query }, { $var, auth, cache }) =>
-  query.operation(
-    {
-      name: "GetProtectedUser",
-      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
-      metadata: ({ $ }) => ({
-        custom: {
-          ...auth.requiresLogin(),
-          ...cache.ttl(300),
-          trackedVariables: [$var.getName($.userId)],
-        },
-      }),
-    },
-    ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.email(),
-        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
-      ]),
-    ],
-  ),
-);

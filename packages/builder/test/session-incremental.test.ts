@@ -10,7 +10,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing shared test fixtures
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const defaultInjectPath = path.join(projectRoot, "tests/fixtures/inject-module/default-inject.ts");
+const defaultInjectPath = path.join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts");
 
 /**
  * Copies the default inject module fixture to the specified destination.
@@ -65,8 +65,8 @@ describe("BuilderSession incremental end-to-end", () => {
     workspaceRoot = path.join(tmpRoot, `session-${timestamp}`);
     await fs.mkdir(workspaceRoot, { recursive: true });
 
-    // Copy fixture to workspace (exclude graphql-system)
-    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system"));
+    // Copy fixture to workspace (exclude graphql-system and variants)
+    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system") && !src.includes("variants"));
 
     // Change to workspace
     process.chdir(workspaceRoot);
@@ -152,10 +152,7 @@ describe("BuilderSession incremental end-to-end", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Update nested-definitions.ts with variant
-    const variantPath = path.join(
-      originalCwd,
-      "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
-    );
+    const variantPath = path.join(fixtureRoot, "variants/nested-definitions.updated.ts");
     const targetPath = path.join(workspaceRoot, "nested-definitions.ts");
     await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
@@ -217,7 +214,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const initialArtifact = initial._unsafeUnwrap();
 
     // Copy new catalog file
-    const variantPath = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
+    const variantPath = path.join(fixtureRoot, "variants/catalog.new.ts");
     const targetPath = path.join(workspaceRoot, "catalog.ts");
     await copyVariantFile(variantPath, targetPath, workspaceRoot);
 
@@ -327,15 +324,12 @@ describe("BuilderSession incremental end-to-end", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Add catalog.ts
-    const catalogVariant = path.join(originalCwd, "tests/fixtures/builder-session-incremental/variants/catalog.new.ts");
+    const catalogVariant = path.join(fixtureRoot, "variants/catalog.new.ts");
     const catalogTarget = path.join(workspaceRoot, "catalog.ts");
     await copyVariantFile(catalogVariant, catalogTarget, workspaceRoot);
 
     // Update nested-definitions.ts
-    const nestedVariant = path.join(
-      originalCwd,
-      "tests/fixtures/builder-session-incremental/variants/nested-definitions.updated.ts",
-    );
+    const nestedVariant = path.join(fixtureRoot, "variants/nested-definitions.updated.ts");
     const nestedTarget = path.join(workspaceRoot, "nested-definitions.ts");
     await copyVariantFile(nestedVariant, nestedTarget, workspaceRoot);
     const now = new Date();
