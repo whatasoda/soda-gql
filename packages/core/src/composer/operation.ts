@@ -27,6 +27,7 @@ export const createOperationComposerFactory = <
 
   type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
   type TAggregatedModelMetadata = ExtractAdapterTypes<TAdapter>["aggregatedModelMetadata"];
+  type TSchemaLevel = ExtractAdapterTypes<TAdapter>["schemaLevel"];
 
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
@@ -47,7 +48,8 @@ export const createOperationComposerFactory = <
         metadata?: MetadataBuilder<
           ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
           TOperationMetadata,
-          TAggregatedModelMetadata
+          TAggregatedModelMetadata,
+          TSchemaLevel
         >;
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
@@ -112,8 +114,9 @@ export const createOperationComposerFactory = <
           // Aggregate using the adapter
           const aggregatedModelMetadata = resolvedAdapter.aggregateModelMetadata(modelMetaInfos) as TAggregatedModelMetadata;
 
-          // Call operation metadata builder with aggregated model metadata
-          return options.metadata?.({ $, document, modelMetadata: aggregatedModelMetadata });
+          // Call operation metadata builder with aggregated model metadata and schema-level config
+          const schemaLevel = resolvedAdapter.schemaLevel as TSchemaLevel | undefined;
+          return options.metadata?.({ $, document, modelMetadata: aggregatedModelMetadata, schemaLevel });
         };
 
         if (hasAsyncModelMetadata) {
