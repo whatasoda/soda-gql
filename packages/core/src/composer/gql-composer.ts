@@ -31,7 +31,7 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, THelp
   };
 
   const helper = {
-    ...createVarBuilder(schema),
+    $var: createVarBuilder(schema),
     $prefix: createPrefixHelper(),
     ...(helpers ?? ({} as THelpers)),
   };

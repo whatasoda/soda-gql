@@ -1,7 +1,6 @@
 /** Utilities for computing type-safe field path selectors and projections. */
 
-import type { AnyGraphqlSchema } from "../schema";
-import type { AnyFields, AnyNestedObject, InferField } from "./field-selection";
+import type { AnyFields, AnyGraphqlSchema, AnyNestedObject, InferField } from "@soda-gql/core";
 
 export type AnyFieldPath = string;
 
