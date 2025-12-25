@@ -65,8 +65,8 @@ describe("BuilderSession incremental end-to-end", () => {
     workspaceRoot = path.join(tmpRoot, `session-${timestamp}`);
     await fs.mkdir(workspaceRoot, { recursive: true });
 
-    // Copy fixture to workspace (exclude graphql-system)
-    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system"));
+    // Copy fixture to workspace (exclude graphql-system and variants)
+    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system") && !src.includes("variants"));
 
     // Change to workspace
     process.chdir(workspaceRoot);

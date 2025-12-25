@@ -113,5 +113,5 @@ export const parseCliJsonOutput = <T>(result: CliResult): T => {
  */
 
 export const getProjectRoot = (): string => {
-  return fileURLToPath(new URL("../../", import.meta.url));
+  return fileURLToPath(new URL("../../../../", import.meta.url));
 };
