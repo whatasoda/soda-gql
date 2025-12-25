@@ -1,18 +1,11 @@
 export type {
-  AdapterInputMetadata,
-  AdapterOutputMetadata,
   AnyMetadataAdapter,
-  MetadataAdapter,
-  MetadataTransformInput,
-} from "./adapter";
-export type {
-  AnyFlexibleMetadataAdapter,
-  DefaultFlexibleMetadataAdapter,
+  DefaultMetadataAdapter,
   ExtractAdapterTypes,
-  FlexibleMetadataAdapter,
+  MetadataAdapter,
   ModelMetaInfo,
-} from "./flexible-adapter";
-export { createDefaultAdapter, defaultFlexibleMetadataAdapter } from "./flexible-adapter";
+} from "./adapter";
+export { createDefaultAdapter, defaultMetadataAdapter } from "./adapter";
 export type {
   ExtractMetadata,
   MetadataBuilder,

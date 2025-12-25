@@ -4,7 +4,7 @@
  */
 
 export const defaultMetadataAdapterTemplate = `\
-import type { FlexibleMetadataAdapter, ModelMetaInfo, OperationMetadata } from "@soda-gql/core";
+import type { MetadataAdapter, ModelMetaInfo, OperationMetadata } from "@soda-gql/core";
 
 /**
  * Default metadata adapter.
@@ -17,7 +17,7 @@ import type { FlexibleMetadataAdapter, ModelMetaInfo, OperationMetadata } from "
  *
  * Note: Operation metadata type is inferred from each operation's metadata callback return type.
  */
-export const adapter: FlexibleMetadataAdapter<
+export const adapter: MetadataAdapter<
   OperationMetadata,
   readonly (OperationMetadata | undefined)[]
 > = {

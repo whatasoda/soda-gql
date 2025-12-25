@@ -1,57 +1,76 @@
-import type { OperationType } from "../schema";
+import type { FieldPath } from "../../composer/field-path-context";
 import type { OperationMetadata } from "./metadata";
 
 /**
- * Input provided to the metadata adapter's transform function.
+ * Information about a model's metadata when embedded in an operation.
  */
-export type MetadataTransformInput<TMetadata extends OperationMetadata> = {
-  /** The type of GraphQL operation (query, mutation, subscription) */
-  readonly operationType: OperationType;
-  /** The name of the operation */
-  readonly operationName: string;
-  /** The operation metadata */
-  readonly metadata: TMetadata;
-  /** The GraphQL document string (useful for generating hashes) */
-  readonly document: string;
+export type ModelMetaInfo<TModelMetadata> = {
+  /** The evaluated metadata from the model, if defined */
+  readonly metadata: TModelMetadata | undefined;
+  /** Field path where the model was embedded */
+  readonly fieldPath: FieldPath | null;
 };
 
 /**
- * Adapter interface for processing metadata at build time.
- * Allows schema-level configuration of default metadata and transformation.
+ * Metadata adapter that defines how model metadata is aggregated
+ * and provides schema-level configuration.
  *
- * @template TInputMetadata - The metadata type accepted by the adapter
- * @template TOutputMetadata - The metadata type produced after transformation
+ * This adapter allows complete customization of:
+ * - Model metadata type (TModelMetadata)
+ * - How model metadata is aggregated (aggregateModelMetadata)
+ * - Schema-level fixed values available to all operation metadata builders (schemaLevel)
+ *
+ * Note: Operation metadata type is inferred from the operation's metadata callback return type.
+ *
+ * @template TModelMetadata - The metadata type returned by model metadata builders
+ * @template TAggregatedModelMetadata - The type returned by aggregateModelMetadata
+ * @template TSchemaLevel - The type of schema-level configuration values
  */
-export type MetadataAdapter<
-  TInputMetadata extends OperationMetadata = OperationMetadata,
-  TOutputMetadata extends OperationMetadata = TInputMetadata,
-> = {
-  /** Schema-level default metadata applied to all operations */
-  readonly defaults: TInputMetadata;
-
+export type MetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata = unknown, TSchemaLevel = unknown> = {
   /**
-   * Transform/process metadata at build time.
-   * Called for each operation.
-   * Use this to add computed values like persisted query hashes.
+   * Aggregates metadata from all embedded models in an operation.
+   * Called with the metadata from each embedded model.
+   * The return type becomes the `modelMetadata` parameter in operation metadata builders.
    */
-  readonly transform?: (input: MetadataTransformInput<TInputMetadata>) => TOutputMetadata;
+  readonly aggregateModelMetadata: (models: readonly ModelMetaInfo<TModelMetadata>[]) => TAggregatedModelMetadata;
+  /**
+   * Schema-level fixed values that are passed to all operation metadata builders.
+   * Useful for configuration that should be consistent across all operations.
+   */
+  readonly schemaLevel?: TSchemaLevel;
 };
+
+/**
+ * Extracts the type parameters from a MetadataAdapter.
+ */
+export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TModel, infer TAggregated, infer TSchemaLevel>
+  ? {
+      modelMetadata: TModel;
+      aggregatedModelMetadata: TAggregated;
+      schemaLevel: TSchemaLevel;
+    }
+  : never;
 
 /**
  * Generic type for any metadata adapter.
  */
-export type AnyMetadataAdapter = MetadataAdapter<OperationMetadata, OperationMetadata>;
+export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
- * Extracts the input metadata type from an adapter.
+ * Default adapter that maintains backwards compatibility with the original behavior.
+ * Uses OperationMetadata for model metadata and aggregates by collecting metadata into a readonly array.
  */
-export type AdapterInputMetadata<T extends AnyMetadataAdapter> = T extends MetadataAdapter<infer I, infer _O>
-  ? I
-  : OperationMetadata;
+export type DefaultMetadataAdapter = MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]>;
 
 /**
- * Extracts the output metadata type from an adapter.
+ * Creates the default adapter instance.
+ * @internal
  */
-export type AdapterOutputMetadata<T extends AnyMetadataAdapter> = T extends MetadataAdapter<infer _I, infer O>
-  ? O
-  : OperationMetadata;
+export const createDefaultAdapter = (): DefaultMetadataAdapter => ({
+  aggregateModelMetadata: (models) => models.map((m) => m.metadata),
+});
+
+/**
+ * The default adapter instance.
+ */
+export const defaultMetadataAdapter: DefaultMetadataAdapter = createDefaultAdapter();

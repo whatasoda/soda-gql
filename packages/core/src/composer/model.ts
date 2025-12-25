@@ -1,8 +1,8 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
 import type {
-  AnyFlexibleMetadataAdapter,
-  DefaultFlexibleMetadataAdapter,
+  AnyMetadataAdapter,
+  DefaultMetadataAdapter,
   ExtractAdapterTypes,
   ModelMetadataBuilder,
 } from "../types/metadata";
@@ -16,7 +16,7 @@ import { recordModelUsage } from "./model-usage-context";
 
 export const createGqlModelComposers = <
   TSchema extends AnyGraphqlSchema,
-  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 >(
   schema: NoInfer<TSchema>,
   _adapter?: TAdapter,

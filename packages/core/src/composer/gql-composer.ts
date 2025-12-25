@@ -1,5 +1,5 @@
 import type { AnyModel, AnyOperation } from "../types/element";
-import type { AnyFlexibleMetadataAdapter, DefaultFlexibleMetadataAdapter } from "../types/metadata";
+import type { AnyMetadataAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createPrefixHelper } from "./field-prefix";
 import { createGqlModelComposers } from "./model";
@@ -12,7 +12,7 @@ export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel 
 
 export type GqlElementComposerOptions<
   THelpers extends object = object,
-  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 > = {
   helpers?: THelpers;
   adapter?: TAdapter;
@@ -21,7 +21,7 @@ export type GqlElementComposerOptions<
 export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
   THelpers extends object = object,
-  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 >(
   schema: NoInfer<TSchema>,
   options: GqlElementComposerOptions<NoInfer<THelpers>, NoInfer<TAdapter>> = {} as GqlElementComposerOptions<THelpers, TAdapter>,

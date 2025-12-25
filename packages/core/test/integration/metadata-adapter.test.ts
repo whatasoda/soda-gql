@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
-import type { FlexibleMetadataAdapter, ModelMetaInfo, OperationMetadata } from "../../src/types/metadata";
-import { defaultFlexibleMetadataAdapter } from "../../src/types/metadata";
+import type { MetadataAdapter, ModelMetaInfo, OperationMetadata } from "../../src/types/metadata";
+import { defaultMetadataAdapter } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
 const schema = {
@@ -53,7 +53,7 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-describe("flexible metadata adapter", () => {
+describe("metadata adapter", () => {
   describe("default adapter", () => {
     it("aggregates model metadata as readonly array", () => {
       const gql = createGqlElementComposer<Schema>(schema);
@@ -108,14 +108,14 @@ describe("flexible metadata adapter", () => {
       expect(meta.custom?.modelCount).toBe(0);
     });
 
-    it("defaultFlexibleMetadataAdapter instance works correctly", () => {
+    it("defaultMetadataAdapter instance works correctly", () => {
       const models: ModelMetaInfo<OperationMetadata>[] = [
         { metadata: { headers: { a: "1" } }, fieldPath: null },
         { metadata: { headers: { b: "2" } }, fieldPath: null },
         { metadata: undefined, fieldPath: null },
       ];
 
-      const result = defaultFlexibleMetadataAdapter.aggregateModelMetadata(models);
+      const result = defaultMetadataAdapter.aggregateModelMetadata(models);
 
       expect(result).toEqual([{ headers: { a: "1" } }, { headers: { b: "2" } }, undefined]);
     });
@@ -133,7 +133,7 @@ describe("flexible metadata adapter", () => {
     };
 
     // Custom adapter that merges all headers
-    const headerMergingAdapter: FlexibleMetadataAdapter<CustomModelMetadata, MergedHeaders> = {
+    const headerMergingAdapter: MetadataAdapter<CustomModelMetadata, MergedHeaders> = {
       aggregateModelMetadata: (models) => {
         const allHeaders: Record<string, string> = {};
         for (const model of models) {
@@ -182,7 +182,7 @@ describe("flexible metadata adapter", () => {
     it("calls aggregateModelMetadata with ModelMetaInfo array", () => {
       const capturedModels: ModelMetaInfo<CustomModelMetadata>[] = [];
 
-      const capturingAdapter: FlexibleMetadataAdapter<CustomModelMetadata, MergedHeaders> = {
+      const capturingAdapter: MetadataAdapter<CustomModelMetadata, MergedHeaders> = {
         aggregateModelMetadata: (models) => {
           capturedModels.push(...models);
           return { allHeaders: {} };
@@ -279,7 +279,7 @@ describe("flexible metadata adapter", () => {
     it("passes undefined metadata in ModelMetaInfo", () => {
       const capturedModels: ModelMetaInfo<OperationMetadata>[] = [];
 
-      const capturingAdapter: FlexibleMetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]> = {
+      const capturingAdapter: MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]> = {
         aggregateModelMetadata: (models) => {
           capturedModels.push(...models);
           return models.map((m) => m.metadata);
