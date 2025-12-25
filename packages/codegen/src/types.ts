@@ -9,13 +9,18 @@ export type CodegenOptions = {
   readonly injectFromPath: string;
 };
 
+// Inject configuration per schema (always resolved object form)
+export type CodegenInjectConfig = {
+  readonly scalars: string;
+  readonly helpers?: string;
+  readonly metadata?: string;
+};
+
 export type MultiSchemaCodegenOptions = {
   readonly schemas: Record<string, string>; // name -> path
   readonly outPath: string;
   readonly format: CodegenFormat;
-  readonly scalars?: Record<string, string>; // schema name -> scalar module path
-  readonly helpers?: Record<string, string>; // schema name -> helpers module path
-  readonly metadata?: Record<string, string>; // schema name -> metadata adapter module path
+  readonly inject?: Record<string, CodegenInjectConfig>; // schema name -> inject config
   readonly injectFromPath?: string; // Legacy: single inject module for default schema
   readonly importExtension?: boolean; // Whether to include file extensions in import paths (default: false)
 };
