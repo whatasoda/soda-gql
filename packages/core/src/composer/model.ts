@@ -30,33 +30,27 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
     return <TFieldEntries extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
-        metadata?: ModelMetadataBuilder<
-          AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>,
-          OperationMetadata
-        >;
+        metadata?: ModelMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, OperationMetadata>;
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
     ) => {
       const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
       const { metadata } = options;
 
-      return Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(
-        () =>
-          ({
-            typename,
-            embed: (variables) => {
-              const f = createFieldFactories(schema, typename);
-              const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
+      return Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => ({
+        typename,
+        embed: (variables) => {
+          const f = createFieldFactories(schema, typename);
+          const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
 
-              recordModelUsage({
-                metadataBuilder: metadata ? () => metadata({ $ }) : null,
-                path: getCurrentFieldPath(),
-              });
+          recordModelUsage({
+            metadataBuilder: metadata ? () => metadata({ $ }) : null,
+            path: getCurrentFieldPath(),
+          });
 
-              return mergeFields(builder({ f, $ }));
-            },
-          })
-      );
+          return mergeFields(builder({ f, $ }));
+        },
+      }));
     };
   };
 

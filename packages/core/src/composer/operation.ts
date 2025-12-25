@@ -41,9 +41,7 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         const f = createFieldFactories(schema, operationTypeName);
 
         // Collect model usages during field building
-        const { result: fields, usages: modelUsages } = withModelUsageCollection(() =>
-          mergeFields(fieldBuilder({ f, $ })),
-        );
+        const { result: fields, usages: modelUsages } = withModelUsageCollection(() => mergeFields(fieldBuilder({ f, $ })));
 
         const document = buildDocument({
           operationName,
@@ -70,8 +68,9 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         }
 
         // Evaluate model metadata first (sync or async)
-        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata>)[] =
-          modelUsages.map((usage) => usage.metadataBuilder ? usage.metadataBuilder() : undefined);
+        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata>)[] = modelUsages.map((usage) =>
+          usage.metadataBuilder ? usage.metadataBuilder() : undefined,
+        );
 
         // Check if any model metadata is async
         const hasAsyncModelMetadata = modelMetadataResults.some((r) => r instanceof Promise);

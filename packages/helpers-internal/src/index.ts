@@ -1,5 +1,4 @@
 // Types
-export type { AnyFieldPath, AvailableFieldPathOf, InferByFieldPath } from "./types/field-path";
 
 // Parse Execution Result
 export { createExecutionResultParser } from "./parse-execution-result";
@@ -29,3 +28,4 @@ export type {
   NormalizedError,
   NormalizedExecutionResult,
 } from "./types";
+export type { AnyFieldPath, AvailableFieldPathOf, InferByFieldPath } from "./types/field-path";
