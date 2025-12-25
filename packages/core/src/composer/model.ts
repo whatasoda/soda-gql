@@ -1,5 +1,5 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
-import type { AnyFields } from "../types/fragment";
+import type { AnyFields, AssignableInput } from "../types/fragment";
 import type { ModelMetadataBuilder, OperationMetadata } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -42,7 +42,7 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
         const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         return {
           typename,
-          embed: (variables: any) => {
+          embed: (variables: AssignableInput<TSchema, MergeVarDefinitions<TVarDefinitions>>) => {
             const f = createFieldFactories(schema, typename);
             const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
 
