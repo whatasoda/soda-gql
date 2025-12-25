@@ -2,7 +2,27 @@ import { dirname, resolve } from "node:path";
 import type { Result } from "neverthrow";
 import { ok } from "neverthrow";
 import type { ConfigError } from "./errors";
-import type { ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
+import type { InjectConfig, ResolvedInjectConfig, ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
+
+/**
+ * Normalize inject config to resolved object form.
+ * String form is converted to object with same path for all fields.
+ */
+function normalizeInject(inject: InjectConfig, configDir: string): ResolvedInjectConfig {
+  if (typeof inject === "string") {
+    const resolvedPath = resolve(configDir, inject);
+    return {
+      scalars: resolvedPath,
+      helpers: resolvedPath,
+      metadata: resolvedPath,
+    };
+  }
+  return {
+    scalars: resolve(configDir, inject.scalars),
+    ...(inject.helpers ? { helpers: resolve(configDir, inject.helpers) } : {}),
+    ...(inject.metadata ? { metadata: resolve(configDir, inject.metadata) } : {}),
+  };
+}
 
 /**
  * Resolve and normalize config with defaults.
@@ -30,9 +50,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
         name,
         {
           schema: resolve(configDir, schemaConfig.schema),
-          scalars: resolve(configDir, schemaConfig.scalars),
-          ...(schemaConfig.helpers ? { helpers: resolve(configDir, schemaConfig.helpers) } : {}),
-          ...(schemaConfig.metadata ? { metadata: resolve(configDir, schemaConfig.metadata) } : {}),
+          inject: normalizeInject(schemaConfig.inject, configDir),
         },
       ]),
     ),
