@@ -1,4 +1,5 @@
-import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import type {
   GqlCallModel,
   GqlCallOperation,
@@ -169,7 +170,3 @@ const extractBuilderCall = (factory: ts.ArrowFunction, typescript: typeof ts): t
 
   return null;
 };
-
-// Re-export old name for backwards compatibility during transition
-/** @deprecated Use `TsGqlCallOperation` instead */
-export type TsGqlCallInlineOperation = TsGqlCallOperation;

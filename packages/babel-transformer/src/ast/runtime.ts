@@ -43,7 +43,3 @@ export const buildOperationRuntimeComponents = ({
     runtimeCall,
   });
 };
-
-// Re-export old name for backwards compatibility during transition
-/** @deprecated Use `buildOperationRuntimeComponents` instead */
-export const buildInlineOperationRuntimeComponents = buildOperationRuntimeComponents;

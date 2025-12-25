@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalId } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import {
   formatPluginError,
   isPluginError,

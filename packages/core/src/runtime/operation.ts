@@ -23,9 +23,3 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
 
   return operation;
 };
-
-// Re-export old names for backwards compatibility during transition
-/** @deprecated Use `RuntimeOperationInput` instead */
-export type RuntimeInlineOperationInput = RuntimeOperationInput;
-/** @deprecated Use `createRuntimeOperation` instead */
-export const createRuntimeInlineOperation = createRuntimeOperation;

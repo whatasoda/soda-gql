@@ -30,11 +30,3 @@ export const __resetRuntimeRegistry = () => {
 export const __getRegisteredOperations = (): ReadonlyMap<string, AnyOperationOf<OperationType>> => {
   return operationRegistry;
 };
-
-// Re-export old names for backwards compatibility during transition
-/** @deprecated Use `registerOperation` instead */
-export const registerInlineOperation = registerOperation;
-/** @deprecated Use `getOperation` instead */
-export const getInlineOperation = getOperation;
-/** @deprecated Use `__getRegisteredOperations` instead */
-export const __getRegisteredInlineOperations = __getRegisteredOperations;

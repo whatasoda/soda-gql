@@ -114,20 +114,3 @@ export class Operation<
     return new Operation(define);
   }
 }
-
-// Re-export old names for backwards compatibility during transition
-/** @deprecated Use `Operation` instead */
-export type InlineOperation<
-  TOperationType extends OperationType,
-  TOperationName extends string,
-  TVariableNames extends string[],
-  TVariables extends AnyConstAssignableInput,
-  TFields extends Partial<AnyFields>,
-  TData extends object,
-> = Operation<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>;
-/** @deprecated Use `AnyOperation` instead */
-export type AnyInlineOperation = AnyOperation;
-/** @deprecated Use `AnyOperationOf` instead */
-export type AnyInlineOperationOf<TOperationType extends OperationType> = AnyOperationOf<TOperationType>;
-/** @deprecated Use `OperationInferMeta` instead */
-export type InlineOperationInferMeta<TVariables, TData extends object> = OperationInferMeta<TVariables, TData>;

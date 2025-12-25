@@ -1,6 +1,7 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import type {
   GqlCallModel,
   GqlCallOperation,
@@ -174,7 +175,3 @@ const extractBuilderCall = (factory: t.ArrowFunctionExpression): t.CallExpressio
 
   return null;
 };
-
-// Re-export old name for backwards compatibility during transition
-/** @deprecated Use `BabelGqlCallOperation` instead */
-export type BabelGqlCallInlineOperation = BabelGqlCallOperation;

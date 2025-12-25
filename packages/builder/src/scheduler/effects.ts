@@ -1,9 +1,9 @@
 import { readFileSync, statSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { Effect, Effects } from "@soda-gql/common";
-import { type AnyInlineOperation, type AnyModel, GqlElement } from "@soda-gql/core";
+import { type AnyOperation, type AnyModel, GqlElement } from "@soda-gql/core";
 
-type AcceptableArtifact = AnyModel | AnyInlineOperation;
+type AcceptableArtifact = AnyModel | AnyOperation;
 
 /**
  * File stats result type.

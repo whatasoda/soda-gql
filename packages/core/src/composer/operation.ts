@@ -97,7 +97,3 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
     };
   };
 };
-
-// Re-export old name for backwards compatibility during transition
-/** @deprecated Use `createOperationComposerFactory` instead */
-export const createInlineOperationComposerFactory = createOperationComposerFactory;

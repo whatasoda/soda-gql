@@ -40,7 +40,3 @@ export type BuilderArtifact = {
     };
   };
 };
-
-// Re-export old name for backwards compatibility during transition
-/** @deprecated Use `BuilderArtifactOperation` instead */
-export type BuilderArtifactInlineOperation = BuilderArtifactOperation;

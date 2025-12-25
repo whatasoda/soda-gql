@@ -3,7 +3,8 @@
  * Simplified from plugin-shared to be self-contained.
  */
 
-import type { BuilderArtifactElement, CanonicalId } from "@soda-gql/builder";
+import type { BuilderArtifactElement } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 
 /**
  * Context for transforming a program.
