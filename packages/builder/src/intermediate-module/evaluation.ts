@@ -90,6 +90,16 @@ function resolveGraphqlSystemPath(configPath: string): string {
 let cachedGql: unknown = null;
 let cachedModulePath: string | null = null;
 
+/**
+ * Clear the cached gql module.
+ * Call this between test runs to ensure clean state.
+ * @internal - exported for testing purposes only
+ */
+export const __clearGqlCache = (): void => {
+  cachedGql = null;
+  cachedModulePath = null;
+};
+
 function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
   // Use cached module if same path
   if (cachedModulePath === modulePath && cachedGql !== null) {
@@ -159,6 +169,18 @@ export const generateIntermediateModules = function* ({
 
     // Generate source code for this intermediate module
     const sourceCode = renderRegistryBlock({ filePath, analysis, analyses, graphqlSystemPath });
+
+    // Debug: log the generated source code
+    if (process.env.DEBUG_INTERMEDIATE_MODULE) {
+      console.log("=== Intermediate module source ===");
+      console.log("FilePath:", filePath);
+      console.log(
+        "Definitions:",
+        analysis.definitions.map((d) => d.astPath),
+      );
+      console.log("Source code:\n", sourceCode);
+      console.log("=================================");
+    }
 
     // Transpile TypeScript to JavaScript using SWC
     const transpiledCodeResult = transpile({ filePath, sourceCode });

@@ -46,6 +46,6 @@ export const loadModuleAnalysisFixture = (name: string): { filePath: string; sou
   return loadFixture("module-analysis", name);
 };
 
-// Re-export manifest utilities for test files
-export { fixtures, getFixturesForAnalyzer, getSkippedFixturesForSwc } from "../fixtures/module-analysis/_manifest";
-export type { FixtureEntry, FixtureName } from "../fixtures/module-analysis/_manifest";
+export type { FixtureName } from "../fixtures/module-analysis/_manifest";
+// Re-export manifest for test files
+export { fixtures } from "../fixtures/module-analysis/_manifest";

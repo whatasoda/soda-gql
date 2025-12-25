@@ -34,12 +34,17 @@ const getPackageRoot = (): string => {
 const FIXTURE_ROOT = join(getPackageRoot(), "test/fixtures");
 const CODEGEN_FIXTURE_ROOT = join(getPackageRoot(), "test/codegen-fixture");
 
+export type AnalyzerType = "ts" | "swc";
+
 /**
  * Create a test config using the shared codegen-fixture.
  * This uses the pre-generated graphql-system from fixture:setup.
+ *
+ * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
-export const createTestConfig = (): ResolvedSodaGqlConfig => {
-  return getTestConfig();
+export const createTestConfig = (analyzer?: AnalyzerType): ResolvedSodaGqlConfig => {
+  const config = getTestConfig();
+  return analyzer ? { ...config, analyzer } : config;
 };
 
 /**
@@ -47,8 +52,9 @@ export const createTestConfig = (): ResolvedSodaGqlConfig => {
  * Uses the shared graphql-system from codegen-fixture (requires `bun fixture:setup` to be run first).
  *
  * @param name - Fixture name relative to test/fixtures (e.g., "models/basic")
+ * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
-export const loadPluginFixture = async (name: string): Promise<LoadedPluginFixture> => {
+export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): Promise<LoadedPluginFixture> => {
   const fixtureDir = join(FIXTURE_ROOT, name);
   const sourcePath = join(fixtureDir, "source.ts");
   const sourceFile = Bun.file(sourcePath);
@@ -57,7 +63,7 @@ export const loadPluginFixture = async (name: string): Promise<LoadedPluginFixtu
     throw new Error(`Fixture source missing: ${sourcePath}`);
   }
 
-  const config = createTestConfig();
+  const config = createTestConfig(analyzer);
   const graphqlSystemDir = join(CODEGEN_FIXTURE_ROOT, "graphql-system");
 
   const service = createBuilderService({
@@ -70,7 +76,8 @@ export const loadPluginFixture = async (name: string): Promise<LoadedPluginFixtu
 
   const buildResult = service.build();
   if (buildResult.isErr()) {
-    throw new Error(`Builder failed for ${name}: ${buildResult.error.code}`);
+    const error = buildResult.error;
+    throw new Error(`Builder failed for ${name}: ${error.code}\n${JSON.stringify(error, null, 2)}`);
   }
 
   const artifact = buildResult.value;
@@ -88,8 +95,9 @@ export const loadPluginFixture = async (name: string): Promise<LoadedPluginFixtu
  * Uses the shared graphql-system from codegen-fixture (requires `bun fixture:setup` to be run first).
  *
  * @param name - Fixture name relative to test/fixtures (e.g., "operations/composed-with-imported-slices")
+ * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
-export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPluginFixtureMulti> => {
+export const loadPluginFixtureMulti = async (name: string, analyzer?: AnalyzerType): Promise<LoadedPluginFixtureMulti> => {
   const fixtureDir = join(FIXTURE_ROOT, name);
 
   const allFiles = readdirSync(fixtureDir);
@@ -99,7 +107,7 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
     throw new Error(`No TypeScript files found in fixture: ${fixtureDir}`);
   }
 
-  const config = createTestConfig();
+  const config = createTestConfig(analyzer);
   const graphqlSystemDir = join(CODEGEN_FIXTURE_ROOT, "graphql-system");
 
   const sourcePaths = tsFiles.map((file) => join(fixtureDir, file));
@@ -114,7 +122,8 @@ export const loadPluginFixtureMulti = async (name: string): Promise<LoadedPlugin
 
   const buildResult = service.build();
   if (buildResult.isErr()) {
-    throw new Error(`Builder failed for ${name}: ${buildResult.error.code}`);
+    const error = buildResult.error;
+    throw new Error(`Builder failed for ${name}: ${error.code}\n${JSON.stringify(error, null, 2)}`);
   }
 
   const artifact = buildResult.value;
