@@ -27,7 +27,6 @@ export const createOperationComposerFactory = <
 
   type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
   type TAggregatedModelMetadata = ExtractAdapterTypes<TAdapter>["aggregatedModelMetadata"];
-  type TOperationMetadata = ExtractAdapterTypes<TAdapter>["operationMetadata"];
 
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
@@ -36,7 +35,12 @@ export const createOperationComposerFactory = <
       throw new Error(`Operation type ${operationType} is not defined in schema roots`);
     }
 
-    return <TOperationName extends string, TFields extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
+    return <
+      TOperationName extends string,
+      TFields extends AnyFields[],
+      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
+      TOperationMetadata = unknown,
+    >(
       options: {
         name: TOperationName;
         variables?: TVarDefinitions;

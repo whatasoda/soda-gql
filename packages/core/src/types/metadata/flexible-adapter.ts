@@ -12,23 +12,18 @@ export type ModelMetaInfo<TModelMetadata> = {
 };
 
 /**
- * Flexible metadata adapter that defines how model metadata is aggregated
- * and what types are used for operation metadata.
+ * Flexible metadata adapter that defines how model metadata is aggregated.
  *
  * This adapter allows complete customization of:
  * - Model metadata type (TModelMetadata)
  * - How model metadata is aggregated (aggregateModelMetadata)
- * - Operation metadata type (TOperationMetadata)
+ *
+ * Note: Operation metadata type is inferred from the operation's metadata callback return type.
  *
  * @template TModelMetadata - The metadata type returned by model metadata builders
  * @template TAggregatedModelMetadata - The type returned by aggregateModelMetadata
- * @template TOperationMetadata - The metadata type returned by operation metadata builders
  */
-export type FlexibleMetadataAdapter<
-  TModelMetadata = unknown,
-  TAggregatedModelMetadata = unknown,
-  TOperationMetadata = unknown,
-> = {
+export type FlexibleMetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata = unknown> = {
   /**
    * Aggregates metadata from all embedded models in an operation.
    * Called with the metadata from each embedded model.
@@ -40,28 +35,25 @@ export type FlexibleMetadataAdapter<
 /**
  * Extracts the type parameters from a FlexibleMetadataAdapter.
  */
-export type ExtractAdapterTypes<T> = T extends FlexibleMetadataAdapter<infer TModel, infer TAggregated, infer TOp>
+export type ExtractAdapterTypes<T> = T extends FlexibleMetadataAdapter<infer TModel, infer TAggregated>
   ? {
       modelMetadata: TModel;
       aggregatedModelMetadata: TAggregated;
-      operationMetadata: TOp;
     }
   : never;
 
 /**
  * Generic type for any flexible metadata adapter.
  */
-export type AnyFlexibleMetadataAdapter = FlexibleMetadataAdapter<unknown, unknown, unknown>;
+export type AnyFlexibleMetadataAdapter = FlexibleMetadataAdapter<any, any>;
 
 /**
  * Default adapter that maintains backwards compatibility with the original behavior.
- * Uses OperationMetadata for both model and operation metadata,
- * and aggregates by collecting metadata into a readonly array.
+ * Uses OperationMetadata for model metadata and aggregates by collecting metadata into a readonly array.
  */
 export type DefaultFlexibleMetadataAdapter = FlexibleMetadataAdapter<
   OperationMetadata,
-  readonly (OperationMetadata | undefined)[],
-  OperationMetadata
+  readonly (OperationMetadata | undefined)[]
 >;
 
 /**
