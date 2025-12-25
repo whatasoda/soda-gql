@@ -259,17 +259,6 @@
         "graphql": "^16.11.0",
       },
     },
-    "packages/graffle-client": {
-      "name": "@soda-gql/graffle-client",
-      "version": "0.1.0",
-      "dependencies": {
-        "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
-        "graphql": "^16.8.1",
-        "graphql-request": "^7.1.0",
-        "neverthrow": "^8.1.2",
-      },
-    },
     "packages/helpers-internal": {
       "name": "@soda-gql/helpers-internal",
       "version": "0.1.0",
@@ -1168,8 +1157,6 @@
 
     "@soda-gql/core": ["@soda-gql/core@workspace:packages/core"],
 
-    "@soda-gql/graffle-client": ["@soda-gql/graffle-client@workspace:packages/graffle-client"],
-
     "@soda-gql/helpers-internal": ["@soda-gql/helpers-internal@workspace:packages/helpers-internal"],
 
     "@soda-gql/metro-plugin": ["@soda-gql/metro-plugin@workspace:packages/metro-plugin"],
@@ -1941,8 +1928,6 @@
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
 
     "graphql": ["graphql@16.11.0", "", {}, "sha512-mS1lbMsxgQj6hge1XZ6p7GPhbrtFwUFYi3wRzXAC/FmYnyXMTvvI3td3rjmQ2u8ewXueaSvRPWaEcgVVOT9Jnw=="],
-
-    "graphql-request": ["graphql-request@7.3.0", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0" }, "peerDependencies": { "graphql": "14 - 16" } }, "sha512-cxmQfa/ZknSNtuJpgPpr4CQTwPjSP57EYzOyNoyhPakXqr1yvTtOXNFbxQYaz4DMQ801i2DjnwUkifGLjtXhSQ=="],
 
     "gray-matter": ["gray-matter@4.0.3", "", { "dependencies": { "js-yaml": "^3.13.1", "kind-of": "^6.0.2", "section-matter": "^1.0.0", "strip-bom-string": "^1.0.0" } }, "sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q=="],
 
