@@ -515,6 +515,7 @@ export type GeneratedModule = {
 type PerSchemaInjection = {
   readonly scalarImportPath: string;
   readonly helpersImportPath?: string;
+  readonly metadataImportPath?: string;
 };
 
 type RuntimeTemplateInjection =
@@ -526,7 +527,6 @@ type RuntimeTemplateInjection =
 
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
-  readonly adapterImportPath?: string;
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -544,7 +544,6 @@ type MultiRuntimeTemplateOptions = {
     }
   >;
   readonly injection: RuntimeTemplateInjection;
-  readonly adapterImportPath?: string;
 };
 
 const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
@@ -552,6 +551,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const imports: string[] = [];
   const scalarAliases = new Map<string, string>();
   const helpersAliases = new Map<string, string>();
+  const metadataAliases = new Map<string, string>();
 
   if ($$.injection.mode === "inject") {
     // Group imports by file path
@@ -578,6 +578,17 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         }
         helpersSpecifiers.push(`helpers as ${helpersAlias}`);
       }
+
+      // Group metadata import (optional)
+      if (injection.metadataImportPath) {
+        const metadataAlias = `metadata_${schemaName}`;
+        metadataAliases.set(schemaName, metadataAlias);
+        const metadataSpecifiers = importsByPath.get(injection.metadataImportPath) ?? [];
+        if (!importsByPath.has(injection.metadataImportPath)) {
+          importsByPath.set(injection.metadataImportPath, metadataSpecifiers);
+        }
+        metadataSpecifiers.push(`metadata as ${metadataAlias}`);
+      }
     }
 
     // Generate grouped imports
@@ -588,11 +599,6 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         imports.push(`import {\n  ${specifiers.join(",\n  ")},\n} from "${path}";`);
       }
     }
-  }
-
-  // Add adapter import if provided
-  if ($$.adapterImportPath) {
-    imports.push(`import { adapter } from "${$$.adapterImportPath}";`);
   }
 
   const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
@@ -632,20 +638,22 @@ const ${schemaVar} = {
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options if needed
-    const hasAdapter = !!$$.adapterImportPath;
+    const metadataVar = metadataAliases.get(name);
     const options: string[] = [];
 
     if (helpersVar) {
       options.push(`helpers: ${helpersVar}`);
     }
-    if (hasAdapter) {
-      options.push("adapter");
+    if (metadataVar) {
+      options.push(`adapter: ${metadataVar}`);
     }
 
     if (options.length > 0) {
-      const typeParams = helpersVar
-        ? `<Schema_${name}, Helpers_${name}, typeof adapter>`
-        : `<Schema_${name}, object, typeof adapter>`;
+      const typeParams = metadataVar
+        ? helpersVar
+          ? `<Schema_${name}, Helpers_${name}, typeof ${metadataVar}>`
+          : `<Schema_${name}, object, typeof ${metadataVar}>`
+        : `<Schema_${name}, Helpers_${name}>`;
       gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { ${options.join(", ")} })`);
     } else {
       gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar})`);
@@ -752,7 +760,6 @@ export const generateMultiSchemaModule = (
   const code = multiRuntimeTemplate({
     schemas: schemaConfigs,
     injection,
-    adapterImportPath: options?.adapterImportPath,
   });
 
   return {

@@ -17,7 +17,7 @@ import type { MetadataAdapter, ModelMetaInfo, OperationMetadata } from "@soda-gq
  *
  * Note: Operation metadata type is inferred from each operation's metadata callback return type.
  */
-export const adapter: MetadataAdapter<
+export const metadata: MetadataAdapter<
   OperationMetadata,
   readonly (OperationMetadata | undefined)[]
 > = {

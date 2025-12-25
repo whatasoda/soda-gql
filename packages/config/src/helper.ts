@@ -65,6 +65,7 @@ const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: z.string().min(1),
   scalars: z.string().min(1),
   helpers: z.string().min(1).optional(),
+  metadata: z.string().min(1).optional(),
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
@@ -73,7 +74,6 @@ const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
 
 const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   analyzer: z.enum(["ts", "swc"]).optional(),
-  metadata: z.string().min(1).optional(),
   outdir: z.string().min(1),
   graphqlSystemAliases: z.array(z.string()).optional(),
   include: z.array(z.string().min(1)),
