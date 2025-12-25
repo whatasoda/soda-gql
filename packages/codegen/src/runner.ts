@@ -59,38 +59,42 @@ const toImportSpecifier = (fromPath: string, targetPath: string, options?: Impor
 
 export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
   const outPath = resolve(options.outPath);
+  const importSpecifierOptions = { includeExtension: options.importExtension };
 
   // Handle legacy injectFromPath for backward compatibility
-  const scalars = options.scalars ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
+  const inject = options.inject ?? (options.injectFromPath ? { default: { scalars: options.injectFromPath } } : {});
 
-  // Validate that all scalar and helper files exist
-  const scalarPaths = new Map<string, string>();
-  const helpersPaths = new Map<string, string>();
-
-  for (const [schemaName, scalarPath] of Object.entries(scalars)) {
-    const resolvedPath = resolve(scalarPath);
-    if (!existsSync(resolvedPath)) {
+  // Validate that all inject files exist
+  for (const [schemaName, injectConfig] of Object.entries(inject)) {
+    const scalarPath = resolve(injectConfig.scalars);
+    if (!existsSync(scalarPath)) {
       return err({
         code: "INJECT_MODULE_NOT_FOUND",
-        message: `Scalar module not found for schema '${schemaName}': ${resolvedPath}`,
-        injectPath: resolvedPath,
+        message: `Scalar module not found for schema '${schemaName}': ${scalarPath}`,
+        injectPath: scalarPath,
       });
     }
-    scalarPaths.set(schemaName, resolvedPath);
-  }
 
-  // Validate optional helpers
-  if (options.helpers) {
-    for (const [schemaName, helpersPath] of Object.entries(options.helpers)) {
-      const resolvedPath = resolve(helpersPath);
-      if (!existsSync(resolvedPath)) {
+    if (injectConfig.helpers) {
+      const helpersPath = resolve(injectConfig.helpers);
+      if (!existsSync(helpersPath)) {
         return err({
           code: "INJECT_MODULE_NOT_FOUND",
-          message: `Helpers module not found for schema '${schemaName}': ${resolvedPath}`,
-          injectPath: resolvedPath,
+          message: `Helpers module not found for schema '${schemaName}': ${helpersPath}`,
+          injectPath: helpersPath,
         });
       }
-      helpersPaths.set(schemaName, resolvedPath);
+    }
+
+    if (injectConfig.metadata) {
+      const metadataPath = resolve(injectConfig.metadata);
+      if (!existsSync(metadataPath)) {
+        return err({
+          code: "INJECT_MODULE_NOT_FOUND",
+          message: `Metadata module not found for schema '${schemaName}': ${metadataPath}`,
+          injectPath: metadataPath,
+        });
+      }
     }
   }
 
@@ -111,24 +115,6 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas.set(name, result.value);
   }
 
-  const importSpecifierOptions = { includeExtension: options.importExtension };
-
-  // Validate optional per-schema metadata
-  const metadataPaths = new Map<string, string>();
-  if (options.metadata) {
-    for (const [schemaName, metadataPath] of Object.entries(options.metadata)) {
-      const resolvedPath = resolve(metadataPath);
-      if (!existsSync(resolvedPath)) {
-        return err({
-          code: "INJECT_MODULE_NOT_FOUND",
-          message: `Metadata module not found for schema '${schemaName}': ${resolvedPath}`,
-          injectPath: resolvedPath,
-        });
-      }
-      metadataPaths.set(schemaName, resolvedPath);
-    }
-  }
-
   // Build injection config for each schema
   const injectionConfig = new Map<
     string,
@@ -140,22 +126,23 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   >();
 
   for (const schemaName of schemas.keys()) {
-    const scalarPath = scalarPaths.get(schemaName);
+    const injectConfig = inject[schemaName];
 
-    if (!scalarPath) {
+    if (!injectConfig) {
       return err({
         code: "INJECT_MODULE_REQUIRED",
-        message: `Missing scalar configuration for schema '${schemaName}'`,
+        message: `Missing inject configuration for schema '${schemaName}'`,
       });
     }
 
-    const helpersPath = helpersPaths.get(schemaName);
-    const metadataPath = metadataPaths.get(schemaName);
-
     injectionConfig.set(schemaName, {
-      scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
-      ...(helpersPath ? { helpersImportPath: toImportSpecifier(outPath, helpersPath, importSpecifierOptions) } : {}),
-      ...(metadataPath ? { metadataImportPath: toImportSpecifier(outPath, metadataPath, importSpecifierOptions) } : {}),
+      scalarImportPath: toImportSpecifier(outPath, resolve(injectConfig.scalars), importSpecifierOptions),
+      ...(injectConfig.helpers
+        ? { helpersImportPath: toImportSpecifier(outPath, resolve(injectConfig.helpers), importSpecifierOptions) }
+        : {}),
+      ...(injectConfig.metadata
+        ? { metadataImportPath: toImportSpecifier(outPath, resolve(injectConfig.metadata), importSpecifierOptions) }
+        : {}),
     });
   }
 
