@@ -37,6 +37,12 @@ export type SodaGqlConfig = {
    */
   readonly analyzer?: "ts" | "swc";
   /**
+   * Path to the metadata adapter module.
+   * The module should export an `adapter` object matching FlexibleMetadataAdapter.
+   * If not specified, a default adapter is generated at {outdir}/metadata-adapter.ts
+   */
+  readonly metadata?: string;
+  /**
    * The directory for the graphql system.
    * This is where the graphql system will be generated, and where the builder/plugin will reference the graphql system.
    *
@@ -81,6 +87,8 @@ export type SodaGqlConfig = {
 // Resolved config (normalized and validated)
 export type ResolvedSodaGqlConfig = {
   readonly analyzer: "ts" | "swc";
+  /** Resolved absolute path to metadata adapter, or null to generate default */
+  readonly metadata: string | null;
   readonly outdir: string;
   readonly graphqlSystemAliases: readonly string[];
   readonly include: readonly string[];

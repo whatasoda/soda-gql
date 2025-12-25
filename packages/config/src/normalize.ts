@@ -19,8 +19,12 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
   // Default exclude to empty array
   const exclude = config.exclude ?? [];
 
+  // Resolve metadata adapter path if specified, otherwise null to generate default
+  const metadata = config.metadata ? resolve(configDir, config.metadata) : null;
+
   const resolved: ResolvedSodaGqlConfig = {
     analyzer,
+    metadata,
     outdir: resolve(configDir, config.outdir),
     graphqlSystemAliases,
     include: config.include.map((pattern) => resolve(configDir, pattern)),
