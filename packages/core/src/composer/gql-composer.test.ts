@@ -95,10 +95,9 @@ describe("createGqlInvoker", () => {
         },
         ({ f, $ }) => [
           //
-          f.user({ id: $.userId })(({ f }) => [
+          f.user({ id: $.userId })(() => [
             //
-            f.id(),
-            f.name(),
+            userModel.embed(),
           ]),
         ],
       ),

@@ -242,7 +242,7 @@ const preparePlatformPackages = async () => {
     }
   } catch (error) {
     // Platform packages may not exist yet (e.g., first build)
-    console.log("No platform packages found (this is expected for local builds)");
+    console.log("No platform packages found (this is expected for local builds)", error);
   }
 };
 

@@ -23,7 +23,7 @@ describe("Module analyzer - TypeScript", () => {
       astPath: definition.astPath,
     }));
 
-    expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "userSlice" }, { astPath: "pageQuery" }]);
+    expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "pageQuery" }]);
   });
 
   it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -35,7 +35,7 @@ describe("Module analyzer - TypeScript", () => {
     expect(analysis.definitions).toHaveLength(1);
     const [definition] = analysis.definitions;
     expect(definition).toBeDefined();
-    expect(definition?.astPath).toBe("buildSlice.arrow#0.invalid");
+    expect(definition?.astPath).toBe("buildOperation.arrow#0.invalid");
     expect(definition?.isTopLevel).toBe(false);
     expect(definition?.isExported).toBe(false);
     expect(definition?.exportBinding).toBeUndefined();

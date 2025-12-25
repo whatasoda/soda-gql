@@ -1,15 +1,14 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-const buildSlice = () => {
+const buildOperation = () => {
   const invalid = gql.default(({ query }) =>
-    query.slice(
-      { variables: [] },
+    query.operation(
+      { name: "InvalidOp" },
       // @ts-expect-error - Test fixture with invalid arguments
-      () => ({}),
       () => ({}),
     ),
   );
   return invalid;
 };
 
-export const userSlice = buildSlice();
+export const userOperation = buildOperation();

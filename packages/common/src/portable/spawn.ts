@@ -49,7 +49,7 @@ export async function spawn(options: SpawnOptions): Promise<SpawnResult> {
   try {
     const execOptions: {
       cwd?: string;
-      env?: Record<string, string>;
+      env?: NodeJS.ProcessEnv;
       encoding: BufferEncoding;
     } = {
       encoding: "utf-8",
@@ -59,7 +59,7 @@ export async function spawn(options: SpawnOptions): Promise<SpawnResult> {
       execOptions.cwd = options.cwd;
     }
     if (options.env) {
-      execOptions.env = options.env;
+      execOptions.env = options.env as NodeJS.ProcessEnv;
     }
 
     const { stdout, stderr } = await execFilePromise(command, args, execOptions);
