@@ -310,13 +310,13 @@ Uses **dist-based resolution**:
 
 #### In Examples
 
-Each example defines its own path mapping:
+Each example defines its own path mapping via symlink to the shared codegen-fixture:
 
-**`examples/babel-app/tsconfig.editor.json`**:
+**`examples/vite-react/tsconfig.editor.json`**:
 ```json
 {
   "paths": {
-    "@/graphql-system": ["./graphql-system/index.ts"]
+    "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
   },
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
@@ -363,16 +363,18 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/graphql-system": ["./graphql-system/index.ts"]
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "include": ["src/**/*", "codegen-fixture/**/*"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" }
   ]
 }
 ```
+
+**Note**: Examples use symlinks to `tests/codegen-fixture/` for the shared GraphQL system. See [Shared codegen-fixture](#shared-codegen-fixture) for details.
 
 #### Key Configuration Options
 
@@ -391,8 +393,7 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": []
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
 }
 ```
@@ -402,7 +403,7 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 {
   "compilerOptions": {
     "paths": {
-      "@/graphql-system": ["./graphql-system/index.ts"],
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"],
       "@/graphql/*": ["./src/graphql/*"]
     }
   }
@@ -413,13 +414,10 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 ```json
 {
   "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": []
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
 }
 ```
-
-Note: Setting `"types": []` prevents Bun types from being included in browser-targeted examples.
 
 #### Root tsconfig.editor.json References
 
@@ -559,12 +557,102 @@ tests/
 │   ├── plugin-nestjs/
 │   └── ...
 ├── integration/             # End-to-end integration tests
+├── codegen-fixture/         # Shared GraphQL schemas and generated code
+│   ├── schemas/             # GraphQL schema definitions
+│   │   └── default/
+│   │       └── schema.graphql
+│   └── graphql-system/      # Generated type-safe GraphQL system
+│       ├── index.ts
+│       ├── types.ts
+│       └── ...
 ├── fixtures/                # Test fixtures and sample code
 │   ├── runtime-app/         # Generated GraphQL system for tests
 │   ├── plugin-babel/        # Babel transformation fixtures
 │   └── ...
 └── utils/                   # Testing utilities
 ```
+
+### Shared codegen-fixture
+
+The `tests/codegen-fixture/` directory contains a shared GraphQL schema and generated type-safe code used across packages and examples. This ensures consistent testing and avoids duplicating schema definitions.
+
+#### Structure
+
+```
+tests/codegen-fixture/
+├── schemas/
+│   └── default/
+│       └── schema.graphql    # Shared GraphQL schema
+└── graphql-system/
+    ├── index.ts              # Main entry point
+    ├── types.ts              # Generated TypeScript types
+    ├── operations.ts         # Operation helpers
+    └── ...
+```
+
+The shared schema includes common types:
+- **User**: id, name, email, posts(categoryId, limit)
+- **Post**: id, title, body
+- **Product**: id, name, price
+
+#### Symlink Pattern
+
+Packages and examples create symlinks to `tests/codegen-fixture` to share the generated code without duplication:
+
+**Package Example** (`packages/builder/test/`):
+```
+packages/builder/test/
+└── codegen-fixture -> ../../../tests/codegen-fixture
+```
+
+**Example Application** (`examples/vite-react/`):
+```
+examples/vite-react/
+└── codegen-fixture -> ../../tests/codegen-fixture
+```
+
+#### Creating Symlinks
+
+For packages:
+```bash
+cd packages/<package-name>/test
+ln -s ../../../tests/codegen-fixture codegen-fixture
+```
+
+For examples:
+```bash
+cd examples/<example-name>
+ln -s ../../tests/codegen-fixture codegen-fixture
+```
+
+#### TypeScript Configuration
+
+When using the shared codegen-fixture, update `tsconfig.editor.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "codegen-fixture/**/*"]
+}
+```
+
+**Key Points**:
+- The `paths` mapping resolves `@/graphql-system` imports to the symlinked fixture
+- Including `codegen-fixture/**/*` ensures the schemas are part of the TypeScript project (required for relative imports within graphql-system)
+
+#### Regenerating the Fixture
+
+If you modify the shared schema:
+
+```bash
+bun run fixture:setup
+```
+
+This regenerates `tests/codegen-fixture/graphql-system/` from the schema files.
 
 ### Test Configuration
 
