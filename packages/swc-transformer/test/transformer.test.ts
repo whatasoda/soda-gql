@@ -24,7 +24,6 @@ try {
   await createTransformer({
     config: {
       analyzer: "ts",
-      metadata: null,
       outdir: "/tmp",
       graphqlSystemAliases: [],
       include: [],
@@ -106,7 +105,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -145,7 +143,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -179,7 +176,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
