@@ -1,11 +1,4 @@
 export type {
-  AdapterInputMetadata,
-  AdapterOutputMetadata,
-  AnyMetadataAdapter,
-  MetadataAdapter,
-  MetadataTransformInput,
-} from "./adapter";
-export type {
   AnyFlexibleMetadataAdapter,
   DefaultFlexibleMetadataAdapter,
   ExtractAdapterTypes,
