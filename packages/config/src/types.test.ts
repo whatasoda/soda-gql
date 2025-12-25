@@ -64,6 +64,7 @@ describe("types.ts", () => {
   test("ResolvedSodaGqlConfig has all required fields", () => {
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      metadata: null,
       outdir: "/abs/path/to/graphql-system",
       graphqlSystemAliases: ["@/graphql-system"],
       include: ["/abs/path/to/src/**/*.ts"],
@@ -88,6 +89,7 @@ describe("types.ts", () => {
   test("ResolvedSodaGqlConfig has defaults applied", () => {
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      metadata: null,
       outdir: "/abs/path/to/graphql-system",
       graphqlSystemAliases: ["@/graphql-system"],
       include: ["/abs/path/to/src/**/*.ts"],

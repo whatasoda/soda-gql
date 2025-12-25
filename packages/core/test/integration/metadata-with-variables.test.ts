@@ -4,6 +4,7 @@ import { print } from "graphql";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
+import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
 const schema = {
@@ -74,7 +75,8 @@ describe("metadata with variable access", () => {
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.extensions?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
     });
 
     it("$var.getName extracts variable name", () => {
@@ -96,7 +98,8 @@ describe("metadata with variable access", () => {
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.custom?.variableNames).toEqual(["userId"]);
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.custom?.variableNames).toEqual(["userId"]);
     });
 
     it("works with multiple variables", () => {
@@ -120,7 +123,8 @@ describe("metadata with variable access", () => {
         ),
       );
 
-      expect(operation.metadata?.extensions?.trackedVars).toEqual({
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.extensions?.trackedVars).toEqual({
         userId: "userId",
         userName: "userName",
       });
@@ -161,7 +165,8 @@ describe("metadata with variable access", () => {
       );
 
       expect(operation.metadata).toBeDefined();
-      expect(operation.metadata?.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it("metadata callback can access both $ and document", () => {
@@ -185,8 +190,9 @@ describe("metadata with variable access", () => {
         ),
       );
 
-      expect(operation.metadata?.headers?.["X-Variable-Name"]).toBe("userId");
-      expect(operation.metadata?.extensions?.hasDocument).toBe(true);
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.headers?.["X-Variable-Name"]).toBe("userId");
+      expect(meta.extensions?.hasDocument).toBe(true);
     });
   });
 });
