@@ -88,37 +88,20 @@ export const userModel = gql.default(({ model }) =>
 );
 ```
 
-### Create a Slice
+### Create an Operation
 
-Slices wrap reusable field selections with variables:
-
-```typescript
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    { variables: [$var("id").scalar("ID:!")] },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(() => [userModel.embed()]),
-    ],
-    ({ select }) =>
-      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
-  ),
-);
-```
-
-### Build an Operation
-
-Operations compose slices into complete GraphQL queries:
+Operations define complete GraphQL queries with field selections:
 
 ```typescript
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
       name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.build({ id: $.userId }),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+    ],
   ),
 );
 ```

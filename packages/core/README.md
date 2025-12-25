@@ -13,21 +13,15 @@ bun add @soda-gql/core
 
 ## Core Concepts
 
-soda-gql uses three main building blocks for constructing GraphQL operations:
+soda-gql uses two main building blocks for constructing GraphQL operations:
 
 ### Models
 
-Reusable type-safe fragments. Models define how to select fields from a GraphQL type.
-
-### Slices
-
-Domain-specific query/mutation/subscription pieces. Slices are reusable operation fragments that can be composed into complete operations.
+Reusable type-safe fragments. Models define how to select fields from a GraphQL type and can be embedded in operations.
 
 ### Operations
 
-Complete GraphQL operations that can be executed. There are two types:
-- **Composed Operations**: Built by combining multiple slices
-- **Inline Operations**: Self-contained operations with field selections defined directly
+Complete GraphQL operations (query/mutation/subscription) with field selections. Operations define variables, select fields, and can embed models for reusable field selections.
 
 ## Usage
 
@@ -54,59 +48,32 @@ export const userModel = gql.default(({ model }, { $var }) =>
 );
 ```
 
-### Writing Slices
+### Writing Operations
 
-Slices define reusable operation fragments:
-
-```typescript
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [
-      f.user({ id: $.userId })(() => [
-        userModel.fragment({}),
-      ]),
-    ],
-    ({ select }) =>
-      select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
-  ),
-);
-```
-
-### Writing Operations (Composed)
-
-Composed operations combine multiple slices:
+Operations define complete GraphQL queries, mutations, or subscriptions:
 
 ```typescript
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
       name: "GetUser",
       variables: [$var("id").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ userId: $.id }),
-    }),
+    ({ f, $ }) => [
+      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
+    ],
   ),
 );
-```
 
-### Writing Operations (Inline)
-
-Inline operations define field selections directly:
-
-```typescript
-export const getUserInline = gql.default(({ query }, { $var }) =>
-  query.inline(
+// Operation with embedded model
+export const getUserWithModel = gql.default(({ query }, { $var }) =>
+  query.operation(
     {
-      name: "GetUserInline",
-      variables: [$var("id").scalar("ID:!")],
+      name: "GetUserWithModel",
+      variables: [$var("id").scalar("ID:!"), $var("includeEmail").scalar("Boolean:?")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [
-        f.id(),
-        f.name(),
-      ]),
+      f.user({ id: $.id })(({ f }) => [userModel.embed({ includeEmail: $.includeEmail })]),
     ],
   ),
 );
@@ -133,7 +100,7 @@ Variables are declared using a string-based type syntax:
 | `f.posts()(({ f }) => [...])` | Nested selection (curried) |
 | `f.id(null, { alias: "uuid" })` | Field with alias |
 | `f.email({ if: $.includeEmail })` | Conditional field |
-| `userModel.fragment({})` | Use model fragment |
+| `userModel.embed({})` | Use model fragment |
 
 ## Defining Custom Scalars
 
@@ -184,7 +151,7 @@ type QueryResult = typeof getUserQuery.$infer.output.projected;
 
 ## Metadata
 
-Metadata allows you to attach runtime information to operations and slices. This is useful for HTTP headers, GraphQL extensions, and application-specific values.
+Metadata allows you to attach runtime information to operations. This is useful for HTTP headers, GraphQL extensions, and application-specific values.
 
 ### Metadata Structure
 
@@ -198,39 +165,24 @@ All metadata types share three base properties:
 
 ### Defining Metadata
 
-Metadata can be defined on both slices and operations:
+Metadata is defined on operations:
 
 ```typescript
-// Slice with metadata
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    {
-      variables: [$var("userId").scalar("ID:!")],
-      metadata: ({ $ }) => ({
-        headers: { "X-Request-ID": "user-query" },
-        custom: { requiresAuth: true, cacheTtl: 300 },
-      }),
-    },
-    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-    ({ select }) => select(["$.user"], (user) => user),
-  ),
-);
-
-// Operation with metadata (can reference variables and document)
+// Operation with metadata
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
       name: "GetUser",
       variables: [$var("id").scalar("ID:!")],
       metadata: ({ $, document }) => ({
+        headers: { "X-Request-ID": "user-query" },
+        custom: { requiresAuth: true, cacheTtl: 300 },
         extensions: {
           trackedVariables: [$var.getInner($.id)],
         },
       }),
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ userId: $.id }),
-    }),
+    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
   ),
 );
 ```
@@ -260,22 +212,8 @@ export const metadataAdapter = createMetadataAdapter({
       },
     },
   }),
-
-  // Custom merge strategy for slice metadata (optional)
-  mergeSliceMetadata: (operationMetadata, sliceMetadataList) => {
-    // Default: shallow merge where operation takes precedence
-    return { ...sliceMetadataList.reduce((acc, s) => ({ ...acc, ...s }), {}), ...operationMetadata };
-  },
 });
 ```
-
-### Metadata Merging
-
-When an operation includes multiple slices, metadata is merged in this order:
-
-1. **Slice metadata** - Merged together (later slices override earlier ones)
-2. **Operation metadata** - Takes precedence over slice metadata
-3. **Schema defaults** - Applied first, overridden by operation/slice values
 
 ## Runtime Exports
 
@@ -285,7 +223,7 @@ The `/runtime` subpath provides utilities for operation registration and retriev
 import { gqlRuntime } from "@soda-gql/core/runtime";
 
 // Retrieve registered operations (typically handled by build plugins)
-const operation = gqlRuntime.getComposedOperation("canonicalId");
+const operation = gqlRuntime.getOperation("canonicalId");
 ```
 
 ## TypeScript Support

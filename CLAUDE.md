@@ -49,39 +49,27 @@ See the main [README](./README.md) for installation and setup instructions.
 
 **Key Concepts**:
 - Models: Type-safe GraphQL fragments with transforms
-- Operation Slices: Domain-specific query/mutation/subscription definitions
-- Operations: Composed GraphQL operations from multiple slices
+- Operations: GraphQL query/mutation/subscription definitions with field selections
 - Zero Runtime: All transformations at build time
 
-**Architecture: Operation vs Slice Separation**:
-- **Slices** (`slice.query`/`slice.mutation`/`slice.subscription`): Build GraphQL field selections using `f` helpers
-  - Define variables, field selections, and data normalization
-  - Have access to field factories (`f`, `_`)
-  - Reusable across multiple operations
-- **Operations** (`operation.query`/`operation.mutation`/`operation.subscription`): Compose slices only
-  - DO NOT build fields directly (no `f` access)
-  - Use `slice.build()` to compose multiple slices
-  - Act as integration layer for slices
-- **Incorrect pattern**: `operation.mutation({}, ({ f, $ }) => ({ result: f.createProduct(...)(({ f }) => [f.id()]) }))`
-- **Correct pattern**: Create slice with field selection, then compose in operation with `slice.build()`
-  ```typescript
-  // Slice with field access
-  const createProductSlice = gql.default(({ mutation }, { $var }) =>
-    mutation.slice(
-      { variables: [$var("name").scalar("String:!")] },
-      ({ f, $ }) => [f.createProduct({ name: $.name })(({ f }) => [f.id(), f.name()])],
-      ({ select }) => select(["$.createProduct"], (result) => result),
-    ),
-  );
+**API Pattern**:
+```typescript
+// Operation with field selections
+export const getUserQuery = gql.default(({ query }, { $var }) =>
+  query.operation(
+    { name: "GetUser", variables: [$var("userId").scalar("ID:!")] },
+    ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()]),
+    ],
+  ),
+);
 
-  // Operation composing slice
-  const createProductMutation = gql.default(({ mutation }, { $var }) =>
-    mutation.composed(
-      { name: "CreateProduct", variables: [$var("productName").scalar("String:!")] },
-      ({ $ }) => ({ result: createProductSlice.build({ name: $.productName }) }),
-    ),
-  );
-  ```
+// Model definition
+export const userModel = gql.default(({ model }) =>
+  model.User({}, ({ f }) => [f.id(), f.name()]),
+);
+// Embed in operations: userModel.embed()
+```
 
 ### Commands
 

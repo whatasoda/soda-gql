@@ -115,13 +115,11 @@ module.exports = {
 The plugin tracks dependencies between soda-gql files:
 
 - **Models**: Base definitions (no dependencies)
-- **Slices**: Reference models via `model.embed()`
-- **Operations**: Reference slices via `slice.embed()`
+- **Operations**: Reference models via `model.embed()`
 
 When a model file changes:
 1. The model is rebuilt
-2. All slices that use the model are rebuilt
-3. All operations that use those slices are rebuilt
+2. All operations that use the model are rebuilt
 
 This ensures that changes propagate correctly through the dependency chain.
 

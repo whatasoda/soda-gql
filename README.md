@@ -96,66 +96,38 @@ export const userModel = gql.default(({ model }, { $var }) =>
   ),
 );
 
-// Create a query slice
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    {
-      variables: [$var("id").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
-      //
-      f.users({
-        id: [$.id],
-        categoryId: $.categoryId,
-      })(() => [
-        //
-        userModel.fragment({ categoryId: $.categoryId }),
-      ]),
-    ],
-    ({ select }) =>
-      select(["$.users"], (result) =>
-        result.safeUnwrap(([users]) => users.map((user) => userModel.normalize(user))),
-      ),
-  ),
-);
-
 // Build a complete operation
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
-    {
-      name: "ProfileQuery",
-      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ $ }) => ({
-      users: userSlice.embed({
-        id: $.userId,
-        categoryId: $.categoryId,
-      }),
-    }),
-  ),
-);
-
-export const profileQueryInline = gql.default(({ query }, { $var }) =>
-  query.inline(
+  query.operation(
     {
       name: "ProfileQuery",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
-      //
       f.users({
         id: [$.userId],
         categoryId: $.categoryId,
       })(({ f }) => [
-        //
         f.id(null, { alias: "uuid" }),
         f.name(),
-        f.posts({ categoryId: $.categoryId })(({ f }) => [
-          //
-          f.id(),
-          f.title(),
-        ]),
+        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
       ]),
+    ],
+  ),
+);
+
+// Operation with embedded model
+export const profileQueryWithModel = gql.default(({ query }, { $var }) =>
+  query.operation(
+    {
+      name: "ProfileQueryWithModel",
+      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
+    },
+    ({ f, $ }) => [
+      f.users({
+        id: [$.userId],
+        categoryId: $.categoryId,
+      })(({ f }) => [userModel.embed({ categoryId: $.categoryId })]),
     ],
   ),
 );
@@ -165,21 +137,21 @@ export const profileQueryInline = gql.default(({ query }, { $var }) =>
 
 ### Metadata
 
-Attach runtime information to operations and slices for HTTP headers, GraphQL extensions, and application-specific values:
+Attach runtime information to operations for HTTP headers, GraphQL extensions, and application-specific values:
 
 ```typescript
-// Slice with metadata
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
+// Operation with metadata
+export const userQuery = gql.default(({ query }, { $var }) =>
+  query.operation(
     {
+      name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
       metadata: ({ $ }) => ({
         headers: { "X-Request-ID": "user-query" },
         custom: { requiresAuth: true, cacheTtl: 300 },
       }),
     },
-    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-    ({ select }) => select(["$.user"], (user) => user),
+    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
   ),
 );
 ```
