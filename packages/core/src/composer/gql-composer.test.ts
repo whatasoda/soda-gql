@@ -88,16 +88,17 @@ describe("createGqlInvoker", () => {
     );
 
     const profileQuery = gql(({ query }, { $var }) =>
-      query.inline(
+      query.operation(
         {
           operationName: "ProfilePageQuery",
           variables: [$var("userId").scalar("ID:!")],
         },
         ({ f, $ }) => [
           //
-          f.user({ id: $.userId })(() => [
+          f.user({ id: $.userId })(({ f }) => [
             //
-            userModel.fragment(),
+            f.id(),
+            f.name(),
           ]),
         ],
       ),

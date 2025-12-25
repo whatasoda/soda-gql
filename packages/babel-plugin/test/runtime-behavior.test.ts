@@ -3,7 +3,7 @@
  *
  * These tests verify that transformed code executes correctly at runtime,
  * validating that operations are registered, documents are exposed,
- * and slices embed properly.
+ * and models are properly transformed.
  */
 
 import { afterEach, describe, expect, it } from "bun:test";
@@ -119,69 +119,18 @@ describe("Runtime Behavior", () => {
     clearTransformCache();
   });
 
-  describe("composedOperation", () => {
-    it("registers and exposes operationName", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/composed-with-imported-slices");
-
-      await withOperationSpy(async ({ composedOperations }) => {
-        const writtenFiles = await transformAndWriteFixture(fixture);
-        const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
-        expect(operationsPath).toBeDefined();
-        await loadModule(operationsPath!);
-
-        expect(composedOperations.some((op) => op.operationName === "GetUserAndPosts")).toBe(true);
-
-        const operation = gqlRuntime.getComposedOperation("GetUserAndPosts");
-        expect(operation).toBeDefined();
-        expect(operation.operationName).toBe("GetUserAndPosts");
-      });
-    });
-
-    it("exposes document property", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/composed-with-imported-slices");
-
-      await withOperationSpy(async () => {
-        const writtenFiles = await transformAndWriteFixture(fixture);
-        const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
-        await loadModule(operationsPath!);
-
-        const operation = gqlRuntime.getComposedOperation("GetUserAndPosts");
-
-        expect(operation.document).toBeDefined();
-        expect(operation.document.definitions).toBeDefined();
-        expect(Array.isArray(operation.document.definitions)).toBe(true);
-      });
-    });
-
-    it("exposes variableNames", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/composed-with-imported-slices");
-
-      await withOperationSpy(async () => {
-        const writtenFiles = await transformAndWriteFixture(fixture);
-        const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
-        await loadModule(operationsPath!);
-
-        const operation = gqlRuntime.getComposedOperation("GetUserAndPosts");
-
-        expect(operation.variableNames).toBeDefined();
-        expect(Array.isArray(operation.variableNames)).toBe(true);
-        expect(operation.variableNames).toContain("userId");
-      });
-    });
-  });
-
-  describe("inlineOperation", () => {
+  describe("operation", () => {
     it("registers and exposes operationName", async () => {
       const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-models");
 
-      await withOperationSpy(async ({ inlineOperations }) => {
+      await withOperationSpy(async ({ operations }) => {
         const writtenFiles = await transformAndWriteFixture(fixture);
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        expect(inlineOperations.some((op) => op.operationName === "GetUserById")).toBe(true);
+        expect(operations.some((op) => op.operationName === "GetUserById")).toBe(true);
 
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
         expect(operation).toBeDefined();
         expect(operation.operationName).toBe("GetUserById");
       });
@@ -195,7 +144,7 @@ describe("Runtime Behavior", () => {
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
 
         expect(operation.document).toBeDefined();
         expect(operation.document.definitions).toBeDefined();
@@ -211,32 +160,12 @@ describe("Runtime Behavior", () => {
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
 
         expect(operation.variableNames).toBeDefined();
         expect(Array.isArray(operation.variableNames)).toBe(true);
         expect(operation.variableNames).toContain("id");
       });
-    });
-  });
-
-  describe("slice", () => {
-    it("embed() returns correct variables and projection", async () => {
-      const fixture = await loadPluginFixtureMulti("slices/with-imported-models");
-
-      const writtenFiles = await transformAndWriteFixture(fixture);
-      const slicesPath = [...writtenFiles.values()].find((p) => p.endsWith("slices.mjs"));
-      expect(slicesPath).toBeDefined();
-
-      const sliceModule = await loadModule(slicesPath!);
-
-      expect(sliceModule.userWithPostsSlice).toBeDefined();
-
-      const embedResult = sliceModule.userWithPostsSlice.embed({ id: "user-123" });
-
-      expect(embedResult.variables).toBeDefined();
-      expect(embedResult.variables).toEqual({ id: "user-123" });
-      expect(embedResult.projection).toBeDefined();
     });
   });
 

@@ -11,7 +11,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -25,7 +24,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -39,7 +37,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -53,7 +50,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -67,7 +63,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -98,7 +93,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -122,7 +116,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -145,7 +138,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -162,7 +154,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },
@@ -179,7 +170,6 @@ describe("helper.ts", () => {
         schemas: {
           default: {
             schema: "./schema.graphql",
-            runtimeAdapter: "./runtime-adapter.ts",
             scalars: "./scalars.ts",
           },
         },

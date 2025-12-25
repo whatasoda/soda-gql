@@ -35,18 +35,19 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
     ) =>
-      Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: Type variance issue with ModelMetadataBuilder generics - safe cast
+      Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(((): any => {
         const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
         return {
           typename,
-          fragment: (variables) => {
+          fragment: (variables: any) => {
             const f = createFieldFactories(schema, typename);
             const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
             return mergeFields(builder({ f, $ }));
           },
-          metadata: options.metadata,
+          ...(options.metadata && { metadata: options.metadata }),
         };
-      });
+      }) as never);
   };
 
   type ModelBuildersAll = {

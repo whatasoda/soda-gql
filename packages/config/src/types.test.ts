@@ -5,12 +5,10 @@ describe("types.ts", () => {
   test("SchemaConfig accepts valid configuration", () => {
     const config: SchemaConfig = {
       schema: "./schema.graphql",
-      runtimeAdapter: "./runtime-adapter.ts",
       scalars: "./scalars.ts",
     };
 
     expect(config.schema).toBe("./schema.graphql");
-    expect(config.runtimeAdapter).toBe("./runtime-adapter.ts");
     expect(config.scalars).toBe("./scalars.ts");
   });
 
@@ -31,7 +29,6 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "./schema.graphql",
-          runtimeAdapter: "./runtime-adapter.ts",
           scalars: "./scalars.ts",
         },
       },
@@ -52,7 +49,6 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "./schema.graphql",
-          runtimeAdapter: "./runtime-adapter.ts",
           scalars: "./scalars.ts",
         },
       },
@@ -75,7 +71,6 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "/abs/path/to/schema.graphql",
-          runtimeAdapter: "/abs/path/to/runtime-adapter.ts",
           scalars: "/abs/path/to/scalars.ts",
         },
       },
@@ -100,7 +95,6 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "/abs/path/to/schema.graphql",
-          runtimeAdapter: "/abs/path/to/runtime-adapter.ts",
           scalars: "/abs/path/to/scalars.ts",
         },
       },

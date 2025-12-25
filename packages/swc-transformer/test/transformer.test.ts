@@ -112,7 +112,6 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  runtimeAdapter: "/tmp/runtime-adapter.ts",
                   scalars: "/tmp/scalars.ts",
                 },
               },
@@ -151,7 +150,6 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  runtimeAdapter: "/tmp/runtime-adapter.ts",
                   scalars: "/tmp/scalars.ts",
                 },
               },
@@ -185,7 +183,6 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  runtimeAdapter: "/tmp/runtime-adapter.ts",
                   scalars: "/tmp/scalars.ts",
                 },
               },

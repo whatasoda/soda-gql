@@ -20,11 +20,14 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, THelp
   const { helpers } = options;
   const model = createGqlModelComposers<TSchema>(schema);
   const createOperationComposer = createOperationComposerFactory<TSchema>(schema);
+
+  // Wrap operation composers in objects with an `operation` method for extensibility
+  // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
   const composers = {
     model,
-    query: createOperationComposer("query"),
-    mutation: createOperationComposer("mutation"),
-    subscription: createOperationComposer("subscription"),
+    query: { operation: createOperationComposer("query") },
+    mutation: { operation: createOperationComposer("mutation") },
+    subscription: { operation: createOperationComposer("subscription") },
   };
 
   const helper = {

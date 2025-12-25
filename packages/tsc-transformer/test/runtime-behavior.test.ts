@@ -82,20 +82,20 @@ describe("Runtime Behavior", () => {
     clearTransformCache();
   });
 
-  describe("inlineOperation", () => {
+  describe("operation", () => {
     it("registers and exposes operationName", async () => {
       const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-models");
 
-      await withOperationSpy(async ({ inlineOperations }) => {
+      await withOperationSpy(async ({ operations }) => {
         const writtenFiles = await transformAndWriteFixture(fixture);
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        // Verify inline operation was registered
-        expect(inlineOperations.some((op) => op.operationName === "GetUserById")).toBe(true);
+        // Verify operation was registered
+        expect(operations.some((op) => op.operationName === "GetUserById")).toBe(true);
 
         // Verify we can retrieve it via gqlRuntime
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
         expect(operation).toBeDefined();
         expect(operation.operationName).toBe("GetUserById");
       });
@@ -109,7 +109,7 @@ describe("Runtime Behavior", () => {
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
 
         // Document should be a TypedDocumentNode
         expect(operation.document).toBeDefined();
@@ -126,7 +126,7 @@ describe("Runtime Behavior", () => {
         const operationsPath = [...writtenFiles.values()].find((p) => p.endsWith("operations.mjs"));
         await loadModule(operationsPath!);
 
-        const operation = gqlRuntime.getInlineOperation("GetUserById");
+        const operation = gqlRuntime.getOperation("GetUserById");
 
         expect(operation.variableNames).toBeDefined();
         expect(Array.isArray(operation.variableNames)).toBe(true);

@@ -513,9 +513,7 @@ export type GeneratedModule = {
 };
 
 type PerSchemaInjection = {
-  readonly adapterImportPath: string;
   readonly scalarImportPath: string;
-  readonly metadataAdapterImportPath?: string;
   readonly helpersImportPath?: string;
 };
 
@@ -550,9 +548,7 @@ type MultiRuntimeTemplateOptions = {
 const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   // Build imports based on injection mode
   const imports: string[] = [];
-  const adapterAliases = new Map<string, string>();
   const scalarAliases = new Map<string, string>();
-  const metadataAdapterAliases = new Map<string, string>();
   const helpersAliases = new Map<string, string>();
 
   if ($$.injection.mode === "inject") {
@@ -560,35 +556,15 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     const importsByPath = new Map<string, string[]>();
 
     for (const [schemaName, injection] of $$.injection.perSchema) {
-      const adapterAlias = `adapter_${schemaName}`;
       const scalarAlias = `scalar_${schemaName}`;
-      adapterAliases.set(schemaName, adapterAlias);
       scalarAliases.set(schemaName, scalarAlias);
 
-      // Group adapter import
-      const adapterSpecifiers = importsByPath.get(injection.adapterImportPath) ?? [];
-      if (!importsByPath.has(injection.adapterImportPath)) {
-        importsByPath.set(injection.adapterImportPath, adapterSpecifiers);
-      }
-      adapterSpecifiers.push(`adapter as ${adapterAlias}`);
-
-      // Group scalar import (may be same file as adapter)
+      // Group scalar import
       const scalarSpecifiers = importsByPath.get(injection.scalarImportPath) ?? [];
       if (!importsByPath.has(injection.scalarImportPath)) {
         importsByPath.set(injection.scalarImportPath, scalarSpecifiers);
       }
       scalarSpecifiers.push(`scalar as ${scalarAlias}`);
-
-      // Group metadataAdapter import (optional)
-      if (injection.metadataAdapterImportPath) {
-        const metadataAdapterAlias = `metadataAdapter_${schemaName}`;
-        metadataAdapterAliases.set(schemaName, metadataAdapterAlias);
-        const metadataAdapterSpecifiers = importsByPath.get(injection.metadataAdapterImportPath) ?? [];
-        if (!importsByPath.has(injection.metadataAdapterImportPath)) {
-          importsByPath.set(injection.metadataAdapterImportPath, metadataAdapterSpecifiers);
-        }
-        metadataAdapterSpecifiers.push(`metadataAdapter as ${metadataAdapterAlias}`);
-      }
 
       // Group helpers import (optional)
       if (injection.helpersImportPath) {
@@ -620,29 +596,18 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const schemaVar = `${name}Schema`;
-    const adapterVar = $$.injection.mode === "inject" ? adapterAliases.get(name) : `adapter_${name}`;
     const scalarBlock = $$.injection.mode === "inject" ? scalarAliases.get(name) : config.scalarBlock;
 
-    // Generate adapter if inline mode
-    const adapterDefinition =
-      $$.injection.mode === "inject"
-        ? ""
-        : `const ${adapterVar} = createRuntimeAdapter(({ type }) => ({\n  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),\n}));\n`;
-
-    // Get optional adapters
-    const metadataAdapterVar = metadataAdapterAliases.get(name);
+    // Get optional helpers
     const helpersVar = helpersAliases.get(name);
 
     // Build type exports
-    const typeExports = [
-      `export type Schema_${name} = typeof ${schemaVar} & { _?: never };`,
-      `export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`,
-    ];
+    const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
     if (helpersVar) {
       typeExports.push(`export type Helpers_${name} = typeof ${helpersVar} & { _?: never };`);
     }
 
-    schemaBlocks.push(`${adapterDefinition}
+    schemaBlocks.push(`
 const ${schemaVar} = {
   label: "${name}" as const,
   operations: defineOperationRoots({
@@ -660,26 +625,14 @@ const ${schemaVar} = {
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options if needed
-    const hasOptions = metadataAdapterVar || helpersVar;
-    if (hasOptions) {
-      const optionsEntries: string[] = [];
-      if (metadataAdapterVar) {
-        optionsEntries.push(`metadataAdapter: ${metadataAdapterVar}`);
-      }
-      if (helpersVar) {
-        optionsEntries.push(`helpers: ${helpersVar}`);
-      }
-      const helpersGeneric = helpersVar ? `, Helpers_${name}` : "";
+    if (helpersVar) {
       gqlEntries.push(
-        `  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}${helpersGeneric}>(${schemaVar}, { ${optionsEntries.join(", ")} })`,
+        `  ${name}: createGqlElementComposer<Schema_${name}, Helpers_${name}>(${schemaVar}, { helpers: ${helpersVar} })`,
       );
     } else {
-      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}, Adapter_${name}>(${schemaVar})`);
+      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar})`);
     }
   }
-
-  // Include createRuntimeAdapter import only in inline mode
-  const runtimeImport = $$.injection.mode === "inline" ? '\nimport { createRuntimeAdapter } from "@soda-gql/runtime";' : "";
 
   return `\
 import {
@@ -689,7 +642,7 @@ import {
   defineOperationRoots,
   unsafeInputType,
   unsafeOutputType,
-} from "@soda-gql/core";${runtimeImport}
+} from "@soda-gql/core";
 ${extraImports}
 ${schemaBlocks.join("\n")}
 

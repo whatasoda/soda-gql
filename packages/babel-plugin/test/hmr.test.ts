@@ -27,7 +27,6 @@ describe("Babel-Plugin HMR Integration", () => {
         schemas: {
           default: {
             schema: schemaPath,
-            runtimeAdapter: join(codegenFixtureRoot, "schemas", "default", "runtime-adapter.ts"),
             scalars: join(codegenFixtureRoot, "schemas", "default", "scalars.ts"),
           },
         },
@@ -100,7 +99,6 @@ describe("Babel-Plugin HMR Integration", () => {
         schemas: {
           default: {
             schema: schemaPath,
-            runtimeAdapter: join(codegenFixtureRoot, "schemas", "default", "runtime-adapter.ts"),
             scalars: join(codegenFixtureRoot, "schemas", "default", "scalars.ts"),
           },
         },

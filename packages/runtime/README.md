@@ -16,7 +16,7 @@ bun add @soda-gql/runtime
 This package provides the minimal runtime needed to execute soda-gql GraphQL operations. It includes:
 
 - Operation registry for storing compiled GraphQL documents
-- Runtime adapter for operation retrieval
+- Runtime utilities for operation retrieval
 - Minimal footprint for production builds
 
 ## Usage
@@ -30,29 +30,16 @@ When using soda-gql with a build plugin (Babel, TypeScript, Vite, etc.), the run
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query(
     { operationName: "GetUser", variables: [$var("id").scalar("ID:!")] },
-    ({ $ }) => ({ user: userSlice.build({ id: $.id }) }),
+    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
   ),
 );
 
 // After transformation (automatically handled by build plugin)
 import { gqlRuntime } from "@soda-gql/runtime";
 
-export const userQuery = gqlRuntime.getComposedOperation("canonicalId");
-```
-
-### Runtime Adapter
-
-For custom client integrations, create a runtime adapter that defines error types:
-
-```typescript
-import { createRuntimeAdapter } from "@soda-gql/runtime";
-
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  // Define the shape of non-GraphQL errors (network errors, etc.)
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));
+export const userQuery = gqlRuntime.getOperation("canonicalId");
 ```
 
 ## API Reference
@@ -64,32 +51,8 @@ The main runtime object for operation management:
 ```typescript
 import { gqlRuntime } from "@soda-gql/runtime";
 
-// Get a composed operation by canonical ID
-const operation = gqlRuntime.getComposedOperation("path/to/file.ts::userQuery");
-
-// Get an inline operation
-const inlineOp = gqlRuntime.getInlineOperation("canonicalId");
-
-// Get a model
-const model = gqlRuntime.getModel("canonicalId");
-
-// Get a slice
-const slice = gqlRuntime.getSlice("canonicalId");
-```
-
-### `createRuntimeAdapter(options)`
-
-Create a custom runtime adapter for client integration:
-
-```typescript
-import { createRuntimeAdapter } from "@soda-gql/runtime";
-
-const adapter = createRuntimeAdapter({
-  errorTypes: {
-    network: (message, cause) => new NetworkError(message, cause),
-    unknown: (message, cause) => new UnknownError(message, cause),
-  },
-});
+// Get an operation by canonical ID
+const operation = gqlRuntime.getOperation("path/to/file.ts::userQuery");
 ```
 
 ## Zero-Runtime Philosophy

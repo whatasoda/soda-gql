@@ -139,11 +139,6 @@ export default defineConfig([
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
   },
-  {
-    ...configure("@soda-gql/graffle-client"),
-    format: ["esm", "cjs"] as const,
-    platform: "neutral" as const,
-  },
 
   // Shared/Common packages
   {

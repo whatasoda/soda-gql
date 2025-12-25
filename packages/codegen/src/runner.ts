@@ -61,26 +61,11 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   const outPath = resolve(options.outPath);
 
   // Handle legacy injectFromPath for backward compatibility
-  const runtimeAdapters = options.runtimeAdapters ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
   const scalars = options.scalars ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
 
-  // Validate that all adapter and scalar files exist
-  const adapterPaths = new Map<string, string>();
+  // Validate that all scalar and helper files exist
   const scalarPaths = new Map<string, string>();
-  const metadataAdapterPaths = new Map<string, string>();
   const helpersPaths = new Map<string, string>();
-
-  for (const [schemaName, adapterPath] of Object.entries(runtimeAdapters)) {
-    const resolvedPath = resolve(adapterPath);
-    if (!existsSync(resolvedPath)) {
-      return err({
-        code: "INJECT_MODULE_NOT_FOUND",
-        message: `Runtime adapter module not found for schema '${schemaName}': ${resolvedPath}`,
-        injectPath: resolvedPath,
-      });
-    }
-    adapterPaths.set(schemaName, resolvedPath);
-  }
 
   for (const [schemaName, scalarPath] of Object.entries(scalars)) {
     const resolvedPath = resolve(scalarPath);
@@ -92,21 +77,6 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
       });
     }
     scalarPaths.set(schemaName, resolvedPath);
-  }
-
-  // Validate optional metadataAdapters
-  if (options.metadataAdapters) {
-    for (const [schemaName, metadataAdapterPath] of Object.entries(options.metadataAdapters)) {
-      const resolvedPath = resolve(metadataAdapterPath);
-      if (!existsSync(resolvedPath)) {
-        return err({
-          code: "INJECT_MODULE_NOT_FOUND",
-          message: `Metadata adapter module not found for schema '${schemaName}': ${resolvedPath}`,
-          injectPath: resolvedPath,
-        });
-      }
-      metadataAdapterPaths.set(schemaName, resolvedPath);
-    }
   }
 
   // Validate optional helpers
@@ -145,34 +115,26 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   const injectionConfig = new Map<
     string,
     {
-      adapterImportPath: string;
       scalarImportPath: string;
-      metadataAdapterImportPath?: string;
       helpersImportPath?: string;
     }
   >();
 
   for (const schemaName of schemas.keys()) {
-    const adapterPath = adapterPaths.get(schemaName);
     const scalarPath = scalarPaths.get(schemaName);
 
-    if (!adapterPath || !scalarPath) {
+    if (!scalarPath) {
       return err({
         code: "INJECT_MODULE_REQUIRED",
-        message: `Missing adapter or scalar configuration for schema '${schemaName}'`,
+        message: `Missing scalar configuration for schema '${schemaName}'`,
       });
     }
 
     const importSpecifierOptions = { includeExtension: options.importExtension };
-    const metadataAdapterPath = metadataAdapterPaths.get(schemaName);
     const helpersPath = helpersPaths.get(schemaName);
 
     injectionConfig.set(schemaName, {
-      adapterImportPath: toImportSpecifier(outPath, adapterPath, importSpecifierOptions),
       scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
-      ...(metadataAdapterPath
-        ? { metadataAdapterImportPath: toImportSpecifier(outPath, metadataAdapterPath, importSpecifierOptions) }
-        : {}),
       ...(helpersPath ? { helpersImportPath: toImportSpecifier(outPath, helpersPath, importSpecifierOptions) } : {}),
     });
   }

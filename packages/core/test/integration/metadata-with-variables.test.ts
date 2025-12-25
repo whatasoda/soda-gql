@@ -54,12 +54,12 @@ const schema = {
 type Schema = typeof schema & { _?: never };
 
 describe("metadata with variable access", () => {
-  describe("inline operation", () => {
+  describe("operation", () => {
     it("metadata callback receives $ with variable refs", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.inline(
+        query.operation(
           {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
@@ -69,7 +69,7 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
         ),
       );
 
@@ -81,7 +81,7 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.inline(
+        query.operation(
           {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
@@ -91,7 +91,7 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
         ),
       );
 
@@ -103,7 +103,7 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ mutation }, { $var }) =>
-        mutation.inline(
+        mutation.operation(
           {
             operationName: "UpdateUser",
             variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
@@ -116,7 +116,7 @@ describe("metadata with variable access", () => {
               },
             }),
           },
-          ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(() => [])],
+          ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(({ f }) => [f.id()])],
         ),
       );
 
@@ -130,12 +130,12 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.inline(
+        query.operation(
           {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
           },
-          ({ f, $ }) => [f.user({ id: $.userId })(() => [])],
+          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
         ),
       );
 
@@ -146,7 +146,7 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.inline(
+        query.operation(
           {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
@@ -168,7 +168,7 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.inline(
+        query.operation(
           {
             operationName: "GetUser",
             variables: [$var("userId").scalar("ID:!")],

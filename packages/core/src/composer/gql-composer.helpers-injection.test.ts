@@ -101,8 +101,8 @@ describe("helpers injection", () => {
       varBuilderAvailable = typeof $var === "function";
       customAvailable = custom() === "test";
 
-      return query.inline({ operationName: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
-        f.user({ id: $.id })(() => []),
+      return query.operation({ operationName: "Test", variables: [$var("id").scalar("ID:!")] }, ({ f, $ }) => [
+        f.user({ id: $.id })(({ f }) => [f.id()]),
       ]);
     });
 

@@ -31,6 +31,7 @@ export const buildModelRuntimeCall = ({
         buildObjectExpression(factory, {
           prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>(factory, {
             typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
+            metadata: factory.createIdentifier("undefined"),
           }),
         }),
       ],

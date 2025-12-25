@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
-import { InlineOperation, Model } from "@soda-gql/core";
+import { Operation, Model } from "@soda-gql/core";
 import { parse } from "graphql";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";
@@ -29,7 +29,7 @@ const createTestIntermediateModule = (elements: Record<string, IntermediateArtif
 });
 
 describe("artifact aggregate", () => {
-  it("aggregates models and inline operations successfully", () => {
+  it("aggregates models and operations successfully", () => {
     const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
@@ -50,8 +50,8 @@ describe("artifact aggregate", () => {
         })),
       },
       [operationId]: {
-        type: "inlineOperation",
-        element: InlineOperation.create(() => ({
+        type: "operation",
+        element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: parse("query ProfilePageQuery { users { id } }"),
@@ -80,8 +80,8 @@ describe("artifact aggregate", () => {
 
         const operation = registry.get(operationId);
         expect(operation).toBeDefined();
-        expect(operation?.type).toBe("inlineOperation");
-        if (operation?.type === "inlineOperation") {
+        expect(operation?.type).toBe("operation");
+        if (operation?.type === "operation") {
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
           expect(operation.prebuild.variableNames).toEqual([]);
         }
@@ -188,7 +188,7 @@ describe("artifact aggregate", () => {
     );
   });
 
-  it("preserves all prebuild data for inline operations", () => {
+  it("preserves all prebuild data for operations", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
@@ -202,8 +202,8 @@ describe("artifact aggregate", () => {
 
     const intermediateModule = createTestIntermediateModule({
       [operationId]: {
-        type: "inlineOperation",
-        element: InlineOperation.create(() => ({
+        type: "operation",
+        element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
           document: document,
@@ -222,8 +222,8 @@ describe("artifact aggregate", () => {
     result.match(
       (registry) => {
         const operation = registry.get(operationId);
-        expect(operation?.type).toBe("inlineOperation");
-        if (operation?.type === "inlineOperation") {
+        expect(operation?.type).toBe("operation");
+        if (operation?.type === "operation") {
           expect(operation.prebuild.operationType).toBe("query");
           expect(operation.prebuild.operationName).toBe("ProfilePageQuery");
           expect(operation.prebuild.document).toBe(document);

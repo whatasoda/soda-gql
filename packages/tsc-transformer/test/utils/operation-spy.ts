@@ -1,8 +1,8 @@
-import type { AnyInlineOperationOf, OperationType } from "@soda-gql/core";
+import type { AnyOperationOf, OperationType } from "@soda-gql/core";
 import { gqlRuntime } from "@soda-gql/core/runtime";
 
 export interface OperationSpy {
-  inlineOperations: Array<AnyInlineOperationOf<OperationType>>;
+  operations: Array<AnyOperationOf<OperationType>>;
   restore: () => void;
 }
 
@@ -11,19 +11,19 @@ export interface OperationSpy {
  * @returns An object with recorded operations and a restore function
  */
 export const createOperationSpy = (): OperationSpy => {
-  const inlineOperations: Array<AnyInlineOperationOf<OperationType>> = [];
-  const originalInlineOperation = gqlRuntime.inlineOperation;
+  const operations: Array<AnyOperationOf<OperationType>> = [];
+  const originalOperation = gqlRuntime.operation;
 
-  gqlRuntime.inlineOperation = (input: any) => {
-    const operation = originalInlineOperation(input);
-    inlineOperations.push(operation);
+  gqlRuntime.operation = (input: any) => {
+    const operation = originalOperation(input);
+    operations.push(operation);
     return operation;
   };
 
   return {
-    inlineOperations,
+    operations,
     restore: () => {
-      gqlRuntime.inlineOperation = originalInlineOperation;
+      gqlRuntime.operation = originalOperation;
     },
   };
 };
@@ -36,7 +36,7 @@ export const withOperationSpy = async <R>(fn: (spy: Omit<OperationSpy, "restore"
   const spy = createOperationSpy();
   try {
     return await fn({
-      inlineOperations: spy.inlineOperations,
+      operations: spy.operations,
     });
   } finally {
     spy.restore();

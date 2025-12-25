@@ -10,4 +10,5 @@ export const createRuntimeModel = (input: RuntimeModelInput): AnyModel =>
   ({
     typename: input.prebuild.typename,
     fragment: hidden(),
+    metadata: undefined,
   }) satisfies StripSymbols<AnyModel> as unknown as AnyModel;

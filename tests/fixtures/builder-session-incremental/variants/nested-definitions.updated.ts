@@ -2,9 +2,9 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 
 // Case 1: Non-exported top-level definition (used internally only)
 // Should be collected with canonical ID: filePath::internalPostModel
+// UPDATED: Added body() field
 const internalPostModel = gql.default(({ model }) =>
   model.Post({}, ({ f }) => [
-    //
     f.id(),
     f.title(),
     f.body(),
@@ -15,12 +15,12 @@ const internalPostModel = gql.default(({ model }) =>
 // Should be collected with canonical ID: filePath::userWithPostsModel
 export const userWithPostsModel = gql.default(({ model }) =>
   model.User({}, ({ f }) => [
-    //
     f.id(),
     f.name(),
-    f.posts({})(() => [
-      //
-      internalPostModel.fragment(),
+    f.posts({})(({ f }) => [
+      f.id(),
+      f.title(),
+      f.body(),
     ]),
   ]),
 );
@@ -31,97 +31,81 @@ export const userWithPostsModel = gql.default(({ model }) =>
 // - filePath::createUserQueries.userList
 export function createUserQueries() {
   const userById = gql.default(({ query }, { $var }) =>
-    query.slice(
+    query.operation(
       {
+        operationName: "UserById",
         variables: [$var("id").scalar("ID:!")],
       },
-      ({ f, $ }) => [
-        //
-        f.user({ id: $.id })(({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ]),
-      ],
-      ({ select }) => select(["$.user"], (result) => result),
+      ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
     ),
   );
 
   const userList = gql.default(({ query }, { $var }) =>
-    query.slice(
+    query.operation(
       {
+        operationName: "UserList",
         variables: [$var("limit").scalar("Int:?")],
       },
-      ({ f, $ }) => [
-        //
-        f.users({ limit: $.limit })(({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ]),
-      ],
-      ({ select }) => select(["$.users"], (result) => result),
+      ({ f, $ }) => [f.users({ limit: $.limit })(({ f }) => [f.id(), f.name()])],
     ),
   );
+
+  return { userById, userList };
 }
 
 // Case 4: Arrow function with nested definitions
 // Should be collected with canonical ID: filePath::queryFactory.arrow#0.baseQuery
 export const queryFactory = () => {
   const baseQuery = gql.default(({ query }) =>
-    query.slice(
-      {},
+    query.operation(
+      {
+        operationName: "BaseQuery",
+      },
       ({ f }) => [
-        //
         f.users({ limit: 5 })(({ f }) => [
-          //
           f.id(),
         ]),
       ],
-      ({ select }) => select(["$.users"], (result) => result),
     ),
   );
 
   return baseQuery;
 };
 
-// Case 5: Nested object structure with gql definitions
+// Case 5: Nested object structure with operation definitions
+// UPDATED: Added email() field to list
 // Should be collected with canonical IDs like:
 // - filePath::nestedQueries.users.list
 // - filePath::nestedQueries.users.byId
 export const nestedQueries = {
   users: {
     list: gql.default(({ query }, { $var }) =>
-      query.slice(
+      query.operation(
         {
+          operationName: "NestedUserList",
           variables: [$var("limit").scalar("Int:?")],
         },
         ({ f, $ }) => [
-          //
           f.users({ limit: $.limit })(({ f }) => [
-            //
             f.id(),
             f.name(),
             f.email(),
           ]),
         ],
-        ({ select }) => select(["$.users"], (result) => result),
       ),
     ),
     byId: gql.default(({ query }, { $var }) =>
-      query.slice(
+      query.operation(
         {
+          operationName: "NestedUserById",
           variables: [$var("id").scalar("ID:!")],
         },
         ({ f, $ }) => [
-          //
           f.user({ id: $.id })(({ f }) => [
-            //
             f.id(),
             f.name(),
           ]),
         ],
-        ({ select }) => select(["$.user"], (result) => result),
       ),
     ),
   },
@@ -129,17 +113,19 @@ export const nestedQueries = {
 
 // Case 6: Operation definition in function scope
 // Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
-// Uses the previously defined nestedQueries.users.byId slice
 export function createUserOperation() {
   const getUserOperation = gql.default(({ query }, { $var }) =>
-    query.composed(
+    query.operation(
       {
         operationName: "GetUserById",
         variables: [$var("id").scalar("ID:!")],
       },
-      ({ $ }) => ({
-        user: nestedQueries.users.byId.embed({ id: $.id }),
-      }),
+      ({ f, $ }) => [
+        f.user({ id: $.id })(({ f }) => [
+          f.id(),
+          f.name(),
+        ]),
+      ],
     ),
   );
 
@@ -148,17 +134,19 @@ export function createUserOperation() {
 
 // Case 7: Operation definition in arrow function
 // Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
-// Uses the previously defined nestedQueries.users.list slice
 export const operationFactory = () => {
   const listUsersOperation = gql.default(({ query }, { $var }) =>
-    query.composed(
+    query.operation(
       {
         operationName: "ListUsers",
         variables: [$var("limit").scalar("Int:?")],
       },
-      ({ $ }) => ({
-        users: nestedQueries.users.list.embed({ limit: $.limit }),
-      }),
+      ({ f, $ }) => [
+        f.users({ limit: $.limit })(({ f }) => [
+          f.id(),
+          f.name(),
+        ]),
+      ],
     ),
   );
 
@@ -172,25 +160,31 @@ export const operationFactory = () => {
 export const nestedOperations = {
   users: {
     getUser: gql.default(({ query }, { $var }) =>
-      query.composed(
+      query.operation(
         {
           operationName: "NestedGetUser",
           variables: [$var("id").scalar("ID:!")],
         },
-        ({ $ }) => ({
-          user: nestedQueries.users.byId.embed({ id: $.id }),
-        }),
+        ({ f, $ }) => [
+          f.user({ id: $.id })(({ f }) => [
+            f.id(),
+            f.name(),
+          ]),
+        ],
       ),
     ),
     listUsers: gql.default(({ query }, { $var }) =>
-      query.composed(
+      query.operation(
         {
           operationName: "NestedListUsers",
           variables: [$var("limit").scalar("Int:?")],
         },
-        ({ $ }) => ({
-          users: nestedQueries.users.list.embed({ limit: $.limit }),
-        }),
+        ({ f, $ }) => [
+          f.users({ limit: $.limit })(({ f }) => [
+            f.id(),
+            f.name(),
+          ]),
+        ],
       ),
     ),
   },

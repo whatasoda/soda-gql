@@ -13,6 +13,7 @@ export const buildModelRuntimeCall = ({
       buildObjectExpression({
         prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
           typename: t.stringLiteral(artifact.prebuild.typename),
+          metadata: t.identifier("undefined"),
         }),
       }),
     ]),

@@ -30,9 +30,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
         name,
         {
           schema: resolve(configDir, schemaConfig.schema),
-          runtimeAdapter: resolve(configDir, schemaConfig.runtimeAdapter),
           scalars: resolve(configDir, schemaConfig.scalars),
-          ...(schemaConfig.metadataAdapter ? { metadataAdapter: resolve(configDir, schemaConfig.metadataAdapter) } : {}),
           ...(schemaConfig.helpers ? { helpers: resolve(configDir, schemaConfig.helpers) } : {}),
         },
       ]),

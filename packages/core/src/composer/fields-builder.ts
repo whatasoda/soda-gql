@@ -79,7 +79,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           const newPath = appendToPath(currentPath, {
             field: fieldName,
             parentType: typeName,
-            isList: isListType(type.type),
+            isList: isListType(type.modifier),
           });
 
           // Run nested builder with updated path context
@@ -109,7 +109,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           const newPath = appendToPath(currentPath, {
             field: fieldName,
             parentType: typeName,
-            isList: isListType(type.type),
+            isList: isListType(type.modifier),
           });
 
           // Run nested builders with updated path context
