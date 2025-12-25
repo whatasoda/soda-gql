@@ -1,5 +1,4 @@
 import { gql } from "@/graphql-system";
-import { userSlice, usersSlice } from "./slices";
 
 /**
  * Query to get a single user by ID.
@@ -7,14 +6,12 @@ import { userSlice, usersSlice } from "./slices";
  * This will be transformed to zero-runtime code by the TypeScript compiler plugin.
  */
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.composed(
+  query.operation(
     {
       name: "GetUser",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ $ }) => ({
-      user: userSlice.embed({ id: $.userId }),
-    }),
+    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
 
@@ -24,29 +21,10 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
  * This demonstrates fetching a list of users with the same fields.
  */
 export const getUsersQuery = gql.default(({ query }) =>
-  query.composed(
+  query.operation(
     {
       name: "GetUsers",
     },
-    () => ({
-      users: usersSlice.embed(),
-    }),
-  ),
-);
-
-export const inline = gql.default(({ query }) =>
-  query.inline(
-    {
-      name: "InlineTest",
-    },
-    ({ f }) => [
-      //
-      f.users()(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    ({ f }) => [f.users()(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
