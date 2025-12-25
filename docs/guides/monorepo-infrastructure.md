@@ -346,6 +346,106 @@ tsc -b
 
 Example applications demonstrate how to use soda-gql in real projects.
 
+### Example TypeScript Configuration
+
+Each example requires a `tsconfig.editor.json` for integrated type checking with the monorepo.
+
+#### Base Template
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/{example-name}",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/{example-name}/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "graphql-system/**/*", "inject-module/**/*"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.editor.json" },
+    { "path": "../../packages/runtime/tsconfig.editor.json" }
+  ]
+}
+```
+
+#### Key Configuration Options
+
+| Option | Purpose |
+|--------|---------|
+| `composite: true` | Required for TypeScript project references |
+| `customConditions: ["@soda-gql"]` | Resolves imports to source files during development |
+| `outDir` / `tsBuildInfoFile` | Outputs type check artifacts to `node_modules/.soda-gql/.typecheck/` |
+| `paths` | Maps `@/graphql-system` to the generated graphql-system |
+| `references` | Links to package tsconfig.editor.json files the example depends on |
+
+#### Framework-Specific Settings
+
+**React Projects** (vite-react, nextjs-webpack):
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": []
+  }
+}
+```
+
+**Next.js Projects** (additional path mappings):
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/graphql-system": ["./graphql-system/index.ts"],
+      "@/graphql/*": ["./src/graphql/*"]
+    }
+  }
+}
+```
+
+**Browser Projects** (webpack-swc, expo-metro):
+```json
+{
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": []
+  }
+}
+```
+
+Note: Setting `"types": []` prevents Bun types from being included in browser-targeted examples.
+
+#### Root tsconfig.editor.json References
+
+Each example must be referenced in the root `tsconfig.editor.json`:
+
+```json
+{
+  "references": [
+    { "path": "./examples/babel-app/tsconfig.editor.json" },
+    { "path": "./examples/vite-react/tsconfig.editor.json" },
+    { "path": "./examples/nextjs-webpack/tsconfig.editor.json" },
+    { "path": "./examples/expo-metro/tsconfig.editor.json" },
+    { "path": "./examples/webpack-swc/tsconfig.editor.json" },
+    { "path": "./examples/nestjs-compiler-tsc/tsconfig.editor.json" }
+  ]
+}
+```
+
+#### Creating a New Example
+
+1. Create `examples/{name}/tsconfig.editor.json` using the base template
+2. Add framework-specific settings if needed (jsx, lib, types)
+3. Add any custom path mappings for the project
+4. Add reference to root `tsconfig.editor.json`
+5. Run `bun typecheck` to verify configuration
+
 ### Babel Example
 
 **Location**: `examples/babel-app/`
