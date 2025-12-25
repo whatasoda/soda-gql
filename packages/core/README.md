@@ -192,7 +192,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 Use `createMetadataAdapter` to customize metadata behavior at the schema level:
 
 ```typescript
-import { createMetadataAdapter } from "@soda-gql/core/metadata";
+import { createMetadataAdapter } from "@soda-gql/core/adapter";
 import { createHash } from "crypto";
 
 export const metadataAdapter = createMetadataAdapter({

@@ -16,13 +16,6 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    "./metadata": {
-      "@soda-gql": "./@x-metadata.ts",
-      "types": "./dist/metadata.d.ts",
-      "import": "./dist/metadata.js",
-      "require": "./dist/metadata.cjs",
-      "default": "./dist/metadata.js"
-    },
     ".": {
       "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.ts",
@@ -36,6 +29,13 @@
       "import": "./dist/runtime.js",
       "require": "./dist/runtime.cjs",
       "default": "./dist/runtime.js"
+    },
+    "./adapter": {
+      "@soda-gql": "./@x-adapter.ts",
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.js",
+      "require": "./dist/adapter.cjs",
+      "default": "./dist/adapter.js"
     },
     "./package.json": "./package.json"
   },

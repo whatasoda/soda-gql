@@ -159,7 +159,7 @@ export const userQuery = gql.default(({ query }, { $var }) =>
 Use `createMetadataAdapter` to set schema-level defaults and transformations:
 
 ```typescript
-import { createMetadataAdapter } from "@soda-gql/core/metadata";
+import { createMetadataAdapter } from "@soda-gql/core/adapter";
 
 export const metadataAdapter = createMetadataAdapter({
   defaults: {

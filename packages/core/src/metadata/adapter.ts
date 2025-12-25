@@ -7,7 +7,7 @@ import { mergeWithDefaults } from "./merge";
  *
  * @example
  * ```typescript
- * import { createMetadataAdapter } from "@soda-gql/core/metadata";
+ * import { createMetadataAdapter } from "@soda-gql/core/adapter";
  * import { createHash } from "crypto";
  *
  * export const metadataAdapter = createMetadataAdapter({
