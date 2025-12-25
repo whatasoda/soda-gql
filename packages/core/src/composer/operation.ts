@@ -1,6 +1,13 @@
 import { type FieldsBuilder, type MergeFields, mergeFields, Operation } from "../types/element";
 import type { AnyFields } from "../types/fragment";
-import type { MetadataBuilder, OperationMetadata } from "../types/metadata";
+import type {
+  AnyFlexibleMetadataAdapter,
+  DefaultFlexibleMetadataAdapter,
+  ExtractAdapterTypes,
+  MetadataBuilder,
+  ModelMetaInfo,
+} from "../types/metadata";
+import { defaultFlexibleMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 
@@ -9,7 +16,18 @@ import { createFieldFactories } from "./fields-builder";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { withModelUsageCollection } from "./model-usage-context";
 
-export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
+export const createOperationComposerFactory = <
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+>(
+  schema: NoInfer<TSchema>,
+  adapter?: TAdapter,
+) => {
+  const resolvedAdapter = adapter ?? (defaultFlexibleMetadataAdapter as TAdapter);
+
+  type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
+  type TAggregatedModelMetadata = ExtractAdapterTypes<TAdapter>["aggregatedModelMetadata"];
+
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
     type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
     const operationTypeName: TTypeName | null = schema.operations[operationType];
@@ -17,13 +35,19 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
       throw new Error(`Operation type ${operationType} is not defined in schema roots`);
     }
 
-    return <TOperationName extends string, TFields extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
+    return <
+      TOperationName extends string,
+      TFields extends AnyFields[],
+      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
+      TOperationMetadata = unknown,
+    >(
       options: {
         name: TOperationName;
         variables?: TVarDefinitions;
         metadata?: MetadataBuilder<
           ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
-          OperationMetadata
+          TOperationMetadata,
+          TAggregatedModelMetadata
         >;
       },
       fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
@@ -50,7 +74,7 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
           fields,
         });
 
-        const createDefinition = (metadata: OperationMetadata | undefined) => ({
+        const createDefinition = (metadata: TOperationMetadata | undefined) => ({
           operationType,
           operationName,
           variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
@@ -68,24 +92,41 @@ export const createOperationComposerFactory = <TSchema extends AnyGraphqlSchema>
         }
 
         // Evaluate model metadata first (sync or async)
-        const modelMetadataResults: (OperationMetadata | undefined | Promise<OperationMetadata>)[] = modelUsages.map((usage) =>
+        const modelMetadataResults: (TModelMetadata | undefined | Promise<TModelMetadata>)[] = modelUsages.map((usage) =>
           usage.metadataBuilder ? usage.metadataBuilder() : undefined,
         );
 
         // Check if any model metadata is async
         const hasAsyncModelMetadata = modelMetadataResults.some((r) => r instanceof Promise);
 
+        // Helper to aggregate and call operation metadata builder
+        const buildOperationMetadata = (
+          resolvedModelMetadata: (TModelMetadata | undefined)[],
+        ): TOperationMetadata | undefined | Promise<TOperationMetadata | undefined> => {
+          // Build ModelMetaInfo array for adapter
+          const modelMetaInfos: ModelMetaInfo<TModelMetadata>[] = modelUsages.map((usage, index) => ({
+            metadata: resolvedModelMetadata[index],
+            fieldPath: usage.path,
+          }));
+
+          // Aggregate using the adapter
+          const aggregatedModelMetadata = resolvedAdapter.aggregateModelMetadata(modelMetaInfos) as TAggregatedModelMetadata;
+
+          // Call operation metadata builder with aggregated model metadata
+          return options.metadata?.({ $, document, modelMetadata: aggregatedModelMetadata });
+        };
+
         if (hasAsyncModelMetadata) {
           // Handle async model metadata
           return Promise.all(modelMetadataResults).then(async (resolvedModelMetadata) => {
-            const operationMetadata = await options.metadata?.({ $, document, modelMetadata: resolvedModelMetadata });
+            const operationMetadata = await buildOperationMetadata(resolvedModelMetadata);
             return createDefinition(operationMetadata);
           });
         }
 
         // All model metadata is sync, evaluate operation metadata
-        const syncModelMetadata = modelMetadataResults as (OperationMetadata | undefined)[];
-        const operationMetadataResult = options.metadata?.({ $, document, modelMetadata: syncModelMetadata });
+        const syncModelMetadata = modelMetadataResults as (TModelMetadata | undefined)[];
+        const operationMetadataResult = buildOperationMetadata(syncModelMetadata);
 
         if (operationMetadataResult instanceof Promise) {
           return operationMetadataResult.then(createDefinition);

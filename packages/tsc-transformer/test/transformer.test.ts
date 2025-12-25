@@ -22,6 +22,7 @@ describe("tsc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -60,6 +61,7 @@ describe("tsc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -93,6 +95,7 @@ describe("tsc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],

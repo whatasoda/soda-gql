@@ -15,6 +15,7 @@ export type MultiSchemaCodegenOptions = {
   readonly format: CodegenFormat;
   readonly scalars?: Record<string, string>; // schema name -> scalar module path
   readonly helpers?: Record<string, string>; // schema name -> helpers module path
+  readonly metadataAdapterPath?: string | null; // path to custom adapter, null to generate default
   readonly injectFromPath?: string; // Legacy: single inject module for default schema
   readonly importExtension?: boolean; // Whether to include file extensions in import paths (default: false)
 };

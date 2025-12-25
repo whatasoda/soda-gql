@@ -36,6 +36,7 @@ try {
   await createTransformer({
     config: {
       analyzer: "ts",
+      metadata: null,
       outdir: "/tmp",
       graphqlSystemAliases: [],
       include: [],

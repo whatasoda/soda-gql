@@ -4,7 +4,7 @@
     "composite": true,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/helpers-internal",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/helpers-internal/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/helpers-internal/tsconfig.tsbuildinfo"
   },
   "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
   "exclude": ["node_modules", "dist"],

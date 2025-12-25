@@ -54,6 +54,7 @@ const transformWithBabel = async ({
  */
 const createTransformConfig = (): import("@soda-gql/config").ResolvedSodaGqlConfig => ({
   analyzer: "ts" as const,
+  metadata: null,
   outdir: "/tmp/babel-conformance",
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],

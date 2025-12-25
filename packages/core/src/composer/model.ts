@@ -1,6 +1,11 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
-import type { ModelMetadataBuilder, OperationMetadata } from "../types/metadata";
+import type {
+  AnyFlexibleMetadataAdapter,
+  DefaultFlexibleMetadataAdapter,
+  ExtractAdapterTypes,
+  ModelMetadataBuilder,
+} from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
@@ -9,7 +14,15 @@ import { createFieldFactories } from "./fields-builder";
 import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { recordModelUsage } from "./model-usage-context";
 
-export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema: NoInfer<TSchema>) => {
+export const createGqlModelComposers = <
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+>(
+  schema: NoInfer<TSchema>,
+  _adapter?: TAdapter,
+) => {
+  type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
+
   type ModelBuilder<TTypeName extends keyof TSchema["object"] & string> = <
     TFieldEntries extends AnyFields[],
     TVarDefinitions extends InputTypeSpecifiers[] = [{}],
@@ -18,7 +31,7 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
       variables?: TVarDefinitions;
       metadata?: ModelMetadataBuilder<
         ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
-        OperationMetadata
+        TModelMetadata
       >;
     },
     builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
@@ -30,7 +43,7 @@ export const createGqlModelComposers = <TSchema extends AnyGraphqlSchema>(schema
     return <TFieldEntries extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
-        metadata?: ModelMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, OperationMetadata>;
+        metadata?: ModelMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, TModelMetadata>;
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
     ) => {

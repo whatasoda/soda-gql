@@ -18,23 +18,35 @@ export type OperationMetadata = {
 /**
  * Tools available inside metadata builder callbacks.
  * Access utilities via $var.getName(), $var.getValue(), $var.getInner().
+ *
+ * @template TVarRefs - Variable references from the operation
+ * @template TAggregatedModelMetadata - The aggregated model metadata type from the adapter
  */
-export type MetadataBuilderTools<TVarRefs extends Record<string, AnyVarRef>> = {
+export type MetadataBuilderTools<
+  TVarRefs extends Record<string, AnyVarRef>,
+  TAggregatedModelMetadata = readonly (OperationMetadata | undefined)[],
+> = {
   /** Variable references created from the operation's variable definitions */
   readonly $: TVarRefs;
   /** The GraphQL DocumentNode (AST) for this operation */
   readonly document: DocumentNode;
-  /** Metadata results from embedded models, evaluated before operation metadata */
-  readonly modelMetadata?: readonly (OperationMetadata | undefined)[];
+  /** Aggregated metadata from embedded models, evaluated before operation metadata */
+  readonly modelMetadata?: TAggregatedModelMetadata;
 };
 
 /**
  * Metadata builder callback that receives variable tools.
  * Allows metadata to reference operation variables.
+ *
+ * @template TVarRefs - Variable references from the operation
+ * @template TMetadata - The metadata type returned by this builder
+ * @template TAggregatedModelMetadata - The aggregated model metadata type from the adapter
  */
-export type MetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata> = (
-  tools: MetadataBuilderTools<TVarRefs>,
-) => TMetadata | Promise<TMetadata>;
+export type MetadataBuilder<
+  TVarRefs extends Record<string, AnyVarRef>,
+  TMetadata,
+  TAggregatedModelMetadata = readonly (OperationMetadata | undefined)[],
+> = (tools: MetadataBuilderTools<TVarRefs, TAggregatedModelMetadata>) => TMetadata | Promise<TMetadata>;
 
 /**
  * Utility type to extract the metadata type from an operation.

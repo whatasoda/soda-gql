@@ -1,4 +1,5 @@
 import type { AnyModel, AnyOperation } from "../types/element";
+import type { AnyFlexibleMetadataAdapter, DefaultFlexibleMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createPrefixHelper } from "./field-prefix";
 import { createGqlModelComposers } from "./model";
@@ -9,17 +10,25 @@ export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel 
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
-export type GqlElementComposerOptions<THelpers extends object = object> = {
+export type GqlElementComposerOptions<
+  THelpers extends object = object,
+  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+> = {
   helpers?: THelpers;
+  adapter?: TAdapter;
 };
 
-export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, THelpers extends object = object>(
+export const createGqlElementComposer = <
+  TSchema extends AnyGraphqlSchema,
+  THelpers extends object = object,
+  TAdapter extends AnyFlexibleMetadataAdapter = DefaultFlexibleMetadataAdapter,
+>(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<THelpers>> = {} as GqlElementComposerOptions<THelpers>,
+  options: GqlElementComposerOptions<NoInfer<THelpers>, NoInfer<TAdapter>> = {} as GqlElementComposerOptions<THelpers, TAdapter>,
 ) => {
-  const { helpers } = options;
-  const model = createGqlModelComposers<TSchema>(schema);
-  const createOperationComposer = createOperationComposerFactory<TSchema>(schema);
+  const { helpers, adapter } = options;
+  const model = createGqlModelComposers<TSchema, TAdapter>(schema, adapter);
+  const createOperationComposer = createOperationComposerFactory<TSchema, TAdapter>(schema, adapter);
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future

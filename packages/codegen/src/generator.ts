@@ -526,6 +526,7 @@ type RuntimeTemplateInjection =
 
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
+  readonly adapterImportPath?: string;
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -543,6 +544,7 @@ type MultiRuntimeTemplateOptions = {
     }
   >;
   readonly injection: RuntimeTemplateInjection;
+  readonly adapterImportPath?: string;
 };
 
 const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
@@ -588,6 +590,11 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     }
   }
 
+  // Add adapter import if provided
+  if ($$.adapterImportPath) {
+    imports.push(`import { adapter } from "${$$.adapterImportPath}";`);
+  }
+
   const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
 
   // Generate per-schema definitions
@@ -625,10 +632,21 @@ const ${schemaVar} = {
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options if needed
+    const hasAdapter = !!$$.adapterImportPath;
+    const options: string[] = [];
+
     if (helpersVar) {
-      gqlEntries.push(
-        `  ${name}: createGqlElementComposer<Schema_${name}, Helpers_${name}>(${schemaVar}, { helpers: ${helpersVar} })`,
-      );
+      options.push(`helpers: ${helpersVar}`);
+    }
+    if (hasAdapter) {
+      options.push("adapter");
+    }
+
+    if (options.length > 0) {
+      const typeParams = helpersVar
+        ? `<Schema_${name}, Helpers_${name}, typeof adapter>`
+        : `<Schema_${name}, object, typeof adapter>`;
+      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { ${options.join(", ")} })`);
     } else {
       gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar})`);
     }
@@ -734,6 +752,7 @@ export const generateMultiSchemaModule = (
   const code = multiRuntimeTemplate({
     schemas: schemaConfigs,
     injection,
+    adapterImportPath: options?.adapterImportPath,
   });
 
   return {
