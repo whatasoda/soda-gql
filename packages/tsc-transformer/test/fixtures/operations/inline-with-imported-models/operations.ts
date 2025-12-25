@@ -11,7 +11,7 @@ export const getUserById = gql.default(({ query }, { $var }) =>
       //
       f.user({ id: $.id })(() => [
         //
-        userModel.fragment(),
+        userModel.embed(),
       ]),
     ],
   ),

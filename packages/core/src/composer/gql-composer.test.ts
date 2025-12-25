@@ -73,9 +73,9 @@ describe("createGqlInvoker", () => {
     );
 
     expect(userModel.typename).toBe("User");
-    const fragment = userModel.fragment({} as never);
-    expect(fragment).toHaveProperty("id");
-    expect(fragment).toHaveProperty("name");
+    const fields = userModel.embed({} as never);
+    expect(fields).toHaveProperty("id");
+    expect(fields).toHaveProperty("name");
   });
 
   it("creates inline operations with variable references", () => {

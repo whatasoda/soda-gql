@@ -19,7 +19,7 @@ export type ModelUsageRecord = {
   readonly metadataBuilder: ModelMetadataBuilder<Record<string, AnyVarRef>, OperationMetadata> | undefined;
   /** Field path where the model was embedded */
   readonly path: FieldPath | null;
-  /** Variable assignments passed to the model's fragment() */
+  /** Variable assignments passed to the model's embed() */
   readonly variables: unknown;
   /** Variable refs created for this model, used when evaluating metadata */
   readonly $: Record<string, AnyVarRef>;
@@ -52,7 +52,7 @@ export const withModelUsageCollection = <T>(fn: () => T): { result: T; usages: M
 };
 
 /**
- * Record a model usage. Called when model.fragment() is invoked.
+ * Record a model usage. Called when model.embed() is invoked.
  * No-op if not in a collection context.
  *
  * @internal

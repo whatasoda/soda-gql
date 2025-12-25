@@ -37,7 +37,7 @@ Slices are domain-specific query or mutation pieces. They define variables, fiel
 export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [f.user({ id: $.userId })(() => [userModel.fragment()])],
+    ({ f, $ }) => [f.user({ id: $.userId })(() => [userModel.embed()])],
     ({ select }) =>
       select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),
   ),

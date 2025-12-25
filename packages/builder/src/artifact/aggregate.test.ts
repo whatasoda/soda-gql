@@ -46,7 +46,7 @@ describe("artifact aggregate", () => {
         type: "model",
         element: Model.create(() => ({
           typename: "User",
-          fragment: () => ({}),
+          embed: () => ({}),
         })),
       },
       [operationId]: {
@@ -136,7 +136,7 @@ describe("artifact aggregate", () => {
         type: "model",
         element: Model.create(() => ({
           typename: "User",
-          fragment: () => ({}),
+          embed: () => ({}),
         })),
       },
     });

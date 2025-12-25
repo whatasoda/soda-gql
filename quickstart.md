@@ -297,7 +297,7 @@ describe("userBasic model", () => {
   });
 
   test("builds fragments", () => {
-    const fragment = userBasic.fragment();
+    const fragment = userBasic.embed();
     expect(fragment.id).toBeDefined();
     expect(fragment.name).toBeDefined();
   });
@@ -369,7 +369,7 @@ export const safeUserSlice = gql.default(({ slice }, { $var }) =>
       //
       f.user({ id: $.id })(() => [
         //
-        userBasic.fragment(),
+        userBasic.embed(),
       ]),
     ],
     ({ select }) =>

@@ -97,7 +97,7 @@ export const userSlice = gql.default(({ query }, { $var }) =>
   query.slice(
     { variables: [$var("id").scalar("ID:!")] },
     ({ f, $ }) => [
-      f.user({ id: $.id })(() => [userModel.fragment()]),
+      f.user({ id: $.id })(() => [userModel.embed()]),
     ],
     ({ select }) =>
       select(["$.user"], (result) => result.safeUnwrap(([user]) => user)),

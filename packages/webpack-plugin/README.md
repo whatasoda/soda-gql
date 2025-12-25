@@ -115,7 +115,7 @@ module.exports = {
 The plugin tracks dependencies between soda-gql files:
 
 - **Models**: Base definitions (no dependencies)
-- **Slices**: Reference models via `model.fragment()`
+- **Slices**: Reference models via `model.embed()`
 - **Operations**: Reference slices via `slice.embed()`
 
 When a model file changes:

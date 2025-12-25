@@ -23,7 +23,7 @@ interface ModelArtifact<
   TVarRefs extends Record<string, AnyVarRef> = Record<string, AnyVarRef>,
 > {
   readonly typename: TTypeName;
-  readonly fragment: (variables: TVariables) => TFields;
+  readonly embed: (variables: TVariables) => TFields;
   readonly metadata?: ModelMetadataBuilder<TVarRefs, OperationMetadata>;
 }
 
@@ -50,8 +50,8 @@ export class Model<
   public get typename() {
     return GqlElement.get(this).typename;
   }
-  public get fragment() {
-    return GqlElement.get(this).fragment;
+  public get embed() {
+    return GqlElement.get(this).embed;
   }
   public get metadata() {
     return GqlElement.get(this).metadata;
@@ -66,7 +66,7 @@ export class Model<
   >(
     define: () => {
       typename: TTypeName;
-      fragment: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
+      embed: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
       metadata?: ModelMetadataBuilder<TVarRefs, OperationMetadata>;
     },
   ) {
