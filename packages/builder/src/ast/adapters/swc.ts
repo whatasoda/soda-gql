@@ -481,13 +481,13 @@ const collectAllDefinitions = ({
       withScope(stack, className, "class", `class:${className}`, (classStack) => {
         // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
         node.body?.forEach((member: any) => {
-          if (member.type === "MethodProperty" || member.type === "ClassProperty") {
+          if (member.type === "ClassMethod" || member.type === "ClassProperty") {
             const memberName = member.key?.value ?? null;
             if (memberName) {
-              const memberKind = member.type === "MethodProperty" ? "method" : "property";
+              const memberKind = member.type === "ClassMethod" ? "method" : "property";
               withScope(classStack, memberName, memberKind, `member:${className}.${memberName}`, (memberStack) => {
-                if (member.type === "MethodProperty" && member.body) {
-                  visit(member.body, memberStack);
+                if (member.type === "ClassMethod" && member.function?.body) {
+                  visit(member.function.body, memberStack);
                 } else if (member.type === "ClassProperty" && member.value) {
                   visit(member.value, memberStack);
                 }

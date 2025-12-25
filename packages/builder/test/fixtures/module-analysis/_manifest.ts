@@ -14,8 +14,8 @@ export interface FixtureEntry {
 export const fixtures = [
   // From shared/ - both analyzers produce consistent results
   { name: "arrow-function", skipSwc: false },
-  { name: "class-method", skipSwc: true }, // SWC doesn't traverse class methods
-  { name: "deeply-nested", skipSwc: true }, // SWC doesn't handle deep nesting
+  { name: "class-method", skipSwc: false },
+  { name: "deeply-nested", skipSwc: false },
   { name: "duplicate-names", skipSwc: false },
   { name: "exported-and-private", skipSwc: false },
   { name: "exported-function", skipSwc: false },
@@ -37,18 +37,18 @@ export const fixtures = [
   { name: "object-property-exports", skipSwc: false },
   { name: "top-level-definitions", skipSwc: false },
 
-  // From ts/ - TS-specific features (skip SWC for now)
-  { name: "imported-slice-refs", skipSwc: true },
-  { name: "local-and-imported-deps", skipSwc: true },
-  { name: "multiple-schemas", skipSwc: true },
-  { name: "nested-namespace-deps", skipSwc: true },
-  { name: "nested-non-top-level", skipSwc: true },
-  { name: "top-level-with-metadata", skipSwc: true },
+  // From ts/ - TS-specific features
+  { name: "imported-slice-refs", skipSwc: false },
+  { name: "local-and-imported-deps", skipSwc: false },
+  { name: "multiple-schemas", skipSwc: false },
+  { name: "nested-namespace-deps", skipSwc: false },
+  { name: "nested-non-top-level", skipSwc: false },
+  { name: "top-level-with-metadata", skipSwc: false },
 
-  // Model embedding fixtures (TS-only for now)
-  { name: "model-embedding/basic-embed", skipSwc: true },
-  { name: "model-embedding/model-in-model", skipSwc: true },
-  { name: "model-embedding/multiple-models", skipSwc: true },
+  // Model embedding fixtures
+  { name: "model-embedding/basic-embed", skipSwc: false },
+  { name: "model-embedding/model-in-model", skipSwc: false },
+  { name: "model-embedding/multiple-models", skipSwc: false },
 ] as const satisfies readonly FixtureEntry[];
 
 export type FixtureName = (typeof fixtures)[number]["name"];
