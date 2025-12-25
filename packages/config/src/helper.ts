@@ -61,16 +61,16 @@ export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): Sod
   return SodaGqlConfigContainer.create(validated.value);
 }
 
-const InjectConfigSchema = defineSchemaFor<InjectConfig>()(
-  z.union([
-    z.string().min(1),
-    z.object({
-      scalars: z.string().min(1),
-      helpers: z.string().min(1).optional(),
-      metadata: z.string().min(1).optional(),
-    }),
-  ]),
-);
+// InjectConfig is a union type (string | object), so we define the schema directly
+// rather than using defineSchemaFor which requires object types
+const InjectConfigSchema: z.ZodType<InjectConfig> = z.union([
+  z.string().min(1),
+  z.object({
+    scalars: z.string().min(1),
+    helpers: z.string().min(1).optional(),
+    metadata: z.string().min(1).optional(),
+  }),
+]);
 
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: z.string().min(1),

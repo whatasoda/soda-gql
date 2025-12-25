@@ -18,9 +18,7 @@ type ParsedCommand =
       schemas: Record<string, string>;
       outPath: string;
       format: CodegenFormat;
-      scalars: Record<string, string>;
-      helpers: Record<string, string>;
-      metadata: Record<string, string>;
+      inject: Record<string, { scalars: string; helpers?: string; metadata?: string }>;
       importExtension: boolean;
     };
 
@@ -67,21 +65,13 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     });
   }
 
-  // Extract schemas, scalars, helpers, and metadata from config
+  // Extract schemas and inject from config
   const schemas: Record<string, string> = {};
-  const scalars: Record<string, string> = {};
-  const helpers: Record<string, string> = {};
-  const metadata: Record<string, string> = {};
+  const inject: Record<string, { scalars: string; helpers?: string; metadata?: string }> = {};
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
     schemas[name] = schemaConfig.schema;
-    scalars[name] = schemaConfig.scalars;
-    if (schemaConfig.helpers) {
-      helpers[name] = schemaConfig.helpers;
-    }
-    if (schemaConfig.metadata) {
-      metadata[name] = schemaConfig.metadata;
-    }
+    inject[name] = schemaConfig.inject;
   }
 
   // Derive output path from outdir (default to index.ts)
@@ -92,9 +82,7 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     schemas,
     outPath,
     format: (args.format ?? "human") as CodegenFormat,
-    scalars,
-    helpers,
-    metadata,
+    inject,
     importExtension: config.styles.importExtension,
   });
 };
@@ -151,15 +139,16 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       schemas: Object.fromEntries(Object.entries(command.schemas).map(([name, path]) => [name, resolve(path)])),
       outPath: resolve(command.outPath),
       format: command.format,
-      scalars: Object.fromEntries(Object.entries(command.scalars).map(([name, path]) => [name, resolve(path)])),
-      helpers:
-        Object.keys(command.helpers).length > 0
-          ? Object.fromEntries(Object.entries(command.helpers).map(([name, path]) => [name, resolve(path)]))
-          : undefined,
-      metadata:
-        Object.keys(command.metadata).length > 0
-          ? Object.fromEntries(Object.entries(command.metadata).map(([name, path]) => [name, resolve(path)]))
-          : undefined,
+      inject: Object.fromEntries(
+        Object.entries(command.inject).map(([name, injectConfig]) => [
+          name,
+          {
+            scalars: resolve(injectConfig.scalars),
+            ...(injectConfig.helpers ? { helpers: resolve(injectConfig.helpers) } : {}),
+            ...(injectConfig.metadata ? { metadata: resolve(injectConfig.metadata) } : {}),
+          },
+        ]),
+      ),
       importExtension: command.importExtension,
     });
 
