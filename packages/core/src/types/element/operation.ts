@@ -1,7 +1,6 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
-import type { OperationMetadata } from "../metadata";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
@@ -36,7 +35,7 @@ type OperationArtifact<
   readonly variableNames: TVariableNames;
   readonly documentSource: () => TFields;
   readonly document: TypedDocumentNode<TData, TVariables>;
-  readonly metadata?: OperationMetadata;
+  readonly metadata?: unknown;
 };
 
 export class Operation<
@@ -100,7 +99,7 @@ export class Operation<
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
           document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
-          metadata?: OperationMetadata;
+          metadata?: unknown;
         }
       | Promise<{
           operationType: TOperationType;
@@ -108,7 +107,7 @@ export class Operation<
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
           document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
-          metadata?: OperationMetadata;
+          metadata?: unknown;
         }>,
   ) {
     return new Operation(define);
