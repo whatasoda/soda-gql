@@ -3,7 +3,6 @@ export * from "./schema";
 export * from "./types/element";
 export type * from "./types/fragment";
 export type * from "./types/metadata";
-export * from "./types/runtime";
 export type * from "./types/schema";
 export type * from "./types/type-foundation";
 export type * from "./utils/empty-object";
