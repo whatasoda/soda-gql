@@ -178,7 +178,7 @@ describe("createSchemaIndex", () => {
     const queryRecord = index.objects.get("Query");
     const userField = queryRecord?.fields.get("user");
     expect(userField?.arguments?.length).toBe(1);
-    expect(userField?.arguments?.[0].name.value).toBe("id");
+    expect(userField?.arguments?.[0]?.name.value).toBe("id");
 
     const usersField = queryRecord?.fields.get("users");
     expect(usersField?.arguments?.length).toBe(2);
@@ -194,8 +194,8 @@ describe("createSchemaIndex", () => {
     const index = createSchemaIndex(document);
 
     const userRecord = index.objects.get("User");
-    expect(userRecord?.directives.length).toBe(1);
-    expect(userRecord?.directives[0].name.value).toBe("deprecated");
+    expect(userRecord?.directives?.length).toBe(1);
+    expect(userRecord?.directives?.[0]?.name.value).toBe("deprecated");
   });
 });
 

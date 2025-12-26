@@ -7,9 +7,12 @@ import {
   type BuilderError,
 } from "../src/errors";
 
+// Type helper to extract specific error variant
+type ErrorOf<C extends BuilderError["code"]> = Extract<BuilderError, { code: C }>;
+
 describe("builderErrors factory functions", () => {
   test("entryNotFound creates correct error", () => {
-    const error = builderErrors.entryNotFound("/path/to/entry");
+    const error = builderErrors.entryNotFound("/path/to/entry") as ErrorOf<"ENTRY_NOT_FOUND">;
     expect(error.code).toBe("ENTRY_NOT_FOUND");
     expect(error.entry).toBe("/path/to/entry");
     expect(error.message).toContain("/path/to/entry");
@@ -21,7 +24,7 @@ describe("builderErrors factory functions", () => {
   });
 
   test("configNotFound creates correct error", () => {
-    const error = builderErrors.configNotFound("/path/to/config.ts");
+    const error = builderErrors.configNotFound("/path/to/config.ts") as ErrorOf<"CONFIG_NOT_FOUND">;
     expect(error.code).toBe("CONFIG_NOT_FOUND");
     expect(error.path).toBe("/path/to/config.ts");
     expect(error.message).toContain("config.ts");
@@ -29,7 +32,7 @@ describe("builderErrors factory functions", () => {
 
   test("configInvalid creates correct error with cause", () => {
     const cause = new Error("Parse error");
-    const error = builderErrors.configInvalid("/config.ts", "Invalid config", cause);
+    const error = builderErrors.configInvalid("/config.ts", "Invalid config", cause) as ErrorOf<"CONFIG_INVALID">;
     expect(error.code).toBe("CONFIG_INVALID");
     expect(error.path).toBe("/config.ts");
     expect(error.message).toBe("Invalid config");
@@ -37,7 +40,7 @@ describe("builderErrors factory functions", () => {
   });
 
   test("discoveryIOError creates correct error", () => {
-    const error = builderErrors.discoveryIOError("/file.ts", "Read failed", "ENOENT");
+    const error = builderErrors.discoveryIOError("/file.ts", "Read failed", "ENOENT") as ErrorOf<"DISCOVERY_IO_ERROR">;
     expect(error.code).toBe("DISCOVERY_IO_ERROR");
     expect(error.path).toBe("/file.ts");
     expect(error.message).toBe("Read failed");
@@ -45,21 +48,21 @@ describe("builderErrors factory functions", () => {
   });
 
   test("fingerprintFailed creates correct error", () => {
-    const error = builderErrors.fingerprintFailed("/file.ts", "Hash failed");
+    const error = builderErrors.fingerprintFailed("/file.ts", "Hash failed") as ErrorOf<"FINGERPRINT_FAILED">;
     expect(error.code).toBe("FINGERPRINT_FAILED");
     expect(error.filePath).toBe("/file.ts");
     expect(error.message).toBe("Hash failed");
   });
 
   test("unsupportedAnalyzer creates correct error", () => {
-    const error = builderErrors.unsupportedAnalyzer("unknown");
+    const error = builderErrors.unsupportedAnalyzer("unknown") as ErrorOf<"UNSUPPORTED_ANALYZER">;
     expect(error.code).toBe("UNSUPPORTED_ANALYZER");
     expect(error.analyzer).toBe("unknown");
     expect(error.message).toContain("unknown");
   });
 
   test("canonicalPathInvalid creates correct error", () => {
-    const error = builderErrors.canonicalPathInvalid("invalid/path", "contains slash");
+    const error = builderErrors.canonicalPathInvalid("invalid/path", "contains slash") as ErrorOf<"CANONICAL_PATH_INVALID">;
     expect(error.code).toBe("CANONICAL_PATH_INVALID");
     expect(error.path).toBe("invalid/path");
     expect(error.reason).toBe("contains slash");
@@ -68,7 +71,7 @@ describe("builderErrors factory functions", () => {
   });
 
   test("canonicalScopeMismatch creates correct error", () => {
-    const error = builderErrors.canonicalScopeMismatch("expected", "actual");
+    const error = builderErrors.canonicalScopeMismatch("expected", "actual") as ErrorOf<"CANONICAL_SCOPE_MISMATCH">;
     expect(error.code).toBe("CANONICAL_SCOPE_MISMATCH");
     expect(error.expected).toBe("expected");
     expect(error.actual).toBe("actual");
@@ -76,14 +79,14 @@ describe("builderErrors factory functions", () => {
 
   test("graphCircularDependency creates correct error", () => {
     const chain = ["a.ts", "b.ts", "c.ts", "a.ts"];
-    const error = builderErrors.graphCircularDependency(chain);
+    const error = builderErrors.graphCircularDependency(chain) as ErrorOf<"GRAPH_CIRCULAR_DEPENDENCY">;
     expect(error.code).toBe("GRAPH_CIRCULAR_DEPENDENCY");
     expect(error.chain).toEqual(chain);
     expect(error.message).toContain("a.ts → b.ts → c.ts → a.ts");
   });
 
   test("graphMissingImport creates correct error", () => {
-    const error = builderErrors.graphMissingImport("importer.ts", "missing.ts");
+    const error = builderErrors.graphMissingImport("importer.ts", "missing.ts") as ErrorOf<"GRAPH_MISSING_IMPORT">;
     expect(error.code).toBe("GRAPH_MISSING_IMPORT");
     expect(error.importer).toBe("importer.ts");
     expect(error.importee).toBe("missing.ts");
@@ -91,7 +94,7 @@ describe("builderErrors factory functions", () => {
 
   test("docDuplicate creates correct error", () => {
     const sources = ["a.ts", "b.ts"];
-    const error = builderErrors.docDuplicate("UserModel", sources);
+    const error = builderErrors.docDuplicate("UserModel", sources) as ErrorOf<"DOC_DUPLICATE">;
     expect(error.code).toBe("DOC_DUPLICATE");
     expect(error.name).toBe("UserModel");
     expect(error.sources).toEqual(sources);
@@ -100,14 +103,14 @@ describe("builderErrors factory functions", () => {
   });
 
   test("writeFailed creates correct error", () => {
-    const error = builderErrors.writeFailed("/out/file.ts", "Write error");
+    const error = builderErrors.writeFailed("/out/file.ts", "Write error") as ErrorOf<"WRITE_FAILED">;
     expect(error.code).toBe("WRITE_FAILED");
     expect(error.outPath).toBe("/out/file.ts");
     expect(error.message).toBe("Write error");
   });
 
   test("cacheCorrupted creates correct error", () => {
-    const error = builderErrors.cacheCorrupted("Invalid JSON", "/cache/path");
+    const error = builderErrors.cacheCorrupted("Invalid JSON", "/cache/path") as ErrorOf<"CACHE_CORRUPTED">;
     expect(error.code).toBe("CACHE_CORRUPTED");
     expect(error.message).toBe("Invalid JSON");
     expect(error.cachePath).toBe("/cache/path");
@@ -118,7 +121,7 @@ describe("builderErrors factory functions", () => {
       "/file.ts",
       "userModel",
       "Import failed",
-    );
+    ) as ErrorOf<"RUNTIME_MODULE_LOAD_FAILED">;
     expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
     expect(error.filePath).toBe("/file.ts");
     expect(error.astPath).toBe("userModel");
@@ -129,14 +132,14 @@ describe("builderErrors factory functions", () => {
     const error = builderErrors.artifactRegistrationFailed(
       "element-123",
       "Duplicate ID",
-    );
+    ) as ErrorOf<"ARTIFACT_REGISTRATION_FAILED">;
     expect(error.code).toBe("ARTIFACT_REGISTRATION_FAILED");
     expect(error.elementId).toBe("element-123");
     expect(error.reason).toBe("Duplicate ID");
   });
 
   test("internalInvariant creates correct error", () => {
-    const error = builderErrors.internalInvariant("Invalid state", "context");
+    const error = builderErrors.internalInvariant("Invalid state", "context") as ErrorOf<"INTERNAL_INVARIANT">;
     expect(error.code).toBe("INTERNAL_INVARIANT");
     expect(error.message).toContain("Invalid state");
     expect(error.context).toBe("context");

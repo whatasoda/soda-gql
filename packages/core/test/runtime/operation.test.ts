@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { Kind, type DocumentNode } from "graphql";
 import {
   createRuntimeOperation,
   type RuntimeOperationInput,
@@ -17,6 +18,11 @@ describe("createRuntimeOperation", () => {
     __resetRuntimeRegistry();
   });
 
+  const createMockDocument = (): DocumentNode => ({
+    kind: Kind.DOCUMENT,
+    definitions: [],
+  });
+
   const createMockInput = (
     overrides?: Partial<RuntimeOperationInput["prebuild"]>,
   ): RuntimeOperationInput => ({
@@ -24,7 +30,7 @@ describe("createRuntimeOperation", () => {
       operationType: "query",
       operationName: "TestQuery",
       variableNames: [],
-      document: { kind: "Document", definitions: [] },
+      document: createMockDocument(),
       metadata: null,
       ...overrides,
     },
@@ -39,7 +45,7 @@ describe("createRuntimeOperation", () => {
     expect(operation.operationType).toBe("query");
     expect(operation.operationName).toBe("TestQuery");
     expect(operation.variableNames).toEqual([]);
-    expect(operation.document).toEqual({ kind: "Document", definitions: [] });
+    expect(operation.document).toEqual(createMockDocument());
     expect(operation.metadata).toBeNull();
   });
 

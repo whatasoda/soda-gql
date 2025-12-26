@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { parse } from "graphql";
+import { join } from "node:path";
+import { Kind, parse } from "graphql";
 import { hashSchema, loadSchema } from "../src/schema";
+import type { CodegenError } from "../src/types";
+
+// Type helper to extract specific error variant
+type ErrorOf<C extends CodegenError["code"]> = Extract<CodegenError, { code: C }>;
 
 describe("loadSchema", () => {
   let tempDir: string;
@@ -31,7 +35,7 @@ describe("loadSchema", () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.definitions.length).toBe(1);
-      expect(result.value.definitions[0].kind).toBe("ObjectTypeDefinition");
+      expect(result.value.definitions[0]?.kind).toBe(Kind.OBJECT_TYPE_DEFINITION);
     }
   });
 
@@ -42,9 +46,10 @@ describe("loadSchema", () => {
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
-      expect(result.error.code).toBe("SCHEMA_NOT_FOUND");
-      expect(result.error.message).toContain("Schema file not found");
-      expect(result.error.schemaPath).toBe(schemaPath);
+      const error = result.error as ErrorOf<"SCHEMA_NOT_FOUND">;
+      expect(error.code).toBe("SCHEMA_NOT_FOUND");
+      expect(error.message).toContain("Schema file not found");
+      expect(error.schemaPath).toBe(schemaPath);
     }
   });
 

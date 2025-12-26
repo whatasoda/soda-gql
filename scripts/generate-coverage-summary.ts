@@ -49,3 +49,5 @@ const md = [
 
 await Bun.write("coverage-summary.md", md);
 console.log("Coverage summary generated");
+
+export {};
