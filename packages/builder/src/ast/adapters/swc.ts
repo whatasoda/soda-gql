@@ -530,7 +530,7 @@ export const swcAdapter: AnalyzerAdapter = {
     // To convert span positions to 0-indexed source positions, we compute the accumulated
     // offset from previous parses: (program.span.end - source.length) gives us the total
     // bytes from previously parsed files, and we add 1 because spans are 1-indexed.
-    const spanOffset = (program.span.end - input.source.length) + 1;
+    const spanOffset = program.span.end - input.source.length + 1;
 
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;

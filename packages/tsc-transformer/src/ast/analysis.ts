@@ -107,4 +107,3 @@ const createUnsupportedArtifactTypeError = ({
   canonicalId,
   artifactType,
 });
-
