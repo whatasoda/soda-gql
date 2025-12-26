@@ -48,7 +48,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
       };
 
       if (element.type === "model") {
-        const prebuild = { typename: element.element.typename, metadata: null };
+        const prebuild = { typename: element.element.typename };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "model",
