@@ -1,11 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { Model } from "@soda-gql/core";
-import {
-  createExecutionResultParser,
-  createProjection,
-  SlicedExecutionResultError,
-  SlicedExecutionResultSuccess,
-} from "../src";
+import { createProjection } from "./create-projection";
+import { createExecutionResultParser } from "./parse-execution-result";
+import { SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 
 describe("createProjection", () => {
   // Create a mock Model for testing
