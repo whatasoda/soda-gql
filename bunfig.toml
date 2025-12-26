@@ -1,0 +1,12 @@
+[test]
+coverage = false
+coverageDir = ".coverage"
+coverageReporter = ["text", "lcov"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = [
+  "node_modules/**",
+  "**/test/**",
+  "**/dist/**",
+  "**/.cache/**",
+  "**/fixtures/**"
+]
