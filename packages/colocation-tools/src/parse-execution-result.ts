@@ -1,5 +1,5 @@
 import type { GraphQLFormattedError } from "graphql";
-import { createPathGraphFromSliceEntries, type AnySlicePayloads, type ProjectionPathGraphNode } from "./projection-path-graph";
+import { type AnySlicePayloads, createPathGraphFromSliceEntries, type ProjectionPathGraphNode } from "./projection-path-graph";
 import { SlicedExecutionResultEmpty, SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 import type { NormalizedExecutionResult } from "./types";
 
@@ -134,7 +134,9 @@ export const createExecutionResultParser = <TSlices extends AnySlicePayloads>(sl
         const dataResults = projection.paths.map(({ segments }) => {
           const [first, ...rest] = segments;
           const prefixedSegments = [`${label}_${first}`, ...rest];
-          return prepared.body.data ? accessDataByPathSegments(prepared.body.data, prefixedSegments) : { error: new Error("No data") };
+          return prepared.body.data
+            ? accessDataByPathSegments(prepared.body.data, prefixedSegments)
+            : { error: new Error("No data") };
         });
         if (dataResults.some(({ error }) => error)) {
           const errors = dataResults.flatMap(({ error }) => (error ? [error] : []));

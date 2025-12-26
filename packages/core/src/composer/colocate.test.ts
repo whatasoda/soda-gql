@@ -66,5 +66,4 @@ describe("$colocate helper", () => {
       });
     });
   });
-
 });

@@ -34,4 +34,3 @@ export const prefixFields = <TLabel extends string, TFields extends AnyFields>(
     TFields
   >;
 };
-

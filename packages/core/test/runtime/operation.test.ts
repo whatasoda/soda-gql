@@ -1,13 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { Kind, type DocumentNode } from "graphql";
-import {
-  createRuntimeOperation,
-  type RuntimeOperationInput,
-} from "../../src/runtime/operation";
-import {
-  __resetRuntimeRegistry,
-  __getRegisteredOperations,
-} from "../../src/runtime/runtime-registry";
+import { type DocumentNode, Kind } from "graphql";
+import { createRuntimeOperation, type RuntimeOperationInput } from "../../src/runtime/operation";
+import { __getRegisteredOperations, __resetRuntimeRegistry } from "../../src/runtime/runtime-registry";
 
 describe("createRuntimeOperation", () => {
   beforeEach(() => {
@@ -23,9 +17,7 @@ describe("createRuntimeOperation", () => {
     definitions: [],
   });
 
-  const createMockInput = (
-    overrides?: Partial<RuntimeOperationInput["prebuild"]>,
-  ): RuntimeOperationInput => ({
+  const createMockInput = (overrides?: Partial<RuntimeOperationInput["prebuild"]>): RuntimeOperationInput => ({
     prebuild: {
       operationType: "query",
       operationName: "TestQuery",

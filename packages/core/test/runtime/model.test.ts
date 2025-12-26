@@ -2,9 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createRuntimeModel, type RuntimeModelInput } from "../../src/runtime/model";
 
 describe("createRuntimeModel", () => {
-  const createMockInput = (
-    overrides?: Partial<RuntimeModelInput["prebuild"]>,
-  ): RuntimeModelInput => ({
+  const createMockInput = (overrides?: Partial<RuntimeModelInput["prebuild"]>): RuntimeModelInput => ({
     prebuild: {
       typename: "User",
       ...overrides,
@@ -39,9 +37,7 @@ describe("createRuntimeModel", () => {
   test("creates multiple models with different typenames", () => {
     const userModel = createRuntimeModel(createMockInput({ typename: "User" }));
     const postModel = createRuntimeModel(createMockInput({ typename: "Post" }));
-    const commentModel = createRuntimeModel(
-      createMockInput({ typename: "Comment" }),
-    );
+    const commentModel = createRuntimeModel(createMockInput({ typename: "Comment" }));
 
     expect(userModel.typename).toBe("User");
     expect(postModel.typename).toBe("Post");

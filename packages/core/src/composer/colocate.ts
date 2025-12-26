@@ -1,5 +1,5 @@
 import type { AnyFields } from "../types/fragment";
-import { prefixFields, type PrefixedFields } from "./field-prefix";
+import { type PrefixedFields, prefixFields } from "./field-prefix";
 
 /**
  * Type for colocated field entries.
@@ -46,12 +46,8 @@ export const createColocateHelper = () => {
    * @param entries - Object mapping labels to field selections
    * @returns Array of prefixed field entries to spread in the field builder
    */
-  const $colocate = <TEntries extends ColocatedEntries>(
-    entries: TEntries,
-  ): ColocatedFields<TEntries>[] => {
-    return Object.entries(entries).map(([label, fields]) =>
-      prefixFields(label, fields),
-    ) as ColocatedFields<TEntries>[];
+  const $colocate = <TEntries extends ColocatedEntries>(entries: TEntries): ColocatedFields<TEntries>[] => {
+    return Object.entries(entries).map(([label, fields]) => prefixFields(label, fields)) as ColocatedFields<TEntries>[];
   };
 
   return $colocate;
