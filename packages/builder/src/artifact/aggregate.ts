@@ -44,12 +44,11 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
 
       const metadata: BuilderArtifactElementMetadata = {
         sourcePath: analysis.filePath ?? canonicalToFilePath(definition.canonicalId),
-        sourceHash: analysis.signature,
         contentHash: "", // Will be computed after prebuild creation
       };
 
       if (element.type === "model") {
-        const prebuild = { typename: element.element.typename, metadata: null };
+        const prebuild = { typename: element.element.typename };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "model",

@@ -1,29 +1,17 @@
 import { CanonicalIdSchema } from "@soda-gql/common";
 import { z } from "zod";
 
-export const SourcePositionSchema = z.object({
-  line: z.number(),
-  column: z.number(),
-});
-
-export const SourceLocationSchema = z.object({
-  start: SourcePositionSchema,
-  end: SourcePositionSchema,
-});
-
 export const ModuleDefinitionSchema = z.object({
   canonicalId: CanonicalIdSchema,
   astPath: z.string(),
   isTopLevel: z.boolean(),
   isExported: z.boolean(),
   exportBinding: z.string().optional(),
-  loc: SourceLocationSchema,
   expression: z.string(),
 });
 
 export const ModuleImportSchema = z.object({
   source: z.string(),
-  imported: z.string(),
   local: z.string(),
   kind: z.enum(["named", "namespace", "default"]),
   isTypeOnly: z.boolean(),

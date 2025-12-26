@@ -17,8 +17,8 @@ import type { GqlDefinitionMetadataMap } from "./metadata";
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
 // Babel-specific GqlCall types
-export type BabelGqlCallModel = GqlCallModel<t.CallExpression> & { readonly nodePath: NodePath<t.CallExpression> };
-export type BabelGqlCallOperation = GqlCallOperation<t.CallExpression> & {
+export type BabelGqlCallModel = GqlCallModel & { readonly nodePath: NodePath<t.CallExpression> };
+export type BabelGqlCallOperation = GqlCallOperation & {
   readonly nodePath: NodePath<t.CallExpression>;
 };
 
@@ -28,7 +28,6 @@ export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
   readonly filename: string;
   readonly metadata: GqlDefinitionMetadataMap;
-  readonly builderCall: t.CallExpression;
   readonly getArtifact: ArtifactLookup;
 };
 
@@ -36,7 +35,6 @@ export const extractGqlCall = ({
   nodePath,
   filename,
   metadata,
-  builderCall,
   getArtifact,
 }: ExtractGqlCallArgs): Result<BabelGqlCall, PluginError> => {
   const callExpression = nodePath.node;
@@ -54,11 +52,11 @@ export const extractGqlCall = ({
   }
 
   if (artifact.type === "model") {
-    return ok({ nodePath, canonicalId, builderCall, type: "model", artifact });
+    return ok({ nodePath, canonicalId, type: "model", artifact });
   }
 
   if (artifact.type === "operation") {
-    return ok({ nodePath, canonicalId, builderCall, type: "operation", artifact });
+    return ok({ nodePath, canonicalId, type: "operation", artifact });
   }
 
   return err(
@@ -115,63 +113,3 @@ const createUnsupportedArtifactTypeError = ({
   artifactType,
 });
 
-export const findGqlBuilderCall = (callPath: NodePath<t.CallExpression>): t.CallExpression | null =>
-  resolveBuilderCall(callPath.node);
-
-const resolveBuilderCall = (call: t.CallExpression): t.CallExpression | null => {
-  if (!isGqlMemberExpression(call.callee)) {
-    return null;
-  }
-
-  if (call.arguments.length !== 1) {
-    return null;
-  }
-
-  const factoryArg = call.arguments[0];
-  if (!t.isArrowFunctionExpression(factoryArg)) {
-    return null;
-  }
-
-  return extractBuilderCall(factoryArg);
-};
-
-const isGqlMemberExpression = (callee: t.Expression | t.V8IntrinsicIdentifier): callee is t.MemberExpression => {
-  return t.isMemberExpression(callee) && isSimpleProperty(callee.property) && isGqlReference(callee.object);
-};
-
-const isSimpleProperty = (property: t.Expression | t.PrivateName): property is t.Identifier | t.StringLiteral =>
-  t.isIdentifier(property) || (t.isStringLiteral(property) && property.value.length > 0);
-
-const isGqlReference = (expr: t.Expression | t.Super): boolean => {
-  if (t.isIdentifier(expr, { name: "gql" })) {
-    return true;
-  }
-  if (!t.isMemberExpression(expr) || expr.computed) {
-    return false;
-  }
-  if (
-    (t.isIdentifier(expr.property) && expr.property.name === "gql") ||
-    (t.isStringLiteral(expr.property) && expr.property.value === "gql")
-  ) {
-    return true;
-  }
-  return isGqlReference(expr.object);
-};
-
-const extractBuilderCall = (factory: t.ArrowFunctionExpression): t.CallExpression | null => {
-  if (t.isCallExpression(factory.body)) {
-    return factory.body;
-  }
-
-  if (!t.isBlockStatement(factory.body)) {
-    return null;
-  }
-
-  for (const statement of factory.body.body) {
-    if (t.isReturnStatement(statement) && statement.argument && t.isCallExpression(statement.argument)) {
-      return statement.argument;
-    }
-  }
-
-  return null;
-};

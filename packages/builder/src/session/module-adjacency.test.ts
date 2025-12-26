@@ -13,7 +13,6 @@ const createMockSnapshot = (
   }> = [],
   imports: Array<{
     source: string;
-    imported: string;
     local: string;
     kind: string;
     isTypeOnly: boolean;
@@ -26,7 +25,6 @@ const createMockSnapshot = (
     isTopLevel: true,
     isExported: true,
     expression: "gql.default({})",
-    loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
   };
 
   const analysis: ModuleAnalysis = {
@@ -35,7 +33,6 @@ const createMockSnapshot = (
     definitions: [definition],
     imports: imports.map((imp) => ({
       source: imp.source,
-      imported: imp.imported,
       local: imp.local,
       kind: imp.kind as "named" | "namespace" | "default",
       isTypeOnly: imp.isTypeOnly,
@@ -105,7 +102,6 @@ describe("Module Adjacency", () => {
             [
               {
                 source: "./b",
-                imported: "*",
                 local: "b",
                 kind: "namespace",
                 isTypeOnly: false,

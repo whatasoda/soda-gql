@@ -4,33 +4,27 @@
 
 import type { CanonicalId } from "@soda-gql/common";
 
-export type SourcePosition = {
-  readonly line: number;
-  readonly column: number;
-};
-
-export type SourceLocation = {
-  readonly start: SourcePosition;
-  readonly end: SourcePosition;
-};
-
 export type ModuleDefinition = {
   readonly canonicalId: CanonicalId;
   /** AST-derived path uniquely identifying this definition's location (e.g., "MyComponent.useQuery.def") */
   readonly astPath: string;
-  /** Whether this definition is at the top level of the module */
+  /**
+   * Whether this definition is at the top level of the module (stack.length === 1 during AST traversal).
+   * Invariant: if isExported is true, isTopLevel must also be true.
+   */
   readonly isTopLevel: boolean;
-  /** Whether this definition is exported from the module */
+  /**
+   * Whether this definition is exported from the module.
+   * Invariant: isExported can only be true when isTopLevel is true.
+   */
   readonly isExported: boolean;
   /** The export binding name if this definition is exported */
   readonly exportBinding?: string;
-  readonly loc: SourceLocation;
   readonly expression: string;
 };
 
 export type ModuleImport = {
   readonly source: string;
-  readonly imported: string;
   readonly local: string;
   readonly kind: "named" | "namespace" | "default";
   readonly isTypeOnly: boolean;

@@ -16,8 +16,8 @@ import type { GqlDefinitionMetadataMap } from "./metadata";
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
 // TypeScript-specific GqlCall types
-export type TsGqlCallModel = GqlCallModel<ts.CallExpression> & { readonly callNode: ts.CallExpression };
-export type TsGqlCallOperation = GqlCallOperation<ts.CallExpression> & { readonly callNode: ts.CallExpression };
+export type TsGqlCallModel = GqlCallModel & { readonly callNode: ts.CallExpression };
+export type TsGqlCallOperation = GqlCallOperation & { readonly callNode: ts.CallExpression };
 
 export type TsGqlCall = TsGqlCallModel | TsGqlCallOperation;
 
@@ -25,7 +25,6 @@ export type ExtractGqlCallArgs = {
   readonly callNode: ts.CallExpression;
   readonly filename: string;
   readonly metadata: GqlDefinitionMetadataMap;
-  readonly builderCall: ts.CallExpression;
   readonly getArtifact: ArtifactLookup;
 };
 
@@ -33,7 +32,6 @@ export const extractGqlCall = ({
   callNode,
   filename,
   metadata,
-  builderCall,
   getArtifact,
 }: ExtractGqlCallArgs): Result<TsGqlCall, PluginError> => {
   const meta = metadata.get(callNode);
@@ -49,11 +47,11 @@ export const extractGqlCall = ({
   }
 
   if (artifact.type === "model") {
-    return ok({ callNode, canonicalId, builderCall, type: "model", artifact });
+    return ok({ callNode, canonicalId, type: "model", artifact });
   }
 
   if (artifact.type === "operation") {
-    return ok({ callNode, canonicalId, builderCall, type: "operation", artifact });
+    return ok({ callNode, canonicalId, type: "operation", artifact });
   }
 
   return err(
@@ -110,63 +108,3 @@ const createUnsupportedArtifactTypeError = ({
   artifactType,
 });
 
-export const findGqlBuilderCall = (callNode: ts.CallExpression, typescript: typeof ts): ts.CallExpression | null =>
-  resolveBuilderCall(callNode, typescript);
-
-const resolveBuilderCall = (call: ts.CallExpression, typescript: typeof ts): ts.CallExpression | null => {
-  if (!isGqlMemberExpression(call.expression, typescript)) {
-    return null;
-  }
-
-  if (call.arguments.length !== 1) {
-    return null;
-  }
-
-  const factoryArg = call.arguments[0];
-  if (!factoryArg || !typescript.isArrowFunction(factoryArg)) {
-    return null;
-  }
-
-  return extractBuilderCall(factoryArg, typescript);
-};
-
-const isGqlMemberExpression = (callee: ts.Expression, typescript: typeof ts): callee is ts.PropertyAccessExpression => {
-  return typescript.isPropertyAccessExpression(callee) && isGqlReference(callee.expression, typescript);
-};
-
-const isGqlReference = (expr: ts.Expression, typescript: typeof ts): boolean => {
-  if (typescript.isIdentifier(expr) && expr.text === "gql") {
-    return true;
-  }
-  if (!typescript.isPropertyAccessExpression(expr)) {
-    return false;
-  }
-  if (typescript.isIdentifier(expr.name) && expr.name.text === "gql") {
-    return true;
-  }
-  return isGqlReference(expr.expression, typescript);
-};
-
-const extractBuilderCall = (factory: ts.ArrowFunction, typescript: typeof ts): ts.CallExpression | null => {
-  const body = factory.body;
-
-  if (typescript.isCallExpression(body)) {
-    return body;
-  }
-
-  if (!typescript.isBlock(body)) {
-    return null;
-  }
-
-  for (const statement of body.statements) {
-    if (
-      typescript.isReturnStatement(statement) &&
-      statement.expression !== undefined &&
-      typescript.isCallExpression(statement.expression)
-    ) {
-      return statement.expression;
-    }
-  }
-
-  return null;
-};

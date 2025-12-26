@@ -5,7 +5,7 @@
 
 import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
-import type { CallExpression, ImportDeclaration, Module, Span } from "@swc/types";
+import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter, AnalyzerResult } from "../core";
@@ -19,50 +19,7 @@ type SwcModule = Module & {
   __spanOffset: number;
 };
 
-import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation, SourcePosition } from "../types";
-
-const getLineStarts = (source: string): readonly number[] => {
-  const starts: number[] = [0];
-  for (let index = 0; index < source.length; index += 1) {
-    if (source[index] === "\n") {
-      starts.push(index + 1);
-    }
-  }
-  return starts;
-};
-
-const toPositionResolver = (source: string) => {
-  const lineStarts = getLineStarts(source);
-  return (offset: number): SourcePosition => {
-    let low = 0;
-    let high = lineStarts.length - 1;
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      const start = lineStarts[mid];
-      const next = mid + 1 < lineStarts.length ? lineStarts[mid + 1] : source.length + 1;
-      if (start == null || next == null) {
-        break;
-      }
-      if (offset < start) {
-        high = mid - 1;
-      } else if (offset >= next) {
-        low = mid + 1;
-      } else {
-        return { line: mid + 1, column: offset - start + 1 } satisfies SourcePosition;
-      }
-    }
-    return {
-      line: lineStarts.length,
-      // biome-ignore lint/style/noNonNullAssertion: lineStarts is guaranteed to have at least one item
-      column: offset - lineStarts[lineStarts.length - 1]! + 1,
-    } satisfies SourcePosition;
-  };
-};
-
-const toLocation = (resolvePosition: (offset: number) => SourcePosition, span: Span, spanOffset: number): SourceLocation => ({
-  start: resolvePosition(span.start - spanOffset),
-  end: resolvePosition(span.end - spanOffset),
-});
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport } from "../types";
 
 const collectImports = (module: Module): ModuleImport[] => {
   const imports: ModuleImport[] = [];
@@ -72,10 +29,8 @@ const collectImports = (module: Module): ModuleImport[] => {
     // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
     declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
-        const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
         imports.push({
           source,
-          imported,
           local: specifier.local.value,
           kind: "named",
           isTypeOnly: Boolean(specifier.isTypeOnly),
@@ -85,7 +40,6 @@ const collectImports = (module: Module): ModuleImport[] => {
       if (specifier.type === "ImportNamespaceSpecifier") {
         imports.push({
           source,
-          imported: "*",
           local: specifier.local.value,
           kind: "namespace",
           isTypeOnly: false,
@@ -95,7 +49,6 @@ const collectImports = (module: Module): ModuleImport[] => {
       if (specifier.type === "ImportDefaultSpecifier") {
         imports.push({
           source,
-          imported: "default",
           local: specifier.local.value,
           kind: "default",
           isTypeOnly: false,
@@ -299,14 +252,12 @@ const collectAllDefinitions = ({
   gqlIdentifiers,
   imports: _imports,
   exports,
-  resolvePosition,
   source,
 }: {
   module: SwcModule;
   gqlIdentifiers: ReadonlySet<string>;
   imports: readonly ModuleImport[];
   exports: readonly ModuleExport[];
-  resolvePosition: (offset: number) => SourcePosition;
   source: string;
 }): {
   readonly definitions: ModuleDefinition[];
@@ -331,7 +282,6 @@ const collectAllDefinitions = ({
     readonly isTopLevel: boolean;
     readonly isExported: boolean;
     readonly exportBinding?: string;
-    readonly loc: SourceLocation;
     readonly expression: string;
   };
 
@@ -422,7 +372,6 @@ const collectAllDefinitions = ({
         isTopLevel,
         isExported,
         exportBinding,
-        loc: toLocation(resolvePosition, node.span, module.__spanOffset),
         expression: expressionFromCall(node),
       });
 
@@ -550,7 +499,6 @@ const collectAllDefinitions = ({
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
         exportBinding: item.exportBinding,
-        loc: item.loc,
         expression: item.expression,
       }) satisfies ModuleDefinition,
   );
@@ -593,13 +541,11 @@ export const swcAdapter: AnalyzerAdapter = {
     const imports = collectImports(swcModule);
     const exports = collectExports(swcModule);
 
-    const resolvePosition = toPositionResolver(input.source);
     const { definitions } = collectAllDefinitions({
       module: swcModule,
       gqlIdentifiers,
       imports,
       exports,
-      resolvePosition,
       source: input.source,
     });
 

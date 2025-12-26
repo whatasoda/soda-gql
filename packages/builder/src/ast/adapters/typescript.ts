@@ -9,21 +9,11 @@ import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter, AnalyzerResult } from "../core";
-import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation } from "../types";
+import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport } from "../types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   return ts.createSourceFile(filePath, source, ts.ScriptTarget.ES2022, true, scriptKind);
-};
-
-const toLocation = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation => {
-  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-  const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
-
-  return {
-    start: { line: start.line + 1, column: start.character + 1 },
-    end: { line: end.line + 1, column: end.character + 1 },
-  } satisfies SourceLocation;
 };
 
 const collectGqlImports = (sourceFile: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ReadonlySet<string> => {
@@ -66,7 +56,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     if (importClause.name) {
       imports.push({
         source: moduleText,
-        imported: "default",
         local: importClause.name.text,
         kind: "default",
         isTypeOnly: Boolean(importClause.isTypeOnly),
@@ -81,7 +70,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     if (ts.isNamespaceImport(namedBindings)) {
       imports.push({
         source: moduleText,
-        imported: "*",
         local: namedBindings.name.text,
         kind: "namespace",
         isTypeOnly: Boolean(importClause.isTypeOnly),
@@ -92,7 +80,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     namedBindings.elements.forEach((element) => {
       imports.push({
         source: moduleText,
-        imported: element.propertyName ? element.propertyName.text : element.name.text,
         local: element.name.text,
         kind: "named",
         isTypeOnly: Boolean(importClause.isTypeOnly || element.isTypeOnly),
@@ -237,7 +224,6 @@ const collectAllDefinitions = ({
     readonly isTopLevel: boolean;
     readonly isExported: boolean;
     readonly exportBinding?: string;
-    readonly loc: SourceLocation;
     readonly expression: string;
   };
 
@@ -303,7 +289,6 @@ const collectAllDefinitions = ({
         isTopLevel,
         isExported,
         exportBinding,
-        loc: toLocation(sourceFile, node),
         expression: node.getText(sourceFile),
       });
 
@@ -415,7 +400,6 @@ const collectAllDefinitions = ({
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
         exportBinding: item.exportBinding,
-        loc: item.loc,
         expression: item.expression,
       }) satisfies ModuleDefinition,
   );

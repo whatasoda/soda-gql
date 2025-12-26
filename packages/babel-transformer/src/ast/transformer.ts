@@ -3,7 +3,7 @@ import type { NodePath } from "@babel/traverse";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
-import { extractGqlCall, findGqlBuilderCall } from "./analysis";
+import { extractGqlCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
@@ -24,8 +24,8 @@ export const transformCallExpression = ({
   metadata,
   getArtifact,
 }: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
-  const builderCall = findGqlBuilderCall(callPath);
-  if (!builderCall) {
+  // Skip if this call doesn't have GQL metadata
+  if (!metadata.has(callPath.node)) {
     return ok({ transformed: false });
   }
 
@@ -33,7 +33,6 @@ export const transformCallExpression = ({
     nodePath: callPath,
     filename,
     metadata,
-    builderCall,
     getArtifact,
   });
 

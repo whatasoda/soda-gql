@@ -6,15 +6,7 @@ import { typescriptAdapter } from "./adapters/typescript";
 import { analyzeModuleCore } from "./core";
 import type { AnalyzeModuleInput, ModuleAnalysis } from "./types";
 
-export type {
-  AnalyzeModuleInput,
-  ModuleAnalysis,
-  ModuleDefinition,
-  ModuleExport,
-  ModuleImport,
-  SourceLocation,
-  SourcePosition,
-} from "./types";
+export type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleExport, ModuleImport } from "./types";
 
 export const createAstAnalyzer = ({
   analyzer,
