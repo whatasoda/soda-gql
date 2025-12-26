@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { createColocateHelper, prefixFields } from "../../src/composer";
+import { createColocateHelper } from "./colocate";
+import { prefixFields } from "./field-prefix";
 
 describe("$colocate helper", () => {
   describe("createColocateHelper", () => {
