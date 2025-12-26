@@ -19,7 +19,6 @@ export type ModuleDefinition = {
 
 export type ModuleImport = {
   readonly source: string;
-  readonly imported: string;
   readonly local: string;
   readonly kind: "named" | "namespace" | "default";
   readonly isTypeOnly: boolean;

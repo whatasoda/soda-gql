@@ -29,10 +29,8 @@ const collectImports = (module: Module): ModuleImport[] => {
     // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
     declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
-        const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
         imports.push({
           source,
-          imported,
           local: specifier.local.value,
           kind: "named",
           isTypeOnly: Boolean(specifier.isTypeOnly),
@@ -42,7 +40,6 @@ const collectImports = (module: Module): ModuleImport[] => {
       if (specifier.type === "ImportNamespaceSpecifier") {
         imports.push({
           source,
-          imported: "*",
           local: specifier.local.value,
           kind: "namespace",
           isTypeOnly: false,
@@ -52,7 +49,6 @@ const collectImports = (module: Module): ModuleImport[] => {
       if (specifier.type === "ImportDefaultSpecifier") {
         imports.push({
           source,
-          imported: "default",
           local: specifier.local.value,
           kind: "default",
           isTypeOnly: false,

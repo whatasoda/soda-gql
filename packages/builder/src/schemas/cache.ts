@@ -12,7 +12,6 @@ export const ModuleDefinitionSchema = z.object({
 
 export const ModuleImportSchema = z.object({
   source: z.string(),
-  imported: z.string(),
   local: z.string(),
   kind: z.enum(["named", "namespace", "default"]),
   isTypeOnly: z.boolean(),

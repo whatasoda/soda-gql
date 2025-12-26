@@ -56,7 +56,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     if (importClause.name) {
       imports.push({
         source: moduleText,
-        imported: "default",
         local: importClause.name.text,
         kind: "default",
         isTypeOnly: Boolean(importClause.isTypeOnly),
@@ -71,7 +70,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     if (ts.isNamespaceImport(namedBindings)) {
       imports.push({
         source: moduleText,
-        imported: "*",
         local: namedBindings.name.text,
         kind: "namespace",
         isTypeOnly: Boolean(importClause.isTypeOnly),
@@ -82,7 +80,6 @@ const collectImports = (sourceFile: ts.SourceFile): ModuleImport[] => {
     namedBindings.elements.forEach((element) => {
       imports.push({
         source: moduleText,
-        imported: element.propertyName ? element.propertyName.text : element.name.text,
         local: element.name.text,
         kind: "named",
         isTypeOnly: Boolean(importClause.isTypeOnly || element.isTypeOnly),
