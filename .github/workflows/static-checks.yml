@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   quality-checks:
@@ -46,8 +47,54 @@ jobs:
       - name: Prepare for tests
         run: bun quality:prepare
 
-      - name: Run tests
-        run: bun run test
+      - name: Run tests with coverage
+        run: bun run test --coverage
+
+      - name: Generate coverage summary
+        if: github.event_name == 'pull_request'
+        run: |
+          bun -e "
+          const lcov = await Bun.file('.coverage/lcov.info').text();
+          const packages = new Map();
+          let currentFile = '', currentLF = 0, currentLH = 0;
+          for (const line of lcov.split('\n')) {
+            if (line.startsWith('SF:')) currentFile = line.slice(3);
+            else if (line.startsWith('LF:')) currentLF = parseInt(line.slice(3));
+            else if (line.startsWith('LH:')) {
+              currentLH = parseInt(line.slice(3));
+              const pkg = currentFile.split('/').slice(0, 2).join('/');
+              if (!packages.has(pkg)) packages.set(pkg, { lf: 0, lh: 0 });
+              packages.get(pkg).lf += currentLF;
+              packages.get(pkg).lh += currentLH;
+            }
+          }
+          let totalLF = 0, totalLH = 0;
+          const rows = [...packages.entries()]
+            .filter(([k]) => k.startsWith('packages/'))
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([pkg, { lf, lh }]) => {
+              totalLF += lf; totalLH += lh;
+              const pct = lf > 0 ? ((lh / lf) * 100).toFixed(1) : '0.0';
+              return \`| \${pkg} | \${pct}% | \${lh}/\${lf} |\`;
+            });
+          const total = totalLF > 0 ? ((totalLH / totalLF) * 100).toFixed(1) : '0.0';
+          const md = [
+            '## Test Coverage Report',
+            '',
+            \`**Overall Coverage: \${total}%** (\${totalLH}/\${totalLF} lines)\`,
+            '',
+            '| Package | Coverage | Lines |',
+            '|---------|----------|-------|',
+            ...rows
+          ].join('\n');
+          await Bun.write('coverage-summary.md', md);
+          "
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: coverage-summary.md
 
   swc-transformer-tests:
     runs-on: ubuntu-latest
