@@ -152,6 +152,7 @@ dist/
 
 # Test coverage
 coverage/
+.coverage/
 *.lcov
 
 # Bun specific

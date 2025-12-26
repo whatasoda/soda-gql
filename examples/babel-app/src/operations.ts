@@ -58,4 +58,3 @@ export const userUpdatesSubscription = gql.default(({ subscription }, { $var }) 
     ({ f, $ }) => [f.userUpdated({ userId: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
   ),
 );
-

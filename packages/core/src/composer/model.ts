@@ -1,11 +1,6 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
-import type {
-  AnyMetadataAdapter,
-  DefaultMetadataAdapter,
-  ExtractAdapterTypes,
-  ModelMetadataBuilder,
-} from "../types/metadata";
+import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, ModelMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
