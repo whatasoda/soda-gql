@@ -44,7 +44,6 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
 
       const metadata: BuilderArtifactElementMetadata = {
         sourcePath: analysis.filePath ?? canonicalToFilePath(definition.canonicalId),
-        sourceHash: analysis.signature,
         contentHash: "", // Will be computed after prebuild creation
       };
 

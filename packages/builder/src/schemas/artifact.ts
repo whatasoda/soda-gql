@@ -4,7 +4,6 @@ import type { BuilderArtifactModel, BuilderArtifactOperation } from "../artifact
 
 const BuilderArtifactElementMetadataSchema = z.object({
   sourcePath: z.string(),
-  sourceHash: z.string(),
   contentHash: z.string(),
 });
 

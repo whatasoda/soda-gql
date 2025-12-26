@@ -6,7 +6,6 @@ export type IntermediateElements = Record<CanonicalId, IntermediateArtifactEleme
 
 export type BuilderArtifactElementMetadata = {
   readonly sourcePath: string;
-  readonly sourceHash: string;
   readonly contentHash: string;
 };
 
