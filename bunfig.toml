@@ -1,5 +1,5 @@
 [test]
-coverage = false
+# coverage is controlled via CLI flag (--coverage)
 coverageDir = ".coverage"
 coverageReporter = ["text", "lcov"]
 coverageSkipTestFiles = true
