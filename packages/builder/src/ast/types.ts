@@ -4,16 +4,6 @@
 
 import type { CanonicalId } from "@soda-gql/common";
 
-export type SourcePosition = {
-  readonly line: number;
-  readonly column: number;
-};
-
-export type SourceLocation = {
-  readonly start: SourcePosition;
-  readonly end: SourcePosition;
-};
-
 export type ModuleDefinition = {
   readonly canonicalId: CanonicalId;
   /** AST-derived path uniquely identifying this definition's location (e.g., "MyComponent.useQuery.def") */
@@ -24,7 +14,6 @@ export type ModuleDefinition = {
   readonly isExported: boolean;
   /** The export binding name if this definition is exported */
   readonly exportBinding?: string;
-  readonly loc: SourceLocation;
   readonly expression: string;
 };
 

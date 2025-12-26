@@ -26,7 +26,6 @@ const createMockSnapshot = (
     isTopLevel: true,
     isExported: true,
     expression: "gql.default({})",
-    loc: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
   };
 
   const analysis: ModuleAnalysis = {

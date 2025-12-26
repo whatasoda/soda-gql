@@ -21,7 +21,6 @@ const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({
   isTopLevel: true,
   isExported: true,
   expression: "stub",
-  loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
 });
 
 const createTestIntermediateModule = (elements: Record<string, IntermediateArtifactElement>) => ({
