@@ -6,8 +6,8 @@ describe("$colocate helper", () => {
     it("should prefix field entries with their labels", () => {
       const $colocate = createColocateHelper();
 
-      const fields1 = { id: "field1", name: "field2" };
-      const fields2 = { title: "field3", body: "field4" };
+      const fields1 = { id: "field1", name: "field2" } as any;
+      const fields2 = { title: "field3", body: "field4" } as any;
 
       const result = $colocate({
         user: fields1,
@@ -30,7 +30,7 @@ describe("$colocate helper", () => {
     it("should work with single entry", () => {
       const $colocate = createColocateHelper();
 
-      const fields = { id: "123", status: "active" };
+      const fields = { id: "123", status: "active" } as any;
 
       const result = $colocate({
         order: fields,
@@ -54,7 +54,7 @@ describe("$colocate helper", () => {
 
   describe("prefixFields", () => {
     it("should prefix all field keys with the label", () => {
-      const fields = { id: "1", name: "test", email: "test@example.com" };
+      const fields = { id: "1", name: "test", email: "test@example.com" } as any;
 
       const result = prefixFields("user", fields);
 
@@ -73,13 +73,13 @@ describe("$colocate helper", () => {
       const fieldEntries = [
         { id: "1", name: "Alice" },
         { id: "2", name: "Bob" },
-      ];
+      ] as any;
 
       const result = $prefix("user", fieldEntries);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ user_id: "1", user_name: "Alice" });
-      expect(result[1]).toEqual({ user_id: "2", user_name: "Bob" });
+      expect(result[0] as any).toEqual({ user_id: "1", user_name: "Alice" });
+      expect(result[1] as any).toEqual({ user_id: "2", user_name: "Bob" });
     });
   });
 });
