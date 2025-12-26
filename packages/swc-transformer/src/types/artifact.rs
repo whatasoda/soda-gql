@@ -15,7 +15,6 @@ pub type CanonicalId = String;
 #[serde(rename_all = "camelCase")]
 pub struct BuilderArtifactElementMetadata {
     pub source_path: String,
-    pub source_hash: String,
     pub content_hash: String,
 }
 
