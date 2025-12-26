@@ -139,6 +139,11 @@ export default defineConfig([
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
   },
+  {
+    ...configure("@soda-gql/colocation-tools"),
+    format: ["esm", "cjs"] as const,
+    platform: "neutral" as const,
+  },
 
   // Shared/Common packages
   {

@@ -1,38 +1,24 @@
-import { getUserQuery, listUsersQuery } from "./graphql/operations";
+import { UserPage, userPageQuery } from "./pages/UserPage";
 
 function App() {
-  // Display query information to verify soda-gql transformation works
   return (
     <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
       <h1>soda-gql Vite + React Example</h1>
-      <p>This example demonstrates soda-gql integration with Vite.</p>
+      <p>This example demonstrates fragment colocation with @soda-gql/colocation-tools.</p>
 
-      <h2>Registered Operations</h2>
-      <div style={{ marginTop: "1rem" }}>
-        <h3>GetUser Query</h3>
-        <pre
-          style={{
-            background: "#f5f5f5",
-            padding: "1rem",
-            borderRadius: "4px",
-            overflow: "auto",
-          }}
-        >
-          {JSON.stringify(getUserQuery, null, 2)}
-        </pre>
+      <UserPage />
 
-        <h3>ListUsers Query</h3>
-        <pre
-          style={{
-            background: "#f5f5f5",
-            padding: "1rem",
-            borderRadius: "4px",
-            overflow: "auto",
-          }}
-        >
-          {JSON.stringify(listUsersQuery, null, 2)}
-        </pre>
-      </div>
+      <h2 style={{ marginTop: "2rem" }}>Generated Query</h2>
+      <pre
+        style={{
+          background: "#f5f5f5",
+          padding: "1rem",
+          borderRadius: "4px",
+          overflow: "auto",
+        }}
+      >
+        {JSON.stringify(userPageQuery, null, 2)}
+      </pre>
     </div>
   );
 }
