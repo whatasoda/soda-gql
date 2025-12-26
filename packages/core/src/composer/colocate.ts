@@ -1,3 +1,4 @@
+import type { UnionToIntersection } from "../utils/type-utils";
 import type { AnyFields } from "../types/fragment";
 import { type PrefixedFields, prefixFields } from "./field-prefix";
 
@@ -9,11 +10,11 @@ export type ColocatedEntries = Record<string, AnyFields>;
 
 /**
  * Result type for colocated fields.
- * Each entry is prefixed with its label.
+ * Merges all prefixed entries into a single object.
  */
-export type ColocatedFields<TEntries extends ColocatedEntries> = {
-  [K in keyof TEntries & string]: PrefixedFields<K, TEntries[K]>;
-}[keyof TEntries & string];
+export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersection<
+  { [K in keyof TEntries & string]: PrefixedFields<K, TEntries[K]> }[keyof TEntries & string]
+>;
 
 /**
  * Creates a $colocate helper function for fragment colocation.
@@ -26,7 +27,7 @@ export type ColocatedFields<TEntries extends ColocatedEntries> = {
  * ```typescript
  * // In operation definition
  * query.operation({ name: "GetData" }, ({ f, $ }) => [
- *   ...$colocate({
+ *   $colocate({
  *     userCard: userCardFragment.embed({ userId: $.userId }),
  *     posts: postsFragment.embed({ userId: $.userId }),
  *   }),
@@ -44,10 +45,11 @@ export const createColocateHelper = () => {
    * Colocates multiple field selections with labeled prefixes.
    *
    * @param entries - Object mapping labels to field selections
-   * @returns Array of prefixed field entries to spread in the field builder
+   * @returns Merged object of all prefixed field entries
    */
-  const $colocate = <TEntries extends ColocatedEntries>(entries: TEntries): ColocatedFields<TEntries>[] => {
-    return Object.entries(entries).map(([label, fields]) => prefixFields(label, fields)) as ColocatedFields<TEntries>[];
+  const $colocate = <TEntries extends ColocatedEntries>(entries: TEntries): ColocatedFields<TEntries> => {
+    const prefixedEntries = Object.entries(entries).map(([label, fields]) => prefixFields(label, fields));
+    return Object.assign({}, ...prefixedEntries) as ColocatedFields<TEntries>;
   };
 
   return $colocate;

@@ -4,7 +4,7 @@ import { prefixFields } from "./field-prefix";
 
 describe("$colocate helper", () => {
   describe("createColocateHelper", () => {
-    it("should prefix field entries with their labels", () => {
+    it("should merge prefixed field entries into single object", () => {
       const $colocate = createColocateHelper();
 
       const fields1 = { id: "field1", name: "field2" } as any;
@@ -15,14 +15,9 @@ describe("$colocate helper", () => {
         post: fields2,
       });
 
-      expect(result).toHaveLength(2);
-      // First entry: user fields prefixed
-      expect(result[0]).toEqual({
+      expect(result).toEqual({
         user_id: "field1",
         user_name: "field2",
-      });
-      // Second entry: post fields prefixed
-      expect(result[1]).toEqual({
         post_title: "field3",
         post_body: "field4",
       });
@@ -37,8 +32,7 @@ describe("$colocate helper", () => {
         order: fields,
       });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result).toEqual({
         order_id: "123",
         order_status: "active",
       });
@@ -49,7 +43,7 @@ describe("$colocate helper", () => {
 
       const result = $colocate({});
 
-      expect(result).toHaveLength(0);
+      expect(result).toEqual({});
     });
   });
 
