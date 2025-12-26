@@ -6,6 +6,11 @@ import { registerOperation } from "./runtime-registry";
 
 export type RuntimeOperationInput = {
   prebuild: StripFunctions<AnyOperationOf<OperationType>>;
+  /**
+   * Reserved for future runtime configuration injection.
+   * Currently always an empty object, but kept for forward compatibility
+   * with potential features like runtime variable injection or context.
+   */
   runtime: {};
 };
 
