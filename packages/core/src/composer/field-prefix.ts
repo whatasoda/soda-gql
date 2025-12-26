@@ -35,27 +35,3 @@ export const prefixFields = <TLabel extends string, TFields extends AnyFields>(
   >;
 };
 
-/**
- * Creates a $prefix helper function that can be used to prefix field arrays.
- * The returned function spreads the prefixed fields for use in field builder arrays.
- */
-export const createPrefixHelper = () => {
-  /**
-   * Prefixes field selections with a label for use in operations.
-   * Spread the result in the field builder array.
-   *
-   * @param label - The prefix to add to each field key
-   * @param fieldEntries - Array of field entries (from field builder results)
-   * @returns Array of prefixed field entries to spread
-   */
-  const $prefix = <TLabel extends string, TFields extends AnyFields>(
-    label: TLabel,
-    fieldEntries: TFields[],
-  ): PrefixedFields<TLabel, TFields>[] => {
-    return fieldEntries.map((fields) => prefixFields(label, fields));
-  };
-
-  return $prefix;
-};
-
-export type PrefixHelper = ReturnType<typeof createPrefixHelper>;

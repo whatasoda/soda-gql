@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createColocateHelper, createPrefixHelper, prefixFields } from "../../src/composer";
+import { createColocateHelper, prefixFields } from "../../src/composer";
 
 describe("$colocate helper", () => {
   describe("createColocateHelper", () => {
@@ -66,20 +66,4 @@ describe("$colocate helper", () => {
     });
   });
 
-  describe("$prefix helper", () => {
-    it("should prefix array of field entries", () => {
-      const $prefix = createPrefixHelper();
-
-      const fieldEntries = [
-        { id: "1", name: "Alice" },
-        { id: "2", name: "Bob" },
-      ] as any;
-
-      const result = $prefix("user", fieldEntries);
-
-      expect(result).toHaveLength(2);
-      expect(result[0] as any).toEqual({ user_id: "1", user_name: "Alice" });
-      expect(result[1] as any).toEqual({ user_id: "2", user_name: "Bob" });
-    });
-  });
 });
