@@ -1,0 +1,12 @@
+[test]
+# coverage is controlled via CLI flag (--coverage)
+coverageDir = ".coverage"
+coverageReporter = ["text", "lcov"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = [
+  "node_modules/**",
+  "**/test/**",
+  "**/dist/**",
+  "**/.cache/**",
+  "**/fixtures/**"
+]
