@@ -1,15 +1,15 @@
 import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { gql } from "@/graphql-system";
+import { UserCard } from "../components/UserCard";
 import { userCardFragment } from "../components/UserCard/fragment";
 import { userCardProjection } from "../components/UserCard/projection";
-import { UserCard } from "../components/UserCard";
 
 /**
  * Operation that composes fragments using $colocate.
  * Each label (e.g., "userCard") must match the parser's label.
  */
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
-  query.operation({ name: "UserPage", variables: [$var("userId").scalar("ID:!")] }, ({ $}) => [
+  query.operation({ name: "UserPage", variables: [$var("userId").scalar("ID:!")] }, ({ $ }) => [
     ...$colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
     }),

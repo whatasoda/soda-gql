@@ -22,11 +22,7 @@ const formatError = (error: NormalizedError): string => {
  */
 export const UserCard = ({ result }: Props) => {
   if (result.error) {
-    return (
-      <div style={{ padding: "1rem", background: "#fee", borderRadius: "4px" }}>
-        Error: {formatError(result.error)}
-      </div>
-    );
+    return <div style={{ padding: "1rem", background: "#fee", borderRadius: "4px" }}>Error: {formatError(result.error)}</div>;
   }
 
   if (!result.user) {
