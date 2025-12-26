@@ -10,6 +10,10 @@ import {
   createEmptyBuilderMetrics,
   createEmptyMemoryMetrics,
   formatBenchmarkResult,
+  createComparisonResult,
+  formatComparisonResult,
+  type AnalyzerType,
+  type AnalyzerComparisonResult,
   type BenchmarkResult,
   type BuilderMetrics,
   type IterationResult,
@@ -33,6 +37,7 @@ interface RunOptions {
   generate: boolean;
   warm: boolean;
   gc: boolean;
+  analyzer: AnalyzerType | "both";
 }
 
 function parseArgs(): RunOptions {
@@ -44,6 +49,7 @@ function parseArgs(): RunOptions {
     generate: false,
     warm: false,
     gc: false,
+    analyzer: "ts",
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -85,6 +91,16 @@ function parseArgs(): RunOptions {
       case "--gc":
         options.gc = true;
         break;
+      case "--analyzer": {
+        const val = args[++i];
+        if (val === "ts" || val === "swc" || val === "both") {
+          options.analyzer = val;
+        } else {
+          console.error("Invalid analyzer value. Use: ts, swc, or both");
+          process.exit(1);
+        }
+        break;
+      }
     }
   }
 
@@ -221,7 +237,7 @@ class MemoryCollector {
  */
 async function measureBuild(
   fixtureDir: string,
-  options: { force: boolean; gc: boolean }
+  options: { force: boolean; gc: boolean; analyzer: AnalyzerType }
 ): Promise<BuilderMetrics> {
   // Force GC if requested (Bun supports global.gc when run with --smol or similar)
   if (options.gc && typeof global.gc === "function") {
@@ -233,7 +249,9 @@ async function measureBuild(
   if (configResult.isErr()) {
     throw new Error(`Failed to load config: ${configResult.error.code}`);
   }
-  const config = configResult.value;
+
+  // Override analyzer from loaded config
+  const config = { ...configResult.value, analyzer: options.analyzer };
 
   // Create session
   const session = createBuilderSession({
@@ -287,6 +305,102 @@ async function measureBuild(
   };
 }
 
+/**
+ * Run benchmark for a single analyzer.
+ */
+async function runSingleAnalyzer(
+  fixtureDir: string,
+  fixtureConfig: FixtureConfig,
+  options: RunOptions,
+  analyzer: AnalyzerType,
+): Promise<BenchmarkResult> {
+  if (!options.json) {
+    console.log(`Running builder benchmark with ${analyzer.toUpperCase()} analyzer (${options.iterations} iteration${options.iterations > 1 ? "s" : ""})...\n`);
+  }
+
+  // Run cold builds
+  const coldIterations: IterationResult[] = [];
+
+  for (let i = 0; i < options.iterations; i++) {
+    if (!options.json) {
+      process.stdout.write(`  Cold build ${i + 1}/${options.iterations}...`);
+    }
+
+    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc, analyzer });
+    coldIterations.push({ iteration: i + 1, metrics });
+
+    if (!options.json) {
+      console.log(` ${metrics.wallTimeMs.toFixed(1)}ms`);
+    }
+  }
+
+  // Compute statistics
+  const coldStats = computeStatistics(coldIterations);
+
+  // Build result
+  return {
+    fixture: fixtureConfig.name,
+    analyzer,
+    timestamp: new Date().toISOString(),
+    scale: {
+      totalFiles: fixtureConfig.totalFiles,
+      gqlRatio: fixtureConfig.gqlRatio,
+      objectTypes: fixtureConfig.objectTypes,
+      models: fixtureConfig.models,
+      slices: fixtureConfig.slices,
+      operations: fixtureConfig.operations,
+    },
+    iterations: coldIterations,
+    average: coldStats.average,
+    min: coldStats.min,
+    max: coldStats.max,
+  };
+}
+
+/**
+ * Run comparison benchmark for both analyzers.
+ */
+async function runComparisonMode(
+  fixtureDir: string,
+  fixtureConfig: FixtureConfig,
+  options: RunOptions,
+): Promise<void> {
+  if (!options.json) {
+    console.log(`Running comparison benchmark (${options.iterations} iteration(s))...\n`);
+  }
+
+  // TS analyzer
+  if (!options.json) {
+    console.log("=== TypeScript Analyzer ===");
+  }
+  const tsResult = await runSingleAnalyzer(fixtureDir, fixtureConfig, options, "ts");
+
+  // SWC analyzer
+  if (!options.json) {
+    console.log("\n=== SWC Analyzer ===");
+  }
+  const swcResult = await runSingleAnalyzer(fixtureDir, fixtureConfig, options, "swc");
+
+  // Create comparison result
+  const comparison = createComparisonResult(tsResult, swcResult);
+
+  // Output results
+  if (options.json) {
+    console.log(JSON.stringify(comparison, null, 2));
+  } else {
+    console.log("\n" + formatComparisonResult(comparison));
+  }
+
+  // Save results to cache
+  const cacheDir = path.join(PROJECT_ROOT, ".cache", "perf", new Date().toISOString().replace(/[:.]/g, "-"), fixtureConfig.name);
+  await fs.mkdir(cacheDir, { recursive: true });
+  await fs.writeFile(path.join(cacheDir, "comparison.json"), JSON.stringify(comparison, null, 2));
+
+  if (!options.json) {
+    console.log(`\nResults saved to: ${cacheDir}/comparison.json`);
+  }
+}
+
 async function main() {
   const options = parseArgs();
   const fixtureConfig = buildFixtureConfig(options);
@@ -317,127 +431,28 @@ async function main() {
     }
   }
 
-  if (!options.json) {
-    console.log(`Running builder benchmark (${options.iterations} iteration${options.iterations > 1 ? "s" : ""})...\n`);
-  }
-
-  // Run cold builds
-  const coldIterations: IterationResult[] = [];
-
-  for (let i = 0; i < options.iterations; i++) {
-    if (!options.json) {
-      process.stdout.write(`  Cold build ${i + 1}/${options.iterations}...`);
-    }
-
-    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc });
-    coldIterations.push({ iteration: i + 1, metrics });
-
-    if (!options.json) {
-      console.log(` ${metrics.wallTimeMs.toFixed(1)}ms`);
-    }
-  }
-
-  // Run warm builds if requested
-  const warmIterations: IterationResult[] = [];
-
-  if (options.warm) {
-    for (let i = 0; i < options.iterations; i++) {
-      if (!options.json) {
-        process.stdout.write(`  Warm build ${i + 1}/${options.iterations}...`);
-      }
-
-      const metrics = await measureBuild(fixtureDir, { force: false, gc: options.gc });
-      warmIterations.push({ iteration: i + 1, metrics });
-
-      if (!options.json) {
-        console.log(` ${metrics.wallTimeMs.toFixed(1)}ms`);
-      }
-    }
-  }
-
-  // Compute statistics
-  const coldStats = computeStatistics(coldIterations);
-  const warmStats = options.warm ? computeStatistics(warmIterations) : null;
-
-  // Build result
-  const result: BenchmarkResult = {
-    fixture: fixtureConfig.name,
-    timestamp: new Date().toISOString(),
-    scale: {
-      totalFiles: fixtureConfig.totalFiles,
-      gqlRatio: fixtureConfig.gqlRatio,
-      objectTypes: fixtureConfig.objectTypes,
-      models: fixtureConfig.models,
-      slices: fixtureConfig.slices,
-      operations: fixtureConfig.operations,
-    },
-    iterations: coldIterations,
-    average: coldStats.average,
-    min: coldStats.min,
-    max: coldStats.max,
-  };
-
-  // Output results
-  if (options.json) {
-    const output = {
-      cold: result,
-      warm: warmStats
-        ? {
-            ...result,
-            iterations: warmIterations,
-            average: warmStats.average,
-            min: warmStats.min,
-            max: warmStats.max,
-          }
-        : null,
-    };
-    console.log(JSON.stringify(output, null, 2));
+  // Run benchmark based on analyzer option
+  if (options.analyzer === "both") {
+    await runComparisonMode(fixtureDir, fixtureConfig, options);
   } else {
-    console.log("");
-    console.log(formatBenchmarkResult(result));
+    const result = await runSingleAnalyzer(fixtureDir, fixtureConfig, options, options.analyzer);
 
-    if (warmStats) {
+    // Output results
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
       console.log("");
-      console.log("=".repeat(60));
-      console.log("WARM BUILD RESULTS");
-      console.log("=".repeat(60));
-      console.log(
-        formatBenchmarkResult({
-          ...result,
-          iterations: warmIterations,
-          average: warmStats.average,
-          min: warmStats.min,
-          max: warmStats.max,
-        })
-      );
+      console.log(formatBenchmarkResult(result));
     }
-  }
 
-  // Save results to cache
-  const cacheDir = path.join(PROJECT_ROOT, ".cache", "perf", new Date().toISOString().replace(/[:.]/g, "-"), fixtureConfig.name);
-  await fs.mkdir(cacheDir, { recursive: true });
-  await fs.writeFile(
-    path.join(cacheDir, "metrics.json"),
-    JSON.stringify(
-      {
-        cold: result,
-        warm: warmStats
-          ? {
-              ...result,
-              iterations: warmIterations,
-              average: warmStats.average,
-              min: warmStats.min,
-              max: warmStats.max,
-            }
-          : null,
-      },
-      null,
-      2
-    )
-  );
+    // Save results to cache
+    const cacheDir = path.join(PROJECT_ROOT, ".cache", "perf", new Date().toISOString().replace(/[:.]/g, "-"), fixtureConfig.name);
+    await fs.mkdir(cacheDir, { recursive: true });
+    await fs.writeFile(path.join(cacheDir, "metrics.json"), JSON.stringify(result, null, 2));
 
-  if (!options.json) {
-    console.log(`\nResults saved to: ${cacheDir}/metrics.json`);
+    if (!options.json) {
+      console.log(`\nResults saved to: ${cacheDir}/metrics.json`);
+    }
   }
 }
 
