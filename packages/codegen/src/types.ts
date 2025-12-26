@@ -2,22 +2,24 @@ import type { Result } from "neverthrow";
 
 export type CodegenFormat = "json" | "human";
 
-export type CodegenOptions = {
-  readonly schemaPath: string;
-  readonly outPath: string;
-  readonly format: CodegenFormat;
-  readonly injectFromPath: string;
+// Inject configuration per schema (always resolved object form)
+export type CodegenInjectConfig = {
+  readonly scalars: string;
+  readonly helpers?: string;
+  readonly metadata?: string;
 };
 
-export type MultiSchemaCodegenOptions = {
-  readonly schemas: Record<string, string>; // name -> path
+// Schema configuration for codegen (mirrors config structure)
+export type CodegenSchemaConfig = {
+  readonly schema: string;
+  readonly inject: CodegenInjectConfig;
+};
+
+export type CodegenOptions = {
+  readonly schemas: Record<string, CodegenSchemaConfig>;
   readonly outPath: string;
   readonly format: CodegenFormat;
-  readonly scalars?: Record<string, string>; // schema name -> scalar module path
-  readonly helpers?: Record<string, string>; // schema name -> helpers module path
-  readonly metadataAdapterPath?: string | null; // path to custom adapter, null to generate default
-  readonly injectFromPath?: string; // Legacy: single inject module for default schema
-  readonly importExtension?: boolean; // Whether to include file extensions in import paths (default: false)
+  readonly importExtension?: boolean;
 };
 
 export type CodegenCliCommand =
@@ -68,15 +70,6 @@ export type CodegenError =
     };
 
 export type CodegenSuccess = {
-  readonly schemaHash: string;
-  readonly outPath: string;
-  readonly objects: number;
-  readonly enums: number;
-  readonly inputs: number;
-  readonly unions: number;
-};
-
-export type MultiSchemaCodegenSuccess = {
   readonly schemas: Record<
     string,
     {
@@ -92,4 +85,3 @@ export type MultiSchemaCodegenSuccess = {
 };
 
 export type CodegenResult = Result<CodegenSuccess, CodegenError>;
-export type MultiSchemaCodegenResult = Result<MultiSchemaCodegenSuccess, CodegenError>;

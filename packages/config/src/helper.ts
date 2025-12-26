@@ -2,7 +2,7 @@ import { defineSchemaFor } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import z from "zod";
 import { type ConfigError, configError } from "./errors";
-import type { SchemaConfig, SodaGqlConfig, StylesConfig } from "./types";
+import type { InjectConfig, SchemaConfig, SodaGqlConfig, StylesConfig } from "./types";
 
 /**
  * Thin wrapper class to simplify the validation of exported value from config file.
@@ -21,7 +21,7 @@ export class SodaGqlConfigContainer {
  * Type-safe helper for defining soda-gql configuration.
  * Supports both static and dynamic (async) configs.
  *
- * @example Static config
+ * @example Static config with object inject
  * ```ts
  * import { defineConfig } from "@soda-gql/config";
  *
@@ -31,24 +31,24 @@ export class SodaGqlConfigContainer {
  *   schemas: {
  *     default: {
  *       schema: "./schema.graphql",
- *       scalars: "./scalars.ts",
+ *       inject: { scalars: "./scalars.ts" },
  *     },
  *   },
  * });
  * ```
  *
- * @example Async config
+ * @example Static config with string inject (single file)
  * ```ts
- * export default defineConfig(async () => ({
- *   outdir: await resolveOutputDir(),
+ * export default defineConfig({
+ *   outdir: "./graphql-system",
  *   include: ["./src/**\/*.ts"],
  *   schemas: {
  *     default: {
  *       schema: "./schema.graphql",
- *       scalars: "./scalars.ts",
+ *       inject: "./inject.ts",  // exports scalar, helpers?, metadata?
  *     },
  *   },
- * }));
+ * });
  * ```
  */
 export function defineConfig(config: SodaGqlConfig): SodaGqlConfigContainer;
@@ -61,10 +61,20 @@ export function defineConfig(config: SodaGqlConfig | (() => SodaGqlConfig)): Sod
   return SodaGqlConfigContainer.create(validated.value);
 }
 
+// InjectConfig is a union type (string | object), so we define the schema directly
+// rather than using defineSchemaFor which requires object types
+const InjectConfigSchema: z.ZodType<InjectConfig> = z.union([
+  z.string().min(1),
+  z.object({
+    scalars: z.string().min(1),
+    helpers: z.string().min(1).optional(),
+    metadata: z.string().min(1).optional(),
+  }),
+]);
+
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: z.string().min(1),
-  scalars: z.string().min(1),
-  helpers: z.string().min(1).optional(),
+  inject: InjectConfigSchema,
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
@@ -73,7 +83,6 @@ const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
 
 const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   analyzer: z.enum(["ts", "swc"]).optional(),
-  metadata: z.string().min(1).optional(),
   outdir: z.string().min(1),
   graphqlSystemAliases: z.array(z.string()).optional(),
   include: z.array(z.string().min(1)),

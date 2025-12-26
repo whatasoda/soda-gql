@@ -4,9 +4,8 @@ import { err, ok } from "neverthrow";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import { defaultMetadataAdapterTemplate } from "./templates/metadata-adapter.template";
 import { bundleGraphqlSystem } from "./tsdown-bundle";
-import type { MultiSchemaCodegenOptions, MultiSchemaCodegenResult, MultiSchemaCodegenSuccess } from "./types";
+import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
 const extensionMap: Record<string, string> = {
   ".ts": ".js",
@@ -58,40 +57,41 @@ const toImportSpecifier = (fromPath: string, targetPath: string, options?: Impor
   return `${withoutExt}${runtimeExt}`;
 };
 
-export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions): Promise<MultiSchemaCodegenResult> => {
+export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult> => {
   const outPath = resolve(options.outPath);
+  const importSpecifierOptions = { includeExtension: options.importExtension };
 
-  // Handle legacy injectFromPath for backward compatibility
-  const scalars = options.scalars ?? (options.injectFromPath ? { default: options.injectFromPath } : {});
-
-  // Validate that all scalar and helper files exist
-  const scalarPaths = new Map<string, string>();
-  const helpersPaths = new Map<string, string>();
-
-  for (const [schemaName, scalarPath] of Object.entries(scalars)) {
-    const resolvedPath = resolve(scalarPath);
-    if (!existsSync(resolvedPath)) {
+  // Validate that all schema and inject files exist
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    const scalarPath = resolve(schemaConfig.inject.scalars);
+    if (!existsSync(scalarPath)) {
       return err({
         code: "INJECT_MODULE_NOT_FOUND",
-        message: `Scalar module not found for schema '${schemaName}': ${resolvedPath}`,
-        injectPath: resolvedPath,
+        message: `Scalar module not found for schema '${schemaName}': ${scalarPath}`,
+        injectPath: scalarPath,
       });
     }
-    scalarPaths.set(schemaName, resolvedPath);
-  }
 
-  // Validate optional helpers
-  if (options.helpers) {
-    for (const [schemaName, helpersPath] of Object.entries(options.helpers)) {
-      const resolvedPath = resolve(helpersPath);
-      if (!existsSync(resolvedPath)) {
+    if (schemaConfig.inject.helpers) {
+      const helpersPath = resolve(schemaConfig.inject.helpers);
+      if (!existsSync(helpersPath)) {
         return err({
           code: "INJECT_MODULE_NOT_FOUND",
-          message: `Helpers module not found for schema '${schemaName}': ${resolvedPath}`,
-          injectPath: resolvedPath,
+          message: `Helpers module not found for schema '${schemaName}': ${helpersPath}`,
+          injectPath: helpersPath,
         });
       }
-      helpersPaths.set(schemaName, resolvedPath);
+    }
+
+    if (schemaConfig.inject.metadata) {
+      const metadataPath = resolve(schemaConfig.inject.metadata);
+      if (!existsSync(metadataPath)) {
+        return err({
+          code: "INJECT_MODULE_NOT_FOUND",
+          message: `Metadata module not found for schema '${schemaName}': ${metadataPath}`,
+          injectPath: metadataPath,
+        });
+      }
     }
   }
 
@@ -99,8 +99,8 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
   const schemas = new Map<string, import("graphql").DocumentNode>();
   const schemaHashes: Record<string, { schemaHash: string; objects: number; enums: number; inputs: number; unions: number }> = {};
 
-  for (const [name, schemaPath] of Object.entries(options.schemas)) {
-    const result = await loadSchema(schemaPath).match(
+  for (const [name, schemaConfig] of Object.entries(options.schemas)) {
+    const result = await loadSchema(schemaConfig.schema).match(
       (doc) => Promise.resolve(ok(doc)),
       (error) => Promise.resolve(err(error)),
     );
@@ -112,67 +112,33 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas.set(name, result.value);
   }
 
-  // Handle metadata adapter
-  const importSpecifierOptions = { includeExtension: options.importExtension };
-  let adapterImportPath: string;
-
-  if (options.metadataAdapterPath) {
-    // User provided custom adapter
-    const resolvedAdapterPath = resolve(options.metadataAdapterPath);
-    if (!existsSync(resolvedAdapterPath)) {
-      return err({
-        code: "INJECT_MODULE_NOT_FOUND",
-        message: `Metadata adapter not found: ${resolvedAdapterPath}`,
-        injectPath: resolvedAdapterPath,
-      });
-    }
-    adapterImportPath = toImportSpecifier(outPath, resolvedAdapterPath, importSpecifierOptions);
-  } else {
-    // Generate default adapter
-    const defaultAdapterPath = resolve(dirname(outPath), "metadata-adapter.ts");
-    const adapterWriteResult = await writeModule(defaultAdapterPath, defaultMetadataAdapterTemplate).match(
-      () => Promise.resolve(ok(undefined)),
-      (error) => Promise.resolve(err(error)),
-    );
-
-    if (adapterWriteResult.isErr()) {
-      return err(adapterWriteResult.error);
-    }
-
-    adapterImportPath = toImportSpecifier(outPath, defaultAdapterPath, importSpecifierOptions);
-  }
-
   // Build injection config for each schema
   const injectionConfig = new Map<
     string,
     {
       scalarImportPath: string;
       helpersImportPath?: string;
+      metadataImportPath?: string;
     }
   >();
 
-  for (const schemaName of schemas.keys()) {
-    const scalarPath = scalarPaths.get(schemaName);
-
-    if (!scalarPath) {
-      return err({
-        code: "INJECT_MODULE_REQUIRED",
-        message: `Missing scalar configuration for schema '${schemaName}'`,
-      });
-    }
-
-    const helpersPath = helpersPaths.get(schemaName);
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    const injectConfig = schemaConfig.inject;
 
     injectionConfig.set(schemaName, {
-      scalarImportPath: toImportSpecifier(outPath, scalarPath, importSpecifierOptions),
-      ...(helpersPath ? { helpersImportPath: toImportSpecifier(outPath, helpersPath, importSpecifierOptions) } : {}),
+      scalarImportPath: toImportSpecifier(outPath, resolve(injectConfig.scalars), importSpecifierOptions),
+      ...(injectConfig.helpers
+        ? { helpersImportPath: toImportSpecifier(outPath, resolve(injectConfig.helpers), importSpecifierOptions) }
+        : {}),
+      ...(injectConfig.metadata
+        ? { metadataImportPath: toImportSpecifier(outPath, resolve(injectConfig.metadata), importSpecifierOptions) }
+        : {}),
     });
   }
 
   // Generate multi-schema module
   const { code } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
-    adapterImportPath,
   });
 
   // Calculate individual schema stats and hashes
@@ -217,5 +183,5 @@ export const runMultiSchemaCodegen = async (options: MultiSchemaCodegenOptions):
     schemas: schemaHashes,
     outPath,
     cjsPath: bundleResult.value.cjsPath,
-  } satisfies MultiSchemaCodegenSuccess);
+  } satisfies CodegenSuccess);
 };

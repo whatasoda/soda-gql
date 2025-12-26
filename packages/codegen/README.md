@@ -27,15 +27,17 @@ This package provides the code generation engine that transforms GraphQL schemas
 For advanced use cases where you need to integrate code generation into your own build pipeline:
 
 ```typescript
-import { runMultiSchemaCodegen } from "@soda-gql/codegen";
+import { runCodegen } from "@soda-gql/codegen";
 
-const result = await runMultiSchemaCodegen({
-  outdir: "./src/graphql-system",
+const result = await runCodegen({
+  outPath: "./src/graphql-system/index.ts",
+  format: "json",
   schemas: {
     default: {
-      schemaPath: "./schema.graphql",
-      runtimeAdapterPath: "./runtime-adapter.ts",
-      scalarsPath: "./scalars.ts",
+      schema: "./schema.graphql",
+      inject: {
+        scalars: "./scalars.ts",
+      },
     },
   },
 });

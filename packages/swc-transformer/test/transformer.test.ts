@@ -24,7 +24,6 @@ try {
   await createTransformer({
     config: {
       analyzer: "ts",
-      metadata: null,
       outdir: "/tmp",
       graphqlSystemAliases: [],
       include: [],
@@ -106,7 +105,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -114,7 +112,7 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },
@@ -145,7 +143,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -153,7 +150,7 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },
@@ -179,7 +176,6 @@ describe("swc-transformer", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
-              metadata: null,
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -187,7 +183,7 @@ describe("swc-transformer", async () => {
               schemas: {
                 default: {
                   schema: "/tmp/schema.graphql",
-                  scalars: "/tmp/scalars.ts",
+                  inject: { scalars: "/tmp/scalars.ts" },
                 },
               },
               styles: { importExtension: false },
