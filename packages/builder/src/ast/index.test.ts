@@ -1,18 +1,13 @@
 import { describe, expect, it, test } from "bun:test";
 import { getTestConfig } from "../../test/codegen-fixture/get-config";
-import {
-  getFixturesForAnalyzer,
-  getSkippedFixturesForSwc,
-  loadModuleAnalysisFixture,
-} from "../../test/utils/fixtures";
+import { fixtures, loadModuleAnalysisFixture } from "../../test/utils/fixtures";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createAstAnalyzer } from ".";
 
 const testConfig = getTestConfig();
 const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
 
-const createAnalyzer = (type: "ts" | "swc") =>
-  createAstAnalyzer({ analyzer: type, graphqlHelper }).analyze;
+const createAnalyzer = (type: "ts" | "swc") => createAstAnalyzer({ analyzer: type, graphqlHelper }).analyze;
 
 const analyzeWithTS = createAnalyzer("ts");
 const analyzeWithSWC = createAnalyzer("swc");
@@ -27,28 +22,17 @@ function expectDefinition<T>(array: readonly T[], index: number): T {
 
 describe("AST Analyzer", () => {
   describe("TypeScript and SWC conformance", () => {
-    const conformanceFixtures = getFixturesForAnalyzer("swc");
+    test.each(fixtures.map((name) => [name]))("produces consistent astPath for: %s", (fixtureName) => {
+      const { filePath, source } = loadModuleAnalysisFixture(fixtureName);
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
 
-    test.each(conformanceFixtures.map((f) => [f.name]))(
-      "produces consistent astPath for: %s",
-      (fixtureName) => {
-        const { filePath, source } = loadModuleAnalysisFixture(fixtureName);
-        const tsAnalysis = analyzeWithTS({ filePath, source });
-        const swcAnalysis = analyzeWithSWC({ filePath, source });
+      expect(tsAnalysis.definitions.length).toBe(swcAnalysis.definitions.length);
 
-        expect(tsAnalysis.definitions.length).toBe(swcAnalysis.definitions.length);
-
-        for (let i = 0; i < tsAnalysis.definitions.length; i++) {
-          expect(tsAnalysis.definitions[i]?.astPath).toBe(swcAnalysis.definitions[i]?.astPath);
-        }
-      },
-    );
-  });
-
-  describe("SWC skipped fixtures (planned for future implementation)", () => {
-    const skippedFixtures = getSkippedFixturesForSwc();
-
-    test.skip.each(skippedFixtures.map((f) => [f.name]))("SKIPPED: %s", () => {});
+      for (let i = 0; i < tsAnalysis.definitions.length; i++) {
+        expect(tsAnalysis.definitions[i]?.astPath).toBe(swcAnalysis.definitions[i]?.astPath);
+      }
+    });
   });
 
   describe("Canonical path consistency", () => {
@@ -97,13 +81,19 @@ describe("AST Analyzer", () => {
       expect(tsDef.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
     });
 
-    it("generates same astPath for class method definitions (TypeScript only)", () => {
+    it("generates same astPath for class method definitions", () => {
       const { filePath, source } = loadModuleAnalysisFixture("class-method");
 
       const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
 
       expect(tsAnalysis.definitions).toHaveLength(1);
-      expect(tsAnalysis.definitions[0]?.astPath).toBe("UserRepository.getModels.model");
+      expect(swcAnalysis.definitions).toHaveLength(1);
+
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toBe("UserRepository.getModels.model");
     });
 
     it("generates same astPath for object property definitions", () => {
@@ -176,10 +166,13 @@ describe("AST Analyzer", () => {
     it("handles deeply nested definitions", () => {
       const { filePath, source } = loadModuleAnalysisFixture("deeply-nested");
 
-      const analysis = analyzeWithTS({ filePath, source });
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
 
-      expect(analysis.definitions).toHaveLength(1);
-      expect(analysis.definitions[0]?.astPath).toBe("Outer.method.obj.nested.deep");
+      expect(tsAnalysis.definitions).toHaveLength(1);
+      expect(swcAnalysis.definitions).toHaveLength(1);
+      expect(tsAnalysis.definitions[0]?.astPath).toBe("Outer.method.obj.nested.deep");
+      expect(swcAnalysis.definitions[0]?.astPath).toBe("Outer.method.obj.nested.deep");
     });
 
     it("handles multiple definitions in same scope", () => {

@@ -13,7 +13,11 @@ import type { AnalyzerAdapter, AnalyzerResult } from "../core";
 /**
  * Extended SWC Module with filePath attached (similar to ts.SourceFile.fileName)
  */
-type SwcModule = Module & { __filePath: string };
+type SwcModule = Module & {
+  __filePath: string;
+  /** Offset to subtract from spans to normalize to 0-based source indices */
+  __spanOffset: number;
+};
 
 import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport, SourceLocation, SourcePosition } from "../types";
 
@@ -55,9 +59,9 @@ const toPositionResolver = (source: string) => {
   };
 };
 
-const toLocation = (resolvePosition: (offset: number) => SourcePosition, span: Span): SourceLocation => ({
-  start: resolvePosition(span.start),
-  end: resolvePosition(span.end),
+const toLocation = (resolvePosition: (offset: number) => SourcePosition, span: Span, spanOffset: number): SourceLocation => ({
+  start: resolvePosition(span.start - spanOffset),
+  end: resolvePosition(span.end - spanOffset),
 });
 
 const collectImports = (module: Module): ModuleImport[] => {
@@ -369,18 +373,23 @@ const collectAllDefinitions = ({
   };
 
   const expressionFromCall = (call: CallExpression): string => {
-    let start = call.span.start;
+    // Normalize span by subtracting the module's span offset
+    const spanOffset = module.__spanOffset;
+    let start = call.span.start - spanOffset;
+    const end = call.span.end - spanOffset;
+
     // Adjust when span starts one character after the leading "g"
     if (start > 0 && source[start] === "q" && source[start - 1] === "g" && source.slice(start, start + 3) === "ql.") {
       start -= 1;
     }
 
-    const raw = source.slice(start, call.span.end);
+    const raw = source.slice(start, end);
     const marker = raw.indexOf("gql");
-    if (marker >= 0) {
-      return raw.slice(marker);
-    }
-    return raw;
+    const expression = marker >= 0 ? raw.slice(marker) : raw;
+
+    // Strip trailing semicolons and whitespace that SWC may include in the span
+    // TypeScript's node.getText() doesn't include these, so we normalize to match
+    return expression.replace(/\s*;\s*$/, "");
   };
 
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
@@ -413,7 +422,7 @@ const collectAllDefinitions = ({
         isTopLevel,
         isExported,
         exportBinding,
-        loc: toLocation(resolvePosition, node.span),
+        loc: toLocation(resolvePosition, node.span, module.__spanOffset),
         expression: expressionFromCall(node),
       });
 
@@ -481,13 +490,13 @@ const collectAllDefinitions = ({
       withScope(stack, className, "class", `class:${className}`, (classStack) => {
         // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
         node.body?.forEach((member: any) => {
-          if (member.type === "MethodProperty" || member.type === "ClassProperty") {
+          if (member.type === "ClassMethod" || member.type === "ClassProperty") {
             const memberName = member.key?.value ?? null;
             if (memberName) {
-              const memberKind = member.type === "MethodProperty" ? "method" : "property";
+              const memberKind = member.type === "ClassMethod" ? "method" : "property";
               withScope(classStack, memberName, memberKind, `member:${className}.${memberName}`, (memberStack) => {
-                if (member.type === "MethodProperty" && member.body) {
-                  visit(member.body, memberStack);
+                if (member.type === "ClassMethod" && member.function?.body) {
+                  visit(member.function.body, memberStack);
                 } else if (member.type === "ClassProperty" && member.value) {
                   visit(member.value, memberStack);
                 }
@@ -569,9 +578,15 @@ export const swcAdapter: AnalyzerAdapter = {
       return null;
     }
 
+    // SWC's BytePos accumulates across parseSync calls (known behavior).
+    // We need to normalize spans by subtracting the program's starting position.
+    // The program.span.start is 1-based, so we subtract (start - 1) to get 0-based offsets.
+    const spanOffset = program.span.start - 1;
+
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;
     swcModule.__filePath = input.filePath;
+    swcModule.__spanOffset = spanOffset;
 
     // Collect all data in one pass
     const gqlIdentifiers = collectGqlIdentifiers(swcModule, helper);

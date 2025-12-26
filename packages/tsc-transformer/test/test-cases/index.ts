@@ -11,7 +11,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
 import { createTransformer } from "../../src/transformer";
 import { getSingleFileTestCases, type TestCaseDefinition } from "./definitions";
-import { createTestConfig, loadPluginFixture } from "./utils";
+import { type AnalyzerType, createTestConfig, loadPluginFixture } from "./utils";
 
 export type ModuleFormat = "esm" | "cjs";
 
@@ -50,6 +50,7 @@ export type TransformTestCase = {
 export type { TestCaseDefinition } from "./definitions";
 export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
 export {
+  type AnalyzerType,
   createTestConfig,
   type LoadedPluginFixture,
   type LoadedPluginFixtureFile,
@@ -178,9 +179,11 @@ export const generateTestCase = async ({
 /**
  * Create a config for transformation using the shared codegen-fixture.
  * Uses the pre-generated graphql-system from fixture:setup.
+ *
+ * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
-const createTransformConfig = (): ResolvedSodaGqlConfig => {
-  return createTestConfig();
+const createTransformConfig = (analyzer?: AnalyzerType): ResolvedSodaGqlConfig => {
+  return createTestConfig(analyzer);
 };
 
 /**
@@ -190,15 +193,16 @@ const createTransformConfig = (): ResolvedSodaGqlConfig => {
  * are verified by tsc-transformer's own tests, ensuring the expected outputs
  * are correct.
  *
+ * @param analyzer - Optional analyzer type override ("ts" or "swc")
  * @returns Array of test cases with input, expected output, and expectations
  */
-export const loadTestCases = async (): Promise<TransformTestCase[]> => {
+export const loadTestCases = async (analyzer?: AnalyzerType): Promise<TransformTestCase[]> => {
   const definitions = getSingleFileTestCases();
   const testCases: TransformTestCase[] = [];
-  const config = createTransformConfig();
+  const config = createTransformConfig(analyzer);
 
   for (const definition of definitions) {
-    const fixture = await loadPluginFixture(definition.fixtureName);
+    const fixture = await loadPluginFixture(definition.fixtureName, analyzer);
 
     const testCase = await generateTestCase({
       id: definition.id,
