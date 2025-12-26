@@ -1,5 +1,5 @@
 import type { InferExecutionResultProjection, NormalizedError } from "@soda-gql/colocation-tools";
-import type { userCardProjection } from "./projection";
+import type { userCardProjection } from "./fragment";
 
 type Props = {
   result: InferExecutionResultProjection<typeof userCardProjection>;

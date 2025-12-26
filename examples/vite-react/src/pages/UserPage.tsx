@@ -1,17 +1,19 @@
 import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { gql } from "@/graphql-system";
+import { PostList } from "../components/PostList";
+import { postListFragment, postListProjection } from "../components/PostList/fragment";
 import { UserCard } from "../components/UserCard";
-import { userCardFragment } from "../components/UserCard/fragment";
-import { userCardProjection } from "../components/UserCard/projection";
+import { userCardFragment, userCardProjection } from "../components/UserCard/fragment";
 
 /**
- * Operation that composes fragments using $colocate.
- * Each label (e.g., "userCard") must match the parser's label.
+ * Operation that composes multiple fragments using $colocate.
+ * Each label must match the parser's label for result distribution.
  */
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({ name: "UserPage", variables: [$var("userId").scalar("ID:!")] }, ({ $ }) => [
     ...$colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
+      postList: postListFragment.embed({ userId: $.userId }),
     }),
   ]),
 );
@@ -22,27 +24,32 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
  */
 const parseResult = createExecutionResultParser({
   userCard: { projection: userCardProjection },
+  postList: { projection: postListProjection },
 });
 
 /**
  * UserPage demonstrates the colocation pattern:
- * 1. Fragment defines data requirements (colocated with component)
- * 2. Projection defines data transformation
- * 3. $colocate composes fragments with unique prefixes
- * 4. Parser distributes results back to projections
+ * 1. Each component defines its data requirements (fragment + projection)
+ * 2. $colocate composes fragments with unique prefixes
+ * 3. Parser distributes results back to each component
  */
 export const UserPage = () => {
   // Mock execution result for demonstration
-  // In real app, this would come from GraphQL client
   const mockResult = parseResult({
     type: "graphql",
     body: {
       data: {
-        // Note: field is prefixed with "userCard_" by $colocate
+        // Fields are prefixed by $colocate labels
         userCard_user: {
           id: "1",
           name: "Alice",
           email: "alice@example.com",
+        },
+        postList_user: {
+          posts: [
+            { id: "1", title: "Hello World" },
+            { id: "2", title: "GraphQL is awesome" },
+          ],
         },
       },
     },
@@ -52,9 +59,12 @@ export const UserPage = () => {
     <div>
       <h2>User Page (Colocation Demo)</h2>
       <p style={{ color: "#666", marginBottom: "1rem" }}>
-        This page demonstrates the fragment colocation pattern using @soda-gql/colocation-tools.
+        This page demonstrates composing multiple colocated fragments with @soda-gql/colocation-tools.
       </p>
-      <UserCard result={mockResult.userCard} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <UserCard result={mockResult.userCard} />
+        <PostList result={mockResult.postList} />
+      </div>
     </div>
   );
 };
