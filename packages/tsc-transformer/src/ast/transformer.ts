@@ -2,7 +2,7 @@ import type { PluginError } from "@soda-gql/plugin-common";
 import { err, ok, type Result } from "neverthrow";
 import * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
-import { extractGqlCall, findGqlBuilderCall } from "./analysis";
+import { extractGqlCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
 import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
@@ -27,8 +27,8 @@ export const transformCallExpression = ({
   factory,
   isCJS,
 }: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
-  const builderCall = findGqlBuilderCall(callNode, ts);
-  if (!builderCall) {
+  // Skip if this call doesn't have GQL metadata
+  if (!metadata.has(callNode)) {
     return ok({ transformed: false });
   }
 
@@ -36,7 +36,6 @@ export const transformCallExpression = ({
     callNode,
     filename,
     metadata,
-    builderCall,
     getArtifact,
   });
 

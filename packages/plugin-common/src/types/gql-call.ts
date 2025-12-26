@@ -1,6 +1,5 @@
 /**
  * Unified GqlCall types used across all plugins.
- * Generic over the AST node type to support Babel, TypeScript, and SWC.
  */
 
 import type { BuilderArtifactModel, BuilderArtifactOperation } from "@soda-gql/builder";
@@ -8,17 +7,15 @@ import type { CanonicalId } from "@soda-gql/common";
 
 /**
  * Base interface for all GraphQL call types.
- * TCallNode represents the AST node type (e.g., t.CallExpression for Babel, ts.CallExpression for TypeScript).
  */
-export interface GqlCallBase<TCallNode> {
+export interface GqlCallBase {
   readonly canonicalId: CanonicalId;
-  readonly builderCall: TCallNode;
 }
 
 /**
  * GraphQL model call.
  */
-export interface GqlCallModel<TCallNode> extends GqlCallBase<TCallNode> {
+export interface GqlCallModel extends GqlCallBase {
   readonly type: "model";
   readonly artifact: BuilderArtifactModel;
 }
@@ -26,7 +23,7 @@ export interface GqlCallModel<TCallNode> extends GqlCallBase<TCallNode> {
 /**
  * GraphQL operation call.
  */
-export interface GqlCallOperation<TCallNode> extends GqlCallBase<TCallNode> {
+export interface GqlCallOperation extends GqlCallBase {
   readonly type: "operation";
   readonly artifact: BuilderArtifactOperation;
 }
@@ -34,4 +31,4 @@ export interface GqlCallOperation<TCallNode> extends GqlCallBase<TCallNode> {
 /**
  * Union of all GraphQL call types.
  */
-export type GqlCall<TCallNode> = GqlCallModel<TCallNode> | GqlCallOperation<TCallNode>;
+export type GqlCall = GqlCallModel | GqlCallOperation;
