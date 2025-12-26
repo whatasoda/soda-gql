@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
-  registerOperation,
-  getOperation,
-  __resetRuntimeRegistry,
   __getRegisteredOperations,
+  __resetRuntimeRegistry,
+  getOperation,
+  registerOperation,
 } from "../../src/runtime/runtime-registry";
 import type { AnyOperationOf } from "../../src/types/element";
 import type { OperationType } from "../../src/types/schema";
@@ -77,9 +77,7 @@ describe("runtime-registry", () => {
     });
 
     test("throws for non-existent operation", () => {
-      expect(() => getOperation("NonExistent")).toThrow(
-        "Operation NonExistent not found",
-      );
+      expect(() => getOperation("NonExistent")).toThrow("Operation NonExistent not found");
     });
 
     test("throws with correct operation name in message", () => {
@@ -107,7 +105,7 @@ describe("runtime-registry", () => {
     });
 
     test("returns readonly map", () => {
-      const operations = __getRegisteredOperations();
+      const _operations = __getRegisteredOperations();
       // Map should be readonly - changes through registerOperation should reflect
       registerOperation(createMockOperation("TestQuery"));
 

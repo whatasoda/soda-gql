@@ -2,6 +2,7 @@
 
 import type { NormalizedError } from "./types";
 
+// biome-ignore lint/suspicious/noExplicitAny: Type alias for any SlicedExecutionResult regardless of data type
 export type AnySlicedExecutionResult = SlicedExecutionResult<any>;
 
 /**

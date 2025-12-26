@@ -3,6 +3,7 @@ import type { Hidden } from "./utils/hidden";
 import type { Tuple } from "./utils/type-utils";
 
 /** Shape of a single selection slice projection. */
+// biome-ignore lint/suspicious/noExplicitAny: Type alias for any Projection regardless of projected type
 export type AnyProjection = Projection<any>;
 
 declare const __PROJECTION_BRAND__: unique symbol;

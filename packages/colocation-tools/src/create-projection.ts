@@ -3,6 +3,7 @@ import { Projection } from "./projection";
 import type { SlicedExecutionResult } from "./sliced-execution-result";
 import type { Tuple } from "./utils/type-utils";
 
+// biome-ignore lint/suspicious/noExplicitAny: Type alias for any Model regardless of type parameters
 type AnyModel = Model<string, any, any, any>;
 
 /**
