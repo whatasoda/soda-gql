@@ -578,10 +578,11 @@ export const swcAdapter: AnalyzerAdapter = {
       return null;
     }
 
-    // SWC's BytePos accumulates across parseSync calls (known behavior).
-    // We need to normalize spans by subtracting the program's starting position.
-    // The program.span.start is 1-based, so we subtract (start - 1) to get 0-based offsets.
-    const spanOffset = program.span.start - 1;
+    // SWC's BytePos counter accumulates across parseSync calls within the same process.
+    // To convert span positions to 0-indexed source positions, we compute the accumulated
+    // offset from previous parses: (program.span.end - source.length) gives us the total
+    // bytes from previously parsed files, and we add 1 because spans are 1-indexed.
+    const spanOffset = (program.span.end - input.source.length) + 1;
 
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;

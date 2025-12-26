@@ -52,14 +52,33 @@ export interface FixtureScale {
   operations: number;
 }
 
+export type AnalyzerType = "ts" | "swc";
+
 export interface BenchmarkResult {
   fixture: string;
+  analyzer: AnalyzerType;
   timestamp: string;
   scale: FixtureScale;
   iterations: IterationResult[];
   average: BuilderMetrics;
   min: BuilderMetrics;
   max: BuilderMetrics;
+}
+
+export interface SpeedupMetrics {
+  wallTime: number;
+  cpuTime: number;
+  builderTime: number;
+  memoryPeak: number;
+}
+
+export interface AnalyzerComparisonResult {
+  fixture: string;
+  timestamp: string;
+  scale: FixtureScale;
+  ts: BenchmarkResult;
+  swc: BenchmarkResult;
+  speedup: SpeedupMetrics;
 }
 
 /**
@@ -291,6 +310,77 @@ export function formatBenchmarkResult(result: BenchmarkResult): string {
     lines.push(formatSingleMetrics(result.max, "Maximum"));
   }
 
+  return lines.join("\n");
+}
+
+/**
+ * Create a comparison result from two benchmark results.
+ */
+export function createComparisonResult(
+  ts: BenchmarkResult,
+  swc: BenchmarkResult,
+): AnalyzerComparisonResult {
+  return {
+    fixture: ts.fixture,
+    timestamp: new Date().toISOString(),
+    scale: ts.scale,
+    ts,
+    swc,
+    speedup: {
+      wallTime: ts.average.wallTimeMs / swc.average.wallTimeMs,
+      cpuTime: ts.average.cpuTimeMs / swc.average.cpuTimeMs,
+      builderTime: ts.average.builderDurationMs / swc.average.builderDurationMs,
+      memoryPeak: ts.average.memory.heapUsed.peak / swc.average.memory.heapUsed.peak,
+    },
+  };
+}
+
+/**
+ * Format a comparison row for the comparison table.
+ */
+function formatComparisonRow(
+  label: string,
+  tsValue: number,
+  swcValue: number,
+  speedup: number,
+  isMemory = false,
+): string {
+  const format = isMemory ? formatBytes : formatMs;
+  return `${label.padEnd(20)}${format(tsValue).padStart(12)}${format(swcValue).padStart(12)}${speedup.toFixed(2).concat("x").padStart(12)}`;
+}
+
+/**
+ * Format the winner line for comparison output.
+ */
+function formatWinnerLine(speedup: SpeedupMetrics): string {
+  const winner = speedup.wallTime > 1 ? "SWC" : "TS";
+  const percent = Math.abs((speedup.wallTime - 1) * 100).toFixed(0);
+  return `Winner: ${winner} (${percent}% faster on wall time)`;
+}
+
+/**
+ * Format analyzer comparison result for human-readable console output.
+ */
+export function formatComparisonResult(result: AnalyzerComparisonResult): string {
+  const { ts, swc, speedup } = result;
+  const lines: string[] = [
+    "=".repeat(60),
+    "ANALYZER COMPARISON",
+    "=".repeat(60),
+    "",
+    `Fixture: ${result.fixture}`,
+    `Iterations: ${ts.iterations.length}`,
+    "",
+    `${"".padEnd(20)}${"TS".padStart(12)}${"SWC".padStart(12)}${"Speedup".padStart(12)}`,
+    "─".repeat(56),
+    formatComparisonRow("Wall Time", ts.average.wallTimeMs, swc.average.wallTimeMs, speedup.wallTime),
+    formatComparisonRow("CPU Time", ts.average.cpuTimeMs, swc.average.cpuTimeMs, speedup.cpuTime),
+    formatComparisonRow("Builder Time", ts.average.builderDurationMs, swc.average.builderDurationMs, speedup.builderTime),
+    formatComparisonRow("Memory Peak", ts.average.memory.heapUsed.peak, swc.average.memory.heapUsed.peak, speedup.memoryPeak, true),
+    "─".repeat(56),
+    "",
+    formatWinnerLine(speedup),
+  ];
   return lines.join("\n");
 }
 
