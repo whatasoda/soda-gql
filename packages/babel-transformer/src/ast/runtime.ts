@@ -1,17 +1,17 @@
 import { types as t } from "@babel/core";
-import type { RuntimeModelInput } from "@soda-gql/core/runtime";
+import type { RuntimeFragmentInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
-import type { BabelGqlCallModel, BabelGqlCallOperation } from "./analysis";
+import type { BabelGqlCallFragment, BabelGqlCallOperation } from "./analysis";
 import { buildObjectExpression } from "./ast";
 
-export const buildModelRuntimeCall = ({
+export const buildFragmentRuntimeCall = ({
   artifact,
-}: BabelGqlCallModel & { filename: string }): Result<t.Expression, PluginError> => {
+}: BabelGqlCallFragment & { filename: string }): Result<t.Expression, PluginError> => {
   return ok(
-    t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("model")), [
+    t.callExpression(t.memberExpression(t.identifier("gqlRuntime"), t.identifier("fragment")), [
       buildObjectExpression({
-        prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>({
+        prebuild: buildObjectExpression<keyof RuntimeFragmentInput["prebuild"]>({
           typename: t.stringLiteral(artifact.prebuild.typename),
         }),
       }),

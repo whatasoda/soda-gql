@@ -4,8 +4,8 @@ import type {
   AnyMetadataAdapter,
   DefaultMetadataAdapter,
   ExtractAdapterTypes,
+  FragmentMetaInfo,
   MetadataBuilder,
-  ModelMetaInfo,
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
@@ -13,8 +13,8 @@ import type { InputTypeSpecifiers } from "../types/type-foundation";
 
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
+import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
-import { withModelUsageCollection } from "./model-usage-context";
 
 export const createOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
@@ -25,8 +25,8 @@ export const createOperationComposerFactory = <
 ) => {
   const resolvedAdapter = adapter ?? (defaultMetadataAdapter as TAdapter);
 
-  type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
-  type TAggregatedModelMetadata = ExtractAdapterTypes<TAdapter>["aggregatedModelMetadata"];
+  type TFragmentMetadata = ExtractAdapterTypes<TAdapter>["fragmentMetadata"];
+  type TAggregatedFragmentMetadata = ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"];
   type TSchemaLevel = ExtractAdapterTypes<TAdapter>["schemaLevel"];
 
   return <TOperationType extends OperationType>(operationType: TOperationType) => {
@@ -48,7 +48,7 @@ export const createOperationComposerFactory = <
         metadata?: MetadataBuilder<
           ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
           TOperationMetadata,
-          TAggregatedModelMetadata,
+          TAggregatedFragmentMetadata,
           TSchemaLevel
         >;
       },
@@ -66,8 +66,8 @@ export const createOperationComposerFactory = <
         const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
         const f = createFieldFactories(schema, operationTypeName);
 
-        // Collect model usages during field building
-        const { result: fields, usages: modelUsages } = withModelUsageCollection(() => mergeFields(fieldBuilder({ f, $ })));
+        // Collect fragment usages during field building
+        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => mergeFields(fieldBuilder({ f, $ })));
 
         const document = buildDocument({
           operationName,
@@ -85,51 +85,53 @@ export const createOperationComposerFactory = <
           metadata,
         });
 
-        // Check if any model has a metadata builder
-        const hasModelMetadata = modelUsages.some((u) => u.metadataBuilder);
+        // Check if any fragment has a metadata builder
+        const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);
 
-        if (!hasModelMetadata && !options.metadata) {
+        if (!hasFragmentMetadata && !options.metadata) {
           // No metadata to evaluate
           return createDefinition(undefined);
         }
 
-        // Evaluate model metadata first (sync or async)
-        const modelMetadataResults: (TModelMetadata | undefined | Promise<TModelMetadata>)[] = modelUsages.map((usage) =>
-          usage.metadataBuilder ? usage.metadataBuilder() : undefined,
+        // Evaluate fragment metadata first (sync or async)
+        const fragmentMetadataResults: (TFragmentMetadata | undefined | Promise<TFragmentMetadata>)[] = fragmentUsages.map(
+          (usage) => (usage.metadataBuilder ? usage.metadataBuilder() : undefined),
         );
 
-        // Check if any model metadata is async
-        const hasAsyncModelMetadata = modelMetadataResults.some((r) => r instanceof Promise);
+        // Check if any fragment metadata is async
+        const hasAsyncFragmentMetadata = fragmentMetadataResults.some((r) => r instanceof Promise);
 
         // Helper to aggregate and call operation metadata builder
         const buildOperationMetadata = (
-          resolvedModelMetadata: (TModelMetadata | undefined)[],
+          resolvedFragmentMetadata: (TFragmentMetadata | undefined)[],
         ): TOperationMetadata | undefined | Promise<TOperationMetadata | undefined> => {
-          // Build ModelMetaInfo array for adapter
-          const modelMetaInfos: ModelMetaInfo<TModelMetadata>[] = modelUsages.map((usage, index) => ({
-            metadata: resolvedModelMetadata[index],
+          // Build FragmentMetaInfo array for adapter
+          const fragmentMetaInfos: FragmentMetaInfo<TFragmentMetadata>[] = fragmentUsages.map((usage, index) => ({
+            metadata: resolvedFragmentMetadata[index],
             fieldPath: usage.path,
           }));
 
           // Aggregate using the adapter
-          const aggregatedModelMetadata = resolvedAdapter.aggregateModelMetadata(modelMetaInfos) as TAggregatedModelMetadata;
+          const aggregatedFragmentMetadata = resolvedAdapter.aggregateFragmentMetadata(
+            fragmentMetaInfos,
+          ) as TAggregatedFragmentMetadata;
 
-          // Call operation metadata builder with aggregated model metadata and schema-level config
+          // Call operation metadata builder with aggregated fragment metadata and schema-level config
           const schemaLevel = resolvedAdapter.schemaLevel as TSchemaLevel | undefined;
-          return options.metadata?.({ $, document, modelMetadata: aggregatedModelMetadata, schemaLevel });
+          return options.metadata?.({ $, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
         };
 
-        if (hasAsyncModelMetadata) {
-          // Handle async model metadata
-          return Promise.all(modelMetadataResults).then(async (resolvedModelMetadata) => {
-            const operationMetadata = await buildOperationMetadata(resolvedModelMetadata);
+        if (hasAsyncFragmentMetadata) {
+          // Handle async fragment metadata
+          return Promise.all(fragmentMetadataResults).then(async (resolvedFragmentMetadata) => {
+            const operationMetadata = await buildOperationMetadata(resolvedFragmentMetadata);
             return createDefinition(operationMetadata);
           });
         }
 
-        // All model metadata is sync, evaluate operation metadata
-        const syncModelMetadata = modelMetadataResults as (TModelMetadata | undefined)[];
-        const operationMetadataResult = buildOperationMetadata(syncModelMetadata);
+        // All fragment metadata is sync, evaluate operation metadata
+        const syncFragmentMetadata = fragmentMetadataResults as (TFragmentMetadata | undefined)[];
+        const operationMetadataResult = buildOperationMetadata(syncFragmentMetadata);
 
         if (operationMetadataResult instanceof Promise) {
           return operationMetadataResult.then(createDefinition);

@@ -1,6 +1,6 @@
 import type { CanonicalId } from "@soda-gql/common";
 import { z } from "zod";
-import type { BuilderArtifactModel, BuilderArtifactOperation } from "../artifact/types";
+import type { BuilderArtifactFragment, BuilderArtifactOperation } from "../artifact/types";
 
 const BuilderArtifactElementMetadataSchema = z.object({
   sourcePath: z.string(),
@@ -23,20 +23,23 @@ declare function __validate_BuilderArtifactOperationSchema<
   _ extends z.infer<typeof BuilderArtifactOperationSchema> = BuilderArtifactOperation,
 >(): never;
 
-const BuilderArtifactModelSchema = z.object({
+const BuilderArtifactFragmentSchema = z.object({
   id: z.string<CanonicalId>(),
-  type: z.literal("model"),
+  type: z.literal("fragment"),
   metadata: BuilderArtifactElementMetadataSchema,
   prebuild: z.object({
     typename: z.string(),
   }),
 });
 
-declare function __validate_BuilderArtifactModelSchema<
-  _ extends z.infer<typeof BuilderArtifactModelSchema> = BuilderArtifactModel,
+declare function __validate_BuilderArtifactFragmentSchema<
+  _ extends z.infer<typeof BuilderArtifactFragmentSchema> = BuilderArtifactFragment,
 >(): never;
 
-const BuilderArtifactElementSchema = z.discriminatedUnion("type", [BuilderArtifactOperationSchema, BuilderArtifactModelSchema]);
+const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
+  BuilderArtifactOperationSchema,
+  BuilderArtifactFragmentSchema,
+]);
 
 export const BuilderArtifactSchema = z.object({
   elements: z.record(z.string<CanonicalId>(), BuilderArtifactElementSchema),

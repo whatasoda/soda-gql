@@ -5,8 +5,8 @@
 //
 // In a real codebase, this pattern may not transform correctly:
 //   class UserRepository {
-//     private userModel = gql.default(({ model }) => ...);
-//     static sharedModel = gql.default(({ model }) => ...);
+//     private userFragment = gql.default(({ fragment }) => ...);
+//     static sharedModel = gql.default(({ fragment }) => ...);
 //   }
 
 export const placeholder = "class-properties-test";

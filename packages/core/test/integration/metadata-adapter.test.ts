@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
-import type { MetadataAdapter, ModelMetaInfo, OperationMetadata } from "../../src/types/metadata";
+import type { FragmentMetaInfo, MetadataAdapter, OperationMetadata } from "../../src/types/metadata";
 import { defaultMetadataAdapter } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
@@ -55,40 +55,40 @@ type Schema = typeof schema & { _?: never };
 
 describe("metadata adapter", () => {
   describe("default adapter", () => {
-    it("aggregates model metadata as readonly array", () => {
+    it("aggregates fragment metadata as readonly array", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
-      // Create a model with metadata
-      const userModel = gql(({ model }) =>
-        model.User(
+      // Create a fragment with metadata
+      const userFragment = gql(({ fragment }) =>
+        fragment.User(
           {
             metadata: () => ({
-              headers: { "X-User-Model": "true" },
+              headers: { "X-User-Fragment": "true" },
             }),
           },
           ({ f }) => [f.id(), f.name()],
         ),
       );
 
-      // Create operation that embeds the model
+      // Create operation that embeds the fragment
       const operation = gql(({ query }, { $var }) =>
         query.operation(
           {
             name: "GetUser",
             variables: [$var("id").scalar("ID:!")],
-            metadata: ({ modelMetadata }) => ({
-              custom: { modelCount: modelMetadata?.length ?? 0 },
+            metadata: ({ fragmentMetadata }) => ({
+              custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.embed()])],
+          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
         ),
       );
 
       const meta = operation.metadata as OperationMetadata;
-      expect(meta.custom?.modelCount).toBe(1);
+      expect(meta.custom?.fragmentCount).toBe(1);
     });
 
-    it("works with operations without embedded models", () => {
+    it("works with operations without embedded fragments", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
@@ -96,8 +96,8 @@ describe("metadata adapter", () => {
           {
             name: "GetUser",
             variables: [$var("id").scalar("ID:!")],
-            metadata: ({ modelMetadata }) => ({
-              custom: { modelCount: modelMetadata?.length ?? 0 },
+            metadata: ({ fragmentMetadata }) => ({
+              custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
             }),
           },
           ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
@@ -105,25 +105,25 @@ describe("metadata adapter", () => {
       );
 
       const meta = operation.metadata as OperationMetadata;
-      expect(meta.custom?.modelCount).toBe(0);
+      expect(meta.custom?.fragmentCount).toBe(0);
     });
 
     it("defaultMetadataAdapter instance works correctly", () => {
-      const models: ModelMetaInfo<OperationMetadata>[] = [
+      const fragments: FragmentMetaInfo<OperationMetadata>[] = [
         { metadata: { headers: { a: "1" } }, fieldPath: null },
         { metadata: { headers: { b: "2" } }, fieldPath: null },
         { metadata: undefined, fieldPath: null },
       ];
 
-      const result = defaultMetadataAdapter.aggregateModelMetadata(models);
+      const result = defaultMetadataAdapter.aggregateFragmentMetadata(fragments);
 
       expect(result).toEqual([{ headers: { a: "1" } }, { headers: { b: "2" } }, undefined]);
     });
   });
 
   describe("custom adapter", () => {
-    // Custom model metadata type
-    type CustomModelMetadata = {
+    // Custom fragment metadata type
+    type CustomFragmentMetadata = {
       readonly headers: Record<string, string>;
     };
 
@@ -133,28 +133,28 @@ describe("metadata adapter", () => {
     };
 
     // Custom adapter that merges all headers
-    const headerMergingAdapter: MetadataAdapter<CustomModelMetadata, MergedHeaders> = {
-      aggregateModelMetadata: (models) => {
+    const headerMergingAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
+      aggregateFragmentMetadata: (fragments) => {
         const allHeaders: Record<string, string> = {};
-        for (const model of models) {
-          if (model.metadata) {
-            Object.assign(allHeaders, model.metadata.headers);
+        for (const fragment of fragments) {
+          if (fragment.metadata) {
+            Object.assign(allHeaders, fragment.metadata.headers);
           }
         }
         return { allHeaders };
       },
     };
 
-    it("supports custom model metadata types", () => {
+    it("supports custom fragment metadata types", () => {
       const gql = createGqlElementComposer<Schema, object, typeof headerMergingAdapter>(schema, {
         adapter: headerMergingAdapter,
       });
 
-      const userModel = gql(({ model }) =>
-        model.User(
+      const userFragment = gql(({ fragment }) =>
+        fragment.User(
           {
             metadata: () => ({
-              headers: { "X-User-Model": "user-value" },
+              headers: { "X-User-Fragment": "user-value" },
             }),
           },
           ({ f }) => [f.id(), f.name()],
@@ -166,25 +166,25 @@ describe("metadata adapter", () => {
           {
             name: "GetUser",
             variables: [$var("id").scalar("ID:!")],
-            metadata: ({ modelMetadata }) => ({
-              mergedHeaders: modelMetadata?.allHeaders,
+            metadata: ({ fragmentMetadata }) => ({
+              mergedHeaders: fragmentMetadata?.allHeaders,
             }),
           },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.embed()])],
+          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
         ),
       );
 
       expect(operation.metadata).toEqual({
-        mergedHeaders: { "X-User-Model": "user-value" },
+        mergedHeaders: { "X-User-Fragment": "user-value" },
       });
     });
 
-    it("calls aggregateModelMetadata with ModelMetaInfo array", () => {
-      const capturedModels: ModelMetaInfo<CustomModelMetadata>[] = [];
+    it("calls aggregateFragmentMetadata with FragmentMetaInfo array", () => {
+      const capturedFragments: FragmentMetaInfo<CustomFragmentMetadata>[] = [];
 
-      const capturingAdapter: MetadataAdapter<CustomModelMetadata, MergedHeaders> = {
-        aggregateModelMetadata: (models) => {
-          capturedModels.push(...models);
+      const capturingAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
+        aggregateFragmentMetadata: (fragments) => {
+          capturedFragments.push(...fragments);
           return { allHeaders: {} };
         },
       };
@@ -193,8 +193,8 @@ describe("metadata adapter", () => {
         adapter: capturingAdapter,
       });
 
-      const userModel = gql(({ model }) =>
-        model.User(
+      const userFragment = gql(({ fragment }) =>
+        fragment.User(
           {
             metadata: () => ({
               headers: { "X-Test": "value" },
@@ -211,15 +211,15 @@ describe("metadata adapter", () => {
             variables: [$var("id").scalar("ID:!")],
             metadata: () => ({}),
           },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.embed()])],
+          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
         ),
       );
 
       // Trigger evaluation by accessing metadata
       expect(operation.metadata).toBeDefined();
 
-      expect(capturedModels.length).toBe(1);
-      expect(capturedModels[0]?.metadata).toEqual({ headers: { "X-Test": "value" } });
+      expect(capturedFragments.length).toBe(1);
+      expect(capturedFragments[0]?.metadata).toEqual({ headers: { "X-Test": "value" } });
     });
 
     it("provides aggregated metadata to operation callback", () => {
@@ -227,8 +227,8 @@ describe("metadata adapter", () => {
         adapter: headerMergingAdapter,
       });
 
-      const userModel = gql(({ model }) =>
-        model.User(
+      const userFragment = gql(({ fragment }) =>
+        fragment.User(
           {
             metadata: () => ({
               headers: { "X-User": "user" },
@@ -238,8 +238,8 @@ describe("metadata adapter", () => {
         ),
       );
 
-      const postModel = gql(({ model }) =>
-        model.Post(
+      const postFragment = gql(({ fragment }) =>
+        fragment.Post(
           {
             metadata: () => ({
               headers: { "X-Post": "post" },
@@ -254,18 +254,18 @@ describe("metadata adapter", () => {
           {
             name: "GetUserWithPosts",
             variables: [$var("id").scalar("ID:!")],
-            metadata: ({ modelMetadata }) => ({
-              allHeaders: modelMetadata?.allHeaders,
+            metadata: ({ fragmentMetadata }) => ({
+              allHeaders: fragmentMetadata?.allHeaders,
             }),
           },
           ({ f, $ }) => [
-            f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.posts()(() => [postModel.embed()])]),
-            f.post({ id: $.id })(() => [userModel.embed()]),
+            f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.posts()(() => [postFragment.embed()])]),
+            f.post({ id: $.id })(() => [userFragment.embed()]),
           ],
         ),
       );
 
-      // Both model headers should be merged
+      // Both fragment headers should be merged
       expect(operation.metadata).toEqual({
         allHeaders: {
           "X-User": "user",
@@ -275,14 +275,14 @@ describe("metadata adapter", () => {
     });
   });
 
-  describe("model without metadata builder", () => {
-    it("passes undefined metadata in ModelMetaInfo", () => {
-      const capturedModels: ModelMetaInfo<OperationMetadata>[] = [];
+  describe("fragment without metadata builder", () => {
+    it("passes undefined metadata in FragmentMetaInfo", () => {
+      const capturedFragments: FragmentMetaInfo<OperationMetadata>[] = [];
 
       const capturingAdapter: MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]> = {
-        aggregateModelMetadata: (models) => {
-          capturedModels.push(...models);
-          return models.map((m) => m.metadata);
+        aggregateFragmentMetadata: (fragments) => {
+          capturedFragments.push(...fragments);
+          return fragments.map((m) => m.metadata);
         },
       };
 
@@ -290,8 +290,8 @@ describe("metadata adapter", () => {
         adapter: capturingAdapter,
       });
 
-      // Model without metadata
-      const userModel = gql(({ model }) => model.User({}, ({ f }) => [f.id()]));
+      // Fragment without metadata
+      const userFragment = gql(({ fragment }) => fragment.User({}, ({ f }) => [f.id()]));
 
       const operation = gql(({ query }, { $var }) =>
         query.operation(
@@ -300,15 +300,15 @@ describe("metadata adapter", () => {
             variables: [$var("id").scalar("ID:!")],
             metadata: () => ({}),
           },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userModel.embed()])],
+          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
         ),
       );
 
       // Trigger evaluation by accessing metadata
       expect(operation.metadata).toBeDefined();
 
-      expect(capturedModels.length).toBe(1);
-      expect(capturedModels[0]?.metadata).toBeUndefined();
+      expect(capturedFragments.length).toBe(1);
+      expect(capturedFragments[0]?.metadata).toBeUndefined();
     });
   });
 

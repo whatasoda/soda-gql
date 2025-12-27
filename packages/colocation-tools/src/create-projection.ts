@@ -1,13 +1,13 @@
-import type { Model } from "@soda-gql/core";
+import type { Fragment } from "@soda-gql/core";
 import { Projection } from "./projection";
 import type { SlicedExecutionResult } from "./sliced-execution-result";
 import type { Tuple } from "./utils/type-utils";
 
-// biome-ignore lint/suspicious/noExplicitAny: Type alias for any Model regardless of type parameters
-type AnyModel = Model<string, any, any, any>;
+// biome-ignore lint/suspicious/noExplicitAny: Type alias for any Fragment regardless of type parameters
+type AnyFragment = Fragment<string, any, any, any>;
 
 /**
- * Options for creating a projection from a Model.
+ * Options for creating a projection from a Fragment.
  */
 export type CreateProjectionOptions<TOutput extends object, TProjected> = {
   /**
@@ -23,7 +23,7 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
 
   /**
    * Handler function to transform the sliced execution result.
-   * Receives a SlicedExecutionResult with the Model's output type.
+   * Receives a SlicedExecutionResult with the Fragment's output type.
    * Handles all cases: success, error, and empty.
    *
    * @example
@@ -40,22 +40,22 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
 };
 
 /**
- * Creates a type-safe projection from a Model.
+ * Creates a type-safe projection from a Fragment.
  *
  * The projection extracts and transforms data from GraphQL execution results,
- * with full type inference from the Model's output type.
+ * with full type inference from the Fragment's output type.
  *
- * Note: The Model parameter is used only for type inference.
+ * Note: The Fragment parameter is used only for type inference.
  * The actual paths must be specified explicitly.
  *
- * @param _model - The Model to infer types from (used for type inference only)
+ * @param _fragment - The Fragment to infer types from (used for type inference only)
  * @param options - Projection options including paths and handle function
  * @returns A Projection that can be used with createExecutionResultParser
  *
  * @example
  * ```typescript
- * const userFragment = gql(({ model }) =>
- *   model.Query({ variables: [...] }, ({ f, $ }) => [
+ * const userFragment = gql(({ fragment }) =>
+ *   fragment.Query({ variables: [...] }, ({ f, $ }) => [
  *     f.user({ id: $.userId })(({ f }) => [f.id(), f.name()]),
  *   ])
  * );
@@ -71,9 +71,9 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
  * });
  * ```
  */
-export const createProjection = <TModel extends AnyModel, TProjected>(
-  _model: TModel,
-  options: CreateProjectionOptions<TModel["$infer"]["output"], TProjected>,
+export const createProjection = <TFragment extends AnyFragment, TProjected>(
+  _fragment: TFragment,
+  options: CreateProjectionOptions<TFragment["$infer"]["output"], TProjected>,
 ): Projection<TProjected> => {
   return new Projection(options.paths, options.handle);
 };

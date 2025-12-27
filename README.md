@@ -6,8 +6,8 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 - 🔍 **Full Type Safety**: Complete TypeScript inference from schema to query results
 - 🎯 **No Code Generation Loop**: Unlike traditional GraphQL codegen, no constant regeneration needed
-- 🔧 **Transform Functions**: Built-in data normalization at the model level
-- 📦 **Modular Architecture**: Compose queries from reusable models
+- 🔧 **Transform Functions**: Built-in data normalization at the fragment level
+- 📦 **Modular Architecture**: Compose queries from reusable fragments
 - ⚡ **Instant Feedback**: Type errors appear immediately in your IDE
 
 ## Project Structure
@@ -69,9 +69,9 @@ The generated runtime module imports your scalar and adapter implementations. Ke
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Define a reusable model with array-based API
-export const userModel = gql.default(({ model }, { $var }) =>
-  model.User(
+// Define a reusable fragment with array-based API
+export const userFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.User(
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
@@ -116,18 +116,18 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
   ),
 );
 
-// Operation with embedded model
-export const profileQueryWithModel = gql.default(({ query }, { $var }) =>
+// Operation with embedded fragment
+export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
   query.operation(
     {
-      name: "ProfileQueryWithModel",
+      name: "ProfileQueryWithFragment",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
     },
     ({ f, $ }) => [
       f.users({
         id: [$.userId],
         categoryId: $.categoryId,
-      })(({ f }) => [userModel.embed({ categoryId: $.categoryId })]),
+      })(({ f }) => [userFragment.embed({ categoryId: $.categoryId })]),
     ],
   ),
 );

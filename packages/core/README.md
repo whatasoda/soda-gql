@@ -15,13 +15,13 @@ bun add @soda-gql/core
 
 soda-gql uses two main building blocks for constructing GraphQL operations:
 
-### Models
+### Fragments
 
-Reusable type-safe fragments. Models define how to select fields from a GraphQL type and can be embedded in operations.
+Reusable type-safe field selections. Fragments define how to select fields from a GraphQL type and can be embedded in operations.
 
 ### Operations
 
-Complete GraphQL operations (query/mutation/subscription) with field selections. Operations define variables, select fields, and can embed models for reusable field selections.
+Complete GraphQL operations (query/mutation/subscription) with field selections. Operations define variables, select fields, and can embed fragments for reusable field selections.
 
 ## Usage
 
@@ -31,13 +31,13 @@ All soda-gql definitions use the `gql.default()` pattern, which is provided by t
 import { gql } from "@/graphql-system";
 ```
 
-### Writing Models
+### Writing Fragments
 
-Models define reusable fragments for a specific GraphQL type:
+Fragments define reusable field selections for a specific GraphQL type:
 
 ```typescript
-export const userModel = gql.default(({ model }, { $var }) =>
-  model.User(
+export const userFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.User(
     { variables: [$var("includeEmail").scalar("Boolean:?")] },
     ({ f, $ }) => [
       f.id(),
@@ -65,15 +65,15 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
   ),
 );
 
-// Operation with embedded model
-export const getUserWithModel = gql.default(({ query }, { $var }) =>
+// Operation with embedded fragment
+export const getUserWithFragment = gql.default(({ query }, { $var }) =>
   query.operation(
     {
-      name: "GetUserWithModel",
+      name: "GetUserWithFragment",
       variables: [$var("id").scalar("ID:!"), $var("includeEmail").scalar("Boolean:?")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [userModel.embed({ includeEmail: $.includeEmail })]),
+      f.user({ id: $.id })(({ f }) => [userFragment.embed({ includeEmail: $.includeEmail })]),
     ],
   ),
 );
@@ -100,7 +100,7 @@ Variables are declared using a string-based type syntax:
 | `f.posts()(({ f }) => [...])` | Nested selection (curried) |
 | `f.id(null, { alias: "uuid" })` | Field with alias |
 | `f.email({ if: $.includeEmail })` | Conditional field |
-| `userModel.embed({})` | Use model fragment |
+| `userFragment.embed({})` | Use fragment fields |
 
 ## Defining Custom Scalars
 
@@ -140,9 +140,9 @@ export const scalar = {
 Extract TypeScript types from soda-gql elements using `$infer`:
 
 ```typescript
-// Model types
-type UserInput = typeof userModel.$infer.input;
-type UserOutput = typeof userModel.$infer.output;
+// Fragment types
+type UserInput = typeof userFragment.$infer.input;
+type UserOutput = typeof userFragment.$infer.output;
 
 // Operation types
 type QueryVariables = typeof getUserQuery.$infer.input;

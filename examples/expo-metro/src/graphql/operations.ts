@@ -1,5 +1,5 @@
 import { gql } from "@/graphql-system";
-import { userModel } from "./models";
+import { userFragment } from "./fragments";
 
 /**
  * Query operation to fetch a single user
@@ -10,7 +10,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       name: "GetUser",
       variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
     },
-    ({ f, $ }) => [f.user({ id: $.userId })(() => [userModel.embed({ categoryId: $.categoryId })])],
+    ({ f, $ }) => [f.user({ id: $.userId })(() => [userFragment.embed({ categoryId: $.categoryId })])],
   ),
 );
 

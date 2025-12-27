@@ -1,5 +1,5 @@
 import { gql } from "../../../codegen-fixture/graphql-system";
-import { userModel } from "./models";
+import { userFragment } from "./fragments";
 
 export const getUserById = gql.default(({ query }, { $var }) =>
   query.operation(
@@ -11,7 +11,7 @@ export const getUserById = gql.default(({ query }, { $var }) =>
       //
       f.user({ id: $.id })(() => [
         //
-        userModel.embed(),
+        userFragment.embed(),
       ]),
     ],
   ),

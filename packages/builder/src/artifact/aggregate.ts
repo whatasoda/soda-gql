@@ -47,11 +47,11 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         contentHash: "", // Will be computed after prebuild creation
       };
 
-      if (element.type === "model") {
+      if (element.type === "fragment") {
         const prebuild = { typename: element.element.typename };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
-          type: "model",
+          type: "fragment",
           prebuild,
           metadata: { ...metadata, contentHash: computeContentHash(prebuild) },
         });

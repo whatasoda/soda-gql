@@ -2,7 +2,7 @@ export type {
   BuilderArtifact,
   BuilderArtifactElement,
   BuilderArtifactElementMetadata,
-  BuilderArtifactModel,
+  BuilderArtifactFragment,
   BuilderArtifactOperation,
 } from "./artifact/types";
 export type {

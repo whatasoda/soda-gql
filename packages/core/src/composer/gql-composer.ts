@@ -1,12 +1,12 @@
-import type { AnyModel, AnyOperation } from "../types/element";
+import type { AnyFragment, AnyOperation } from "../types/element";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
-import { createGqlModelComposers } from "./model";
+import { createGqlFragmentComposers } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder } from "./var-builder";
 
-export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyModel | AnyOperation>(
+export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyFragment | AnyOperation>(
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
@@ -27,13 +27,13 @@ export const createGqlElementComposer = <
   options: GqlElementComposerOptions<NoInfer<THelpers>, NoInfer<TAdapter>> = {} as GqlElementComposerOptions<THelpers, TAdapter>,
 ) => {
   const { helpers, adapter } = options;
-  const model = createGqlModelComposers<TSchema, TAdapter>(schema, adapter);
+  const fragment = createGqlFragmentComposers<TSchema, TAdapter>(schema, adapter);
   const createOperationComposer = createOperationComposerFactory<TSchema, TAdapter>(schema, adapter);
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
   const composers = {
-    model,
+    fragment,
     query: { operation: createOperationComposer("query") },
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },

@@ -2,15 +2,15 @@ export type {
   AnyMetadataAdapter,
   DefaultMetadataAdapter,
   ExtractAdapterTypes,
+  FragmentMetaInfo,
   MetadataAdapter,
-  ModelMetaInfo,
 } from "./adapter";
 export { createDefaultAdapter, defaultMetadataAdapter } from "./adapter";
 export type {
   ExtractMetadata,
+  FragmentMetadataBuilder,
+  FragmentMetadataBuilderTools,
   MetadataBuilder,
   MetadataBuilderTools,
-  ModelMetadataBuilder,
-  ModelMetadataBuilderTools,
   OperationMetadata,
 } from "./metadata";

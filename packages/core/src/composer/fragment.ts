@@ -1,57 +1,57 @@
-import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
+import { type FieldsBuilder, Fragment, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
-import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, ModelMetadataBuilder } from "../types/metadata";
+import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { getCurrentFieldPath } from "./field-path-context";
 import { createFieldFactories } from "./fields-builder";
+import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
-import { recordModelUsage } from "./model-usage-context";
 
-export const createGqlModelComposers = <
+export const createGqlFragmentComposers = <
   TSchema extends AnyGraphqlSchema,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 >(
   schema: NoInfer<TSchema>,
   _adapter?: TAdapter,
 ) => {
-  type TModelMetadata = ExtractAdapterTypes<TAdapter>["modelMetadata"];
+  type TFragmentMetadata = ExtractAdapterTypes<TAdapter>["fragmentMetadata"];
 
-  type ModelBuilder<TTypeName extends keyof TSchema["object"] & string> = <
+  type FragmentBuilder<TTypeName extends keyof TSchema["object"] & string> = <
     TFieldEntries extends AnyFields[],
     TVarDefinitions extends InputTypeSpecifiers[] = [{}],
   >(
     options: {
       variables?: TVarDefinitions;
-      metadata?: ModelMetadataBuilder<
+      metadata?: FragmentMetadataBuilder<
         ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
-        TModelMetadata
+        TFragmentMetadata
       >;
     },
     builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
-  ) => ReturnType<typeof Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>>;
+  ) => ReturnType<typeof Fragment.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>>;
 
-  const createModelComposer = <TTypeName extends keyof TSchema["object"] & string>(
+  const createFragmentComposer = <TTypeName extends keyof TSchema["object"] & string>(
     typename: TTypeName,
-  ): ModelBuilder<TTypeName> => {
+  ): FragmentBuilder<TTypeName> => {
     return <TFieldEntries extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(
       options: {
         variables?: TVarDefinitions;
-        metadata?: ModelMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, TModelMetadata>;
+        metadata?: FragmentMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, TFragmentMetadata>;
       },
       builder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>,
     ) => {
       const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
       const { metadata } = options;
 
-      return Model.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => ({
+      return Fragment.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => ({
         typename,
         embed: (variables) => {
           const f = createFieldFactories(schema, typename);
           const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
 
-          recordModelUsage({
+          recordFragmentUsage({
             metadataBuilder: metadata ? () => metadata({ $ }) : null,
             path: getCurrentFieldPath(),
           });
@@ -62,13 +62,13 @@ export const createGqlModelComposers = <
     };
   };
 
-  type ModelBuildersAll = {
-    readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string ? ModelBuilder<TTypeName> : never;
+  type FragmentBuildersAll = {
+    readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string ? FragmentBuilder<TTypeName> : never;
   };
 
   // Include operation roots (Query, Mutation, Subscription) for fragment colocation
   // These allow defining reusable fragments on operation root types
-  type ModelBuilders = ModelBuildersAll;
+  type FragmentBuilders = FragmentBuildersAll;
 
-  return mapValues(schema.object, (_, typename) => createModelComposer(typename)) as ModelBuilders;
+  return mapValues(schema.object, (_, typename) => createFragmentComposer(typename)) as FragmentBuilders;
 };

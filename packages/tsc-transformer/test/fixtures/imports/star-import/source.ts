@@ -5,6 +5,6 @@
 //
 // In a real codebase, this would NOT be transformed due to builder limitation:
 //   import * as gqlSystem from "@/graphql-system";
-//   export const userModel = gqlSystem.gql.default(({ model }) => ...);
+//   export const userFragment = gqlSystem.gql.default(({ fragment }) => ...);
 
 export const placeholder = "star-import-test";

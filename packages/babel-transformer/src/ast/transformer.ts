@@ -5,7 +5,7 @@ import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
+import { buildFragmentRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callPath: NodePath<t.CallExpression>;
@@ -50,8 +50,8 @@ const replaceWithRuntimeCall = (
   gqlCall: BabelGqlCall,
   filename: string,
 ): Result<TransformCallExpressionResult, PluginError> => {
-  if (gqlCall.type === "model") {
-    const result = buildModelRuntimeCall({ ...gqlCall, filename });
+  if (gqlCall.type === "fragment") {
+    const result = buildFragmentRuntimeCall({ ...gqlCall, filename });
     if (result.isErr()) {
       return err(result.error);
     }

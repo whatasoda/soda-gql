@@ -115,17 +115,17 @@ bun run soda-gql builder \
 
 ## Basic Usage
 
-### Step 1: Define Models with `gql.default`
+### Step 1: Define Fragments with `gql.default`
 
-Models are declared with `model.<TypeName>(options, fieldsBuilder, normalize)` using the array-based API. The fields builder receives `f` for selections and `$` for model-scoped variables, and returns an array of field selections.
+Fragments are declared with `fragment.<TypeName>(options, fieldsBuilder, normalize)` using the array-based API. The fields builder receives `f` for selections and `$` for fragment-scoped variables, and returns an array of field selections.
 
 ```typescript
-// src/models/user.model.ts
+// src/fragments/user.fragment.ts
 import { gql } from "@/graphql-system";
 
-// Basic user model with field selection
-export const userBasic = gql.default(({ model }) =>
-  model.User(
+// Basic user fragment with field selection
+export const userBasic = gql.default(({ fragment }) =>
+  fragment.User(
     {},
     ({ f }) => [
       //
@@ -140,8 +140,8 @@ export const userBasic = gql.default(({ model }) =>
 );
 
 // User with nested posts selection
-export const userWithPosts = gql.default(({ model }, { $var }) =>
-  model.User(
+export const userWithPosts = gql.default(({ fragment }, { $var }) =>
+  fragment.User(
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
@@ -178,7 +178,7 @@ export type UserWithPosts = ReturnType<typeof userWithPosts["normalize"]>;
 ```typescript
 // src/operations/profile.query.ts
 import { gql } from "@/graphql-system";
-import { userWithPosts } from "../models/user.model";
+import { userWithPosts } from "../fragments/user.fragment";
 
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation(
@@ -229,14 +229,14 @@ const executionResult = await graphqlClient({
 const data = profileQuery.parse(executionResult);
 ```
 
-## Testing Models
+## Testing Fragments
 
 ```typescript
-// src/models/__tests__/user.model.test.ts
+// src/fragments/__tests__/user.fragment.test.ts
 import { describe, expect, test } from "bun:test";
-import { userBasic } from "../user.model";
+import { userBasic } from "../user.fragment";
 
-describe("userBasic model", () => {
+describe("userBasic fragment", () => {
   test("normalizes data", () => {
     const normalized = userBasic.normalize({ id: "1", name: "Ada Lovelace" });
     expect(normalized).toEqual({ id: "1", name: "Ada Lovelace" });
@@ -278,7 +278,7 @@ export const profileQuery = gqlRuntime.getOperation("ProfilePageQuery");
 src/
 ├── entities/
 │   └── user/
-│       └── models/user.model.ts
+│       └── fragments/user.fragment.ts
 ├── features/
 │   └── profile/
 │       └── operations/
@@ -295,7 +295,7 @@ src/
 // src/operations/safe-user.query.ts
 import { err, ok } from "neverthrow";
 import { gql } from "@/graphql-system";
-import { userBasic } from "@/models/user.model";
+import { userBasic } from "@/fragments/user.fragment";
 
 export const safeGetUserQuery = gql.default(({ query }, { $var }) =>
   query.operation(
@@ -331,7 +331,7 @@ async function getUser(id: string) {
 2. Check that TypeScript includes `graphql-system` directory
 3. Restart TypeScript service in your IDE
 
-### Models Not Being Transformed
+### Fragments Not Being Transformed
 
 1. Verify Babel plugin is configured correctly
 2. Check that files are being processed by Babel
@@ -346,5 +346,5 @@ async function getUser(id: string) {
 ## Next Steps
 
 - Explore the type system in `docs/type-system.md`.
-- Review composition patterns in `docs/models.md`.
+- Review composition patterns in `docs/fragments.md`.
 - Check the migration guide in `docs/migration.md`.

@@ -48,7 +48,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toBe("userModel");
+      expect(tsDef.astPath).toBe("userFragment");
     });
 
     it("generates same astPath for nested definitions in functions", () => {
@@ -78,7 +78,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toMatch(/^factory\.arrow#\d+\.model$/);
+      expect(tsDef.astPath).toMatch(/^factory\.arrow#\d+\.fragment$/);
     });
 
     it("generates same astPath for class method definitions", () => {
@@ -93,7 +93,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toBe("UserRepository.getModels.model");
+      expect(tsDef.astPath).toBe("UserRepository.getFragments.fragment");
     });
 
     it("generates same astPath for object property definitions", () => {
@@ -126,10 +126,10 @@ describe("AST Analyzer", () => {
         expect(tsDef.astPath).toBe(swcDef.astPath);
       }
 
-      expect(tsAnalysis.definitions[0]?.astPath).toBe("model1");
-      expect(tsAnalysis.definitions[1]?.astPath).toBe("model2");
-      expect(tsAnalysis.definitions[2]?.astPath).toBe("factory.model1");
-      expect(tsAnalysis.definitions[3]?.astPath).toBe("factory.model2");
+      expect(tsAnalysis.definitions[0]?.astPath).toBe("fragment1");
+      expect(tsAnalysis.definitions[1]?.astPath).toBe("fragment2");
+      expect(tsAnalysis.definitions[2]?.astPath).toBe("factory.fragment1");
+      expect(tsAnalysis.definitions[3]?.astPath).toBe("factory.fragment2");
     });
   });
 
@@ -141,14 +141,14 @@ describe("AST Analyzer", () => {
 
       expect(analysis.definitions).toHaveLength(2);
 
-      const userModel = analysis.definitions.find((d) => d.astPath === "userModel");
-      const privateModel = analysis.definitions.find((d) => d.astPath === "privateModel");
+      const userFragment = analysis.definitions.find((d) => d.astPath === "userFragment");
+      const privateFragment = analysis.definitions.find((d) => d.astPath === "privateFragment");
 
-      expect(userModel?.isExported).toBe(true);
-      expect(userModel?.exportBinding).toBe("userModel");
+      expect(userFragment?.isExported).toBe(true);
+      expect(userFragment?.exportBinding).toBe("userFragment");
 
-      expect(privateModel?.isExported).toBe(false);
-      expect(privateModel?.exportBinding).toBeUndefined();
+      expect(privateFragment?.isExported).toBe(false);
+      expect(privateFragment?.exportBinding).toBeUndefined();
     });
 
     it("detects exported function declarations", () => {
@@ -157,7 +157,7 @@ describe("AST Analyzer", () => {
       const analysis = analyzeWithTS({ filePath, source });
 
       expect(analysis.definitions).toHaveLength(1);
-      expect(analysis.definitions[0]?.astPath).toBe("getModel.model");
+      expect(analysis.definitions[0]?.astPath).toBe("getFragment.fragment");
       expect(analysis.definitions[0]?.isTopLevel).toBe(false);
     });
   });
@@ -183,7 +183,7 @@ describe("AST Analyzer", () => {
       expect(analysis.definitions).toHaveLength(3);
 
       const astPaths = analysis.definitions.map((d) => d.astPath).sort();
-      expect(astPaths).toEqual(["container.model1", "container.model2", "container.model3"]);
+      expect(astPaths).toEqual(["container.fragment1", "container.fragment2", "container.fragment3"]);
     });
   });
 
@@ -197,7 +197,7 @@ describe("AST Analyzer", () => {
         astPath: definition.astPath,
       }));
 
-      expect(summary).toEqual([{ astPath: "userModel" }, { astPath: "pageQuery" }]);
+      expect(summary).toEqual([{ astPath: "userFragment" }, { astPath: "pageQuery" }]);
     });
 
     it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -254,7 +254,7 @@ describe("AST Analyzer", () => {
         astPath: definition.astPath,
       }));
 
-      expect(summary).toEqual([{ astPath: "adminModel" }, { astPath: "defaultQuery" }]);
+      expect(summary).toEqual([{ astPath: "adminFragment" }, { astPath: "defaultQuery" }]);
     });
   });
 
@@ -272,7 +272,7 @@ describe("AST Analyzer", () => {
 
       const analysis = analyzeWithSWC({ filePath, source });
       const names = analysis.definitions.map((item) => item.astPath);
-      expect(names).toContain("user_remoteModel.forIterate");
+      expect(names).toContain("user_remoteFragment.forIterate");
     });
 
     it("collects nested definitions inside functions", () => {

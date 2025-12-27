@@ -5,7 +5,7 @@
 use swc_core::common::{SyntaxContext, DUMMY_SP};
 use swc_core::ecma::ast::*;
 
-use crate::types::{BuilderArtifactElement, ModelPrebuild, OperationPrebuild};
+use crate::types::{BuilderArtifactElement, FragmentPrebuild, OperationPrebuild};
 
 use super::analysis::GqlReplacement;
 
@@ -24,12 +24,12 @@ impl RuntimeCallBuilder {
 
     /// Build replacement expression and optional runtime statement.
     ///
-    /// For models: returns just the replacement expression.
+    /// For fragments: returns just the replacement expression.
     /// For operations: returns both a reference expression and a runtime setup statement.
     pub fn build_replacement(&self, replacement: &GqlReplacement) -> Option<(Expr, Option<Stmt>)> {
         let result = match &replacement.artifact {
-            BuilderArtifactElement::Model { prebuild, .. } => self
-                .build_model_call(prebuild, &replacement.builder_args)
+            BuilderArtifactElement::Fragment { prebuild, .. } => self
+                .build_fragment_call(prebuild, &replacement.builder_args)
                 .map(|expr| (expr, None)),
             BuilderArtifactElement::Operation { prebuild, .. } => {
                 self.build_operation_calls(prebuild)
@@ -38,7 +38,7 @@ impl RuntimeCallBuilder {
 
         if result.is_none() {
             let artifact_type = match &replacement.artifact {
-                BuilderArtifactElement::Model { .. } => "Model",
+                BuilderArtifactElement::Fragment { .. } => "Fragment",
                 BuilderArtifactElement::Operation { .. } => "Operation",
             };
             eprintln!(
@@ -88,13 +88,13 @@ impl RuntimeCallBuilder {
         })
     }
 
-    /// Build a model runtime call.
+    /// Build a fragment runtime call.
     ///
-    /// Input: `model.User({}, fields)`
-    /// Output: `gqlRuntime.model({ prebuild: { typename: "User" } })`
-    fn build_model_call(
+    /// Input: `fragment.User({}, fields)`
+    /// Output: `gqlRuntime.fragment({ prebuild: { typename: "User" } })`
+    fn build_fragment_call(
         &self,
-        prebuild: &ModelPrebuild,
+        prebuild: &FragmentPrebuild,
         _builder_args: &[ExprOrSpread],
     ) -> Option<Expr> {
         let arg = self.create_object_lit(vec![(
@@ -103,7 +103,7 @@ impl RuntimeCallBuilder {
         )]);
 
         Some(self.create_runtime_call(
-            "model",
+            "fragment",
             vec![ExprOrSpread {
                 spread: None,
                 expr: Box::new(arg),
