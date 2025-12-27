@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@soda-gql/cli": "workspace:*",
+    "@soda-gql/swc-transformer": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

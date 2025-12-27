@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       new SodaGqlWebpackPlugin({
         configPath: "./soda-gql.config.ts",
         debug: dev,
+        transformer: "swc",
       }),
     );
 
@@ -20,6 +21,7 @@ const nextConfig: NextConfig = {
           loader: "@soda-gql/webpack-plugin/loader",
           options: {
             configPath: "./soda-gql.config.ts",
+            transformer: "swc",
           },
         },
       ],
