@@ -94,7 +94,6 @@ export type Adapter<
 /**
  * Generic type for any unified adapter.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Generic adapter type requires any
 export type AnyAdapter = Adapter<any, any, any, any>;
 
 /**
