@@ -1,3 +1,4 @@
+import remapping from "@ampproject/remapping";
 import crypto from "node:crypto";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
@@ -170,11 +171,24 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
   }
 
   // Pass transformed code to upstream transformer
-  return upstream.transform({
+  const upstreamResult = await upstream.transform({
     src: babelResult.code,
     filename,
     options,
   });
+
+  // Chain source maps if both exist
+  if (babelResult.map && upstreamResult.map) {
+    const mergedMap = remapping([upstreamResult.map as Parameters<typeof remapping>[0][0], babelResult.map], () => null);
+    return { ...upstreamResult, map: mergedMap };
+  }
+
+  // Include our map if upstream doesn't have one
+  if (babelResult.map) {
+    return { ...upstreamResult, map: babelResult.map };
+  }
+
+  return upstreamResult;
 }
 
 /**

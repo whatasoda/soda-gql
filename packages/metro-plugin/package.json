@@ -33,6 +33,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@ampproject/remapping": "^2.3.0",
     "@soda-gql/babel-plugin": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
