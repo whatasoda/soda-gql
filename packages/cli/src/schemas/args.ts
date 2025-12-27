@@ -18,6 +18,11 @@ export const FormatArgsSchema = z.object({
   check: z.boolean().optional(),
 });
 
+export const InitArgsSchema = z.object({
+  force: z.boolean().optional(),
+});
+
 export type CodegenArgs = z.infer<typeof CodegenArgsSchema>;
 export type BuilderArgs = z.infer<typeof BuilderArgsSchema>;
 export type FormatArgs = z.infer<typeof FormatArgsSchema>;
+export type InitArgs = z.infer<typeof InitArgsSchema>;
