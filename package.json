@@ -51,7 +51,6 @@
     "@soda-gql/tsc-plugin": "workspace:*",
     "@soda-gql/tsc-transformer": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",
-    "@swc-node/register": "^1.11.1",
     "@swc/core": "^1.0.0",
     "@swc/types": "^0.1.0",
     "@types/babel__core": "^7.20.5",
