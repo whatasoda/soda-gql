@@ -84,7 +84,7 @@ describe("Runtime Behavior", () => {
 
   describe("operation", () => {
     it("registers and exposes operationName", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-models");
+      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-fragments");
 
       await withOperationSpy(async ({ operations }) => {
         const writtenFiles = await transformAndWriteFixture(fixture);
@@ -102,7 +102,7 @@ describe("Runtime Behavior", () => {
     });
 
     it("exposes document property", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-models");
+      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-fragments");
 
       await withOperationSpy(async () => {
         const writtenFiles = await transformAndWriteFixture(fixture);
@@ -119,7 +119,7 @@ describe("Runtime Behavior", () => {
     });
 
     it("exposes variableNames", async () => {
-      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-models");
+      const fixture = await loadPluginFixtureMulti("operations/inline-with-imported-fragments");
 
       await withOperationSpy(async () => {
         const writtenFiles = await transformAndWriteFixture(fixture);
@@ -135,23 +135,23 @@ describe("Runtime Behavior", () => {
     });
   });
 
-  describe("model", () => {
+  describe("fragment", () => {
     it("is defined after transformation", async () => {
-      const fixture = await loadPluginFixtureMulti("models/multiple-files");
+      const fixture = await loadPluginFixtureMulti("fragments/multiple-files");
 
       const writtenFiles = await transformAndWriteFixture(fixture);
 
-      // Load user model file
+      // Load user fragment file
       const userPath = [...writtenFiles.values()].find((p) => p.endsWith("user.mjs"));
       expect(userPath).toBeDefined();
       const userModule = await loadModule(userPath!);
-      expect(userModule.userModel).toBeDefined();
+      expect(userModule.userFragment).toBeDefined();
 
-      // Load product model file (which exports postModel)
+      // Load product fragment file (which exports postFragment)
       const productPath = [...writtenFiles.values()].find((p) => p.endsWith("product.mjs"));
       expect(productPath).toBeDefined();
       const productModule = await loadModule(productPath!);
-      expect(productModule.postModel).toBeDefined();
+      expect(productModule.postFragment).toBeDefined();
     });
   });
 });

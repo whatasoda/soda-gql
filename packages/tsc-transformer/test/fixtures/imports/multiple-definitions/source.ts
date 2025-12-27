@@ -3,16 +3,16 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 // Test case: File with multiple gql definitions
 // Expected: Single runtime import added, all definitions transformed
 
-export const model1 = gql.default(({ model }) =>
-  model.User(
+export const model1 = gql.default(({ fragment }) =>
+  fragment.User(
     {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),
   ),
 );
 
-export const model2 = gql.default(({ model }) =>
-  model.Post(
+export const model2 = gql.default(({ fragment }) =>
+  fragment.Post(
     {},
     ({ f }) => [f.id()],
     (selection) => ({ id: selection.id }),

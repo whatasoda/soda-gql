@@ -1,7 +1,7 @@
 import { gql } from "../../../codegen-fixture/graphql-system";
 
-export const userModel = gql.default(({ model }) =>
-  model.User(
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User(
     {},
     ({ f }) => [f.id(), f.name(), f.email()],
     (selection) => ({

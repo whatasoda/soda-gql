@@ -310,7 +310,7 @@ impl VisitMut for GqlTransformer<'_> {
                 } else {
                     // Record structured error when replacement build fails
                     let artifact_type = match &replacement.artifact {
-                        crate::types::BuilderArtifactElement::Model { .. } => "model",
+                        crate::types::BuilderArtifactElement::Fragment { .. } => "fragment",
                         crate::types::BuilderArtifactElement::Operation { .. } => "operation",
                     };
                     let error = PluginError::missing_builder_arg(

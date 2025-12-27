@@ -23,14 +23,14 @@ export type TestCaseDefinition = {
  * Single-file test case definitions.
  */
 const singleFileTestCases: TestCaseDefinition[] = [
-  // Models
+  // Fragments
   {
-    id: "models/basic",
-    description: "Basic model definition transformation",
-    fixtureName: "models/basic",
+    id: "fragments/basic",
+    description: "Basic fragment definition transformation",
+    fixtureName: "fragments/basic",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -56,7 +56,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "imports/add-runtime",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -67,7 +67,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "imports/merge-runtime-import",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -78,7 +78,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "imports/multiple-definitions",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -89,7 +89,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "imports/preserve-other-imports",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -161,7 +161,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "scopes/deeply-nested",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -172,7 +172,7 @@ const singleFileTestCases: TestCaseDefinition[] = [
     fixtureName: "scopes/duplicate-names",
     isMultiFile: false,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
@@ -195,23 +195,23 @@ const singleFileTestCases: TestCaseDefinition[] = [
  */
 const multiFileTestCases: TestCaseDefinition[] = [
   {
-    id: "models/multiple-files",
-    description: "Multiple model files",
-    fixtureName: "models/multiple-files",
+    id: "fragments/multiple-files",
+    description: "Multiple fragment files",
+    fixtureName: "fragments/multiple-files",
     isMultiFile: true,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model"],
+      runtimeCalls: ["gqlRuntime.fragment"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },
   },
   {
-    id: "operations/inline-with-imported-models",
-    description: "Operations with imported models",
-    fixtureName: "operations/inline-with-imported-models",
+    id: "operations/inline-with-imported-fragments",
+    description: "Operations with imported fragments",
+    fixtureName: "operations/inline-with-imported-fragments",
     isMultiFile: true,
     expectations: {
-      runtimeCalls: ["gqlRuntime.model", "gqlRuntime.operation"],
+      runtimeCalls: ["gqlRuntime.fragment", "gqlRuntime.operation"],
       shouldAddRuntimeImport: true,
       shouldTransform: true,
     },

@@ -1,20 +1,20 @@
 import { describe, expect, it } from "bun:test";
-import { Model } from "@soda-gql/core";
+import { Fragment } from "@soda-gql/core";
 import { createProjection } from "./create-projection";
 import { createExecutionResultParser } from "./parse-execution-result";
 import { SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 
 describe("createProjection", () => {
-  // Create a mock Model for testing
-  const createMockModel = () => {
-    return Model.create<any, "Query", {}, { user: { id: string; name: string } }>(() => ({
+  // Create a mock Fragment for testing
+  const createMockFragment = () => {
+    return Fragment.create<any, "Query", {}, { user: { id: string; name: string } }>(() => ({
       typename: "Query",
       embed: () => ({ user: { id: "1", name: "Test" } }),
     }));
   };
 
   it("should create a projection with paths and handle function", () => {
-    const model = createMockModel();
+    const model = createMockFragment();
 
     const projection = createProjection(model, {
       paths: ["$.user"],
@@ -35,7 +35,7 @@ describe("createProjection", () => {
   });
 
   it("should handle success result correctly", () => {
-    const model = createMockModel();
+    const model = createMockFragment();
 
     const projection = createProjection(model, {
       paths: ["$.user"],
@@ -56,7 +56,7 @@ describe("createProjection", () => {
   });
 
   it("should handle error result correctly", () => {
-    const model = createMockModel();
+    const model = createMockFragment();
 
     const projection = createProjection(model, {
       paths: ["$.user"],
@@ -82,12 +82,12 @@ describe("createProjection", () => {
 
 describe("createExecutionResultParser integration", () => {
   it("should parse execution result with labeled projections", () => {
-    const userModel = Model.create<any, "Query", {}, { user: { id: string } }>(() => ({
+    const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
       typename: "Query",
       embed: () => ({ user: { id: "1" } }),
     }));
 
-    const userProjection = createProjection(userModel, {
+    const userProjection = createProjection(userFragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isSuccess()) {
@@ -118,12 +118,12 @@ describe("createExecutionResultParser integration", () => {
   });
 
   it("should handle empty results", () => {
-    const userModel = Model.create<any, "Query", {}, { user: { id: string } }>(() => ({
+    const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
       typename: "Query",
       embed: () => ({ user: { id: "1" } }),
     }));
 
-    const userProjection = createProjection(userModel, {
+    const userProjection = createProjection(userFragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isEmpty()) {

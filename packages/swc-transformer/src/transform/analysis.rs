@@ -24,7 +24,7 @@ pub struct GqlCallInfo {
     pub artifact: BuilderArtifactElement,
     /// Span of the original gql.default() call
     pub call_span: Span,
-    /// The inner builder call (e.g., model.User(), query.slice())
+    /// The inner builder call (e.g., fragment.User(), query.slice())
     pub builder_call_args: Vec<ExprOrSpread>,
 }
 
@@ -122,10 +122,10 @@ impl Visit for GqlCallFinder<'_> {
 /// Find the inner builder call from a gql.default() call.
 ///
 /// Supports both arrow functions and function expressions:
-/// - `gql.default(({ model }) => model.User(...))`
-/// - `gql.default(function({ model }) { return model.User(...); })`
+/// - `gql.default(({ fragment }) => fragment.User(...))`
+/// - `gql.default(function({ fragment }) { return fragment.User(...); })`
 ///
-/// Returns: The inner builder call expression (e.g., `model.User(...)`)
+/// Returns: The inner builder call expression (e.g., `fragment.User(...)`)
 fn find_gql_builder_call(call: &CallExpr) -> Option<&CallExpr> {
     // Check if callee is gql.* pattern
     if !is_gql_member_expression(&call.callee) {

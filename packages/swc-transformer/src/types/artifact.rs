@@ -18,10 +18,10 @@ pub struct BuilderArtifactElementMetadata {
     pub content_hash: String,
 }
 
-/// Prebuild data for a Model artifact.
+/// Prebuild data for a Fragment artifact.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModelPrebuild {
+pub struct FragmentPrebuild {
     pub typename: String,
 }
 
@@ -42,11 +42,11 @@ pub struct OperationPrebuild {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum BuilderArtifactElement {
-    #[serde(rename = "model")]
-    Model {
+    #[serde(rename = "fragment")]
+    Fragment {
         id: CanonicalId,
         metadata: BuilderArtifactElementMetadata,
-        prebuild: ModelPrebuild,
+        prebuild: FragmentPrebuild,
     },
     #[serde(rename = "operation")]
     Operation {
@@ -61,7 +61,7 @@ impl BuilderArtifactElement {
     /// Get the canonical ID of this element.
     pub fn id(&self) -> &str {
         match self {
-            Self::Model { id, .. } => id,
+            Self::Fragment { id, .. } => id,
             Self::Operation { id, .. } => id,
         }
     }
@@ -69,7 +69,7 @@ impl BuilderArtifactElement {
     /// Get the element type as a string.
     pub fn element_type(&self) -> &'static str {
         match self {
-            Self::Model { .. } => "model",
+            Self::Fragment { .. } => "fragment",
             Self::Operation { .. } => "operation",
         }
     }

@@ -3,15 +3,15 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 // Test nested scopes (3 levels: function -> object -> property)
 function outer() {
   const models = {
-    user: gql.default(({ model }) =>
-      model.User(
+    user: gql.default(({ fragment }) =>
+      fragment.User(
         {},
         ({ f }) => [f.id()],
         (selection) => ({ id: selection.id }),
       ),
     ),
-    product: gql.default(({ model }) =>
-      model.Product(
+    product: gql.default(({ fragment }) =>
+      fragment.Product(
         {},
         ({ f }) => [f.id()],
         (selection) => ({ id: selection.id }),

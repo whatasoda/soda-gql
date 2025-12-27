@@ -7,6 +7,6 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
       name: "ProfilePageQuery",
       variables: [$var("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => [f.user({ id: $.userId })(() => [objectWrapped.nested.model.embed()])],
+    ({ f, $ }) => [f.user({ id: $.userId })(() => [objectWrapped.nested.fragment.embed()])],
   ),
 );
