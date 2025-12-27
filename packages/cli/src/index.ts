@@ -1,5 +1,6 @@
 import { codegenCommand } from "./commands/codegen";
 import { formatCommand } from "./commands/format";
+import { initCommand } from "./commands/init";
 import { formatError } from "./utils/format";
 
 const dispatch = async (argv: readonly string[]): Promise<number> => {
@@ -8,9 +9,14 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   if (!command || command === "--help" || command === "-h") {
     process.stdout.write(`Usage: soda-gql <command> [options]\n`);
     process.stdout.write(`\nCommands:\n`);
+    process.stdout.write(`  init       Initialize a new soda-gql project\n`);
     process.stdout.write(`  codegen    Generate graphql-system runtime module\n`);
     process.stdout.write(`  format     Format soda-gql field selections\n`);
     return 0;
+  }
+
+  if (command === "init") {
+    return initCommand(rest);
   }
 
   if (command === "codegen") {

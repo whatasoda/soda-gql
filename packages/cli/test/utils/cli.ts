@@ -70,6 +70,12 @@ export const runFormatCli = (args: readonly string[], options?: CliOptions): Pro
   runSodaGqlCli("format", args, options);
 
 /**
+ * Run init CLI command
+ */
+export const runInitCli = (args: readonly string[], options?: CliOptions): Promise<CliResult> =>
+  runSodaGqlCli("init", args, options);
+
+/**
  * Assert CLI command succeeded
  */
 export const assertCliSuccess = (result: CliResult): void => {
