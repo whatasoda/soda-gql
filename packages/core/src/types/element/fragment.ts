@@ -1,4 +1,4 @@
-/** Model helper types mirroring the `gql.model` API. */
+/** Fragment helper types mirroring the `gql.fragment` API. */
 
 import type { SwitchIfEmpty } from "../../utils/empty-object";
 import type { Hidden } from "../../utils/hidden";
@@ -8,14 +8,14 @@ import type { InputTypeSpecifiers } from "../type-foundation";
 import type { AnyVarRef } from "../type-foundation/var-ref";
 import { GqlElement } from "./gql-element";
 
-export type AnyModel = Model<string, any, AnyFields, any>;
+export type AnyFragment = Fragment<string, any, AnyFields, any>;
 
-export type ModelInferMeta<TVariables, TOutput extends object> = {
+export type FragmentInferMeta<TVariables, TOutput extends object> = {
   readonly input: TVariables;
   readonly output: TOutput;
 };
 
-interface ModelArtifact<
+interface FragmentArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
@@ -24,23 +24,23 @@ interface ModelArtifact<
   readonly embed: (variables: TVariables) => TFields;
 }
 
-declare const __MODEL_BRAND__: unique symbol;
-export class Model<
+declare const __FRAGMENT_BRAND__: unique symbol;
+export class Fragment<
     TTypeName extends string,
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
     _TVarRefs extends Record<string, AnyVarRef> = Record<string, AnyVarRef>,
   >
-  extends GqlElement<ModelArtifact<TTypeName, TVariables, TFields>, ModelInferMeta<TVariables, TOutput>>
-  implements ModelArtifact<TTypeName, TVariables, TFields>
+  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields>, FragmentInferMeta<TVariables, TOutput>>
+  implements FragmentArtifact<TTypeName, TVariables, TFields>
 {
-  declare readonly [__MODEL_BRAND__]: Hidden<{
+  declare readonly [__FRAGMENT_BRAND__]: Hidden<{
     input: TVariables;
     output: TOutput;
   }>;
 
-  private constructor(define: () => ModelArtifact<TTypeName, TVariables, TFields>) {
+  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields>) {
     super(define);
   }
 
@@ -66,6 +66,6 @@ export class Model<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Model<TTypeName, Variables, Fields, Output>(define as () => ModelArtifact<TTypeName, Variables, Fields>);
+    return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
   }
 }
