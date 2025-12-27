@@ -31,24 +31,14 @@ bun add -D @soda-gql/tsc-plugin
 }
 ```
 
-[View example on GitHub](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-compiler-tsc)
+[View playground on GitHub](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/nestjs-compiler-tsc)
 
-### SWC Compiler Plugin
+### Webpack Plugin with SWC
 
-**Best for:** Large projects requiring fastest possible builds.
-
-```bash
-bun add -D @soda-gql/swc-transformer
-```
-
-[View example on GitHub](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-compiler-swc)
-
-### Webpack Plugin
-
-**Best for:** Projects needing working zero-runtime transformation today.
+**Best for:** Projects needing working zero-runtime transformation today with fast builds.
 
 ```bash
-bun add -D @soda-gql/webpack-plugin
+bun add -D @soda-gql/webpack-plugin @soda-gql/swc-transformer
 ```
 
 ```javascript
@@ -56,11 +46,11 @@ bun add -D @soda-gql/webpack-plugin
 const { SodaGqlWebpackPlugin } = require("@soda-gql/webpack-plugin");
 
 module.exports = {
-  plugins: [new SodaGqlWebpackPlugin()],
+  plugins: [new SodaGqlWebpackPlugin({ transformer: "swc" })],
 };
 ```
 
-[View example on GitHub](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-app)
+[View playground on GitHub](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/nextjs-webpack)
 
 ## Vite Integration
 
@@ -88,24 +78,7 @@ For React Native projects using Metro bundler:
 bun add -D @soda-gql/metro-plugin
 ```
 
-[View example on GitHub](https://github.com/whatasoda/soda-gql/tree/main/examples/expo-metro)
-
-## Babel Integration
-
-For framework-agnostic usage or custom build setups:
-
-```bash
-bun add -D @soda-gql/babel-plugin
-```
-
-```javascript
-// babel.config.js
-module.exports = {
-  plugins: ["@soda-gql/babel-plugin"],
-};
-```
-
-[View example on GitHub](https://github.com/whatasoda/soda-gql/tree/main/examples/babel-app)
+[View playground on GitHub](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/expo-metro)
 
 ## Common Setup Steps
 
@@ -126,11 +99,10 @@ bun run build
 
 New to soda-gql? Follow this path:
 
-1. **Start with [NestJS + TSC](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-compiler-tsc)** - Simplest setup, best for learning
-2. **Explore [NestJS + Webpack](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-app)** - See integrated workflow
-3. **Try [NestJS + SWC](https://github.com/whatasoda/soda-gql/tree/main/examples/nestjs-compiler-swc)** - Experience build speed improvements
-4. **Check [Babel](https://github.com/whatasoda/soda-gql/tree/main/examples/babel-app)** - Understand framework-agnostic usage
+1. **Start with [Next.js + Webpack](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/nextjs-webpack)** - Full-featured setup with SWC
+2. **Explore [Vite + React](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/vite-react)** - Fragment colocation pattern
+3. **Try [Expo + Metro](https://github.com/whatasoda/soda-gql/tree/main/playgrounds/expo-metro)** - Mobile development
 
-## More Examples
+## More Playgrounds
 
-See the full list of examples in the [GitHub repository](https://github.com/whatasoda/soda-gql/tree/main/examples).
+See the full list of playgrounds in the [GitHub repository](https://github.com/whatasoda/soda-gql/tree/main/playgrounds).

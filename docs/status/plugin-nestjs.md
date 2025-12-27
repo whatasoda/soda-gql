@@ -16,7 +16,7 @@
 **Related Documentation**:
 - [Plugin Plan](../plans/plugin-ecosystem/plugin-nestjs.md)
 - [Package README](../../packages/plugin-nestjs/README.md)
-- [Examples](../../examples/README.md)
+- [Playgrounds](../../playgrounds/README.md)
 
 ---
 
@@ -241,25 +241,16 @@ export { SodaGqlWebpackPlugin } from '@soda-gql/plugin-webpack';
 
 ### Working Examples
 
-1. **nestjs-compiler-tsc** (`examples/nestjs-compiler-tsc/`)
+1. **nestjs-compiler-tsc** (`playgrounds/nestjs-compiler-tsc/`)
    - Demonstrates TypeScript compiler plugin configuration
    - Full NestJS application with GraphQL operations
    - **Current Behavior**: Build succeeds, operations evaluated at runtime (detection-only)
-
-2. **nestjs-compiler-swc** (`examples/nestjs-compiler-swc/`)
-   - Demonstrates SWC compiler plugin configuration
-   - Same application structure as TSC example
-   - **Current Behavior**: Build succeeds with faster compilation, runtime evaluation
-
-3. **nestjs-app** (`examples/nestjs-app/`)
-   - Demonstrates webpack plugin (full transformation)
-   - **Current Behavior**: Zero-runtime transformation working
 
 ### How to Reproduce Detection
 
 ```bash
 # From repository root
-cd examples/nestjs-compiler-tsc
+cd playgrounds/nestjs-compiler-tsc
 
 # Generate GraphQL system
 bun run codegen
@@ -360,5 +351,5 @@ From `packages/plugin-shared/src/adapters/typescript-adapter.ts:45`:
 
 - **Issues**: [GitHub Issues](https://github.com/anthropics/soda-gql/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/anthropics/soda-gql/discussions)
-- **Examples**: See `examples/` directory for working integrations
+- **Playgrounds**: See `playgrounds/` directory for development/testing
 - **Plan Document**: [Plugin Ecosystem Plan](../plans/plugin-ecosystem/plugin-nestjs.md)

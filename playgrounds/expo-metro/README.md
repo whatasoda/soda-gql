@@ -26,7 +26,7 @@ expo-metro/
 ### 1. Install Dependencies
 
 ```bash
-cd examples/expo-metro
+cd playgrounds/expo-metro
 bun install
 ```
 

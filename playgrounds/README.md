@@ -1,253 +1,79 @@
-# soda-gql Examples
+# soda-gql Playgrounds
 
-This directory contains practical examples demonstrating different integration methods for soda-gql.
+This directory contains playgrounds for testing and verifying different integration methods for soda-gql.
 
-> **⚠️ Status Note (v0.1.0 Pre-release)**: The compiler plugin examples (TypeScript/SWC) demonstrate infrastructure and configuration. These plugins currently provide detection-only implementation and do not yet perform full zero-runtime transformation. The webpack example is fully functional.
+> **Note**: These are development/testing playgrounds, not production-ready examples. Proper examples will be provided separately in an appropriate format.
 
-## Available Examples
+## Available Playgrounds
 
-### NestJS Integration
+### Web Frameworks
 
-Choose the integration method that best fits your project:
+#### [nextjs-webpack](./nextjs-webpack) - Next.js + Webpack + SWC
 
-#### 1. [nestjs-compiler-tsc](./nestjs-compiler-tsc) - TypeScript Compiler Plugin ⭐ **Recommended**
+**Features:**
+- Next.js 15 with App Router
+- Webpack plugin integration
+- SWC transformer for fast builds
+- API route examples
 
-**Best for:** Most projects, especially those preferring standard TypeScript tooling
+#### [vite-react](./vite-react) - Vite + React
 
-**Current Status (v0.1.0)**:
-- ✅ No webpack dependency
-- ✅ Works with standard `nest build` command
-- ✅ Simple configuration
-- ✅ Detection infrastructure in place
-- ⏳ Zero-runtime transformation planned
+**Features:**
+- Vite 6 with React 19
+- Fragment colocation pattern
+- Component-based fragment organization
 
-**When to use:**
-- You want to prepare for webpack-free zero-runtime setup
-- You prefer TypeScript's official compiler
-- You need maximum compatibility
+### Mobile
 
-#### 2. [nestjs-compiler-swc](./nestjs-compiler-swc) - SWC Compiler Plugin ⚡
+#### [expo-metro](./expo-metro) - Expo + Metro
 
-**Best for:** Large projects requiring fastest possible builds
+**Features:**
+- React Native / Expo
+- Metro bundler integration
+- Verification UI for metadata
 
-**Current Status (v0.1.0)**:
-- ✅ 20x faster compilation than TypeScript
-- ✅ No webpack dependency
-- ✅ Detection infrastructure in place
-- ✅ Excellent for large codebases
-- ✅ Production-ready compiler (used by Vercel, Next.js)
-- ⏳ Zero-runtime transformation planned
+### Backend
 
-**When to use:**
-- You have a large codebase (>100 files)
-- Build speed is critical
-- You're comfortable with Rust-based tooling
+#### [nestjs-compiler-tsc](./nestjs-compiler-tsc) - NestJS + TSC Plugin
 
-#### 3. [nestjs-app](./nestjs-app) - Webpack Plugin ✨ **Fully Functional**
-
-**Best for:** Projects needing working zero-runtime transformation today
-
-**Current Status** *(production-ready)*:
-- ✅ Full zero-runtime transformation
-- ✅ Integrated watch mode
-- ✅ Automatic artifact generation
-- ✅ Development error reporting
-- ✅ Hot module replacement support
-
-**When to use:**
-- You need zero-runtime transformation working today
-- You're already using webpack
-- You want integrated development workflow
-
-### Babel Integration
-
-#### 4. [babel-app](./babel-app) - Babel Plugin
-
-**Best for:** Non-NestJS Node.js applications or custom build setups
-
-- ✅ Framework-agnostic
-- ✅ Works with any bundler
-- ✅ Flexible configuration
-
-**When to use:**
-- You're not using NestJS
-- You have a custom build setup with Babel
-- You need maximum flexibility
+**Features:**
+- TypeScript compiler plugin
+- No webpack dependency
+- Detection infrastructure (transformation planned)
 
 ## Quick Comparison
 
-| Feature | TSC Plugin | SWC Plugin | Webpack Plugin | Babel Plugin |
-|---------|-----------|-----------|----------------|--------------|
-| Build Speed | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ |
-| Setup Complexity | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
-| Zero-Runtime | ⏳ Planned | ⏳ Planned | ✅ Working | ✅ Working |
-| Nest Integration | ✅ | ✅ | ✅ | ❌ |
-| Watch Mode | Manual | Manual | Integrated | Manual |
-| Webpack Required | ❌ | ❌ | ✅ | ❌ |
+| Playground | Framework | Bundler | Transformer | Zero-Runtime |
+|------------|-----------|---------|-------------|--------------|
+| nextjs-webpack | Next.js 15 | Webpack | SWC | Working |
+| vite-react | Vite 6 | Rollup | Babel | Working |
+| expo-metro | Expo | Metro | Babel | Working |
+| nestjs-compiler-tsc | NestJS | TSC | TSC | Detection-only |
 
 ## Getting Started
 
-1. **Choose an example** based on your needs
-2. **Navigate to the example directory**
+1. **Install dependencies** (from repo root)
    ```bash
-   cd examples/nestjs-compiler-tsc  # or your chosen example
-   ```
-3. **Follow the README** in that directory
-
-## Common Setup Steps
-
-All examples follow similar setup steps:
-
-```bash
-# 1. Install dependencies (from repo root)
-bun install
-
-# 2. Navigate to example
-cd examples/<example-name>
-
-# 3. Generate GraphQL system
-bun run codegen
-
-# 4. Generate artifact (for compiler plugins)
-bun run artifact
-
-# 5. Build and run
-bun run build
-bun run start
-```
-
-## Development Workflow
-
-### For Compiler Plugins (TSC/SWC)
-
-```bash
-# Terminal 1: Watch artifact generation
-bun run artifact --watch
-
-# Terminal 2: Watch NestJS app
-bun run dev
-```
-
-### For Webpack Plugin
-
-```bash
-# Single command with integrated watch
-bun run dev
-```
-
-## Learning Path
-
-**New to soda-gql?** Follow this path:
-
-1. Start with [nestjs-compiler-tsc](./nestjs-compiler-tsc)
-   - Simplest setup
-   - Most documentation
-   - Best for learning
-
-2. Explore [nestjs-app](./nestjs-app) (webpack)
-   - See integrated workflow
-   - Understand artifact generation
-   - Learn development patterns
-
-3. Try [nestjs-compiler-swc](./nestjs-compiler-swc)
-   - Experience build speed improvements
-   - Compare with TSC plugin
-   - Understand tradeoffs
-
-4. Check [babel-app](./babel-app)
-   - Understand framework-agnostic usage
-   - Learn custom integration patterns
-
-## Migration Between Examples
-
-### From Webpack to Compiler Plugins
-
-Main changes needed:
-
-1. **Update nest-cli.json**
-   ```diff
-   {
-     "compilerOptions": {
-   -   "builder": "webpack",
-   -   "webpackConfigPath": "webpack.config.js"
-   +   "builder": "tsc",  // or "swc"
-   +   "plugins": [       // or "swcPlugins"
-   +     {
-   +       "name": "@soda-gql/plugin-tsc",
-   +       "options": {
-   +         "artifactPath": "./.cache/soda-gql-artifact.json",
-   +         "mode": "zero-runtime"
-   +       }
-   +     }
-   +   ]
-     }
-   }
+   bun install
    ```
 
-2. **Remove webpack.config.js**
-
-3. **Add artifact generation script**
-   ```json
-   {
-     "scripts": {
-       "artifact": "soda-gql builder --mode zero-runtime --entry ./src/**/*.ts --out .cache/soda-gql-artifact.json"
-     }
-   }
+2. **Navigate to a playground**
+   ```bash
+   cd playgrounds/<playground-name>
    ```
 
-### From TSC to SWC
+3. **Generate GraphQL system**
+   ```bash
+   bun run codegen
+   ```
 
-Simple change in `nest-cli.json`:
-
-```diff
-{
-  "compilerOptions": {
--   "builder": "tsc",
--   "plugins": [
-+   "builder": "swc",
-+   "swcPlugins": [
-      [
--       {
--         "name": "@soda-gql/plugin-tsc",
--         "options": { ... }
--       }
-+       "@soda-gql/plugin-swc",
-+       { ... }
-      ]
-    ]
-  }
-}
-```
-
-## Troubleshooting
-
-See individual example READMEs for specific troubleshooting guides.
-
-### Common Issues
-
-1. **Artifact not found**
-   - Run `bun run artifact` before building
-   - Check artifact path in configuration
-
-2. **Type errors**
-   - Run `bun run codegen` to regenerate GraphQL system
-   - Ensure schema is up to date
-
-3. **Plugin not transforming (compiler plugins)**
-   - Note: TSC/SWC plugins don't transform yet (detection-only in v0.1.0)
-   - For working transformation, use webpack or babel plugins
-
-## Contributing
-
-To add a new example:
-
-1. Create a new directory in `examples/`
-2. Add a comprehensive README
-3. Include working package.json and configuration
-4. Update this README with a link
-5. Test the example thoroughly
+4. **Build and run**
+   ```bash
+   bun run build
+   bun run start  # or dev
+   ```
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/anthropics/soda-gql/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/anthropics/soda-gql/discussions)
+- **Issues**: [GitHub Issues](https://github.com/whatasoda/soda-gql/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/whatasoda/soda-gql/discussions)

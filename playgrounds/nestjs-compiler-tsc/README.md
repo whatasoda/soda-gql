@@ -23,7 +23,7 @@ This example demonstrates using `@soda-gql/plugin-tsc` with the TypeScript compi
 bun install
 
 # Generate GraphQL system files
-cd examples/nestjs-compiler-tsc
+cd playgrounds/nestjs-compiler-tsc
 bun run codegen
 
 # Generate artifact file
@@ -301,6 +301,5 @@ bun run codegen
 
 ## Next Steps
 
-- Try the [SWC compiler example](../nestjs-compiler-swc) for even faster builds
-- Try the [webpack example](../nestjs-app) for integrated development workflow
+- Try the [Next.js webpack playground](../nextjs-webpack) for integrated development workflow
 - Explore [advanced patterns](../../docs/guides) in the documentation
