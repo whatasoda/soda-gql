@@ -22,19 +22,22 @@ export const isGqlReference = (node: Expression, gqlIdentifiers: ReadonlySet<str
 };
 
 /**
- * Check if a call expression is a gql.default/model/query/mutation/subscription call
+ * Check if a call expression is a gql definition call
+ * Handles: gql.default(...), gql.model(...), gql.schemaName(...) (multi-schema)
  */
 export const isGqlDefinitionCall = (node: CallExpression, gqlIdentifiers: ReadonlySet<string>): boolean => {
   if (node.callee.type !== "MemberExpression") return false;
+  const { object } = node.callee;
 
-  const { object, property } = node.callee;
+  // Check object is a gql reference first
+  if (!isGqlReference(object, gqlIdentifiers)) return false;
 
-  // Check for gql.default, gql.model, gql.query, gql.mutation, gql.subscription
-  if (property.type !== "Identifier") return false;
-  const validMethods = ["default", "model", "query", "mutation", "subscription"];
-  if (!validMethods.includes(property.value)) return false;
+  // Verify first argument is an arrow function (factory pattern)
+  // SWC's arguments are ExprOrSpread[], so access via .expression
+  const firstArg = node.arguments[0];
+  if (!firstArg || firstArg.expression.type !== "ArrowFunctionExpression") return false;
 
-  return isGqlReference(object, gqlIdentifiers);
+  return true;
 };
 
 /**
