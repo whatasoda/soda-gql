@@ -47,7 +47,7 @@
     "includes": [
       "./tsdown.config.ts",
       "packages/**/*",
-      "examples/**/*",
+      "playgrounds/**/*",
       "**/tests/**/*",
       "scripts/prepublish.ts",
       "!bun.lock",
@@ -103,7 +103,7 @@
       }
     },
     {
-      "includes": ["examples/nestjs-compiler-tsc/**/*"],
+      "includes": ["playgrounds/nestjs-compiler-tsc/**/*"],
       "linter": {
         "rules": {
           "style": {
