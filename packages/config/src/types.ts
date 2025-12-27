@@ -4,8 +4,7 @@
  *
  * When a string is provided, it should be a path to a file that exports:
  * - `scalar` (required): Scalar type definitions
- * - `helpers` (optional): Helper functions for gql composer
- * - `metadata` (optional): Metadata adapter
+ * - `adapter` (optional): Unified adapter with helpers and metadata
  *
  * When an object is provided, each property is a path to a separate file.
  */
@@ -13,19 +12,18 @@ export type InjectConfig =
   | string
   | {
       readonly scalars: string;
-      readonly helpers?: string;
-      readonly metadata?: string;
+      readonly adapter?: string;
     };
 
 // Schema configuration for codegen
 export type SchemaConfig = {
   readonly schema: string;
   /**
-   * Injection configuration for scalars, helpers, and metadata.
+   * Injection configuration for scalars and adapter.
    * Can be a single file path or an object with separate paths.
    *
-   * @example Single file: "./inject.ts" (exports scalar, helpers?, metadata?)
-   * @example Object: { scalars: "./scalars.ts", helpers: "./helpers.ts", metadata: "./metadata.ts" }
+   * @example Single file: "./inject.ts" (exports scalar, adapter?)
+   * @example Object: { scalars: "./scalars.ts", adapter: "./adapter.ts" }
    */
   readonly inject: InjectConfig;
 };
@@ -101,8 +99,7 @@ export type SodaGqlConfig = {
 // Resolved inject config with absolute paths (always object form)
 export type ResolvedInjectConfig = {
   readonly scalars: string;
-  readonly helpers?: string;
-  readonly metadata?: string;
+  readonly adapter?: string;
 };
 
 // Resolved schema config with absolute paths
