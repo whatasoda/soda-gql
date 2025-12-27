@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createCanonicalId } from "@soda-gql/common";
-import { GqlElement, Model } from "@soda-gql/core";
+import { GqlElement, Fragment } from "@soda-gql/core";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { createIntermediateRegistry } from "./registry";
 
@@ -22,7 +22,7 @@ class TestElement extends GqlElement<{ value: string }> {
   }
 }
 
-type AcceptableArtifact = Model<string, any, any, any>;
+type AcceptableArtifact = Fragment<string, any, any, any>;
 
 /**
  * Helper function to cast TestElement to AcceptableArtifact for use with registry.addElement.
@@ -392,7 +392,7 @@ describe("createIntermediateRegistry", () => {
 
       // Add a simple element with sync define
       const element = registry.addElement("test:element", () =>
-        Model.create(() => ({
+        Fragment.create(() => ({
           typename: "TestType",
           embed: () => ({}),
           metadata: null,
@@ -402,7 +402,7 @@ describe("createIntermediateRegistry", () => {
       const result = await registry.evaluateAsync();
 
       expect(result["test:element"]).toBeDefined();
-      expect(result["test:element"]?.type).toBe("model");
+      expect(result["test:element"]?.type).toBe("fragment");
       expect(element.typename).toBe("TestType");
     });
 
@@ -504,9 +504,9 @@ describe("createIntermediateRegistry", () => {
         return {};
       });
 
-      // Sync element (using Model)
+      // Sync element (using Fragment)
       const syncElement = registry.addElement("test:sync", () =>
-        Model.create(() => ({
+        Fragment.create(() => ({
           typename: "SyncType",
           embed: () => ({}),
           metadata: null,
@@ -529,9 +529,9 @@ describe("createIntermediateRegistry", () => {
       expect(syncElement.typename).toBe("SyncType");
       expect(asTestElement(asyncElement).value).toBe("AsyncValue");
 
-      // Verify sync element appears in artifacts (Model is recognized)
+      // Verify sync element appears in artifacts (Fragment is recognized)
       expect(result["test:sync"]).toBeDefined();
-      expect(result["test:sync"]?.type).toBe("model");
+      expect(result["test:sync"]?.type).toBe("fragment");
     });
 
     test("should handle module dependencies with async element evaluation", async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
-import { Model, Operation } from "@soda-gql/core";
+import { Fragment, Operation } from "@soda-gql/core";
 import { parse } from "graphql";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";
@@ -28,12 +28,12 @@ const createTestIntermediateModule = (elements: Record<string, IntermediateArtif
 });
 
 describe("artifact aggregate", () => {
-  it("aggregates models and operations successfully", () => {
-    const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
+  it("aggregates fragments and operations successfully", () => {
+    const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment");
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(fragmentId)])],
       [
         "/app/src/pages/profile.query.ts",
         createTestAnalysis("/app/src/pages/profile.query.ts", [createTestDefinition(operationId)]),
@@ -41,9 +41,9 @@ describe("artifact aggregate", () => {
     ]);
 
     const intermediateModule = createTestIntermediateModule({
-      [modelId]: {
-        type: "model",
-        element: Model.create(() => ({
+      [fragmentId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
           typename: "User",
           embed: () => ({}),
           metadata: null,
@@ -71,11 +71,11 @@ describe("artifact aggregate", () => {
       (registry) => {
         expect(registry.size).toBe(2);
 
-        const model = registry.get(modelId);
-        expect(model).toBeDefined();
-        expect(model?.type).toBe("model");
-        if (model?.type === "model") {
-          expect(model.prebuild.typename).toBe("User");
+        const fragment = registry.get(fragmentId);
+        expect(fragment).toBeDefined();
+        expect(fragment?.type).toBe("fragment");
+        if (fragment?.type === "fragment") {
+          expect(fragment.prebuild.typename).toBe("User");
         }
 
         const operation = registry.get(operationId);
@@ -93,14 +93,14 @@ describe("artifact aggregate", () => {
   });
 
   it("fails when artifact is not found in intermediate module", () => {
-    const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
+    const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment");
 
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(fragmentId)])],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
-      // Missing modelId
+      // Missing fragmentId
     });
 
     const result = aggregate({
@@ -124,17 +124,17 @@ describe("artifact aggregate", () => {
   });
 
   it("fails when duplicate canonical ID exists in analysis", () => {
-    const modelId = createCanonicalId("/app/src/entities/user.ts", "userModel");
+    const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment");
 
     // Create analysis with single definition
     const analyses = new Map<string, ModuleAnalysis>([
-      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(modelId)])],
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(fragmentId)])],
     ]);
 
     const intermediateModule = createTestIntermediateModule({
-      [modelId]: {
-        type: "model",
-        element: Model.create(() => ({
+      [fragmentId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
           typename: "User",
           embed: () => ({}),
           metadata: null,

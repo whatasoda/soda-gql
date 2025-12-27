@@ -1,12 +1,12 @@
 import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, ParallelEffect } from "@soda-gql/common";
-import { type AnyModel, type AnyOperation, GqlElement, Model, Operation } from "@soda-gql/core";
+import { type AnyFragment, type AnyOperation, GqlElement, Fragment, Operation } from "@soda-gql/core";
 import type { ModuleAnalysis } from "../ast";
 import { ElementEvaluationEffect } from "../scheduler";
 import type { EvaluationRequest, IntermediateArtifactElement } from "./types";
 
 export type IntermediateRegistry = ReturnType<typeof createIntermediateRegistry>;
 
-type AcceptableArtifact = AnyModel | AnyOperation;
+type AcceptableArtifact = AnyFragment | AnyOperation;
 type ArtifactModule = ArtifactRecord;
 type ArtifactRecord = {
   readonly [key: string]: AcceptableArtifact | ArtifactRecord;
@@ -158,8 +158,8 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
   const buildArtifacts = (): Record<string, IntermediateArtifactElement> => {
     const artifacts: Record<string, IntermediateArtifactElement> = {};
     for (const [canonicalId, element] of elements.entries()) {
-      if (element instanceof Model) {
-        artifacts[canonicalId] = { type: "model", element };
+      if (element instanceof Fragment) {
+        artifacts[canonicalId] = { type: "fragment", element };
       } else if (element instanceof Operation) {
         artifacts[canonicalId] = { type: "operation", element };
       }
