@@ -45,6 +45,31 @@ describe("format", () => {
     });
   });
 
+  describe("multi-schema support", () => {
+    it("should format multi-schema files (gql.admin, gql.default, etc.)", () => {
+      const source = loadFixture("multi-schema");
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(true);
+      // Check that empty comments were added to all schema field selections
+      expect(result.value.sourceCode).toContain("//");
+    });
+
+    it("should not modify already formatted multi-schema files", () => {
+      const source = loadFixture("multi-schema-formatted");
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(false);
+      expect(result.value.sourceCode).toBe(source);
+    });
+  });
+
   describe("config arrays", () => {
     it("should only format field selection arrays, not config arrays", () => {
       const source = loadFixture("config-arrays");
