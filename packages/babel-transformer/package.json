@@ -26,6 +26,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@ampproject/remapping": "^2.3.0",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
