@@ -42,6 +42,7 @@
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/cli": "workspace:*",
     "@soda-gql/codegen": "workspace:*",
+    "@soda-gql/colocation-tools": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",

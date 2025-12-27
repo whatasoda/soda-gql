@@ -16,6 +16,7 @@
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/cli": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/colocation-tools": "workspace:*",
         "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
@@ -121,6 +122,7 @@
     "examples/vite-react": {
       "name": "vite-react-example",
       "dependencies": {
+        "@soda-gql/colocation-tools": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
         "react": "^19.0.0",
@@ -232,6 +234,14 @@
         "graphql": "^16.8.1",
         "neverthrow": "^8.1.1",
         "tsdown": "^0.15.7",
+      },
+    },
+    "packages/colocation-tools": {
+      "name": "@soda-gql/colocation-tools",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soda-gql/core": "workspace:*",
+        "graphql": "^16.11.0",
       },
     },
     "packages/common": {
@@ -1151,6 +1161,8 @@
     "@soda-gql/cli": ["@soda-gql/cli@workspace:packages/cli"],
 
     "@soda-gql/codegen": ["@soda-gql/codegen@workspace:packages/codegen"],
+
+    "@soda-gql/colocation-tools": ["@soda-gql/colocation-tools@workspace:packages/colocation-tools"],
 
     "@soda-gql/common": ["@soda-gql/common@workspace:packages/common"],
 

@@ -19,8 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/graphql-system": ["./graphql-system/index.ts"]
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
     }
   },
-  "include": ["src", "graphql-system", "inject-module"]
+  "include": ["src", "codegen-fixture", "inject-module"]
 }

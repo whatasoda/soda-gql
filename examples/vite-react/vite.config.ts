@@ -6,9 +6,9 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [sodaGqlPlugin({ debug: true }), react()],
   resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
-      "@/graphql-system": resolve(__dirname, "./graphql-system"),
-    },
+    alias: [
+      { find: "@/graphql-system", replacement: resolve(__dirname, "./codegen-fixture/graphql-system") },
+      { find: "@", replacement: resolve(__dirname, "./src") },
+    ],
   },
 });

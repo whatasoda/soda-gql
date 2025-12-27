@@ -1,7 +1,7 @@
 import { type FieldsBuilder, type MergeFields, Model, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, ModelMetadataBuilder } from "../types/metadata";
-import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { getCurrentFieldPath } from "./field-path-context";
@@ -65,7 +65,10 @@ export const createGqlModelComposers = <
   type ModelBuildersAll = {
     readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string ? ModelBuilder<TTypeName> : never;
   };
-  type ModelBuilders = Omit<ModelBuildersAll, TSchema["operations"][OperationType] & keyof ModelBuildersAll>;
+
+  // Include operation roots (Query, Mutation, Subscription) for fragment colocation
+  // These allow defining reusable fragments on operation root types
+  type ModelBuilders = ModelBuildersAll;
 
   return mapValues(schema.object, (_, typename) => createModelComposer(typename)) as ModelBuilders;
 };

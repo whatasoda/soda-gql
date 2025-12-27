@@ -9,6 +9,7 @@
     "codegen": "soda-gql codegen"
   },
   "dependencies": {
+    "@soda-gql/colocation-tools": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
     "react": "^19.0.0",

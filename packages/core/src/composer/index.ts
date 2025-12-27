@@ -1,7 +1,11 @@
-export { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
+export {
+  getVarRefInner,
+  getVarRefName,
+  getVarRefValue,
+} from "../types/type-foundation/var-ref";
 export * from "./build-document";
+export * from "./colocate";
 export * from "./field-path-context";
-export * from "./field-prefix";
 export * from "./fields-builder";
 export * from "./gql-composer";
 export * from "./helpers";

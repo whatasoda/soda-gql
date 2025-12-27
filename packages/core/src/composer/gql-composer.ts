@@ -1,7 +1,7 @@
 import type { AnyModel, AnyOperation } from "../types/element";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
-import { createPrefixHelper } from "./field-prefix";
+import { createColocateHelper } from "./colocate";
 import { createGqlModelComposers } from "./model";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder } from "./var-builder";
@@ -41,7 +41,7 @@ export const createGqlElementComposer = <
 
   const helper = {
     $var: createVarBuilder(schema),
-    $prefix: createPrefixHelper(),
+    $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };
 
