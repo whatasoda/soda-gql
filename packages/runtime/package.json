@@ -1,6 +1,7 @@
 {
   "name": "@soda-gql/runtime",
   "version": "0.1.0",
+  "description": "Minimal runtime for soda-gql operations",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -11,6 +12,25 @@
     "name": "Shota Hatada",
     "email": "shota.hatada@whatasoda.me",
     "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "codegen",
+    "zero-runtime",
+    "typescript",
+    "runtime"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/runtime"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
