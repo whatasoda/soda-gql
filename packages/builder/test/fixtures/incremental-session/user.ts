@@ -1,7 +1,7 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-export const userModel = gql.default(({ model }, { $var }) =>
-  model.User(
+export const userFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.User(
     {
       variables: [$var("categoryId").scalar("ID:?")],
     },
@@ -10,7 +10,7 @@ export const userModel = gql.default(({ model }, { $var }) =>
 );
 
 export const userRemote = {
-  forIterate: gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.name()])),
+  forIterate: gql.default(({ fragment }) => fragment.User({}, ({ f }) => [f.id(), f.name()])),
 };
 
 export const usersQuery = gql.default(({ query }, { $var }) =>

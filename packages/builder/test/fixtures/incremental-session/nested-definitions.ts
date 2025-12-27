@@ -1,13 +1,13 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
 // Case 1: Non-exported top-level definition (used internally only)
-// Should be collected with canonical ID: filePath::internalPostModel
-const internalPostModel = gql.default(({ model }) => model.Post({}, ({ f }) => [f.id(), f.title()]));
+// Should be collected with canonical ID: filePath::internalPostFragment
+const internalPostFragment = gql.default(({ fragment }) => fragment.Post({}, ({ f }) => [f.id(), f.title()]));
 
-// Case 2: Exported model using the internal model
-// Should be collected with canonical ID: filePath::userWithPostsModel
-export const userWithPostsModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name(), f.posts({})(({ f }) => [f.id(), f.title()])]),
+// Case 2: Exported fragment using the internal fragment
+// Should be collected with canonical ID: filePath::userWithPostsFragment
+export const userWithPostsFragment = gql.default(({ fragment }) =>
+  fragment.User({}, ({ f }) => [f.id(), f.name(), f.posts({})(({ f }) => [f.id(), f.title()])]),
 );
 
 // Case 3: Nested definitions in function scope

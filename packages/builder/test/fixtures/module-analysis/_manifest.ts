@@ -39,10 +39,10 @@ export const fixtures = [
   "nested-non-top-level",
   "top-level-with-metadata",
 
-  // Model embedding
-  "model-embedding/basic-embed",
-  "model-embedding/model-in-model",
-  "model-embedding/multiple-models",
+  // Fragment embedding
+  "fragment-embedding/basic-embed",
+  "fragment-embedding/fragment-in-fragment",
+  "fragment-embedding/multiple-fragments",
 ] as const;
 
 export type FixtureName = (typeof fixtures)[number];
