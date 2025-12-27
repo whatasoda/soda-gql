@@ -1,5 +1,5 @@
 import type { AnyFragment, AnyOperation } from "../types/element";
-import type { AnyMetadataAdapter, DefaultMetadataAdapter } from "../types/metadata";
+import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
 import { createGqlFragmentComposers } from "./fragment";
@@ -10,25 +10,38 @@ export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyFragme
   composeElement: (composers: TComposers, helper: THelper) => TResult,
 ) => TResult;
 
-export type GqlElementComposerOptions<
-  THelpers extends object = object,
-  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
-> = {
-  helpers?: THelpers;
+/**
+ * Extracts the helpers type from an adapter.
+ */
+type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infer THelpers, unknown, unknown, unknown>
+  ? THelpers
+  : object;
+
+/**
+ * Extracts the metadata adapter type from an adapter.
+ * Handles optional metadata property correctly.
+ */
+type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter extends { metadata?: infer M }
+  ? NonNullable<M> extends AnyMetadataAdapter
+    ? NonNullable<M>
+    : DefaultMetadataAdapter
+  : DefaultMetadataAdapter;
+
+export type GqlElementComposerOptions<TAdapter extends AnyAdapter = DefaultAdapter> = {
   adapter?: TAdapter;
 };
 
-export const createGqlElementComposer = <
-  TSchema extends AnyGraphqlSchema,
-  THelpers extends object = object,
-  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
->(
+export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter>(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<THelpers>, NoInfer<TAdapter>> = {} as GqlElementComposerOptions<THelpers, TAdapter>,
+  options: GqlElementComposerOptions<NoInfer<TAdapter>> = {} as GqlElementComposerOptions<TAdapter>,
 ) => {
-  const { helpers, adapter } = options;
-  const fragment = createGqlFragmentComposers<TSchema, TAdapter>(schema, adapter);
-  const createOperationComposer = createOperationComposerFactory<TSchema, TAdapter>(schema, adapter);
+  type THelpers = ExtractHelpers<TAdapter>;
+  type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;
+  const { adapter } = options;
+  const helpers = adapter?.helpers as THelpers | undefined;
+  const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
+  const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter);
+  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(schema, metadataAdapter);
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future

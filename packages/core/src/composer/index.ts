@@ -10,7 +10,6 @@ export * from "./fields-builder";
 export * from "./fragment";
 export * from "./fragment-usage-context";
 export * from "./gql-composer";
-export * from "./helpers";
 export * from "./input";
 export * from "./operation";
 export * from "./var-builder";
