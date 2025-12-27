@@ -6,7 +6,7 @@ import type { PluginSession } from "./plugin-session";
  * Matches the Transformer interface from @soda-gql/swc-transformer.
  */
 export interface SwcTransformerInterface {
-  transform(input: { sourceCode: string; sourcePath: string }): {
+  transform(input: { sourceCode: string; sourcePath: string; inputSourceMap?: string }): {
     transformed: boolean;
     sourceCode: string;
     sourceMap?: string;

@@ -5,6 +5,7 @@
  * as input and returning transformed source code.
  */
 
+import remapping from "@ampproject/remapping";
 import { types as t } from "@babel/core";
 import _generate from "@babel/generator";
 import { parse } from "@babel/parser";
@@ -37,6 +38,8 @@ export type TransformInput = {
   sourceCode: string;
   /** Path to the source file */
   sourcePath: string;
+  /** Input source map from previous transformer (JSON string) */
+  inputSourceMap?: string;
 };
 
 /**
@@ -68,7 +71,7 @@ export const createBabelTransformer = (options: TransformOptions): Transformer =
   const { config, artifact, sourceMap = false } = options;
 
   return {
-    transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
+    transform: ({ sourceCode, sourcePath, inputSourceMap }: TransformInput): TransformOutput => {
       // Parse source code to AST
       const ast = parse(sourceCode, {
         sourceType: "module",
@@ -124,10 +127,22 @@ export const createBabelTransformer = (options: TransformOptions): Transformer =
         sourceCode,
       );
 
+      // Handle source map chaining
+      let finalSourceMap: string | undefined;
+      if (sourceMap && output.map) {
+        if (inputSourceMap) {
+          // Chain source maps: our map -> input map -> original source
+          const merged = remapping([output.map, JSON.parse(inputSourceMap)], () => null);
+          finalSourceMap = JSON.stringify(merged);
+        } else {
+          finalSourceMap = JSON.stringify(output.map);
+        }
+      }
+
       return {
         transformed: true,
         sourceCode: output.code,
-        sourceMap: sourceMap && output.map ? JSON.stringify(output.map) : undefined,
+        sourceMap: finalSourceMap,
       };
     },
   };
@@ -157,5 +172,6 @@ export const transform = (
   return transformer.transform({
     sourceCode: input.sourceCode,
     sourcePath: input.sourcePath,
+    inputSourceMap: input.inputSourceMap,
   });
 };

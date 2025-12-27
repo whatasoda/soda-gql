@@ -95,6 +95,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
           const result = swcTransformer.transform({
             sourceCode: source,
             sourcePath: filename,
+            inputSourceMap: inputSourceMap ? JSON.stringify(inputSourceMap) : undefined,
           });
 
           if (result.transformed) {
@@ -123,6 +124,7 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
       const result = babelTransformer.transform({
         sourceCode: source,
         sourcePath: filename,
+        inputSourceMap: inputSourceMap ? JSON.stringify(inputSourceMap) : undefined,
       });
 
       if (result.transformed) {

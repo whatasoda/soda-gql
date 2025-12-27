@@ -6,6 +6,7 @@
 
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
+import remapping from "@ampproject/remapping";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
@@ -98,6 +99,8 @@ export type TransformInput = {
   sourceCode: string;
   /** Path to the source file */
   sourcePath: string;
+  /** Input source map from previous transformer (JSON string) */
+  inputSourceMap?: string;
 };
 
 /**
@@ -186,7 +189,7 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
   const fullArtifact = options.artifact;
 
   return {
-    transform: ({ sourceCode, sourcePath }: TransformInput): TransformOutput => {
+    transform: ({ sourceCode, sourcePath, inputSourceMap }: TransformInput): TransformOutput => {
       // Resolve to absolute path and normalize for canonical ID consistency
       // This ensures bundlers can pass relative paths safely
       const normalizedPath = normalizePath(resolve(sourcePath));
@@ -201,10 +204,22 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
       const resultJson = fileTransformer.transform(sourceCode, normalizedPath);
       const result: TransformResult = JSON.parse(resultJson);
 
+      // Handle source map chaining
+      let finalSourceMap: string | undefined;
+      if (result.sourceMap) {
+        if (inputSourceMap) {
+          // Chain source maps: our map -> input map -> original source
+          const merged = remapping([JSON.parse(result.sourceMap), JSON.parse(inputSourceMap)], () => null);
+          finalSourceMap = JSON.stringify(merged);
+        } else {
+          finalSourceMap = result.sourceMap;
+        }
+      }
+
       return {
         transformed: result.transformed,
         sourceCode: result.outputCode,
-        sourceMap: result.sourceMap,
+        sourceMap: finalSourceMap,
         errors: result.errors ?? [],
       };
     },
@@ -254,10 +269,22 @@ export const transform = async (
   const resultJson = native.transform(inputJson);
   const result: TransformResult = JSON.parse(resultJson);
 
+  // Handle source map chaining
+  let finalSourceMap: string | undefined;
+  if (result.sourceMap) {
+    if (input.inputSourceMap) {
+      // Chain source maps: our map -> input map -> original source
+      const merged = remapping([JSON.parse(result.sourceMap), JSON.parse(input.inputSourceMap)], () => null);
+      finalSourceMap = JSON.stringify(merged);
+    } else {
+      finalSourceMap = result.sourceMap;
+    }
+  }
+
   return {
     transformed: result.transformed,
     sourceCode: result.outputCode,
-    sourceMap: result.sourceMap,
+    sourceMap: finalSourceMap,
     errors: result.errors ?? [],
   };
 };
