@@ -1,4 +1,5 @@
 import { access, readFile, writeFile } from "node:fs/promises";
+import { loadConfig } from "@soda-gql/config";
 import fg from "fast-glob";
 import { FormatArgsSchema } from "../schemas/args";
 import { parseArgs } from "../utils/parse-args";
@@ -57,7 +58,10 @@ const isGlobPattern = (pattern: string): boolean => {
   return /[*?[\]{}]/.test(pattern);
 };
 
-const expandGlobPatterns = async (patterns: readonly string[]): Promise<string[]> => {
+const expandGlobPatterns = async (
+  patterns: readonly string[],
+  excludePatterns: readonly string[] = [],
+): Promise<string[]> => {
   const files: string[] = [];
 
   for (const pattern of patterns) {
@@ -72,26 +76,30 @@ const expandGlobPatterns = async (patterns: readonly string[]): Promise<string[]
       continue;
     }
 
-    // Glob pattern - use fast-glob
-    const matches = await fg(pattern, { absolute: true });
+    // Glob pattern - use fast-glob with ignore
+    const matches = await fg(pattern, {
+      absolute: true,
+      ignore: [...excludePatterns],
+    });
     files.push(...matches);
   }
 
   return [...new Set(files)];
 };
 
-const FORMAT_HELP = `Usage: soda-gql format <patterns...> [options]
+const FORMAT_HELP = `Usage: soda-gql format [patterns...] [options]
 
 Format soda-gql field selections by inserting empty comments.
 
 Options:
-  --check     Check if files need formatting (exit 1 if unformatted)
-  --help, -h  Show this help message
+  --config <path>  Path to soda-gql.config.ts (auto-detected if omitted)
+  --check          Check if files need formatting (exit 1 if unformatted)
+  --help, -h       Show this help message
 
 Examples:
-  soda-gql format "src/**/*.ts"
-  soda-gql format "src/**/*.ts" --check
-  soda-gql format "src/**/*.ts" "lib/**/*.tsx"
+  soda-gql format                     # Use config include/exclude
+  soda-gql format "src/**/*.ts"       # Override with explicit patterns
+  soda-gql format --check             # Check mode with config
 `;
 
 export const formatCommand = async (argv: readonly string[]): Promise<number> => {
@@ -113,15 +121,27 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
 
   const args = parsed.value;
   const isCheckMode = args.check === true;
-  const patterns = args._ ?? [];
+  const explicitPatterns = args._ ?? [];
 
-  if (patterns.length === 0) {
-    const error: FormatError = {
-      code: "NO_PATTERNS",
-      message: "No file patterns provided. Usage: soda-gql format <patterns...> [--check]",
-    };
-    process.stderr.write(`${formatFormatError(error)}\n`);
-    return 1;
+  // Determine patterns: use explicit patterns or load from config
+  let targetPatterns: readonly string[];
+  let excludePatterns: readonly string[] = [];
+
+  if (explicitPatterns.length > 0) {
+    targetPatterns = explicitPatterns;
+  } else {
+    // Try to load patterns from config
+    const configResult = loadConfig(args.config);
+    if (configResult.isErr()) {
+      const error: FormatError = {
+        code: "NO_PATTERNS",
+        message: "No patterns provided and config not found. Usage: soda-gql format [patterns...] [--check]",
+      };
+      process.stderr.write(`${formatFormatError(error)}\n`);
+      return 1;
+    }
+    targetPatterns = configResult.value.include;
+    excludePatterns = configResult.value.exclude;
   }
 
   // Load formatter lazily - it's an optional dependency
@@ -135,7 +155,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
     return 1;
   }
 
-  const files = await expandGlobPatterns(patterns);
+  const files = await expandGlobPatterns(targetPatterns, excludePatterns);
 
   if (files.length === 0) {
     const result: FormatResult = {

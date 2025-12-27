@@ -14,6 +14,7 @@ export const BuilderArgsSchema = z.object({
 
 export const FormatArgsSchema = z.object({
   _: z.array(z.string()).optional(),
+  config: z.string().optional(),
   check: z.boolean().optional(),
 });
 

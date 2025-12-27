@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { createTempConfigFile } from "@soda-gql/config/test";
 import { assertCliSuccess, getProjectRoot, runFormatCli } from "./utils/cli";
 
 const projectRoot = getProjectRoot();
@@ -128,8 +129,12 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
   });
 
   describe("error handling", () => {
-    it("returns error when no patterns provided", async () => {
-      const result = await runFormatCli([]);
+    it("returns error when no patterns and no config", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      // Run from a directory without config
+      const result = await runFormatCli([], { cwd: caseDir });
 
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain("NO_PATTERNS");
@@ -143,6 +148,107 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("0 file(s) checked");
+    });
+  });
+
+  describe("config-based patterns", () => {
+    it("uses include patterns from config when no patterns provided", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      const srcDir = join(caseDir, "src");
+      mkdirSync(srcDir, { recursive: true });
+
+      // Create test file
+      const testFile = join(srcDir, "test.ts");
+      const unformatted = `import { gql } from "@/graphql-system";
+export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+`;
+      await Bun.write(testFile, unformatted);
+
+      // Create config with include pattern
+      const configPath = createTempConfigFile(caseDir, {
+        outdir: "./graphql-system",
+        include: ["src/**/*.ts"],
+        schemas: {
+          default: {
+            schema: "./schema.graphql",
+            inject: { scalars: "./scalars.ts" },
+          },
+        },
+      });
+
+      const result = await runFormatCli(["--config", configPath]);
+
+      assertCliSuccess(result);
+      expect(result.stdout).toContain("1 formatted");
+    });
+
+    it("respects exclude patterns from config", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      const srcDir = join(caseDir, "src");
+      mkdirSync(srcDir, { recursive: true });
+
+      // Create regular file and test file
+      const regularFile = join(srcDir, "app.ts");
+      const testFile = join(srcDir, "app.test.ts");
+      const unformatted = `import { gql } from "@/graphql-system";
+export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+`;
+      await Bun.write(regularFile, unformatted);
+      await Bun.write(testFile, unformatted);
+
+      // Create config that excludes test files
+      const configPath = createTempConfigFile(caseDir, {
+        outdir: "./graphql-system",
+        include: ["src/**/*.ts"],
+        exclude: ["src/**/*.test.ts"],
+        schemas: {
+          default: {
+            schema: "./schema.graphql",
+            inject: { scalars: "./scalars.ts" },
+          },
+        },
+      });
+
+      const result = await runFormatCli(["--config", configPath]);
+
+      assertCliSuccess(result);
+      // Only 1 file should be formatted (the test file is excluded)
+      expect(result.stdout).toContain("1 file(s) checked");
+      expect(result.stdout).toContain("1 formatted");
+    });
+
+    it("explicit patterns override config", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      const srcDir = join(caseDir, "src");
+      const libDir = join(caseDir, "lib");
+      mkdirSync(srcDir, { recursive: true });
+      mkdirSync(libDir, { recursive: true });
+
+      const srcFile = join(srcDir, "app.ts");
+      const libFile = join(libDir, "util.ts");
+      const unformatted = `import { gql } from "@/graphql-system";
+export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+`;
+      await Bun.write(srcFile, unformatted);
+      await Bun.write(libFile, unformatted);
+
+      // Config includes src, but we explicitly specify lib
+      createTempConfigFile(caseDir, {
+        outdir: "./graphql-system",
+        include: ["src/**/*.ts"],
+        schemas: {
+          default: {
+            schema: "./schema.graphql",
+            inject: { scalars: "./scalars.ts" },
+          },
+        },
+      });
+
+      // Explicitly specify lib directory only
+      const result = await runFormatCli([join(libDir, "*.ts")]);
+
+      assertCliSuccess(result);
+      expect(result.stdout).toContain("1 file(s) checked");
     });
   });
 
