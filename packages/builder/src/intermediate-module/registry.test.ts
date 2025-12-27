@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createCanonicalId } from "@soda-gql/common";
-import { GqlElement, Fragment } from "@soda-gql/core";
+import { Fragment, GqlElement } from "@soda-gql/core";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { createIntermediateRegistry } from "./registry";
 

@@ -4,8 +4,8 @@ import type {
   AnyMetadataAdapter,
   DefaultMetadataAdapter,
   ExtractAdapterTypes,
-  MetadataBuilder,
   FragmentMetaInfo,
+  MetadataBuilder,
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
@@ -13,8 +13,8 @@ import type { InputTypeSpecifiers } from "../types/type-foundation";
 
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
-import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
+import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
 export const createOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
@@ -94,8 +94,8 @@ export const createOperationComposerFactory = <
         }
 
         // Evaluate fragment metadata first (sync or async)
-        const fragmentMetadataResults: (TFragmentMetadata | undefined | Promise<TFragmentMetadata>)[] = fragmentUsages.map((usage) =>
-          usage.metadataBuilder ? usage.metadataBuilder() : undefined,
+        const fragmentMetadataResults: (TFragmentMetadata | undefined | Promise<TFragmentMetadata>)[] = fragmentUsages.map(
+          (usage) => (usage.metadataBuilder ? usage.metadataBuilder() : undefined),
         );
 
         // Check if any fragment metadata is async
@@ -112,7 +112,9 @@ export const createOperationComposerFactory = <
           }));
 
           // Aggregate using the adapter
-          const aggregatedFragmentMetadata = resolvedAdapter.aggregateFragmentMetadata(fragmentMetaInfos) as TAggregatedFragmentMetadata;
+          const aggregatedFragmentMetadata = resolvedAdapter.aggregateFragmentMetadata(
+            fragmentMetaInfos,
+          ) as TAggregatedFragmentMetadata;
 
           // Call operation metadata builder with aggregated fragment metadata and schema-level config
           const schemaLevel = resolvedAdapter.schemaLevel as TSchemaLevel | undefined;

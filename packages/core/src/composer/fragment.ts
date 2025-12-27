@@ -1,4 +1,4 @@
-import { type FieldsBuilder, type MergeFields, Fragment, mergeFields } from "../types/element";
+import { type FieldsBuilder, Fragment, type MergeFields, mergeFields } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
@@ -6,8 +6,8 @@ import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { getCurrentFieldPath } from "./field-path-context";
 import { createFieldFactories } from "./fields-builder";
-import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 import { recordFragmentUsage } from "./fragment-usage-context";
+import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
 
 export const createGqlFragmentComposers = <
   TSchema extends AnyGraphqlSchema,

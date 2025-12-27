@@ -36,7 +36,10 @@ declare function __validate_BuilderArtifactFragmentSchema<
   _ extends z.infer<typeof BuilderArtifactFragmentSchema> = BuilderArtifactFragment,
 >(): never;
 
-const BuilderArtifactElementSchema = z.discriminatedUnion("type", [BuilderArtifactOperationSchema, BuilderArtifactFragmentSchema]);
+const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
+  BuilderArtifactOperationSchema,
+  BuilderArtifactFragmentSchema,
+]);
 
 export const BuilderArtifactSchema = z.object({
   elements: z.record(z.string<CanonicalId>(), BuilderArtifactElementSchema),

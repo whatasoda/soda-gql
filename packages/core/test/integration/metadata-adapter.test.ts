@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
-import type { MetadataAdapter, FragmentMetaInfo, OperationMetadata } from "../../src/types/metadata";
+import type { FragmentMetaInfo, MetadataAdapter, OperationMetadata } from "../../src/types/metadata";
 import { defaultMetadataAdapter } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
