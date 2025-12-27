@@ -1,6 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "customConditions": ["@soda-gql"],
     "strict": true,
     "paths": {
       "@/graphql-system": ["./graphql-system/index.ts"],

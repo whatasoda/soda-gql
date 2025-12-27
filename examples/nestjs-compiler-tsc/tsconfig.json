@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "customConditions": ["@soda-gql"],
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
