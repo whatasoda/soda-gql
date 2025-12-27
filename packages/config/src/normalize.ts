@@ -13,14 +13,12 @@ function normalizeInject(inject: InjectConfig, configDir: string): ResolvedInjec
     const resolvedPath = resolve(configDir, inject);
     return {
       scalars: resolvedPath,
-      helpers: resolvedPath,
-      metadata: resolvedPath,
+      adapter: resolvedPath,
     };
   }
   return {
     scalars: resolve(configDir, inject.scalars),
-    ...(inject.helpers ? { helpers: resolve(configDir, inject.helpers) } : {}),
-    ...(inject.metadata ? { metadata: resolve(configDir, inject.metadata) } : {}),
+    ...(inject.adapter ? { adapter: resolve(configDir, inject.adapter) } : {}),
   };
 }
 

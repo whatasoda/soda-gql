@@ -95,8 +95,7 @@ describe("normalize.ts", () => {
       if (result.isOk()) {
         const defaultSchema = result.value.schemas.default;
         expect(defaultSchema?.inject.scalars).toContain("inject.ts");
-        expect(defaultSchema?.inject.helpers).toContain("inject.ts");
-        expect(defaultSchema?.inject.metadata).toContain("inject.ts");
+        expect(defaultSchema?.inject.adapter).toContain("inject.ts");
       }
     });
   });

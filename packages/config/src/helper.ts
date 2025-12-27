@@ -45,7 +45,7 @@ export class SodaGqlConfigContainer {
  *   schemas: {
  *     default: {
  *       schema: "./schema.graphql",
- *       inject: "./inject.ts",  // exports scalar, helpers?, metadata?
+ *       inject: "./inject.ts",  // exports scalar, adapter?
  *     },
  *   },
  * });
@@ -67,8 +67,7 @@ const InjectConfigSchema: z.ZodType<InjectConfig> = z.union([
   z.string().min(1),
   z.object({
     scalars: z.string().min(1),
-    helpers: z.string().min(1).optional(),
-    metadata: z.string().min(1).optional(),
+    adapter: z.string().min(1).optional(),
   }),
 ]);
 

@@ -57,10 +57,72 @@ export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TFragment, 
 export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
+ * Unified adapter that combines helpers and metadata configuration.
+ *
+ * @template THelpers - Custom helper functions accessible in gql composer callbacks
+ * @template TFragmentMetadata - The metadata type returned by fragment metadata builders
+ * @template TAggregatedFragmentMetadata - The type returned by aggregateFragmentMetadata
+ * @template TSchemaLevel - The type of schema-level configuration values
+ *
+ * @example
+ * ```typescript
+ * const adapter = defineAdapter({
+ *   helpers: {
+ *     auth: {
+ *       requiresLogin: () => ({ requiresAuth: true }),
+ *     },
+ *   },
+ *   metadata: {
+ *     aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+ *     schemaLevel: { apiVersion: "v2" },
+ *   },
+ * });
+ * ```
+ */
+export type Adapter<
+  THelpers extends object = object,
+  TFragmentMetadata = unknown,
+  TAggregatedFragmentMetadata = unknown,
+  TSchemaLevel = unknown,
+> = {
+  /** Custom helper functions accessible in gql composer callbacks */
+  readonly helpers?: THelpers;
+  /** Metadata configuration for fragments and operations */
+  readonly metadata?: MetadataAdapter<TFragmentMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+};
+
+/**
+ * Generic type for any unified adapter.
+ */
+export type AnyAdapter = Adapter<any, any, any, any>;
+
+/**
+ * Extracts the type parameters from a unified Adapter.
+ */
+export type ExtractUnifiedAdapterTypes<T> = T extends Adapter<
+  infer THelpers,
+  infer TFragment,
+  infer TAggregated,
+  infer TSchemaLevel
+>
+  ? {
+      helpers: THelpers;
+      fragmentMetadata: TFragment;
+      aggregatedFragmentMetadata: TAggregated;
+      schemaLevel: TSchemaLevel;
+    }
+  : never;
+
+/**
  * Default adapter that maintains backwards compatibility with the original behavior.
  * Uses OperationMetadata for fragment metadata and aggregates by collecting metadata into a readonly array.
  */
 export type DefaultMetadataAdapter = MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]>;
+
+/**
+ * Default unified adapter type.
+ */
+export type DefaultAdapter = Adapter<object, OperationMetadata, readonly (OperationMetadata | undefined)[]>;
 
 /**
  * Creates the default adapter instance.
