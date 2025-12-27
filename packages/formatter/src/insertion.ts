@@ -1,25 +1,36 @@
-import { types as t } from "@babel/core";
+/**
+ * The empty comment string to insert after array opening bracket
+ */
+export const EMPTY_COMMENT_INSERTION = "\n//\n";
 
 /**
- * Check if an array already has a leading empty comment on its first element
+ * Check if there's already an empty line comment after the opening bracket.
+ * Uses string inspection rather than AST comments.
+ *
+ * @param source - The source code string
+ * @param arrayStartPos - The position of the `[` character in the source
  */
-export const hasLeadingEmptyComment = (array: t.ArrayExpression): boolean => {
-  const firstElement = array.elements[0];
-  if (!firstElement) return true; // Empty array, nothing to format
+export const hasExistingEmptyComment = (source: string, arrayStartPos: number): boolean => {
+  // Skip the `[` character
+  let pos = arrayStartPos + 1;
 
-  const comments = firstElement.leadingComments;
-  if (!comments || comments.length === 0) return false;
+  // Skip whitespace (spaces, tabs, newlines)
+  while (pos < source.length && /\s/.test(source[pos])) {
+    pos++;
+  }
 
-  // Check if any leading comment is an empty line comment
-  return comments.some((c) => c.type === "CommentLine" && c.value.trim() === "");
-};
+  // Check if next characters are `//`
+  if (source.slice(pos, pos + 2) !== "//") {
+    return false;
+  }
 
-/**
- * Insert an empty line comment before the first element of the array
- */
-export const insertEmptyComment = (array: t.ArrayExpression): void => {
-  const firstElement = array.elements[0];
-  if (!firstElement) return;
+  // Check if it's an empty comment (only whitespace until newline)
+  const endOfLine = source.indexOf("\n", pos + 2);
+  if (endOfLine === -1) {
+    // Comment at end of file - consider it empty
+    return source.slice(pos + 2).trim() === "";
+  }
 
-  t.addComment(firstElement, "leading", "", true);
+  const commentContent = source.slice(pos + 2, endOfLine).trim();
+  return commentContent === "";
 };

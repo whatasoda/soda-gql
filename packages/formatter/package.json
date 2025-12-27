@@ -26,14 +26,12 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@babel/core": "^7.24.0",
-    "@babel/generator": "^7.24.0",
-    "@babel/parser": "^7.24.0",
-    "@babel/traverse": "^7.24.0",
-    "@babel/types": "^7.24.0",
     "neverthrow": "^8.1.1"
   },
+  "peerDependencies": {
+    "@swc/core": "^1.0.0"
+  },
   "devDependencies": {
-    "@types/babel__generator": "^7.27.0"
+    "@swc/types": "^0.1.0"
   }
 }
