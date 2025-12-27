@@ -514,8 +514,7 @@ export type GeneratedModule = {
 
 type PerSchemaInjection = {
   readonly scalarImportPath: string;
-  readonly helpersImportPath?: string;
-  readonly metadataImportPath?: string;
+  readonly adapterImportPath?: string;
 };
 
 type RuntimeTemplateInjection =
@@ -550,8 +549,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   // Build imports based on injection mode
   const imports: string[] = [];
   const scalarAliases = new Map<string, string>();
-  const helpersAliases = new Map<string, string>();
-  const metadataAliases = new Map<string, string>();
+  const adapterAliases = new Map<string, string>();
 
   if ($$.injection.mode === "inject") {
     // Group imports by file path
@@ -568,26 +566,15 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
       }
       scalarSpecifiers.push(`scalar as ${scalarAlias}`);
 
-      // Group helpers import (optional)
-      if (injection.helpersImportPath) {
-        const helpersAlias = `helpers_${schemaName}`;
-        helpersAliases.set(schemaName, helpersAlias);
-        const helpersSpecifiers = importsByPath.get(injection.helpersImportPath) ?? [];
-        if (!importsByPath.has(injection.helpersImportPath)) {
-          importsByPath.set(injection.helpersImportPath, helpersSpecifiers);
+      // Group adapter import (optional)
+      if (injection.adapterImportPath) {
+        const adapterAlias = `adapter_${schemaName}`;
+        adapterAliases.set(schemaName, adapterAlias);
+        const adapterSpecifiers = importsByPath.get(injection.adapterImportPath) ?? [];
+        if (!importsByPath.has(injection.adapterImportPath)) {
+          importsByPath.set(injection.adapterImportPath, adapterSpecifiers);
         }
-        helpersSpecifiers.push(`helpers as ${helpersAlias}`);
-      }
-
-      // Group metadata import (optional)
-      if (injection.metadataImportPath) {
-        const metadataAlias = `metadata_${schemaName}`;
-        metadataAliases.set(schemaName, metadataAlias);
-        const metadataSpecifiers = importsByPath.get(injection.metadataImportPath) ?? [];
-        if (!importsByPath.has(injection.metadataImportPath)) {
-          importsByPath.set(injection.metadataImportPath, metadataSpecifiers);
-        }
-        metadataSpecifiers.push(`metadata as ${metadataAlias}`);
+        adapterSpecifiers.push(`adapter as ${adapterAlias}`);
       }
     }
 
@@ -611,13 +598,13 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     const schemaVar = `${name}Schema`;
     const scalarBlock = $$.injection.mode === "inject" ? scalarAliases.get(name) : config.scalarBlock;
 
-    // Get optional helpers
-    const helpersVar = helpersAliases.get(name);
+    // Get optional adapter
+    const adapterVar = adapterAliases.get(name);
 
     // Build type exports
     const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
-    if (helpersVar) {
-      typeExports.push(`export type Helpers_${name} = typeof ${helpersVar} & { _?: never };`);
+    if (adapterVar) {
+      typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
 
     schemaBlocks.push(`
@@ -638,23 +625,9 @@ const ${schemaVar} = {
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options if needed
-    const metadataVar = metadataAliases.get(name);
-    const options: string[] = [];
-
-    if (helpersVar) {
-      options.push(`helpers: ${helpersVar}`);
-    }
-    if (metadataVar) {
-      options.push(`adapter: ${metadataVar}`);
-    }
-
-    if (options.length > 0) {
-      const typeParams = metadataVar
-        ? helpersVar
-          ? `<Schema_${name}, Helpers_${name}, typeof ${metadataVar}>`
-          : `<Schema_${name}, object, typeof ${metadataVar}>`
-        : `<Schema_${name}, Helpers_${name}>`;
-      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { ${options.join(", ")} })`);
+    if (adapterVar) {
+      const typeParams = `<Schema_${name}, Adapter_${name}>`;
+      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar} })`);
     } else {
       gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar})`);
     }

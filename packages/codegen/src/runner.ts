@@ -72,24 +72,13 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       });
     }
 
-    if (schemaConfig.inject.helpers) {
-      const helpersPath = resolve(schemaConfig.inject.helpers);
-      if (!existsSync(helpersPath)) {
+    if (schemaConfig.inject.adapter) {
+      const adapterPath = resolve(schemaConfig.inject.adapter);
+      if (!existsSync(adapterPath)) {
         return err({
           code: "INJECT_MODULE_NOT_FOUND",
-          message: `Helpers module not found for schema '${schemaName}': ${helpersPath}`,
-          injectPath: helpersPath,
-        });
-      }
-    }
-
-    if (schemaConfig.inject.metadata) {
-      const metadataPath = resolve(schemaConfig.inject.metadata);
-      if (!existsSync(metadataPath)) {
-        return err({
-          code: "INJECT_MODULE_NOT_FOUND",
-          message: `Metadata module not found for schema '${schemaName}': ${metadataPath}`,
-          injectPath: metadataPath,
+          message: `Adapter module not found for schema '${schemaName}': ${adapterPath}`,
+          injectPath: adapterPath,
         });
       }
     }
@@ -117,8 +106,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     string,
     {
       scalarImportPath: string;
-      helpersImportPath?: string;
-      metadataImportPath?: string;
+      adapterImportPath?: string;
     }
   >();
 
@@ -127,11 +115,8 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
 
     injectionConfig.set(schemaName, {
       scalarImportPath: toImportSpecifier(outPath, resolve(injectConfig.scalars), importSpecifierOptions),
-      ...(injectConfig.helpers
-        ? { helpersImportPath: toImportSpecifier(outPath, resolve(injectConfig.helpers), importSpecifierOptions) }
-        : {}),
-      ...(injectConfig.metadata
-        ? { metadataImportPath: toImportSpecifier(outPath, resolve(injectConfig.metadata), importSpecifierOptions) }
+      ...(injectConfig.adapter
+        ? { adapterImportPath: toImportSpecifier(outPath, resolve(injectConfig.adapter), importSpecifierOptions) }
         : {}),
     });
   }

@@ -5,8 +5,7 @@ export type CodegenFormat = "json" | "human";
 // Inject configuration per schema (always resolved object form)
 export type CodegenInjectConfig = {
   readonly scalars: string;
-  readonly helpers?: string;
-  readonly metadata?: string;
+  readonly adapter?: string;
 };
 
 // Schema configuration for codegen (mirrors config structure)
