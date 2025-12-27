@@ -43,18 +43,18 @@ describe("createGqlInvoker", () => {
     let idVarRef: Record<string, any> | undefined;
     let fieldArgRef: any;
 
-    const userModel = gql(({ model }, { $var }) => {
+    const userFragment = gql(({ fragment }, { $var }) => {
       idVarRef = $var("id").scalar("ID:!");
       fieldArgRef = $var("id").byField("Query", "user", "id");
 
-      return model.User({}, ({ f }) => [
+      return fragment.User({}, ({ f }) => [
         //
         f.id(),
         f.name(),
       ]);
     });
 
-    expect(userModel.typename).toBe("User");
+    expect(userFragment.typename).toBe("User");
     expect(idVarRef?.id.kind).toBe("scalar");
     expect(idVarRef?.id.name).toBe("ID");
     expect(idVarRef?.id.modifier).toBe("!");
@@ -63,24 +63,24 @@ describe("createGqlInvoker", () => {
     expect(fieldArgRef?.modifier).toBe("!");
   });
 
-  it("creates model descriptors with fragment wiring", () => {
-    const userModel = gql(({ model }) =>
-      model.User({}, ({ f }) => [
+  it("creates fragment descriptors with fragment wiring", () => {
+    const userFragment = gql(({ fragment }) =>
+      fragment.User({}, ({ f }) => [
         //
         f.id(),
         f.name(),
       ]),
     );
 
-    expect(userModel.typename).toBe("User");
-    const fields = userModel.embed({} as never);
+    expect(userFragment.typename).toBe("User");
+    const fields = userFragment.embed({} as never);
     expect(fields).toHaveProperty("id");
     expect(fields).toHaveProperty("name");
   });
 
   it("creates inline operations with variable references", () => {
-    const userModel = gql(({ model }) =>
-      model.User({}, ({ f }) => [
+    const userFragment = gql(({ fragment }) =>
+      fragment.User({}, ({ f }) => [
         //
         f.id(),
         f.name(),
@@ -97,7 +97,7 @@ describe("createGqlInvoker", () => {
           //
           f.user({ id: $.userId })(() => [
             //
-            userModel.embed(),
+            userFragment.embed(),
           ]),
         ],
       ),

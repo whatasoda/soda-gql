@@ -3,14 +3,14 @@ export type {
   DefaultMetadataAdapter,
   ExtractAdapterTypes,
   MetadataAdapter,
-  ModelMetaInfo,
+  FragmentMetaInfo,
 } from "./adapter";
 export { createDefaultAdapter, defaultMetadataAdapter } from "./adapter";
 export type {
   ExtractMetadata,
   MetadataBuilder,
   MetadataBuilderTools,
-  ModelMetadataBuilder,
-  ModelMetadataBuilderTools,
+  FragmentMetadataBuilder,
+  FragmentMetadataBuilderTools,
   OperationMetadata,
 } from "./metadata";

@@ -2,7 +2,7 @@
  * Unified GqlCall types used across all plugins.
  */
 
-import type { BuilderArtifactModel, BuilderArtifactOperation } from "@soda-gql/builder";
+import type { BuilderArtifactFragment, BuilderArtifactOperation } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 
 /**
@@ -13,11 +13,11 @@ export interface GqlCallBase {
 }
 
 /**
- * GraphQL model call.
+ * GraphQL fragment call.
  */
-export interface GqlCallModel extends GqlCallBase {
-  readonly type: "model";
-  readonly artifact: BuilderArtifactModel;
+export interface GqlCallFragment extends GqlCallBase {
+  readonly type: "fragment";
+  readonly artifact: BuilderArtifactFragment;
 }
 
 /**
@@ -31,4 +31,4 @@ export interface GqlCallOperation extends GqlCallBase {
 /**
  * Union of all GraphQL call types.
  */
-export type GqlCall = GqlCallModel | GqlCallOperation;
+export type GqlCall = GqlCallFragment | GqlCallOperation;
