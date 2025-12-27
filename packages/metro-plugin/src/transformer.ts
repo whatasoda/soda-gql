@@ -1,5 +1,5 @@
-import remapping from "@ampproject/remapping";
 import crypto from "node:crypto";
+import remapping, { type SourceMapInput } from "@ampproject/remapping";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
 import { normalizePath } from "@soda-gql/common";
@@ -179,7 +179,8 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
 
   // Chain source maps if both exist
   if (babelResult.map && upstreamResult.map) {
-    const mergedMap = remapping([upstreamResult.map as Parameters<typeof remapping>[0][0], babelResult.map], () => null);
+    // Type assertion needed because Metro's map type is looser than remapping expects
+    const mergedMap = remapping([upstreamResult.map as SourceMapInput, babelResult.map as SourceMapInput], () => null);
     return { ...upstreamResult, map: mergedMap };
   }
 

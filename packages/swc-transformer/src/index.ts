@@ -4,9 +4,9 @@
  * This module provides a TypeScript wrapper around the native Rust transformer.
  */
 
-import remapping from "@ampproject/remapping";
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
+import remapping from "@ampproject/remapping";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
