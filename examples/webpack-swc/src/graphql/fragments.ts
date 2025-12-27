@@ -1,10 +1,10 @@
 import { gql } from "@/graphql-system";
 
 /**
- * User model with nested posts
+ * User fragment with nested posts
  */
-export const userModel = gql.default(({ model }, { $var }) =>
-  model.User(
+export const userFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.User(
     {
       variables: [$var("categoryId").scalar("ID:!")],
     },
@@ -13,6 +13,6 @@ export const userModel = gql.default(({ model }, { $var }) =>
 );
 
 /**
- * Simple post model
+ * Simple post fragment
  */
-export const postModel = gql.default(({ model }) => model.Post({}, ({ f }) => [f.id(), f.title(), f.body()]));
+export const postFragment = gql.default(({ fragment }) => fragment.Post({}, ({ f }) => [f.id(), f.title(), f.body()]));

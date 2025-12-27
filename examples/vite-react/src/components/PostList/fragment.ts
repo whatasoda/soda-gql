@@ -5,8 +5,8 @@ import { gql } from "@/graphql-system";
  * Fragment for PostList component.
  * Fetches posts for a specific user.
  */
-export const postListFragment = gql.default(({ model }, { $var }) =>
-  model.Query({ variables: [$var("userId").scalar("ID:!")] }, ({ f, $ }) => [
+export const postListFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.Query({ variables: [$var("userId").scalar("ID:!")] }, ({ f, $ }) => [
     f.user({ id: $.userId })(({ f }) => [f.posts({})(({ f }) => [f.id(), f.title()])]),
   ]),
 );
