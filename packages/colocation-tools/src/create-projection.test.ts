@@ -14,9 +14,9 @@ describe("createProjection", () => {
   };
 
   it("should create a projection with paths and handle function", () => {
-    const model = createMockFragment();
+    const fragment = createMockFragment();
 
-    const projection = createProjection(model, {
+    const projection = createProjection(fragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isError()) {
@@ -35,9 +35,9 @@ describe("createProjection", () => {
   });
 
   it("should handle success result correctly", () => {
-    const model = createMockFragment();
+    const fragment = createMockFragment();
 
-    const projection = createProjection(model, {
+    const projection = createProjection(fragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isSuccess()) {
@@ -56,9 +56,9 @@ describe("createProjection", () => {
   });
 
   it("should handle error result correctly", () => {
-    const model = createMockFragment();
+    const fragment = createMockFragment();
 
-    const projection = createProjection(model, {
+    const projection = createProjection(fragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isError()) {

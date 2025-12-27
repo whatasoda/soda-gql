@@ -36,7 +36,7 @@ type TypeScriptGqlCall = GqlCall<ts.CallExpression>;
 ```
 
 Available variants:
-- `GqlCallModel<TCallNode>` - Model definitions
+- `GqlCallFragment<TCallNode>` - Fragment definitions
 - `GqlCallSlice<TCallNode>` - Query/mutation/subscription slices
 - `GqlCallOperation<TCallNode>` - Composed operations
 - `GqlCallInlineOperation<TCallNode>` - Inline operations
@@ -205,7 +205,7 @@ function transformNode(node, metadata, artifact) {
   }
 
   const gqlCall = gqlCallResult.value;
-  // Transform based on gqlCall.type: "model" | "slice" | "operation" | "inlineOperation"
+  // Transform based on gqlCall.type: "fragment" | "slice" | "operation" | "inlineOperation"
 }
 ```
 
@@ -268,7 +268,7 @@ This package is written in TypeScript and provides complete type definitions:
 ```typescript
 import type {
   GqlCall,
-  GqlCallModel,
+  GqlCallFragment,
   GqlDefinitionMetadata,
   PluginError,
   PluginOptions,

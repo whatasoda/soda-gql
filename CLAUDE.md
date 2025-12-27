@@ -153,12 +153,12 @@ bun typecheck
 **Example Structure**:
 ```typescript
 // Bad: Inline string test code
-const source = `import { gql } from "@/graphql-system"; export const model = gql.default(...)`;
+const source = `import { gql } from "@/graphql-system"; export const fragment = gql.default(...)`;
 const result = analyze(source);
 
 // Good: Fixture-based test code
 import { loadFixture } from "@soda-gql/common/test";
-const { filePath, source } = loadFixture("model-definition");
+const { filePath, source } = loadFixture("fragment-definition");
 const result = analyze({ filePath, source });
 ```
 

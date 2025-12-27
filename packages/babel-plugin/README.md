@@ -167,19 +167,19 @@ The plugin automatically handles both ESM and CommonJS:
 **Input (ESM)**:
 ```typescript
 import { gql } from "@/graphql-system";
-export const model = gql.default(/* ... */);
+export const fragment = gql.default(/* ... */);
 ```
 
 **Output (ESM)**:
 ```typescript
 import { gqlRuntime } from "@soda-gql/runtime";
-export const model = gqlRuntime.model("canonicalId", /* ... */);
+export const fragment = gqlRuntime.fragment("canonicalId", /* ... */);
 ```
 
 **Output (CommonJS)** - when using `@babel/plugin-transform-modules-commonjs`:
 ```javascript
 const { gqlRuntime } = require("@soda-gql/runtime");
-module.exports.model = gqlRuntime.model("canonicalId", /* ... */);
+module.exports.fragment = gqlRuntime.fragment("canonicalId", /* ... */);
 ```
 
 ## Architecture
@@ -194,7 +194,7 @@ module.exports.model = gqlRuntime.model("canonicalId", /* ... */);
 
 ### Supported GraphQL Elements
 
-- **Models**: Fragment definitions with data normalization
+- **Fragments**: Fragment definitions with data normalization
 - **Operations**: Query/mutation/subscription operations with field selections
 
 ## Comparison with Other Plugins
