@@ -1,23 +1,20 @@
 import { resolve } from "node:path";
-import type { CodegenError, CodegenFormat, CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
+import type { CodegenError, CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
 import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { CodegenArgsSchema } from "../schemas/args";
-import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 import { parseArgs } from "../utils/parse-args";
 
 type ParsedCommand =
   | {
       kind: "emitInjectTemplate";
       outPath: string;
-      format: CodegenFormat;
     }
   | {
       kind: "generate";
       schemas: Record<string, CodegenSchemaConfig>;
       outPath: string;
-      format: CodegenFormat;
       importExtension: boolean;
     };
 
@@ -39,7 +36,6 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     return ok<ParsedCommand, CodegenError>({
       kind: "emitInjectTemplate",
       outPath: args["emit-inject-template"],
-      format: (args.format ?? "human") as CodegenFormat,
     });
   }
 
@@ -81,40 +77,49 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     kind: "generate",
     schemas,
     outPath,
-    format: (args.format ?? "human") as CodegenFormat,
     importExtension: config.styles.importExtension,
   });
 };
 
-const formatSuccess = (format: OutputFormat, success: CodegenSuccess) => {
-  if (format === "json") {
-    return formatOutput(success, "json");
-  }
+const formatSuccess = (success: CodegenSuccess): string => {
   const schemaNames = Object.keys(success.schemas).join(", ");
   const totalObjects = Object.values(success.schemas).reduce((sum, s) => sum + s.objects, 0);
   return `Generated ${totalObjects} objects from schemas: ${schemaNames}\n  TypeScript: ${success.outPath}\n  CommonJS: ${success.cjsPath}`;
 };
 
-const formatTemplateSuccess = (format: OutputFormat, outPath: string) => {
-  if (format === "json") {
-    return formatOutput({ outPath }, "json");
-  }
+const formatTemplateSuccess = (outPath: string): string => {
   return `Created inject template → ${outPath}`;
 };
 
-const formatCodegenError = (format: OutputFormat, error: CodegenError) => {
-  if (format === "json") {
-    return formatError(error, "json");
-  }
+const formatCodegenError = (error: CodegenError): string => {
   return `${error.code}: ${"message" in error ? error.message : "Unknown error"}`;
 };
 
+const CODEGEN_HELP = `Usage: soda-gql codegen [options]
+
+Generate graphql-system runtime module from GraphQL schema.
+
+Options:
+  --config <path>                Path to soda-gql.config.ts
+  --emit-inject-template <path>  Create inject template file
+  --help, -h                     Show this help message
+
+Examples:
+  soda-gql codegen --config ./soda-gql.config.ts
+  soda-gql codegen --emit-inject-template ./src/graphql/scalars.ts
+`;
+
 export const codegenCommand = async (argv: readonly string[]): Promise<number> => {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    process.stdout.write(CODEGEN_HELP);
+    return 0;
+  }
+
   try {
     const parsed = parseCodegenArgs(argv);
 
     if (parsed.isErr()) {
-      process.stderr.write(`${formatCodegenError("json", parsed.error)}\n`);
+      process.stderr.write(`${formatCodegenError(parsed.error)}\n`);
       return 1;
     }
 
@@ -124,10 +129,10 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       const outPath = resolve(command.outPath);
       const result = writeInjectTemplate(outPath);
       if (result.isErr()) {
-        process.stderr.write(`${formatCodegenError(command.format, result.error)}\n`);
+        process.stderr.write(`${formatCodegenError(result.error)}\n`);
         return 1;
       }
-      process.stdout.write(`${formatTemplateSuccess(command.format, outPath)}\n`);
+      process.stdout.write(`${formatTemplateSuccess(outPath)}\n`);
       return 0;
     }
 
@@ -147,16 +152,16 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
     const result = await runCodegen({
       schemas: resolvedSchemas,
       outPath: resolve(command.outPath),
-      format: command.format,
+      format: "human",
       importExtension: command.importExtension,
     });
 
     if (result.isErr()) {
-      process.stderr.write(`${formatCodegenError(command.format, result.error)}\n`);
+      process.stderr.write(`${formatCodegenError(result.error)}\n`);
       return 1;
     }
 
-    process.stdout.write(`${formatSuccess(command.format, result.value)}\n`);
+    process.stdout.write(`${formatSuccess(result.value)}\n`);
     return 0;
   } catch (error) {
     // Catch unexpected errors and convert to structured format
@@ -165,7 +170,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
       message: error instanceof Error ? error.message : String(error),
       outPath: "",
     };
-    process.stderr.write(`${formatCodegenError("json", unexpectedError)}\n`);
+    process.stderr.write(`${formatCodegenError(unexpectedError)}\n`);
     return 1;
   }
 };

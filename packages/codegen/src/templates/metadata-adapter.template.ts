@@ -4,16 +4,16 @@
  */
 
 export const defaultMetadataAdapterTemplate = `\
-import type { MetadataAdapter, ModelMetaInfo, OperationMetadata } from "@soda-gql/core";
+import type { MetadataAdapter, FragmentMetaInfo, OperationMetadata } from "@soda-gql/core";
 
 /**
  * Default metadata adapter.
- * Aggregates model metadata as a readonly array.
- * Uses OperationMetadata as the model metadata type.
+ * Aggregates fragment metadata as a readonly array.
+ * Uses OperationMetadata as the fragment metadata type.
  *
  * Customize this file to:
- * - Define custom model metadata types
- * - Change how model metadata is aggregated
+ * - Define custom fragment metadata types
+ * - Change how fragment metadata is aggregated
  *
  * Note: Operation metadata type is inferred from each operation's metadata callback return type.
  */
@@ -21,7 +21,7 @@ export const metadata: MetadataAdapter<
   OperationMetadata,
   readonly (OperationMetadata | undefined)[]
 > = {
-  aggregateModelMetadata: (models: readonly ModelMetaInfo<OperationMetadata>[]) =>
-    models.map((m) => m.metadata),
+  aggregateFragmentMetadata: (fragments: readonly FragmentMetaInfo<OperationMetadata>[]) =>
+    fragments.map((m) => m.metadata),
 };
 `;

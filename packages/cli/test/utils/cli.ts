@@ -64,6 +64,12 @@ export const runCodegenCli = (args: readonly string[], options?: CliOptions): Pr
   runSodaGqlCli("codegen", args, options);
 
 /**
+ * Run format CLI command
+ */
+export const runFormatCli = (args: readonly string[], options?: CliOptions): Promise<CliResult> =>
+  runSodaGqlCli("format", args, options);
+
+/**
  * Assert CLI command succeeded
  */
 export const assertCliSuccess = (result: CliResult): void => {
