@@ -1,6 +1,5 @@
-import type { UnionToIntersection } from "../utils/type-utils";
 import type { AnyFields } from "../types/fragment";
-import { type PrefixedFields, prefixFields } from "./field-prefix";
+import type { UnionToIntersection } from "../utils/type-utils";
 
 /**
  * Type for colocated field entries.
@@ -12,9 +11,18 @@ export type ColocatedEntries = Record<string, AnyFields>;
  * Result type for colocated fields.
  * Merges all prefixed entries into a single object.
  */
-export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersection<
-  { [K in keyof TEntries & string]: PrefixedFields<K, TEntries[K]> }[keyof TEntries & string]
->;
+export type ColocatedFields<TEntries extends ColocatedEntries> =
+  UnionToIntersection<
+    {
+      [KPrefix in keyof TEntries]: KPrefix extends string
+        ? {
+            [KField in keyof TEntries[KPrefix] as KField extends string
+              ? `${KPrefix}_${KField}`
+              : never]: TEntries[KPrefix][KField];
+          }
+        : never;
+    }[keyof TEntries]
+  >;
 
 /**
  * Creates a $colocate helper function for fragment colocation.
@@ -42,15 +50,21 @@ export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersec
  */
 export const createColocateHelper = () => {
   /**
-   * Colocates multiple field selections with labeled prefixes.
+   * Colocate multiple field selections with labeled prefixes.
    *
    * @param entries - Object mapping labels to field selections
    * @returns Merged object of all prefixed field entries
    */
-  const $colocate = <TEntries extends ColocatedEntries>(entries: TEntries): ColocatedFields<TEntries> => {
-    const prefixedEntries = Object.entries(entries).map(([label, fields]) => prefixFields(label, fields));
-    return Object.assign({}, ...prefixedEntries) as ColocatedFields<TEntries>;
-  };
+  const $colocate = <TEntries extends ColocatedEntries>(
+    entries: TEntries
+  ): ColocatedFields<TEntries> =>
+    Object.fromEntries(
+      Object.entries(entries).flatMap(([label, fields]) =>
+        Object.entries(fields).map(
+          ([key, value]) => [`${label}_${key}`, value] as const
+        )
+      )
+    ) as ColocatedFields<TEntries>;
 
   return $colocate;
 };

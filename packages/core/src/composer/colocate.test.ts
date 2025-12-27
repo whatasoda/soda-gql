@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { createColocateHelper } from "./colocate";
-import { prefixFields } from "./field-prefix";
 
 describe("$colocate helper", () => {
   describe("createColocateHelper", () => {
@@ -44,20 +43,6 @@ describe("$colocate helper", () => {
       const result = $colocate({});
 
       expect(result).toEqual({});
-    });
-  });
-
-  describe("prefixFields", () => {
-    it("should prefix all field keys with the label", () => {
-      const fields = { id: "1", name: "test", email: "test@example.com" } as any;
-
-      const result = prefixFields("user", fields);
-
-      expect(result).toEqual({
-        user_id: "1",
-        user_name: "test",
-        user_email: "test@example.com",
-      });
     });
   });
 });
