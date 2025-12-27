@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/vite-react",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/vite-react/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/vite-react",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/vite-react/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "baseUrl": ".",
     "jsx": "react-jsx",

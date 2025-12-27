@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/expo-metro",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/expo-metro/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
