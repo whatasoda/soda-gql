@@ -143,8 +143,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
         schema: resolve(schemaConfig.schema),
         inject: {
           scalars: resolve(schemaConfig.inject.scalars),
-          ...(schemaConfig.inject.helpers ? { helpers: resolve(schemaConfig.inject.helpers) } : {}),
-          ...(schemaConfig.inject.metadata ? { metadata: resolve(schemaConfig.inject.metadata) } : {}),
+          ...(schemaConfig.inject.adapter ? { adapter: resolve(schemaConfig.inject.adapter) } : {}),
         },
       };
     }
