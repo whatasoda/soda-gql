@@ -1,7 +1,11 @@
 export type {
+  Adapter,
+  AnyAdapter,
   AnyMetadataAdapter,
+  DefaultAdapter,
   DefaultMetadataAdapter,
   ExtractAdapterTypes,
+  ExtractUnifiedAdapterTypes,
   FragmentMetaInfo,
   MetadataAdapter,
 } from "./adapter";
