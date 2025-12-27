@@ -15,7 +15,7 @@ export const hasExistingEmptyComment = (source: string, arrayStartPos: number): 
   let pos = arrayStartPos + 1;
 
   // Skip whitespace (spaces, tabs, newlines)
-  while (pos < source.length && /\s/.test(source[pos])) {
+  while (pos < source.length && /\s/.test(source[pos] ?? "")) {
     pos++;
   }
 

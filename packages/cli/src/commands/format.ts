@@ -58,10 +58,7 @@ const isGlobPattern = (pattern: string): boolean => {
   return /[*?[\]{}]/.test(pattern);
 };
 
-const expandGlobPatterns = async (
-  patterns: readonly string[],
-  excludePatterns: readonly string[] = [],
-): Promise<string[]> => {
+const expandGlobPatterns = async (patterns: readonly string[], excludePatterns: readonly string[] = []): Promise<string[]> => {
   const files: string[] = [];
 
   for (const pattern of patterns) {
