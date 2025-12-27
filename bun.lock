@@ -221,8 +221,12 @@
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
+        "fast-glob": "^3.3.3",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
+      },
+      "optionalDependencies": {
+        "@soda-gql/formatter": "workspace:*",
       },
     },
     "packages/codegen": {

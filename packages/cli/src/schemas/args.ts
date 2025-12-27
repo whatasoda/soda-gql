@@ -13,5 +13,12 @@ export const BuilderArgsSchema = z.object({
   format: z.enum(["human", "json"]).optional().default("human"),
 });
 
+export const FormatArgsSchema = z.object({
+  _: z.array(z.string()).optional(),
+  check: z.boolean().optional(),
+  format: z.enum(["human", "json"]).optional(),
+});
+
 export type CodegenArgs = z.infer<typeof CodegenArgsSchema>;
 export type BuilderArgs = z.infer<typeof BuilderArgsSchema>;
+export type FormatArgs = z.infer<typeof FormatArgsSchema>;
