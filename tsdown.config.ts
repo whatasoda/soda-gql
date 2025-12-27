@@ -83,6 +83,7 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
     name,
     outDir: `packages/${shortName}/dist`,
     entry,
+    sourcemap: true,
     dts: {
       tsconfig: "./tsconfig.build.json",
       sourcemap: true,
