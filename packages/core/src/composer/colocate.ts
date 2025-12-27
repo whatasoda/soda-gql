@@ -11,18 +11,17 @@ export type ColocatedEntries = Record<string, AnyFields>;
  * Result type for colocated fields.
  * Merges all prefixed entries into a single object.
  */
-export type ColocatedFields<TEntries extends ColocatedEntries> =
-  UnionToIntersection<
-    {
-      [KPrefix in keyof TEntries]: KPrefix extends string
-        ? {
-            [KField in keyof TEntries[KPrefix] as KField extends string
-              ? `${KPrefix}_${KField}`
-              : never]: TEntries[KPrefix][KField];
-          }
-        : never;
-    }[keyof TEntries]
-  >;
+export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersection<
+  {
+    [KPrefix in keyof TEntries]: KPrefix extends string
+      ? {
+          [KField in keyof TEntries[KPrefix] as KField extends string
+            ? `${KPrefix}_${KField}`
+            : never]: TEntries[KPrefix][KField];
+        }
+      : never;
+  }[keyof TEntries]
+>;
 
 /**
  * Creates a $colocate helper function for fragment colocation.
@@ -55,15 +54,11 @@ export const createColocateHelper = () => {
    * @param entries - Object mapping labels to field selections
    * @returns Merged object of all prefixed field entries
    */
-  const $colocate = <TEntries extends ColocatedEntries>(
-    entries: TEntries
-  ): ColocatedFields<TEntries> =>
+  const $colocate = <TEntries extends ColocatedEntries>(entries: TEntries): ColocatedFields<TEntries> =>
     Object.fromEntries(
       Object.entries(entries).flatMap(([label, fields]) =>
-        Object.entries(fields).map(
-          ([key, value]) => [`${label}_${key}`, value] as const
-        )
-      )
+        Object.entries(fields).map(([key, value]) => [`${label}_${key}`, value] as const),
+      ),
     ) as ColocatedFields<TEntries>;
 
   return $colocate;

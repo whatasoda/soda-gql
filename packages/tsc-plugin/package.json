@@ -19,8 +19,7 @@
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
-    "@soda-gql/tsc-transformer": "workspace:*",
-    "neverthrow": "^8.1.1"
+    "@soda-gql/tsc-transformer": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "5.*"
