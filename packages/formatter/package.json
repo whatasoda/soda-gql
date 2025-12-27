@@ -1,0 +1,37 @@
+{
+  "name": "@soda-gql/formatter",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@soda-gql": "./@x-index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "neverthrow": "^8.1.1"
+  },
+  "peerDependencies": {
+    "@swc/core": "^1.0.0"
+  },
+  "devDependencies": {
+    "@swc/types": "^0.1.0"
+  }
+}

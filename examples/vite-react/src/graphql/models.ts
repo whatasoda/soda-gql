@@ -9,11 +9,28 @@ export const userModel = gql.default(({ model }, { $var }) =>
     {
       variables: [$var("categoryId").scalar("ID:!")],
     },
-    ({ f, $ }) => [f.id(), f.name(), f.email(), f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()])],
+    ({ f, $ }) => [
+      //
+      f.id(),
+      f.name(),
+      f.email(),
+      f.posts({ categoryId: $.categoryId })(({ f }) => [
+        //
+        f.id(),
+        f.title(),
+      ]),
+    ],
   ),
 );
 
 /**
  * Simple post model without variables
  */
-export const postModel = gql.default(({ model }) => model.Post({}, ({ f }) => [f.id(), f.title(), f.body()]));
+export const postModel = gql.default(({ model }) =>
+  model.Post({}, ({ f }) => [
+    //
+    f.id(),
+    f.title(),
+    f.body(),
+  ]),
+);
