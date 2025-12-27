@@ -1,6 +1,5 @@
 export const getInjectTemplate = (): string => `\
-import { defineScalar } from "@soda-gql/core";
-import { defineAdapter } from "@soda-gql/core/adapter";
+import { defineAdapter, defineHelpers, defineScalar } from "@soda-gql/core/adapter";
 
 export const scalar = {
   ...defineScalar<"ID", string, string>("ID"),
@@ -10,7 +9,7 @@ export const scalar = {
   ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
 } as const;
 
-export const helpers = {};
+export const helpers = defineHelpers({});
 
 export const metadata = defineAdapter({
   aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
