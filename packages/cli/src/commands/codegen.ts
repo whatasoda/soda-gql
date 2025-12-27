@@ -109,7 +109,27 @@ const formatCodegenError = (format: OutputFormat, error: CodegenError) => {
   return `${error.code}: ${"message" in error ? error.message : "Unknown error"}`;
 };
 
+const CODEGEN_HELP = `Usage: soda-gql codegen [options]
+
+Generate graphql-system runtime module from GraphQL schema.
+
+Options:
+  --config <path>              Path to soda-gql.config.ts
+  --emit-inject-template <path>  Create inject template file
+  --format <human|json>        Output format (default: human)
+  --help, -h                   Show this help message
+
+Examples:
+  soda-gql codegen --config ./soda-gql.config.ts
+  soda-gql codegen --emit-inject-template ./src/graphql/scalars.ts
+`;
+
 export const codegenCommand = async (argv: readonly string[]): Promise<number> => {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    process.stdout.write(CODEGEN_HELP);
+    return 0;
+  }
+
   try {
     const parsed = parseCodegenArgs(argv);
 

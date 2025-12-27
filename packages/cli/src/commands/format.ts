@@ -88,7 +88,27 @@ const expandGlobPatterns = async (patterns: readonly string[]): Promise<string[]
   return [...new Set(files)];
 };
 
+const FORMAT_HELP = `Usage: soda-gql format <patterns...> [options]
+
+Format soda-gql field selections by inserting empty comments.
+
+Options:
+  --check                Check if files need formatting (exit 1 if unformatted)
+  --format <human|json>  Output format (default: human)
+  --help, -h             Show this help message
+
+Examples:
+  soda-gql format "src/**/*.ts"
+  soda-gql format "src/**/*.ts" --check
+  soda-gql format "src/**/*.ts" "lib/**/*.tsx"
+`;
+
 export const formatCommand = async (argv: readonly string[]): Promise<number> => {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    process.stdout.write(FORMAT_HELP);
+    return 0;
+  }
+
   const parsed = parseArgs([...argv], FormatArgsSchema);
 
   if (!parsed.isOk()) {
