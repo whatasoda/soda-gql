@@ -2,37 +2,37 @@ import type { FieldPath } from "../../composer/field-path-context";
 import type { OperationMetadata } from "./metadata";
 
 /**
- * Information about a model's metadata when embedded in an operation.
+ * Information about a fragment's metadata when embedded in an operation.
  */
-export type ModelMetaInfo<TModelMetadata> = {
-  /** The evaluated metadata from the model, if defined */
-  readonly metadata: TModelMetadata | undefined;
-  /** Field path where the model was embedded */
+export type FragmentMetaInfo<TFragmentMetadata> = {
+  /** The evaluated metadata from the fragment, if defined */
+  readonly metadata: TFragmentMetadata | undefined;
+  /** Field path where the fragment was embedded */
   readonly fieldPath: FieldPath | null;
 };
 
 /**
- * Metadata adapter that defines how model metadata is aggregated
+ * Metadata adapter that defines how fragment metadata is aggregated
  * and provides schema-level configuration.
  *
  * This adapter allows complete customization of:
- * - Model metadata type (TModelMetadata)
- * - How model metadata is aggregated (aggregateModelMetadata)
+ * - Fragment metadata type (TFragmentMetadata)
+ * - How fragment metadata is aggregated (aggregateFragmentMetadata)
  * - Schema-level fixed values available to all operation metadata builders (schemaLevel)
  *
  * Note: Operation metadata type is inferred from the operation's metadata callback return type.
  *
- * @template TModelMetadata - The metadata type returned by model metadata builders
- * @template TAggregatedModelMetadata - The type returned by aggregateModelMetadata
+ * @template TFragmentMetadata - The metadata type returned by fragment metadata builders
+ * @template TAggregatedFragmentMetadata - The type returned by aggregateFragmentMetadata
  * @template TSchemaLevel - The type of schema-level configuration values
  */
-export type MetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata = unknown, TSchemaLevel = unknown> = {
+export type MetadataAdapter<TFragmentMetadata = unknown, TAggregatedFragmentMetadata = unknown, TSchemaLevel = unknown> = {
   /**
-   * Aggregates metadata from all embedded models in an operation.
-   * Called with the metadata from each embedded model.
-   * The return type becomes the `modelMetadata` parameter in operation metadata builders.
+   * Aggregates metadata from all embedded fragments in an operation.
+   * Called with the metadata from each embedded fragment.
+   * The return type becomes the `fragmentMetadata` parameter in operation metadata builders.
    */
-  readonly aggregateModelMetadata: (models: readonly ModelMetaInfo<TModelMetadata>[]) => TAggregatedModelMetadata;
+  readonly aggregateFragmentMetadata: (fragments: readonly FragmentMetaInfo<TFragmentMetadata>[]) => TAggregatedFragmentMetadata;
   /**
    * Schema-level fixed values that are passed to all operation metadata builders.
    * Useful for configuration that should be consistent across all operations.
@@ -43,10 +43,10 @@ export type MetadataAdapter<TModelMetadata = unknown, TAggregatedModelMetadata =
 /**
  * Extracts the type parameters from a MetadataAdapter.
  */
-export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TModel, infer TAggregated, infer TSchemaLevel>
+export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TFragment, infer TAggregated, infer TSchemaLevel>
   ? {
-      modelMetadata: TModel;
-      aggregatedModelMetadata: TAggregated;
+      fragmentMetadata: TFragment;
+      aggregatedFragmentMetadata: TAggregated;
       schemaLevel: TSchemaLevel;
     }
   : never;
@@ -58,7 +58,7 @@ export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
  * Default adapter that maintains backwards compatibility with the original behavior.
- * Uses OperationMetadata for model metadata and aggregates by collecting metadata into a readonly array.
+ * Uses OperationMetadata for fragment metadata and aggregates by collecting metadata into a readonly array.
  */
 export type DefaultMetadataAdapter = MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]>;
 
@@ -67,7 +67,7 @@ export type DefaultMetadataAdapter = MetadataAdapter<OperationMetadata, readonly
  * @internal
  */
 export const createDefaultAdapter = (): DefaultMetadataAdapter => ({
-  aggregateModelMetadata: (models) => models.map((m) => m.metadata),
+  aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
 });
 
 /**
