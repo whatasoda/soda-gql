@@ -1,8 +1,8 @@
-import type { RuntimeModelInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
+import type { RuntimeFragmentInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
-import type { TsGqlCallModel, TsGqlCallOperation } from "./analysis";
+import type { TsGqlCallFragment, TsGqlCallOperation } from "./analysis";
 import { buildJsonParseExpression, buildObjectExpression } from "./ast";
 
 const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts.NodeFactory }) =>
@@ -13,23 +13,23 @@ const createRuntimeAccessor = ({ isCJS, factory }: { isCJS: boolean; factory: ts
       )
     : factory.createIdentifier("gqlRuntime");
 
-export const buildModelRuntimeCall = ({
+export const buildFragmentRuntimeCall = ({
   gqlCall,
   factory,
   isCJS,
 }: {
-  gqlCall: TsGqlCallModel;
+  gqlCall: TsGqlCallFragment;
   factory: ts.NodeFactory;
   isCJS: boolean;
   filename: string;
 }): Result<ts.Expression, PluginError> => {
   return ok(
     factory.createCallExpression(
-      factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("model")),
+      factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("fragment")),
       undefined,
       [
         buildObjectExpression(factory, {
-          prebuild: buildObjectExpression<keyof RuntimeModelInput["prebuild"]>(factory, {
+          prebuild: buildObjectExpression<keyof RuntimeFragmentInput["prebuild"]>(factory, {
             typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
           }),
         }),

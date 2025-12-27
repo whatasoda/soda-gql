@@ -4,7 +4,7 @@ import type * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";
 import { extractGqlCall } from "./analysis";
 import type { GqlDefinitionMetadataMap } from "./metadata";
-import { buildModelRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
+import { buildFragmentRuntimeCall, buildOperationRuntimeComponents } from "./runtime";
 
 type TransformCallExpressionArgs = {
   readonly callNode: ts.CallExpression;
@@ -59,8 +59,8 @@ const replaceWithRuntimeCall = ({
   isCJS: boolean;
   filename: string;
 }): Result<TransformCallExpressionResult, PluginError> => {
-  if (gqlCall.type === "model") {
-    const result = buildModelRuntimeCall({ gqlCall, factory, isCJS, filename });
+  if (gqlCall.type === "fragment") {
+    const result = buildFragmentRuntimeCall({ gqlCall, factory, isCJS, filename });
     if (result.isErr()) {
       return err(result.error);
     }

@@ -1,7 +1,7 @@
 import type { BuilderArtifactElement } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type {
-  GqlCallModel,
+  GqlCallFragment,
   GqlCallOperation,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
@@ -16,10 +16,10 @@ import type { GqlDefinitionMetadataMap } from "./metadata";
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
 // TypeScript-specific GqlCall types
-export type TsGqlCallModel = GqlCallModel & { readonly callNode: ts.CallExpression };
+export type TsGqlCallFragment = GqlCallFragment & { readonly callNode: ts.CallExpression };
 export type TsGqlCallOperation = GqlCallOperation & { readonly callNode: ts.CallExpression };
 
-export type TsGqlCall = TsGqlCallModel | TsGqlCallOperation;
+export type TsGqlCall = TsGqlCallFragment | TsGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly callNode: ts.CallExpression;
@@ -46,8 +46,8 @@ export const extractGqlCall = ({
     return err(createArtifactMissingError({ filename, canonicalId }));
   }
 
-  if (artifact.type === "model") {
-    return ok({ callNode, canonicalId, type: "model", artifact });
+  if (artifact.type === "fragment") {
+    return ok({ callNode, canonicalId, type: "fragment", artifact });
   }
 
   if (artifact.type === "operation") {

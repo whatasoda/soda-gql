@@ -3,7 +3,7 @@ import type { NodePath } from "@babel/traverse";
 import type { BuilderArtifactElement } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type {
-  GqlCallModel,
+  GqlCallFragment,
   GqlCallOperation,
   PluginAnalysisArtifactMissingError,
   PluginAnalysisMetadataMissingError,
@@ -17,12 +17,12 @@ import type { GqlDefinitionMetadataMap } from "./metadata";
 export type ArtifactLookup = (canonicalId: CanonicalId) => BuilderArtifactElement | undefined;
 
 // Babel-specific GqlCall types
-export type BabelGqlCallModel = GqlCallModel & { readonly nodePath: NodePath<t.CallExpression> };
+export type BabelGqlCallFragment = GqlCallFragment & { readonly nodePath: NodePath<t.CallExpression> };
 export type BabelGqlCallOperation = GqlCallOperation & {
   readonly nodePath: NodePath<t.CallExpression>;
 };
 
-export type BabelGqlCall = BabelGqlCallModel | BabelGqlCallOperation;
+export type BabelGqlCall = BabelGqlCallFragment | BabelGqlCallOperation;
 
 export type ExtractGqlCallArgs = {
   readonly nodePath: NodePath<t.CallExpression>;
@@ -51,8 +51,8 @@ export const extractGqlCall = ({
     return err(createArtifactMissingError({ filename, canonicalId }));
   }
 
-  if (artifact.type === "model") {
-    return ok({ nodePath, canonicalId, type: "model", artifact });
+  if (artifact.type === "fragment") {
+    return ok({ nodePath, canonicalId, type: "fragment", artifact });
   }
 
   if (artifact.type === "operation") {
