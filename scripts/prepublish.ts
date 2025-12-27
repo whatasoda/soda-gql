@@ -15,6 +15,7 @@ export const mapValues = <TObject extends object, TMappedValue>(
     [K in keyof TObject]: TMappedValue;
   };
 
+// Schema for public packages (strict validation for npm registry)
 type PackageJson = z.output<typeof packageJsonSchema>;
 const packageJsonSchema = z.object({
   name: z.string().regex(/^@soda-gql\//),
@@ -54,6 +55,12 @@ const packageJsonSchema = z.object({
   bundledDependencies: z.array(z.string()).optional(),
 });
 
+// Schema for private packages (minimal validation, not published to npm)
+const privatePackageJsonSchema = z.object({
+  name: z.string().regex(/^@soda-gql\//),
+  private: z.literal(true),
+});
+
 type PackageEntry = {
   name: string;
   packageSourceDir: string;
@@ -84,9 +91,18 @@ const prepare = async () => {
         const packageSourceDir = path.join("packages", packageEntry.name);
         const packageDistDir = path.join("dist", packageEntry.name);
 
-        const parsedPackageJsonSource = packageJsonSchema.safeParse(
-          JSON.parse(await readFile(path.join(packageSourceDir, "package.json"), "utf-8")),
-        );
+        const rawPackageJson = JSON.parse(await readFile(path.join(packageSourceDir, "package.json"), "utf-8"));
+
+        // Check if this is a private package first
+        const parsedPrivate = privatePackageJsonSchema.safeParse(rawPackageJson);
+        if (parsedPrivate.success) {
+          console.log(`Removing private package from dist: ${packageEntry.name}`);
+          await $`rm -rf ${packageDistDir}`;
+          continue;
+        }
+
+        // Validate public package with strict schema
+        const parsedPackageJsonSource = packageJsonSchema.safeParse(rawPackageJson);
         if (!parsedPackageJsonSource.success) {
           console.error(`Invalid package.json: ${packageEntry.name}`);
           console.error(parsedPackageJsonSource.error);
@@ -95,12 +111,6 @@ const prepare = async () => {
         }
 
         const packageJsonSource = parsedPackageJsonSource.data;
-
-        if (packageJsonSource.private) {
-          console.log(`Removing private package from dist: ${packageEntry.name}`);
-          await $`rm -rf ${packageDistDir}`;
-          continue;
-        }
 
         const { packageJsonDist, workspacePackages } = ((): { packageJsonDist: PackageJson; workspacePackages: Set<string> } => {
           const {
