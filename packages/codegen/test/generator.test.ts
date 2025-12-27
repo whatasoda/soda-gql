@@ -366,19 +366,16 @@ describe("generateMultiSchemaModule", () => {
           "default",
           {
             scalarImportPath: "./scalars",
-            helpersImportPath: "./helpers",
-            metadataImportPath: "./metadata",
+            adapterImportPath: "./adapter",
           },
         ],
       ]),
     });
 
     expect(result.code).toContain('from "./scalars"');
-    expect(result.code).toContain('from "./helpers"');
-    expect(result.code).toContain('from "./metadata"');
+    expect(result.code).toContain('from "./adapter"');
     expect(result.code).toContain("scalar_default");
-    expect(result.code).toContain("helpers_default");
-    expect(result.code).toContain("metadata_default");
+    expect(result.code).toContain("adapter_default");
   });
 
   test("handles complex field types with modifiers", () => {

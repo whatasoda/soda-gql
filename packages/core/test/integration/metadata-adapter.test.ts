@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { defineAdapter } from "../../src/adapter/define-adapter";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
@@ -133,7 +134,7 @@ describe("metadata adapter", () => {
     };
 
     // Custom adapter that merges all headers
-    const headerMergingAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
+    const headerMergingMetadataAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
       aggregateFragmentMetadata: (fragments) => {
         const allHeaders: Record<string, string> = {};
         for (const fragment of fragments) {
@@ -145,8 +146,12 @@ describe("metadata adapter", () => {
       },
     };
 
+    const headerMergingAdapter = defineAdapter({
+      metadata: headerMergingMetadataAdapter,
+    });
+
     it("supports custom fragment metadata types", () => {
-      const gql = createGqlElementComposer<Schema, object, typeof headerMergingAdapter>(schema, {
+      const gql = createGqlElementComposer<Schema, typeof headerMergingAdapter>(schema, {
         adapter: headerMergingAdapter,
       });
 
@@ -182,14 +187,18 @@ describe("metadata adapter", () => {
     it("calls aggregateFragmentMetadata with FragmentMetaInfo array", () => {
       const capturedFragments: FragmentMetaInfo<CustomFragmentMetadata>[] = [];
 
-      const capturingAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
+      const capturingMetadataAdapter: MetadataAdapter<CustomFragmentMetadata, MergedHeaders> = {
         aggregateFragmentMetadata: (fragments) => {
           capturedFragments.push(...fragments);
           return { allHeaders: {} };
         },
       };
 
-      const gql = createGqlElementComposer<Schema, object, typeof capturingAdapter>(schema, {
+      const capturingAdapter = defineAdapter({
+        metadata: capturingMetadataAdapter,
+      });
+
+      const gql = createGqlElementComposer<Schema, typeof capturingAdapter>(schema, {
         adapter: capturingAdapter,
       });
 
@@ -223,7 +232,7 @@ describe("metadata adapter", () => {
     });
 
     it("provides aggregated metadata to operation callback", () => {
-      const gql = createGqlElementComposer<Schema, object, typeof headerMergingAdapter>(schema, {
+      const gql = createGqlElementComposer<Schema, typeof headerMergingAdapter>(schema, {
         adapter: headerMergingAdapter,
       });
 
@@ -279,14 +288,18 @@ describe("metadata adapter", () => {
     it("passes undefined metadata in FragmentMetaInfo", () => {
       const capturedFragments: FragmentMetaInfo<OperationMetadata>[] = [];
 
-      const capturingAdapter: MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]> = {
+      const capturingMetadataAdapter: MetadataAdapter<OperationMetadata, readonly (OperationMetadata | undefined)[]> = {
         aggregateFragmentMetadata: (fragments) => {
           capturedFragments.push(...fragments);
           return fragments.map((m) => m.metadata);
         },
       };
 
-      const gql = createGqlElementComposer<Schema, object, typeof capturingAdapter>(schema, {
+      const capturingAdapter = defineAdapter({
+        metadata: capturingMetadataAdapter,
+      });
+
+      const gql = createGqlElementComposer<Schema, typeof capturingAdapter>(schema, {
         adapter: capturingAdapter,
       });
 

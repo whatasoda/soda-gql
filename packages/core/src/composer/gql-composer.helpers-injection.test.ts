@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import { defineAdapter } from "../adapter/define-adapter";
 import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import { createGqlElementComposer } from "./gql-composer";
-import { defineHelpers } from "./helpers";
 
 const schema = {
   label: "test" as const,
@@ -40,8 +40,8 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-describe("helpers injection", () => {
-  it("allows custom helpers to be injected via options", () => {
+describe("helpers injection via adapter", () => {
+  it("allows custom helpers to be injected via adapter.helpers", () => {
     const authHelper = {
       requiresLogin: () => ({ requiresAuth: true as const }),
       adminOnly: () => ({
@@ -50,9 +50,11 @@ describe("helpers injection", () => {
       }),
     };
 
-    const gql = createGqlElementComposer<Schema, { auth: typeof authHelper }>(schema, {
+    const adapter = defineAdapter({
       helpers: { auth: authHelper },
     });
+
+    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter });
 
     let capturedAuth: typeof authHelper | undefined;
 
@@ -69,15 +71,17 @@ describe("helpers injection", () => {
     });
   });
 
-  it("works with defineHelpers for type inference", () => {
-    const helpers = defineHelpers({
-      cache: {
-        ttl: (seconds: number) => ({ cacheTTL: seconds }),
-        noCache: () => ({ cacheTTL: 0 }),
+  it("works with defineAdapter for type inference", () => {
+    const adapter = defineAdapter({
+      helpers: {
+        cache: {
+          ttl: (seconds: number) => ({ cacheTTL: seconds }),
+          noCache: () => ({ cacheTTL: 0 }),
+        },
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter });
 
     let capturedCacheTTL: number | undefined;
 
@@ -90,9 +94,11 @@ describe("helpers injection", () => {
   });
 
   it("preserves $var (var builder) alongside custom helpers", () => {
-    const gql = createGqlElementComposer<Schema, { custom: () => string }>(schema, {
+    const adapter = defineAdapter({
       helpers: { custom: () => "test" },
     });
+
+    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter });
 
     let varBuilderAvailable = false;
     let customAvailable = false;
@@ -110,7 +116,7 @@ describe("helpers injection", () => {
     expect(customAvailable).toBe(true);
   });
 
-  it("works without helpers option (backward compatible)", () => {
+  it("works without adapter option (backward compatible)", () => {
     const gql = createGqlElementComposer<Schema>(schema);
 
     let varBuilderAvailable = false;
@@ -124,23 +130,25 @@ describe("helpers injection", () => {
   });
 
   it("supports nested helper structures", () => {
-    const helpers = defineHelpers({
-      auth: {
-        roles: {
-          admin: () => ({ role: "admin" as const }),
-          user: () => ({ role: "user" as const }),
+    const adapter = defineAdapter({
+      helpers: {
+        auth: {
+          roles: {
+            admin: () => ({ role: "admin" as const }),
+            user: () => ({ role: "user" as const }),
+          },
+          permissions: {
+            read: () => ({ canRead: true }),
+            write: () => ({ canWrite: true }),
+          },
         },
-        permissions: {
-          read: () => ({ canRead: true }),
-          write: () => ({ canWrite: true }),
+        tracking: {
+          analytics: (eventName: string) => ({ event: eventName }),
         },
-      },
-      tracking: {
-        analytics: (eventName: string) => ({ event: eventName }),
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof helpers>(schema, { helpers });
+    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter });
 
     let capturedRole: string | undefined;
     let capturedEvent: string | undefined;

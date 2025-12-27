@@ -88,7 +88,7 @@ describe("soda-gql init CLI", () => {
   });
 
   describe("inject template content", () => {
-    it("includes scalar, helpers, and metadata exports", async () => {
+    it("includes scalar and adapter exports", async () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}-5`);
       mkdirSync(caseDir, { recursive: true });
 
@@ -97,9 +97,9 @@ describe("soda-gql init CLI", () => {
       const injectContent = await Bun.file(join(caseDir, "graphql-system/default.inject.ts")).text();
 
       expect(injectContent).toContain("export const scalar");
-      expect(injectContent).toContain("export const helpers");
-      expect(injectContent).toContain("export const metadata");
+      expect(injectContent).toContain("export const adapter");
       expect(injectContent).toContain("defineScalar");
+      expect(injectContent).toContain("defineAdapter");
     });
   });
 

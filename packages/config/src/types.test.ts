@@ -59,7 +59,7 @@ describe("types.ts", () => {
       schemas: {
         default: {
           schema: "./schema.graphql",
-          inject: { scalars: "./scalars.ts", helpers: "./helpers.ts" },
+          inject: { scalars: "./scalars.ts", adapter: "./adapter.ts" },
         },
       },
       plugins: { babel: { enabled: true } },
