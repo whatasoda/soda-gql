@@ -9,7 +9,7 @@
     "paths": {}
   },
   "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
-  "exclude": ["test/fixtures/**/*"],
+  "exclude": ["node_modules", "dist"],
   "references": [
     {
       "path": "../builder/tsconfig.editor.json"

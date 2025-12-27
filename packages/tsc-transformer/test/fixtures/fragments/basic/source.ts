@@ -1,27 +1,11 @@
 import { gql } from "../../../codegen-fixture/graphql-system";
 
-export const userFragment = gql.default(({ fragment }) =>
-  fragment.User(
-    {},
-    ({ f }) => [f.id(), f.name()],
-    (selection) => ({ id: selection.id, name: selection.name }),
-  ),
-);
+export const userFragment = gql.default(({ fragment }) => fragment.User({}, ({ f }) => [f.id(), f.name()]));
 
 export const productFragment = gql.default(({ fragment }) => {
-  return fragment.Product(
-    {},
-    ({ f }) => [f.id(), f.name()],
-    (selection) => ({ id: selection.id, name: selection.name }),
-  );
+  return fragment.Product({}, ({ f }) => [f.id(), f.name()]);
 });
 
-export const models = {
-  user: gql.default(({ fragment }) =>
-    fragment.User(
-      {},
-      ({ f }) => [f.id()],
-      (selection) => ({ id: selection.id }),
-    ),
-  ),
+export const fragments = {
+  user: gql.default(({ fragment }) => fragment.User({}, ({ f }) => [f.id()])),
 };

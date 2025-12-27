@@ -1,12 +1,6 @@
 import { gql } from "../../../codegen-fixture/graphql-system";
 
-// Test case: Slice definitions in separate file
+// Test case: Fragment definitions in separate file
 // Used by operations.ts to test cross-file transformation order
 
-export const userSlice = gql.default(({ query }, { $var }) =>
-  query.slice(
-    { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
-    ({ select }) => select(["$.user"], (result) => result),
-  ),
-);
+export const userFragment = gql.default(({ fragment }) => fragment.User({}, ({ f }) => [f.id(), f.name()]));
