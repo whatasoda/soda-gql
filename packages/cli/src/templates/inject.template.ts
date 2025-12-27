@@ -1,10 +1,6 @@
 export const getInjectTemplate = (): string => `\
 import { defineScalar } from "@soda-gql/core";
-import type {
-  FragmentMetaInfo,
-  MetadataAdapter,
-  OperationMetadata,
-} from "@soda-gql/core";
+import { defineAdapter } from "@soda-gql/core/adapter";
 
 export const scalar = {
   ...defineScalar<"ID", string, string>("ID"),
@@ -16,12 +12,7 @@ export const scalar = {
 
 export const helpers = {};
 
-export const metadata: MetadataAdapter<
-  OperationMetadata,
-  readonly (OperationMetadata | undefined)[]
-> = {
-  aggregateFragmentMetadata: (
-    fragments: readonly FragmentMetaInfo<OperationMetadata>[],
-  ) => fragments.map((m) => m.metadata),
-};
+export const metadata = defineAdapter({
+  aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+});
 `;
