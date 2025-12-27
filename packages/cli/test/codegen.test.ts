@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test";
-import { assertCliError, type CliResult, getProjectRoot, runCodegenCli } from "./utils/cli";
+import { type CliResult, getProjectRoot, runCodegenCli } from "./utils/cli";
 
 const projectRoot = getProjectRoot();
 
@@ -57,9 +57,10 @@ describe("soda-gql codegen CLI", () => {
       },
     });
 
-    const result = await runCodegenCli(["--config", configPath, "--format", "json"]);
+    const result = await runCodegenCli(["--config", configPath]);
 
-    assertCliError(result, "SCHEMA_NOT_FOUND");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("SCHEMA_NOT_FOUND");
   });
 
   it("returns schema validation error details for invalid schema", async () => {
@@ -84,11 +85,10 @@ describe("soda-gql codegen CLI", () => {
       },
     });
 
-    const result = await runCodegenCli(["--config", configPath, "--format", "json"]);
+    const result = await runCodegenCli(["--config", configPath]);
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("SchemaValidationError");
-    expect(result.stderr).toContain(invalidSchemaPath);
   });
 
   it(
@@ -115,7 +115,7 @@ describe("soda-gql codegen CLI", () => {
         },
       });
 
-      const result = await runCodegenCli(["--config", configPath, "--format", "json"]);
+      const result = await runCodegenCli(["--config", configPath]);
 
       expect(result.exitCode).toBe(0);
       const generatedExists = await Bun.file(outFile).exists();
@@ -125,22 +125,14 @@ describe("soda-gql codegen CLI", () => {
       // Scalar import should be present
       expect(moduleContents).toContain("scalar as scalar_default");
 
-      // Multi-schema format has nested structure
-      const stdoutTrimmed = result.stdout.trim();
-      if (stdoutTrimmed?.startsWith("{")) {
-        const jsonOutput = JSON.parse(stdoutTrimmed);
-        expect(jsonOutput.schemas?.default?.schemaHash).toBeDefined();
+      // Verify .cjs bundle was generated
+      const cjsPath = outFile.replace(/\.ts$/, ".cjs");
+      const cjsExists = await Bun.file(cjsPath).exists();
+      expect(cjsExists).toBe(true);
 
-        // Verify .cjs bundle was generated
-        expect(jsonOutput.cjsPath).toBeDefined();
-        const cjsExists = await Bun.file(jsonOutput.cjsPath).exists();
-        expect(cjsExists).toBe(true);
-      } else {
-        // If stdout is empty or not JSON, just verify .cjs exists at expected location
-        const cjsPath = outFile.replace(/\.ts$/, ".cjs");
-        const cjsExists = await Bun.file(cjsPath).exists();
-        expect(cjsExists).toBe(true);
-      }
+      // Verify human-readable output
+      expect(result.stdout).toContain("Generated");
+      expect(result.stdout).toContain("TypeScript:");
 
       const tsconfigPath = join(caseDir, "tsconfig.json");
       const extendsPath = toPosix(relative(caseDir, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");

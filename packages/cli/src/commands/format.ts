@@ -1,7 +1,6 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import fg from "fast-glob";
 import { FormatArgsSchema } from "../schemas/args";
-import { formatError, formatOutput, type OutputFormat } from "../utils/format";
 import { parseArgs } from "../utils/parse-args";
 
 type FormatterModule = typeof import("@soda-gql/formatter");
@@ -19,29 +18,22 @@ type FormatError = {
   message: string;
 };
 
-type FormatSuccess = {
+type FormatResult = {
   mode: "format" | "check";
   total: number;
   modified: number;
   unchanged: number;
   errors: number;
-  unformatted?: string[];
+  unformatted: string[];
 };
 
-const formatFormatError = (outputFormat: OutputFormat, error: FormatError): string => {
-  if (outputFormat === "json") {
-    return formatError(error, "json");
-  }
+const formatFormatError = (error: FormatError): string => {
   return `${error.code}: ${error.message}`;
 };
 
-const formatSuccess = (outputFormat: OutputFormat, result: FormatSuccess): string => {
-  if (outputFormat === "json") {
-    return formatOutput(result, "json");
-  }
-
+const formatResult = (result: FormatResult): string => {
   if (result.mode === "check") {
-    if (result.unformatted && result.unformatted.length > 0) {
+    if (result.unformatted.length > 0) {
       const files = result.unformatted.map((f) => `  ${f}`).join("\n");
       return `${result.unformatted.length} file(s) need formatting:\n${files}`;
     }
@@ -93,9 +85,8 @@ const FORMAT_HELP = `Usage: soda-gql format <patterns...> [options]
 Format soda-gql field selections by inserting empty comments.
 
 Options:
-  --check                Check if files need formatting (exit 1 if unformatted)
-  --format <human|json>  Output format (default: human)
-  --help, -h             Show this help message
+  --check     Check if files need formatting (exit 1 if unformatted)
+  --help, -h  Show this help message
 
 Examples:
   soda-gql format "src/**/*.ts"
@@ -116,12 +107,11 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
       code: "PARSE_ERROR",
       message: parsed.error,
     };
-    process.stderr.write(`${formatFormatError("json", error)}\n`);
+    process.stderr.write(`${formatFormatError(error)}\n`);
     return 1;
   }
 
   const args = parsed.value;
-  const outputFormat: OutputFormat = args.format ?? "human";
   const isCheckMode = args.check === true;
   const patterns = args._ ?? [];
 
@@ -130,7 +120,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
       code: "NO_PATTERNS",
       message: "No file patterns provided. Usage: soda-gql format <patterns...> [--check]",
     };
-    process.stderr.write(`${formatFormatError(outputFormat, error)}\n`);
+    process.stderr.write(`${formatFormatError(error)}\n`);
     return 1;
   }
 
@@ -141,21 +131,22 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
       code: "FORMATTER_NOT_INSTALLED",
       message: "@soda-gql/formatter is not installed. Run: npm install @soda-gql/formatter",
     };
-    process.stderr.write(`${formatFormatError(outputFormat, error)}\n`);
+    process.stderr.write(`${formatFormatError(error)}\n`);
     return 1;
   }
 
   const files = await expandGlobPatterns(patterns);
 
   if (files.length === 0) {
-    const result: FormatSuccess = {
+    const result: FormatResult = {
       mode: isCheckMode ? "check" : "format",
       total: 0,
       modified: 0,
       unchanged: 0,
       errors: 0,
+      unformatted: [],
     };
-    process.stdout.write(`${formatSuccess(outputFormat, result)}\n`);
+    process.stdout.write(`${formatResult(result)}\n`);
     return 0;
   }
 
@@ -194,16 +185,16 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
     }
   }
 
-  const result: FormatSuccess = {
+  const result: FormatResult = {
     mode: isCheckMode ? "check" : "format",
     total: files.length,
     modified,
     unchanged,
     errors,
-    ...(isCheckMode && unformatted.length > 0 ? { unformatted } : {}),
+    unformatted,
   };
 
-  process.stdout.write(`${formatSuccess(outputFormat, result)}\n`);
+  process.stdout.write(`${formatResult(result)}\n`);
 
   if (isCheckMode && unformatted.length > 0) {
     return 1;

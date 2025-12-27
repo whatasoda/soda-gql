@@ -146,27 +146,6 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
     });
   });
 
-  describe("json output", () => {
-    it("outputs json when --format json is specified", async () => {
-      const caseDir = join(tmpRoot, `case-${Date.now()}`);
-      mkdirSync(caseDir, { recursive: true });
-
-      const testFile = join(caseDir, "test.ts");
-      const content = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
-`;
-      await Bun.write(testFile, content);
-
-      const result = await runFormatCli(["--format", "json", testFile]);
-
-      expect(result.exitCode).toBe(0);
-      const json = JSON.parse(result.stdout);
-      expect(json.mode).toBe("format");
-      expect(json.total).toBe(1);
-      expect(json.modified).toBe(1);
-    });
-  });
-
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
