@@ -1,7 +1,7 @@
 import type { AnyOperationOf, GqlElementAttachment } from "../types/element";
 import type { OperationType } from "../types/schema";
 import { hidden } from "../utils/hidden";
-import type { StripFunctions } from "../utils/type-utils";
+import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 import { registerOperation } from "./runtime-registry";
 
 export type RuntimeOperationInput = {
@@ -23,11 +23,17 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
     document: input.prebuild.document,
     metadata: input.prebuild.metadata,
     attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<typeof operation, TName, TValue>) {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment
-      (operation as any)[attachment.name] = attachment.createValue(operation);
+      const value = attachment.createValue(operation);
+
+      Object.defineProperty(operation, attachment.name, {
+        get() {
+          return value;
+        },
+      });
+
       return operation as typeof operation & { [_ in TName]: TValue };
     },
-  } as unknown as AnyOperationOf<OperationType>;
+  } satisfies StripSymbols<AnyOperationOf<OperationType>> as AnyOperationOf<OperationType>;
 
   registerOperation(operation);
 

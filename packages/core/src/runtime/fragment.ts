@@ -1,6 +1,6 @@
 import type { AnyFragment, GqlElementAttachment } from "../types/element";
 import { hidden } from "../utils/hidden";
-import type { StripFunctions } from "../utils/type-utils";
+import type { StripFunctions, StripSymbols } from "../utils/type-utils";
 
 export type RuntimeFragmentInput = {
   prebuild: StripFunctions<AnyFragment>;
@@ -11,11 +11,17 @@ export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment 
     typename: input.prebuild.typename,
     embed: hidden(),
     attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<typeof fragment, TName, TValue>) {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment
-      (fragment as any)[attachment.name] = attachment.createValue(fragment);
+      const value = attachment.createValue(fragment);
+
+      Object.defineProperty(fragment, attachment.name, {
+        get() {
+          return value;
+        },
+      });
+
       return fragment as typeof fragment & { [_ in TName]: TValue };
     },
-  } as unknown as AnyFragment;
+  } satisfies StripSymbols<AnyFragment> as unknown as AnyFragment;
 
   return fragment;
 };
