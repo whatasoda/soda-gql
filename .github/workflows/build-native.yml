@@ -1,15 +1,19 @@
 name: Build Native Modules
 
+# NOTE: PR/push triggers disabled to reduce GitHub Actions usage.
+# Use workflow_dispatch for manual runs, or workflow_call from release.yml.
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "packages/swc-transformer/**"
+#       - ".github/workflows/build-native.yml"
+#   pull_request:
+#     paths:
+#       - "packages/swc-transformer/**"
+#       - ".github/workflows/build-native.yml"
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - "packages/swc-transformer/**"
-      - ".github/workflows/build-native.yml"
-  pull_request:
-    paths:
-      - "packages/swc-transformer/**"
-      - ".github/workflows/build-native.yml"
   workflow_dispatch:
   workflow_call:
 
