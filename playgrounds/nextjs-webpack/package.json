@@ -1,5 +1,5 @@
 {
-  "name": "nextjs-webpack-example",
+  "name": "@soda-gql-playgrounds/nextjs-webpack",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@soda-gql/cli": "workspace:*",
+    "@soda-gql/swc-transformer": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

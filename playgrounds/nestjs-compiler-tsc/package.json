@@ -1,5 +1,5 @@
 {
-  "name": "@soda-gql-examples/nestjs-compiler-tsc",
+  "name": "@soda-gql-playgrounds/nestjs-compiler-tsc",
   "version": "0.0.1",
   "private": true,
   "description": "NestJS example using TypeScript compiler plugin for soda-gql",

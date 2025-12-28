@@ -31,9 +31,11 @@ soda-gql/
 │   ├── plugin-nestjs/
 │   ├── plugin-shared/
 │   └── runtime/
-├── examples/           # Example applications
-│   ├── babel-app/
-│   └── nestjs-app/
+├── playgrounds/        # Development/testing playgrounds
+│   ├── nextjs-webpack/
+│   ├── vite-react/
+│   ├── expo-metro/
+│   └── nestjs-compiler-tsc/
 ├── tests/              # All test suites
 │   ├── unit/
 │   ├── integration/
@@ -49,12 +51,12 @@ The workspace is defined in the root `package.json`:
 
 ```json
 {
-  "workspaces": ["packages/*", "examples/*"]
+  "workspaces": ["packages/*", "playgrounds/*"]
 }
 ```
 
 This configuration:
-- Enables dependency hoisting across all packages and examples
+- Enables dependency hoisting across all packages and playgrounds
 - Allows cross-package references using workspace protocol
 - Provides unified dependency management via Bun
 
@@ -312,7 +314,7 @@ Uses **dist-based resolution**:
 
 Each example defines its own path mapping via symlink to the shared codegen-fixture:
 
-**`examples/vite-react/tsconfig.editor.json`**:
+**`playgrounds/vite-react/tsconfig.editor.json`**:
 ```json
 {
   "paths": {
@@ -358,8 +360,8 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/{example-name}",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/{example-name}/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/{playground-name}",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/{playground-name}/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
@@ -421,125 +423,41 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 
 #### Root tsconfig.editor.json References
 
-Each example must be referenced in the root `tsconfig.editor.json`:
+Each playground must be referenced in the root `tsconfig.editor.json`:
 
 ```json
 {
   "references": [
-    { "path": "./examples/babel-app/tsconfig.editor.json" },
-    { "path": "./examples/vite-react/tsconfig.editor.json" },
-    { "path": "./examples/nextjs-webpack/tsconfig.editor.json" },
-    { "path": "./examples/expo-metro/tsconfig.editor.json" },
-    { "path": "./examples/webpack-swc/tsconfig.editor.json" },
-    { "path": "./examples/nestjs-compiler-tsc/tsconfig.editor.json" }
+    { "path": "./playgrounds/nestjs-compiler-tsc/tsconfig.editor.json" },
+    { "path": "./playgrounds/nextjs-webpack/tsconfig.editor.json" },
+    { "path": "./playgrounds/vite-react/tsconfig.editor.json" },
+    { "path": "./playgrounds/expo-metro/tsconfig.editor.json" }
   ]
 }
 ```
 
-#### Creating a New Example
+#### Creating a New Playground
 
-1. Create `examples/{name}/tsconfig.editor.json` using the base template
+1. Create `playgrounds/{name}/tsconfig.editor.json` using the base template
 2. Add framework-specific settings if needed (jsx, lib, types)
 3. Add any custom path mappings for the project
 4. Add reference to root `tsconfig.editor.json`
 5. Run `bun typecheck` to verify configuration
 
-### Babel Example
+### Module Resolution in Playgrounds
 
-**Location**: `examples/babel-app/`
-
-**Purpose**: Demonstrates zero-runtime GraphQL with Babel plugin
-
-**Key Configuration**:
-```json
-{
-  "references": [
-    { "path": "../../packages/core/tsconfig.editor.json" },
-    { "path": "../../packages/runtime/tsconfig.editor.json" }
-  ]
-}
-```
-
-**Dependencies**:
-- `@soda-gql/core` - Core types and utilities
-- `@soda-gql/runtime` - Runtime operation registry
-- `@soda-gql/plugin-babel` - Babel transformation plugin (dev dependency)
-
-### NestJS Example
-
-**Location**: `examples/nestjs-app/`
-
-**Purpose**: Demonstrates zero-runtime GraphQL with webpack loader/plugin in NestJS
-
-**Key Configuration**:
-
-**`webpack.config.cjs`**:
-```javascript
-const { SodaGqlWebpackPlugin } = require("@soda-gql/plugin-nestjs/webpack/plugin");
-
-module.exports = (options, _webpack) => {
-  return {
-    ...options,
-    module: {
-      rules: [
-        {
-          test: /\.[jt]sx?$/,
-          enforce: "pre", // Run BEFORE ts-loader
-          exclude: /node_modules/,
-          use: [{
-            loader: "@soda-gql/plugin-nestjs/webpack/loader",
-            options: {
-              mode: "zero-runtime",
-              artifactSource: {
-                source: "artifact-file",
-                path: ".cache/soda-gql-artifact.json"
-              }
-            }
-          }]
-        }
-      ]
-    },
-    plugins: [
-      new SodaGqlWebpackPlugin({
-        mode: "zero-runtime",
-        artifactSource: {
-          source: "artifact-file",
-          path: ".cache/soda-gql-artifact.json"
-        }
-      })
-    ]
-  };
-};
-```
-
-**Key Points**:
-- Loader runs **before** ts-loader (using `enforce: "pre"`)
-- This allows transforming TypeScript source directly
-- Plugin and loader share the same artifact configuration
-- Artifact file is generated by the builder CLI
-
-**Dependencies**:
-- `@soda-gql/core` - Core types
-- `@soda-gql/runtime` - Runtime registry
-- `@soda-gql/plugin-nestjs` - Webpack plugin and loader
-
-### Module Resolution in Examples
-
-Examples resolve modules through:
+Playgrounds resolve modules through:
 
 1. **Workspace Dependencies**: Packages are linked via Bun workspaces
 2. **Development Condition**: `customConditions: ["development"]` resolves to source files
 3. **Path Mapping**: Local graphql-system resolved via `paths` configuration
 4. **Project References**: TypeScript validates types across referenced packages
 
-### Running Examples
+### Running Playgrounds
 
 ```bash
-# Generate GraphQL systems for all examples
-bun run examples:codegen
-
-# Navigate to specific example
-cd examples/babel-app
+# Navigate to specific playground
+cd playgrounds/<playground-name>
 bun install
 bun run dev
 ```
@@ -605,9 +523,9 @@ packages/builder/test/
 └── codegen-fixture -> ../../../tests/codegen-fixture
 ```
 
-**Example Application** (`examples/vite-react/`):
+**Playground** (`playgrounds/vite-react/`):
 ```
-examples/vite-react/
+playgrounds/vite-react/
 └── codegen-fixture -> ../../tests/codegen-fixture
 ```
 
@@ -619,9 +537,9 @@ cd packages/<package-name>/test
 ln -s ../../../tests/codegen-fixture codegen-fixture
 ```
 
-For examples:
+For playgrounds:
 ```bash
-cd examples/<example-name>
+cd playgrounds/<playground-name>
 ln -s ../../tests/codegen-fixture codegen-fixture
 ```
 

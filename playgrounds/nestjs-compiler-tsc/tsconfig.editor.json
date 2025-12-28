@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/examples/nestjs-compiler-tsc",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/examples/nestjs-compiler-tsc/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/nestjs-compiler-tsc",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/nestjs-compiler-tsc/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {

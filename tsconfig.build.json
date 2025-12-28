@@ -23,6 +23,6 @@
     "**/tests/**/*",
     "**/dist/**/*",
     "**/scripts/**/*",
-    "**/examples/**/*"
+    "**/playgrounds/**/*"
   ]
 }

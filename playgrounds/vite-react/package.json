@@ -1,5 +1,5 @@
 {
-  "name": "vite-react-example",
+  "name": "@soda-gql-playgrounds/vite-react",
   "private": true,
   "type": "module",
   "scripts": {

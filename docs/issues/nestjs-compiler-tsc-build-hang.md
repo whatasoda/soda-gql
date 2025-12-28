@@ -6,7 +6,7 @@
 ## Affected Component
 - Package: `@soda-gql/plugin-tsc`
 - Path: `packages/plugin-tsc/src/`
-- Examples: `examples/nestjs-compiler-tsc`
+- Playgrounds: `playgrounds/nestjs-compiler-tsc`
 
 ## Problem Description
 
@@ -14,7 +14,7 @@ The `bun run build` command for the nestjs-compiler-tsc example hangs indefinite
 
 ### Observed Behavior
 ```bash
-cd examples/nestjs-compiler-tsc
+cd playgrounds/nestjs-compiler-tsc
 bun run artifact  # ✓ Works (generates artifact in 0ms, 4 elements)
 bun run build     # ✗ Hangs (>1 minute, no output, no errors)
 ```
