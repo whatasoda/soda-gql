@@ -97,6 +97,8 @@ jobs:
     needs: [check-version, build-native]
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
 
@@ -113,10 +115,6 @@ jobs:
       - name: Collect NAPI artifacts
         working-directory: packages/swc-transformer
         run: bunx @napi-rs/cli artifacts
-
-      - name: Prepare NAPI packages
-        working-directory: packages/swc-transformer
-        run: bunx @napi-rs/cli prepublish -t npm --skip-gh-release
 
       - run: bun quality:prepare
       - run: bun quality
