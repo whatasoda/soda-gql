@@ -90,15 +90,6 @@ f.id(null, { alias: "userId" })
 f.name(null, { alias: "displayName" })
 ```
 
-### Conditional Fields
-
-Include fields conditionally based on variables:
-
-```typescript
-f.email({ if: $.includeEmail })
-f.phoneNumber({ if: $.includeContact })
-```
-
 ## Fragment Variables
 
 Unlike standard GraphQL fragments, soda-gql fragments can declare their own variables:
@@ -106,17 +97,19 @@ Unlike standard GraphQL fragments, soda-gql fragments can declare their own vari
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User(
-    { variables: [$var("includeEmail").scalar("Boolean:?")] },
+    { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.email({ if: $.includeEmail }),
+      f.user({ id: $.userId })(({ f }) => [
+        f.id(),
+        f.name(),
+        f.email(),
+      ]),
     ],
   ),
 );
 ```
 
-Variables are declared in an array using `$var()`. The variable reference (`$`) provides typed access to these variables within field selections.
+Variables are declared in an array using `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
 
 ## Embedding Fragments
 

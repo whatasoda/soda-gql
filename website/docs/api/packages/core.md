@@ -204,7 +204,6 @@ Complete reference for field selection API:
 | With arguments | `f.posts({ limit: 10 })` | Field with arguments |
 | Nested (curried) | `f.posts()(({ f }) => [...])` | Nested selections |
 | With alias | `f.id(null, { alias: "userId" })` | Renamed field |
-| Conditional | `f.email({ if: $.include })` | Optional inclusion |
 | Fragment embed | `userFragment.embed({})` | Embed fragment fields |
 | Fragment with vars | `userFragment.embed({ a: $.b })` | Pass variables |
 

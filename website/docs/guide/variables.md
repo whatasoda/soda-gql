@@ -108,19 +108,6 @@ Reference declared variables using `$`:
 ]
 ```
 
-### Conditional Fields
-
-Use variables to conditionally include fields:
-
-```typescript
-({ f, $ }) => [
-  f.id(),
-  f.name(),
-  f.email({ if: $.includeEmail }),        // Only include if variable is truthy
-  f.phoneNumber({ if: $.showContact }),
-]
-```
-
 ### Passing to Embedded Fragments
 
 Pass variables to embedded fragments:
@@ -128,12 +115,14 @@ Pass variables to embedded fragments:
 ```typescript
 // Fragment with its own variable
 const userFragment = gql.default(({ fragment }, { $var }) =>
-  fragment.User(
-    { variables: [$var("showEmail").scalar("Boolean:?")] },
+  fragment.Query(
+    { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.email({ if: $.showEmail }),
+      f.user({ id: $.userId })(({ f }) => [
+        f.id(),
+        f.name(),
+        f.email(),
+      ]),
     ],
   ),
 );
@@ -143,16 +132,11 @@ const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation(
     {
       name: "GetUser",
-      variables: [
-        $var("userId").scalar("ID:!"),
-        $var("includeEmail").scalar("Boolean:?"),
-      ],
+      variables: [$var("userId").scalar("ID:!")],
     },
-    ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [
-        // Map operation variable to fragment variable
-        userFragment.embed({ showEmail: $.includeEmail }),
-      ]),
+    ({ $ }) => [
+      // Pass operation variable to fragment variable
+      userFragment.embed({ userId: $.userId }),
     ],
   ),
 );
