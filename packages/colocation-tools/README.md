@@ -56,6 +56,71 @@ export const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
+### Using with $colocate
+
+When composing multiple fragments in a single operation, use `$colocate` to prefix field selections with labels. The `createExecutionResultParser` will use these same labels to extract the corresponding data.
+
+#### Complete Workflow
+
+**Step 1: Define component fragments**
+
+```typescript
+// UserCard.tsx
+export const userCardFragment = gql.default(({ fragment }, { $var }) =>
+  fragment.Query({ variables: [$var("userId").scalar("ID:!")] }, ({ f, $ }) => [
+    f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()]),
+  ]),
+);
+
+export const userCardProjection = createProjection(userCardFragment, {
+  paths: ["$.user"],
+  handle: (result) => {
+    if (result.isError()) return { error: result.error, user: null };
+    if (result.isEmpty()) return { error: null, user: null };
+    return { error: null, user: result.unwrap().user };
+  },
+});
+```
+
+**Step 2: Compose operation with $colocate**
+
+```typescript
+// UserPage.tsx
+import { userCardFragment, userCardProjection } from "./UserCard";
+import { postListFragment, postListProjection } from "./PostList";
+
+export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+  query.operation(
+    { name: "UserPage", variables: [$var("userId").scalar("ID:!")] },
+    ({ $ }) => [
+      $colocate({
+        userCard: userCardFragment.embed({ userId: $.userId }),
+        postList: postListFragment.embed({ userId: $.userId }),
+      }),
+    ],
+  ),
+);
+```
+
+**Step 3: Create parser with matching labels**
+
+```typescript
+const parseUserPageResult = createExecutionResultParser({
+  userCard: userCardProjection,
+  postList: postListProjection,
+});
+```
+
+**Step 4: Parse execution result**
+
+```typescript
+const result = await executeQuery(userPageQuery);
+const { userCard, postList } = parseUserPageResult(result);
+// userCard and postList contain the projected data
+```
+
+The labels in `$colocate` (`userCard`, `postList`) must match the labels in `createExecutionResultParser` for proper data routing.
+
 ## API
 
 ### createProjection
