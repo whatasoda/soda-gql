@@ -1,4 +1,4 @@
-import { expect } from "bun:test";
+import { expect } from "vitest";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "@soda-gql/common";

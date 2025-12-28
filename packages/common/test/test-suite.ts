@@ -1,4 +1,4 @@
-import { afterEach, beforeEach } from "bun:test";
+import { afterEach, beforeEach } from "vitest";
 import { getPortableFS } from "../src/portable";
 import { TestTempDir } from "./temp-dir";
 
