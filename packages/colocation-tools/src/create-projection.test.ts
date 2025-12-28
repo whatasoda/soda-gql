@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { Fragment } from "@soda-gql/core";
 import { createProjection } from "./create-projection";
 import { createExecutionResultParser } from "./parse-execution-result";

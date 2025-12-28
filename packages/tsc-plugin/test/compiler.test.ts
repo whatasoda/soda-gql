@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { join } from "node:path";
 import ts from "typescript";
 import { createTscPlugin, type PluginOptions } from "../src/plugin";
