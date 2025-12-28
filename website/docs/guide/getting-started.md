@@ -76,15 +76,15 @@ This generates the type-safe GraphQL system that imports your scalar and adapter
 
 ## Basic Usage
 
-### Define a Model
+### Define a Fragment
 
-Models specify reusable field selections:
+Fragments specify reusable field selections:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name()]),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({}, ({ f }) => [f.id(), f.name()]),
 );
 ```
 
@@ -100,7 +100,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+      f.user({ id: $.userId })(({ f }) => [userFragment.embed()]),
     ],
   ),
 );

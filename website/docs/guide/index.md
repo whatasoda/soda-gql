@@ -17,15 +17,15 @@ This cycle creates friction: you write code in two languages, wait for generatio
 
 ## Core Concepts
 
-### Models
+### Fragments
 
-Models define reusable GraphQL fragments. They specify which fields to select from a type:
+Fragments define reusable field selections for GraphQL types:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name(), f.email()]),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({}, ({ f }) => [f.id(), f.name(), f.email()]),
 );
 ```
 
@@ -41,7 +41,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+      f.user({ id: $.userId })(({ f }) => [userFragment.embed()]),
     ],
   ),
 );
