@@ -247,6 +247,32 @@ const isGqlCall = (identifiers: ReadonlySet<string>, call: CallExpression): bool
   return true;
 };
 
+/**
+ * Unwrap method chains (like .attach()) to find the underlying gql call.
+ * Returns the innermost CallExpression that is a valid gql definition call.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+const unwrapMethodChains = (identifiers: ReadonlySet<string>, node: any): CallExpression | null => {
+  if (!node || node.type !== "CallExpression") {
+    return null;
+  }
+
+  // Check if this is directly a gql call
+  if (isGqlCall(identifiers, node)) {
+    return node;
+  }
+
+  // Check if this is a method call on another expression (e.g., .attach())
+  const callee = node.callee;
+  if (callee.type !== "MemberExpression") {
+    return null;
+  }
+
+  // Recursively check the object of the member expression
+  // e.g., for `gql.default(...).attach(...)`, callee.object is `gql.default(...)`
+  return unwrapMethodChains(identifiers, callee.object);
+};
+
 const collectAllDefinitions = ({
   module,
   gqlIdentifiers,
@@ -348,35 +374,39 @@ const collectAllDefinitions = ({
       return;
     }
 
-    // Check if this is a gql definition call
-    if (node.type === "CallExpression" && isGqlCall(gqlIdentifiers, node)) {
-      // Use tracker to get astPath
-      const { astPath } = tracker.registerDefinition();
-      const isTopLevel = stack.length === 1;
+    // Check if this is a gql definition call (possibly wrapped in method chains like .attach())
+    if (node.type === "CallExpression") {
+      const gqlCall = unwrapMethodChains(gqlIdentifiers, node);
+      if (gqlCall) {
+        // Use tracker to get astPath
+        const { astPath } = tracker.registerDefinition();
+        const isTopLevel = stack.length === 1;
 
-      // Determine if exported
-      let isExported = false;
-      let exportBinding: string | undefined;
+        // Determine if exported
+        let isExported = false;
+        let exportBinding: string | undefined;
 
-      if (isTopLevel && stack[0]) {
-        const topLevelName = stack[0].nameSegment;
-        if (exportBindings.has(topLevelName)) {
-          isExported = true;
-          exportBinding = exportBindings.get(topLevelName);
+        if (isTopLevel && stack[0]) {
+          const topLevelName = stack[0].nameSegment;
+          if (exportBindings.has(topLevelName)) {
+            isExported = true;
+            exportBinding = exportBindings.get(topLevelName);
+          }
         }
+
+        handledCalls.push(node);
+        pending.push({
+          astPath,
+          isTopLevel,
+          isExported,
+          exportBinding,
+          // Use the unwrapped gql call expression (without .attach() chain)
+          expression: expressionFromCall(gqlCall),
+        });
+
+        // Don't visit children of gql calls
+        return;
       }
-
-      handledCalls.push(node);
-      pending.push({
-        astPath,
-        isTopLevel,
-        isExported,
-        exportBinding,
-        expression: expressionFromCall(node),
-      });
-
-      // Don't visit children of gql calls
-      return;
     }
 
     // Variable declaration
