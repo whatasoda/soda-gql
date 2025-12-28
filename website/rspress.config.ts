@@ -32,6 +32,14 @@ export default defineConfig({
             { text: "Getting Started", link: "/guide/getting-started" },
           ],
         },
+        {
+          text: "Core Concepts",
+          items: [
+            { text: "Fragments", link: "/guide/fragments" },
+            { text: "Operations", link: "/guide/operations" },
+            { text: "Variables", link: "/guide/variables" },
+          ],
+        },
       ],
       "/api/": [
         {
