@@ -65,7 +65,7 @@ describe("metadata with variable access", () => {
             name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ $ }) => ({
-              extensions: {
+              custom: {
                 trackedVariables: [$var.getInner($.userId)],
               },
             }),
@@ -76,7 +76,7 @@ describe("metadata with variable access", () => {
 
       expect(operation.metadata).toBeDefined();
       const meta = operation.metadata as OperationMetadata;
-      expect(meta.extensions?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
+      expect(meta.custom?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
     });
 
     it("$var.getName extracts variable name", () => {
@@ -111,7 +111,7 @@ describe("metadata with variable access", () => {
             name: "UpdateUser",
             variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
             metadata: ({ $ }) => ({
-              extensions: {
+              custom: {
                 trackedVars: {
                   userId: $var.getName($.userId),
                   userName: $var.getName($.userName),
@@ -124,7 +124,7 @@ describe("metadata with variable access", () => {
       );
 
       const meta = operation.metadata as OperationMetadata;
-      expect(meta.extensions?.trackedVars).toEqual({
+      expect(meta.custom?.trackedVars).toEqual({
         userId: "userId",
         userName: "userName",
       });
@@ -155,7 +155,7 @@ describe("metadata with variable access", () => {
             name: "GetUser",
             variables: [$var("userId").scalar("ID:!")],
             metadata: ({ document }) => ({
-              extensions: {
+              custom: {
                 documentHash: createHash("sha256").update(print(document)).digest("hex"),
               },
             }),
@@ -166,7 +166,7 @@ describe("metadata with variable access", () => {
 
       expect(operation.metadata).toBeDefined();
       const meta = operation.metadata as OperationMetadata;
-      expect(meta.extensions?.documentHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(meta.custom?.documentHash).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it("metadata callback can access both $ and document", () => {
@@ -181,7 +181,7 @@ describe("metadata with variable access", () => {
               headers: {
                 "X-Variable-Name": $var.getName($.userId),
               },
-              extensions: {
+              custom: {
                 hasDocument: document.kind === "Document",
               },
             }),
@@ -192,7 +192,7 @@ describe("metadata with variable access", () => {
 
       const meta = operation.metadata as OperationMetadata;
       expect(meta.headers?.["X-Variable-Name"]).toBe("userId");
-      expect(meta.extensions?.hasDocument).toBe(true);
+      expect(meta.custom?.hasDocument).toBe(true);
     });
   });
 });

@@ -3,14 +3,12 @@ import type { AnyVarRef } from "../type-foundation/var-ref";
 
 /**
  * Base metadata types that can be attached to operations.
- * These are consumed at runtime by GraphQL clients for HTTP headers,
- * extensions, and custom application-specific values.
+ * These are consumed at runtime by GraphQL clients for HTTP headers
+ * and custom application-specific values.
  */
 export type OperationMetadata = {
   /** HTTP headers to include with the GraphQL request */
   readonly headers?: Record<string, string>;
-  /** GraphQL extensions to include in the request payload */
-  readonly extensions?: Record<string, unknown>;
   /** Custom arbitrary metadata values for application-specific use */
   readonly custom?: Record<string, unknown>;
 };
