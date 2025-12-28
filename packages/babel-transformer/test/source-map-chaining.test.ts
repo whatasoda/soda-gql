@@ -2,7 +2,7 @@
  * Tests for source map chaining functionality in babel-transformer.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { loadTestCases } from "@soda-gql/tsc-transformer/test";
 import { createBabelTransformer, type TransformOptions } from "../src/transform";
 

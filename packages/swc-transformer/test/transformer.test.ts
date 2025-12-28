@@ -5,7 +5,7 @@
  * tsc-transformer, ensuring behavioral equivalence between the two implementations.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc-transformer/test";
 
 // Check if native module is available before running tests

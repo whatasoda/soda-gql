@@ -5,7 +5,7 @@
  * validating that operations are registered and documents are exposed.
  */
 
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

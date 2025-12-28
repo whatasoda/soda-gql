@@ -8,7 +8,7 @@
  * Tests run with both TypeScript and SWC analyzers to ensure consistent behavior.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { type AnalyzerType, loadTestCases, normalizeCode, transformWithTsc } from "./test-cases";
 
 const analyzers: AnalyzerType[] = ["ts", "swc"];

@@ -6,7 +6,7 @@
  * semantically equivalent code.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel-plugin";
 import { type AnalyzerType, loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test";
