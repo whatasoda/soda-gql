@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel-plugin";
+import { transpileTypeScript } from "@soda-gql/common/test";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import {
   clearTransformCache,
@@ -28,12 +29,6 @@ const config = createTestConfig();
 
 // Counter for unique output directories per test
 let testCounter = 0;
-
-// Reusable transpiler instance
-const transpiler = new Bun.Transpiler({
-  loader: "ts",
-  target: "node",
-});
 
 /**
  * Transform source code using babel-plugin.
@@ -90,7 +85,7 @@ async function transformAndWriteFixture(fixture: LoadedPluginFixtureMulti): Prom
     });
 
     // Transpile TypeScript to JavaScript (Babel output is already JS but may need further processing)
-    const jsCode = transpiler.transformSync(transformed);
+    const jsCode = transpileTypeScript(transformed);
 
     // Calculate output path
     const fixturesIndex = file.sourcePath.lastIndexOf("/fixtures/");

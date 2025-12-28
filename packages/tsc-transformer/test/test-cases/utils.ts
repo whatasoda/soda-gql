@@ -2,7 +2,8 @@
  * Utilities for loading test fixtures and generating test cases.
  */
 
-import { readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuilderArtifact } from "@soda-gql/builder";
@@ -57,9 +58,8 @@ export const createTestConfig = (analyzer?: AnalyzerType): ResolvedSodaGqlConfig
 export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): Promise<LoadedPluginFixture> => {
   const fixtureDir = join(FIXTURE_ROOT, name);
   const sourcePath = join(fixtureDir, "source.ts");
-  const sourceFile = Bun.file(sourcePath);
 
-  if (!(await sourceFile.exists())) {
+  if (!existsSync(sourcePath)) {
     throw new Error(`Fixture source missing: ${sourcePath}`);
   }
 
@@ -81,7 +81,7 @@ export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): 
   }
 
   const artifact = buildResult.value;
-  const sourceCode = await sourceFile.text();
+  const sourceCode = await readFile(sourcePath, "utf-8");
 
   return {
     sourcePath,
@@ -130,8 +130,7 @@ export const loadPluginFixtureMulti = async (name: string, analyzer?: AnalyzerTy
 
   const files: LoadedPluginFixtureFile[] = [];
   for (const sourcePath of sourcePaths) {
-    const sourceFile = Bun.file(sourcePath);
-    const sourceCode = await sourceFile.text();
+    const sourceCode = await readFile(sourcePath, "utf-8");
     files.push({ sourcePath, sourceCode });
   }
 

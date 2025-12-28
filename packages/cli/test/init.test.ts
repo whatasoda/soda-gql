@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { getProjectRoot, runInitCli } from "./utils/cli";
@@ -32,7 +33,7 @@ describe("soda-gql init CLI", () => {
 
       await runInitCli([], { cwd: caseDir });
 
-      const configContent = await Bun.file(join(caseDir, "soda-gql.config.ts")).text();
+      const configContent = await readFile(join(caseDir, "soda-gql.config.ts"), "utf-8");
       expect(configContent).toContain("defineConfig");
       expect(configContent).toContain("outdir");
       expect(configContent).toContain("schemas");
@@ -64,7 +65,7 @@ describe("soda-gql init CLI", () => {
 
       expect(result.exitCode).toBe(0);
 
-      const configContent = await Bun.file(join(caseDir, "soda-gql.config.ts")).text();
+      const configContent = await readFile(join(caseDir, "soda-gql.config.ts"), "utf-8");
       expect(configContent).toContain("defineConfig");
       expect(configContent).not.toContain("old content");
     });
@@ -94,7 +95,7 @@ describe("soda-gql init CLI", () => {
 
       await runInitCli([], { cwd: caseDir });
 
-      const injectContent = await Bun.file(join(caseDir, "graphql-system/default.inject.ts")).text();
+      const injectContent = await readFile(join(caseDir, "graphql-system/default.inject.ts"), "utf-8");
 
       expect(injectContent).toContain("export const scalar");
       expect(injectContent).toContain("export const adapter");
@@ -110,7 +111,7 @@ describe("soda-gql init CLI", () => {
 
       await runInitCli([], { cwd: caseDir });
 
-      const gitignoreContent = await Bun.file(join(caseDir, "graphql-system/.gitignore")).text();
+      const gitignoreContent = await readFile(join(caseDir, "graphql-system/.gitignore"), "utf-8");
 
       expect(gitignoreContent).toContain("/index.ts");
       expect(gitignoreContent).toContain("/index.cjs");

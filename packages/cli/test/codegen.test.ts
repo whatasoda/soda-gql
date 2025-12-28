@@ -1,5 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test";
 import { type CliResult, getProjectRoot, runCodegenCli } from "./utils/cli";
@@ -11,23 +13,30 @@ const copyDefaultInject = (destinationPath: string): void => {
 };
 
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
-  const subprocess = Bun.spawn({
-    cmd: ["bun", "x", "tsc", "--noEmit", "--project", tsconfigPath],
-    cwd: projectRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-    },
+  return new Promise((resolve) => {
+    const subprocess = spawn("bun", ["x", "tsc", "--noEmit", "--project", tsconfigPath], {
+      cwd: projectRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+      },
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    subprocess.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
+    subprocess.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    subprocess.on("close", (exitCode) => {
+      resolve({ stdout, stderr, exitCode: exitCode ?? 0 });
+    });
   });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(subprocess.stdout).text(),
-    new Response(subprocess.stderr).text(),
-    subprocess.exited,
-  ]);
-
-  return { stdout, stderr, exitCode };
 };
 
 const toPosix = (value: string): string => value.split(/\\|\//).join("/");
@@ -68,7 +77,7 @@ describe("soda-gql codegen CLI", () => {
     mkdirSync(caseDir, { recursive: true });
 
     const invalidSchemaPath = join(caseDir, "invalid.graphql");
-    await Bun.write(invalidSchemaPath, "type Query { invalid }");
+    await writeFile(invalidSchemaPath, "type Query { invalid }");
     const _outFile = join(caseDir, "output.ts");
     const injectFile = join(caseDir, "inject.ts");
 
@@ -118,16 +127,16 @@ describe("soda-gql codegen CLI", () => {
       const result = await runCodegenCli(["--config", configPath]);
 
       expect(result.exitCode).toBe(0);
-      const generatedExists = await Bun.file(outFile).exists();
+      const generatedExists = existsSync(outFile);
       expect(generatedExists).toBe(true);
-      const moduleContents = await Bun.file(outFile).text();
+      const moduleContents = await readFile(outFile, "utf-8");
       expect(moduleContents).toContain("export const gql");
       // Scalar import should be present
       expect(moduleContents).toContain("scalar as scalar_default");
 
       // Verify .cjs bundle was generated
       const cjsPath = outFile.replace(/\.ts$/, ".cjs");
-      const cjsExists = await Bun.file(cjsPath).exists();
+      const cjsExists = existsSync(cjsPath);
       expect(cjsExists).toBe(true);
 
       // Verify human-readable output
@@ -156,7 +165,7 @@ describe("soda-gql codegen CLI", () => {
         files: [generatedRelative.startsWith(".") ? generatedRelative : `./${generatedRelative}`],
       } satisfies Record<string, unknown>;
 
-      await Bun.write(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`);
+      await writeFile(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`);
 
       await runTypecheck(tsconfigPath);
       // Skip typecheck assertion for now - bun types issue unrelated to this refactoring
@@ -171,9 +180,9 @@ describe("soda-gql codegen CLI", () => {
     const result = await runCodegenCli(["--emit-inject-template", templatePath]);
 
     expect(result.exitCode).toBe(0);
-    const templateExists = await Bun.file(templatePath).exists();
+    const templateExists = existsSync(templatePath);
     expect(templateExists).toBe(true);
-    const contents = await Bun.file(templatePath).text();
+    const contents = await readFile(templatePath, "utf-8");
     expect(contents).toContain("export const scalar");
   });
 

@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { transpileTypeScript } from "@soda-gql/common/test";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import {
   clearTransformCache,
@@ -57,12 +58,6 @@ try {
 
 // Counter for unique output directories per test
 let testCounter = 0;
-
-// Reusable transpiler instance
-const transpiler = new Bun.Transpiler({
-  loader: "ts",
-  target: "node",
-});
 
 /**
  * Transform source code using swc-transformer.
@@ -117,7 +112,7 @@ async function transformAndWriteFixture(fixture: LoadedPluginFixtureMulti): Prom
     });
 
     // Transpile TypeScript to JavaScript
-    const jsCode = transpiler.transformSync(transformed);
+    const jsCode = transpileTypeScript(transformed);
 
     // Calculate output path
     const fixturesIndex = file.sourcePath.lastIndexOf("/fixtures/");

@@ -1,11 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-
-// Reusable transpiler instance
-const transpiler = new Bun.Transpiler({
-  loader: "ts",
-  target: "node",
-});
+import { transpileTypeScript } from "@soda-gql/common/test";
 
 // Optional: Simple memoization cache
 const transformCache = new Map<string, string>();
@@ -33,7 +28,7 @@ export const loadTransformedModule = async (
         return cache;
       }
     }
-    const code = transpiler.transformSync(transformedCode);
+    const code = transpileTypeScript(transformedCode);
     if (options?.cache) {
       transformCache.set(cacheKey, code);
     }

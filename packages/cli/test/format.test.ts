@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test";
 import { assertCliSuccess, getProjectRoot, runFormatCli } from "./utils/cli";
@@ -19,14 +20,14 @@ describe("soda-gql format CLI", () => {
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.name()]));
 `;
-      await Bun.write(testFile, unformatted);
+      await writeFile(testFile, unformatted);
 
       const result = await runFormatCli([testFile]);
 
       assertCliSuccess(result);
       expect(result.stdout).toContain("1 formatted");
 
-      const formatted = await Bun.file(testFile).text();
+      const formatted = await readFile(testFile, "utf-8");
       expect(formatted).toContain("//");
     });
 
@@ -44,7 +45,7 @@ export const model = gql.default(({ model }) =>
   ]),
 );
 `;
-      await Bun.write(testFile, alreadyFormatted);
+      await writeFile(testFile, alreadyFormatted);
 
       const result = await runFormatCli([testFile]);
 
@@ -62,8 +63,8 @@ export const model = gql.default(({ model }) =>
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(file1, unformatted);
-      await Bun.write(file2, unformatted);
+      await writeFile(file1, unformatted);
+      await writeFile(file2, unformatted);
 
       const result = await runFormatCli([join(caseDir, "*.ts")]);
 
@@ -87,7 +88,7 @@ export const model = gql.default(({ model }) =>
   ]),
 );
 `;
-      await Bun.write(testFile, alreadyFormatted);
+      await writeFile(testFile, alreadyFormatted);
 
       const result = await runFormatCli([testFile, "--check"]);
 
@@ -103,7 +104,7 @@ export const model = gql.default(({ model }) =>
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(testFile, unformatted);
+      await writeFile(testFile, unformatted);
 
       const result = await runFormatCli([testFile, "--check"]);
 
@@ -119,11 +120,11 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(testFile, unformatted);
+      await writeFile(testFile, unformatted);
 
       await runFormatCli(["--check", testFile]);
 
-      const content = await Bun.file(testFile).text();
+      const content = await readFile(testFile, "utf-8");
       expect(content).toBe(unformatted);
     });
   });
@@ -162,7 +163,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(testFile, unformatted);
+      await writeFile(testFile, unformatted);
 
       // Create config with include pattern
       const configPath = createTempConfigFile(caseDir, {
@@ -193,8 +194,8 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(regularFile, unformatted);
-      await Bun.write(testFile, unformatted);
+      await writeFile(regularFile, unformatted);
+      await writeFile(testFile, unformatted);
 
       // Create config that excludes test files
       const configPath = createTempConfigFile(caseDir, {
@@ -229,8 +230,8 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const unformatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
 `;
-      await Bun.write(srcFile, unformatted);
-      await Bun.write(libFile, unformatted);
+      await writeFile(srcFile, unformatted);
+      await writeFile(libFile, unformatted);
 
       // Config includes src, but we explicitly specify lib
       createTempConfigFile(caseDir, {
