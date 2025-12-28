@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createFieldFactories, createVarBuilder } from "../../src/composer";
 import { define, defineScalar, unsafeOutputType } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";

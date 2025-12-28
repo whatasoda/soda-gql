@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createCanonicalId } from "@soda-gql/common";
 import { Fragment, GqlElement } from "@soda-gql/core";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";

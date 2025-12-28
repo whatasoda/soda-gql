@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { type BuilderError, builderErr, builderErrors, formatBuilderError, isBuilderError } from "../src/errors";
 
 // Type helper to extract specific error variant

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createGqlElementComposer } from "./gql-composer";

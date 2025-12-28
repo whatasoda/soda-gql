@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Script } from "node:vm";
 import { createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { Kind } from "graphql";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "./build-document";

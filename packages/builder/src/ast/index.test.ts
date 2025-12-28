@@ -1,4 +1,4 @@
-import { describe, expect, it, test } from "bun:test";
+import { describe, expect, it, test } from "vitest";
 import { getTestConfig } from "../../test/codegen-fixture/get-config";
 import { fixtures, loadModuleAnalysisFixture } from "../../test/utils/fixtures";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";

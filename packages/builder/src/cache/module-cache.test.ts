@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createCanonicalId } from "@soda-gql/common";
 import { createTestSuite, TestSuite } from "@soda-gql/common/test";
 import type { ModuleAnalysis } from "../ast/types";

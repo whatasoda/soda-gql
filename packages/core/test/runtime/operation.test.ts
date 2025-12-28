@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { type DocumentNode, Kind } from "graphql";
 import { createRuntimeOperation, type RuntimeOperationInput } from "../../src/runtime/operation";
 import { __getRegisteredOperations, __resetRuntimeRegistry } from "../../src/runtime/runtime-registry";

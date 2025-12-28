@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { type CanonicalId, createCanonicalId } from "@soda-gql/common";
 import { Fragment, Operation } from "@soda-gql/core";
 import { parse } from "graphql";

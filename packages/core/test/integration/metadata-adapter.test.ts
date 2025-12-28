@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
