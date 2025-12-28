@@ -86,7 +86,7 @@ jobs:
 
       - name: Prepare NAPI packages
         working-directory: packages/swc-transformer
-        run: bunx @napi-rs/cli prepublish -t npm
+        run: bunx @napi-rs/cli prepublish -t npm --skip-gh-release
 
       - run: bun quality:prepare
       - run: bun quality
