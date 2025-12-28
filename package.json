@@ -18,8 +18,9 @@
     "exports:sync": "bun scripts/sync-exports.ts",
     "build": "bun run --filter=@soda-gql/swc-transformer build:dev && bun run exports:sync && bunx tsdown",
     "build:release": "bun run --filter=@soda-gql/swc-transformer build && bun run exports:sync && bunx tsdown",
-    "test": "bun --conditions=@soda-gql test",
-    "test:coverage": "bun --conditions=@soda-gql test --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "clean:dist": "find packages -name dist -type d -prune -exec rm -rf {} +",
     "soda-gql": "bun --conditions=@soda-gql packages/cli/src/index.ts",
     "fixture:setup": "bun soda-gql codegen --config tests/codegen-fixture/soda-gql.config.ts",
@@ -30,6 +31,7 @@
     "cleanup": "rm -rf .cache tests/.tmp"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^3.0.0",
     "@babel/core": "*",
     "@babel/parser": "*",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
@@ -58,10 +60,12 @@
     "@types/babel__traverse": "^7.20.6",
     "@types/bun": "1.3.0",
     "@types/node": "^24.7.2",
+    "esbuild": "^0.24.0",
     "graphql": "^16.8.1",
     "neverthrow": "^8.2.0",
     "tsdown": "^0.17.4",
     "typescript": "^5.9.2",
+    "vitest": "^3.0.0",
     "zod": "^4.1.11"
   },
   "patchedDependencies": {
