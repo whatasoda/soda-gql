@@ -40,6 +40,13 @@ export default defineConfig({
             { text: "Variables", link: "/guide/variables" },
           ],
         },
+        {
+          text: "Features",
+          items: [
+            { text: "Metadata", link: "/guide/metadata" },
+            { text: "Fragment Colocation", link: "/guide/colocation" },
+          ],
+        },
       ],
       "/api/": [
         {
