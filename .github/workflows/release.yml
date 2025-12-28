@@ -69,8 +69,27 @@ jobs:
             echo "should_release=false" >> $GITHUB_OUTPUT
           fi
 
-  build-native:
+  validate-versions:
     needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate package versions
+        run: bun scripts/version-check.ts validate
+
+  build-native:
+    needs: [check-version, validate-versions]
     if: needs.check-version.outputs.should_release == 'true'
     uses: ./.github/workflows/build-native.yml
 

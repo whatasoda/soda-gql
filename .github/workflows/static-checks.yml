@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -60,35 +61,37 @@ jobs:
         with:
           path: coverage-summary.md
 
-  swc-transformer-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "packages/swc-transformer -> target"
-          cache-targets: "true"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Prepare for tests
-        run: bun quality:prepare
-
-      - name: Build swc-transformer native module
-        working-directory: packages/swc-transformer
-        run: bun run build
-
-      - name: Run swc-transformer tests
-        run: bun run test --filter swc-transformer
+  # NOTE: swc-transformer-tests disabled to reduce GitHub Actions usage.
+  # Rust compilation is expensive. Run locally before release.
+  # swc-transformer-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Bun
+  #       uses: oven-sh/setup-bun@v2
+  #       with:
+  #         bun-version-file: .bun-version
+  #
+  #     - name: Setup Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #
+  #     - name: Setup Rust cache
+  #       uses: Swatinem/rust-cache@v2
+  #       with:
+  #         workspaces: "packages/swc-transformer -> target"
+  #         cache-targets: "true"
+  #
+  #     - name: Install dependencies
+  #       run: bun install --frozen-lockfile
+  #
+  #     - name: Prepare for tests
+  #       run: bun quality:prepare
+  #
+  #     - name: Build swc-transformer native module
+  #       working-directory: packages/swc-transformer
+  #       run: bun run build
+  #
+  #     - name: Run swc-transformer tests
+  #       run: bun run test --filter swc-transformer

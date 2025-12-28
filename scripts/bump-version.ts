@@ -1,14 +1,32 @@
 import { $ } from "bun";
-import { readdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
 import { err, ok, type Result } from "neverthrow";
+import {
+  buildDependencyGraph,
+  computePackagesToBump,
+  detectDirectChanges,
+  getLastReleaseTag,
+  getPackagePaths,
+  type DependencyGraph,
+  type PackageInfo,
+} from "./lib/version-utils";
 
 type BumpType = "major" | "minor" | "patch";
 
 type PackageJson = {
   name: string;
   version: string;
+  optionalDependencies?: Record<string, string>;
   [key: string]: unknown;
+};
+
+type BumpPlan = {
+  toBump: Set<string>;
+  toSkip: Set<string>;
+  newVersion: string;
+  directChanges: Set<string>;
+  cascadeChanges: Set<string>;
+  graph: DependencyGraph;
 };
 
 /**
@@ -26,10 +44,7 @@ const parseVersion = (version: string): Result<[number, number, number], string>
 /**
  * Increment version based on bump type
  */
-const incrementVersion = (
-  version: string,
-  bumpType: BumpType,
-): Result<string, string> => {
+const incrementVersion = (version: string, bumpType: BumpType): Result<string, string> => {
   return parseVersion(version).map(([major, minor, patch]) => {
     switch (bumpType) {
       case "major":
@@ -72,44 +87,10 @@ const writePackageJson = async (
 };
 
 /**
- * Get all package.json paths
- */
-const getPackagePaths = async (): Promise<Result<string[], string>> => {
-  try {
-    const packageDirs = await readdir("packages", { withFileTypes: true });
-    const paths = packageDirs
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join("packages", entry.name, "package.json"));
-
-    // Add root package.json
-    paths.unshift("package.json");
-
-    // Add platform-specific packages for swc-transformer
-    try {
-      const platformDirs = await readdir("packages/swc-transformer/npm", { withFileTypes: true });
-      for (const entry of platformDirs) {
-        if (entry.isDirectory()) {
-          paths.push(path.join("packages/swc-transformer/npm", entry.name, "package.json"));
-        }
-      }
-    } catch {
-      // Platform packages may not exist yet
-    }
-
-    return ok(paths);
-  } catch (error) {
-    return err(`Failed to read packages directory: ${String(error)}`);
-  }
-};
-
-/**
  * Update optionalDependencies versions for platform packages
  */
-const updateOptionalDependencies = (
-  packageJson: PackageJson,
-  newVersion: string,
-): void => {
-  const optionalDeps = packageJson.optionalDependencies as Record<string, string> | undefined;
+const updateOptionalDependencies = (packageJson: PackageJson, newVersion: string): void => {
+  const optionalDeps = packageJson.optionalDependencies;
   if (optionalDeps) {
     for (const dep of Object.keys(optionalDeps)) {
       // Update @soda-gql/swc-transformer-* platform package versions
@@ -121,37 +102,199 @@ const updateOptionalDependencies = (
 };
 
 /**
- * Bump version for a single package
+ * Verify local build before version bump
+ * Ensures swc-transformer builds and prepublish succeeds
  */
-const bumpPackageVersion = async (
-  filePath: string,
-  bumpType: BumpType,
-): Promise<Result<{ path: string; oldVersion: string; newVersion: string }, string>> => {
-  const packageJsonResult = await readPackageJson(filePath);
-  if (packageJsonResult.isErr()) {
-    return err(packageJsonResult.error);
+const verifyLocalBuild = async (): Promise<Result<void, string>> => {
+  console.log("Verifying local build...\n");
+
+  // 1. Build swc-transformer native module
+  console.log("  Building swc-transformer...");
+  const buildResult = await $`bun run build`.cwd("packages/swc-transformer").quiet().nothrow();
+  if (buildResult.exitCode !== 0) {
+    console.error(buildResult.stderr.toString());
+    return err("swc-transformer build failed. Run 'bun run build' in packages/swc-transformer to debug.");
+  }
+  console.log("  ✓ swc-transformer build succeeded");
+
+  // 2. Run prepublish
+  console.log("  Running prepublish...");
+  const prepublishResult = await $`bun prepublish`.quiet().nothrow();
+  if (prepublishResult.exitCode !== 0) {
+    console.error(prepublishResult.stderr.toString());
+    return err("prepublish failed. Run 'bun prepublish' to debug.");
+  }
+  console.log("  ✓ prepublish succeeded\n");
+
+  return ok(undefined);
+};
+
+/**
+ * Create a bump plan based on changes and dependencies
+ */
+const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, string>> => {
+  // Build dependency graph
+  const graphResult = await buildDependencyGraph();
+  if (graphResult.isErr()) {
+    return err(graphResult.error);
+  }
+  const graph = graphResult.value;
+
+  // Get last release tag
+  const tagResult = await getLastReleaseTag();
+  if (tagResult.isErr()) {
+    return err(tagResult.error);
+  }
+  const lastTag = tagResult.value;
+
+  console.log(`Last release tag: ${lastTag ?? "(none)"}`);
+
+  // Detect direct changes
+  const directChangesResult = await detectDirectChanges(graph, lastTag);
+  if (directChangesResult.isErr()) {
+    return err(directChangesResult.error);
+  }
+  const directChanges = directChangesResult.value;
+
+  // Compute all packages to bump (including cascade)
+  const toBump = computePackagesToBump(directChanges, graph);
+
+  // Cascade changes = toBump - directChanges
+  const cascadeChanges = new Set<string>();
+  for (const pkg of toBump) {
+    if (!directChanges.has(pkg)) {
+      cascadeChanges.add(pkg);
+    }
   }
 
-  const packageJson = packageJsonResult.value;
-  const oldVersion = packageJson.version;
+  // Compute packages to skip
+  const toSkip = new Set<string>();
+  for (const name of graph.packages.keys()) {
+    if (!toBump.has(name)) {
+      toSkip.add(name);
+    }
+  }
 
-  const newVersionResult = incrementVersion(oldVersion, bumpType);
+  // Get root version and calculate new version
+  const rootInfo = graph.packages.get("soda-gql");
+  if (!rootInfo) {
+    return err("Could not find root package");
+  }
+
+  const newVersionResult = incrementVersion(rootInfo.version, bumpType);
   if (newVersionResult.isErr()) {
     return err(newVersionResult.error);
   }
 
-  const newVersion = newVersionResult.value;
-  packageJson.version = newVersion;
+  return ok({
+    toBump,
+    toSkip,
+    newVersion: newVersionResult.value,
+    directChanges,
+    cascadeChanges,
+    graph,
+  });
+};
 
-  // Also update optionalDependencies for platform packages
-  updateOptionalDependencies(packageJson, newVersion);
+/**
+ * Report the bump plan to console
+ */
+const reportBumpPlan = (plan: BumpPlan): void => {
+  const { directChanges, cascadeChanges, toSkip, newVersion, graph } = plan;
 
-  const writeResult = await writePackageJson(filePath, packageJson);
-  if (writeResult.isErr()) {
-    return err(writeResult.error);
+  console.log(`New version: ${newVersion}\n`);
+
+  // Direct changes
+  console.log(`Direct changes (${directChanges.size}):`);
+  for (const name of directChanges) {
+    const info = graph.packages.get(name);
+    if (info) {
+      console.log(`  - ${name} (${info.packageDir})`);
+    }
   }
 
-  return ok({ path: filePath, oldVersion, newVersion });
+  // Cascade changes
+  if (cascadeChanges.size > 0) {
+    console.log(`\nCascade bump (${cascadeChanges.size}):`);
+    for (const name of cascadeChanges) {
+      const info = graph.packages.get(name);
+      if (info) {
+        const deps = [...info.workspaceDeps].filter((d) => plan.toBump.has(d));
+        console.log(`  - ${name} (depends on: ${deps.map((d) => d.replace("@soda-gql/", "")).join(", ")})`);
+      }
+    }
+  }
+
+  // Skipped packages
+  if (toSkip.size > 0) {
+    console.log(`\nSkipped (${toSkip.size}):`);
+    for (const name of toSkip) {
+      const info = graph.packages.get(name);
+      if (info) {
+        console.log(`  - ${name} (no changes)`);
+      }
+    }
+  }
+};
+
+/**
+ * Execute the bump plan
+ */
+const executeBumpPlan = async (
+  plan: BumpPlan,
+  dryRun: boolean,
+): Promise<Result<Array<{ path: string; oldVersion: string; newVersion: string }>, string>> => {
+  const results: Array<{ path: string; oldVersion: string; newVersion: string }> = [];
+
+  // Get all package paths (to maintain order)
+  const pathsResult = await getPackagePaths();
+  if (pathsResult.isErr()) {
+    return err(pathsResult.error);
+  }
+
+  for (const packagePath of pathsResult.value) {
+    const pkgResult = await readPackageJson(packagePath);
+    if (pkgResult.isErr()) {
+      // Skip packages that can't be read
+      continue;
+    }
+
+    const pkg = pkgResult.value;
+    const oldVersion = pkg.version;
+
+    // Check if this package should be bumped
+    if (!plan.toBump.has(pkg.name)) {
+      // Skip this package
+      continue;
+    }
+
+    if (dryRun) {
+      results.push({
+        path: packagePath,
+        oldVersion,
+        newVersion: plan.newVersion,
+      });
+    } else {
+      // Update version
+      pkg.version = plan.newVersion;
+
+      // Update optionalDependencies for platform packages
+      updateOptionalDependencies(pkg, plan.newVersion);
+
+      const writeResult = await writePackageJson(packagePath, pkg);
+      if (writeResult.isErr()) {
+        return err(writeResult.error);
+      }
+
+      results.push({
+        path: packagePath,
+        oldVersion,
+        newVersion: plan.newVersion,
+      });
+    }
+  }
+
+  return ok(results);
 };
 
 /**
@@ -161,7 +304,7 @@ const createCommitAndPR = async (
   version: string,
   bumpType: BumpType,
   dryRun: boolean,
-) => {
+): Promise<void> => {
   const branchName = `release/v${version}`;
   const commitMessage = `chore: bump version to ${version} (${bumpType})`;
 
@@ -208,74 +351,60 @@ const createCommitAndPR = async (
 /**
  * Main function
  */
-const main = async () => {
+const main = async (): Promise<void> => {
   const args = process.argv.slice(2);
   const bumpType = args[0] as BumpType | undefined;
   const dryRun = args.includes("--dry-run");
+  const skipVerify = args.includes("--skip-verify");
 
   if (!bumpType || !["major", "minor", "patch"].includes(bumpType)) {
-    console.error("Usage: bun scripts/bump-version.ts <major|minor|patch> [--dry-run]");
+    console.error("Usage: bun scripts/bump-version.ts <major|minor|patch> [--dry-run] [--skip-verify]");
     process.exit(1);
   }
 
   if (dryRun) {
-    console.log("[DRY RUN MODE]");
+    console.log("[DRY RUN MODE]\n");
   }
 
-  console.log(`Bumping ${bumpType} version...`);
+  // Verify local build before proceeding (unless skipped)
+  if (!skipVerify && !dryRun) {
+    const verifyResult = await verifyLocalBuild();
+    if (verifyResult.isErr()) {
+      console.error(`\nError: ${verifyResult.error}`);
+      console.error("\nUse --skip-verify to bypass this check.");
+      process.exit(1);
+    }
+  } else if (skipVerify) {
+    console.log("[SKIPPING LOCAL BUILD VERIFICATION]\n");
+  }
 
-  // Get all package paths
-  const pathsResult = await getPackagePaths();
-  if (pathsResult.isErr()) {
-    console.error(pathsResult.error);
+  console.log(`Bumping ${bumpType} version...\n`);
+
+  // Create bump plan
+  const planResult = await createBumpPlan(bumpType);
+  if (planResult.isErr()) {
+    console.error(`Error: ${planResult.error}`);
     process.exit(1);
   }
 
-  const paths = pathsResult.value;
+  const plan = planResult.value;
 
-  // Bump all package versions (or simulate in dry-run mode)
-  const results: Array<{ path: string; oldVersion: string; newVersion: string }> = [];
-  for (const packagePath of paths) {
-    if (dryRun) {
-      // In dry-run mode, just read and calculate new version without writing
-      const packageJsonResult = await readPackageJson(packagePath);
-      if (packageJsonResult.isErr()) {
-        console.error(packageJsonResult.error);
-        process.exit(1);
-      }
-      const packageJson = packageJsonResult.value;
-      const oldVersion = packageJson.version;
-      const newVersionResult = incrementVersion(oldVersion, bumpType);
-      if (newVersionResult.isErr()) {
-        console.error(newVersionResult.error);
-        process.exit(1);
-      }
-      results.push({
-        path: packagePath,
-        oldVersion,
-        newVersion: newVersionResult.value,
-      });
-    } else {
-      const result = await bumpPackageVersion(packagePath, bumpType);
-      if (result.isErr()) {
-        console.error(result.error);
-        process.exit(1);
-      }
-      results.push(result.value);
-    }
+  // Report what will happen
+  reportBumpPlan(plan);
+
+  // Execute (or simulate in dry-run)
+  const executeResult = await executeBumpPlan(plan, dryRun);
+  if (executeResult.isErr()) {
+    console.error(`Error: ${executeResult.error}`);
+    process.exit(1);
   }
 
-  // Display results
+  const results = executeResult.value;
+
+  // Display version update summary
   console.log("\nVersion updates:");
   for (const { path: packagePath, oldVersion, newVersion } of results) {
-    console.log(`  ${packagePath}: ${oldVersion} → ${newVersion}`);
-  }
-
-  // Get the new version from root package.json
-  const newVersion = results[0]?.newVersion;
-  if (!newVersion) {
-    console.error("Failed to get new version");
-    process.exit(1);
+    console.log(`  ${packagePath}: ${oldVersion} -> ${newVersion}`);
   }
 
   // Create commit and PR
@@ -283,7 +412,7 @@ const main = async () => {
     console.log("\nCreating commit and PR...");
   }
   try {
-    await createCommitAndPR(newVersion, bumpType, dryRun);
+    await createCommitAndPR(plan.newVersion, bumpType, dryRun);
     if (!dryRun) {
       console.log("\n✓ Successfully created commit and PR");
     } else {
