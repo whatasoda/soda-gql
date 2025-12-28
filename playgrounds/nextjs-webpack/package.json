@@ -1,5 +1,5 @@
 {
-  "name": "nextjs-webpack-example",
+  "name": "@soda-gql-playgrounds/nextjs-webpack",
   "private": true,
   "scripts": {
     "dev": "next dev",
