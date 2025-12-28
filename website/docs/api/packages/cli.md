@@ -50,8 +50,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });

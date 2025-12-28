@@ -15,7 +15,7 @@ bun create vite my-app --template react-ts
 cd my-app
 
 # Install soda-gql packages
-bun add @soda-gql/core @soda-gql/runtime
+bun add @soda-gql/core
 bun add -D @soda-gql/cli @soda-gql/config @soda-gql/vite-plugin
 ```
 
@@ -33,8 +33,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });
@@ -62,11 +61,11 @@ export default defineConfig({
 });
 ```
 
-### 3. Generate GraphQL System
+### 3. Initialize Project
 
 ```bash
-# Generate initial templates
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+# Initialize with templates
+bun run soda-gql init
 
 # Generate the GraphQL system
 bun run soda-gql codegen
@@ -81,8 +80,7 @@ my-vite-app/
 │   ├── main.tsx
 │   ├── graphql-system/         # Generated
 │   │   ├── index.ts
-│   │   ├── runtime-adapter.ts
-│   │   └── scalars.ts
+│   │   └── default.inject.ts
 │   ├── components/
 │   │   ├── UserCard.tsx
 │   │   └── PostList.tsx

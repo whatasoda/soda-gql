@@ -22,8 +22,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });
@@ -50,8 +49,7 @@ Each entry in `schemas` requires:
 | Option | Type | Description |
 |--------|------|-------------|
 | `schema` | `string` | Path to GraphQL schema file |
-| `runtimeAdapter` | `string` | Path to runtime adapter module |
-| `scalars` | `string` | Path to scalar definitions module |
+| `inject` | `string` | Path to inject file (scalars and adapter definitions) |
 
 ## Multi-Schema Configuration
 
@@ -66,13 +64,11 @@ export default defineConfig({
   schemas: {
     users: {
       schema: "./schemas/users.graphql",
-      runtimeAdapter: "./src/graphql-system/users/runtime-adapter.ts",
-      scalars: "./src/graphql-system/users/scalars.ts",
+      inject: "./src/graphql-system/users.inject.ts",
     },
     products: {
       schema: "./schemas/products.graphql",
-      runtimeAdapter: "./src/graphql-system/products/runtime-adapter.ts",
-      scalars: "./src/graphql-system/products/scalars.ts",
+      inject: "./src/graphql-system/products.inject.ts",
     },
   },
 });

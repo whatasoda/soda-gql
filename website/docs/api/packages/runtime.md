@@ -74,34 +74,46 @@ export const getUserQuery = gqlRuntime.getOperation("abc123");
 
 The operation details are registered in a separate runtime registry, and your code only contains a lightweight reference.
 
-## Runtime Adapter
+## Adapter Definition
 
-The runtime adapter defines application-specific types for error handling:
+The adapter is defined in the inject file using `defineAdapter` from `@soda-gql/core/adapter`:
 
 ```typescript
-// src/graphql-system/runtime-adapter.ts
-import { createRuntimeAdapter } from "@soda-gql/runtime";
+// src/graphql-system/default.inject.ts
+import { defineAdapter, defineScalar } from "@soda-gql/core/adapter";
 
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{
-    type: "non-graphql-error";
-    cause: unknown;
-  }>(),
-}));
+export const scalar = {
+  ...defineScalar<"ID", string, string>("ID"),
+  ...defineScalar<"String", string, string>("String"),
+  ...defineScalar<"Int", number, number>("Int"),
+  ...defineScalar<"Float", number, number>("Float"),
+  ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
+} as const;
+
+export const adapter = defineAdapter({
+  helpers: {},
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+  },
+});
 ```
 
-### Non-GraphQL Errors
+### Custom Error Types
 
-Define how your application represents errors that aren't GraphQL errors:
+Define application-specific error types for runtime handling:
 
 ```typescript
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<
-    | { type: "network-error"; status: number }
-    | { type: "timeout"; duration: number }
-    | { type: "unknown"; cause: unknown }
-  >(),
-}));
+export const adapter = defineAdapter({
+  helpers: {
+    parseError: (error: unknown) => ({
+      type: "parse-error" as const,
+      cause: error,
+    }),
+  },
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+  },
+});
 ```
 
 ## Integration with Build Plugins

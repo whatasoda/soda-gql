@@ -154,10 +154,12 @@ soda-gql recognizes these standard GraphQL scalars:
 | `Float` | `number` | Double-precision float |
 | `Boolean` | `boolean` | true/false |
 
-Custom scalars are defined in your project's scalar configuration:
+Custom scalars are defined in your project's inject file:
 
 ```typescript
-// In your scalars.ts
+// In your default.inject.ts
+import { defineScalar } from "@soda-gql/core/adapter";
+
 export const scalar = {
   ...defineScalar("DateTime", ({ type }) => ({
     input: type<string>(),   // ISO string when sending
