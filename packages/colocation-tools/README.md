@@ -142,6 +142,51 @@ const projection = createProjection(fragment, {
 });
 ```
 
+### createProjectionAttachment
+
+Combines fragment definition and projection into a single export using `attach()`. This eliminates the need for separate projection definitions.
+
+```typescript
+import { createProjectionAttachment } from "@soda-gql/colocation-tools";
+import { gql } from "./graphql-system";
+
+export const postListFragment = gql
+  .default(({ fragment }, { $var }) =>
+    fragment.Query({ variables: [$var("userId").scalar("ID:!")] }, ({ f, $ }) => [
+      f.user({ id: $.userId })(({ f }) => [f.posts({})(({ f }) => [f.id(), f.title()])]),
+    ]),
+  )
+  .attach(
+    createProjectionAttachment({
+      paths: ["$.user.posts"],
+      handle: (result) => {
+        if (result.isError()) return { error: result.error, posts: null };
+        if (result.isEmpty()) return { error: null, posts: null };
+        return { error: null, posts: result.unwrap().user?.posts ?? [] };
+      },
+    }),
+  );
+
+// The fragment now has a .projection property
+postListFragment.projection;
+```
+
+**Benefits**:
+- Single export for both fragment and projection
+- Fragment can be passed directly to `createExecutionResultParser`
+- Reduces boilerplate when projection logic is simple
+
+**Using with createExecutionResultParser**:
+
+```typescript
+const parseResult = createExecutionResultParser({
+  userCard: { projection: userCardProjection }, // Explicit projection
+  postList: postListFragment,                    // Fragment with attached projection
+});
+```
+
+Both patterns work with the parser - it automatically detects fragments with attached projections.
+
 ### createExecutionResultParser
 
 Creates a parser from labeled projections to process GraphQL execution results.

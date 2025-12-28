@@ -149,6 +149,39 @@ type QueryVariables = typeof getUserQuery.$infer.input;
 type QueryResult = typeof getUserQuery.$infer.output.projected;
 ```
 
+## Element Extensions
+
+The `attach()` method allows extending gql elements with custom properties. This is useful for colocating related functionality with fragment or operation definitions.
+
+### Basic Usage
+
+```typescript
+import type { GqlElementAttachment } from "@soda-gql/core";
+
+// Define an attachment
+const myAttachment: GqlElementAttachment<typeof userFragment, "custom", { value: number }> = {
+  name: "custom",
+  createValue: (element) => ({ value: 42 }),
+};
+
+// Attach to a fragment
+export const userFragment = gql
+  .default(({ fragment }) => fragment.User({}, ({ f }) => [f.id(), f.name()]))
+  .attach(myAttachment);
+
+// Access the attached property
+userFragment.custom.value; // 42
+```
+
+### Type Safety
+
+Attachments are fully typed. The returned element includes the new property in its type:
+
+```typescript
+const fragment = gql.default(...).attach({ name: "foo", createValue: () => ({ bar: 1 }) });
+// Type: Fragment<...> & { foo: { bar: number } }
+```
+
 ## Metadata
 
 Metadata allows you to attach runtime information to operations. This is useful for HTTP headers, GraphQL extensions, and application-specific values.

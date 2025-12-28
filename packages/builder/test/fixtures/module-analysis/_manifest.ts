@@ -39,6 +39,9 @@ export const fixtures = [
   "nested-non-top-level",
   "top-level-with-metadata",
 
+  // Method chaining patterns
+  "attach-chaining",
+
   // Fragment embedding
   "fragment-embedding/basic-embed",
   "fragment-embedding/fragment-in-fragment",

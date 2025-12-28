@@ -1,11 +1,9 @@
 /** Fragment helper types mirroring the `gql.fragment` API. */
 
 import type { SwitchIfEmpty } from "../../utils/empty-object";
-import type { Hidden } from "../../utils/hidden";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
-import type { AnyVarRef } from "../type-foundation/var-ref";
 import { GqlElement } from "./gql-element";
 
 export type AnyFragment = Fragment<string, any, AnyFields, any>;
@@ -30,15 +28,11 @@ export class Fragment<
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
-    _TVarRefs extends Record<string, AnyVarRef> = Record<string, AnyVarRef>,
   >
   extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields>, FragmentInferMeta<TVariables, TOutput>>
   implements FragmentArtifact<TTypeName, TVariables, TFields>
 {
-  declare readonly [__FRAGMENT_BRAND__]: Hidden<{
-    input: TVariables;
-    output: TOutput;
-  }>;
+  private declare readonly [__FRAGMENT_BRAND__]: void;
 
   private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields>) {
     super(define);

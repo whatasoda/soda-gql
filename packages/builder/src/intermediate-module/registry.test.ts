@@ -8,7 +8,7 @@ import { createIntermediateRegistry } from "./registry";
  * Test-only GqlElement subclass that supports async define functions.
  * Used to test async evaluation without depending on specific element types.
  */
-class TestElement extends GqlElement<{ value: string }> {
+class TestElement extends GqlElement<{ value: string }, { value: string }> {
   private constructor(define: () => { value: string } | Promise<{ value: string }>) {
     super(define);
   }
