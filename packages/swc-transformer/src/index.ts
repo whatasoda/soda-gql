@@ -67,7 +67,7 @@ const loadNativeModule = async (): Promise<NativeModule> => {
     // Use require() for the napi-rs generated loader (CommonJS)
     const { createRequire } = await import("node:module");
     const require = createRequire(import.meta.url);
-    nativeModule = require("./native/index.js") as NativeModule;
+    nativeModule = require("./native/index.cjs") as NativeModule;
     return nativeModule;
   } catch (error) {
     throw new Error(

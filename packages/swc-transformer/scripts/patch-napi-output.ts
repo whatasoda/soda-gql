@@ -1,8 +1,11 @@
 /**
  * Post-build patch for napi-rs generated index.js
  *
- * Applies .slice(0) workaround to dynamic require statements to prevent
- * tsdown from statically analyzing and incorrectly bundling the native bindings.
+ * 1. Renames index.js to index.cjs for Node.js ESM compatibility
+ *    (napi-rs generates CommonJS code which doesn't work in "type": "module" packages)
+ *
+ * 2. Applies .slice(0) workaround to dynamic require statements to prevent
+ *    tsdown from statically analyzing and incorrectly bundling the native bindings.
  *
  * Transforms:
  * - require('@soda-gql/swc-transformer-xxx')
@@ -11,16 +14,19 @@
  *   → require('./swc-transformer.'.slice(0) + 'xxx.node')
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
 const INDEX_JS_PATH = join(PACKAGE_ROOT, "src/native/index.js");
+const INDEX_CJS_PATH = join(PACKAGE_ROOT, "src/native/index.cjs");
 
 const main = () => {
   console.log("[patch-napi-output] Patching src/native/index.js...");
 
-  let content = readFileSync(INDEX_JS_PATH, "utf-8");
+  // Read from .js (napi-rs output) or .cjs (already patched)
+  const sourcePath = existsSync(INDEX_JS_PATH) ? INDEX_JS_PATH : INDEX_CJS_PATH;
+  let content = readFileSync(sourcePath, "utf-8");
   const originalContent = content;
 
   // Patch package requires: require('@soda-gql/swc-transformer-xxx')
@@ -34,13 +40,20 @@ const main = () => {
   // → require('./swc-transformer.'.slice(0) + 'xxx.node')
   content = content.replace(/require\('\.\/swc-transformer\.([^']+)'\)/g, "require('./swc-transformer.'.slice(0) + '$1')");
 
-  if (content === originalContent) {
+  if (content === originalContent && sourcePath === INDEX_CJS_PATH) {
     console.log("[patch-napi-output] No changes needed");
     return;
   }
 
-  writeFileSync(INDEX_JS_PATH, content);
-  console.log("[patch-napi-output] Patched successfully");
+  // Write to .cjs for Node.js ESM compatibility
+  writeFileSync(INDEX_CJS_PATH, content);
+
+  // Remove the original .js file if it exists
+  if (existsSync(INDEX_JS_PATH)) {
+    unlinkSync(INDEX_JS_PATH);
+  }
+
+  console.log("[patch-napi-output] Patched successfully (renamed to index.cjs)");
 };
 
 main();
