@@ -23,24 +23,45 @@ This package provides:
 
 ## API
 
-### transformBabel
+### createBabelTransformer
 
-Transforms a source file using Babel, replacing soda-gql DSL with runtime calls.
+Creates a transformer instance for transforming source files using Babel.
 
 ```typescript
-import { transformBabel } from "@soda-gql/babel-transformer";
+import { createBabelTransformer } from "@soda-gql/babel-transformer";
 
-const result = await transformBabel({
-  source: sourceCode,
-  filePath: "/path/to/file.ts",
+const transformer = createBabelTransformer({
   artifact: builderArtifact,
   config: resolvedConfig,
+  sourceMap: true, // optional
 });
 
-if (result.isOk()) {
-  const { code, map } = result.value;
+const result = transformer.transform({
+  sourceCode: source,
+  sourcePath: "/path/to/file.ts",
+  inputSourceMap: existingSourceMap, // optional
+});
+
+if (result.transformed) {
+  const { sourceCode, sourceMap } = result;
   // Use transformed code and source map
 }
+```
+
+### transform
+
+One-shot transform function for transforming a single file.
+
+```typescript
+import { transform } from "@soda-gql/babel-transformer";
+
+const result = transform({
+  sourceCode: source,
+  sourcePath: "/path/to/file.ts",
+  artifact: builderArtifact,
+  config: resolvedConfig,
+  sourceMap: true, // optional
+});
 ```
 
 ## Related Packages

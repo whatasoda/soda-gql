@@ -27,12 +27,26 @@ soda-gql codegen --format
 ### Programmatic Usage
 
 ```typescript
-import { formatGraphQL } from "@soda-gql/formatter";
+import { format, needsFormat } from "@soda-gql/formatter";
 
-const result = formatGraphQL(graphqlDocument);
+// Format a source file
+const result = format({
+  sourceCode: source,
+  filePath: "/path/to/file.ts", // optional, used for TSX detection
+});
 
 if (result.isOk()) {
-  console.log(result.value);
+  const { modified, sourceCode } = result.value;
+  if (modified) {
+    // Source was formatted
+    console.log(sourceCode);
+  }
+}
+
+// Check if formatting is needed (useful for pre-commit hooks)
+const needsFormatting = needsFormat({ sourceCode: source });
+if (needsFormatting.isOk() && needsFormatting.value) {
+  console.log("File needs formatting");
 }
 ```
 

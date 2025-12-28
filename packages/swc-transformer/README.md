@@ -27,21 +27,24 @@ This package is typically used through higher-level plugins:
 ### Direct Usage
 
 ```typescript
-import { createSwcTransformer } from "@soda-gql/swc-transformer";
+import { createTransformer } from "@soda-gql/swc-transformer";
 
-const transformer = createSwcTransformer({
+// createTransformer is async (loads native module)
+const transformer = await createTransformer({
   artifact: builderArtifact,
   config: resolvedConfig,
+  sourceMap: true, // optional
 });
 
-const result = await transformer.transform({
-  source: sourceCode,
-  filePath: "/path/to/file.ts",
+// transform is synchronous after initialization
+const result = transformer.transform({
+  sourceCode: source,
+  sourcePath: "/path/to/file.ts",
   inputSourceMap: existingSourceMap, // optional
 });
 
-if (result.isOk()) {
-  const { code, map } = result.value;
+if (result.transformed) {
+  const { sourceCode, sourceMap, errors } = result;
   // Use transformed code and source map
 }
 ```

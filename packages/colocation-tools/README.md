@@ -21,17 +21,24 @@ bun add @soda-gql/colocation-tools
 ### Fragment Colocation Pattern
 
 ```typescript
-import { createProjection } from "@soda-gql/colocation-tools";
+import { createProjection, createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { userFragment } from "./graphql-system";
 
-// Create a projection for component props
-const useUserData = createProjection(userFragment);
+// Create a projection with paths and handle function
+const userProjection = createProjection(userFragment, {
+  paths: ["$.user.id", "$.user.name"],
+  handle: (result) => {
+    if (result.isError()) return { error: result.error, user: null };
+    if (result.isEmpty()) return { error: null, user: null };
+    const data = result.unwrap();
+    return { error: null, user: data };
+  },
+});
 
-// In your component
-function UserCard({ data }: { data: typeof userFragment.$infer }) {
-  const user = useUserData(data);
-  return <div>{user.name}</div>;
-}
+// Use with execution result parser
+const parser = createExecutionResultParser({
+  user: userProjection,
+});
 ```
 
 ### Embedding Fragments
@@ -53,13 +60,37 @@ export const getUserQuery = gql.default(({ query }) =>
 
 ### createProjection
 
-Creates a typed projection function from a fragment definition.
+Creates a typed projection from a fragment definition with specified paths and handler.
 
 ```typescript
 import { createProjection } from "@soda-gql/colocation-tools";
 
-const projection = createProjection(fragment);
-const data = projection(rawData);
+const projection = createProjection(fragment, {
+  // Field paths to extract (must start with "$.")
+  paths: ["$.user.id", "$.user.name"],
+  // Handler to transform the sliced result
+  handle: (result) => {
+    if (result.isError()) return { error: result.error, data: null };
+    if (result.isEmpty()) return { error: null, data: null };
+    return { error: null, data: result.unwrap() };
+  },
+});
+```
+
+### createExecutionResultParser
+
+Creates a parser from labeled projections to process GraphQL execution results.
+
+```typescript
+import { createExecutionResultParser } from "@soda-gql/colocation-tools";
+
+const parser = createExecutionResultParser({
+  userData: userProjection,
+  postsData: postsProjection,
+});
+
+const results = parser(executionResult);
+// results.userData, results.postsData
 ```
 
 ## Related Packages
