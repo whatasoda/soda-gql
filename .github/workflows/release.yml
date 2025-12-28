@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.result.outputs.should_release }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          sparse-checkout: |
+            package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Check version change
+        id: version
+        run: |
+          OLD_VERSION=$(git show HEAD~1:package.json | jq -r '.version' 2>/dev/null || echo "")
+          NEW_VERSION=$(jq -r '.version' package.json)
+          echo "old_version=$OLD_VERSION"
+          echo "new_version=$NEW_VERSION"
+          if [ "$OLD_VERSION" != "$NEW_VERSION" ] && [ -n "$NEW_VERSION" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if tag exists
+        if: steps.version.outputs.changed == 'true'
+        id: tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          git fetch --tags
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine if should release
+        id: result
+        run: |
+          if [ "${{ steps.version.outputs.changed }}" == "true" ] && [ "${{ steps.tag.outputs.exists }}" != "true" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-native:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    uses: ./.github/workflows/build-native.yml
+
+  build-packages:
+    needs: [check-version, build-native]
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages/swc-transformer/artifacts
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+
+      - name: Collect NAPI artifacts
+        working-directory: packages/swc-transformer
+        run: bunx @napi-rs/cli artifacts
+
+      - name: Prepare NAPI packages
+        working-directory: packages/swc-transformer
+        run: bunx @napi-rs/cli prepublish -t npm
+
+      - run: bun quality:prepare
+      - run: bun quality
+      - run: bun prepublish
+
+      - name: Create release archive
+        run: |
+          VERSION="v${{ needs.check-version.outputs.version }}"
+          tar -czvf "publish-packages-${VERSION}.tar.gz" -C dist .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-archive
+          path: publish-packages-*.tar.gz
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publish-packages
+          path: dist/
+          retention-days: 90
+
+  create-release:
+    needs: [check-version, build-packages]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-archive
+
+      - name: Create and push tag
+        run: |
+          TAG="v${{ needs.check-version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Created and pushed tag: $TAG"
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ needs.check-version.outputs.version }}"
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --generate-notes \
+            --draft \
+            "publish-packages-${VERSION}.tar.gz"
