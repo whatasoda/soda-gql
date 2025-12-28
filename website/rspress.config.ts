@@ -80,6 +80,14 @@ export default defineConfig({
           text: "Recipes",
           items: [{ text: "Examples Overview", link: "/recipes/" }],
         },
+        {
+          text: "Framework Integrations",
+          items: [
+            { text: "Next.js", link: "/recipes/nextjs" },
+            { text: "Vite + React", link: "/recipes/vite-react" },
+            { text: "Expo / React Native", link: "/recipes/expo" },
+          ],
+        },
       ],
     },
     footer: {
