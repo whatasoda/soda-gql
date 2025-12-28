@@ -4,7 +4,7 @@
 
 export type { CreateProjectionOptions } from "./create-projection";
 // Create a type-safe projection from a Model
-export { createProjection } from "./create-projection";
+export { createProjection, createProjectionAttachment } from "./create-projection";
 
 // Create an execution result parser from labeled projections
 export { createExecutionResultParser } from "./parse-execution-result";

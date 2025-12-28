@@ -8,5 +8,5 @@ export type StripFunctions<T extends object> = {
 };
 
 export type StripSymbols<T extends object> = {
-  [K in keyof T as K extends symbol | "$infer" ? never : K]: T[K];
+  [K in keyof T as K extends symbol | "$infer" | "attach" ? never : K]: T[K];
 };

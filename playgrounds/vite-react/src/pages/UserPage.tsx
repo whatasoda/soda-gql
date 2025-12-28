@@ -1,7 +1,7 @@
 import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { gql } from "@/graphql-system";
 import { PostList } from "../components/PostList";
-import { postListFragment, postListProjection } from "../components/PostList/fragment";
+import { postListFragment } from "../components/PostList/fragment";
 import { UserCard } from "../components/UserCard";
 import { userCardFragment, userCardProjection } from "../components/UserCard/fragment";
 
@@ -24,7 +24,7 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
  */
 const parseResult = createExecutionResultParser({
   userCard: { projection: userCardProjection },
-  postList: { projection: postListProjection },
+  postList: postListFragment,
 });
 
 /**

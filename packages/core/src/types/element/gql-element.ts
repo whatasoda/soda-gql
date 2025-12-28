@@ -13,13 +13,18 @@ export type GqlElementContext = LazyEvaluatorContext;
 
 export type GqlElementDefinitionFactory<T> = (context: GqlElementContext | null) => T | Promise<T>;
 
-export abstract class GqlElement<TDefinition extends object, TInfer extends object = object> {
+export type GqlElementAttachment<TElement extends object, TName extends string, TValue extends object> = {
+  name: TName;
+  createValue: (element: TElement) => TValue;
+};
+
+export abstract class GqlElement<TDefinition extends object, TInfer extends object> {
   declare readonly $infer: TInfer;
 
   private [GQL_ELEMENT_FACTORY]: LazyEvaluatorExecutor<TDefinition>;
   private [GQL_ELEMENT_CONTEXT]: GqlElementContext | null = null;
 
-  protected constructor(define: GqlElementDefinitionFactory<TDefinition>, getDeps?: () => GqlElement<any>[]) {
+  protected constructor(define: GqlElementDefinitionFactory<TDefinition>, getDeps?: () => GqlElement<any, any>[]) {
     this[GQL_ELEMENT_FACTORY] = createLazyEvaluator(define, getDeps, GqlElement.createEvaluationGenerator);
 
     Object.defineProperty(this, "$infer", {
@@ -29,23 +34,41 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     });
   }
 
-  static setContext<TElement extends GqlElement<any>>(element: TElement, context: GqlElementContext): void {
+  public attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<this, TName, TValue>) {
+    let cache: TValue | null = null;
+
+    Object.defineProperty(this, attachment.name, {
+      get() {
+        if (cache) {
+          return cache;
+        }
+
+        GqlElement.evaluateInstantly(this);
+
+        return (cache = attachment.createValue(this));
+      },
+    });
+
+    return this as this & { [_ in TName]: TValue };
+  }
+
+  static setContext<TElement extends GqlElement<any, any>>(element: TElement, context: GqlElementContext): void {
     element[GQL_ELEMENT_CONTEXT] = context;
   }
 
-  static createEvaluationGenerator(element: GqlElement<any>): Generator<Promise<void>, void, void> {
+  static createEvaluationGenerator(element: GqlElement<any, any>): Generator<Promise<void>, void, void> {
     return lazyCreateEvaluationGenerator(element[GQL_ELEMENT_FACTORY], element[GQL_ELEMENT_CONTEXT]);
   }
 
-  private static evaluateInstantly<TValue extends object>(element: GqlElement<TValue>): TValue {
+  private static evaluateInstantly<TValue extends object>(element: GqlElement<TValue, any>): TValue {
     return lazyEvaluateSync(element[GQL_ELEMENT_FACTORY], element[GQL_ELEMENT_CONTEXT]);
   }
 
-  static evaluateSync(element: GqlElement<any>): void {
+  static evaluateSync(element: GqlElement<any, any>): void {
     void GqlElement.evaluateInstantly(element);
   }
 
-  static get<TValue extends object>(element: GqlElement<TValue>): TValue {
+  static get<TValue extends object>(element: GqlElement<TValue, any>): TValue {
     return GqlElement.evaluateInstantly(element);
   }
 }

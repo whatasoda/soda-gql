@@ -1,5 +1,4 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
-import type { Hidden } from "../../utils/hidden";
 import type { AnyFields, InferFields } from "../fragment";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -52,9 +51,7 @@ export class Operation<
   >
   implements OperationArtifact<TOperationType, TOperationName, TVariableNames, TVariables, TFields, TData>
 {
-  declare readonly [__OPERATION_BRAND__]: Hidden<{
-    operationType: TOperationType;
-  }>;
+  private declare readonly [__OPERATION_BRAND__]: void;
 
   private constructor(
     define: (

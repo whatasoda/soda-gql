@@ -1,4 +1,4 @@
-import type { Fragment } from "@soda-gql/core";
+import type { Fragment, GqlElementAttachment } from "@soda-gql/core";
 import { Projection } from "./projection";
 import type { SlicedExecutionResult } from "./sliced-execution-result";
 import type { Tuple } from "./utils/type-utils";
@@ -76,4 +76,13 @@ export const createProjection = <TFragment extends AnyFragment, TProjected>(
   options: CreateProjectionOptions<TFragment["$infer"]["output"], TProjected>,
 ): Projection<TProjected> => {
   return new Projection(options.paths, options.handle);
+};
+
+export const createProjectionAttachment = <TFragment extends AnyFragment, TProjected>(
+  options: CreateProjectionOptions<NoInfer<TFragment>["$infer"]["output"], TProjected>,
+): GqlElementAttachment<TFragment, "projection", Projection<TProjected>> => {
+  return {
+    name: "projection",
+    createValue: (fragment) => createProjection(fragment, options),
+  };
 };
