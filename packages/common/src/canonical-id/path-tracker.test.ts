@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { CanonicalId } from "./canonical-id";
 import { createCanonicalTracker } from "./path-tracker";
 

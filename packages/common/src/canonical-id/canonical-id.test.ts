@@ -1,4 +1,4 @@
-import { describe, expect, test as it } from "bun:test";
+import { describe, expect, test as it } from "vitest";
 import { type CanonicalId, createCanonicalId } from "./canonical-id";
 
 describe("canonical identifier helpers", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { join } from "node:path";
 import { normalizeConfig } from "./normalize";
 import type { SodaGqlConfig } from "./types";

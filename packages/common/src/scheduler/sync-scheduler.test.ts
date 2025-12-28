@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { Effects, PureEffect } from "./effect";
 import { createSyncScheduler } from "./sync-scheduler";
 import { Effect } from "./types";

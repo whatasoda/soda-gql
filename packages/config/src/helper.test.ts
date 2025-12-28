@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { defineConfig, validateConfig } from "./helper";
 import type { SodaGqlConfig } from "./types";
 
