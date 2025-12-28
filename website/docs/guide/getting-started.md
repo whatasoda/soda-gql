@@ -92,7 +92,11 @@ Fragments specify reusable field selections:
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({}, ({ f }) => [f.id(), f.name()]),
+  fragment.User({}, ({ f }) => [
+    //
+    f.id(),
+    f.name(),
+  ]),
 );
 ```
 
@@ -108,7 +112,11 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [userFragment.embed()]),
+      //
+      f.user({ id: $.userId })(({ f }) => [
+        //
+        userFragment.embed(),
+      ]),
     ],
   ),
 );

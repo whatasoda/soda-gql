@@ -37,6 +37,7 @@ import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({}, ({ f }) => [
+    //
     f.id(),
     f.name(),
     f.email(),
@@ -72,9 +73,11 @@ For fields that return object types, use curried syntax to select nested fields:
 
 ```typescript
 f.posts({ limit: 10 })(({ f }) => [
+  //
   f.id(),
   f.title(),
   f.author()(({ f }) => [
+    //
     f.id(),
     f.name(),
   ]),
@@ -99,7 +102,9 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User(
     { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [
+      //
       f.user({ id: $.userId })(({ f }) => [
+        //
         f.id(),
         f.name(),
         f.email(),
@@ -118,9 +123,11 @@ Embed fragments in other fragments or operations using `.embed()`:
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
   fragment.Post({}, ({ f }) => [
+    //
     f.id(),
     f.title(),
     f.author()(({ f }) => [
+      //
       userFragment.embed({ includeEmail: false }),
     ]),
   ]),
@@ -136,15 +143,19 @@ export const getPostQuery = gql.default(({ query }, { $var }) =>
     {
       name: "GetPost",
       variables: [
+        //
         $var("postId").scalar("ID:!"),
         $var("showEmail").scalar("Boolean:?"),
       ],
     },
     ({ f, $ }) => [
+      //
       f.post({ id: $.postId })(({ f }) => [
+        //
         f.id(),
         f.title(),
         f.author()(({ f }) => [
+          //
           // Pass parent variable to embedded fragment
           userFragment.embed({ includeEmail: $.showEmail }),
         ]),
@@ -185,7 +196,11 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({}, ({ f }) => [f.id(), f.name()])
+    fragment.User({}, ({ f }) => [
+      //
+      f.id(),
+      f.name(),
+    ]),
   )
   .attach({
     name: "displayName",

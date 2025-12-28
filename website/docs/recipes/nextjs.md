@@ -105,6 +105,7 @@ import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({}, ({ f }) => [
+    //
     f.id(),
     f.name(),
     f.email(),
@@ -124,10 +125,17 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation(
     {
       name: "GetUser",
-      variables: [$var("id").scalar("ID:!")],
+      variables: [
+        //
+        $var("id").scalar("ID:!"),
+      ],
     },
     ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [userFragment.embed({})]),
+      //
+      f.user({ id: $.id })(({ f }) => [
+        //
+        userFragment.embed({}),
+      ]),
     ],
   ),
 );

@@ -53,7 +53,9 @@ export const userCardFragment = gql
     fragment.Query(
       { variables: [$var("userId").scalar("ID:!")] },
       ({ f, $ }) => [
+        //
         f.user({ id: $.userId })(({ f }) => [
+          //
           f.id(),
           f.name(),
           f.avatarUrl(),
@@ -105,6 +107,7 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => [
+      //
       $colocate({
         userCard: userCardFragment.embed({ userId: $.userId }),
         postList: postListFragment.embed({ userId: $.userId }),
@@ -164,7 +167,12 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 const fragment = gql
   .default(({ fragment }) =>
     fragment.Query({}, ({ f }) => [
-      f.user({ id: "1" })(({ f }) => [f.id(), f.name()]),
+      //
+      f.user({ id: "1" })(({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ]),
     ]),
   )
   .attach(
@@ -285,15 +293,20 @@ export const userCardFragment = gql
     fragment.Query(
       { variables: [$var("id").scalar("ID:!")] },
       ({ f, $ }) => [
-        f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.email()]),
+        //
+        f.user({ id: $.id })(({ f }) => [
+          //
+          f.id(),
+          f.name(),
+          f.email(),
+        ]),
       ],
     ),
   )
   .attach(
     createProjectionAttachment({
       paths: ["$.user"],
-      handle: (result) =>
-        result.safeUnwrap((data) => data.user),
+      handle: (result) => result.safeUnwrap((data) => data.user),
     }),
   );
 
@@ -301,10 +314,22 @@ export const userCardFragment = gql
 export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query(
-      { variables: [$var("userId").scalar("ID:!"), $var("limit").scalar("Int:?")] },
+      {
+        variables: [
+          //
+          $var("userId").scalar("ID:!"),
+          $var("limit").scalar("Int:?"),
+        ],
+      },
       ({ f, $ }) => [
+        //
         f.user({ id: $.userId })(({ f }) => [
-          f.posts({ limit: $.limit })(({ f }) => [f.id(), f.title()]),
+          //
+          f.posts({ limit: $.limit })(({ f }) => [
+            //
+            f.id(),
+            f.title(),
+          ]),
         ]),
       ],
     ),
@@ -312,8 +337,7 @@ export const postListFragment = gql
   .attach(
     createProjectionAttachment({
       paths: ["$.user.posts"],
-      handle: (result) =>
-        result.safeUnwrap((data) => data.user?.posts ?? []),
+      handle: (result) => result.safeUnwrap((data) => data.user?.posts ?? []),
     }),
   );
 
@@ -326,6 +350,7 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation(
     { name: "UserPage", variables: [$var("userId").scalar("ID:!")] },
     ({ $ }) => [
+      //
       $colocate({
         userCard: userCardFragment.embed({ id: $.userId }),
         postList: postListFragment.embed({ userId: $.userId, limit: 10 }),

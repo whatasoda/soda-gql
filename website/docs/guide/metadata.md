@@ -53,7 +53,12 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       }),
     },
     ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
+      //
+      f.user({ id: $.id })(({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ]),
     ],
   ),
 );

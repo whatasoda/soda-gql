@@ -64,8 +64,11 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       name: "GetUser",                              // Operation name
       variables: [$var("userId").scalar("ID:!")],   // Variable declarations
     },
-    ({ f, $ }) => [                                 // Field selections
+    ({ f, $ }) => [
+      //
+      // Field selections
       f.user({ id: $.userId })(({ f }) => [
+        //
         f.id(),
         f.name(),
         f.email(),
@@ -89,20 +92,24 @@ Field selections in operations work the same as in fragments:
 
 ```typescript
 ({ f, $ }) => [
+  //
   // Scalar fields
   f.id(),
   f.createdAt(),
 
   // Fields with arguments
   f.posts({ limit: 10 })(({ f }) => [
+    //
     f.id(),
     f.title(),
   ]),
 
   // Nested selections
   f.user({ id: $.userId })(({ f }) => [
+    //
     f.id(),
     f.profile()(({ f }) => [
+      //
       f.avatarUrl(),
       f.bio(),
     ]),
@@ -122,12 +129,15 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
     {
       name: "GetUser",
       variables: [
+        //
         $var("userId").scalar("ID:!"),
         $var("includeEmail").scalar("Boolean:?"),
       ],
     },
     ({ f, $ }) => [
+      //
       f.user({ id: $.userId })(({ f }) => [
+        //
         // Embed fragment with variable passing
         userFragment.embed({ includeEmail: $.includeEmail }),
       ]),
@@ -197,12 +207,12 @@ export const createUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation(
     {
       name: "CreateUser",
-      variables: [
-        $var("input").scalar("CreateUserInput:!"),
-      ],
+      variables: [$var("input").scalar("CreateUserInput:!")],
     },
     ({ f, $ }) => [
+      //
       f.createUser({ input: $.input })(({ f }) => [
+        //
         f.id(),
         f.name(),
       ]),

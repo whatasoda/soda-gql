@@ -77,7 +77,11 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({}, ({ f }) => [f.id(), f.name()])
+    fragment.User({}, ({ f }) => [
+      //
+      f.id(),
+      f.name(),
+    ]),
   )
   .attach({
     name: "utils",
@@ -131,7 +135,10 @@ gql.default(({ query }, { $var }) =>
         custom: { requiresAuth: true },
       }),
     },
-    ({ f, $ }) => [...],
+    ({ f, $ }) => [
+      //
+      ...
+    ],
   ),
 );
 ```

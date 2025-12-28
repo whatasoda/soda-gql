@@ -39,6 +39,7 @@ gql.default(({ query }, { $var }) =>
     {
       name: "SearchPosts",
       variables: [
+        //
         $var("query").scalar("String:!"),      // Required string
         $var("limit").scalar("Int:?"),         // Optional int
         $var("tags").scalar("String:![]?"),    // Optional list of required strings
@@ -103,6 +104,7 @@ Reference declared variables using `$`:
 
 ```typescript
 ({ f, $ }) => [
+  //
   f.user({ id: $.userId })(({ f }) => [...]),
   f.posts({ limit: $.limit, tags: $.tags })(({ f }) => [...]),
 ]
@@ -118,7 +120,9 @@ const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query(
     { variables: [$var("userId").scalar("ID:!")] },
     ({ f, $ }) => [
+      //
       f.user({ id: $.userId })(({ f }) => [
+        //
         f.id(),
         f.name(),
         f.email(),
@@ -135,6 +139,7 @@ const getUserQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ $ }) => [
+      //
       // Pass operation variable to fragment variable
       userFragment.embed({ userId: $.userId }),
     ],
@@ -179,6 +184,7 @@ const query = gql.default(({ query }, { $var }) =>
     {
       name: "Search",
       variables: [
+        //
         $var("query").scalar("String:!"),
         $var("limit").scalar("Int:?"),
       ],
