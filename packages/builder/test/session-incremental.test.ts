@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { randomUUID } from "node:crypto";
 import { cpSync, mkdtempSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -109,7 +110,7 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("initial build creates chunks and artifact", async () => {
-    const evaluatorId = Bun.randomUUIDv7();
+    const evaluatorId = randomUUID();
     const session = createBuilderSession({
       evaluatorId,
       entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
@@ -133,8 +134,8 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("applies graph patch when a module changes", async () => {
-    const evaluatorId = Bun.randomUUIDv7();
-    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const evaluatorId = randomUUID();
+    const fullRebuildEvaluatorId = randomUUID();
     const session = createBuilderSession({
       evaluatorId,
       entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
@@ -199,8 +200,8 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("adds new module without touching unaffected chunks", async () => {
-    const evaluatorId = Bun.randomUUIDv7();
-    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const evaluatorId = randomUUID();
+    const fullRebuildEvaluatorId = randomUUID();
     const session = createBuilderSession({
       evaluatorId,
       entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
@@ -252,8 +253,8 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("removes module and updates artifact", async () => {
-    const evaluatorId = Bun.randomUUIDv7();
-    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const evaluatorId = randomUUID();
+    const fullRebuildEvaluatorId = randomUUID();
     const session = createBuilderSession({
       evaluatorId,
       entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],
@@ -307,8 +308,8 @@ describe("BuilderSession incremental end-to-end", () => {
   });
 
   test("handles mixed add/update/remove in one pass", async () => {
-    const evaluatorId = Bun.randomUUIDv7();
-    const fullRebuildEvaluatorId = Bun.randomUUIDv7();
+    const evaluatorId = randomUUID();
+    const fullRebuildEvaluatorId = randomUUID();
     const session = createBuilderSession({
       evaluatorId,
       entrypointsOverride: [path.join(workspaceRoot, "**/*.ts")],

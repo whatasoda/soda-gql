@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "vitest";
+import { describe, expect, vi, test } from "vitest";
 import {
   createEvaluationGenerator,
   createLazyEvaluator,
@@ -29,7 +29,7 @@ describe("createLazyEvaluator", () => {
     });
 
     test("should not re-execute factory after caching", () => {
-      const factory = mock(() => ({ value: "test" }));
+      const factory = vi.fn(() => ({ value: "test" }));
       const executor = createLazyEvaluator(factory, undefined, noopDepGenerator);
 
       evaluateSync(executor, null);
@@ -80,7 +80,7 @@ describe("createLazyEvaluator", () => {
     });
 
     test("should return cached value when evaluated again after async resolution", async () => {
-      const factory = mock(async () => ({ value: "async" }));
+      const factory = vi.fn(async () => ({ value: "async" }));
       const executor = createLazyEvaluator(factory, undefined, noopDepGenerator);
 
       // First evaluation
@@ -175,7 +175,7 @@ describe("createLazyEvaluator", () => {
     });
 
     test("should handle empty dependency list", () => {
-      const factory = mock(() => ({ value: "test" }));
+      const factory = vi.fn(() => ({ value: "test" }));
       const executor = createLazyEvaluator(factory, () => [], noopDepGenerator);
 
       const result = evaluateSync(executor, null);
@@ -185,7 +185,7 @@ describe("createLazyEvaluator", () => {
     });
 
     test("should handle undefined getDeps", () => {
-      const factory = mock(() => ({ value: "test" }));
+      const factory = vi.fn(() => ({ value: "test" }));
       const executor = createLazyEvaluator(factory, undefined, noopDepGenerator);
 
       const result = evaluateSync(executor, null);

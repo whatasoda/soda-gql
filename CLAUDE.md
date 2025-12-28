@@ -29,7 +29,7 @@ See the main [README](./README.md) for installation and setup instructions.
 **Use Bun for all operations**:
 - `bun install` (not npm/yarn/pnpm)
 - `bun run <script>` (not npm run)
-- `bun run test` (not jest/vitest, not `bun test`)
+- `bun run test` (uses vitest)
 
 **Use Node.js APIs for implementation**:
 - Node.js `fs/promises` for file operations
@@ -45,7 +45,7 @@ See the main [README](./README.md) for installation and setup instructions.
 - Bun plugin system for transformations
 - neverthrow for error handling
 - Zod v4 for validation
-- Bun test with TDD (t_wada methodology)
+- Vitest for testing with TDD (t_wada methodology)
 
 **Key Concepts**:
 - Fragments: Type-safe GraphQL field selections with transforms
@@ -141,7 +141,7 @@ bun typecheck
 **Integration Test Utilities**:
 - Use `__resetRuntimeRegistry()` from `@soda-gql/core/runtime` to clear operation registry between tests
 - Use spies/wrappers to track registrations without mocking
-- Transpile TypeScript test output with `new Bun.Transpiler()` before execution
+- Transpile TypeScript test output with `transpileTypeScript()` from `@soda-gql/common/test`
 - Dynamic imports with cache-busting: `import(\`file://\${path}?t=\${Date.now()}\`)`
 
 **Test Organization**:

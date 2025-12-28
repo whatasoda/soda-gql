@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { createTscPlugin, type PluginOptions } from "../src/plugin";
 
@@ -16,7 +17,7 @@ export const createSodaGqlTransformer = (
 };
 
 describe("TypeScript Compiler Plugin Integration", () => {
-  const fixturesDir = join(import.meta.dir, "./fixtures");
+  const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "./fixtures");
   const sourceFile = join(fixturesDir, "sample.ts");
 
   test(

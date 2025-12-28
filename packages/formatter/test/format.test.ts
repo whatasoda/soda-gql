@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { format, needsFormat } from "../src/format";
 
 const loadFixture = (name: string): string => {
-  const path = resolve(import.meta.dirname, "fixtures", `${name}.ts`);
+  const path = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures", `${name}.ts`);
   return readFileSync(path, "utf-8");
 };
 
