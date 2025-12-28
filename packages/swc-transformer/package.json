@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/swc-transformer",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "SWC-based native transformer for soda-gql",
   "type": "module",
   "private": false,
@@ -74,11 +74,11 @@
     "@swc/core": "^1.0.0"
   },
   "optionalDependencies": {
-    "@soda-gql/swc-transformer-darwin-arm64": "0.1.0",
-    "@soda-gql/swc-transformer-darwin-x64": "0.1.0",
-    "@soda-gql/swc-transformer-linux-x64-gnu": "0.1.0",
-    "@soda-gql/swc-transformer-linux-x64-musl": "0.1.0",
-    "@soda-gql/swc-transformer-win32-x64-msvc": "0.1.0"
+    "@soda-gql/swc-transformer-darwin-arm64": "0.3.0",
+    "@soda-gql/swc-transformer-darwin-x64": "0.3.0",
+    "@soda-gql/swc-transformer-linux-x64-gnu": "0.3.0",
+    "@soda-gql/swc-transformer-linux-x64-musl": "0.3.0",
+    "@soda-gql/swc-transformer-win32-x64-msvc": "0.3.0"
   },
   "exports": {
     "./native": {
