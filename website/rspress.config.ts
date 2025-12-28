@@ -54,10 +54,24 @@ export default defineConfig({
           items: [{ text: "Overview", link: "/api/" }],
         },
         {
-          text: "Packages",
+          text: "Core Packages",
           items: [
             { text: "@soda-gql/core", link: "/api/packages/core" },
             { text: "@soda-gql/cli", link: "/api/packages/cli" },
+            { text: "@soda-gql/config", link: "/api/packages/config" },
+            { text: "@soda-gql/runtime", link: "/api/packages/runtime" },
+            {
+              text: "@soda-gql/colocation-tools",
+              link: "/api/packages/colocation-tools",
+            },
+          ],
+        },
+        {
+          text: "Build Plugins",
+          items: [
+            { text: "Vite Plugin", link: "/api/packages/vite-plugin" },
+            { text: "Webpack Plugin", link: "/api/packages/webpack-plugin" },
+            { text: "Metro Plugin", link: "/api/packages/metro-plugin" },
           ],
         },
       ],
