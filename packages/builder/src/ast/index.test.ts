@@ -258,6 +258,62 @@ describe("AST Analyzer", () => {
     });
   });
 
+  describe("Method chaining transparency", () => {
+    it("detects gql definition through .attach() chain", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("attach-chaining");
+
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
+
+      // Should detect all three definitions
+      expect(tsAnalysis.definitions).toHaveLength(3);
+      expect(swcAnalysis.definitions).toHaveLength(3);
+
+      // Both analyzers should produce consistent results
+      for (let i = 0; i < tsAnalysis.definitions.length; i++) {
+        expect(tsAnalysis.definitions[i]?.astPath).toBe(swcAnalysis.definitions[i]?.astPath);
+      }
+    });
+
+    it("extracts only base gql expression without .attach() chain", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("attach-chaining");
+
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
+
+      for (const analysis of [tsAnalysis, swcAnalysis]) {
+        for (const def of analysis.definitions) {
+          // Expression should NOT contain .attach()
+          expect(def.expression).not.toContain(".attach");
+          // Expression should contain gql call
+          expect(def.expression).toContain("gql");
+        }
+      }
+    });
+
+    it("handles multiple .attach() chains correctly", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("attach-chaining");
+
+      const analysis = analyzeWithTS({ filePath, source });
+
+      const multipleAttach = analysis.definitions.find((d) => d.astPath === "multipleAttach");
+
+      // Expression should NOT contain any .attach()
+      expect(multipleAttach?.expression).not.toContain(".attach");
+      // Should contain the fragment definition
+      expect(multipleAttach?.expression).toContain("fragment.User");
+    });
+
+    it("correctly identifies astPath for attach-chained definitions", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("attach-chaining");
+
+      const analysis = analyzeWithTS({ filePath, source });
+
+      const astPaths = analysis.definitions.map((d) => d.astPath).sort();
+      expect(astPaths).toEqual(["multipleAttach", "operationAttach", "simpleAttach"]);
+    });
+  });
+
   describe("SWC analyzer patterns", () => {
     it("extracts top-level definitions", () => {
       const { filePath, source } = loadModuleAnalysisFixture("top-level-definitions");
