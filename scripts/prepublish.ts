@@ -15,12 +15,13 @@ export const mapValues = <TObject extends object, TMappedValue>(
     [K in keyof TObject]: TMappedValue;
   };
 
+// Schema for public packages (strict validation for npm registry)
 type PackageJson = z.output<typeof packageJsonSchema>;
 const packageJsonSchema = z.object({
   name: z.string().regex(/^@soda-gql\//),
   type: z.enum(["module", "commonjs"]),
   version: z.string(),
-  description: z.string().optional(),
+  description: z.string().min(1),
   private: z.boolean(),
   license: z.literal("MIT"),
   files: z.array(z.string()),
@@ -28,6 +29,19 @@ const packageJsonSchema = z.object({
     name: z.literal("Shota Hatada"),
     email: z.literal("shota.hatada@whatasoda.me"),
     url: z.literal("https://github.com/whatasoda"),
+  }),
+  keywords: z.array(z.string()).min(1),
+  repository: z.object({
+    type: z.literal("git"),
+    url: z.literal("https://github.com/whatasoda/soda-gql.git"),
+    directory: z.string().regex(/^packages\//),
+  }),
+  homepage: z.literal("https://github.com/whatasoda/soda-gql#readme"),
+  bugs: z.object({
+    url: z.literal("https://github.com/whatasoda/soda-gql/issues"),
+  }),
+  engines: z.object({
+    node: z.literal(">=18"),
   }),
   bin: z.record(z.string(), z.string()).optional(),
   main: z.string(),
@@ -39,6 +53,12 @@ const packageJsonSchema = z.object({
   peerDependencies: z.record(z.string(), z.string()).optional(),
   optionalDependencies: z.record(z.string(), z.string()).optional(),
   bundledDependencies: z.array(z.string()).optional(),
+});
+
+// Schema for private packages (minimal validation, not published to npm)
+const privatePackageJsonSchema = z.object({
+  name: z.string().regex(/^@soda-gql\//),
+  private: z.literal(true),
 });
 
 type PackageEntry = {
@@ -71,9 +91,18 @@ const prepare = async () => {
         const packageSourceDir = path.join("packages", packageEntry.name);
         const packageDistDir = path.join("dist", packageEntry.name);
 
-        const parsedPackageJsonSource = packageJsonSchema.safeParse(
-          JSON.parse(await readFile(path.join(packageSourceDir, "package.json"), "utf-8")),
-        );
+        const rawPackageJson = JSON.parse(await readFile(path.join(packageSourceDir, "package.json"), "utf-8"));
+
+        // Check if this is a private package first
+        const parsedPrivate = privatePackageJsonSchema.safeParse(rawPackageJson);
+        if (parsedPrivate.success) {
+          console.log(`Removing private package from dist: ${packageEntry.name}`);
+          await $`rm -rf ${packageDistDir}`;
+          continue;
+        }
+
+        // Validate public package with strict schema
+        const parsedPackageJsonSource = packageJsonSchema.safeParse(rawPackageJson);
         if (!parsedPackageJsonSource.success) {
           console.error(`Invalid package.json: ${packageEntry.name}`);
           console.error(parsedPackageJsonSource.error);
@@ -82,12 +111,6 @@ const prepare = async () => {
         }
 
         const packageJsonSource = parsedPackageJsonSource.data;
-
-        if (packageJsonSource.private) {
-          console.log(`Removing private package from dist: ${packageEntry.name}`);
-          await $`rm -rf ${packageDistDir}`;
-          continue;
-        }
 
         const { packageJsonDist, workspacePackages } = ((): { packageJsonDist: PackageJson; workspacePackages: Set<string> } => {
           const {
@@ -100,6 +123,11 @@ const prepare = async () => {
             files,
             bin,
             author,
+            keywords,
+            repository,
+            homepage,
+            bugs,
+            engines,
             main,
             module,
             types,
@@ -128,6 +156,11 @@ const prepare = async () => {
             files,
             bin,
             author,
+            keywords,
+            repository,
+            homepage,
+            bugs,
+            engines,
             main,
             module,
             types,

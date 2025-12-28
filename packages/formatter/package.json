@@ -1,6 +1,7 @@
 {
   "name": "@soda-gql/formatter",
   "version": "0.1.0",
+  "description": "GraphQL document formatter for soda-gql",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -11,6 +12,25 @@
     "name": "Shota Hatada",
     "email": "shota.hatada@whatasoda.me",
     "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "codegen",
+    "zero-runtime",
+    "typescript",
+    "formatter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/formatter"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
