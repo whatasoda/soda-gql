@@ -1,12 +1,12 @@
 import {
   type AnyAssignableInput,
   type AssigningInput,
-  createVarRefFromConstValue,
+  createVarRefFromNestedValue,
   createVarRefFromVariable,
   isVarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema, InferInputProfile } from "../types/schema";
-import type { AnyVarRef, ConstValue, InputTypeSpecifiers } from "../types/type-foundation";
+import type { AnyVarRef, InputTypeSpecifiers, NestedValue } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
@@ -16,7 +16,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
   return mapValues(definitions, (_definition, key): AnyVarRef => {
     const varName = key as string;
     if (!providedValues || providedValues[varName] === undefined) {
-      return createVarRefFromConstValue<InferInputProfile<TSchema, typeof _definition>>(undefined);
+      return createVarRefFromNestedValue<InferInputProfile<TSchema, typeof _definition>>(undefined);
     }
 
     const provided = providedValues[varName];
@@ -24,7 +24,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
       return provided;
     }
 
-    return createVarRefFromConstValue<InferInputProfile<TSchema, typeof _definition>>(provided as ConstValue);
+    return createVarRefFromNestedValue<InferInputProfile<TSchema, typeof _definition>>(provided as NestedValue);
   }) as AssigningInput<TSchema, TVariableDefinitions>;
 };
 

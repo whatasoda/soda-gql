@@ -6,14 +6,31 @@ export interface AnyVarRefMeta {
   readonly signature: unknown;
 }
 
+/**
+ * A nested value that can contain:
+ * - Primitive ConstValue (string, number, boolean, null, undefined)
+ * - VarRef at any nesting level
+ * - Objects with NestedValue fields
+ * - Arrays of NestedValue
+ */
+export type NestedValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | AnyVarRef
+  | { readonly [key: string]: NestedValue }
+  | readonly NestedValue[];
+
 export type VarRefInner =
   | {
       type: "variable";
       name: string;
     }
   | {
-      type: "const-value";
-      value: ConstValue;
+      type: "nested-value";
+      value: NestedValue;
     };
 
 export type AnyVarRef = VarRef<any>;
@@ -37,8 +54,8 @@ export const createVarRefFromVariable = <TProfile extends TypeProfile.WithMeta>(
   return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "variable", name });
 };
 
-export const createVarRefFromConstValue = <TProfile extends TypeProfile.WithMeta>(value: ConstValue) => {
-  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "const-value", value });
+export const createVarRefFromNestedValue = <TProfile extends TypeProfile.WithMeta>(value: NestedValue) => {
+  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "nested-value", value });
 };
 
 export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
@@ -47,24 +64,24 @@ export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
 
 /**
  * Get the variable name from a VarRef.
- * Throws if the VarRef contains a const-value instead of a variable reference.
+ * Throws if the VarRef contains a nested-value instead of a variable reference.
  */
 export const getVarRefName = (varRef: AnyVarRef): string => {
   const inner = VarRef.getInner(varRef);
   if (inner.type !== "variable") {
-    throw new Error("Expected variable reference, got const-value");
+    throw new Error("Expected variable reference, got nested-value");
   }
   return inner.name;
 };
 
 /**
  * Get the const value from a VarRef.
- * Throws if the VarRef contains a variable reference instead of a const-value.
+ * Throws if the VarRef contains a variable reference instead of a nested-value.
  */
 export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
   const inner = VarRef.getInner(varRef);
-  if (inner.type !== "const-value") {
-    throw new Error("Expected const-value, got variable reference");
+  if (inner.type !== "nested-value") {
+    throw new Error("Expected nested-value, got variable reference");
   }
-  return inner.value;
+  return inner.value as ConstValue;
 };
