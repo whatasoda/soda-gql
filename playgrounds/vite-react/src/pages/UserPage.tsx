@@ -10,12 +10,16 @@ import { userCardFragment, userCardProjection } from "../components/UserCard/fra
  * Each label must match the parser's label for result distribution.
  */
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
-  query.operation({ name: "UserPage", variables: [$var("userId").scalar("ID:!")] }, ({ $ }) => [
-    $colocate({
-      userCard: userCardFragment.embed({ userId: $.userId }),
-      postList: postListFragment.embed({ userId: $.userId }),
-    }),
-  ]),
+  query.operation({
+    name: "UserPage",
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ $ }) => [
+      $colocate({
+        userCard: userCardFragment.embed({ userId: $.userId }),
+        postList: postListFragment.embed({ userId: $.userId }),
+      }),
+    ],
+  }),
 );
 
 /**
