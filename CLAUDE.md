@@ -74,6 +74,8 @@ bun typecheck
 
 | Document | When to Reference |
 |----------|------------------|
+| [Project Constitution](./memory/constitution.md) | Core principles, governance, and technical constraints |
+| [Code Conventions](./memory/code-conventions.md) | Detailed coding standards with examples |
 | [Builder Flow](./docs/guides/builder-flow.md) | Understanding builder processing flow |
 | [Monorepo Infrastructure](./docs/guides/monorepo-infrastructure.md) | Package structure, build system, testing infrastructure |
 | [Performance Profiling](./docs/guides/performance-profiling.md) | Performance measurement and optimization |
@@ -88,61 +90,29 @@ bun typecheck
 
 ### Code Conventions
 
-**Type Safety**:
-- NO `any`/`unknown` directly - use generic constraints
-- Acceptable `any` usage requires suppression comment
-- Validate external data with Zod v4
+See [Code Conventions](./memory/code-conventions.md) for detailed standards with examples.
 
-**Error Handling**:
-- Use neverthrow for type-safe errors
-- Use `ok()` and `err()` functions only
-- NO `fromPromise` - loses type information
-- Never throw - return Result types
-
-**Code Organization**:
-- NO classes for state management
-- Pure functions for testability
-- Minimize dependencies and coupling
-
-**Testing**:
-- TDD mandatory (t_wada: RED → GREEN → REFACTOR)
-- No mocks - use real dependencies
-- Use `import`, never `require`
+**Key Points**:
+- NO `any`/`unknown` - use generic constraints
+- neverthrow for errors (`ok()`, `err()` only, NO `fromPromise`)
+- NO classes for state - pure functions preferred
+- TDD mandatory - no mocks, use real dependencies
 
 ### Testing Conventions
 
-**Colocated Test Structure**:
-- Tests are colocated within each package: `packages/{package}/test/`
-- Shared test utilities: `@soda-gql/common/test`
-- Package-specific fixtures: `packages/{package}/test/fixtures/`
-- Package-specific schemas: `packages/{package}/test/schemas/`
+See [Code Conventions](./memory/code-conventions.md) for TDD methodology details.
 
-**Fixture-Based Testing**:
-- Store test code as `.ts` fixture files, not inline strings
-- Place fixtures in `test/fixtures/` within each package
-- Fixture files are type-checked by package's `tsconfig.editor.json`
-- Use `@ts-expect-error` for intentionally invalid test cases
-- Benefits: Type safety, editor support, refactoring tools work
-
-**Behavioral Testing**:
-- Test **behavior** (execution results), not **implementation details** (output format)
-- For transform tests: Execute transformed code and verify runtime behavior
-- Don't assert on exact transformation output (brittle to formatting changes)
-- Example: Instead of `expect(code).toContain("gqlRuntime.operation")`, execute the code and verify the operation was registered
-
-**Integration Test Utilities**:
-- Use `__resetRuntimeRegistry()` from `@soda-gql/core/runtime` to clear operation registry between tests
-- Use spies/wrappers to track registrations without mocking
-- Transpile TypeScript test output with `new Bun.Transpiler()` before execution
-- Dynamic imports with cache-busting: `import(\`file://\${path}?t=\${Date.now()}\`)`
-
-**Test Organization**:
-- Unit tests: `packages/{package}/src/**/*.test.ts`
-- Integration tests: `packages/{package}/test/**/*.test.ts`
-- Fixtures: `packages/{package}/test/fixtures/**/*.ts`
+**Structure**:
+- Tests colocated: `packages/{package}/test/`
+- Fixtures: `packages/{package}/test/fixtures/*.ts`
 - Shared utilities: `@soda-gql/common/test`
 
-**Example**: See `packages/builder/test/` for fixture-based testing patterns
+**Approach**:
+- Fixture-based testing (`.ts` files, not inline strings)
+- Test behavior, not implementation details
+- Use `__resetRuntimeRegistry()` to clear state between tests
+
+**Example**: See `packages/builder/test/` for patterns
 
 ### Pull Request Guidelines
 
