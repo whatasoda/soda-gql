@@ -60,7 +60,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment }, { auth }) => {
       capturedAuth = auth;
-      return fragment.User({ fields: ({ f }) => [f.id(), f.name()] });
+      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
 
     expect(capturedAuth).toBeDefined();
@@ -87,7 +87,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment }, { cache }) => {
       capturedCacheTTL = cache.ttl(300).cacheTTL;
-      return fragment.User({ fields: ({ f }) => [f.id(), f.name()] });
+      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
 
     expect(capturedCacheTTL).toBe(300);
@@ -109,8 +109,8 @@ describe("helpers injection via adapter", () => {
 
       return query.operation({
         name: "Test",
-        variables: [$var("id").scalar("ID:!")],
-        fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+        variables: { ...$var("id").scalar("ID:!") },
+        fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
       });
     });
 
@@ -125,7 +125,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment }, { $var }) => {
       varBuilderAvailable = typeof $var === "function";
-      return fragment.User({ fields: ({ f }) => [f.id(), f.name()] });
+      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
 
     expect(varBuilderAvailable).toBe(true);
@@ -158,7 +158,7 @@ describe("helpers injection via adapter", () => {
     gql(({ fragment }, { auth, tracking }) => {
       capturedRole = auth.roles.admin().role;
       capturedEvent = tracking.analytics("page_view").event;
-      return fragment.User({ fields: ({ f }) => [f.id(), f.name()] });
+      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
 
     expect(capturedRole).toBe("admin");

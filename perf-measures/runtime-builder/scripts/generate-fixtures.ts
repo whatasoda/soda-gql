@@ -161,23 +161,23 @@ import { gql } from "../../graphql-system";
 
 export const model${index} = gql.default(({ model }) =>
   model.Entity${entityIndex}({
-    fields: ({ f }) => [
-      f.id(),
-      f.name(),
-      f.description(),
-      f.value(),
-      f.isActive(),
-      f.createdAt(),
-      f.related()(({ f }) => [
-        f.id(),
-        f.name(),
-        f.value(),
-      ]),
-      f.relatedList({ limit: 5 })(({ f }) => [
-        f.id(),
-        f.name(),
-      ]),
-    ],
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.description(),
+      ...f.value(),
+      ...f.isActive(),
+      ...f.createdAt(),
+      ...f.related()(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.value(),
+      })),
+      ...f.relatedList({ limit: 5 })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
   }),
 );
 `;
@@ -197,16 +197,16 @@ import { gql } from "../../graphql-system";
 export const query${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Query${index}",
-    variables: [$var("limit").scalar("Int:?"), $var("offset").scalar("Int:?")],
-    fields: ({ f, $ }) => [
-      f.${entityName}List({ limit: $.limit, offset: $.offset })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.description(),
-        f.value(),
-        f.isActive(),
-      ]),
-    ],
+    variables: { ...$var("limit").scalar("Int:?"), ...$var("offset").scalar("Int:?") },
+    fields: ({ f, $ }) => ({
+      ...f.${entityName}List({ limit: $.limit, offset: $.offset })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.description(),
+        ...f.value(),
+        ...f.isActive(),
+      })),
+    }),
   }),
 );
 `;
@@ -218,16 +218,16 @@ import { gql } from "../../graphql-system";
 export const query${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Query${index}",
-    variables: [$var("id").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      f.${entityName}({ id: $.id })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.description(),
-        f.value(),
-        f.isActive(),
-      ]),
-    ],
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.${entityName}({ id: $.id })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.description(),
+        ...f.value(),
+        ...f.isActive(),
+      })),
+    }),
   }),
 );
 `;
@@ -244,7 +244,7 @@ function generateOperationWithModelsFile(index: number, modelCount: number): str
   for (let j = 0; j < modelsPerOp; j++) {
     const modelIndex = (index * modelsPerOp + j) % modelCount;
     modelImports.push(`model${modelIndex}`);
-    modelEmbeds.push(`        model${modelIndex}.embed(),`);
+    modelEmbeds.push(`        ...model${modelIndex}.embed(),`);
   }
 
   // Generate individual imports for each model (from ../entities/ since operations are in src/pages/)
@@ -258,12 +258,12 @@ ${individualImports}
 export const operation${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Operation${index}",
-    variables: [$var("id").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      f.entity${entityIndex}({ id: $.id })(({ f }) => [
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.entity${entityIndex}({ id: $.id })(({ f }) => ({
 ${modelEmbeds.join("\n")}
-      ]),
-    ],
+      })),
+    }),
   }),
 );
 `;

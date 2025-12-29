@@ -38,12 +38,12 @@ Fragments define reusable field selections for a specific GraphQL type:
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: [$var("includeEmail").scalar("Boolean:?")],
-    fields: ({ f, $ }) => [
-      f.id(),
-      f.name(),
-      f.email({ if: $.includeEmail }),
-    ],
+    variables: { ...$var("includeEmail").scalar("Boolean:?") },
+    fields: ({ f, $ }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.email({ if: $.includeEmail }),
+    }),
   }),
 );
 ```
@@ -56,10 +56,10 @@ Operations define complete GraphQL queries, mutations, or subscriptions:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("id").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
-    ],
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
+    }),
   }),
 );
 
@@ -67,10 +67,10 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const getUserWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUserWithFragment",
-    variables: [$var("id").scalar("ID:!"), $var("includeEmail").scalar("Boolean:?")],
-    fields: ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [userFragment.embed({ includeEmail: $.includeEmail })]),
-    ],
+    variables: { ...$var("id").scalar("ID:!"), ...$var("includeEmail").scalar("Boolean:?") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed({ includeEmail: $.includeEmail }) })),
+    }),
   }),
 );
 ```
@@ -91,12 +91,12 @@ Variables are declared using a string-based type syntax:
 
 | Pattern | Description |
 |---------|-------------|
-| `f.id()` | Basic field selection |
-| `f.posts({ limit: 10 })` | Field with arguments |
-| `f.posts()(({ f }) => [...])` | Nested selection (curried) |
-| `f.id(null, { alias: "uuid" })` | Field with alias |
-| `f.email({ if: $.includeEmail })` | Conditional field |
-| `userFragment.embed({})` | Use fragment fields |
+| `...f.id()` | Basic field selection |
+| `...f.posts({ limit: 10 })` | Field with arguments |
+| `...f.posts()(({ f }) => ({ ... }))` | Nested selection (curried) |
+| `...f.id(null, { alias: "uuid" })` | Field with alias |
+| `...f.email({ if: $.includeEmail })` | Conditional field |
+| `...userFragment.embed({})` | Use fragment fields |
 
 ## Understanding the Inject Module
 
@@ -180,7 +180,7 @@ const myAttachment: GqlElementAttachment<typeof userFragment, "custom", { value:
 
 // Attach to a fragment
 export const userFragment = gql
-  .default(({ fragment }) => fragment.User({ fields: ({ f }) => [f.id(), f.name()] }))
+  .default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }))
   .attach(myAttachment);
 
 // Access the attached property
@@ -218,7 +218,7 @@ Metadata is defined on operations:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("id").scalar("ID:!")],
+    variables: { ...$var("id").scalar("ID:!") },
     metadata: ({ $, document }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: {
@@ -227,7 +227,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
         trackedVariables: [$var.getInner($.id)],
       },
     }),
-    fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );
 ```

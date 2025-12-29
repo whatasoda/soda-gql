@@ -22,7 +22,7 @@ soda-gql uses a TypeScript-based approach:
 | **Required** | `Type!` (suffix) | `"Type:!"` (suffix after colon) |
 | **Optional** | `Type` (no suffix) | `"Type:?"` (explicit optional) |
 | **Lists** | `[Type!]!` | `"Type:![]!"` |
-| **Declaration** | In operation header | Array: `variables: [$var(...)]` |
+| **Declaration** | In operation header | Object spread: `variables: { ...$var(...) }` |
 | **Type Safety** | External codegen required | Compile-time inference |
 
 :::info Explicit Nullability
@@ -31,19 +31,18 @@ Unlike GraphQL where omitting `!` means optional, soda-gql requires explicit `:!
 
 ## Declaring Variables
 
-Variables are declared using `$var()` in the `variables` array:
+Variables are declared using `$var()` with object spread syntax:
 
 ```typescript
 gql.default(({ query }, { $var }) =>
   query.operation({
     name: "SearchPosts",
-    variables: [
-      //
-      $var("query").scalar("String:!"),      // Required string
-      $var("limit").scalar("Int:?"),         // Optional int
-      $var("tags").scalar("String:![]?"),    // Optional list of required strings
-    ],
-    fields: ({ f, $ }) => [...],
+    variables: {
+      ...$var("query").scalar("String:!"),      // Required string
+      ...$var("limit").scalar("Int:?"),         // Optional int
+      ...$var("tags").scalar("String:![]?"),    // Optional list of required strings
+    },
+    fields: ({ f, $ }) => ({ ... }),
   }),
 );
 ```
@@ -101,11 +100,10 @@ $var("filters").scalar("FilterInput:![]?")   // List of custom input
 Reference declared variables using `$`:
 
 ```typescript
-({ f, $ }) => [
-  //
-  f.user({ id: $.userId })(({ f }) => [...]),
-  f.posts({ limit: $.limit, tags: $.tags })(({ f }) => [...]),
-]
+({ f, $ }) => ({
+  ...f.user({ id: $.userId })(({ f }) => ({ ... })),
+  ...f.posts({ limit: $.limit, tags: $.tags })(({ f }) => ({ ... })),
+})
 ```
 
 ### Passing to Embedded Fragments
@@ -116,16 +114,14 @@ Pass variables to embedded fragments:
 // Fragment with its own variable
 const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query({
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      //
-      f.user({ id: $.userId })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+      })),
+    }),
   }),
 );
 
@@ -133,12 +129,11 @@ const userFragment = gql.default(({ fragment }, { $var }) =>
 const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ $ }) => [
-      //
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ $ }) => ({
       // Pass operation variable to fragment variable
-      userFragment.embed({ userId: $.userId }),
-    ],
+      ...userFragment.embed({ userId: $.userId }),
+    }),
   }),
 );
 ```
@@ -178,12 +173,11 @@ Variable types are fully inferred:
 const query = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Search",
-    variables: [
-      //
-      $var("query").scalar("String:!"),
-      $var("limit").scalar("Int:?"),
-    ],
-    fields: ({ f, $ }) => [...],
+    variables: {
+      ...$var("query").scalar("String:!"),
+      ...$var("limit").scalar("Int:?"),
+    },
+    fields: ({ f, $ }) => ({ ... }),
   }),
 );
 

@@ -1,13 +1,12 @@
-import {
-  type AnyFieldSelectionFactory,
-  type AnyFieldSelectionFactoryReturn,
-  type FieldSelectionFactories,
-  type FieldSelectionFactoryObjectReturn,
-  type FieldSelectionFactoryPrimitiveReturn,
-  type FieldSelectionFactoryUnionReturn,
-  mergeFields,
-  type NestedObjectFieldsBuilder,
-  type NestedUnionFieldsBuilder,
+import type {
+  AnyFieldSelectionFactory,
+  AnyFieldSelectionFactoryReturn,
+  FieldSelectionFactories,
+  FieldSelectionFactoryObjectReturn,
+  FieldSelectionFactoryPrimitiveReturn,
+  FieldSelectionFactoryUnionReturn,
+  NestedObjectFieldsBuilder,
+  NestedUnionFieldsBuilder,
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
@@ -71,7 +70,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
 
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
-        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject[]>(
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject>(
           nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
         ) => {
           // Build new path for this field
@@ -83,7 +82,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           });
 
           // Run nested builder with updated path context
-          const nestedFields = withFieldPath(newPath, () => mergeFields(nest({ f: createFieldFactories(schema, type.name) })));
+          const nestedFields = withFieldPath(newPath, () => nest({ f: createFieldFactories(schema, type.name) }));
 
           return wrap({
             parent: typeName,
@@ -115,12 +114,12 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           // Run nested builders with updated path context
           const nestedUnion = withFieldPath(newPath, () =>
             mapValues(
-              nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject[]> | undefined>,
+              nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject> | undefined>,
               (builder, memberName) => {
                 if (!builder) {
                   throw new Error(`Builder is undefined for member name: ${memberName}`);
                 }
-                return mergeFields(builder({ f: createFieldFactories(schema, memberName) }));
+                return builder({ f: createFieldFactories(schema, memberName) });
               },
             ),
           ) as TNested;

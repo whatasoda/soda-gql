@@ -30,10 +30,11 @@ When using soda-gql with a build plugin (Babel, TypeScript, Vite, etc.), the run
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query(
-    { name: "GetUser", variables: [$var("id").scalar("ID:!")] },
-    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
+  }),
 );
 
 // After transformation (automatically handled by build plugin)

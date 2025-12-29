@@ -616,15 +616,13 @@ const result = transform(source);
 import { gql } from "@/graphql-system";
 
 export const userSlice = gql.default(({ slice }, { $var }) =>
-  slice.query(
-    {
-      variables: [$var("id").scalar("ID:!")],
-    },
-    ({ f, $ }) => [
-      f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
-    ],
-    ({ select }) => select(["$.user"], (result) => result),
-  ),
+  slice.query({
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
+    }),
+    select: ({ select }) => select(["$.user"], (result) => result),
+  }),
 );
 
 // tests/fixtures/my-test/source.ts
@@ -632,15 +630,13 @@ import { gql } from "@/graphql-system";
 import { userSlice } from "./slices";
 
 export const query = gql.default(({ operation }, { $var }) =>
-  operation.query(
-    {
-      name: "MyTestQuery",
-      variables: [$var("userId").scalar("ID:!")],
-    },
-    ({ $ }) => ({
+  operation.query({
+    name: "MyTestQuery",
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),
     }),
-  ),
+  }),
 );
 
 // tests/unit/my-test.test.ts

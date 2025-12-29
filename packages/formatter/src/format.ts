@@ -1,13 +1,13 @@
 import { parseSync } from "@swc/core";
-import type { ArrayExpression, ArrowFunctionExpression, CallExpression, Module, Node } from "@swc/types";
+import type { ArrowFunctionExpression, CallExpression, Module, Node, ObjectExpression } from "@swc/types";
 import { err, ok, type Result } from "neverthrow";
-import { collectGqlIdentifiers, isFieldSelectionArray, isGqlDefinitionCall } from "./detection";
-import { EMPTY_COMMENT_INSERTION, hasExistingEmptyComment } from "./insertion";
+import { collectGqlIdentifiers, isFieldSelectionObject, isGqlDefinitionCall } from "./detection";
+import { hasExistingNewline, NEWLINE_INSERTION } from "./insertion";
 import type { FormatError, FormatOptions, FormatResult } from "./types";
 
 type TraversalContext = {
-  parent: Node | null;
   insideGqlDefinition: boolean;
+  currentArrowFunction: ArrowFunctionExpression | null;
 };
 
 /**
@@ -17,41 +17,55 @@ const traverseNode = (
   node: Node,
   context: TraversalContext,
   gqlIdentifiers: ReadonlySet<string>,
-  onArrayExpression: (array: ArrayExpression, parent: ArrowFunctionExpression) => void,
+  onObjectExpression: (object: ObjectExpression, parent: ArrowFunctionExpression) => void,
 ): void => {
   // Check for gql definition call entry
   if (node.type === "CallExpression" && isGqlDefinitionCall(node as CallExpression, gqlIdentifiers)) {
     context = { ...context, insideGqlDefinition: true };
   }
 
-  // Handle array expressions
-  if (node.type === "ArrayExpression" && context.insideGqlDefinition && context.parent?.type === "ArrowFunctionExpression") {
-    onArrayExpression(node as ArrayExpression, context.parent as ArrowFunctionExpression);
+  // Handle object expressions - check if it's the body of the current arrow function
+  if (
+    node.type === "ObjectExpression" &&
+    context.insideGqlDefinition &&
+    context.currentArrowFunction &&
+    isFieldSelectionObject(node as ObjectExpression, context.currentArrowFunction)
+  ) {
+    onObjectExpression(node as ObjectExpression, context.currentArrowFunction);
   }
 
-  // Recursively visit children - only traverse AST node properties
-  const childContext = { ...context, parent: node };
-
+  // Recursively visit children
   if (node.type === "CallExpression") {
     const call = node as CallExpression;
-    traverseNode(call.callee as Node, childContext, gqlIdentifiers, onArrayExpression);
+    traverseNode(call.callee as Node, context, gqlIdentifiers, onObjectExpression);
     for (const arg of call.arguments) {
-      traverseNode(arg.expression as Node, childContext, gqlIdentifiers, onArrayExpression);
+      traverseNode(arg.expression as Node, context, gqlIdentifiers, onObjectExpression);
     }
   } else if (node.type === "ArrowFunctionExpression") {
     const arrow = node as ArrowFunctionExpression;
+    // Update context with the new arrow function
+    const childContext = { ...context, currentArrowFunction: arrow };
     if (arrow.body.type !== "BlockStatement") {
-      traverseNode(arrow.body as Node, childContext, gqlIdentifiers, onArrayExpression);
+      traverseNode(arrow.body as Node, childContext, gqlIdentifiers, onObjectExpression);
+    }
+  } else if (node.type === "ParenthesisExpression") {
+    // Handle parenthesized expressions like `({ ...f.id() })`
+    // biome-ignore lint/suspicious/noExplicitAny: SWC types
+    const paren = node as any;
+    if (paren.expression) {
+      traverseNode(paren.expression as Node, context, gqlIdentifiers, onObjectExpression);
     }
   } else if (node.type === "MemberExpression") {
     // biome-ignore lint/suspicious/noExplicitAny: SWC types
     const member = node as any;
-    traverseNode(member.object as Node, childContext, gqlIdentifiers, onArrayExpression);
-  } else if (node.type === "ArrayExpression") {
-    const arr = node as ArrayExpression;
-    for (const elem of arr.elements) {
-      if (elem?.expression) {
-        traverseNode(elem.expression as Node, childContext, gqlIdentifiers, onArrayExpression);
+    traverseNode(member.object as Node, context, gqlIdentifiers, onObjectExpression);
+  } else if (node.type === "ObjectExpression") {
+    const obj = node as ObjectExpression;
+    for (const prop of obj.properties) {
+      if (prop.type === "SpreadElement") {
+        traverseNode(prop.arguments as Node, context, gqlIdentifiers, onObjectExpression);
+      } else if (prop.type === "KeyValueProperty") {
+        traverseNode(prop.value as Node, context, gqlIdentifiers, onObjectExpression);
       }
     }
   } else {
@@ -60,11 +74,11 @@ const traverseNode = (
       if (Array.isArray(value)) {
         for (const child of value) {
           if (child && typeof child === "object" && "type" in child) {
-            traverseNode(child as Node, childContext, gqlIdentifiers, onArrayExpression);
+            traverseNode(child as Node, context, gqlIdentifiers, onObjectExpression);
           }
         }
       } else if (value && typeof value === "object" && "type" in value) {
-        traverseNode(value as Node, childContext, gqlIdentifiers, onArrayExpression);
+        traverseNode(value as Node, context, gqlIdentifiers, onObjectExpression);
       }
     }
   }
@@ -73,15 +87,15 @@ const traverseNode = (
 const traverse = (
   module: Module,
   gqlIdentifiers: ReadonlySet<string>,
-  onArrayExpression: (array: ArrayExpression, parent: ArrowFunctionExpression) => void,
+  onObjectExpression: (object: ObjectExpression, parent: ArrowFunctionExpression) => void,
 ): void => {
   for (const statement of module.body) {
-    traverseNode(statement, { parent: null, insideGqlDefinition: false }, gqlIdentifiers, onArrayExpression);
+    traverseNode(statement, { insideGqlDefinition: false, currentArrowFunction: null }, gqlIdentifiers, onObjectExpression);
   }
 };
 
 /**
- * Format soda-gql field selection arrays by inserting empty comments.
+ * Format soda-gql field selection objects by inserting newlines.
  * This preserves multi-line formatting when using Biome/Prettier.
  */
 export const format = (options: FormatOptions): Result<FormatResult, FormatError> => {
@@ -128,17 +142,15 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   // Collect insertion points
   const insertionPoints: number[] = [];
 
-  traverse(module, gqlIdentifiers, (array, parent) => {
-    if (!isFieldSelectionArray(array, parent)) return;
-
+  traverse(module, gqlIdentifiers, (object, _parent) => {
     // Calculate actual position in source
-    const arrayStart = array.span.start - spanOffset;
+    const objectStart = object.span.start - spanOffset;
 
-    // Check if already has empty comment
-    if (hasExistingEmptyComment(sourceCode, arrayStart)) return;
+    // Check if already has newline
+    if (hasExistingNewline(sourceCode, objectStart)) return;
 
-    // Record insertion point (position after `[`)
-    insertionPoints.push(arrayStart + 1);
+    // Record insertion point (position after `{`)
+    insertionPoints.push(objectStart + 1);
   });
 
   // Apply insertions
@@ -152,7 +164,7 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   let result = sourceCode;
   for (const pos of sortedPoints) {
-    result = result.slice(0, pos) + EMPTY_COMMENT_INSERTION + result.slice(pos);
+    result = result.slice(0, pos) + NEWLINE_INSERTION + result.slice(pos);
   }
 
   return ok({ modified: true, sourceCode: result });
@@ -202,12 +214,11 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
 
   let needsFormatting = false;
 
-  traverse(module, gqlIdentifiers, (array, parent) => {
+  traverse(module, gqlIdentifiers, (object, _parent) => {
     if (needsFormatting) return; // Early exit
-    if (!isFieldSelectionArray(array, parent)) return;
 
-    const arrayStart = array.span.start - spanOffset;
-    if (!hasExistingEmptyComment(sourceCode, arrayStart)) {
+    const objectStart = object.span.start - spanOffset;
+    if (!hasExistingNewline(sourceCode, objectStart)) {
       needsFormatting = true;
     }
   });

@@ -101,14 +101,12 @@ import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
 export const userQuery = gql.default(({ operation }) =>
-  operation.query(
-    {
-      name: 'UserQuery',
-    },
-    () => ({
+  operation.query({
+    name: 'UserQuery',
+    fields: () => ({
       user: userSlice.build(),
     }),
-  ),
+  }),
 );
 ```
 
@@ -163,15 +161,13 @@ import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
 export const getUserQuery = gql.default(({ operation }, { $var }) =>
-  operation.query(
-    {
-      name: 'GetUser',
-      variables: [$var('userId').scalar('ID:!')],
-    },
-    ({ $ }) => ({
+  operation.query({
+    name: 'GetUser',
+    variables: { ...$var('userId').scalar('ID:!') },
+    fields: ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),
     }),
-  ),
+  }),
 );
 ```
 

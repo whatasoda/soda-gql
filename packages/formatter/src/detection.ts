@@ -1,9 +1,9 @@
 import type {
-  ArrayExpression,
   ArrowFunctionExpression,
   CallExpression,
   Expression,
   Module,
+  ObjectExpression,
   ObjectPatternProperty,
 } from "@swc/types";
 
@@ -41,13 +41,26 @@ export const isGqlDefinitionCall = (node: CallExpression, gqlIdentifiers: Readon
 };
 
 /**
- * Check if an array expression is a field selection array
- * Field selection arrays are returned from arrow functions with ({ f }) or ({ f, $ }) parameter
+ * Check if an object expression is a field selection object
+ * Field selection objects are returned from arrow functions with ({ f }) or ({ f, $ }) parameter
  */
-export const isFieldSelectionArray = (array: ArrayExpression, parent: ArrowFunctionExpression): boolean => {
-  // The array must be the body of the arrow function (not inside a block)
-  if (parent.body.type !== "ArrayExpression") return false;
-  if (parent.body.span.start !== array.span.start) return false;
+export const isFieldSelectionObject = (object: ObjectExpression, parent: ArrowFunctionExpression): boolean => {
+  // The object must be the body of the arrow function
+  // Handle both direct ObjectExpression and parenthesized ObjectExpression: `({ ... })`
+  let bodyObject: ObjectExpression | null = null;
+
+  if (parent.body.type === "ObjectExpression") {
+    bodyObject = parent.body;
+  } else if (parent.body.type === "ParenthesisExpression") {
+    // Handle `({ f }) => ({ ...f.id() })` pattern where body is parenthesized
+    const inner = parent.body.expression;
+    if (inner.type === "ObjectExpression") {
+      bodyObject = inner;
+    }
+  }
+
+  if (!bodyObject) return false;
+  if (bodyObject.span.start !== object.span.start) return false;
 
   // Check if first parameter has 'f' destructured
   const param = parent.params[0];

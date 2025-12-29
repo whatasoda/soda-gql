@@ -93,11 +93,10 @@ import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
-    fields: ({ f }) => [
-      //
-      f.id(),
-      f.name(),
-    ],
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
   }),
 );
 ```
@@ -110,14 +109,12 @@ Operations define complete GraphQL queries with field selections:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      //
-      f.user({ id: $.userId })(({ f }) => [
-        //
-        userFragment.embed(),
-      ]),
-    ],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...userFragment.embed(),
+      })),
+    }),
   }),
 );
 ```

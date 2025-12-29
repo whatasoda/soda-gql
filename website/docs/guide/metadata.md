@@ -27,29 +27,25 @@ Add metadata to an operation using the `metadata` option:
 
 ```typescript
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("id").scalar("ID:!")],
-      metadata: ({ $, document }) => ({
-        headers: {
-          "X-Request-ID": "get-user-query",
-        },
-        custom: {
-          requiresAuth: true,
-          cacheTtl: 300,
-        },
-      }),
-    },
-    ({ f, $ }) => [
-      //
-      f.user({ id: $.id })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ]),
-    ],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").scalar("ID:!") },
+    metadata: ({ $, document }) => ({
+      headers: {
+        "X-Request-ID": "get-user-query",
+      },
+      custom: {
+        requiresAuth: true,
+        cacheTtl: 300,
+      },
+    }),
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
+  }),
 );
 ```
 

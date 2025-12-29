@@ -48,11 +48,10 @@ describe("createGqlInvoker", () => {
       fieldArgRef = $var("id").byField("Query", "user", "id");
 
       return fragment.User({
-        fields: ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
+        fields: ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
       });
     });
 
@@ -68,11 +67,10 @@ describe("createGqlInvoker", () => {
   it("creates fragment descriptors with fragment wiring", () => {
     const userFragment = gql(({ fragment }) =>
       fragment.User({
-        fields: ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
+        fields: ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
       }),
     );
 
@@ -85,25 +83,22 @@ describe("createGqlInvoker", () => {
   it("creates inline operations with variable references", () => {
     const userFragment = gql(({ fragment }) =>
       fragment.User({
-        fields: ({ f }) => [
-          //
-          f.id(),
-          f.name(),
-        ],
+        fields: ({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        }),
       }),
     );
 
     const profileQuery = gql(({ query }, { $var }) =>
       query.operation({
         name: "ProfilePageQuery",
-        variables: [$var("userId").scalar("ID:!")],
-        fields: ({ f, $ }) => [
-          //
-          f.user({ id: $.userId })(() => [
-            //
-            userFragment.embed(),
-          ]),
-        ],
+        variables: { ...$var("userId").scalar("ID:!") },
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.userId })(({ f }) => ({
+            ...userFragment.embed(),
+          })),
+        }),
       }),
     );
 

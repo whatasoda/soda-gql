@@ -52,7 +52,7 @@ import { userFragment } from "./UserCard";
 export const getUserQuery = gql.default(({ query }) =>
   query.operation({
     name: "GetUser",
-    fields: ({ f }) => [f.user({ id: "1" })(userFragment.embed())],
+    fields: ({ f }) => ({ ...f.user({ id: "1" })(({ f }) => ({ ...userFragment.embed() })) }),
   }),
 );
 ```
@@ -69,8 +69,8 @@ When composing multiple fragments in a single operation, use `$colocate` to pref
 // UserCard.tsx
 export const userCardFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query({
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
 
@@ -94,13 +94,11 @@ import { postListFragment, postListProjection } from "./PostList";
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ $ }) => [
-      $colocate({
-        userCard: userCardFragment.embed({ userId: $.userId }),
-        postList: postListFragment.embed({ userId: $.userId }),
-      }),
-    ],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ $ }) => $colocate({
+      userCard: userCardFragment.embed({ userId: $.userId }),
+      postList: postListFragment.embed({ userId: $.userId }),
+    }),
   }),
 );
 ```
@@ -156,8 +154,8 @@ import { gql } from "./graphql-system";
 export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: [$var("userId").scalar("ID:!")],
-      fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.posts({})(({ f }) => [f.id(), f.title()])])],
+      variables: { ...$var("userId").scalar("ID:!") },
+      fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),
     }),
   )
   .attach(

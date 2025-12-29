@@ -56,16 +56,16 @@ The `gql` object is generated per-schema and provides builders:
 import { gql } from "@/graphql-system";
 
 // Fragment builder
-gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => [...] }));
+gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ... }) }));
 
 // Query operation
-gql.default(({ query }) => query.operation({ name: "...", fields: ({ f, $ }) => [...] }));
+gql.default(({ query }) => query.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
 
 // Mutation operation
-gql.default(({ mutation }) => mutation.operation({ name: "...", fields: ({ f, $ }) => [...] }));
+gql.default(({ mutation }) => mutation.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
 
 // Subscription operation (planned)
-gql.default(({ subscription }) => subscription.operation({ name: "...", fields: ({ f, $ }) => [...] }));
+gql.default(({ subscription }) => subscription.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
 ```
 
 ## Element Extensions (attach)
@@ -78,11 +78,10 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 export const userFragment = gql
   .default(({ fragment }) =>
     fragment.User({
-      fields: ({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ],
+      fields: ({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      }),
     }),
   )
   .attach({
@@ -129,15 +128,14 @@ Define runtime metadata on operations:
 gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("id").scalar("ID:!")],
+    variables: { ...$var("id").scalar("ID:!") },
     metadata: ({ $, document, $var }) => ({
       headers: { "X-Request-ID": "get-user" },
       custom: { requiresAuth: true, hash: hashDocument(document) },
     }),
-    fields: ({ f, $ }) => [
-      //
+    fields: ({ f, $ }) => ({
       ...
-    ],
+    }),
   }),
 );
 ```
@@ -207,7 +205,7 @@ Complete reference for field selection API:
 |---------|---------|-------------|
 | Basic field | `f.id()` | Select a scalar field |
 | With arguments | `f.posts({ limit: 10 })` | Field with arguments |
-| Nested (curried) | `f.posts()(({ f }) => [...])` | Nested selections |
+| Nested (curried) | `f.posts()(({ f }) => ({ ... }))` | Nested selections |
 | With alias | `f.id(null, { alias: "userId" })` | Renamed field |
 | Fragment embed | `userFragment.embed({})` | Embed fragment fields |
 | Fragment with vars | `userFragment.embed({ a: $.b })` | Pass variables |

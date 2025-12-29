@@ -143,23 +143,23 @@ function generateModels(config: FixtureConfig): string {
 export const model${i} = gql.default(({ model }) =>
   model.${typeName}(
     {},
-    ({ f }) => [
-      f.id(),
-      f.name(),
-      f.description(),
-      f.value(),
-      f.isActive(),
-      f.createdAt(),
-      f.related()(({ f }) => [
-        f.id(),
-        f.name(),
-        f.value(),
-      ]),
-      f.relatedList({ limit: 5 })(({ f }) => [
-        f.id(),
-        f.name(),
-      ]),
-    ],
+    ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.description(),
+      ...f.value(),
+      ...f.isActive(),
+      ...f.createdAt(),
+      ...f.related()(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.value(),
+      })),
+      ...f.relatedList({ limit: 5 })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
     (selection) => ({
       id: selection.id,
       name: selection.name,
@@ -196,17 +196,17 @@ function generateSlices(config: FixtureConfig): string {
 export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$var("id").scalar("ID:!")],
+      variables: { ...$var("id").scalar("ID:!") },
     },
-    ({ f, $ }) => [
-      f.${typeName.toLowerCase()}({ id: $.id })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.description(),
-        f.value(),
-        f.isActive(),
-      ]),
-    ],
+    ({ f, $ }) => ({
+      ...f.${typeName.toLowerCase()}({ id: $.id })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.description(),
+        ...f.value(),
+        ...f.isActive(),
+      })),
+    }),
     ({ select }) => select(["$.${typeName.toLowerCase()}"], (result) =>
       result.safeUnwrap((data) => data)
     ),
@@ -218,17 +218,17 @@ export const slice${i} = gql.default(({ query }, { $var }) =>
 export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: [$var("limit").scalar("Int:?"), $var("offset").scalar("Int:?")],
+      variables: { ...$var("limit").scalar("Int:?"), ...$var("offset").scalar("Int:?") },
     },
-    ({ f, $ }) => [
-      f.${typeName.toLowerCase()}List({ limit: $.limit, offset: $.offset })(({ f }) => [
-        f.id(),
-        f.name(),
-        f.description(),
-        f.value(),
-        f.isActive(),
-      ]),
-    ],
+    ({ f, $ }) => ({
+      ...f.${typeName.toLowerCase()}List({ limit: $.limit, offset: $.offset })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.description(),
+        ...f.value(),
+        ...f.isActive(),
+      })),
+    }),
     ({ select }) => select(["$.${typeName.toLowerCase()}List"], (result) => result),
   ),
 );`);
@@ -258,11 +258,11 @@ function generateOperations(config: FixtureConfig): string {
 
       if (isListSlice) {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ limit: $.limit${j}, offset: $.offset${j} }),`);
-        sliceVars.push(`$var("limit${j}").scalar("Int:?")`);
-        sliceVars.push(`$var("offset${j}").scalar("Int:?")`);
+        sliceVars.push(`...$var("limit${j}").scalar("Int:?")`);
+        sliceVars.push(`...$var("offset${j}").scalar("Int:?")`);
       } else {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ id: $.id${j} }),`);
-        sliceVars.push(`$var("id${j}").scalar("ID:!")`);
+        sliceVars.push(`...$var("id${j}").scalar("ID:!")`);
       }
     }
 
@@ -272,7 +272,7 @@ export const operation${i} = gql.default(({ query }, { $var }) =>
   query.composed(
     {
       name: "Operation${i}",
-      variables: [${sliceVars.join(", ")}],
+      variables: { ${sliceVars.join(", ")} },
     },
     ({ $ }) => ({
 ${sliceEmbeds.join("\n")}

@@ -78,20 +78,18 @@ The generated module imports your scalar definitions from the inject file. Keep 
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Define a reusable fragment with array-based API
+// Define a reusable fragment
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: [$var("categoryId").scalar("ID:?")],
-    fields: ({ f, $ }) => [
-      //
-      f.id(null, { alias: "uuid" }),
-      f.name(),
-      f.posts({ categoryId: $.categoryId })(({ f }) => [
-        //
-        f.id(),
-        f.title(),
-      ]),
-    ],
+    variables: { ...$var("categoryId").scalar("ID:?") },
+    fields: ({ f, $ }) => ({
+      ...f.id(null, { alias: "uuid" }),
+      ...f.name(),
+      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+      })),
+    }),
   }),
 );
 
@@ -99,17 +97,17 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    fields: ({ f, $ }) => [
-      f.users({
+    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    fields: ({ f, $ }) => ({
+      ...f.users({
         id: [$.userId],
         categoryId: $.categoryId,
-      })(({ f }) => [
-        f.id(null, { alias: "uuid" }),
-        f.name(),
-        f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
-      ]),
-    ],
+      })(({ f }) => ({
+        ...f.id(null, { alias: "uuid" }),
+        ...f.name(),
+        ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })),
+      })),
+    }),
   }),
 );
 
@@ -117,18 +115,18 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQueryWithFragment",
-    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    fields: ({ f, $ }) => [
-      f.users({
+    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    fields: ({ f, $ }) => ({
+      ...f.users({
         id: [$.userId],
         categoryId: $.categoryId,
-      })(({ f }) => [userFragment.embed({ categoryId: $.categoryId })]),
-    ],
+      })(({ f }) => ({ ...userFragment.embed({ categoryId: $.categoryId }) })),
+    }),
   }),
 );
 ```
 
-**Note on API**: Variables are now declared as arrays (`variables: [$var(...)]`) and field builders return arrays of selections (`({ f }) => [ f.id(), f.name() ]`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => [...])`). This improves type safety, prevents accidental key overwrites, and aligns better with GraphQL's structure.
+**Note on API**: Variables and field selections use object spread syntax (`variables: { ...$var(...) }` and `({ f }) => ({ ...f.id(), ...f.name() })`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => ({ ... }))`). This improves type safety and aligns with GraphQL's structure.
 
 ### Metadata
 
@@ -139,12 +137,12 @@ Attach runtime information to operations for HTTP headers and application-specif
 export const userQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("userId").scalar("ID:!")],
+    variables: { ...$var("userId").scalar("ID:!") },
     metadata: ({ $ }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: { requiresAuth: true, cacheTtl: 300 },
     }),
-    fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );
 ```
