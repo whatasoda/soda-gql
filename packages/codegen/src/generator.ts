@@ -502,17 +502,17 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
-const renderInputTypeMethod = (kind: "scalar" | "enum" | "input", typeName: string): string =>
-  `${typeName}: createVarMethod("${kind}", "${typeName}")`;
+const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
+  `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
 
-const renderInputTypeMethods = (schema: SchemaIndex): string => {
+const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string => {
   const scalarMethods = Array.from(builtinScalarTypes.keys())
     .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
-    .map((name) => renderInputTypeMethod("scalar", name));
+    .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
 
-  const enumMethods = collectEnumTypeNames(schema).map((name) => renderInputTypeMethod("enum", name));
+  const enumMethods = collectEnumTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "enum", name));
 
-  const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod("input", name));
+  const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "input", name));
 
   const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
     const leftName = left.split(":")[0] ?? "";
@@ -630,6 +630,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     }
 
     const inputTypeMethodsVar = `inputTypeMethods_${name}`;
+    const factoryVar = `createMethod_${name}`;
 
     schemaBlocks.push(`
 const ${schemaVar} = {
@@ -646,7 +647,8 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
-const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
+const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
+const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock} satisfies InputTypeMethods<typeof ${schemaVar}>;
 
 ${typeExports.join("\n")}`);
 
@@ -666,8 +668,9 @@ ${typeExports.join("\n")}`);
   return `\
 import {
   type AnyGraphqlSchema,
+  type InputTypeMethods,
   createGqlElementComposer,
-  createVarMethod,
+  createVarMethodFactory,
   define,
   defineOperationRoots,
   unsafeInputType,
@@ -735,7 +738,8 @@ export const generateMultiSchemaModule = (
       .filter((definition) => definition.length > 0);
     const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
 
-    const inputTypeMethodsBlock = renderInputTypeMethods(schema);
+    const factoryVar = `createMethod_${name}`;
+    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
 
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";
