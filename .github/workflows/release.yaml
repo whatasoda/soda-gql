@@ -91,7 +91,7 @@ jobs:
   build-native:
     needs: [check-version, validate-versions]
     if: needs.check-version.outputs.should_release == 'true'
-    uses: ./.github/workflows/build-native.yml
+    uses: ./.github/workflows/build-native.yaml
 
   build-packages:
     needs: [check-version, build-native]
