@@ -19,7 +19,7 @@ features:
     details: Unlike traditional GraphQL codegen, no constant regeneration needed. Changes reflect instantly.
     icon: 🎯
   - title: Modular Architecture
-    details: Compose queries from reusable models and slices. Build complex operations from simple pieces.
+    details: Compose queries from reusable fragments. Build complex operations from simple pieces.
     icon: 📦
 ---
 
@@ -35,9 +35,9 @@ bun add -D @soda-gql/cli @soda-gql/config
 
 soda-gql brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Instead of generating types from queries, you write type-safe queries directly in TypeScript:
 
-1. **Define models** - Reusable fragments with built-in transforms
-2. **Create slices** - Domain-specific query/mutation pieces
-3. **Compose operations** - Combine slices into complete GraphQL operations
+1. **Define fragments** - Reusable field selections for types
+2. **Create operations** - Query, mutation, or subscription definitions
+3. **Compose** - Embed fragments into operations
 4. **Build** - Transform at build time into optimized GraphQL documents
 
 All with full type inference and zero runtime overhead.
