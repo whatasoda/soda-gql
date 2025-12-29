@@ -6,7 +6,7 @@ export default defineConfig({
   base: "/",
   title: "soda-gql",
   description:
-    "Zero-runtime GraphQL query generation - Type-safe GraphQL with build-time transformation",
+    "Zero-runtime-like GraphQL query generation - Type-safe GraphQL with build-time transformation",
   markdown: {
     showLineNumbers: true,
   },

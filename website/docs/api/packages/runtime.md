@@ -10,7 +10,7 @@ bun add @soda-gql/runtime
 
 ## Overview
 
-soda-gql follows a "zero-runtime" philosophy. Most GraphQL operations are transformed at build time, leaving only minimal runtime code:
+soda-gql follows a "zero-runtime-like" philosophy. GraphQL documents and metadata are pre-computed at build time, while query execution happens at runtime:
 
 - **Build Time**: Operations are analyzed, validated, and transformed
 - **Runtime**: Only the operation registry and result parsing remain

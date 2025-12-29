@@ -1,6 +1,6 @@
 # What is soda-gql?
 
-soda-gql is a zero-runtime GraphQL query generation system that brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Write type-safe queries in TypeScript that are statically analyzed and transformed at build time into optimized GraphQL documents.
+soda-gql is a zero-runtime-like GraphQL query generation system that brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Write type-safe queries in TypeScript that are statically analyzed and transformed at build time into optimized GraphQL documents.
 
 ## Why soda-gql?
 
@@ -14,6 +14,21 @@ Traditional GraphQL development involves a code generation loop:
 This cycle creates friction: you write code in two languages, wait for generation, and deal with out-of-sync types.
 
 **soda-gql eliminates this loop.** You write everything in TypeScript, and the build system handles the rest.
+
+## What "Zero-Runtime-Like" Means
+
+Inspired by [PandaCSS](https://panda-css.com/), soda-gql analyzes your code at build time and embeds pre-computed data as JSON. However, unlike CSS which is truly zero-runtime, soda-gql still requires runtime processing for:
+
+- Query execution against GraphQL servers
+- Response parsing and type coercion
+- Variable interpolation
+
+What happens at **build time**:
+- GraphQL document string generation
+- Metadata computation
+- Type validation
+
+This approach eliminates the codegen loop while keeping runtime overhead minimal.
 
 ## Core Concepts
 
