@@ -59,7 +59,7 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({ fields: ({ f }) => [f.id(), f.name()] })
+    fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
   )
   .attach(
     createProjectionAttachment({
@@ -242,8 +242,8 @@ import {
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: [$var("userId").scalar("ID:!")],
-      fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
+      variables: { ...$var("userId").scalar("ID:!") },
+      fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   )
   .attach(
@@ -260,12 +260,12 @@ export const userCardFragment = gql
 export const pageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "Page",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ $ }) => [
-      $colocate({
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ $ }) => ({
+      ...$colocate({
         userCard: userCardFragment.embed({ userId: $.userId }),
       }),
-    ],
+    }),
   }),
 );
 

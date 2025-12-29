@@ -85,10 +85,11 @@ The plugin transforms `gql.default()` calls at compile time:
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    { name: "GetUser", variables: [$var("id").scalar("ID:!")] },
-    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
+  }),
 );
 ```
 
