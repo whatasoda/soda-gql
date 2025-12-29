@@ -131,8 +131,7 @@ gql.default(({ query }, { $var }) =>
       variables: [$var("id").scalar("ID:!")],
       metadata: ({ $, document, $var }) => ({
         headers: { "X-Request-ID": "get-user" },
-        extensions: { hash: hashDocument(document) },
-        custom: { requiresAuth: true },
+        custom: { requiresAuth: true, hash: hashDocument(document) },
       }),
     },
     ({ f, $ }) => [
@@ -148,7 +147,6 @@ gql.default(({ query }, { $var }) =>
 | Property | Type | Description |
 |----------|------|-------------|
 | `headers` | `Record<string, string>` | HTTP headers |
-| `extensions` | `Record<string, unknown>` | GraphQL extensions |
 | `custom` | `Record<string, unknown>` | Application-specific values |
 
 ### Accessing Metadata

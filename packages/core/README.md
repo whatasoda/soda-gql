@@ -184,16 +184,15 @@ const fragment = gql.default(...).attach({ name: "foo", createValue: () => ({ ba
 
 ## Metadata
 
-Metadata allows you to attach runtime information to operations. This is useful for HTTP headers, GraphQL extensions, and application-specific values.
+Metadata allows you to attach runtime information to operations. This is useful for HTTP headers and application-specific values.
 
 ### Metadata Structure
 
-All metadata types share three base properties:
+All metadata types share two base properties:
 
 | Property | Type | Purpose |
 |----------|------|---------|
 | `headers` | `Record<string, string>` | HTTP headers to include with the GraphQL request |
-| `extensions` | `Record<string, unknown>` | GraphQL extensions in the request payload |
 | `custom` | `Record<string, unknown>` | Application-specific values (auth requirements, cache settings, etc.) |
 
 ### Defining Metadata
@@ -209,8 +208,9 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("id").scalar("ID:!")],
       metadata: ({ $, document }) => ({
         headers: { "X-Request-ID": "user-query" },
-        custom: { requiresAuth: true, cacheTtl: 300 },
-        extensions: {
+        custom: {
+          requiresAuth: true,
+          cacheTtl: 300,
           trackedVariables: [$var.getInner($.id)],
         },
       }),

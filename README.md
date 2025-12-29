@@ -137,7 +137,7 @@ export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
 
 ### Metadata
 
-Attach runtime information to operations for HTTP headers, GraphQL extensions, and application-specific values:
+Attach runtime information to operations for HTTP headers and application-specific values:
 
 ```typescript
 // Operation with metadata

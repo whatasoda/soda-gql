@@ -1,6 +1,6 @@
 # Metadata
 
-Metadata allows you to attach runtime information to operations. This is useful for HTTP headers, GraphQL extensions, and application-specific configuration.
+Metadata allows you to attach runtime information to operations. This is useful for HTTP headers and application-specific configuration.
 
 ## How soda-gql Metadata Differs from GraphQL
 
@@ -9,22 +9,16 @@ Standard GraphQL has limited support for request-level metadata:
 | Aspect | GraphQL | soda-gql |
 |--------|---------|----------|
 | **Request Headers** | Handled outside the query | Declared with the operation |
-| **Extensions** | Only in responses | Can be defined for requests |
 | **Custom Data** | Not standardized | First-class `custom` property |
 | **Type Safety** | None | Full TypeScript inference |
 
-:::info
-GraphQL's `extensions` field is typically used in responses for debugging or tracing information. soda-gql extends this concept to allow request-side extensions as well.
-:::
-
 ## Metadata Structure
 
-All metadata has three base properties:
+All metadata has two base properties:
 
 | Property | Type | Purpose |
 |----------|------|---------|
 | `headers` | `Record<string, string>` | HTTP headers to include with the request |
-| `extensions` | `Record<string, unknown>` | GraphQL extensions in the request payload |
 | `custom` | `Record<string, unknown>` | Application-specific values |
 
 ## Defining Metadata
@@ -40,11 +34,6 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       metadata: ({ $, document }) => ({
         headers: {
           "X-Request-ID": "get-user-query",
-        },
-        extensions: {
-          persistedQuery: {
-            sha256Hash: "abc123...",
-          },
         },
         custom: {
           requiresAuth: true,
@@ -83,10 +72,9 @@ metadata: ({ $, $var }) => ({
   headers: {
     "X-Trace-ID": `user-${$var.getInner($.id)}`,
   },
-  extensions: {
+  custom: {
     trackedVariables: [$var.getInner($.id)],
   },
-  custom: {},
 }),
 ```
 
@@ -101,7 +89,6 @@ metadata: () => ({
   headers: {
     "Authorization": "Bearer ${token}",
   },
-  extensions: {},
   custom: {
     requiresAuth: true,
     authScopes: ["user:read"],
@@ -119,10 +106,9 @@ metadata: ({ document }) => ({
     "X-Operation-Name": "GetUser",
     "X-Document-Hash": hashDocument(document),
   },
-  extensions: {
+  custom: {
     tracing: true,
   },
-  custom: {},
 }),
 ```
 
@@ -133,7 +119,6 @@ Define caching behavior for your application:
 ```typescript
 metadata: () => ({
   headers: {},
-  extensions: {},
   custom: {
     cache: {
       ttl: 3600,
@@ -151,7 +136,6 @@ Control operation behavior based on features:
 ```typescript
 metadata: () => ({
   headers: {},
-  extensions: {},
   custom: {
     features: {
       enableNewUserFields: true,
@@ -194,7 +178,6 @@ async function graphqlClient<T>(operation: {
     body: JSON.stringify({
       query: operation.document,
       variables: operation.variables,
-      extensions: meta.extensions,
     }),
   });
 
@@ -210,7 +193,6 @@ Metadata types are inferred from your definition:
 type QueryMeta = typeof getUserQuery.$infer.metadata;
 // {
 //   headers: { "X-Request-ID": string };
-//   extensions: { persistedQuery: { sha256Hash: string } };
 //   custom: { requiresAuth: boolean; cacheTtl: number };
 // }
 ```
