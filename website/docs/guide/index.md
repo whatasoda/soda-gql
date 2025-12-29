@@ -56,22 +56,6 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 );
 ```
 
-## Project Structure
-
-```
-packages/
-├── core/           # Core GraphQL types and utilities
-├── codegen/        # Schema code generation
-├── builder/        # Static analysis & artifact generation
-├── babel-plugin/   # Babel transformation plugin
-├── tsc-plugin/     # TypeScript compiler plugin
-├── webpack-plugin/ # Webpack plugin with HMR support
-├── vite-plugin/    # Vite bundler plugin
-├── metro-plugin/   # React Native/Expo Metro plugin
-├── runtime/        # Runtime execution helpers
-└── cli/            # Command-line interface
-```
-
 ## Next Steps
 
 Ready to get started? Head to the [Getting Started](/guide/getting-started) guide.
