@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   createVarRefFromNestedValue,
   createVarRefFromVariable,
+  extractPath,
   getVarRefName,
   getVarRefValue,
   hasVarRefInside,
@@ -101,5 +102,27 @@ describe("isVarRef", () => {
     expect(isVarRef(undefined)).toBe(false);
     expect(isVarRef({})).toBe(false);
     expect(isVarRef([])).toBe(false);
+  });
+});
+
+describe("extractPath", () => {
+  it("captures single property access", () => {
+    expect(extractPath((p) => p.user)).toEqual(["user"]);
+  });
+
+  it("captures nested property access", () => {
+    expect(extractPath((p) => p.user.profile.name)).toEqual(["user", "profile", "name"]);
+  });
+
+  it("captures array index access", () => {
+    expect(extractPath((p) => p.items[0])).toEqual(["items", 0]);
+  });
+
+  it("captures mixed property and index access", () => {
+    expect(extractPath((p) => p.users[0].addresses[1].street)).toEqual(["users", 0, "addresses", 1, "street"]);
+  });
+
+  it("returns empty array for identity function", () => {
+    expect(extractPath((p) => p)).toEqual([]);
   });
 });

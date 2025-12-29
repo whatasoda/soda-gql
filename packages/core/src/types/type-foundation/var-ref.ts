@@ -109,3 +109,72 @@ export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
   }
   return inner.value as ConstValue;
 };
+
+// ============================================================================
+// Path Types and Utilities
+// ============================================================================
+
+/**
+ * Path segment types for navigating nested values.
+ */
+export type PathSegment = string | number;
+
+/**
+ * Proxy type that records property accesses.
+ * The actual implementation uses Proxy to capture the path.
+ */
+export interface PathProxy<_T> {
+  readonly [key: string]: PathProxy<unknown>;
+  readonly [index: number]: PathProxy<unknown>;
+}
+
+/**
+ * Type-safe path builder function.
+ * Used with getNameAt and getValueAt helpers.
+ *
+ * @example
+ * getNameAt(varRef, p => p.user.addresses[0].street)
+ *
+ * Note: Full Proxy-based type inference is marked as TODO.
+ * Current implementation supports runtime path extraction without
+ * compile-time type checking of the path validity.
+ */
+export type PathBuilder<T = unknown> = (proxy: PathProxy<T>) => PathProxy<unknown>;
+
+/**
+ * Internal symbol to store path segments on PathProxy.
+ */
+export const PATH_SEGMENTS = Symbol("PATH_SEGMENTS");
+
+interface PathProxyInternal {
+  readonly [PATH_SEGMENTS]: readonly PathSegment[];
+}
+
+/**
+ * Creates a proxy that records property accesses as a path.
+ * Used internally by getNameAt and getValueAt.
+ */
+export const createPathProxy = <T>(segments: readonly PathSegment[] = []): PathProxy<T> => {
+  return new Proxy({ [PATH_SEGMENTS]: segments } as PathProxyInternal & PathProxy<T>, {
+    get(target, prop) {
+      if (prop === PATH_SEGMENTS) {
+        return target[PATH_SEGMENTS];
+      }
+
+      // Handle both string keys and numeric indices
+      const segment: PathSegment =
+        typeof prop === "symbol" ? String(prop) : !Number.isNaN(Number(prop)) ? Number(prop) : prop;
+
+      return createPathProxy([...target[PATH_SEGMENTS], segment]);
+    },
+  });
+};
+
+/**
+ * Extracts the path segments from a PathBuilder function.
+ */
+export const extractPath = <T>(pathFn: PathBuilder<T>): readonly PathSegment[] => {
+  const proxy = createPathProxy<T>();
+  const result = pathFn(proxy) as unknown as PathProxyInternal;
+  return result[PATH_SEGMENTS];
+};
