@@ -37,12 +37,11 @@ import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
-    fields: ({ f }) => [
-      //
-      f.id(),
-      f.name(),
-      f.email(),
-    ],
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.email(),
+    }),
   }),
 );
 ```
@@ -56,8 +55,8 @@ The `fragment.User` call specifies the GraphQL type this fragment applies to. Th
 Select scalar fields directly:
 
 ```typescript
-f.id()      // Select the id field
-f.name()    // Select the name field
+...f.id()      // Select the id field
+...f.name()    // Select the name field
 ```
 
 ### Fields with Arguments
@@ -74,16 +73,14 @@ f.avatar({ size: "LARGE" })
 For fields that return object types, use curried syntax to select nested fields:
 
 ```typescript
-f.posts({ limit: 10 })(({ f }) => [
-  //
-  f.id(),
-  f.title(),
-  f.author()(({ f }) => [
-    //
-    f.id(),
-    f.name(),
-  ]),
-])
+...f.posts({ limit: 10 })(({ f }) => ({
+  ...f.id(),
+  ...f.title(),
+  ...f.author()(({ f }) => ({
+    ...f.id(),
+    ...f.name(),
+  })),
+}))
 ```
 
 ### Field Aliases
@@ -91,8 +88,8 @@ f.posts({ limit: 10 })(({ f }) => [
 Rename fields in the response using the alias option:
 
 ```typescript
-f.id(null, { alias: "userId" })
-f.name(null, { alias: "displayName" })
+...f.id(null, { alias: "userId" })
+...f.name(null, { alias: "displayName" })
 ```
 
 ## Fragment Variables
@@ -102,21 +99,19 @@ Unlike standard GraphQL fragments, soda-gql fragments can declare their own vari
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      //
-      f.user({ id: $.userId })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+      })),
+    }),
   }),
 );
 ```
 
-Variables are declared in an array using `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
+Variables are declared using object spread syntax with `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
 
 ## Embedding Fragments
 
@@ -125,15 +120,13 @@ Embed fragments in other fragments or operations using `.embed()`:
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
   fragment.Post({
-    fields: ({ f }) => [
-      //
-      f.id(),
-      f.title(),
-      f.author()(({ f }) => [
-        //
-        userFragment.embed({ includeEmail: false }),
-      ]),
-    ],
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.title(),
+      ...f.author()(({ f }) => ({
+        ...userFragment.embed({ includeEmail: false }),
+      })),
+    }),
   }),
 );
 ```
@@ -145,24 +138,20 @@ When embedding a fragment with variables, pass the values through the first argu
 export const getPostQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetPost",
-    variables: [
-      //
-      $var("postId").scalar("ID:!"),
-      $var("showEmail").scalar("Boolean:?"),
-    ],
-    fields: ({ f, $ }) => [
-      //
-      f.post({ id: $.postId })(({ f }) => [
-        //
-        f.id(),
-        f.title(),
-        f.author()(({ f }) => [
-          //
+    variables: {
+      ...$var("postId").scalar("ID:!"),
+      ...$var("showEmail").scalar("Boolean:?"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.post({ id: $.postId })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+        ...f.author()(({ f }) => ({
           // Pass parent variable to embedded fragment
-          userFragment.embed({ includeEmail: $.showEmail }),
-        ]),
-      ]),
-    ],
+          ...userFragment.embed({ includeEmail: $.showEmail }),
+        })),
+      })),
+    }),
   }),
 );
 ```
@@ -199,11 +188,10 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 export const userFragment = gql
   .default(({ fragment }) =>
     fragment.User({
-      fields: ({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ],
+      fields: ({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      }),
     }),
   )
   .attach({

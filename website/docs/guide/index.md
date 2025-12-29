@@ -41,12 +41,11 @@ import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
-    fields: ({ f }) => [
-      //
-      f.id(),
-      f.name(),
-      f.email(),
-    ],
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.email(),
+    }),
   }),
 );
 ```
@@ -59,14 +58,12 @@ Operations define complete GraphQL queries, mutations, or subscriptions with fie
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [
-      //
-      f.user({ id: $.userId })(({ f }) => [
-        //
-        userFragment.embed(),
-      ]),
-    ],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...userFragment.embed(),
+      })),
+    }),
   }),
 );
 ```
