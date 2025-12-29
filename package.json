@@ -27,7 +27,9 @@
     "perf:transformer": "bun run perf-measures/transformer/scripts/run.ts",
     "perf:typecheck": "bun run perf-measures/type-check/scripts/run.ts",
     "perf:typecheck:generate": "bun run perf-measures/type-check/scripts/run.ts --generate",
-    "cleanup": "rm -rf .cache tests/.tmp"
+    "cleanup": "rm -rf .cache tests/.tmp",
+    "website:dev": "bun run --filter=@soda-gql/website dev",
+    "website:build": "bun run --filter=@soda-gql/website build"
   },
   "devDependencies": {
     "@babel/core": "*",
