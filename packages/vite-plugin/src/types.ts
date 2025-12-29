@@ -1,4 +1,6 @@
-import type { PluginOptions } from "@soda-gql/plugin-common";
+import type { PluginOptions, TransformerType } from "@soda-gql/plugin-common";
+
+export type { TransformerType } from "@soda-gql/plugin-common";
 
 /**
  * Options for the Vite plugin.
@@ -10,4 +12,9 @@ export type VitePluginOptions = PluginOptions & {
   readonly exclude?: RegExp | RegExp[];
   /** Enable verbose logging for debugging */
   readonly debug?: boolean;
+  /**
+   * Transformer to use for code transformation.
+   * @default 'babel'
+   */
+  readonly transformer?: TransformerType;
 };

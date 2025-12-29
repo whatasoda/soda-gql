@@ -7,8 +7,10 @@ import {
   getSharedState,
   getStateKey,
   type PluginSession,
+  type SwcTransformerInterface,
   setSharedArtifact,
   setSharedPluginSession,
+  setSharedSwcTransformer,
 } from "@soda-gql/plugin-common";
 import type { HmrContext, ModuleNode, Plugin, ViteDevServer } from "vite";
 import type { VitePluginOptions } from "./types";
@@ -37,10 +39,44 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
   let previousArtifact: BuilderArtifact | null = null;
   let _viteServer: ViteDevServer | null = null;
   let isDevMode = false;
+  let swcTransformer: SwcTransformerInterface | null = null;
+  let swcInitialized = false;
 
   const log = (message: string): void => {
     if (options.debug) {
       console.log(`[@soda-gql/vite-plugin] ${message}`);
+    }
+  };
+
+  /**
+   * Initialize SWC transformer if configured.
+   */
+  const initializeSwcTransformer = async (): Promise<void> => {
+    if (swcInitialized || options.transformer !== "swc") {
+      return;
+    }
+
+    swcInitialized = true;
+
+    if (!currentArtifact || !pluginSession) {
+      return;
+    }
+
+    try {
+      const { createTransformer } = await import("@soda-gql/swc-transformer");
+      swcTransformer = await createTransformer({
+        config: pluginSession.config,
+        artifact: currentArtifact,
+        sourceMap: true,
+      });
+      setSharedSwcTransformer(stateKey, swcTransformer);
+      log("SWC transformer initialized");
+    } catch (error) {
+      console.warn(
+        `[@soda-gql/vite-plugin] Failed to initialize SWC transformer: ${error}. ` +
+          "Make sure @soda-gql/swc-transformer is installed. Falling back to Babel.",
+      );
+      swcTransformer = null;
     }
   };
 
@@ -140,6 +176,9 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
       setSharedArtifact(stateKey, currentArtifact);
 
       log(`Initial build: ${Object.keys(currentArtifact?.elements ?? {}).length} elements`);
+
+      // Initialize SWC transformer if configured
+      await initializeSwcTransformer();
     },
 
     configureServer(server) {
@@ -175,7 +214,24 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
 
       log(`Transforming: ${normalizedPath}`);
 
-      // Transform using Babel plugin with direct artifact
+      // Try SWC transformer first if available
+      if (swcTransformer) {
+        const swcResult = swcTransformer.transform({
+          sourceCode: code,
+          sourcePath: id,
+        });
+
+        if (swcResult.transformed) {
+          return {
+            code: swcResult.sourceCode,
+            map: swcResult.sourceMap ? JSON.parse(swcResult.sourceMap) : undefined,
+          };
+        }
+        // SWC didn't transform (no soda-gql code), return null to pass through
+        return null;
+      }
+
+      // Fall back to Babel transformer
       const babelOptions: TransformOptions = {
         filename: id,
         babelrc: false,
@@ -203,8 +259,10 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
         pluginSession = null;
         currentArtifact = null;
         previousArtifact = null;
+        swcTransformer = null;
         setSharedPluginSession(stateKey, null);
         setSharedArtifact(stateKey, null);
+        setSharedSwcTransformer(stateKey, null);
       }
     },
 

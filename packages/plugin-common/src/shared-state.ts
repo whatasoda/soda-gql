@@ -2,6 +2,13 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import type { PluginSession } from "./plugin-session";
 
 /**
+ * Transformer type for code transformation.
+ * - 'babel': Use Babel plugin (default, wider compatibility)
+ * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc-transformer)
+ */
+export type TransformerType = "babel" | "swc";
+
+/**
  * Minimal interface for SWC transformer.
  * Matches the Transformer interface from @soda-gql/swc-transformer.
  */
@@ -23,6 +30,7 @@ export type SharedState = {
   moduleAdjacency: Map<string, Set<string>>;
   generation: number;
   swcTransformer: SwcTransformerInterface | null;
+  transformerType: TransformerType | null;
 };
 
 // Global state for sharing between plugin and loader
@@ -40,6 +48,7 @@ export const getSharedState = (key: string): SharedState => {
       moduleAdjacency: new Map(),
       generation: 0,
       swcTransformer: null,
+      transformerType: null,
     };
     sharedStates.set(key, state);
   }
@@ -102,4 +111,18 @@ export const setSharedSwcTransformer = (key: string, transformer: SwcTransformer
  */
 export const getSharedSwcTransformer = (key: string): SwcTransformerInterface | null => {
   return getSharedState(key).swcTransformer;
+};
+
+/**
+ * Set shared transformer type.
+ */
+export const setSharedTransformerType = (key: string, transformerType: TransformerType | null): void => {
+  getSharedState(key).transformerType = transformerType;
+};
+
+/**
+ * Get shared transformer type.
+ */
+export const getSharedTransformerType = (key: string): TransformerType | null => {
+  return getSharedState(key).transformerType;
 };

@@ -55,6 +55,12 @@
     "@soda-gql/plugin-common": "workspace:*"
   },
   "peerDependencies": {
-    "vite": "^5.0.0 || ^6.0.0"
+    "vite": "^5.0.0 || ^6.0.0",
+    "@soda-gql/swc-transformer": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@soda-gql/swc-transformer": {
+      "optional": true
+    }
   }
 }

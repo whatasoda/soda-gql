@@ -1,8 +1,16 @@
+import { getStateKey, setSharedTransformerType } from "@soda-gql/plugin-common";
 import type { MetroConfig, MetroPluginOptions } from "./types";
 
 // Re-export shared state utilities for advanced usage
 export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/plugin-common";
-export type { MetroConfig, MetroPluginOptions, MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
+export type {
+  MetroConfig,
+  MetroPluginOptions,
+  MetroTransformer,
+  MetroTransformParams,
+  MetroTransformResult,
+  TransformerType,
+} from "./types";
 
 /**
  * Wrap Metro configuration with soda-gql support.
@@ -41,12 +49,18 @@ export type { MetroConfig, MetroPluginOptions, MetroTransformer, MetroTransformP
  * ```
  *
  * @param config - The Metro configuration to wrap
- * @param _options - Optional plugin configuration (reserved for future use)
+ * @param options - Optional plugin configuration
  * @returns Modified Metro configuration with soda-gql transformer
  */
-export function withSodaGql<T extends MetroConfig>(config: T, _options: MetroPluginOptions = {}): T {
+export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPluginOptions = {}): T {
   // Use package export path to ensure correct resolution from any location
   const transformerPath = require.resolve("@soda-gql/metro-plugin/transformer");
+
+  // Store transformer type in shared state for the transformer module to read
+  const stateKey = getStateKey(options.configPath);
+  if (options.transformer) {
+    setSharedTransformerType(stateKey, options.transformer);
+  }
 
   return {
     ...config,
