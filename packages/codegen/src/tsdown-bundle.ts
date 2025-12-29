@@ -1,6 +1,6 @@
 import { dirname, extname } from "node:path";
 import { err, ok, type Result } from "neverthrow";
-import { build, type Options } from "tsdown";
+import type { Options } from "tsdown";
 import type { CodegenError } from "./types";
 
 export type BundleResult = {
@@ -9,6 +9,9 @@ export type BundleResult = {
 
 export const bundleGraphqlSystem = async (sourcePath: string): Promise<Result<BundleResult, CodegenError>> => {
   try {
+    // Dynamic import to support CJS builds (tsdown is ESM-only)
+    const { build } = await import("tsdown");
+
     const sourceDir = dirname(sourcePath);
     const sourceExt = extname(sourcePath);
     const baseName = sourcePath.slice(0, -sourceExt.length);
