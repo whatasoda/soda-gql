@@ -195,6 +195,15 @@ export default defineConfig([
     clean: true,
   },
 
+  // Formatter package (optional CLI dependency)
+  {
+    ...configure("@soda-gql/formatter"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    clean: true,
+  },
+
   // Transformer packages
   {
     ...configure("@soda-gql/babel-transformer"),
