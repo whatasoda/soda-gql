@@ -101,14 +101,12 @@ import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
 export const userQuery = gql.default(({ operation }) =>
-  operation.query(
-    {
-      name: 'UserQuery',
-    },
-    () => ({
+  operation.query({
+    name: 'UserQuery',
+    fields: () => ({
       user: userSlice.build(),
     }),
-  ),
+  }),
 );
 ```
 
