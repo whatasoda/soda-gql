@@ -61,7 +61,17 @@ bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inj
 bun run soda-gql codegen
 ```
 
-The generated runtime module imports your scalar and adapter definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior and adapter configuration stay explicit.
+The generated runtime module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
+
+### Generated Files
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `{schema}.inject.ts` | Custom scalar TypeScript types (hand-edit) | ✅ Commit |
+| `index.ts` | Generated schema types and gql composer | ❌ .gitignore |
+| `index.js`, `index.cjs` | Bundled output (by tsdown) | ❌ .gitignore |
+
+**Note**: The inject file defines TypeScript types for custom scalars (DateTime, JSON, etc.). Scaffold it once with `--emit-inject-template`, then customize as needed. The generated `index.ts` and bundled outputs should be added to `.gitignore`.
 
 ### Basic Example
 

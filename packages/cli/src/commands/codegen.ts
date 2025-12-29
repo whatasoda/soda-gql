@@ -91,8 +91,20 @@ const formatTemplateSuccess = (outPath: string): string => {
   return `Created inject template → ${outPath}`;
 };
 
+const errorHints: Record<string, string> = {
+  SCHEMA_NOT_FOUND: "Verify the schema path in soda-gql.config.ts",
+  SCHEMA_INVALID: "Check your GraphQL schema for syntax errors",
+  INJECT_MODULE_NOT_FOUND: "Run: soda-gql codegen --emit-inject-template <path>",
+  INJECT_MODULE_REQUIRED: "Add inject configuration to your schema in soda-gql.config.ts",
+  INJECT_TEMPLATE_EXISTS: "Delete the existing file to regenerate, or use a different path",
+  EMIT_FAILED: "Check write permissions and that the output directory exists",
+};
+
 const formatCodegenError = (error: CodegenError): string => {
-  return `${error.code}: ${"message" in error ? error.message : "Unknown error"}`;
+  const message = "message" in error ? error.message : "Unknown error";
+  const hint = errorHints[error.code];
+  const hintLine = hint ? `\n  Hint: ${hint}` : "";
+  return `${error.code}: ${message}${hintLine}`;
 };
 
 const CODEGEN_HELP = `Usage: soda-gql codegen [options]
