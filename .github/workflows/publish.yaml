@@ -94,6 +94,9 @@ jobs:
     needs: check-publishable
     if: needs.check-publishable.outputs.can_publish == 'ci'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download release artifact
         env:
