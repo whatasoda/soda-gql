@@ -6,7 +6,7 @@ import type {
   InferInputKind,
 } from "../types/schema";
 import type { InputTypeKind, TypeModifier } from "../types/type-foundation";
-import { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
+import { getNameAt, getValueAt, getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 
 /**
@@ -160,6 +160,8 @@ export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
   getName: typeof getVarRefName;
   getValue: typeof getVarRefValue;
   getInner: typeof getVarRefInner;
+  getNameAt: typeof getNameAt;
+  getValueAt: typeof getValueAt;
 };
 
 /**
@@ -193,6 +195,8 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
   varBuilder.getName = getVarRefName;
   varBuilder.getValue = getVarRefValue;
   varBuilder.getInner = getVarRefInner;
+  varBuilder.getNameAt = getNameAt;
+  varBuilder.getValueAt = getValueAt;
 
   return varBuilder as VarBuilder<TSchema>;
 };
