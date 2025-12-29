@@ -5,7 +5,7 @@ export const userFragment = gql.default(({ fragment }) => fragment.User({ fields
 export const pageQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfilePageQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.users({ id: [$.userId] })(({ f }) => ({ ...f.id() })) }),
   }),
 );

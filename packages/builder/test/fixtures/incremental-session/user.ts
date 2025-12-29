@@ -2,7 +2,7 @@ import { gql } from "../../codegen-fixture/graphql-system";
 
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
@@ -18,7 +18,7 @@ export const userRemote = {
 export const usersQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUsers",
-    variables: { ...$var("id").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("id").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
         id: [$.id],
@@ -32,7 +32,7 @@ export const usersQueryCatalog = {
   byId: gql.default(({ query }, { $var }) =>
     query.operation({
       name: "GetUsersById",
-      variables: { ...$var("id").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+      variables: { ...$var("id").ID("!"), ...$var("categoryId").ID("?") },
       fields: ({ f, $ }) => ({
         ...f.users({
           id: [$.id],

@@ -58,7 +58,7 @@ Operations define complete GraphQL queries, mutations, or subscriptions with fie
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
         ...userFragment.embed(),

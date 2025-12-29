@@ -144,3 +144,23 @@ export type UnionMemberName<TSchema extends AnyGraphqlSchema, TSpecifier extends
   keyof TSchema["union"][TSpecifier["name"]]["types"]
 > &
   string;
+
+/**
+ * Union of all input type names in a schema (scalars, enums, and input objects).
+ */
+export type AllInputTypeNames<TSchema extends AnyGraphqlSchema> =
+  | (keyof TSchema["scalar"] & string)
+  | (keyof TSchema["enum"] & string)
+  | (keyof TSchema["input"] & string);
+
+/**
+ * Infers the input type kind from a type name.
+ */
+export type InferInputKind<TSchema extends AnyGraphqlSchema, TName extends AllInputTypeNames<TSchema>> = TName extends
+  keyof TSchema["scalar"]
+  ? "scalar"
+  : TName extends keyof TSchema["enum"]
+    ? "enum"
+    : TName extends keyof TSchema["input"]
+      ? "input"
+      : never;

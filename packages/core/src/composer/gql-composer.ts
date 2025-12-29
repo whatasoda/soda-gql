@@ -4,7 +4,7 @@ import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
 import { createGqlFragmentComposers } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
-import { createVarBuilder } from "./var-builder";
+import { createVarBuilder, type InputTypeMethods } from "./var-builder";
 
 export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyFragment | AnyOperation>(
   composeElement: (composers: TComposers, helper: THelper) => TResult,
@@ -27,17 +27,18 @@ type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter extends { me
     : DefaultMetadataAdapter
   : DefaultMetadataAdapter;
 
-export type GqlElementComposerOptions<TAdapter extends AnyAdapter = DefaultAdapter> = {
+export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter> = {
   adapter?: TAdapter;
+  inputTypeMethods: InputTypeMethods<TSchema>;
 };
 
 export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter>(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<TAdapter>> = {} as GqlElementComposerOptions<TAdapter>,
+  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>>,
 ) => {
   type THelpers = ExtractHelpers<TAdapter>;
   type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;
-  const { adapter } = options;
+  const { adapter, inputTypeMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter);
@@ -53,7 +54,7 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdap
   };
 
   const helper = {
-    $var: createVarBuilder(schema),
+    $var: createVarBuilder<TSchema>(inputTypeMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };

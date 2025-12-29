@@ -20,7 +20,7 @@ soda-gql operations are TypeScript functions:
 | Aspect | GraphQL | soda-gql |
 |--------|---------|----------|
 | **Definition** | String-based query language | TypeScript builder functions |
-| **Variables** | `$name: Type!` syntax | `$var("name").scalar("Type:!")` with full type safety |
+| **Variables** | `$name: Type!` syntax | `$var("name").Type("!")` with full type safety |
 | **Variable Declaration** | Object-style in query header | Object spread: `{ ...$var(...), ...$var(...) }` |
 | **Field Selections** | Implicit object syntax | Object spread: `({ ...f.id(), ...f.name() })` |
 | **Type Checking** | Requires external codegen step | Compile-time validation |
@@ -60,8 +60,8 @@ import { gql } from "@/graphql-system";
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
-    name: "GetUser",                                          // Operation name
-    variables: { ...$var("userId").scalar("ID:!") },          // Variable declarations
+    name: "GetUser",                                  // Operation name
+    variables: { ...$var("userId").ID("!") },         // Variable declarations
     fields: ({ f, $ }) => ({
       // Field selections
       ...f.user({ id: $.userId })(({ f }) => ({
@@ -121,8 +121,8 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
     variables: {
-      ...$var("userId").scalar("ID:!"),
-      ...$var("includeEmail").scalar("Boolean:?"),
+      ...$var("userId").ID("!"),
+      ...$var("includeEmail").Boolean("?"),
     },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
@@ -179,7 +179,7 @@ Mutations follow the same pattern as queries:
 export const createUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation({
     name: "CreateUser",
-    variables: { ...$var("input").scalar("CreateUserInput:!") },
+    variables: { ...$var("input").CreateUserInput("!") },
     fields: ({ f, $ }) => ({
       ...f.createUser({ input: $.input })(({ f }) => ({
         ...f.id(),

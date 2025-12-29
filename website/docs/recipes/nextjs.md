@@ -125,7 +125,7 @@ import { userFragment } from "@/fragments/user.fragment";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({
         ...userFragment.embed(),

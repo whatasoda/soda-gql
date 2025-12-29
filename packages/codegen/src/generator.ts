@@ -502,6 +502,27 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
+const renderInputTypeMethod = (kind: "scalar" | "enum" | "input", typeName: string): string =>
+  `${typeName}: createVarMethod("${kind}", "${typeName}")`;
+
+const renderInputTypeMethods = (schema: SchemaIndex): string => {
+  const scalarMethods = Array.from(builtinScalarTypes.keys())
+    .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
+    .map((name) => renderInputTypeMethod("scalar", name));
+
+  const enumMethods = collectEnumTypeNames(schema).map((name) => renderInputTypeMethod("enum", name));
+
+  const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod("input", name));
+
+  const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
+    const leftName = left.split(":")[0]!;
+    const rightName = right.split(":")[0]!;
+    return leftName.localeCompare(rightName);
+  });
+
+  return renderPropertyLines({ entries: allMethods, indentSize: 2 });
+};
+
 export type GeneratedModule = {
   readonly code: string;
   readonly stats: {
@@ -540,6 +561,7 @@ type MultiRuntimeTemplateOptions = {
       readonly inputBlock: string;
       readonly objectBlock: string;
       readonly unionBlock: string;
+      readonly inputTypeMethodsBlock: string;
     }
   >;
   readonly injection: RuntimeTemplateInjection;
@@ -607,6 +629,8 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
       typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
 
+    const inputTypeMethodsVar = `inputTypeMethods_${name}`;
+
     schemaBlocks.push(`
 const ${schemaVar} = {
   label: "${name}" as const,
@@ -622,14 +646,16 @@ const ${schemaVar} = {
   union: ${config.unionBlock},
 } satisfies AnyGraphqlSchema;
 
+const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
+
 ${typeExports.join("\n")}`);
 
-    // Build gql entry with options if needed
+    // Build gql entry with options - inputTypeMethods is always required
     if (adapterVar) {
       const typeParams = `<Schema_${name}, Adapter_${name}>`;
-      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar} })`);
+      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`);
     } else {
-      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar})`);
+      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`);
     }
   }
 
@@ -637,6 +663,7 @@ ${typeExports.join("\n")}`);
 import {
   type AnyGraphqlSchema,
   createGqlElementComposer,
+  createVarMethod,
   define,
   defineOperationRoots,
   unsafeInputType,
@@ -704,6 +731,8 @@ export const generateMultiSchemaModule = (
       .filter((definition) => definition.length > 0);
     const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
 
+    const inputTypeMethodsBlock = renderInputTypeMethods(schema);
+
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";
     const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
@@ -717,6 +746,7 @@ export const generateMultiSchemaModule = (
       inputBlock,
       objectBlock,
       unionBlock,
+      inputTypeMethodsBlock,
     };
 
     // Accumulate stats

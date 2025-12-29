@@ -10,7 +10,7 @@ type ProfileQueryVariables = {
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfilePageQuery",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
         id: [$.userId],

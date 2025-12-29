@@ -1,41 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { createFieldFactories, createVarBuilder } from "../../src/composer";
+import { createFieldFactories } from "../../src/composer";
 import { define, defineScalar, unsafeOutputType } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
 describe("Schema Edge Cases", () => {
-  describe("Non-existent field arguments", () => {
-    it("should throw when requesting non-existent argument", () => {
-      const schema = {
-        label: "test" as const,
-        operations: {
-          query: "Query" as const,
-          mutation: null,
-          subscription: null,
-        },
-        scalar: {
-          String: defineScalar<"String", string, string>("String").String,
-        },
-        enum: {},
-        input: {},
-        object: {
-          Query: define("Query").object({
-            user: unsafeOutputType.scalar("String:!", { arguments: {} }),
-          }),
-        },
-        union: {},
-      } satisfies AnyGraphqlSchema;
-
-      const $var = createVarBuilder(schema);
-
-      // Trying to get an argument that doesn't exist
-      expect(() => {
-        // @ts-expect-error - Testing runtime error for non-existent argument
-        $var("userVar").byField("Query", "user", "nonExistentArg");
-      }).toThrow("Argument nonExistentArg not found in field user of type Query");
-    });
-  });
-
   describe("Missing object types", () => {
     it("should handle missing object type in schema", () => {
       const schema = {

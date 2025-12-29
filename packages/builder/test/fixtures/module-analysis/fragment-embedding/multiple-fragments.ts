@@ -20,7 +20,7 @@ export const simplePostFragment = gql.default(({ fragment }) =>
 export const getDashboardQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetDashboard",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("postLimit").scalar("Int:?") },
+    variables: { ...$var("userId").ID("!"), ...$var("postLimit").Int("?") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({ ...simpleUserFragment.embed() })),
       ...f.posts({ limit: $.postLimit })(({ f }) => ({ ...simplePostFragment.embed() })),

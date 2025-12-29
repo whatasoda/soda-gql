@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
+import { createVarMethod } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { FragmentMetaInfo, MetadataAdapter, OperationMetadata } from "../../src/types/metadata";
@@ -54,10 +55,17 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const inputTypeMethods = {
+  Boolean: createVarMethod("scalar", "Boolean"),
+  ID: createVarMethod("scalar", "ID"),
+  Int: createVarMethod("scalar", "Int"),
+  String: createVarMethod("scalar", "String"),
+};
+
 describe("metadata adapter", () => {
   describe("default adapter", () => {
     it("aggregates fragment metadata as readonly array", () => {
-      const gql = createGqlElementComposer<Schema>(schema);
+      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       // Create a fragment with metadata
       const userFragment = gql(({ fragment }) =>
@@ -73,7 +81,7 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
@@ -86,12 +94,12 @@ describe("metadata adapter", () => {
     });
 
     it("works with operations without embedded fragments", () => {
-      const gql = createGqlElementComposer<Schema>(schema);
+      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
@@ -147,6 +155,7 @@ describe("metadata adapter", () => {
     it("supports custom fragment metadata types", () => {
       const gql = createGqlElementComposer<Schema, typeof headerMergingAdapter>(schema, {
         adapter: headerMergingAdapter,
+        inputTypeMethods,
       });
 
       const userFragment = gql(({ fragment }) =>
@@ -161,7 +170,7 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: ({ fragmentMetadata }) => ({
             mergedHeaders: fragmentMetadata?.allHeaders,
           }),
@@ -190,6 +199,7 @@ describe("metadata adapter", () => {
 
       const gql = createGqlElementComposer<Schema, typeof capturingAdapter>(schema, {
         adapter: capturingAdapter,
+        inputTypeMethods,
       });
 
       const userFragment = gql(({ fragment }) =>
@@ -204,7 +214,7 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({}),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
@@ -220,6 +230,7 @@ describe("metadata adapter", () => {
     it("provides aggregated metadata to operation callback", () => {
       const gql = createGqlElementComposer<Schema, typeof headerMergingAdapter>(schema, {
         adapter: headerMergingAdapter,
+        inputTypeMethods,
       });
 
       const userFragment = gql(({ fragment }) =>
@@ -243,7 +254,7 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUserWithPosts",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: ({ fragmentMetadata }) => ({
             allHeaders: fragmentMetadata?.allHeaders,
           }),
@@ -285,6 +296,7 @@ describe("metadata adapter", () => {
 
       const gql = createGqlElementComposer<Schema, typeof capturingAdapter>(schema, {
         adapter: capturingAdapter,
+        inputTypeMethods,
       });
 
       // Fragment without metadata
@@ -293,7 +305,7 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({}),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
@@ -309,13 +321,13 @@ describe("metadata adapter", () => {
 
   describe("operation metadata inference", () => {
     it("infers operation metadata type from callback return", () => {
-      const gql = createGqlElementComposer<Schema>(schema);
+      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       // Simple return type
       const operation1 = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({ simpleValue: 42 }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
@@ -328,7 +340,7 @@ describe("metadata adapter", () => {
       const operation2 = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUsers",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({
             nested: {
               deep: {
@@ -348,13 +360,13 @@ describe("metadata adapter", () => {
     });
 
     it("allows different metadata types per operation", () => {
-      const gql = createGqlElementComposer<Schema>(schema);
+      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       // Operation with string metadata
       const op1 = gql(({ query }, { $var }) =>
         query.operation({
           name: "Op1",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({ type: "string" as const, value: "hello" }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
@@ -364,7 +376,7 @@ describe("metadata adapter", () => {
       const op2 = gql(({ query }, { $var }) =>
         query.operation({
           name: "Op2",
-          variables: { ...$var("id").scalar("ID:!") },
+          variables: { ...$var("id").ID("!") },
           metadata: () => ({ type: "number" as const, value: 123 }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),

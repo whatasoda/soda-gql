@@ -12,7 +12,7 @@ import { userCardFragment, userCardProjection } from "../components/UserCard/fra
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
       postList: postListFragment.embed({ userId: $.userId }),

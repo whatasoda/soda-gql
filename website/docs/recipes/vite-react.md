@@ -102,7 +102,7 @@ import { gql } from "@/graphql-system";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({
         ...f.id(),
@@ -176,7 +176,7 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("userId").scalar("ID:!") },
+      variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.userId })(({ f }) => ({
           ...f.id(),
@@ -221,7 +221,7 @@ import { postListFragment, PostList } from "@/components/PostList";
 const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
       postList: postListFragment.embed({ userId: $.userId }),

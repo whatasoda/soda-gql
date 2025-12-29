@@ -18,7 +18,7 @@ soda-gql uses a TypeScript-based approach:
 
 | Aspect | GraphQL | soda-gql |
 |--------|---------|----------|
-| **Syntax** | `$name: Type!` | `$var("name").scalar("Type:!")` |
+| **Syntax** | `$name: Type!` | `$var("name").Type("!")` |
 | **Required** | `Type!` (suffix) | `"Type:!"` (suffix after colon) |
 | **Optional** | `Type` (no suffix) | `"Type:?"` (explicit optional) |
 | **Lists** | `[Type!]!` | `"Type:![]!"` |
@@ -38,9 +38,9 @@ gql.default(({ query }, { $var }) =>
   query.operation({
     name: "SearchPosts",
     variables: {
-      ...$var("query").scalar("String:!"),      // Required string
-      ...$var("limit").scalar("Int:?"),         // Optional int
-      ...$var("tags").scalar("String:![]?"),    // Optional list of required strings
+      ...$var("query").String("!"),      // Required string
+      ...$var("limit").Int("?"),         // Optional int
+      ...$var("tags").String("![]?"),    // Optional list of required strings
     },
     fields: ({ f, $ }) => ({ ... }),
   }),
@@ -88,9 +88,9 @@ For lists of lists, chain the brackets:
 Use your schema's input types and custom scalars:
 
 ```typescript
-$var("input").scalar("CreateUserInput:!")    // Custom input type
-$var("cursor").scalar("Cursor:?")            // Custom scalar
-$var("filters").scalar("FilterInput:![]?")   // List of custom input
+$var("input").CreateUserInput("!")    // Custom input type
+$var("cursor").Cursor("?")            // Custom scalar
+$var("filters").FilterInput("![]?")   // List of custom input
 ```
 
 ## Using Variables
@@ -114,7 +114,7 @@ Pass variables to embedded fragments:
 // Fragment with its own variable
 const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query({
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
         ...f.id(),
@@ -129,7 +129,7 @@ const userFragment = gql.default(({ fragment }, { $var }) =>
 const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => ({
       // Pass operation variable to fragment variable
       ...userFragment.embed({ userId: $.userId }),
@@ -174,8 +174,8 @@ const query = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Search",
     variables: {
-      ...$var("query").scalar("String:!"),
-      ...$var("limit").scalar("Int:?"),
+      ...$var("query").String("!"),
+      ...$var("limit").Int("?"),
     },
     fields: ({ f, $ }) => ({ ... }),
   }),
