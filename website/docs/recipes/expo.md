@@ -225,7 +225,7 @@ async function fetchUser(id: string) {
   });
 
   const json = await response.json();
-  return getUserQuery.parse(json);
+  return json;
 }
 
 export function useUser(id: string) {

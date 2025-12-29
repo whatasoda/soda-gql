@@ -24,7 +24,7 @@ soda-gql operations are TypeScript functions:
 | **Variable Declaration** | Object-style in query header | Array-based: `[$var(...), $var(...)]` |
 | **Field Selections** | Implicit object syntax | Array-based: `[f.id(), f.name()]` |
 | **Type Checking** | Requires external codegen step | Compile-time validation |
-| **Output** | Runtime parsing needed | `.document` for query, `.parse()` for results |
+| **Output** | Runtime parsing needed | `.document` for query |
 
 :::info Array-Based API
 soda-gql uses arrays for both variable declarations and field selections. This design enables better type inference and explicit ordering.
@@ -169,21 +169,6 @@ console.log(getUserQuery.document);
 // }
 ```
 
-### .parse()
-
-Type-safe response parsing that validates and transforms the result:
-
-```typescript
-const response = await graphqlClient({
-  document: getUserQuery.document,
-  variables: { userId: "123" },
-});
-
-// Parse with full type inference
-const data = getUserQuery.parse(response);
-// data.user.id, data.user.name, etc. are fully typed
-```
-
 ## Type Inference
 
 Extract TypeScript types from operations:
@@ -227,8 +212,6 @@ const result = await graphqlClient({
     input: { name: "Alice", email: "alice@example.com" },
   },
 });
-
-const data = createUserMutation.parse(result);
 ```
 
 ## Next Steps
