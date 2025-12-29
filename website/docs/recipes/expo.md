@@ -102,25 +102,18 @@ my-expo-app/
 import { gql } from "@/graphql-system";
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [
-        //
-        $var("id").scalar("ID:!"),
-      ],
-    },
-    ({ f, $ }) => [
-      //
-      f.user({ id: $.id })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-        f.email(),
-        f.avatarUrl(),
-      ]),
-    ],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+        ...f.avatarUrl(),
+      })),
+    }),
+  }),
 );
 ```
 

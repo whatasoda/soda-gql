@@ -100,24 +100,17 @@ my-vite-app/
 import { gql } from "@/graphql-system";
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [
-        //
-        $var("id").scalar("ID:!"),
-      ],
-    },
-    ({ f, $ }) => [
-      //
-      f.user({ id: $.id })(({ f }) => [
-        //
-        f.id(),
-        f.name(),
-        f.email(),
-      ]),
-    ],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").scalar("ID:!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+      })),
+    }),
+  }),
 );
 ```
 
@@ -182,23 +175,16 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
-    fragment.Query(
-      {
-        variables: [
-          //
-          $var("userId").scalar("ID:!"),
-        ],
-      },
-      ({ f, $ }) => [
-        //
-        f.user({ id: $.userId })(({ f }) => [
-          //
-          f.id(),
-          f.name(),
-          f.avatarUrl(),
-        ]),
-      ],
-    ),
+    fragment.Query({
+      variables: { ...$var("userId").scalar("ID:!") },
+      fields: ({ f, $ }) => ({
+        ...f.user({ id: $.userId })(({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+          ...f.avatarUrl(),
+        })),
+      }),
+    }),
   )
   .attach(
     createProjectionAttachment({
@@ -233,22 +219,16 @@ import { userCardFragment, UserCard } from "@/components/UserCard";
 import { postListFragment, PostList } from "@/components/PostList";
 
 const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
-  query.operation(
-    {
-      name: "UserPage",
-      variables: [
-        //
-        $var("userId").scalar("ID:!"),
-      ],
-    },
-    ({ $ }) => [
-      //
-      $colocate({
+  query.operation({
+    name: "UserPage",
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ $ }) => ({
+      ...$colocate({
         userCard: userCardFragment.embed({ userId: $.userId }),
         postList: postListFragment.embed({ userId: $.userId }),
       }),
-    ],
-  ),
+    }),
+  }),
 );
 
 const parseResult = createExecutionResultParser({

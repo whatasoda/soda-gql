@@ -35,12 +35,12 @@ export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersec
  * // In operation definition
  * query.operation({
  *   name: "GetData",
- *   fields: ({ f, $ }) => [
- *     $colocate({
+ *   fields: ({ f, $ }) => ({
+ *     ...$colocate({
  *       userCard: userCardFragment.embed({ userId: $.userId }),
  *       posts: postsFragment.embed({ userId: $.userId }),
  *     }),
- *   ],
+ *   }),
  * });
  *
  * // In parser definition (same labels)
