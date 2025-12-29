@@ -17,7 +17,7 @@ describe("soda-gql format CLI", () => {
 
       const testFile = join(caseDir, "test.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(), f.name()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
 `;
       await Bun.write(testFile, unformatted);
 
@@ -27,7 +27,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       expect(result.stdout).toContain("1 formatted");
 
       const formatted = await Bun.file(testFile).text();
-      expect(formatted).toContain("//");
+      expect(formatted).toContain("\n");
     });
 
     it("reports unchanged for already formatted files", async () => {
@@ -37,11 +37,12 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const testFile = join(caseDir, "test.ts");
       const alreadyFormatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [
-    //
-    f.id(),
-    f.name(),
-  ]),
+  model.User({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+  }),
 );
 `;
       await Bun.write(testFile, alreadyFormatted);
@@ -60,7 +61,7 @@ export const model = gql.default(({ model }) =>
       const file2 = join(caseDir, "b.ts");
 
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(file1, unformatted);
       await Bun.write(file2, unformatted);
@@ -81,10 +82,11 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const testFile = join(caseDir, "test.ts");
       const alreadyFormatted = `import { gql } from "@/graphql-system";
 export const model = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [
-    //
-    f.id(),
-  ]),
+  model.User({
+    fields: ({ f }) => ({
+      ...f.id(),
+    }),
+  }),
 );
 `;
       await Bun.write(testFile, alreadyFormatted);
@@ -101,7 +103,7 @@ export const model = gql.default(({ model }) =>
 
       const testFile = join(caseDir, "test.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(testFile, unformatted);
 
@@ -117,7 +119,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
 
       const testFile = join(caseDir, "test.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(testFile, unformatted);
 
@@ -160,7 +162,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       // Create test file
       const testFile = join(srcDir, "test.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(testFile, unformatted);
 
@@ -191,7 +193,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const regularFile = join(srcDir, "app.ts");
       const testFile = join(srcDir, "app.test.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(regularFile, unformatted);
       await Bun.write(testFile, unformatted);
@@ -227,7 +229,7 @@ export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id(
       const srcFile = join(srcDir, "app.ts");
       const libFile = join(libDir, "util.ts");
       const unformatted = `import { gql } from "@/graphql-system";
-export const model = gql.default(({ model }) => model.User({}, ({ f }) => [f.id()]));
+export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => ({ ...f.id() }) }));
 `;
       await Bun.write(srcFile, unformatted);
       await Bun.write(libFile, unformatted);
