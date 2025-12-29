@@ -61,7 +61,7 @@ bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inj
 bun run soda-gql codegen
 ```
 
-The generated runtime module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
+The generated module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
 
 ### Generated Files
 
