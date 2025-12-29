@@ -196,7 +196,7 @@ function generateSlices(config: FixtureConfig): string {
 export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: { ...$var("id").scalar("ID:!") },
+      variables: { ...$var("id").ID("!") },
     },
     ({ f, $ }) => ({
       ...f.${typeName.toLowerCase()}({ id: $.id })(({ f }) => ({
@@ -218,7 +218,7 @@ export const slice${i} = gql.default(({ query }, { $var }) =>
 export const slice${i} = gql.default(({ query }, { $var }) =>
   query.slice(
     {
-      variables: { ...$var("limit").scalar("Int:?"), ...$var("offset").scalar("Int:?") },
+      variables: { ...$var("limit").Int("?"), ...$var("offset").Int("?") },
     },
     ({ f, $ }) => ({
       ...f.${typeName.toLowerCase()}List({ limit: $.limit, offset: $.offset })(({ f }) => ({
@@ -258,11 +258,11 @@ function generateOperations(config: FixtureConfig): string {
 
       if (isListSlice) {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ limit: $.limit${j}, offset: $.offset${j} }),`);
-        sliceVars.push(`...$var("limit${j}").scalar("Int:?")`);
-        sliceVars.push(`...$var("offset${j}").scalar("Int:?")`);
+        sliceVars.push(`...$var("limit${j}").Int("?")`);
+        sliceVars.push(`...$var("offset${j}").Int("?")`);
       } else {
         sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ id: $.id${j} }),`);
-        sliceVars.push(`...$var("id${j}").scalar("ID:!")`);
+        sliceVars.push(`...$var("id${j}").ID("!")`);
       }
     }
 

@@ -2,7 +2,7 @@ import { gql } from "@/graphql-system";
 
 // Config objects should NOT be touched (variables object)
 export const model = gql.default(({ model }, { $var }) =>
-  model.User({ variables: { ...$var("id").scalar("ID:!") }, fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+  model.User({ variables: { ...$var("id").ID("!") }, fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
 );
 
 // Regular arrays outside gql.default should not be touched
