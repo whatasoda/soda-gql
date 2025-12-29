@@ -13,11 +13,9 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").scalar("ID:!") },
-    fields: ({ $ }) => ({
-      ...$colocate({
-        userCard: userCardFragment.embed({ userId: $.userId }),
-        postList: postListFragment.embed({ userId: $.userId }),
-      }),
+    fields: ({ $ }) => $colocate({
+      userCard: userCardFragment.embed({ userId: $.userId }),
+      postList: postListFragment.embed({ userId: $.userId }),
     }),
   }),
 );
