@@ -61,28 +61,24 @@ describe("metadata adapter", () => {
 
       // Create a fragment with metadata
       const userFragment = gql(({ fragment }) =>
-        fragment.User(
-          {
-            metadata: () => ({
-              headers: { "X-User-Fragment": "true" },
-            }),
-          },
-          ({ f }) => [f.id(), f.name()],
-        ),
+        fragment.User({
+          metadata: () => ({
+            headers: { "X-User-Fragment": "true" },
+          }),
+          fields: ({ f }) => [f.id(), f.name()],
+        }),
       );
 
       // Create operation that embeds the fragment
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: ({ fragmentMetadata }) => ({
-              custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: ({ fragmentMetadata }) => ({
+            custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+        }),
       );
 
       const meta = operation.metadata as OperationMetadata;
@@ -93,16 +89,14 @@ describe("metadata adapter", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: ({ fragmentMetadata }) => ({
-              custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: ({ fragmentMetadata }) => ({
+            custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
+        }),
       );
 
       const meta = operation.metadata as OperationMetadata;
@@ -156,27 +150,23 @@ describe("metadata adapter", () => {
       });
 
       const userFragment = gql(({ fragment }) =>
-        fragment.User(
-          {
-            metadata: () => ({
-              headers: { "X-User-Fragment": "user-value" },
-            }),
-          },
-          ({ f }) => [f.id(), f.name()],
-        ),
+        fragment.User({
+          metadata: () => ({
+            headers: { "X-User-Fragment": "user-value" },
+          }),
+          fields: ({ f }) => [f.id(), f.name()],
+        }),
       );
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: ({ fragmentMetadata }) => ({
-              mergedHeaders: fragmentMetadata?.allHeaders,
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: ({ fragmentMetadata }) => ({
+            mergedHeaders: fragmentMetadata?.allHeaders,
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+        }),
       );
 
       expect(operation.metadata).toEqual({
@@ -203,25 +193,21 @@ describe("metadata adapter", () => {
       });
 
       const userFragment = gql(({ fragment }) =>
-        fragment.User(
-          {
-            metadata: () => ({
-              headers: { "X-Test": "value" },
-            }),
-          },
-          ({ f }) => [f.id()],
-        ),
+        fragment.User({
+          metadata: () => ({
+            headers: { "X-Test": "value" },
+          }),
+          fields: ({ f }) => [f.id()],
+        }),
       );
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({}),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({}),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+        }),
       );
 
       // Trigger evaluation by accessing metadata
@@ -237,41 +223,35 @@ describe("metadata adapter", () => {
       });
 
       const userFragment = gql(({ fragment }) =>
-        fragment.User(
-          {
-            metadata: () => ({
-              headers: { "X-User": "user" },
-            }),
-          },
-          ({ f }) => [f.id()],
-        ),
+        fragment.User({
+          metadata: () => ({
+            headers: { "X-User": "user" },
+          }),
+          fields: ({ f }) => [f.id()],
+        }),
       );
 
       const postFragment = gql(({ fragment }) =>
-        fragment.Post(
-          {
-            metadata: () => ({
-              headers: { "X-Post": "post" },
-            }),
-          },
-          ({ f }) => [f.id(), f.title()],
-        ),
+        fragment.Post({
+          metadata: () => ({
+            headers: { "X-Post": "post" },
+          }),
+          fields: ({ f }) => [f.id(), f.title()],
+        }),
       );
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUserWithPosts",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: ({ fragmentMetadata }) => ({
-              allHeaders: fragmentMetadata?.allHeaders,
-            }),
-          },
-          ({ f, $ }) => [
+        query.operation({
+          name: "GetUserWithPosts",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: ({ fragmentMetadata }) => ({
+            allHeaders: fragmentMetadata?.allHeaders,
+          }),
+          fields: ({ f, $ }) => [
             f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.posts()(() => [postFragment.embed()])]),
             f.post({ id: $.id })(() => [userFragment.embed()]),
           ],
-        ),
+        }),
       );
 
       // Both fragment headers should be merged
@@ -304,17 +284,15 @@ describe("metadata adapter", () => {
       });
 
       // Fragment without metadata
-      const userFragment = gql(({ fragment }) => fragment.User({}, ({ f }) => [f.id()]));
+      const userFragment = gql(({ fragment }) => fragment.User({ fields: ({ f }) => [f.id()] }));
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({}),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({}),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+        }),
       );
 
       // Trigger evaluation by accessing metadata
@@ -331,14 +309,12 @@ describe("metadata adapter", () => {
 
       // Simple return type
       const operation1 = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({ simpleValue: 42 }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({ simpleValue: 42 }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+        }),
       );
 
       // Type is inferred - metadata has simpleValue
@@ -346,21 +322,19 @@ describe("metadata adapter", () => {
 
       // Complex nested return type
       const operation2 = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUsers",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({
-              nested: {
-                deep: {
-                  value: "complex",
-                },
+        query.operation({
+          name: "GetUsers",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({
+            nested: {
+              deep: {
+                value: "complex",
               },
-              array: [1, 2, 3],
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
-        ),
+            },
+            array: [1, 2, 3],
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(operation2.metadata).toEqual({
@@ -374,26 +348,22 @@ describe("metadata adapter", () => {
 
       // Operation with string metadata
       const op1 = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "Op1",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({ type: "string" as const, value: "hello" }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "Op1",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({ type: "string" as const, value: "hello" }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+        }),
       );
 
       // Operation with number metadata
       const op2 = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "Op2",
-            variables: [$var("id").scalar("ID:!")],
-            metadata: () => ({ type: "number" as const, value: 123 }),
-          },
-          ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "Op2",
+          variables: [$var("id").scalar("ID:!")],
+          metadata: () => ({ type: "number" as const, value: 123 }),
+          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(op1.metadata).toEqual({ type: "string", value: "hello" });
