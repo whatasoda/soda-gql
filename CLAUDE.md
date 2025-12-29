@@ -78,6 +78,8 @@ bun typecheck
 | [Code Conventions](./memory/code-conventions.md) | Detailed coding standards with examples |
 | [Builder Flow](./docs/guides/builder-flow.md) | Understanding builder processing flow |
 | [Monorepo Infrastructure](./docs/guides/monorepo-infrastructure.md) | Package structure, build system, testing infrastructure |
+| [Plugin Selection](./docs/guides/plugin-selection.md) | Choosing the right build plugin for your framework |
+| [Troubleshooting](./docs/troubleshooting.md) | Common issues and solutions |
 | [Performance Profiling](./docs/guides/performance-profiling.md) | Performance measurement and optimization |
 | [Performance Reference](./docs/reference/perf-measures.md) | Benchmark command quick reference |
 
