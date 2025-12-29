@@ -50,6 +50,26 @@ export const isVarRef = (value: unknown): value is AnyVarRef => {
   return typeof value === "object" && value !== null && value instanceof VarRef;
 };
 
+/**
+ * Recursively checks if a NestedValue contains any VarRef.
+ * Used by getVarRefValue to determine if it's safe to return as ConstValue.
+ */
+export const hasVarRefInside = (value: NestedValue): boolean => {
+  if (isVarRef(value)) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(hasVarRefInside);
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return Object.values(value).some(hasVarRefInside);
+  }
+
+  return false;
+};
+
 export const createVarRefFromVariable = <TProfile extends TypeProfile.WithMeta>(name: string) => {
   return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "variable", name });
 };
@@ -76,12 +96,16 @@ export const getVarRefName = (varRef: AnyVarRef): string => {
 
 /**
  * Get the const value from a VarRef.
- * Throws if the VarRef contains a variable reference instead of a nested-value.
+ * Throws if the VarRef contains a variable reference instead of a nested-value,
+ * or if the nested-value contains any VarRef inside.
  */
 export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
   const inner = VarRef.getInner(varRef);
   if (inner.type !== "nested-value") {
     throw new Error("Expected nested-value, got variable reference");
+  }
+  if (hasVarRefInside(inner.value)) {
+    throw new Error("Cannot get const value: nested-value contains VarRef");
   }
   return inner.value as ConstValue;
 };
