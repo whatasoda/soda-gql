@@ -34,13 +34,9 @@ export declare namespace TypeProfile {
   // Helper type to build object type with correct optional/required fields
   type ObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
     {
-      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
-        ? Type<TProfileObject[K]>
-        : never;
+      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta ? Type<TProfileObject[K]> : never;
     } & {
-      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
-        ? Type<TProfileObject[K]>
-        : never;
+      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta ? Type<TProfileObject[K]> : never;
     }
   >;
 
