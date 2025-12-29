@@ -8,18 +8,6 @@ import {
 import type { AnyGraphqlSchema, InferInputProfile } from "../types/schema";
 import type { AnyVarRef, ConstValue, InputTypeSpecifiers } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
-import type { UnionToIntersection } from "../utils/type-utils";
-
-export const mergeVarDefinitions = <TVarDefinitions extends InputTypeSpecifiers[]>(definitions: TVarDefinitions) =>
-  Object.assign({}, ...definitions) as MergeVarDefinitions<TVarDefinitions>;
-
-export type MergeVarDefinitions<TVarDefinitions extends InputTypeSpecifiers[]> = UnionToIntersection<
-  TVarDefinitions[number]
-> extends infer TDefinitions
-  ? {
-      readonly [K in keyof TDefinitions]: TDefinitions[K];
-    }
-  : never;
 
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
   definitions: TVariableDefinitions,

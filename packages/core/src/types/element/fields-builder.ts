@@ -1,7 +1,6 @@
 /** Field builder factories shared by model and slice helpers. */
 
 import type { IfEmpty } from "../../utils/empty-object";
-import type { UnionToIntersection } from "../../utils/type-utils";
 import type {
   AbstractFieldSelection,
   AnyAssignableInput,
@@ -23,19 +22,6 @@ import type {
   OutputUnionSpecifier,
 } from "../type-foundation";
 
-export const mergeFields = <TFieldEntries extends AnyFields[]>(fields: TFieldEntries) =>
-  Object.assign({}, ...fields) as MergeFields<TFieldEntries>;
-
-export type MergeFields<TFieldEntries extends AnyFields[]> = UnionToIntersection<
-  TFieldEntries[number]
-> extends infer TFieldsIntersection
-  ? {
-      [TFieldName in keyof TFieldsIntersection]: TFieldsIntersection[TFieldName] extends AnyFieldSelection
-        ? TFieldsIntersection[TFieldName]
-        : never;
-    } & {}
-  : never;
-
 /**
  * Builder signature exposed to userland `model` and `slice` helpers. The
  * tooling `f`/`fields`/`_` aliases provide ergonomic access to GraphQL fields
@@ -45,7 +31,7 @@ export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TVariableDefinitions extends InputTypeSpecifiers,
-  TFields extends AnyFields[],
+  TFields extends AnyFields,
 > = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 
 export type FieldsBuilderTools<
@@ -61,7 +47,7 @@ export type FieldsBuilderTools<
 export type NestedObjectFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TFields extends AnyNestedObject[],
+  TFields extends AnyNestedObject,
 > = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchema, TTypeName>>) => TFields;
 
 export type NestedObjectFieldsBuilderTools<
@@ -79,7 +65,7 @@ export type NestedUnionFieldsBuilder<
   [TTypename in keyof TUnionFields & TMemberName]?: NestedObjectFieldsBuilder<
     TSchema,
     TTypename,
-    NonNullable<TUnionFields[TTypename]>[]
+    NonNullable<TUnionFields[TTypename]>
   >;
 };
 
@@ -127,7 +113,7 @@ export type FieldSelectionFactoryObjectReturn<
   TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection & { type: OutputObjectSpecifier },
   TAlias extends string | null,
-> = <TNested extends AnyNestedObject[]>(
+> = <TNested extends AnyNestedObject>(
   nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
@@ -136,7 +122,7 @@ export type FieldSelectionFactoryObjectReturn<
     TSelection["type"],
     TSelection["args"],
     TSelection["directives"],
-    { object: MergeFields<TNested> }
+    { object: TNested }
   >;
 };
 

@@ -1,4 +1,4 @@
-import { type FieldsBuilder, type MergeFields, mergeFields, Operation } from "../types/element";
+import { type FieldsBuilder, Operation } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
@@ -14,7 +14,7 @@ import type { InputTypeSpecifiers } from "../types/type-foundation";
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
-import { createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
+import { createVarRefs } from "./input";
 
 export const createOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
@@ -38,35 +38,35 @@ export const createOperationComposerFactory = <
 
     return <
       TOperationName extends string,
-      TFields extends AnyFields[],
-      TVarDefinitions extends InputTypeSpecifiers[] = [{}],
+      TFields extends AnyFields,
+      TVarDefinitions extends InputTypeSpecifiers = {},
       TOperationMetadata = unknown,
     >(options: {
       name: TOperationName;
       variables?: TVarDefinitions;
       metadata?: MetadataBuilder<
-        ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+        ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>,
         TOperationMetadata,
         TAggregatedFragmentMetadata,
         TSchemaLevel
       >;
-      fields: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>;
+      fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
     }) => {
       return Operation.create<
         TSchema,
         TOperationType,
         TOperationName,
-        MergeVarDefinitions<TVarDefinitions>,
-        MergeFields<TFields>
+        TVarDefinitions,
+        TFields
       >(() => {
         const { name: operationName } = options;
-        const variables = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
-        const $ = createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>(variables);
+        const variables = (options.variables ?? {}) as TVarDefinitions;
+        const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
         const f = createFieldFactories(schema, operationTypeName);
 
         // Collect fragment usages during field building
         const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() =>
-          mergeFields(options.fields({ f, $ })),
+          options.fields({ f, $ }),
         );
 
         const document = buildDocument({
@@ -79,7 +79,7 @@ export const createOperationComposerFactory = <
         const createDefinition = (metadata: TOperationMetadata | undefined) => ({
           operationType,
           operationName,
-          variableNames: Object.keys(variables) as (keyof MergeVarDefinitions<TVarDefinitions> & string)[],
+          variableNames: Object.keys(variables) as (keyof TVarDefinitions & string)[],
           documentSource: () => fields,
           document,
           metadata,

@@ -1,4 +1,4 @@
-import { type FieldsBuilder, Fragment, type MergeFields, mergeFields } from "../types/element";
+import { type FieldsBuilder, Fragment } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
@@ -7,7 +7,7 @@ import { mapValues } from "../utils/map-values";
 import { getCurrentFieldPath } from "./field-path-context";
 import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
-import { createVarAssignments, type createVarRefs, type MergeVarDefinitions, mergeVarDefinitions } from "./input";
+import { createVarAssignments, type createVarRefs } from "./input";
 
 export const createGqlFragmentComposers = <
   TSchema extends AnyGraphqlSchema,
@@ -19,40 +19,40 @@ export const createGqlFragmentComposers = <
   type TFragmentMetadata = ExtractAdapterTypes<TAdapter>["fragmentMetadata"];
 
   type FragmentBuilder<TTypeName extends keyof TSchema["object"] & string> = <
-    TFieldEntries extends AnyFields[],
-    TVarDefinitions extends InputTypeSpecifiers[] = [{}],
+    TFields extends AnyFields,
+    TVarDefinitions extends InputTypeSpecifiers = {},
   >(options: {
     variables?: TVarDefinitions;
     metadata?: FragmentMetadataBuilder<
-      ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+      ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>,
       TFragmentMetadata
     >;
-    fields: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>;
-  }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>>;
+    fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
+  }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
 
   const createFragmentComposer = <TTypeName extends keyof TSchema["object"] & string>(
     typename: TTypeName,
   ): FragmentBuilder<TTypeName> => {
-    return <TFieldEntries extends AnyFields[], TVarDefinitions extends InputTypeSpecifiers[] = [{}]>(options: {
+    return <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
       variables?: TVarDefinitions;
-      metadata?: FragmentMetadataBuilder<AssigningInput<TSchema, MergeVarDefinitions<TVarDefinitions>>, TFragmentMetadata>;
-      fields: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFieldEntries>;
+      metadata?: FragmentMetadataBuilder<AssigningInput<TSchema, TVarDefinitions>, TFragmentMetadata>;
+      fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
     }) => {
-      const varDefinitions = mergeVarDefinitions((options.variables ?? []) as TVarDefinitions);
+      const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
       const { metadata, fields } = options;
 
-      return Fragment.create<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, MergeFields<TFieldEntries>>(() => ({
+      return Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>(() => ({
         typename,
         embed: (variables) => {
           const f = createFieldFactories(schema, typename);
-          const $ = createVarAssignments<TSchema, MergeVarDefinitions<TVarDefinitions>>(varDefinitions, variables);
+          const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);
 
           recordFragmentUsage({
             metadataBuilder: metadata ? () => metadata({ $ }) : null,
             path: getCurrentFieldPath(),
           });
 
-          return mergeFields(fields({ f, $ }));
+          return fields({ f, $ });
         },
       }));
     };

@@ -62,13 +62,13 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("userId").scalar("ID:!")],
+          variables: { ...$var("userId").scalar("ID:!") },
           metadata: ({ $ }) => ({
             custom: {
               trackedVariables: [$var.getInner($.userId)],
             },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -83,13 +83,13 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("userId").scalar("ID:!")],
+          variables: { ...$var("userId").scalar("ID:!") },
           metadata: ({ $ }) => ({
             custom: {
               variableNames: [$var.getName($.userId)],
             },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -104,7 +104,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ mutation }, { $var }) =>
         mutation.operation({
           name: "UpdateUser",
-          variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
+          variables: { ...$var("userId").scalar("ID:!"), ...$var("userName").scalar("String:!") },
           metadata: ({ $ }) => ({
             custom: {
               trackedVars: {
@@ -113,7 +113,7 @@ describe("metadata with variable access", () => {
               },
             },
           }),
-          fields: ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.updateUser({ id: $.userId, name: $.userName })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -130,8 +130,8 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("userId").scalar("ID:!")],
-          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          variables: { ...$var("userId").scalar("ID:!") },
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -144,13 +144,13 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("userId").scalar("ID:!")],
+          variables: { ...$var("userId").scalar("ID:!") },
           metadata: ({ document }) => ({
             custom: {
               documentHash: createHash("sha256").update(print(document)).digest("hex"),
             },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -165,7 +165,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("userId").scalar("ID:!")],
+          variables: { ...$var("userId").scalar("ID:!") },
           metadata: ({ $, document }) => ({
             headers: {
               "X-Variable-Name": $var.getName($.userId),
@@ -174,7 +174,7 @@ describe("metadata with variable access", () => {
               hasDocument: document.kind === "Document",
             },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 

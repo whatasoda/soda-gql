@@ -65,7 +65,7 @@ describe("metadata adapter", () => {
           metadata: () => ({
             headers: { "X-User-Fragment": "true" },
           }),
-          fields: ({ f }) => [f.id(), f.name()],
+          fields: ({ f }) => ({ ...f.id(), ...f.name() }),
         }),
       );
 
@@ -73,11 +73,11 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -91,11 +91,11 @@ describe("metadata adapter", () => {
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
         }),
       );
 
@@ -154,18 +154,18 @@ describe("metadata adapter", () => {
           metadata: () => ({
             headers: { "X-User-Fragment": "user-value" },
           }),
-          fields: ({ f }) => [f.id(), f.name()],
+          fields: ({ f }) => ({ ...f.id(), ...f.name() }),
         }),
       );
 
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: ({ fragmentMetadata }) => ({
             mergedHeaders: fragmentMetadata?.allHeaders,
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -197,16 +197,16 @@ describe("metadata adapter", () => {
           metadata: () => ({
             headers: { "X-Test": "value" },
           }),
-          fields: ({ f }) => [f.id()],
+          fields: ({ f }) => ({ ...f.id() }),
         }),
       );
 
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -227,7 +227,7 @@ describe("metadata adapter", () => {
           metadata: () => ({
             headers: { "X-User": "user" },
           }),
-          fields: ({ f }) => [f.id()],
+          fields: ({ f }) => ({ ...f.id() }),
         }),
       );
 
@@ -236,21 +236,21 @@ describe("metadata adapter", () => {
           metadata: () => ({
             headers: { "X-Post": "post" },
           }),
-          fields: ({ f }) => [f.id(), f.title()],
+          fields: ({ f }) => ({ ...f.id(), ...f.title() }),
         }),
       );
 
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUserWithPosts",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: ({ fragmentMetadata }) => ({
             allHeaders: fragmentMetadata?.allHeaders,
           }),
-          fields: ({ f, $ }) => [
-            f.user({ id: $.id })(({ f }) => [f.id(), f.name(), f.posts()(() => [postFragment.embed()])]),
-            f.post({ id: $.id })(() => [userFragment.embed()]),
-          ],
+          fields: ({ f, $ }) => ({
+            ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name(), ...f.posts()(({ f }) => ({ ...postFragment.embed() })) })),
+            ...f.post({ id: $.id })(({ f }) => ({ ...userFragment.embed() })),
+          }),
         }),
       );
 
@@ -284,14 +284,14 @@ describe("metadata adapter", () => {
       });
 
       // Fragment without metadata
-      const userFragment = gql(({ fragment }) => fragment.User({ fields: ({ f }) => [f.id()] }));
+      const userFragment = gql(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
 
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(() => [userFragment.embed()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -311,9 +311,9 @@ describe("metadata adapter", () => {
       const operation1 = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({ simpleValue: 42 }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -324,7 +324,7 @@ describe("metadata adapter", () => {
       const operation2 = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUsers",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({
             nested: {
               deep: {
@@ -333,7 +333,7 @@ describe("metadata adapter", () => {
             },
             array: [1, 2, 3],
           }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -350,9 +350,9 @@ describe("metadata adapter", () => {
       const op1 = gql(({ query }, { $var }) =>
         query.operation({
           name: "Op1",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({ type: "string" as const, value: "hello" }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -360,9 +360,9 @@ describe("metadata adapter", () => {
       const op2 = gql(({ query }, { $var }) =>
         query.operation({
           name: "Op2",
-          variables: [$var("id").scalar("ID:!")],
+          variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({ type: "number" as const, value: 123 }),
-          fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id()])],
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
