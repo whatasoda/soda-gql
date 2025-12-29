@@ -225,8 +225,6 @@ const executionResult = await graphqlClient({
   document: profileQuery.document,
   variables: { userId: "42", categoryId: null },
 });
-
-const data = profileQuery.parse(executionResult);
 ```
 
 ## Testing Fragments
