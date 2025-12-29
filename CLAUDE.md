@@ -137,7 +137,7 @@ bun typecheck
 - Dynamic imports with cache-busting: `import(\`file://\${path}?t=\${Date.now()}\`)`
 
 **Test Organization**:
-- Unit tests: `packages/{package}/test/**/*.test.ts`
+- Unit tests: `packages/{package}/src/**/*.test.ts`
 - Integration tests: `packages/{package}/test/**/*.test.ts`
 - Fixtures: `packages/{package}/test/fixtures/**/*.ts`
 - Shared utilities: `@soda-gql/common/test`
