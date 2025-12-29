@@ -139,7 +139,10 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
   new Script(bundledCode, { filename: modulePath }).runInNewContext(sandbox);
 
   // Read exported gql (handle both direct export and default export)
-  const exportedGql = moduleExports.gql ?? moduleExports.default;
+  // Note: We read from sandbox.module.exports because esbuild CJS output
+  // reassigns module.exports = __toCommonJS(...), replacing the original object
+  const finalExports = sandbox.module.exports as Record<string, unknown>;
+  const exportedGql = finalExports.gql ?? finalExports.default;
 
   if (exportedGql === undefined) {
     throw new Error(`No 'gql' export found in GraphQL system module: ${modulePath}`);
