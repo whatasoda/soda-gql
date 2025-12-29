@@ -4,8 +4,7 @@
     "customConditions": ["@soda-gql"],
     "strict": true,
     "paths": {
-      "@/graphql-system": ["./graphql-system/index.ts"],
-      "@/graphql-system/*": ["./graphql-system/*"]
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]

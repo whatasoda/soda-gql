@@ -5,7 +5,7 @@ import type {
   ConstAssignableInputValue,
   InferInputKind,
 } from "../types/schema";
-import type { AnyTypeSpecifier, InputTypeKind, TypeModifier } from "../types/type-foundation";
+import type { InputTypeKind, TypeModifier } from "../types/type-foundation";
 import { getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 
@@ -76,11 +76,7 @@ export const createVarMethod = <TKind extends InputTypeKind, TTypeName extends s
 /**
  * Type for a single input type method.
  */
-export type InputTypeMethod<
-  TSchema extends AnyGraphqlSchema,
-  TKind extends InputTypeKind,
-  TTypeName extends string,
-> = <
+export type InputTypeMethod<TSchema extends AnyGraphqlSchema, TKind extends InputTypeKind, TTypeName extends string> = <
   const TModifier extends TypeModifier,
   const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
   const TDirectives extends AnyConstDirectiveAttachments = {},
@@ -153,12 +149,12 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
   const varBuilder = <TVarName extends string>(varName: TVarName): VarBuilderMethods<TVarName, TSchema> => {
     const wrappedMethods = {} as VarBuilderMethods<TVarName, TSchema>;
 
-    for (const typeName of Object.keys(inputTypeMethods)) {
-      const method = (inputTypeMethods as Record<string, AnyInputTypeMethod>)[typeName]!;
-      (wrappedMethods as Record<string, unknown>)[typeName] = (
-        modifier: TypeModifier,
-        extras?: { default?: () => unknown; directives?: AnyConstDirectiveAttachments },
-      ) => wrapByKey(varName, method(modifier, extras));
+    for (const [typeName, method] of Object.entries(inputTypeMethods) as [string, AnyInputTypeMethod][]) {
+      Object.defineProperty(wrappedMethods, typeName, {
+        value: ((modifier, extras) => wrapByKey(varName, method(modifier, extras))) satisfies AnyInputTypeMethod,
+        writable: false,
+        configurable: true,
+      });
     }
 
     return wrappedMethods;

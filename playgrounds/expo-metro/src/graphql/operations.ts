@@ -19,7 +19,7 @@ export const listUsersQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ListUsers",
     variables: { ...$var("categoryId").ID("?") },
-    fields: ({ f, $ }) => ({ ...f.users({ categoryId: $.categoryId })(() => ({ ...f.id(), ...f.name(), ...f.email() })) }),
+    fields: ({ f, $ }) => ({ ...f.users({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
 
@@ -31,7 +31,7 @@ export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
     name: "UpdateUser",
     variables: { ...$var("userId").ID("!"), ...$var("name").String("!") },
     fields: ({ f, $ }) => ({
-      ...f.updateUser({ id: $.userId, name: $.name })(() => ({ ...f.id(), ...f.name(), ...f.email() })),
+      ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })),
     }),
   }),
 );

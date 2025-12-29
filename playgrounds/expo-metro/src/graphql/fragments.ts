@@ -11,7 +11,7 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
       ...f.id(),
       ...f.name(),
       ...f.email(),
-      ...f.posts({ categoryId: $.categoryId })(() => ({ ...f.id(), ...f.title() })),
+      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })),
     }),
   }),
 );

@@ -156,8 +156,10 @@ export type AllInputTypeNames<TSchema extends AnyGraphqlSchema> =
 /**
  * Infers the input type kind from a type name.
  */
-export type InferInputKind<TSchema extends AnyGraphqlSchema, TName extends AllInputTypeNames<TSchema>> = TName extends
-  keyof TSchema["scalar"]
+export type InferInputKind<
+  TSchema extends AnyGraphqlSchema,
+  TName extends AllInputTypeNames<TSchema>,
+> = TName extends keyof TSchema["scalar"]
   ? "scalar"
   : TName extends keyof TSchema["enum"]
     ? "enum"

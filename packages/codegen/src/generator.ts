@@ -515,8 +515,8 @@ const renderInputTypeMethods = (schema: SchemaIndex): string => {
   const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod("input", name));
 
   const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
-    const leftName = left.split(":")[0]!;
-    const rightName = right.split(":")[0]!;
+    const leftName = left.split(":")[0] ?? "";
+    const rightName = right.split(":")[0] ?? "";
     return leftName.localeCompare(rightName);
   });
 
@@ -653,9 +653,13 @@ ${typeExports.join("\n")}`);
     // Build gql entry with options - inputTypeMethods is always required
     if (adapterVar) {
       const typeParams = `<Schema_${name}, Adapter_${name}>`;
-      gqlEntries.push(`  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`);
+      gqlEntries.push(
+        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`,
+      );
     } else {
-      gqlEntries.push(`  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`);
+      gqlEntries.push(
+        `  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`,
+      );
     }
   }
 
