@@ -10,7 +10,7 @@ const loadFixture = (name: string): string => {
 
 describe("format", () => {
   describe("basic formatting", () => {
-    it("should insert empty comments in field selection arrays", () => {
+    it("should insert newlines in field selection objects", () => {
       const source = loadFixture("needs-format");
       const result = format({ sourceCode: source });
 
@@ -18,11 +18,15 @@ describe("format", () => {
       if (!result.isOk()) return;
 
       expect(result.value.modified).toBe(true);
-      // Check that empty comments were added
-      expect(result.value.sourceCode).toContain("//");
+      // Check that newlines were added after opening braces of field selections
+      // The source has `({ f }) => ({` patterns that should become `({ f }) => ({\n`
+      const fieldSelectionPattern = /\(\{ f(?:, \$)? \}\) => \(\{\n/g;
+      const matches = result.value.sourceCode.match(fieldSelectionPattern);
+      expect(matches).not.toBeNull();
+      expect(matches!.length).toBeGreaterThan(0);
     });
 
-    it("should not modify already formatted arrays", () => {
+    it("should not modify already formatted objects", () => {
       const source = loadFixture("already-formatted");
       const result = format({ sourceCode: source });
 
@@ -54,8 +58,11 @@ describe("format", () => {
       if (!result.isOk()) return;
 
       expect(result.value.modified).toBe(true);
-      // Check that empty comments were added to all schema field selections
-      expect(result.value.sourceCode).toContain("//");
+      // Check that newlines were added to all schema field selections
+      const fieldSelectionPattern = /\(\{ f(?:, \$)? \}\) => \(\{\n/g;
+      const matches = result.value.sourceCode.match(fieldSelectionPattern);
+      expect(matches).not.toBeNull();
+      expect(matches!.length).toBeGreaterThan(0);
     });
 
     it("should not modify already formatted multi-schema files", () => {
@@ -70,8 +77,8 @@ describe("format", () => {
     });
   });
 
-  describe("config arrays", () => {
-    it("should only format field selection arrays, not config arrays", () => {
+  describe("config objects", () => {
+    it("should only format field selection objects, not variables objects", () => {
       const source = loadFixture("config-arrays");
       const result = format({ sourceCode: source });
 
@@ -80,11 +87,12 @@ describe("format", () => {
 
       expect(result.value.modified).toBe(true);
 
-      // The field selection array should have empty comment
-      // But the variables array should NOT
+      // The field selection object should have newline
+      // But the variables object should NOT (it's not a field selection)
       const code = result.value.sourceCode;
-      const variablesMatch = code.match(/variables:\s*\[\s*\/\//);
-      expect(variablesMatch).toBeNull();
+      // variables: { should not have a newline inserted right after the {
+      // because it's not a field selection (no ({ f }) pattern)
+      expect(code).toContain("variables: { ...$var");
     });
   });
 
