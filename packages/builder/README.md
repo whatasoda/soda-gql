@@ -44,8 +44,7 @@ const builder = await createBuilder({
     schemas: {
       default: {
         schema: "./schema.graphql",
-        runtimeAdapter: "./runtime-adapter.ts",
-        scalars: "./scalars.ts",
+        inject: "./default.inject.ts",
       },
     },
   },
