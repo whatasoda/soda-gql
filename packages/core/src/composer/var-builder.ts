@@ -50,6 +50,8 @@ export type VarSpecifier<
 /**
  * Creates a variable method for a specific input type.
  * This is used by codegen to generate type-specific variable methods.
+ *
+ * @deprecated Use createVarMethodFactory instead for proper type inference with nested input objects.
  */
 export const createVarMethod = <TKind extends InputTypeKind, TTypeName extends string>(kind: TKind, typeName: TTypeName) => {
   return <
@@ -71,6 +73,34 @@ export const createVarMethod = <TKind extends InputTypeKind, TTypeName extends s
       defaultValue: extras?.default ? { default: extras.default() } : null,
       directives: extras?.directives ?? {},
     }) as VarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
+};
+
+/**
+ * Creates a factory function for generating schema-scoped variable methods.
+ * This ensures proper type inference for nested input objects by binding the schema type upfront.
+ *
+ * @example
+ * ```typescript
+ * const createMethod = createVarMethodFactory<typeof schema>();
+ * const inputTypeMethods = {
+ *   Boolean: createMethod("scalar", "Boolean"),
+ *   user_bool_exp: createMethod("input", "user_bool_exp"),
+ * } satisfies InputTypeMethods<typeof schema>;
+ * ```
+ */
+export const createVarMethodFactory = <TSchema extends AnyGraphqlSchema>() => {
+  return <TKind extends InputTypeKind, TTypeName extends AllInputTypeNames<TSchema>>(
+    kind: TKind,
+    typeName: TTypeName,
+  ): InputTypeMethod<TSchema, TKind, TTypeName> => {
+    return ((modifier, extras) => ({
+      kind,
+      name: typeName,
+      modifier,
+      defaultValue: extras?.default ? { default: extras.default() } : null,
+      directives: extras?.directives ?? {},
+    })) as InputTypeMethod<TSchema, TKind, TTypeName>;
+  };
 };
 
 /**
