@@ -37,17 +37,17 @@ soda-gql supports three operation types:
 ```typescript
 // Query - fetch data
 gql.default(({ query }, { $var }) =>
-  query.operation({ name: "GetUser", variables: [...] }, ({ f, $ }) => [...])
+  query.operation({ name: "GetUser", variables: [...], fields: ({ f, $ }) => [...] })
 );
 
 // Mutation - modify data
 gql.default(({ mutation }, { $var }) =>
-  mutation.operation({ name: "CreateUser", variables: [...] }, ({ f, $ }) => [...])
+  mutation.operation({ name: "CreateUser", variables: [...], fields: ({ f, $ }) => [...] })
 );
 
 // Subscription - real-time updates (planned)
 gql.default(({ subscription }, { $var }) =>
-  subscription.operation({ name: "UserUpdated", variables: [...] }, ({ f, $ }) => [...])
+  subscription.operation({ name: "UserUpdated", variables: [...], fields: ({ f, $ }) => [...] })
 );
 ```
 
@@ -59,12 +59,10 @@ A complete operation definition includes:
 import { gql } from "@/graphql-system";
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",                              // Operation name
-      variables: [$var("userId").scalar("ID:!")],   // Variable declarations
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetUser",                              // Operation name
+    variables: [$var("userId").scalar("ID:!")],   // Variable declarations
+    fields: ({ f, $ }) => [
       //
       // Field selections
       f.user({ id: $.userId })(({ f }) => [
@@ -74,7 +72,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
         f.email(),
       ]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -85,6 +83,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 | `name` | `string` | Required. The GraphQL operation name |
 | `variables` | `$var[]` | Array of variable declarations |
 | `metadata` | `function` | Optional. Runtime metadata (see [Metadata](/guide/metadata)) |
+| `fields` | `function` | Required. Field selection builder function |
 
 ## Field Selections
 
@@ -125,16 +124,14 @@ Embed fragments to reuse field selections:
 import { userFragment } from "./user.fragment";
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [
-        //
-        $var("userId").scalar("ID:!"),
-        $var("includeEmail").scalar("Boolean:?"),
-      ],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetUser",
+    variables: [
+      //
+      $var("userId").scalar("ID:!"),
+      $var("includeEmail").scalar("Boolean:?"),
+    ],
+    fields: ({ f, $ }) => [
       //
       f.user({ id: $.userId })(({ f }) => [
         //
@@ -142,7 +139,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
         userFragment.embed({ includeEmail: $.includeEmail }),
       ]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -189,12 +186,10 @@ Mutations follow the same pattern as queries:
 
 ```typescript
 export const createUserMutation = gql.default(({ mutation }, { $var }) =>
-  mutation.operation(
-    {
-      name: "CreateUser",
-      variables: [$var("input").scalar("CreateUserInput:!")],
-    },
-    ({ f, $ }) => [
+  mutation.operation({
+    name: "CreateUser",
+    variables: [$var("input").scalar("CreateUserInput:!")],
+    fields: ({ f, $ }) => [
       //
       f.createUser({ input: $.input })(({ f }) => [
         //
@@ -202,7 +197,7 @@ export const createUserMutation = gql.default(({ mutation }, { $var }) =>
         f.name(),
       ]),
     ],
-  ),
+  }),
 );
 
 // Usage

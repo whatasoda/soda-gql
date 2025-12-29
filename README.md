@@ -80,11 +80,9 @@ import { gql } from "@/graphql-system";
 
 // Define a reusable fragment with array-based API
 export const userFragment = gql.default(({ fragment }, { $var }) =>
-  fragment.User(
-    {
-      variables: [$var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
+  fragment.User({
+    variables: [$var("categoryId").scalar("ID:?")],
+    fields: ({ f, $ }) => [
       //
       f.id(null, { alias: "uuid" }),
       f.name(),
@@ -94,25 +92,15 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
         f.title(),
       ]),
     ],
-    (selection) => ({
-      id: selection.uuid,
-      name: selection.name,
-      posts: selection.posts.map((post) => ({
-        id: post.id,
-        title: post.title,
-      })),
-    }),
-  ),
+  }),
 );
 
 // Build a complete operation
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "ProfileQuery",
-      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "ProfileQuery",
+    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
+    fields: ({ f, $ }) => [
       f.users({
         id: [$.userId],
         categoryId: $.categoryId,
@@ -122,23 +110,21 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
         f.posts({ categoryId: $.categoryId })(({ f }) => [f.id(), f.title()]),
       ]),
     ],
-  ),
+  }),
 );
 
 // Operation with embedded fragment
 export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "ProfileQueryWithFragment",
-      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "ProfileQueryWithFragment",
+    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
+    fields: ({ f, $ }) => [
       f.users({
         id: [$.userId],
         categoryId: $.categoryId,
       })(({ f }) => [userFragment.embed({ categoryId: $.categoryId })]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -151,17 +137,15 @@ Attach runtime information to operations for HTTP headers and application-specif
 ```typescript
 // Operation with metadata
 export const userQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("userId").scalar("ID:!")],
-      metadata: ({ $ }) => ({
-        headers: { "X-Request-ID": "user-query" },
-        custom: { requiresAuth: true, cacheTtl: 300 },
-      }),
-    },
-    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: [$var("userId").scalar("ID:!")],
+    metadata: ({ $ }) => ({
+      headers: { "X-Request-ID": "user-query" },
+      custom: { requiresAuth: true, cacheTtl: 300 },
+    }),
+    fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name()])],
+  }),
 );
 ```
 

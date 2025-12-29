@@ -56,16 +56,16 @@ The `gql` object is generated per-schema and provides builders:
 import { gql } from "@/graphql-system";
 
 // Fragment builder
-gql.default(({ fragment }) => fragment.User({}, ({ f }) => [...]));
+gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => [...] }));
 
 // Query operation
-gql.default(({ query }) => query.operation({...}, ({ f, $ }) => [...]));
+gql.default(({ query }) => query.operation({ name: "...", fields: ({ f, $ }) => [...] }));
 
 // Mutation operation
-gql.default(({ mutation }) => mutation.operation({...}, ({ f, $ }) => [...]));
+gql.default(({ mutation }) => mutation.operation({ name: "...", fields: ({ f, $ }) => [...] }));
 
 // Subscription operation (planned)
-gql.default(({ subscription }) => subscription.operation({...}, ({ f, $ }) => [...]));
+gql.default(({ subscription }) => subscription.operation({ name: "...", fields: ({ f, $ }) => [...] }));
 ```
 
 ## Element Extensions (attach)
@@ -77,11 +77,13 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({}, ({ f }) => [
-      //
-      f.id(),
-      f.name(),
-    ]),
+    fragment.User({
+      fields: ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ],
+    }),
   )
   .attach({
     name: "utils",
@@ -125,20 +127,18 @@ Define runtime metadata on operations:
 
 ```typescript
 gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("id").scalar("ID:!")],
-      metadata: ({ $, document, $var }) => ({
-        headers: { "X-Request-ID": "get-user" },
-        custom: { requiresAuth: true, hash: hashDocument(document) },
-      }),
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetUser",
+    variables: [$var("id").scalar("ID:!")],
+    metadata: ({ $, document, $var }) => ({
+      headers: { "X-Request-ID": "get-user" },
+      custom: { requiresAuth: true, hash: hashDocument(document) },
+    }),
+    fields: ({ f, $ }) => [
       //
       ...
     ],
-  ),
+  }),
 );
 ```
 
