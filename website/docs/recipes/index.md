@@ -7,7 +7,7 @@ Practical examples demonstrating different integration methods for soda-gql.
 | Feature | TSC Plugin | SWC Plugin | Webpack Plugin | Babel Plugin | Vite Plugin | Metro Plugin |
 |---------|-----------|-----------|----------------|--------------|-------------|--------------|
 | Build Speed | Fast | Very Fast | Standard | Fast | Fast | Fast |
-| Zero-Runtime | Planned | Planned | Working | Working | Working | Working |
+| Zero-Runtime-Like | Planned | Planned | Working | Working | Working | Working |
 | Watch Mode | Manual | Manual | Integrated | Manual | Integrated | Integrated |
 | Best For | TypeScript projects | Large codebases | Webpack builds | Custom setups | Vite projects | React Native |
 
@@ -35,7 +35,7 @@ bun add -D @soda-gql/tsc-plugin
 
 ### Webpack Plugin with SWC
 
-**Best for:** Projects needing working zero-runtime transformation today with fast builds.
+**Best for:** Projects needing working zero-runtime-like transformation today with fast builds.
 
 ```bash
 bun add -D @soda-gql/webpack-plugin @soda-gql/swc-transformer

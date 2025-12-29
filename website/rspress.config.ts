@@ -6,7 +6,7 @@ export default defineConfig({
   base: "/",
   title: "soda-gql",
   description:
-    "Zero-runtime GraphQL query generation - Type-safe GraphQL with build-time transformation",
+    "Zero-runtime-like GraphQL query generation - Type-safe GraphQL with build-time transformation",
   markdown: {
     showLineNumbers: true,
   },
@@ -32,6 +32,21 @@ export default defineConfig({
             { text: "Getting Started", link: "/guide/getting-started" },
           ],
         },
+        {
+          text: "Core Concepts",
+          items: [
+            { text: "Fragments", link: "/guide/fragments" },
+            { text: "Operations", link: "/guide/operations" },
+            { text: "Variables", link: "/guide/variables" },
+          ],
+        },
+        {
+          text: "Features",
+          items: [
+            { text: "Metadata", link: "/guide/metadata" },
+            { text: "Fragment Colocation", link: "/guide/colocation" },
+          ],
+        },
       ],
       "/api/": [
         {
@@ -39,10 +54,24 @@ export default defineConfig({
           items: [{ text: "Overview", link: "/api/" }],
         },
         {
-          text: "Packages",
+          text: "Core Packages",
           items: [
             { text: "@soda-gql/core", link: "/api/packages/core" },
             { text: "@soda-gql/cli", link: "/api/packages/cli" },
+            { text: "@soda-gql/config", link: "/api/packages/config" },
+            { text: "@soda-gql/runtime", link: "/api/packages/runtime" },
+            {
+              text: "@soda-gql/colocation-tools",
+              link: "/api/packages/colocation-tools",
+            },
+          ],
+        },
+        {
+          text: "Build Plugins",
+          items: [
+            { text: "Vite Plugin", link: "/api/packages/vite-plugin" },
+            { text: "Webpack Plugin", link: "/api/packages/webpack-plugin" },
+            { text: "Metro Plugin", link: "/api/packages/metro-plugin" },
           ],
         },
       ],
@@ -50,6 +79,14 @@ export default defineConfig({
         {
           text: "Recipes",
           items: [{ text: "Examples Overview", link: "/recipes/" }],
+        },
+        {
+          text: "Framework Integrations",
+          items: [
+            { text: "Next.js", link: "/recipes/nextjs" },
+            { text: "Vite + React", link: "/recipes/vite-react" },
+            { text: "Expo / React Native", link: "/recipes/expo" },
+          ],
         },
       ],
     },

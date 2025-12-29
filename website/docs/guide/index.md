@@ -1,6 +1,6 @@
 # What is soda-gql?
 
-soda-gql is a zero-runtime GraphQL query generation system that brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Write type-safe queries in TypeScript that are statically analyzed and transformed at build time into optimized GraphQL documents.
+soda-gql is a zero-runtime-like GraphQL query generation system that brings [PandaCSS](https://panda-css.com/)'s approach to GraphQL. Write type-safe queries in TypeScript that are statically analyzed and transformed at build time into optimized GraphQL documents.
 
 ## Why soda-gql?
 
@@ -15,17 +15,37 @@ This cycle creates friction: you write code in two languages, wait for generatio
 
 **soda-gql eliminates this loop.** You write everything in TypeScript, and the build system handles the rest.
 
+## What "Zero-Runtime-Like" Means
+
+Inspired by [PandaCSS](https://panda-css.com/), soda-gql analyzes your code at build time and embeds pre-computed data as JSON. However, unlike CSS which is truly zero-runtime, soda-gql still requires runtime processing for:
+
+- Query execution against GraphQL servers
+- Response parsing and type coercion
+- Variable interpolation
+
+What happens at **build time**:
+- GraphQL document string generation
+- Metadata computation
+- Type validation
+
+This approach eliminates the codegen loop while keeping runtime overhead minimal.
+
 ## Core Concepts
 
-### Models
+### Fragments
 
-Models define reusable GraphQL fragments. They specify which fields to select from a type:
+Fragments define reusable field selections for GraphQL types:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name(), f.email()]),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({}, ({ f }) => [
+    //
+    f.id(),
+    f.name(),
+    f.email(),
+  ]),
 );
 ```
 
@@ -41,26 +61,14 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+      //
+      f.user({ id: $.userId })(({ f }) => [
+        //
+        userFragment.embed(),
+      ]),
     ],
   ),
 );
-```
-
-## Project Structure
-
-```
-packages/
-├── core/           # Core GraphQL types and utilities
-├── codegen/        # Schema code generation
-├── builder/        # Static analysis & artifact generation
-├── babel-plugin/   # Babel transformation plugin
-├── tsc-plugin/     # TypeScript compiler plugin
-├── webpack-plugin/ # Webpack plugin with HMR support
-├── vite-plugin/    # Vite bundler plugin
-├── metro-plugin/   # React Native/Expo Metro plugin
-├── runtime/        # Runtime execution helpers
-└── cli/            # Command-line interface
 ```
 
 ## Next Steps

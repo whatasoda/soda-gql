@@ -6,11 +6,11 @@ This guide walks you through setting up soda-gql in your project.
 
 ```bash
 # Install core packages
-bun add @soda-gql/core @soda-gql/runtime
+bun add @soda-gql/core
 bun add -D @soda-gql/cli @soda-gql/config
 
 # Install peer dependencies
-bun add zod neverthrow
+bun add neverthrow
 ```
 
 :::tip
@@ -19,72 +19,84 @@ This initial version supports queries and mutations only. Subscriptions, directi
 
 ## Setup
 
-### 1. Configure Your Schema
+### 1. Initialize Project
 
-Create a `soda-gql.config.ts` file in your project root:
+Run the init command to scaffold all necessary files:
+
+```bash
+bun run soda-gql init
+```
+
+This creates:
+- `soda-gql.config.ts` - Configuration file
+- `schema.graphql` - Sample GraphQL schema
+- `graphql-system/default.inject.ts` - Scalars and adapter definitions
+- `graphql-system/.gitignore` - Ignore generated files
+
+### 2. Edit Your Schema
+
+Replace the sample `schema.graphql` with your actual GraphQL schema:
+
+```graphql
+type Query {
+  user(id: ID!): User
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+```
+
+### 3. Customize Scalars and Adapter (Optional)
+
+Edit `graphql-system/default.inject.ts` to add custom scalars:
 
 ```typescript
-import { defineConfig } from "@soda-gql/config";
+import { defineAdapter, defineScalar } from "@soda-gql/core/adapter";
 
-export default defineConfig({
-  outdir: "./src/graphql-system",
-  include: ["./src/**/*.ts"],
-  schemas: {
-    default: {
-      schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
-    },
+export const scalar = {
+  ...defineScalar<"ID", string, string>("ID"),
+  ...defineScalar<"String", string, string>("String"),
+  ...defineScalar<"Int", number, number>("Int"),
+  ...defineScalar<"Float", number, number>("Float"),
+  ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
+  // Add custom scalars
+  ...defineScalar<"DateTime", string, Date>("DateTime"),
+} as const;
+
+export const adapter = defineAdapter({
+  helpers: {},
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
   },
 });
 ```
 
-### 2. Prepare Scalars and Adapter
-
-Scaffold the template files:
-
-```bash
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
-```
-
-Edit the generated file to define your custom scalars and runtime adapter:
-
-```typescript
-import { defineScalar } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
-
-export const scalar = {
-  ...defineScalar("DateTime", ({ type }) => ({
-    input: type<string>(),
-    output: type<Date>(),
-    directives: {},
-  })),
-} as const;
-
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));
-```
-
-### 3. Generate GraphQL System
+### 4. Generate GraphQL System
 
 ```bash
 bun run soda-gql codegen
 ```
 
-This generates the type-safe GraphQL system that imports your scalar and adapter definitions.
+This generates the type-safe GraphQL system in the `graphql-system/` directory.
 
 ## Basic Usage
 
-### Define a Model
+### Define a Fragment
 
-Models specify reusable field selections:
+Fragments specify reusable field selections:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userModel = gql.default(({ model }) =>
-  model.User({}, ({ f }) => [f.id(), f.name()]),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({}, ({ f }) => [
+    //
+    f.id(),
+    f.name(),
+  ]),
 );
 ```
 
@@ -100,7 +112,11 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
       variables: [$var("userId").scalar("ID:!")],
     },
     ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [userModel.embed()]),
+      //
+      f.user({ id: $.userId })(({ f }) => [
+        //
+        userFragment.embed(),
+      ]),
     ],
   ),
 );
