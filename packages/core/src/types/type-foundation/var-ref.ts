@@ -122,11 +122,13 @@ export type PathSegment = string | number;
 /**
  * Proxy type that records property accesses.
  * The actual implementation uses Proxy to capture the path.
+ *
+ * TODO: Full type-safe path inference is complex and deferred.
+ * Current implementation uses 'any' for simplicity.
+ * The runtime behavior is correct; only compile-time type checking is limited.
  */
-export interface PathProxy<_T> {
-  readonly [key: string]: PathProxy<unknown>;
-  readonly [index: number]: PathProxy<unknown>;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PathProxy<_T> = any;
 
 /**
  * Type-safe path builder function.
@@ -177,4 +179,101 @@ export const extractPath = <T>(pathFn: PathBuilder<T>): readonly PathSegment[] =
   const proxy = createPathProxy<T>();
   const result = pathFn(proxy) as unknown as PathProxyInternal;
   return result[PATH_SEGMENTS];
+};
+
+/**
+ * Gets a value at the specified path within a NestedValue.
+ * Returns undefined if path doesn't exist or encounters a VarRef before reaching the end.
+ */
+export const getNestedValue = (value: NestedValue, path: readonly PathSegment[]): NestedValue | undefined => {
+  let current: NestedValue = value;
+
+  for (const segment of path) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+
+    if (isVarRef(current)) {
+      // Cannot traverse into a VarRef
+      return undefined;
+    }
+
+    if (typeof segment === "number" && Array.isArray(current)) {
+      current = current[segment];
+    } else if (typeof segment === "string" && typeof current === "object") {
+      current = (current as { [key: string]: NestedValue })[segment];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+};
+
+/**
+ * Get the variable name from a VarRef at a specific path.
+ *
+ * @param varRef - The VarRef containing a nested-value
+ * @param pathFn - Path builder function, e.g., p => p.user.age
+ * @returns The variable name at the specified path
+ * @throws If path doesn't lead to a VarRef with type "variable"
+ *
+ * @example
+ * const ref = createVarRefFromNestedValue({
+ *   user: { age: someVariableRef }
+ * });
+ * getNameAt(ref, p => p.user.age); // returns the variable name
+ */
+export const getNameAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): string => {
+  const inner = VarRef.getInner(varRef);
+  if (inner.type !== "nested-value") {
+    throw new Error("getNameAt requires a nested-value VarRef");
+  }
+
+  const path = extractPath(pathFn);
+  const valueAtPath = getNestedValue(inner.value, path);
+
+  if (!isVarRef(valueAtPath)) {
+    throw new Error(`Expected VarRef at path [${path.join(".")}], got ${typeof valueAtPath}`);
+  }
+
+  return getVarRefName(valueAtPath);
+};
+
+/**
+ * Get the const value from a nested-value VarRef at a specific path.
+ *
+ * @param varRef - The VarRef containing a nested-value
+ * @param pathFn - Path builder function, e.g., p => p.user.name
+ * @returns The const value at the specified path
+ * @throws If path leads to a VarRef or if value contains VarRef inside
+ *
+ * @example
+ * const ref = createVarRefFromNestedValue({
+ *   user: { name: "Alice", age: someVariableRef }
+ * });
+ * getValueAt(ref, p => p.user.name); // returns "Alice"
+ */
+export const getValueAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): ConstValue => {
+  const inner = VarRef.getInner(varRef);
+  if (inner.type !== "nested-value") {
+    throw new Error("getValueAt requires a nested-value VarRef");
+  }
+
+  const path = extractPath(pathFn);
+  const valueAtPath = getNestedValue(inner.value, path);
+
+  if (valueAtPath === undefined) {
+    return undefined;
+  }
+
+  if (isVarRef(valueAtPath)) {
+    throw new Error(`Expected const value at path [${path.join(".")}], got VarRef`);
+  }
+
+  if (hasVarRefInside(valueAtPath)) {
+    throw new Error(`Value at path [${path.join(".")}] contains nested VarRef`);
+  }
+
+  return valueAtPath as ConstValue;
 };
