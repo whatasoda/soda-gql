@@ -14,10 +14,10 @@ import {
   getSharedTransformerType,
   getStateKey,
   type PluginSession,
+  type SwcTransformerInterface,
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-  type SwcTransformerInterface,
 } from "@soda-gql/plugin-common";
 import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 

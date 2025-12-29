@@ -7,10 +7,10 @@ import {
   getSharedState,
   getStateKey,
   type PluginSession,
+  type SwcTransformerInterface,
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-  type SwcTransformerInterface,
 } from "@soda-gql/plugin-common";
 import type { HmrContext, ModuleNode, Plugin, ViteDevServer } from "vite";
 import type { VitePluginOptions } from "./types";
