@@ -3,7 +3,7 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );
@@ -11,7 +11,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 export const updateProfileMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation({
     name: "UpdateProfile",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("name").scalar("String:!") },
+    variables: { ...$var("userId").ID("!"), ...$var("name").String("!") },
     fields: ({ f, $ }) => ({ ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );

@@ -99,7 +99,7 @@ Unlike standard GraphQL fragments, soda-gql fragments can declare their own vari
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
         ...f.id(),
@@ -139,8 +139,8 @@ export const getPostQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetPost",
     variables: {
-      ...$var("postId").scalar("ID:!"),
-      ...$var("showEmail").scalar("Boolean:?"),
+      ...$var("postId").ID("!"),
+      ...$var("showEmail").Boolean("?"),
     },
     fields: ({ f, $ }) => ({
       ...f.post({ id: $.postId })(({ f }) => ({

@@ -13,7 +13,7 @@ export const userFragment = gql.default(({ fragment }) =>
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(() => ({ ...userFragment.embed() })) }),
   }),
 );

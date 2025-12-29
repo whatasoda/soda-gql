@@ -7,8 +7,14 @@ import { gql } from "@/graphql-system";
  */
 export const userCardFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query({
-    variables: { ...$var("userId").scalar("ID:!") },
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
+    variables: { ...$var("userId").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+      })),
+    }),
   }),
 );
 

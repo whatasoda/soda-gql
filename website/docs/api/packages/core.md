@@ -128,7 +128,7 @@ Define runtime metadata on operations:
 gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     metadata: ({ $, document, $var }) => ({
       headers: { "X-Request-ID": "get-user" },
       custom: { requiresAuth: true, hash: hashDocument(document) },
@@ -157,7 +157,7 @@ console.log(meta.custom);
 
 ## Variable Type Syntax Reference
 
-Complete reference for the `$var().scalar()` type specifier:
+Complete reference for the `$var().Type()` type specifier:
 
 ### Basic Types
 
@@ -193,8 +193,8 @@ Complete reference for the `$var().scalar()` type specifier:
 ### Custom Types
 
 ```typescript
-$var("input").scalar("CreateUserInput:!")
-$var("filters").scalar("FilterInput:![]?")
+$var("input").CreateUserInput("!")
+$var("filters").FilterInput("![]?")
 ```
 
 ## Field Selection Patterns Reference

@@ -5,7 +5,7 @@ export const topLevelModel = gql.default(({ fragment }) => fragment.User({ field
 export const topLevelQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "TopLevelQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
   }),
 );

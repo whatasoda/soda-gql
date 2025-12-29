@@ -6,12 +6,15 @@ import { gql } from "@/graphql-system";
  */
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("categoryId").scalar("ID:!") },
+    variables: { ...$var("categoryId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
       ...f.email(),
-      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })),
+      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+      })),
     }),
   }),
 );

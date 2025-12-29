@@ -69,7 +69,7 @@ When composing multiple fragments in a single operation, use `$colocate` to pref
 // UserCard.tsx
 export const userCardFragment = gql.default(({ fragment }, { $var }) =>
   fragment.Query({
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
@@ -94,7 +94,7 @@ import { postListFragment, postListProjection } from "./PostList";
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
       postList: postListFragment.embed({ userId: $.userId }),
@@ -154,7 +154,7 @@ import { gql } from "./graphql-system";
 export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("userId").scalar("ID:!") },
+      variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),
     }),
   )

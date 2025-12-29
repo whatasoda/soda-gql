@@ -29,7 +29,7 @@ Add metadata to an operation using the `metadata` option:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     metadata: ({ $, document }) => ({
       headers: {
         "X-Request-ID": "get-user-query",

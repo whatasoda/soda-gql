@@ -38,7 +38,7 @@ Fragments define reusable field selections for a specific GraphQL type:
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("includeEmail").scalar("Boolean:?") },
+    variables: { ...$var("includeEmail").Boolean("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
@@ -56,7 +56,7 @@ Operations define complete GraphQL queries, mutations, or subscriptions:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
@@ -67,7 +67,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const getUserWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUserWithFragment",
-    variables: { ...$var("id").scalar("ID:!"), ...$var("includeEmail").scalar("Boolean:?") },
+    variables: { ...$var("id").ID("!"), ...$var("includeEmail").Boolean("?") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed({ includeEmail: $.includeEmail }) })),
     }),
@@ -218,7 +218,7 @@ Metadata is defined on operations:
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     metadata: ({ $, document }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: {

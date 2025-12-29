@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createGqlElementComposer } from "./gql-composer";
+import { createVarMethod } from "./var-builder";
 
 const schema = {
   label: "test" as const,
@@ -36,16 +37,19 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const inputTypeMethods = {
+  ID: createVarMethod("scalar", "ID"),
+  String: createVarMethod("scalar", "String"),
+};
+
 describe("createGqlInvoker", () => {
-  const gql = createGqlElementComposer<Schema>(schema);
+  const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;
-    let fieldArgRef: any;
 
     const userFragment = gql(({ fragment }, { $var }) => {
-      idVarRef = $var("id").scalar("ID:!");
-      fieldArgRef = $var("id").byField("Query", "user", "id");
+      idVarRef = $var("id").ID("!");
 
       return fragment.User({
         fields: ({ f }) => ({
@@ -59,9 +63,6 @@ describe("createGqlInvoker", () => {
     expect(idVarRef?.id.kind).toBe("scalar");
     expect(idVarRef?.id.name).toBe("ID");
     expect(idVarRef?.id.modifier).toBe("!");
-    expect(fieldArgRef?.kind).toBe("scalar");
-    expect(fieldArgRef?.name).toBe("ID");
-    expect(fieldArgRef?.modifier).toBe("!");
   });
 
   it("creates fragment descriptors with fragment wiring", () => {
@@ -93,7 +94,7 @@ describe("createGqlInvoker", () => {
     const profileQuery = gql(({ query }, { $var }) =>
       query.operation({
         name: "ProfilePageQuery",
-        variables: { ...$var("userId").scalar("ID:!") },
+        variables: { ...$var("userId").ID("!") },
         fields: ({ f, $ }) => ({
           ...f.user({ id: $.userId })(() => ({
             ...userFragment.embed(),

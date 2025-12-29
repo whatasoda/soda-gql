@@ -197,7 +197,7 @@ import { gql } from "../../graphql-system";
 export const query${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Query${index}",
-    variables: { ...$var("limit").scalar("Int:?"), ...$var("offset").scalar("Int:?") },
+    variables: { ...$var("limit").Int("?"), ...$var("offset").Int("?") },
     fields: ({ f, $ }) => ({
       ...f.${entityName}List({ limit: $.limit, offset: $.offset })(({ f }) => ({
         ...f.id(),
@@ -218,7 +218,7 @@ import { gql } from "../../graphql-system";
 export const query${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Query${index}",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.${entityName}({ id: $.id })(({ f }) => ({
         ...f.id(),
@@ -258,7 +258,7 @@ ${individualImports}
 export const operation${index} = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "Operation${index}",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.entity${entityIndex}({ id: $.id })(({ f }) => ({
 ${modelEmbeds.join("\n")}

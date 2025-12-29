@@ -8,7 +8,7 @@ export const catalogFragment = gql.default(({ fragment }) =>
 export const catalogOperation = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetCatalog",
-    variables: { ...$var("limit").scalar("Int:?") },
+    variables: { ...$var("limit").Int("?") },
     fields: ({ f, $ }) => ({ ...f.products({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name(), ...f.price() })) }),
   }),
 );

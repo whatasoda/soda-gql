@@ -6,7 +6,7 @@ export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields
 export const pageQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "PageQuery",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("postId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!"), ...$var("postId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(() => ({ ...topLevelModel.embed() })),
       ...f.posts({ id: $.postId })(() => ({ ...postFragment.embed() })),

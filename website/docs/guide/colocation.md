@@ -51,7 +51,7 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("userId").scalar("ID:!") },
+      variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.userId })(({ f }) => ({
           ...f.id(),
@@ -101,7 +101,7 @@ import { postListFragment } from "./PostList";
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
       postList: postListFragment.embed({ userId: $.userId }),
@@ -284,7 +284,7 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("id").scalar("ID:!") },
+      variables: { ...$var("id").ID("!") },
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.id })(({ f }) => ({
           ...f.id(),
@@ -306,8 +306,8 @@ export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
       variables: {
-        ...$var("userId").scalar("ID:!"),
-        ...$var("limit").scalar("Int:?"),
+        ...$var("userId").ID("!"),
+        ...$var("limit").Int("?"),
       },
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.userId })(({ f }) => ({
@@ -334,7 +334,7 @@ import { postListFragment } from "./fragments/PostList";
 export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "UserPage",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ id: $.userId }),
       postList: postListFragment.embed({ userId: $.userId, limit: 10 }),

@@ -18,7 +18,7 @@ export function createUserQueries() {
   const userById = gql.default(({ query }, { $var }) =>
     query.operation({
       name: "UserById",
-      variables: { ...$var("id").scalar("ID:!") },
+      variables: { ...$var("id").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   );
@@ -26,7 +26,7 @@ export function createUserQueries() {
   const userList = gql.default(({ query }, { $var }) =>
     query.operation({
       name: "UserList",
-      variables: { ...$var("limit").scalar("Int:?") },
+      variables: { ...$var("limit").Int("?") },
       fields: ({ f, $ }) => ({ ...f.users({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   );
@@ -56,14 +56,14 @@ export const nestedQueries = {
     list: gql.default(({ query }, { $var }) =>
       query.operation({
         name: "NestedUserList",
-        variables: { ...$var("limit").scalar("Int:?") },
+        variables: { ...$var("limit").Int("?") },
         fields: ({ f, $ }) => ({ ...f.users({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
       }),
     ),
     byId: gql.default(({ query }, { $var }) =>
       query.operation({
         name: "NestedUserById",
-        variables: { ...$var("id").scalar("ID:!") },
+        variables: { ...$var("id").ID("!") },
         fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
       }),
     ),
@@ -76,7 +76,7 @@ export function createUserOperation() {
   const getUserOperation = gql.default(({ query }, { $var }) =>
     query.operation({
       name: "GetUserById",
-      variables: { ...$var("id").scalar("ID:!") },
+      variables: { ...$var("id").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   );
@@ -90,7 +90,7 @@ export const operationFactory = () => {
   const listUsersOperation = gql.default(({ query }, { $var }) =>
     query.operation({
       name: "ListUsers",
-      variables: { ...$var("limit").scalar("Int:?") },
+      variables: { ...$var("limit").Int("?") },
       fields: ({ f, $ }) => ({ ...f.users({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   );
@@ -107,14 +107,14 @@ export const nestedOperations = {
     getUser: gql.default(({ query }, { $var }) =>
       query.operation({
         name: "NestedGetUser",
-        variables: { ...$var("id").scalar("ID:!") },
+        variables: { ...$var("id").ID("!") },
         fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
       }),
     ),
     listUsers: gql.default(({ query }, { $var }) =>
       query.operation({
         name: "NestedListUsers",
-        variables: { ...$var("limit").scalar("Int:?") },
+        variables: { ...$var("limit").Int("?") },
         fields: ({ f, $ }) => ({ ...f.users({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
       }),
     ),

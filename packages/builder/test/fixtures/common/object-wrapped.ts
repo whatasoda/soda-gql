@@ -6,7 +6,7 @@ export const objectWrapped = {
   query: gql.default(({ query }, { $var }) =>
     query.operation({
       name: "ObjectWrappedQuery",
-      variables: { ...$var("userId").scalar("ID:!") },
+      variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
     }),
   ),
@@ -17,7 +17,7 @@ export const objectWrapped = {
     query: gql.default(({ query }, { $var }) =>
       query.operation({
         name: "ObjectWrappedNestedQuery",
-        variables: { ...$var("userId").scalar("ID:!") },
+        variables: { ...$var("userId").ID("!") },
         fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
       }),
     ),

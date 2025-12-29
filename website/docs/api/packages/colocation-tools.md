@@ -242,7 +242,7 @@ import {
 export const userCardFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("userId").scalar("ID:!") },
+      variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
     }),
   )
@@ -260,7 +260,7 @@ export const userCardFragment = gql
 export const pageQuery = gql.default(({ query }, { $var, $colocate }) =>
   query.operation({
     name: "Page",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.embed({ userId: $.userId }),
     }),

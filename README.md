@@ -81,7 +81,7 @@ import { gql } from "@/graphql-system";
 // Define a reusable fragment
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.id(null, { alias: "uuid" }),
       ...f.name(),
@@ -97,7 +97,7 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
         id: [$.userId],
@@ -115,7 +115,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQueryWithFragment",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
         id: [$.userId],
@@ -137,7 +137,7 @@ Attach runtime information to operations for HTTP headers and application-specif
 export const userQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     metadata: ({ $ }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: { requiresAuth: true, cacheTtl: 300 },

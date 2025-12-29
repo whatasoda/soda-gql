@@ -617,7 +617,7 @@ import { gql } from "@/graphql-system";
 
 export const userSlice = gql.default(({ slice }, { $var }) =>
   slice.query({
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
@@ -632,7 +632,7 @@ import { userSlice } from "./slices";
 export const query = gql.default(({ operation }, { $var }) =>
   operation.query({
     name: "MyTestQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),
     }),

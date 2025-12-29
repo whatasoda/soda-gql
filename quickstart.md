@@ -136,7 +136,7 @@ export const userBasic = gql.default(({ fragment }) =>
 // User with nested posts selection
 export const userWithPosts = gql.default(({ fragment }, { $var }) =>
   fragment.User({
-    variables: { ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
@@ -165,7 +165,7 @@ import { userWithPosts } from "../fragments/user.fragment";
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfilePageQuery",
-    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:?") },
+    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
         id: [$.userId],
@@ -183,7 +183,7 @@ import { gql } from "@/graphql-system";
 export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation({
     name: "UpdateUser",
-    variables: { ...$var("id").scalar("ID:!"), ...$var("name").scalar("String:!") },
+    variables: { ...$var("id").ID("!"), ...$var("name").String("!") },
     fields: ({ f, $ }) => ({
       ...f.updateUser({ id: $.id, name: $.name })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
@@ -234,7 +234,7 @@ describe("userBasic fragment", () => {
 export const profileQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfilePageQuery",
-    variables: { ...$var("userId").scalar("ID:!") },
+    variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.users({ id: [$.userId] })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
@@ -277,7 +277,7 @@ import { userBasic } from "@/fragments/user.fragment";
 export const safeGetUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "SafeGetUser",
-    variables: { ...$var("id").scalar("ID:!") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({ ...userBasic.embed() })),
     }),
