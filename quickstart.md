@@ -60,40 +60,40 @@ type Mutation {
 }
 ```
 
-### 2. Prepare Scalars and Adapter
+### 2. Prepare Inject File (Scalars and Adapter)
 
-Code generation now expects user-defined scalar implementations and a runtime adapter. Scaffold a template and adjust it as needed for your environment:
+Code generation expects user-defined scalar definitions and an optional adapter. Scaffold a template and adjust it as needed for your environment:
 
 ```bash
 # Create a starting point for scalar + adapter definitions
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
-Edit `./src/graphql-system/inject.ts` to describe each custom scalar and to implement the `GraphqlRuntimeAdapter`. The template uses the new `defineScalar()` helper so each scalar stays strongly typed.
+Edit `./src/graphql-system/default.inject.ts` to describe each custom scalar and optionally configure the adapter. The template uses `defineScalar()` and `defineAdapter()` helpers for type safety.
 
 ```ts
-import { defineScalar } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/runtime";
+import { defineAdapter, defineScalar } from "@soda-gql/core/adapter";
 
 export const scalar = {
-  ...defineScalar("DateTime", ({ type }) => ({
-    input: type<string>(),
-    output: type<Date>(),
-    directives: {},
-  })),
-  ...defineScalar("Money", ({ type }) => ({
-    input: type<number>(),
-    output: type<number>(),
-    directives: {},
-  })),
+  ...defineScalar<"ID", string, string>("ID"),
+  ...defineScalar<"String", string, string>("String"),
+  ...defineScalar<"Int", number, number>("Int"),
+  ...defineScalar<"Float", number, number>("Float"),
+  ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
+  // Add custom scalars
+  ...defineScalar<"DateTime", string, Date>("DateTime"),
+  ...defineScalar<"Money", number, number>("Money"),
 } as const;
 
-export const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));
+export const adapter = defineAdapter({
+  helpers: {},
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+  },
+});
 ```
 
-Replace or extend the examples to match the scalars and runtime behavior in your own schema.
+Replace or extend the examples to match the scalars in your schema.
 
 ### 3. Generate GraphQL System
 

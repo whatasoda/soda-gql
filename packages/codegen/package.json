@@ -48,8 +48,8 @@
   "dependencies": {
     "@soda-gql/core": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
+    "esbuild": "^0.24.0",
     "graphql": "^16.8.1",
-    "neverthrow": "^8.1.1",
-    "tsdown": "^0.15.7"
+    "neverthrow": "^8.1.1"
   }
 }

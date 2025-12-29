@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
+import { defaultBundler } from "./bundler";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import { bundleGraphqlSystem } from "./tsdown-bundle";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
 const extensionMap: Record<string, string> = {
@@ -153,8 +153,11 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     return err(writeResult.error);
   }
 
-  // Bundle the generated module with tsdown
-  const bundleOutcome = await bundleGraphqlSystem(outPath);
+  // Bundle the generated module
+  const bundleOutcome = await defaultBundler.bundle({
+    sourcePath: outPath,
+    external: ["@soda-gql/core", "@soda-gql/runtime"],
+  });
   const bundleResult = bundleOutcome.match(
     (result) => ok(result),
     (error) => err(error),

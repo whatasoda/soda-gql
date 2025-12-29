@@ -102,6 +102,24 @@ Variables are declared using a string-based type syntax:
 | `f.email({ if: $.includeEmail })` | Conditional field |
 | `userFragment.embed({})` | Use fragment fields |
 
+## Understanding the Inject Module
+
+The inject module (`{schema}.inject.ts`) bridges your GraphQL schema with TypeScript types.
+
+**Why hand-written?**
+- Custom scalar types (DateTime, JSON, etc.) need explicit TypeScript type mappings
+- Version-controlled to keep type behavior explicit and reviewable
+
+**What it contains:**
+- `scalar`: TypeScript type definitions for each GraphQL scalar
+
+**Scaffolding:**
+```bash
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+```
+
+This creates a template with standard scalars (ID, String, Int, Float, Boolean) that you can customize.
+
 ## Defining Custom Scalars
 
 Scalars define the TypeScript types for GraphQL scalar values:

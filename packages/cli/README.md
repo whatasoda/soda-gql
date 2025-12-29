@@ -26,8 +26,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });
@@ -48,10 +47,10 @@ This command:
 
 #### Scaffold Templates
 
-For first-time setup, generate scalar and runtime adapter templates:
+For first-time setup, generate inject template with scalar and adapter definitions:
 
 ```bash
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
 ### CLI Options
@@ -59,7 +58,7 @@ bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
 | Option | Description |
 |--------|-------------|
 | `--config <path>` | Path to config file (auto-discovered if not specified) |
-| `--emit-inject-template <path>` | Generate scaffold templates for scalars and runtime adapter |
+| `--emit-inject-template <path>` | Generate scaffold template for scalars and adapter definitions |
 | `--format <type>` | Output format: `human` (default) or `json` |
 
 ### Config File Discovery
@@ -87,15 +86,14 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });
 EOF
 
 # 3. Generate templates (first-time only)
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
 
 # 4. Generate GraphQL system
 bun run soda-gql codegen

@@ -52,7 +52,7 @@ nextjs-webpack/
 │       ├── slices.ts            # Query/mutation slices
 │       └── operations.ts        # Composed operations
 ├── inject-module/
-│   └── runtime-adapter.ts       # Scalar and adapter definitions
+│   └── default.inject.ts        # Scalar and adapter definitions
 ├── graphql-system/              # Generated (do not edit)
 ├── schema.graphql               # GraphQL schema
 ├── soda-gql.config.ts           # soda-gql configuration
@@ -115,8 +115,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./inject-module/runtime-adapter.ts",
-      scalars: "./inject-module/runtime-adapter.ts",
+      inject: "./inject-module/default.inject.ts",
     },
   },
 });

@@ -45,8 +45,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: "./schema.graphql",
-      runtimeAdapter: "./src/graphql-system/runtime-adapter.ts",
-      scalars: "./src/graphql-system/scalars.ts",
+      inject: "./src/graphql-system/default.inject.ts",
     },
   },
 });
@@ -55,14 +54,24 @@ export default defineConfig({
 Generate the GraphQL system:
 
 ```bash
-# Scaffold scalar and runtime adapter templates (first-time setup)
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/inject.ts
+# Scaffold inject template with scalar and adapter definitions (first-time setup)
+bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
 
 # Generate GraphQL system from schema
 bun run soda-gql codegen
 ```
 
-The generated runtime module imports your scalar and adapter implementations. Keep the `scalars.ts` and `runtime-adapter.ts` files under version control so custom scalar behavior stays explicit. Declare each scalar with the `defineScalar()` helper exported by `@soda-gql/core`—for example `defineScalar("DateTime", ({ type }) => ({ input: type<string>(), output: type<Date>(), directives: {} }))`—so both input and output shapes stay typed.
+The generated module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
+
+### Generated Files
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `{schema}.inject.ts` | Custom scalar TypeScript types (hand-edit) | ✅ Commit |
+| `index.ts` | Generated schema types and gql composer | ❌ .gitignore |
+| `index.js`, `index.cjs` | Bundled output (by tsdown) | ❌ .gitignore |
+
+**Note**: The inject file defines TypeScript types for custom scalars (DateTime, JSON, etc.). Scaffold it once with `--emit-inject-template`, then customize as needed. The generated `index.ts` and bundled outputs should be added to `.gitignore`.
 
 ### Basic Example
 
