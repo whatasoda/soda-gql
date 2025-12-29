@@ -13,10 +13,55 @@ export declare namespace TypeProfile {
   export type WITH_DEFAULT_INPUT = "with_default_input";
   export type WithMeta = [TypeProfile, TypeModifier, WITH_DEFAULT_INPUT?];
 
+  // Helper types for optional field detection in nested Input objects
+  type IsOptionalProfile<TField extends WithMeta> = TField[1] extends `${string}?`
+    ? true
+    : TField[2] extends WITH_DEFAULT_INPUT
+      ? true
+      : false;
+
+  type OptionalProfileKeys<TProfileObject extends { readonly [key: string]: WithMeta }> = {
+    [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends true ? K : never;
+  }[keyof TProfileObject];
+
+  type RequiredProfileKeys<TProfileObject extends { readonly [key: string]: WithMeta }> = {
+    [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends false ? K : never;
+  }[keyof TProfileObject];
+
+  // Simplify utility to flatten intersection types into a single object type
+  type Simplify<T> = { [K in keyof T]: T[K] } & {};
+
+  // Helper type to build object type with correct optional/required fields
+  type ObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
+    {
+      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
+        ? Type<TProfileObject[K]>
+        : never;
+    } & {
+      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
+        ? Type<TProfileObject[K]>
+        : never;
+    }
+  >;
+
+  type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
+    {
+      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
+        ? AssignableType<TProfileObject[K]>
+        : never;
+    } & {
+      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
+        ? AssignableType<TProfileObject[K]>
+        : never;
+    }
+  >;
+
   export type Type<TProfile extends TypeProfile.WithMeta> =
     | (TProfile[0] extends [PrimitiveTypeProfile]
         ? ApplyTypeModifier<TProfile[0][0]["value"], TProfile[1]>
-        : { readonly [K in keyof TProfile[0]]: TProfile[0][K] extends TypeProfile.WithMeta ? Type<TProfile[0][K]> : never })
+        : TProfile[0] extends { readonly [key: string]: WithMeta }
+          ? ObjectTypeProfile<TProfile[0]>
+          : never)
     | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
 
   export type AssignableSignature<TProfile extends TypeProfile.WithMeta> =
@@ -46,11 +91,9 @@ export declare namespace TypeProfile {
     | ApplyTypeModifier<
         TProfile[0] extends [PrimitiveTypeProfile]
           ? TProfile[0][0]["value"]
-          : {
-              readonly [K in keyof TProfile[0]]: TProfile[0][K] extends TypeProfile.WithMeta
-                ? AssignableType<TProfile[0][K]>
-                : never;
-            },
+          : TProfile[0] extends { readonly [key: string]: WithMeta }
+            ? AssignableObjectTypeProfile<TProfile[0]>
+            : never,
         TProfile[1]
       >
     | VarRef<AssignableVarRefMeta<TProfile>>;
