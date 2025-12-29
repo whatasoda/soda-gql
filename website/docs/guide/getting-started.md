@@ -132,8 +132,6 @@ const result = await graphqlClient({
   document: getUserQuery.document,
   variables: { userId: "42" },
 });
-
-const data = getUserQuery.parse(result);
 ```
 
 ## Build Plugin Setup
