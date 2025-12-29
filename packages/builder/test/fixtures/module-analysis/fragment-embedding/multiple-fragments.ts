@@ -22,8 +22,8 @@ export const getDashboardQuery = gql.default(({ query }, { $var }) =>
     name: "GetDashboard",
     variables: { ...$var("userId").ID("!"), ...$var("postLimit").Int("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({ ...simpleUserFragment.embed() })),
-      ...f.posts({ limit: $.postLimit })(({ f }) => ({ ...simplePostFragment.embed() })),
+      ...f.user({ id: $.userId })(() => ({ ...simpleUserFragment.embed() })),
+      ...f.posts({ limit: $.postLimit })(() => ({ ...simplePostFragment.embed() })),
     }),
   }),
 );

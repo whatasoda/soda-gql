@@ -61,7 +61,7 @@ export const createOperationComposerFactory = <
         // Collect fragment usages during field building
         const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => options.fields({ f, $ }));
 
-        const document = buildDocument({
+        const document = buildDocument<TSchema, TFields, TVarDefinitions>({
           operationName,
           operationType,
           variables,

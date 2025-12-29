@@ -8,8 +8,8 @@ export const pageQuery = gql.default(({ query }, { $var }) =>
     name: "PageQuery",
     variables: { ...$var("userId").ID("!"), ...$var("postId").ID("!") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({ ...topLevelModel.embed() })),
-      ...f.posts({ id: $.postId })(({ f }) => ({ ...postFragment.embed() })),
+      ...f.user({ id: $.userId })(() => ({ ...topLevelModel.embed() })),
+      ...f.posts({ id: $.postId })(() => ({ ...postFragment.embed() })),
     }),
   }),
 );

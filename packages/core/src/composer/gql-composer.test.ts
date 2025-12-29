@@ -96,7 +96,7 @@ describe("createGqlInvoker", () => {
         name: "ProfilePageQuery",
         variables: { ...$var("userId").ID("!") },
         fields: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(({ f }) => ({
+          ...f.user({ id: $.userId })(() => ({
             ...userFragment.embed(),
           })),
         }),

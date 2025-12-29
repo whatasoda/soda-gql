@@ -14,7 +14,7 @@ export const userWithPostsFragment = gql.default(({ fragment }, { $var }) =>
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...postFragment.embed() })),
+      ...f.posts({ categoryId: $.categoryId })(() => ({ ...postFragment.embed() })),
     }),
   }),
 );
@@ -27,7 +27,7 @@ export const getUserWithPostsQuery = gql.default(({ query }, { $var }) =>
     name: "GetUserWithPosts",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({ ...userWithPostsFragment.embed({ categoryId: $.categoryId }) })),
+      ...f.user({ id: $.userId })(() => ({ ...userWithPostsFragment.embed({ categoryId: $.categoryId }) })),
     }),
   }),
 );
