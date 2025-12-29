@@ -60,18 +60,16 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("userId").scalar("ID:!")],
-            metadata: ({ $ }) => ({
-              custom: {
-                trackedVariables: [$var.getInner($.userId)],
-              },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("userId").scalar("ID:!")],
+          metadata: ({ $ }) => ({
+            custom: {
+              trackedVariables: [$var.getInner($.userId)],
+            },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(operation.metadata).toBeDefined();
@@ -83,18 +81,16 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("userId").scalar("ID:!")],
-            metadata: ({ $ }) => ({
-              custom: {
-                variableNames: [$var.getName($.userId)],
-              },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("userId").scalar("ID:!")],
+          metadata: ({ $ }) => ({
+            custom: {
+              variableNames: [$var.getName($.userId)],
+            },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(operation.metadata).toBeDefined();
@@ -106,21 +102,19 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ mutation }, { $var }) =>
-        mutation.operation(
-          {
-            name: "UpdateUser",
-            variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
-            metadata: ({ $ }) => ({
-              custom: {
-                trackedVars: {
-                  userId: $var.getName($.userId),
-                  userName: $var.getName($.userName),
-                },
+        mutation.operation({
+          name: "UpdateUser",
+          variables: [$var("userId").scalar("ID:!"), $var("userName").scalar("String:!")],
+          metadata: ({ $ }) => ({
+            custom: {
+              trackedVars: {
+                userId: $var.getName($.userId),
+                userName: $var.getName($.userName),
               },
-            }),
-          },
-          ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(({ f }) => [f.id()])],
-        ),
+            },
+          }),
+          fields: ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.userName })(({ f }) => [f.id()])],
+        }),
       );
 
       const meta = operation.metadata as OperationMetadata;
@@ -134,13 +128,11 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("userId").scalar("ID:!")],
-          },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("userId").scalar("ID:!")],
+          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(operation.metadata).toBeUndefined();
@@ -150,18 +142,16 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("userId").scalar("ID:!")],
-            metadata: ({ document }) => ({
-              custom: {
-                documentHash: createHash("sha256").update(print(document)).digest("hex"),
-              },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("userId").scalar("ID:!")],
+          metadata: ({ document }) => ({
+            custom: {
+              documentHash: createHash("sha256").update(print(document)).digest("hex"),
+            },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        }),
       );
 
       expect(operation.metadata).toBeDefined();
@@ -173,21 +163,19 @@ describe("metadata with variable access", () => {
       const gql = createGqlElementComposer<Schema>(schema);
 
       const operation = gql(({ query }, { $var }) =>
-        query.operation(
-          {
-            name: "GetUser",
-            variables: [$var("userId").scalar("ID:!")],
-            metadata: ({ $, document }) => ({
-              headers: {
-                "X-Variable-Name": $var.getName($.userId),
-              },
-              custom: {
-                hasDocument: document.kind === "Document",
-              },
-            }),
-          },
-          ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
-        ),
+        query.operation({
+          name: "GetUser",
+          variables: [$var("userId").scalar("ID:!")],
+          metadata: ({ $, document }) => ({
+            headers: {
+              "X-Variable-Name": $var.getName($.userId),
+            },
+            custom: {
+              hasDocument: document.kind === "Document",
+            },
+          }),
+          fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id()])],
+        }),
       );
 
       const meta = operation.metadata as OperationMetadata;

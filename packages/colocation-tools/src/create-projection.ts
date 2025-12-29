@@ -55,9 +55,12 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
  * @example
  * ```typescript
  * const userFragment = gql(({ fragment }) =>
- *   fragment.Query({ variables: [...] }, ({ f, $ }) => [
- *     f.user({ id: $.userId })(({ f }) => [f.id(), f.name()]),
- *   ])
+ *   fragment.Query({
+ *     variables: [...],
+ *     fields: ({ f, $ }) => [
+ *       f.user({ id: $.userId })(({ f }) => [f.id(), f.name()]),
+ *     ],
+ *   })
  * );
  *
  * const userProjection = createProjection(userFragment, {

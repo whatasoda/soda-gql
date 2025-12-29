@@ -5,11 +5,9 @@ import { userFragment } from "./slices";
 // Tests runtime import handling and transformation order
 
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("userId").scalar("ID:!")],
-    },
-    ({ f, $ }) => [f.user({ id: $.userId })(() => [userFragment.embed()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ f, $ }) => [f.user({ id: $.userId })(() => [userFragment.embed()])],
+  }),
 );

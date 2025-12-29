@@ -6,13 +6,11 @@ import { gql } from "@/graphql-system";
  * This will be transformed to zero-runtime code by the TypeScript compiler plugin.
  */
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("userId").scalar("ID:!")],
-    },
-    ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
+  }),
 );
 
 /**
@@ -21,10 +19,8 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
  * This demonstrates fetching a list of users with the same fields.
  */
 export const getUsersQuery = gql.default(({ query }) =>
-  query.operation(
-    {
-      name: "GetUsers",
-    },
-    ({ f }) => [f.users({})(({ f }) => [f.id(), f.name(), f.email()])],
-  ),
+  query.operation({
+    name: "GetUsers",
+    fields: ({ f }) => [f.users({})(({ f }) => [f.id(), f.name(), f.email()])],
+  }),
 );

@@ -37,14 +37,14 @@ Fragments define reusable field selections for a specific GraphQL type:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
-  fragment.User(
-    { variables: [$var("includeEmail").scalar("Boolean:?")] },
-    ({ f, $ }) => [
+  fragment.User({
+    variables: [$var("includeEmail").scalar("Boolean:?")],
+    fields: ({ f, $ }) => [
       f.id(),
       f.name(),
       f.email({ if: $.includeEmail }),
     ],
-  ),
+  }),
 );
 ```
 
@@ -54,28 +54,24 @@ Operations define complete GraphQL queries, mutations, or subscriptions:
 
 ```typescript
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("id").scalar("ID:!")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetUser",
+    variables: [$var("id").scalar("ID:!")],
+    fields: ({ f, $ }) => [
       f.user({ id: $.id })(({ f }) => [f.id(), f.name()]),
     ],
-  ),
+  }),
 );
 
 // Operation with embedded fragment
 export const getUserWithFragment = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUserWithFragment",
-      variables: [$var("id").scalar("ID:!"), $var("includeEmail").scalar("Boolean:?")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetUserWithFragment",
+    variables: [$var("id").scalar("ID:!"), $var("includeEmail").scalar("Boolean:?")],
+    fields: ({ f, $ }) => [
       f.user({ id: $.id })(({ f }) => [userFragment.embed({ includeEmail: $.includeEmail })]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -184,7 +180,7 @@ const myAttachment: GqlElementAttachment<typeof userFragment, "custom", { value:
 
 // Attach to a fragment
 export const userFragment = gql
-  .default(({ fragment }) => fragment.User({}, ({ f }) => [f.id(), f.name()]))
+  .default(({ fragment }) => fragment.User({ fields: ({ f }) => [f.id(), f.name()] }))
   .attach(myAttachment);
 
 // Access the attached property
@@ -220,21 +216,19 @@ Metadata is defined on operations:
 ```typescript
 // Operation with metadata
 export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("id").scalar("ID:!")],
-      metadata: ({ $, document }) => ({
-        headers: { "X-Request-ID": "user-query" },
-        custom: {
-          requiresAuth: true,
-          cacheTtl: 300,
-          trackedVariables: [$var.getInner($.id)],
-        },
-      }),
-    },
-    ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
-  ),
+  query.operation({
+    name: "GetUser",
+    variables: [$var("id").scalar("ID:!")],
+    metadata: ({ $, document }) => ({
+      headers: { "X-Request-ID": "user-query" },
+      custom: {
+        requiresAuth: true,
+        cacheTtl: 300,
+        trackedVariables: [$var.getInner($.id)],
+      },
+    }),
+    fields: ({ f, $ }) => [f.user({ id: $.id })(({ f }) => [f.id(), f.name()])],
+  }),
 );
 ```
 

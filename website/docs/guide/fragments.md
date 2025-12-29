@@ -36,12 +36,14 @@ Use the `gql.default()` pattern to define a fragment:
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({}, ({ f }) => [
-    //
-    f.id(),
-    f.name(),
-    f.email(),
-  ]),
+  fragment.User({
+    fields: ({ f }) => [
+      //
+      f.id(),
+      f.name(),
+      f.email(),
+    ],
+  }),
 );
 ```
 
@@ -99,9 +101,9 @@ Unlike standard GraphQL fragments, soda-gql fragments can declare their own vari
 
 ```typescript
 export const userFragment = gql.default(({ fragment }, { $var }) =>
-  fragment.User(
-    { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [
+  fragment.User({
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ f, $ }) => [
       //
       f.user({ id: $.userId })(({ f }) => [
         //
@@ -110,7 +112,7 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
         f.email(),
       ]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -122,15 +124,17 @@ Embed fragments in other fragments or operations using `.embed()`:
 
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
-  fragment.Post({}, ({ f }) => [
-    //
-    f.id(),
-    f.title(),
-    f.author()(({ f }) => [
+  fragment.Post({
+    fields: ({ f }) => [
       //
-      userFragment.embed({ includeEmail: false }),
-    ]),
-  ]),
+      f.id(),
+      f.title(),
+      f.author()(({ f }) => [
+        //
+        userFragment.embed({ includeEmail: false }),
+      ]),
+    ],
+  }),
 );
 ```
 
@@ -139,16 +143,14 @@ When embedding a fragment with variables, pass the values through the first argu
 ```typescript
 // Parent operation with its own variable
 export const getPostQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetPost",
-      variables: [
-        //
-        $var("postId").scalar("ID:!"),
-        $var("showEmail").scalar("Boolean:?"),
-      ],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "GetPost",
+    variables: [
+      //
+      $var("postId").scalar("ID:!"),
+      $var("showEmail").scalar("Boolean:?"),
+    ],
+    fields: ({ f, $ }) => [
       //
       f.post({ id: $.postId })(({ f }) => [
         //
@@ -161,7 +163,7 @@ export const getPostQuery = gql.default(({ query }, { $var }) =>
         ]),
       ]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -196,11 +198,13 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({}, ({ f }) => [
-      //
-      f.id(),
-      f.name(),
-    ]),
+    fragment.User({
+      fields: ({ f }) => [
+        //
+        f.id(),
+        f.name(),
+      ],
+    }),
   )
   .attach({
     name: "displayName",

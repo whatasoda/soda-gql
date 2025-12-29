@@ -125,27 +125,20 @@ import { gql } from "@/graphql-system";
 
 // Basic user fragment with field selection
 export const userBasic = gql.default(({ fragment }) =>
-  fragment.User(
-    {},
-    ({ f }) => [
+  fragment.User({
+    fields: ({ f }) => [
       //
       f.id(),
       f.name(),
     ],
-    (selected) => ({
-      id: selected.id,
-      name: selected.name,
-    }),
-  ),
+  }),
 );
 
 // User with nested posts selection
 export const userWithPosts = gql.default(({ fragment }, { $var }) =>
-  fragment.User(
-    {
-      variables: [$var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
+  fragment.User({
+    variables: [$var("categoryId").scalar("ID:?")],
+    fields: ({ f, $ }) => [
       //
       f.id(),
       f.name(),
@@ -155,15 +148,7 @@ export const userWithPosts = gql.default(({ fragment }, { $var }) =>
         f.title(),
       ]),
     ],
-    (selected) => ({
-      id: selected.id,
-      name: selected.name,
-      posts: selected.posts.map((post) => ({
-        id: post.id,
-        title: post.title,
-      })),
-    }),
-  ),
+  }),
 );
 
 // Export inferred types
@@ -181,18 +166,16 @@ import { gql } from "@/graphql-system";
 import { userWithPosts } from "../fragments/user.fragment";
 
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "ProfilePageQuery",
-      variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "ProfilePageQuery",
+    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:?")],
+    fields: ({ f, $ }) => [
       f.users({
         id: [$.userId],
         categoryId: $.categoryId,
       })(({ f }) => [userWithPosts.embed({ categoryId: $.categoryId })]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -201,15 +184,13 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
 import { gql } from "@/graphql-system";
 
 export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
-  mutation.operation(
-    {
-      name: "UpdateUser",
-      variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
-    },
-    ({ f, $ }) => [
+  mutation.operation({
+    name: "UpdateUser",
+    variables: [$var("id").scalar("ID:!"), $var("name").scalar("String:!")],
+    fields: ({ f, $ }) => [
       f.updateUser({ id: $.id, name: $.name })(({ f }) => [f.id(), f.name()]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -254,12 +235,13 @@ describe("userBasic fragment", () => {
 **Before (development)**
 ```typescript
 export const profileQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    { name: "ProfilePageQuery", variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [
+  query.operation({
+    name: "ProfilePageQuery",
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ f, $ }) => [
       f.users({ id: [$.userId] })(({ f }) => [f.id(), f.name()]),
     ],
-  ),
+  }),
 );
 ```
 
@@ -296,15 +278,13 @@ import { gql } from "@/graphql-system";
 import { userBasic } from "@/fragments/user.fragment";
 
 export const safeGetUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "SafeGetUser",
-      variables: [$var("id").scalar("ID:!")],
-    },
-    ({ f, $ }) => [
+  query.operation({
+    name: "SafeGetUser",
+    variables: [$var("id").scalar("ID:!")],
+    fields: ({ f, $ }) => [
       f.user({ id: $.id })(({ f }) => [userBasic.embed()]),
     ],
-  ),
+  }),
 );
 
 // Usage with neverthrow

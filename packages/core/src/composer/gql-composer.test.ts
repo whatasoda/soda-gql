@@ -47,11 +47,13 @@ describe("createGqlInvoker", () => {
       idVarRef = $var("id").scalar("ID:!");
       fieldArgRef = $var("id").byField("Query", "user", "id");
 
-      return fragment.User({}, ({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ]);
+      return fragment.User({
+        fields: ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
+      });
     });
 
     expect(userFragment.typename).toBe("User");
@@ -65,11 +67,13 @@ describe("createGqlInvoker", () => {
 
   it("creates fragment descriptors with fragment wiring", () => {
     const userFragment = gql(({ fragment }) =>
-      fragment.User({}, ({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ]),
+      fragment.User({
+        fields: ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
+      }),
     );
 
     expect(userFragment.typename).toBe("User");
@@ -80,27 +84,27 @@ describe("createGqlInvoker", () => {
 
   it("creates inline operations with variable references", () => {
     const userFragment = gql(({ fragment }) =>
-      fragment.User({}, ({ f }) => [
-        //
-        f.id(),
-        f.name(),
-      ]),
+      fragment.User({
+        fields: ({ f }) => [
+          //
+          f.id(),
+          f.name(),
+        ],
+      }),
     );
 
     const profileQuery = gql(({ query }, { $var }) =>
-      query.operation(
-        {
-          name: "ProfilePageQuery",
-          variables: [$var("userId").scalar("ID:!")],
-        },
-        ({ f, $ }) => [
+      query.operation({
+        name: "ProfilePageQuery",
+        variables: [$var("userId").scalar("ID:!")],
+        fields: ({ f, $ }) => [
           //
           f.user({ id: $.userId })(() => [
             //
             userFragment.embed(),
           ]),
         ],
-      ),
+      }),
     );
 
     expect(profileQuery.operationName).toBe("ProfilePageQuery");

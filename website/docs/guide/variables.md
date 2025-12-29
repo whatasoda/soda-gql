@@ -35,18 +35,16 @@ Variables are declared using `$var()` in the `variables` array:
 
 ```typescript
 gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "SearchPosts",
-      variables: [
-        //
-        $var("query").scalar("String:!"),      // Required string
-        $var("limit").scalar("Int:?"),         // Optional int
-        $var("tags").scalar("String:![]?"),    // Optional list of required strings
-      ],
-    },
-    ({ f, $ }) => [...],
-  ),
+  query.operation({
+    name: "SearchPosts",
+    variables: [
+      //
+      $var("query").scalar("String:!"),      // Required string
+      $var("limit").scalar("Int:?"),         // Optional int
+      $var("tags").scalar("String:![]?"),    // Optional list of required strings
+    ],
+    fields: ({ f, $ }) => [...],
+  }),
 );
 ```
 
@@ -117,9 +115,9 @@ Pass variables to embedded fragments:
 ```typescript
 // Fragment with its own variable
 const userFragment = gql.default(({ fragment }, { $var }) =>
-  fragment.Query(
-    { variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [
+  fragment.Query({
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ f, $ }) => [
       //
       f.user({ id: $.userId })(({ f }) => [
         //
@@ -128,22 +126,20 @@ const userFragment = gql.default(({ fragment }, { $var }) =>
         f.email(),
       ]),
     ],
-  ),
+  }),
 );
 
 // Operation passing its variable to the fragment
 const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "GetUser",
-      variables: [$var("userId").scalar("ID:!")],
-    },
-    ({ $ }) => [
+  query.operation({
+    name: "GetUser",
+    variables: [$var("userId").scalar("ID:!")],
+    fields: ({ $ }) => [
       //
       // Pass operation variable to fragment variable
       userFragment.embed({ userId: $.userId }),
     ],
-  ),
+  }),
 );
 ```
 
@@ -180,17 +176,15 @@ Variable types are fully inferred:
 
 ```typescript
 const query = gql.default(({ query }, { $var }) =>
-  query.operation(
-    {
-      name: "Search",
-      variables: [
-        //
-        $var("query").scalar("String:!"),
-        $var("limit").scalar("Int:?"),
-      ],
-    },
-    ({ f, $ }) => [...],
-  ),
+  query.operation({
+    name: "Search",
+    variables: [
+      //
+      $var("query").scalar("String:!"),
+      $var("limit").scalar("Int:?"),
+    ],
+    fields: ({ f, $ }) => [...],
+  }),
 );
 
 // Inferred type
