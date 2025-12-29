@@ -7,8 +7,8 @@ import { userFragment } from "./fragments";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("userId").scalar("ID:!"), $var("categoryId").scalar("ID:!")],
-    fields: ({ f, $ }) => [f.user({ id: $.userId })(() => [userFragment.embed({ categoryId: $.categoryId })])],
+    variables: { ...$var("userId").scalar("ID:!"), ...$var("categoryId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...userFragment.embed({ categoryId: $.categoryId }) })) }),
   }),
 );
 
@@ -18,8 +18,8 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const listUsersQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ListUsers",
-    variables: [$var("categoryId").scalar("ID:?")],
-    fields: ({ f, $ }) => [f.users({ categoryId: $.categoryId })(({ f }) => [f.id(), f.name(), f.email()])],
+    variables: { ...$var("categoryId").scalar("ID:?") },
+    fields: ({ f, $ }) => ({ ...f.users({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
 
@@ -29,7 +29,7 @@ export const listUsersQuery = gql.default(({ query }, { $var }) =>
 export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation({
     name: "UpdateUser",
-    variables: [$var("userId").scalar("ID:!"), $var("name").scalar("String:!")],
-    fields: ({ f, $ }) => [f.updateUser({ id: $.userId, name: $.name })(({ f }) => [f.id(), f.name(), f.email()])],
+    variables: { ...$var("userId").scalar("ID:!"), ...$var("name").scalar("String:!") },
+    fields: ({ f, $ }) => ({ ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );

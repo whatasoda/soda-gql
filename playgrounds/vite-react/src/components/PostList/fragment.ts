@@ -8,8 +8,8 @@ import { gql } from "@/graphql-system";
 export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: [$var("userId").scalar("ID:!")],
-      fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.posts({})(({ f }) => [f.id(), f.title()])])],
+      variables: { ...$var("userId").scalar("ID:!") },
+      fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),
     }),
   )
   .attach(

@@ -8,8 +8,8 @@ import { gql } from "@/graphql-system";
 export const getUserQuery = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUser",
-    variables: [$var("userId").scalar("ID:!")],
-    fields: ({ f, $ }) => [f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()])],
+    variables: { ...$var("userId").scalar("ID:!") },
+    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
 
@@ -21,6 +21,6 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 export const getUsersQuery = gql.default(({ query }) =>
   query.operation({
     name: "GetUsers",
-    fields: ({ f }) => [f.users({})(({ f }) => [f.id(), f.name(), f.email()])],
+    fields: ({ f }) => ({ ...f.users({})(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
   }),
 );
