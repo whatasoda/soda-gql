@@ -77,7 +77,7 @@ describe("metadata adapter", () => {
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -165,7 +165,7 @@ describe("metadata adapter", () => {
           metadata: ({ fragmentMetadata }) => ({
             mergedHeaders: fragmentMetadata?.allHeaders,
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -206,7 +206,7 @@ describe("metadata adapter", () => {
           name: "GetUser",
           variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
         }),
       );
 
@@ -251,9 +251,9 @@ describe("metadata adapter", () => {
             ...f.user({ id: $.id })(({ f }) => ({
               ...f.id(),
               ...f.name(),
-              ...f.posts()(({ f }) => ({ ...postFragment.embed() })),
+              ...f.posts()(() => ({ ...postFragment.embed() })),
             })),
-            ...f.post({ id: $.id })(({ f }) => ({ ...userFragment.embed() })),
+            ...f.post({ id: $.id })(() => ({ ...userFragment.embed() })),
           }),
         }),
       );
@@ -295,7 +295,7 @@ describe("metadata adapter", () => {
           name: "GetUser",
           variables: { ...$var("id").scalar("ID:!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
         }),
       );
 
