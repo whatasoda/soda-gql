@@ -78,11 +78,10 @@ import {
   createGqlElementComposer,
   define,
   defineOperationRoots,
-  defineScalar,
   unsafeInputType,
   unsafeOutputType,
 } from "@soda-gql/core";
-import { createRuntimeAdapter } from "@soda-gql/core/runtime";
+import { defineAdapter, defineScalar } from "@soda-gql/core/adapter";
 
 const scalars = {
   ...defineScalar<"ID", string, string>("ID"),
@@ -92,9 +91,12 @@ const scalars = {
   ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
 } as const;
 
-const adapter = createRuntimeAdapter(({ type }) => ({
-  nonGraphqlErrorType: type<{ type: "non-graphql-error"; cause: unknown }>(),
-}));
+const adapter = defineAdapter({
+  helpers: {},
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => fragments.map((m) => m.metadata),
+  },
+});
 
 const schema = {
   label: "benchmark" as const,
