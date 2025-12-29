@@ -41,19 +41,17 @@ export const createOperationComposerFactory = <
       TFields extends AnyFields[],
       TVarDefinitions extends InputTypeSpecifiers[] = [{}],
       TOperationMetadata = unknown,
-    >(
-      options: {
-        name: TOperationName;
-        variables?: TVarDefinitions;
-        metadata?: MetadataBuilder<
-          ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
-          TOperationMetadata,
-          TAggregatedFragmentMetadata,
-          TSchemaLevel
-        >;
-      },
-      fieldBuilder: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>,
-    ) => {
+    >(options: {
+      name: TOperationName;
+      variables?: TVarDefinitions;
+      metadata?: MetadataBuilder<
+        ReturnType<typeof createVarRefs<TSchema, MergeVarDefinitions<TVarDefinitions>>>,
+        TOperationMetadata,
+        TAggregatedFragmentMetadata,
+        TSchemaLevel
+      >;
+      fields: FieldsBuilder<TSchema, TTypeName, MergeVarDefinitions<TVarDefinitions>, TFields>;
+    }) => {
       return Operation.create<
         TSchema,
         TOperationType,
@@ -67,7 +65,7 @@ export const createOperationComposerFactory = <
         const f = createFieldFactories(schema, operationTypeName);
 
         // Collect fragment usages during field building
-        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => mergeFields(fieldBuilder({ f, $ })));
+        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => mergeFields(options.fields({ f, $ })));
 
         const document = buildDocument({
           operationName,
