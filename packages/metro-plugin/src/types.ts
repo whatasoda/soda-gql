@@ -1,4 +1,6 @@
-import type { PluginOptions } from "@soda-gql/plugin-common";
+import type { PluginOptions, TransformerType } from "@soda-gql/plugin-common";
+
+export type { TransformerType } from "@soda-gql/plugin-common";
 
 /**
  * Options for the Metro plugin configuration wrapper.
@@ -6,6 +8,11 @@ import type { PluginOptions } from "@soda-gql/plugin-common";
 export type MetroPluginOptions = PluginOptions & {
   /** Enable verbose logging for debugging */
   readonly debug?: boolean;
+  /**
+   * Transformer to use for code transformation.
+   * @default 'babel'
+   */
+  readonly transformer?: TransformerType;
 };
 
 /**

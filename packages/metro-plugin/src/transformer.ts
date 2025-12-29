@@ -2,16 +2,22 @@ import crypto from "node:crypto";
 import remapping, { type SourceMapInput } from "@ampproject/remapping";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
+import type { BuilderArtifact } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import {
   createPluginSession,
   getSharedArtifact,
   getSharedPluginSession,
   getSharedState,
+  getSharedSwcTransformer,
+  getSharedTransformerType,
   getStateKey,
   type PluginSession,
   setSharedArtifact,
   setSharedPluginSession,
+  setSharedSwcTransformer,
+  type SwcTransformerInterface,
 } from "@soda-gql/plugin-common";
 import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
@@ -110,6 +116,52 @@ const ensurePluginSession = (): PluginSession | null => {
 };
 
 /**
+ * Whether SWC transformer initialization has been attempted.
+ */
+let swcInitialized = false;
+
+/**
+ * Initialize SWC transformer if configured.
+ */
+const initializeSwcTransformer = async (
+  artifact: BuilderArtifact,
+  config: ResolvedSodaGqlConfig,
+): Promise<SwcTransformerInterface | null> => {
+  const stateKey = getStateKey();
+
+  // Check if already initialized
+  const existing = getSharedSwcTransformer(stateKey);
+  if (existing || swcInitialized) {
+    return existing;
+  }
+
+  swcInitialized = true;
+
+  // Check if SWC is configured
+  const transformerType = getSharedTransformerType(stateKey);
+  if (transformerType !== "swc") {
+    return null;
+  }
+
+  try {
+    const { createTransformer } = await import("@soda-gql/swc-transformer");
+    const transformer = await createTransformer({
+      config,
+      artifact,
+      sourceMap: true,
+    });
+    setSharedSwcTransformer(stateKey, transformer);
+    return transformer;
+  } catch (error) {
+    console.warn(
+      `[@soda-gql/metro-plugin] Failed to initialize SWC transformer: ${error}. ` +
+        "Make sure @soda-gql/swc-transformer is installed. Falling back to Babel.",
+    );
+    return null;
+  }
+};
+
+/**
  * Transform source code with soda-gql transformations.
  * Wraps the upstream Metro Babel transformer.
  */
@@ -149,7 +201,43 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
     return upstream.transform(params);
   }
 
-  // Transform with soda-gql Babel plugin first
+  // Try SWC transformer first if configured
+  const swcTransformer = await initializeSwcTransformer(artifact, session.config);
+  if (swcTransformer) {
+    const swcResult = swcTransformer.transform({
+      sourceCode: src,
+      sourcePath: filename,
+    });
+
+    if (swcResult.transformed) {
+      // Pass SWC-transformed code to upstream transformer
+      const upstreamResult = await upstream.transform({
+        src: swcResult.sourceCode,
+        filename,
+        options,
+      });
+
+      // Chain source maps if both exist
+      if (swcResult.sourceMap && upstreamResult.map) {
+        const mergedMap = remapping(
+          [upstreamResult.map as SourceMapInput, JSON.parse(swcResult.sourceMap) as SourceMapInput],
+          () => null,
+        );
+        return { ...upstreamResult, map: mergedMap };
+      }
+
+      // Include our map if upstream doesn't have one
+      if (swcResult.sourceMap) {
+        return { ...upstreamResult, map: JSON.parse(swcResult.sourceMap) };
+      }
+
+      return upstreamResult;
+    }
+    // SWC didn't transform (no soda-gql code), fall through to upstream
+    return upstream.transform(params);
+  }
+
+  // Fall back to Babel transformer
   const sodaGqlPlugin = createPluginWithArtifact({
     artifact,
     config: session.config,
