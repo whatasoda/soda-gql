@@ -52,22 +52,14 @@ export const createOperationComposerFactory = <
       >;
       fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
     }) => {
-      return Operation.create<
-        TSchema,
-        TOperationType,
-        TOperationName,
-        TVarDefinitions,
-        TFields
-      >(() => {
+      return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>(() => {
         const { name: operationName } = options;
         const variables = (options.variables ?? {}) as TVarDefinitions;
         const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
         const f = createFieldFactories(schema, operationTypeName);
 
         // Collect fragment usages during field building
-        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() =>
-          options.fields({ f, $ }),
-        );
+        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => options.fields({ f, $ }));
 
         const document = buildDocument({
           operationName,

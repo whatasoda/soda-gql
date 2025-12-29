@@ -2,7 +2,7 @@ import { parseSync } from "@swc/core";
 import type { ArrowFunctionExpression, CallExpression, Module, Node, ObjectExpression } from "@swc/types";
 import { err, ok, type Result } from "neverthrow";
 import { collectGqlIdentifiers, isFieldSelectionObject, isGqlDefinitionCall } from "./detection";
-import { NEWLINE_INSERTION, hasExistingNewline } from "./insertion";
+import { hasExistingNewline, NEWLINE_INSERTION } from "./insertion";
 import type { FormatError, FormatOptions, FormatResult } from "./types";
 
 type TraversalContext = {

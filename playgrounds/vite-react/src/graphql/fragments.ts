@@ -7,11 +7,18 @@ import { gql } from "@/graphql-system";
 export const userFragment = gql.default(({ fragment }, { $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").scalar("ID:!") },
-    fields: ({ f, $ }) => ({ ...f.id(), ...f.name(), ...f.email(), ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })) }),
+    fields: ({ f, $ }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.email(),
+      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })),
+    }),
   }),
 );
 
 /**
  * Simple post fragment without variables
  */
-export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.body() }) }));
+export const postFragment = gql.default(({ fragment }) =>
+  fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.body() }) }),
+);

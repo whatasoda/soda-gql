@@ -30,6 +30,8 @@ export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
   mutation.operation({
     name: "UpdateUser",
     variables: { ...$var("userId").scalar("ID:!"), ...$var("name").scalar("String:!") },
-    fields: ({ f, $ }) => ({ ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
+    fields: ({ f, $ }) => ({
+      ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })),
+    }),
   }),
 );

@@ -1,12 +1,12 @@
-import {
-  type AnyFieldSelectionFactory,
-  type AnyFieldSelectionFactoryReturn,
-  type FieldSelectionFactories,
-  type FieldSelectionFactoryObjectReturn,
-  type FieldSelectionFactoryPrimitiveReturn,
-  type FieldSelectionFactoryUnionReturn,
-  type NestedObjectFieldsBuilder,
-  type NestedUnionFieldsBuilder,
+import type {
+  AnyFieldSelectionFactory,
+  AnyFieldSelectionFactoryReturn,
+  FieldSelectionFactories,
+  FieldSelectionFactoryObjectReturn,
+  FieldSelectionFactoryPrimitiveReturn,
+  FieldSelectionFactoryUnionReturn,
+  NestedObjectFieldsBuilder,
+  NestedUnionFieldsBuilder,
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";

@@ -248,7 +248,11 @@ describe("metadata adapter", () => {
             allHeaders: fragmentMetadata?.allHeaders,
           }),
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name(), ...f.posts()(({ f }) => ({ ...postFragment.embed() })) })),
+            ...f.user({ id: $.id })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+              ...f.posts()(({ f }) => ({ ...postFragment.embed() })),
+            })),
             ...f.post({ id: $.id })(({ f }) => ({ ...userFragment.embed() })),
           }),
         }),

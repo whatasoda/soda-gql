@@ -23,10 +23,7 @@ export const createGqlFragmentComposers = <
     TVarDefinitions extends InputTypeSpecifiers = {},
   >(options: {
     variables?: TVarDefinitions;
-    metadata?: FragmentMetadataBuilder<
-      ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>,
-      TFragmentMetadata
-    >;
+    metadata?: FragmentMetadataBuilder<ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>, TFragmentMetadata>;
     fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
   }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
 

@@ -9,7 +9,9 @@ export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
       variables: { ...$var("userId").scalar("ID:!") },
-      fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),
+      fields: ({ f, $ }) => ({
+        ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })),
+      }),
     }),
   )
   .attach(
