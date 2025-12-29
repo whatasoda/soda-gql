@@ -3,9 +3,7 @@ import { gql } from "../../../codegen-fixture/graphql-system";
 // Case 1: Non-exported top-level definition (used internally only)
 // Should be collected with canonical ID: filePath::internalPostFragment
 // UPDATED: Added body() field
-const internalPostFragment = gql.default(({ fragment }) =>
-  fragment.Post({ fields: ({ f }) => [f.id(), f.title(), f.body()] }),
-);
+const internalPostFragment = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => [f.id(), f.title(), f.body()] }));
 
 // Case 2: Exported fragment using the internal fragment
 // Should be collected with canonical ID: filePath::userWithPostsFragment

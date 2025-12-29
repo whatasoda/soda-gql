@@ -65,7 +65,9 @@ export const createOperationComposerFactory = <
         const f = createFieldFactories(schema, operationTypeName);
 
         // Collect fragment usages during field building
-        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => mergeFields(options.fields({ f, $ })));
+        const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() =>
+          mergeFields(options.fields({ f, $ })),
+        );
 
         const document = buildDocument({
           operationName,
