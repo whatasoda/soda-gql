@@ -12,7 +12,7 @@ Checklist:
 
 ## Project Status
 
-**soda-gql is at pre-release v0.0.1**:
+**soda-gql is at pre-release v0.2.0**:
 - All refactors and architectural changes are encouraged
 - Breaking changes are acceptable
 - NO migration paths required
@@ -52,24 +52,7 @@ See the main [README](./README.md) for installation and setup instructions.
 - Operations: GraphQL query/mutation/subscription definitions with field selections
 - Zero Runtime: All transformations at build time
 
-**API Pattern**:
-```typescript
-// Operation with field selections
-export const getUserQuery = gql.default(({ query }, { $var }) =>
-  query.operation(
-    { name: "GetUser", variables: [$var("userId").scalar("ID:!")] },
-    ({ f, $ }) => [
-      f.user({ id: $.userId })(({ f }) => [f.id(), f.name(), f.email()]),
-    ],
-  ),
-);
-
-// Fragment definition
-export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({}, ({ f }) => [f.id(), f.name()]),
-);
-// Embed in operations: userFragment.embed()
-```
+**API Pattern**: See `packages/core/test/` for usage examples
 
 ### Commands
 
@@ -86,6 +69,15 @@ bun quality
 # Type check only
 bun typecheck
 ```
+
+### Developer Documentation
+
+| Document | When to Reference |
+|----------|------------------|
+| [Builder Flow](./docs/guides/builder-flow.md) | Understanding builder processing flow |
+| [Monorepo Infrastructure](./docs/guides/monorepo-infrastructure.md) | Package structure, build system, testing infrastructure |
+| [Performance Profiling](./docs/guides/performance-profiling.md) | Performance measurement and optimization |
+| [Performance Reference](./docs/reference/perf-measures.md) | Benchmark command quick reference |
 
 ### Documentation Standards
 
@@ -150,17 +142,7 @@ bun typecheck
 - Fixtures: `packages/{package}/test/fixtures/**/*.ts`
 - Shared utilities: `@soda-gql/common/test`
 
-**Example Structure**:
-```typescript
-// Bad: Inline string test code
-const source = `import { gql } from "@/graphql-system"; export const fragment = gql.default(...)`;
-const result = analyze(source);
-
-// Good: Fixture-based test code
-import { loadFixture } from "@soda-gql/common/test";
-const { filePath, source } = loadFixture("fragment-definition");
-const result = analyze({ filePath, source });
-```
+**Example**: See `packages/builder/test/` for fixture-based testing patterns
 
 ### Pull Request Guidelines
 
