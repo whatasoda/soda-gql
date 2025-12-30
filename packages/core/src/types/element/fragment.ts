@@ -19,7 +19,7 @@ interface FragmentArtifact<
   TFields extends Partial<AnyFields>,
 > {
   readonly typename: TTypeName;
-  readonly embed: (variables: TVariables) => TFields;
+  readonly spread: (variables: TVariables) => TFields;
 }
 
 declare const __FRAGMENT_BRAND__: unique symbol;
@@ -41,8 +41,8 @@ export class Fragment<
   public get typename() {
     return GqlElement.get(this).typename;
   }
-  public get embed() {
-    return GqlElement.get(this).embed;
+  public get spread() {
+    return GqlElement.get(this).spread;
   }
 
   static create<
@@ -53,7 +53,7 @@ export class Fragment<
   >(
     define: () => {
       typename: TTypeName;
-      embed: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
+      spread: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };

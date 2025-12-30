@@ -48,7 +48,7 @@ export const withFragmentUsageCollection = <T>(fn: () => T): { result: T; usages
 };
 
 /**
- * Record a fragment usage. Called when fragment.embed() is invoked.
+ * Record a fragment usage. Called when fragment.spread() is invoked.
  * No-op if not in a collection context.
  *
  * @internal

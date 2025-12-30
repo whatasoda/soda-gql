@@ -40,7 +40,7 @@ export const createGqlFragmentComposers = <
 
       return Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>(() => ({
         typename,
-        embed: (variables) => {
+        spread: (variables) => {
           const f = createFieldFactories(schema, typename);
           const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);
 
