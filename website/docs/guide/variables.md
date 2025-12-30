@@ -106,9 +106,9 @@ Reference declared variables using `$`:
 })
 ```
 
-### Passing to Embedded Fragments
+### Passing to Spread Fragments
 
-Pass variables to embedded fragments:
+Pass variables to spread fragments:
 
 ```typescript
 // Fragment with its own variable
@@ -132,7 +132,7 @@ const getUserQuery = gql.default(({ query }, { $var }) =>
     variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => ({
       // Pass operation variable to fragment variable
-      ...userFragment.embed({ userId: $.userId }),
+      ...userFragment.spread({ userId: $.userId }),
     }),
   }),
 );

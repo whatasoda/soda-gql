@@ -44,7 +44,7 @@ const fieldPathContext: { current: FieldPath | null } = {
  * ```typescript
  * import { getCurrentFieldPath } from '@soda-gql/core';
  *
- * // Inside a field builder or model embed:
+ * // Inside a field builder or model spread:
  * const path = getCurrentFieldPath();
  * console.log(path?.full); // "$.user.posts[].author"
  * ```

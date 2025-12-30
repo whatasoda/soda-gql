@@ -128,7 +128,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
     variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({
-        ...userFragment.embed(),
+        ...userFragment.spread(),
       })),
     }),
   }),

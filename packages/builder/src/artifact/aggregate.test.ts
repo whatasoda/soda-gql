@@ -45,7 +45,7 @@ describe("artifact aggregate", () => {
         type: "fragment",
         element: Fragment.create(() => ({
           typename: "User",
-          embed: () => ({}),
+          spread: () => ({}),
           metadata: null,
         })),
       },
@@ -136,7 +136,7 @@ describe("artifact aggregate", () => {
         type: "fragment",
         element: Fragment.create(() => ({
           typename: "User",
-          embed: () => ({}),
+          spread: () => ({}),
           metadata: null,
         })),
       },

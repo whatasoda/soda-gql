@@ -262,7 +262,7 @@ export const pageQuery = gql.default(({ query }, { $var, $colocate }) =>
     name: "Page",
     variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
-      userCard: userCardFragment.embed({ userId: $.userId }),
+      userCard: userCardFragment.spread({ userId: $.userId }),
     }),
   }),
 );

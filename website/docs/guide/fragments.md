@@ -21,7 +21,7 @@ soda-gql takes a different approach:
 | **Definition** | String-based, inside `.graphql` files | TypeScript functions with full IDE support |
 | **Type Safety** | Requires external codegen | Built-in type inference |
 | **Variables** | Not supported in standard GraphQL fragments | First-class support with `$var` |
-| **Composition** | `...FragmentName` spread syntax | `.embed()` method with typed variable passing |
+| **Composition** | `...FragmentName` spread syntax | `.spread()` method with typed variable passing |
 | **IDE Support** | Limited (depends on tooling) | Full autocomplete, go-to-definition, refactoring |
 
 :::tip
@@ -113,9 +113,9 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
 
 Variables are declared using object spread syntax with `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
 
-## Embedding Fragments
+## Spreading Fragments
 
-Embed fragments in other fragments or operations using `.embed()`:
+Spread fragments in other fragments or operations using `.spread()`:
 
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
@@ -124,14 +124,14 @@ export const postFragment = gql.default(({ fragment }) =>
       ...f.id(),
       ...f.title(),
       ...f.author()(({ f }) => ({
-        ...userFragment.embed({ includeEmail: false }),
+        ...userFragment.spread({ includeEmail: false }),
       })),
     }),
   }),
 );
 ```
 
-When embedding a fragment with variables, pass the values through the first argument:
+When spreading a fragment with variables, pass the values through the first argument:
 
 ```typescript
 // Parent operation with its own variable
@@ -147,8 +147,8 @@ export const getPostQuery = gql.default(({ query }, { $var }) =>
         ...f.id(),
         ...f.title(),
         ...f.author()(({ f }) => ({
-          // Pass parent variable to embedded fragment
-          ...userFragment.embed({ includeEmail: $.showEmail }),
+          // Pass parent variable to spread fragment
+          ...userFragment.spread({ includeEmail: $.showEmail }),
         })),
       })),
     }),

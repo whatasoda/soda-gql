@@ -42,10 +42,10 @@ export const fixtures = [
   // Method chaining patterns
   "attach-chaining",
 
-  // Fragment embedding
-  "fragment-embedding/basic-embed",
-  "fragment-embedding/fragment-in-fragment",
-  "fragment-embedding/multiple-fragments",
+  // Fragment spreading
+  "fragment-spreading/basic-spread",
+  "fragment-spreading/fragment-in-fragment",
+  "fragment-spreading/multiple-fragments",
 ] as const;
 
 export type FixtureName = (typeof fixtures)[number];

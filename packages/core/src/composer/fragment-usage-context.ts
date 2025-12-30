@@ -2,14 +2,14 @@
  * Fragment usage context using shared value container pattern.
  *
  * This module tracks fragment usages during operation building,
- * allowing metadata from embedded fragments to be collected and aggregated.
+ * allowing metadata from spread fragments to be collected and aggregated.
  * Similar to field-path-context, uses a shared mutable container.
  */
 
 import type { FieldPath } from "./field-path-context";
 
 /**
- * Record of a fragment being embedded in an operation.
+ * Record of a fragment being spread in an operation.
  * Stores metadata builder (not fragment reference) since fragment cannot reference itself.
  *
  * @template TFragmentMetadata - The type of metadata produced by the fragment's metadata builder
@@ -17,7 +17,7 @@ import type { FieldPath } from "./field-path-context";
 export type FragmentUsageRecord<TFragmentMetadata = unknown> = {
   /** Metadata builder factory from the fragment, if defined */
   readonly metadataBuilder: (() => TFragmentMetadata | Promise<TFragmentMetadata>) | null;
-  /** Field path where the fragment was embedded */
+  /** Field path where the fragment was spread */
   readonly path: FieldPath | null;
 };
 
@@ -48,7 +48,7 @@ export const withFragmentUsageCollection = <T>(fn: () => T): { result: T; usages
 };
 
 /**
- * Record a fragment usage. Called when fragment.embed() is invoked.
+ * Record a fragment usage. Called when fragment.spread() is invoked.
  * No-op if not in a collection context.
  *
  * @internal

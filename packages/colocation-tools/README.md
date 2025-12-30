@@ -41,9 +41,9 @@ const parser = createExecutionResultParser({
 });
 ```
 
-### Embedding Fragments
+### Spreading Fragments
 
-Fragments can be embedded in operations:
+Fragments can be spread in operations:
 
 ```typescript
 import { gql } from "./graphql-system";
@@ -52,7 +52,7 @@ import { userFragment } from "./UserCard";
 export const getUserQuery = gql.default(({ query }) =>
   query.operation({
     name: "GetUser",
-    fields: ({ f }) => ({ ...f.user({ id: "1" })(({ f }) => ({ ...userFragment.embed() })) }),
+    fields: ({ f }) => ({ ...f.user({ id: "1" })(({ f }) => ({ ...userFragment.spread() })) }),
   }),
 );
 ```
@@ -96,8 +96,8 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
-      userCard: userCardFragment.embed({ userId: $.userId }),
-      postList: postListFragment.embed({ userId: $.userId }),
+      userCard: userCardFragment.spread({ userId: $.userId }),
+      postList: postListFragment.spread({ userId: $.userId }),
     }),
   }),
 );

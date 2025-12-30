@@ -77,7 +77,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      // Create operation that embeds the fragment
+      // Create operation that spreads the fragment
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
@@ -85,7 +85,7 @@ describe("metadata adapter", () => {
           metadata: ({ fragmentMetadata }) => ({
             custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })) }),
         }),
       );
 
@@ -93,7 +93,7 @@ describe("metadata adapter", () => {
       expect(meta.custom?.fragmentCount).toBe(1);
     });
 
-    it("works with operations without embedded fragments", () => {
+    it("works with operations without spread fragments", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       const operation = gql(({ query }, { $var }) =>
@@ -174,7 +174,7 @@ describe("metadata adapter", () => {
           metadata: ({ fragmentMetadata }) => ({
             mergedHeaders: fragmentMetadata?.allHeaders,
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })) }),
         }),
       );
 
@@ -216,7 +216,7 @@ describe("metadata adapter", () => {
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })) }),
         }),
       );
 
@@ -262,9 +262,9 @@ describe("metadata adapter", () => {
             ...f.user({ id: $.id })(({ f }) => ({
               ...f.id(),
               ...f.name(),
-              ...f.posts()(() => ({ ...postFragment.embed() })),
+              ...f.posts()(() => ({ ...postFragment.spread() })),
             })),
-            ...f.post({ id: $.id })(() => ({ ...userFragment.embed() })),
+            ...f.post({ id: $.id })(() => ({ ...userFragment.spread() })),
           }),
         }),
       );
@@ -307,7 +307,7 @@ describe("metadata adapter", () => {
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
           metadata: () => ({}),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.embed() })) }),
+          fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })) }),
         }),
       );
 

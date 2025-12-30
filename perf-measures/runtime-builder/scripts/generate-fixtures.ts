@@ -234,17 +234,17 @@ export const query${index} = gql.default(({ query }, { $var }) =>
 }
 
 /**
- * Generate an operation file that uses model embedding.
+ * Generate an operation file that uses model spreading.
  */
 function generateOperationWithModelsFile(index: number, modelCount: number): string {
   const modelsPerOp = Math.min(3, modelCount);
   const modelImports: string[] = [];
-  const modelEmbeds: string[] = [];
+  const modelSpreads: string[] = [];
 
   for (let j = 0; j < modelsPerOp; j++) {
     const modelIndex = (index * modelsPerOp + j) % modelCount;
     modelImports.push(`model${modelIndex}`);
-    modelEmbeds.push(`        ...model${modelIndex}.embed(),`);
+    modelSpreads.push(`        ...model${modelIndex}.spread(),`);
   }
 
   // Generate individual imports for each model (from ../entities/ since operations are in src/pages/)
@@ -261,7 +261,7 @@ export const operation${index} = gql.default(({ query }, { $var }) =>
     variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
       ...f.entity${entityIndex}({ id: $.id })(({ f }) => ({
-${modelEmbeds.join("\n")}
+${modelSpreads.join("\n")}
       })),
     }),
   }),
@@ -512,7 +512,7 @@ export async function generateFixtures(config: FixtureConfig): Promise<void> {
   );
   console.log(`  Generated: ${sliceFiles} query operation files`);
 
-  // Generate operation files with model embedding
+  // Generate operation files with model spreading
   for (let i = 0; i < operationFiles; i++) {
     await fs.writeFile(
       path.join(fixturesDir, "src", "pages", `operation${i}.ts`),

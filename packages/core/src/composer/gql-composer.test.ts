@@ -76,7 +76,7 @@ describe("createGqlInvoker", () => {
     );
 
     expect(userFragment.typename).toBe("User");
-    const fields = userFragment.embed({} as never);
+    const fields = userFragment.spread({} as never);
     expect(fields).toHaveProperty("id");
     expect(fields).toHaveProperty("name");
   });
@@ -97,7 +97,7 @@ describe("createGqlInvoker", () => {
         variables: { ...$var("userId").ID("!") },
         fields: ({ f, $ }) => ({
           ...f.user({ id: $.userId })(() => ({
-            ...userFragment.embed(),
+            ...userFragment.spread(),
           })),
         }),
       }),

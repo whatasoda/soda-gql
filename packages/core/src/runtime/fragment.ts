@@ -9,7 +9,7 @@ export type RuntimeFragmentInput = {
 export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment => {
   const fragment = {
     typename: input.prebuild.typename,
-    embed: hidden(),
+    spread: hidden(),
     attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<typeof fragment, TName, TValue>) {
       const value = attachment.createValue(fragment);
 

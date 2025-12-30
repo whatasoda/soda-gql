@@ -17,11 +17,11 @@ soda-gql uses two main building blocks for constructing GraphQL operations:
 
 ### Fragments
 
-Reusable type-safe field selections. Fragments define how to select fields from a GraphQL type and can be embedded in operations.
+Reusable type-safe field selections. Fragments define how to select fields from a GraphQL type and can be spread in operations.
 
 ### Operations
 
-Complete GraphQL operations (query/mutation/subscription) with field selections. Operations define variables, select fields, and can embed fragments for reusable field selections.
+Complete GraphQL operations (query/mutation/subscription) with field selections. Operations define variables, select fields, and can spread fragments for reusable field selections.
 
 ## Usage
 
@@ -63,13 +63,13 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
   }),
 );
 
-// Operation with embedded fragment
+// Operation with spread fragment
 export const getUserWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "GetUserWithFragment",
     variables: { ...$var("id").ID("!"), ...$var("includeEmail").Boolean("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed({ includeEmail: $.includeEmail }) })),
+      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.spread({ includeEmail: $.includeEmail }) })),
     }),
   }),
 );
@@ -96,7 +96,7 @@ Variables are declared using a string-based type syntax:
 | `...f.posts()(({ f }) => ({ ... }))` | Nested selection (curried) |
 | `...f.id(null, { alias: "uuid" })` | Field with alias |
 | `...f.email({ if: $.includeEmail })` | Conditional field |
-| `...userFragment.embed({})` | Use fragment fields |
+| `...userFragment.spread({})` | Use fragment fields |
 
 ## Understanding the Inject Module
 
