@@ -177,6 +177,38 @@ describe("depth-counter", () => {
       type _Test = AssertEqual<Depth["length"], 3>;
       expect(true).toBe(true);
     });
+
+    it("should use schema default when no per-type override exists", () => {
+      type Overrides = { user_bool_exp: 5 };
+      // other_type not in overrides, should use schema default of 7
+      type Depth = GetInputTypeDepth<Overrides, "other_type", 7>;
+
+      type _Test = AssertEqual<Depth["length"], 7>;
+      expect(true).toBe(true);
+    });
+
+    it("should prefer per-type override over schema default", () => {
+      type Overrides = { user_bool_exp: 5 };
+      // user_bool_exp has override of 5, should ignore schema default of 7
+      type Depth = GetInputTypeDepth<Overrides, "user_bool_exp", 7>;
+
+      type _Test = AssertEqual<Depth["length"], 5>;
+      expect(true).toBe(true);
+    });
+
+    it("should use schema default when overrides is undefined", () => {
+      type Depth = GetInputTypeDepth<undefined, "any_type", 6>;
+
+      type _Test = AssertEqual<Depth["length"], 6>;
+      expect(true).toBe(true);
+    });
+
+    it("should fallback to DefaultDepth when both overrides and schema default are undefined", () => {
+      type Depth = GetInputTypeDepth<undefined, "any_type", undefined>;
+
+      type _Test = AssertEqual<Depth["length"], 3>;
+      expect(true).toBe(true);
+    });
   });
 
   describe("InputDepthOverrides constraint", () => {

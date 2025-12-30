@@ -27,6 +27,14 @@ export type SchemaConfig = {
    */
   readonly inject: InjectConfig;
   /**
+   * Default depth limit for input type inference.
+   * Used when no per-type override is specified.
+   *
+   * @default 3
+   * @example 5
+   */
+  readonly defaultInputDepth?: number;
+  /**
    * Override the default depth limit for specific input types.
    * Useful for recursive input types like Hasura's `bool_exp`.
    *
@@ -113,6 +121,7 @@ export type ResolvedInjectConfig = {
 export type ResolvedSchemaConfig = {
   readonly schema: string;
   readonly inject: ResolvedInjectConfig;
+  readonly defaultInputDepth: number;
   readonly inputDepthOverrides: Readonly<Record<string, number>>;
 };
 

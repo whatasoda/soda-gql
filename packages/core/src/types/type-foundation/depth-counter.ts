@@ -71,16 +71,22 @@ export type InputDepthOverrides = Readonly<Record<string, number>>;
 
 /**
  * Get depth for a specific input type from schema overrides.
- * Falls back to DefaultDepth if no override exists.
+ * Priority: per-type override > schema default > hardcoded DefaultDepth (3).
  *
  * @typeParam TOverrides - The input depth overrides from schema
  * @typeParam TTypeName - The input type name to look up
+ * @typeParam TDefaultDepth - Optional schema-level default depth
  */
 export type GetInputTypeDepth<
   TOverrides extends InputDepthOverrides | undefined,
   TTypeName extends string,
+  TDefaultDepth extends number | undefined = undefined,
 > = TOverrides extends InputDepthOverrides
   ? TTypeName extends keyof TOverrides
     ? NumberToDepth<TOverrides[TTypeName]>
-    : DefaultDepth
-  : DefaultDepth;
+    : TDefaultDepth extends number
+      ? NumberToDepth<TDefaultDepth>
+      : DefaultDepth
+  : TDefaultDepth extends number
+    ? NumberToDepth<TDefaultDepth>
+    : DefaultDepth;

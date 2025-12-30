@@ -516,4 +516,61 @@ describe("generateMultiSchemaModule", () => {
 
     expect(result.code).not.toContain("__inputDepthOverrides");
   });
+
+  test("generates __defaultInputDepth when non-default value provided", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      defaultInputDepth: new Map([["default", 5]]),
+    });
+
+    expect(result.code).toContain("__defaultInputDepth: 5");
+  });
+
+  test("does not generate __defaultInputDepth when value is 3 (default)", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      defaultInputDepth: new Map([["default", 3]]),
+    });
+
+    expect(result.code).not.toContain("__defaultInputDepth");
+  });
+
+  test("does not generate __defaultInputDepth when not provided", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    expect(result.code).not.toContain("__defaultInputDepth");
+  });
+
+  test("generates both __defaultInputDepth and __inputDepthOverrides when both provided", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      defaultInputDepth: new Map([["default", 5]]),
+      inputDepthOverrides: new Map([["default", { special_type: 10 }]]),
+    });
+
+    expect(result.code).toContain("__defaultInputDepth: 5");
+    expect(result.code).toContain("__inputDepthOverrides:");
+    expect(result.code).toContain('"special_type":10');
+  });
 });

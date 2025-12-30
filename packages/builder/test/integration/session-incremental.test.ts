@@ -36,6 +36,7 @@ const createTestConfig = (
     default: {
       schema: path.join(workspaceRoot, "schema.graphql"),
       inject: { scalars: path.join(workspaceRoot, "inject/scalars.ts") },
+      defaultInputDepth: 3,
       inputDepthOverrides: {},
     },
   },
