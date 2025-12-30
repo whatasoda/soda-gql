@@ -296,7 +296,6 @@ const parseTypeReference = (type: TypeNode): { readonly name: string; readonly m
   return { name, modifier: buildTypeModifier(levels) };
 };
 
-
 const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
 const _isInputName = (schema: SchemaIndex, name: string): boolean => schema.inputs.has(name);
