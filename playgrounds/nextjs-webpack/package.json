@@ -18,7 +18,7 @@
     "@soda-gql/cli": "workspace:*",
     "@soda-gql/swc-transformer": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.0.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^5.0.0"

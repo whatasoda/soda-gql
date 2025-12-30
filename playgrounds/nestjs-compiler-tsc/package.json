@@ -23,11 +23,11 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.0.0",
-    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/cli": "^11.0.14",
+    "@nestjs/schematics": "^11.0.9",
     "@soda-gql/cli": "workspace:*",
     "@soda-gql/tsc-plugin": "workspace:*",
-    "@types/node": "^20.0.0",
+    "@types/node": "^25.0.3",
     "typescript": "^5.0.0"
   }
 }
