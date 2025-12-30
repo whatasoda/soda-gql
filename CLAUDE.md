@@ -105,16 +105,17 @@ See [Code Conventions](./memory/code-conventions.md) for detailed standards with
 See [Code Conventions](./memory/code-conventions.md) for TDD methodology details.
 
 **Structure**:
-- Tests colocated: `packages/{package}/test/`
+- Unit tests colocated: `packages/{package}/src/**/*.test.ts` (beside source modules)
+- Integration tests: `packages/{package}/test/integration/*.test.ts`
 - Fixtures: `packages/{package}/test/fixtures/*.ts`
-- Shared utilities: `@soda-gql/common/test`
+- Test utilities: `packages/{package}/test/utils/` or `@soda-gql/common/test`
 
 **Approach**:
 - Fixture-based testing (`.ts` files, not inline strings)
 - Test behavior, not implementation details
 - Use `__resetRuntimeRegistry()` to clear state between tests
 
-**Example**: See `packages/builder/test/` for patterns
+**Example**: See `packages/core/src/` for unit test patterns, `packages/builder/test/integration/` for integration tests
 
 ### Pull Request Guidelines
 

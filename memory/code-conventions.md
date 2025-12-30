@@ -276,6 +276,21 @@ import { module } from '../src/module';
 
 **Rationale**: ES modules preserve type information and enable better tree-shaking.
 
+### Test File Organization
+
+**Unit Tests**: Place beside the source file being tested:
+- `src/utils/empty-object.ts` → `src/utils/empty-object.test.ts`
+- `src/composer/build-document.ts` → `src/composer/build-document.test.ts`
+
+**Integration Tests**: Place in `test/integration/` directory:
+- Tests that involve multiple modules working together
+- E2E tests (CLI commands, plugin behavior)
+- Runtime behavior tests
+
+**Fixtures and Utilities**:
+- Fixtures remain in `test/fixtures/`
+- Test utilities remain in `test/utils/` or use shared `@soda-gql/common/test`
+
 ## Implementation Patterns
 
 ### Pure Functions First

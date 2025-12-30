@@ -468,13 +468,24 @@ bun run dev
 
 ### Test Organization
 
+**Package-level structure**:
+```
+packages/{package}/
+├── src/
+│   ├── module.ts
+│   └── module.test.ts      # Unit test colocated with source
+└── test/
+    ├── integration/        # Integration tests
+    │   └── *.test.ts
+    ├── fixtures/           # Test fixtures
+    │   └── *.ts
+    └── utils/              # Test utilities
+        └── *.ts
+```
+
+**Root-level shared fixtures**:
 ```
 tests/
-├── unit/                    # Unit tests for individual modules
-│   ├── plugin-babel/
-│   ├── plugin-nestjs/
-│   └── ...
-├── integration/             # End-to-end integration tests
 ├── codegen-fixture/         # Shared GraphQL schemas and generated code
 │   ├── schemas/             # GraphQL schema definitions
 │   │   └── default/
@@ -483,11 +494,7 @@ tests/
 │       ├── index.ts
 │       ├── types.ts
 │       └── ...
-├── fixtures/                # Test fixtures and sample code
-│   ├── runtime-app/         # Generated GraphQL system for tests
-│   ├── plugin-babel/        # Babel transformation fixtures
-│   └── ...
-└── utils/                   # Testing utilities
+└── fixtures/                # Shared test fixtures
 ```
 
 ### Shared codegen-fixture

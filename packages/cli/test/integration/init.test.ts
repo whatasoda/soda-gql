@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { getProjectRoot, runInitCli } from "./utils/cli";
+import { getProjectRoot, runInitCli } from "../utils/cli";
 
 const projectRoot = getProjectRoot();
 
