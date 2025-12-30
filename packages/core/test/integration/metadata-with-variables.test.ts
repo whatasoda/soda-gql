@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
 import { print } from "graphql";
-import { type FragmentBuildersAll, createGqlElementComposer } from "../../src/composer/gql-composer";
+import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
-import { type FragmentBuildersAll, createGqlElementComposer } from "./gql-composer";
+import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {

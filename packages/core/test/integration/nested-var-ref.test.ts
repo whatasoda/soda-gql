@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { type FragmentBuildersAll, createGqlElementComposer } from "../../src/composer/gql-composer";
+import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";

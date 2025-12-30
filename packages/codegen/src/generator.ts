@@ -473,12 +473,19 @@ const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
-const renderFragmentBuildersType = (objectTypeNames: string[], schemaName: string): string => {
+const renderFragmentBuildersType = (
+  objectTypeNames: string[],
+  schemaName: string,
+  adapterTypeName?: string,
+): string => {
   if (objectTypeNames.length === 0) {
     return `type FragmentBuilders_${schemaName} = Record<string, never>;`;
   }
 
-  const entries = objectTypeNames.map((name) => `  readonly ${name}: FragmentBuilderFor<Schema_${schemaName}, "${name}">`);
+  const adapterPart = adapterTypeName ? `, ExtractMetadataAdapter<${adapterTypeName}>` : "";
+  const entries = objectTypeNames.map(
+    (name) => `  readonly ${name}: FragmentBuilderFor<Schema_${schemaName}, "${name}"${adapterPart}>`,
+  );
   return `type FragmentBuilders_${schemaName} = {\n${entries.join(";\n")};\n};`;
 };
 
@@ -667,6 +674,7 @@ ${typeExports.join("\n")}`);
 
   return `\
 import {
+  type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   type InputTypeMethods,
   createGqlElementComposer,
@@ -736,7 +744,9 @@ export const generateMultiSchemaModule = (
 
     const factoryVar = `createMethod_${name}`;
     const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
-    const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name);
+    // Pass adapter type name if injection has adapter for this schema
+    const adapterTypeName = options?.injection?.get(name)?.adapterImportPath ? `Adapter_${name}` : undefined;
+    const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name, adapterTypeName);
 
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";

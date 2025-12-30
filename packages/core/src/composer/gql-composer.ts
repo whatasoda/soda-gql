@@ -21,7 +21,7 @@ type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infe
  * Extracts the metadata adapter type from an adapter.
  * Handles optional metadata property correctly.
  */
-type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter extends { metadata?: infer M }
+export type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter extends { metadata?: infer M }
   ? NonNullable<M> extends AnyMetadataAdapter
     ? NonNullable<M>
     : DefaultMetadataAdapter
