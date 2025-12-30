@@ -473,11 +473,7 @@ const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
-const renderFragmentBuildersType = (
-  objectTypeNames: string[],
-  schemaName: string,
-  adapterTypeName?: string,
-): string => {
+const renderFragmentBuildersType = (objectTypeNames: string[], schemaName: string, adapterTypeName?: string): string => {
   if (objectTypeNames.length === 0) {
     return `type FragmentBuilders_${schemaName} = Record<string, never>;`;
   }
