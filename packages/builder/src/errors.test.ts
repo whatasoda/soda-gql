@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type BuilderError, builderErr, builderErrors, formatBuilderError, isBuilderError } from "../src/errors";
+import { type BuilderError, builderErr, builderErrors, formatBuilderError, isBuilderError } from "./errors";
 
 // Type helper to extract specific error variant
 type ErrorOf<C extends BuilderError["code"]> = Extract<BuilderError, { code: C }>;
