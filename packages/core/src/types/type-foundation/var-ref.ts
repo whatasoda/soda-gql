@@ -140,35 +140,46 @@ export type SelectableProxy<T> = T;
 export type Selector<T, U> = (proxy: T) => U;
 
 type ProxyInner = {
-  readonly inner: VarRefInner;
+  readonly varInner: VarRefInner | { type: "virtual"; varName: string; varSegments: readonly PathSegment[] };
   readonly segments: readonly PathSegment[];
 };
 
-const ProxyInnerRegistry = new WeakMap<any, ProxyInner>();
-const getProxyInner = (proxy: any): ProxyInner => {
-  const inner = ProxyInnerRegistry.get(proxy);
+const SelectableProxyInnerRegistry = new WeakMap<any, ProxyInner>();
+const getSelectableProxyInner = (proxy: any): ProxyInner => {
+  const inner = SelectableProxyInnerRegistry.get(proxy);
   if (!inner) {
     throw new Error(`Proxy inner not found`);
   }
   return inner;
 };
 
-const createProxy = <T>(current: ProxyInner): T => {
+const createSelectableProxy = <T>(current: ProxyInner): T => {
   const proxy: T = new Proxy(Object.create(null), {
     get(_, property) {
       if (typeof property === "symbol") {
         throw new Error(`Prohibited property access: ${String(property)}`);
       }
+      const nextSegments = [...current.segments, property];
 
-      if (current.inner.type === "variable") {
-        throw new Error(`Cannot access children of variable at path [${current.segments.join(".")}]`);
+      if (current.varInner.type === "virtual") {
+        return createSelectableProxy({
+          varInner: current.varInner,
+          segments: nextSegments,
+        });
       }
 
-      if (typeof current.inner.value === "object" && current.inner.value !== null) {
-        const value = (current.inner.value as { [key: string]: NestedValueElement })[property];
-        return createProxy({
-          inner: isVarRef(value) ? getVarRefInner(value) : { type: "nested-value", value },
-          segments: [...current.segments, property],
+      if (current.varInner.type === "variable") {
+        return createSelectableProxy({
+          varInner: { type: "virtual", varName: current.varInner.name, varSegments: nextSegments },
+          segments: nextSegments,
+        });
+      }
+
+      if (typeof current.varInner.value === "object" && current.varInner.value !== null) {
+        const value = (current.varInner.value as { [key: string]: NestedValueElement })[property];
+        return createSelectableProxy({
+          varInner: isVarRef(value) ? getVarRefInner(value) : { type: "nested-value", value },
+          segments: nextSegments,
         });
       }
 
@@ -176,7 +187,7 @@ const createProxy = <T>(current: ProxyInner): T => {
     },
   });
 
-  ProxyInnerRegistry.set(proxy, { inner: current.inner, segments: current.segments });
+  SelectableProxyInnerRegistry.set(proxy, current);
 
   return proxy;
 };
@@ -199,15 +210,19 @@ export const getNameAt = <T extends AnyVarRefMeta, U>(
   varRef: VarRef<T>,
   selector: (proxy: TypeProfile.Type<T["profile"]>) => U,
 ): string => {
-  const proxy = createProxy<TypeProfile.Type<T["profile"]>>({ inner: VarRef.getInner(varRef), segments: [] });
+  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
-  const inner = getProxyInner(selected);
+  const inner = getSelectableProxyInner(selected);
 
-  if (inner.inner.type !== "variable") {
+  if (inner.varInner.type === "virtual") {
+    throw new Error(`Value at path [${inner.segments.join(".")}] is inside a variable`);
+  }
+
+  if (inner.varInner.type !== "variable") {
     throw new Error(`Value at path [${inner.segments.join(".")}] is not a variable`);
   }
 
-  return inner.inner.name;
+  return inner.varInner.name;
 };
 
 /**
@@ -228,17 +243,41 @@ export const getValueAt = <T extends AnyVarRefMeta, U>(
   varRef: VarRef<T>,
   selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
 ): U => {
-  const proxy = createProxy<TypeProfile.Type<T["profile"]>>({ inner: VarRef.getInner(varRef), segments: [] });
+  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
-  const inner = getProxyInner(selected);
+  const inner = getSelectableProxyInner(selected);
 
-  if (inner.inner.type !== "nested-value") {
+  if (inner.varInner.type === "virtual") {
+    throw new Error(`Value at path [${inner.segments.join(".")}] is inside a variable`);
+  }
+
+  if (inner.varInner.type !== "nested-value") {
     throw new Error(`Value at path [${inner.segments.join(".")}] is not a nested-value`);
   }
 
-  if (hasVarRefInside(inner.inner.value)) {
+  if (hasVarRefInside(inner.varInner.value)) {
     throw new Error(`Value at path [${inner.segments.join(".")}] contains nested VarRef`);
   }
 
-  return inner.inner.value as U;
+  return inner.varInner.value as U;
 };
+
+
+export const getVariablePath= <T extends AnyVarRefMeta, U>(
+  varRef: VarRef<T>,
+  selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
+): readonly PathSegment[] => {
+  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
+  const selected = selector(proxy);
+  const inner = getSelectableProxyInner(selected);
+
+  if (inner.varInner.type === "virtual") {
+    return [`$${inner.varInner.varName}`, ...inner.segments.slice(inner.varInner.varSegments.length)];
+  }
+
+  if (inner.varInner.type === "variable") { 
+    return [`$${inner.varInner.name}`];
+  }
+
+  throw new Error(`Value at path [${inner.segments.join(".")}] is not a variable or inside a variable`);
+}
