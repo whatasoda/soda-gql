@@ -292,7 +292,7 @@ const createCommitAndPR = async (
   if (dryRun) {
     console.log("\n[DRY RUN] Would execute the following git commands:");
     console.log(`  git checkout -b ${branchName}`);
-    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json`);
+    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json bun.lockb`);
     console.log(`  git commit -m "${commitMessage}"`);
     console.log(`  git push -u origin ${branchName}`);
     console.log(`  gh pr create --title "${commitMessage}" --base main`);
@@ -302,8 +302,8 @@ const createCommitAndPR = async (
   // Create and checkout new branch
   await $`git checkout -b ${branchName}`;
 
-  // Stage all package.json changes (including platform packages)
-  await $`git add package.json packages/*/package.json`;
+  // Stage all package.json changes (including platform packages) and lockfile
+  await $`git add package.json packages/*/package.json bun.lockb`;
   try {
     await $`git add packages/swc-transformer/npm/*/package.json`;
   } catch {
@@ -386,6 +386,20 @@ const main = async (): Promise<void> => {
   console.log("\nVersion updates:");
   for (const { path: packagePath, oldVersion, newVersion } of results) {
     console.log(`  ${packagePath}: ${oldVersion} -> ${newVersion}`);
+  }
+
+  // Update lockfile
+  if (!dryRun) {
+    console.log("\nUpdating lockfile...");
+    const installResult = await $`bun install`.quiet().nothrow();
+    if (installResult.exitCode !== 0) {
+      console.error(installResult.stderr.toString());
+      console.error("Failed to update lockfile");
+      process.exit(1);
+    }
+    console.log("✓ Lockfile updated");
+  } else {
+    console.log("\n[DRY RUN] Would run: bun install");
   }
 
   // Create commit and PR
