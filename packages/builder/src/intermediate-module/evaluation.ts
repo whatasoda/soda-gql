@@ -4,6 +4,8 @@ import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import * as sandboxCore from "@soda-gql/core";
+import * as sandboxCoreAdapter from "@soda-gql/core/adapter";
+import * as sandboxCoreRuntime from "@soda-gql/core/runtime";
 import * as sandboxRuntime from "@soda-gql/runtime";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
@@ -118,6 +120,12 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
     require: (path: string) => {
       if (path === "@soda-gql/core") {
         return sandboxCore;
+      }
+      if (path === "@soda-gql/core/adapter") {
+        return sandboxCoreAdapter;
+      }
+      if (path === "@soda-gql/core/runtime") {
+        return sandboxCoreRuntime;
       }
       if (path === "@soda-gql/runtime") {
         return sandboxRuntime;
