@@ -2,15 +2,27 @@
 name: soda-gql
 description: |
   Assists with soda-gql zero-runtime GraphQL development. Use when the user asks to
-  "set up soda-gql", "create GraphQL fragment", "create GraphQL operation",
-  "configure soda-gql", "run soda-gql codegen", "GraphQL type inference",
-  "troubleshoot soda-gql", "configure custom scalars", "add build plugin",
-  or asks about soda-gql DSL patterns, configuration, or API.
+  "set up soda-gql", "create soda-gql fragment", "create soda-gql operation",
+  "configure soda-gql", "run soda-gql codegen", "soda-gql type inference",
+  "troubleshoot soda-gql", "configure soda-gql scalars", "add soda-gql plugin",
+  or asks about soda-gql DSL patterns (gql.default, fragment, query, $var, $infer).
 ---
 
 # soda-gql Development Support
 
 Provide comprehensive assistance for soda-gql, a zero-runtime GraphQL query generation system. Help users create type-safe GraphQL operations, configure projects, and troubleshoot issues.
+
+## Before Responding
+
+**Check if this project uses soda-gql:**
+1. Look for `soda-gql.config.ts` or `soda-gql.config.js` in the project root
+2. Check `package.json` for `@soda-gql/*` dependencies
+
+**If soda-gql is detected:**
+- ALWAYS use soda-gql DSL patterns (TypeScript), NOT standard GraphQL syntax
+- Fragments use `gql.default(({ fragment }) => fragment.TypeName({...}))`
+- Operations use `gql.default(({ query }) => query.operation({...}))`
+- Never suggest `.graphql` files for soda-gql projects
 
 ## Overview
 
