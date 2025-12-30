@@ -17,70 +17,86 @@ const DEFAULT_CONFIG: FixtureConfig = {
 };
 
 function generateSchema(config: FixtureConfig): string {
-  const objectTypes: string[] = [];
+  // Generate split object definitions using plain object literals with as const
+  const objectDefinitions: string[] = [];
 
-  // Query type with fields for each object type
+  // Query object definition - using direct object literal without function calls
   const queryFields: string[] = [];
   for (let i = 0; i < config.objectTypes; i++) {
     const typeName = `Entity${i}`;
-    queryFields.push(`      ${typeName.toLowerCase()}: unsafeOutputType.object("${typeName}:?", { arguments: {
-        id: unsafeInputType.scalar("ID:!", { default: null, directives: {} }),
-      } }),`);
-    queryFields.push(`      ${typeName.toLowerCase()}List: unsafeOutputType.object("${typeName}:![]!", { arguments: {
-        limit: unsafeInputType.scalar("Int:?", { default: null, directives: {} }),
-        offset: unsafeInputType.scalar("Int:?", { default: null, directives: {} }),
-      } }),`);
+    queryFields.push(`    ${typeName.toLowerCase()}: { kind: "object", name: "${typeName}", modifier: "?", arguments: {
+      id: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null, directives: {} },
+    } },`);
+    queryFields.push(`    ${typeName.toLowerCase()}List: { kind: "object", name: "${typeName}", modifier: "![]!", arguments: {
+      limit: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null, directives: {} },
+      offset: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null, directives: {} },
+    } },`);
   }
+  objectDefinitions.push(`const Query = {
+  name: "Query",
+  fields: {
+${queryFields.join("\n")}
+  },
+} as const;`);
 
-  // Mutation type with create/update/delete for each object type
+  // Mutation object definition
   const mutationFields: string[] = [];
   for (let i = 0; i < config.objectTypes; i++) {
     const typeName = `Entity${i}`;
-    mutationFields.push(`      create${typeName}: unsafeOutputType.object("${typeName}:!", { arguments: {
-        name: unsafeInputType.scalar("String:!", { default: null, directives: {} }),
-        value: unsafeInputType.scalar("Int:?", { default: null, directives: {} }),
-      } }),`);
-    mutationFields.push(`      update${typeName}: unsafeOutputType.object("${typeName}:?", { arguments: {
-        id: unsafeInputType.scalar("ID:!", { default: null, directives: {} }),
-        name: unsafeInputType.scalar("String:?", { default: null, directives: {} }),
-      } }),`);
-    mutationFields.push(`      delete${typeName}: unsafeOutputType.scalar("Boolean:!", { arguments: {
-        id: unsafeInputType.scalar("ID:!", { default: null, directives: {} }),
-      } }),`);
+    mutationFields.push(`    create${typeName}: { kind: "object", name: "${typeName}", modifier: "!", arguments: {
+      name: { kind: "scalar", name: "String", modifier: "!", defaultValue: null, directives: {} },
+      value: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null, directives: {} },
+    } },`);
+    mutationFields.push(`    update${typeName}: { kind: "object", name: "${typeName}", modifier: "?", arguments: {
+      id: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null, directives: {} },
+      name: { kind: "scalar", name: "String", modifier: "?", defaultValue: null, directives: {} },
+    } },`);
+    mutationFields.push(`    delete${typeName}: { kind: "scalar", name: "Boolean", modifier: "!", arguments: {
+      id: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null, directives: {} },
+    } },`);
   }
+  objectDefinitions.push(`const Mutation = {
+  name: "Mutation",
+  fields: {
+${mutationFields.join("\n")}
+  },
+} as const;`);
 
-  // Object types with varied field complexity
+  // Entity object definitions
   for (let i = 0; i < config.objectTypes; i++) {
     const typeName = `Entity${i}`;
     const relatedType = `Entity${(i + 1) % config.objectTypes}`;
 
-    objectTypes.push(`    ${typeName}: define("${typeName}").object({
-      id: unsafeOutputType.scalar("ID:!", { arguments: {} }),
-      name: unsafeOutputType.scalar("String:!", { arguments: {} }),
-      description: unsafeOutputType.scalar("String:?", { arguments: {} }),
-      value: unsafeOutputType.scalar("Int:?", { arguments: {} }),
-      score: unsafeOutputType.scalar("Float:?", { arguments: {} }),
-      isActive: unsafeOutputType.scalar("Boolean:!", { arguments: {} }),
-      createdAt: unsafeOutputType.scalar("String:!", { arguments: {} }),
-      updatedAt: unsafeOutputType.scalar("String:?", { arguments: {} }),
-      related: unsafeOutputType.object("${relatedType}:?", { arguments: {} }),
-      relatedList: unsafeOutputType.object("${relatedType}:![]!", { arguments: {
-        limit: unsafeInputType.scalar("Int:?", { default: null, directives: {} }),
-      } }),
-    }),`);
+    objectDefinitions.push(`const ${typeName} = {
+  name: "${typeName}",
+  fields: {
+    id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+    name: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+    description: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+    value: { kind: "scalar", name: "Int", modifier: "?", arguments: {} },
+    score: { kind: "scalar", name: "Float", modifier: "?", arguments: {} },
+    isActive: { kind: "scalar", name: "Boolean", modifier: "!", arguments: {} },
+    createdAt: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+    updatedAt: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+    related: { kind: "object", name: "${relatedType}", modifier: "?", arguments: {} },
+    relatedList: { kind: "object", name: "${relatedType}", modifier: "![]!", arguments: {
+      limit: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null, directives: {} },
+    } },
+  },
+} as const;`);
   }
+
+  // Object references for schema composition
+  const objectRefs = ["Query", "Mutation"];
+  for (let i = 0; i < config.objectTypes; i++) {
+    objectRefs.push(`Entity${i}`);
+  }
+  const objectComposition = objectRefs.map((name) => `    ${name},`).join("\n");
 
   return `// Auto-generated schema for type-check benchmarking
 // DO NOT EDIT - this file is generated by generate-fixtures.ts
 
-import {
-  type AnyGraphqlSchema,
-  createGqlElementComposer,
-  define,
-  defineOperationRoots,
-  unsafeInputType,
-  unsafeOutputType,
-} from "@soda-gql/core";
+import { createGqlElementComposer } from "@soda-gql/core";
 import { defineAdapter, defineScalar } from "@soda-gql/core/adapter";
 
 const scalars = {
@@ -98,27 +114,21 @@ const adapter = defineAdapter({
   },
 });
 
+// Split object definitions with as const assertions
+${objectDefinitions.join("\n\n")}
+
+// Compose schema with as const
 const schema = {
-  label: "benchmark" as const,
-  operations: defineOperationRoots({
-    query: "Query",
-    mutation: "Mutation",
-    subscription: null,
-  }),
+  label: "benchmark",
+  operations: { query: "Query", mutation: "Mutation", subscription: null },
   scalar: scalars,
   enum: {},
   input: {},
   object: {
-    Query: define("Query").object({
-${queryFields.join("\n")}
-    }),
-    Mutation: define("Mutation").object({
-${mutationFields.join("\n")}
-    }),
-${objectTypes.join("\n")}
+${objectComposition}
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+} as const;
 
 export type Schema = typeof schema & { _?: never };
 export type Adapter = typeof adapter & { _?: never };
