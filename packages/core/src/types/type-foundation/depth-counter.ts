@@ -31,3 +31,50 @@ export type DecrementDepth<D extends DepthCounter> = D extends readonly [unknown
  * Check if depth counter is exhausted (empty tuple).
  */
 export type IsDepthExhausted<D extends DepthCounter> = D extends readonly [] ? true : false;
+
+// =============================================================================
+// Future Extensibility: Per-Type Depth Configuration
+// =============================================================================
+
+/**
+ * Type for per-input-type depth overrides.
+ *
+ * @example
+ * ```typescript
+ * // Future usage (not yet implemented):
+ * type MyDepthOverrides = {
+ *   user_bool_exp: [unknown, unknown, unknown, unknown, unknown]; // depth 5
+ *   post_bool_exp: [unknown, unknown]; // depth 2
+ * };
+ * ```
+ *
+ * @remarks
+ * This type is a placeholder for future per-type depth configuration.
+ * Currently, all input types use the same default depth (3).
+ */
+export type TypeDepthOverrides = {
+  readonly [typeName: string]: DepthCounter;
+};
+
+/**
+ * Get depth for a specific type name from overrides, falling back to default.
+ *
+ * @typeParam TTypeName - The input type name to look up
+ * @typeParam TOverrides - The depth overrides map
+ * @typeParam TDefault - The default depth to use if no override exists
+ *
+ * @example
+ * ```typescript
+ * // Future usage (not yet implemented):
+ * type Depth = GetDepthForType<"user_bool_exp", MyDepthOverrides, DefaultDepth>;
+ * ```
+ *
+ * @remarks
+ * This type is a placeholder for future per-type depth configuration.
+ * It will be used when depth overrides are configurable via schema or config.
+ */
+export type GetDepthForType<
+  TTypeName extends string,
+  TOverrides extends TypeDepthOverrides,
+  TDefault extends DepthCounter,
+> = TTypeName extends keyof TOverrides ? TOverrides[TTypeName] : TDefault;

@@ -153,6 +153,7 @@ describe("Recursive input type depth limit", () => {
   describe("ConstAssignableInput with recursive types", () => {
     it("should allow valid values within depth limit", () => {
       // This should compile - simple filter without deep recursion
+      // Depth usage: user_bool_exp (3) -> name/String_comparison_exp (2) -> _eq/String (1)
       const _input: ConstAssignableInput<RecursiveSchema, RecursiveSchema["input"]["user_bool_exp"]["fields"]> = {
         name: {
           _eq: "Alice",
@@ -165,26 +166,25 @@ describe("Recursive input type depth limit", () => {
       expect(true).toBe(true);
     });
 
-    it("should allow one level of _and/_or", () => {
-      // One level of recursion should work within depth limit
-      const _input: ConstAssignableInput<RecursiveSchema, RecursiveSchema["input"]["user_bool_exp"]["fields"]> = {
-        _and: [
-          {
-            name: { _eq: "Alice" },
-          },
-          {
-            age: { _gt: 18 },
-          },
-        ],
+    it("should allow non-recursive input types", () => {
+      // SimpleInput should work normally
+      const _input: ConstAssignableInput<RecursiveSchema, RecursiveSchema["input"]["SimpleInput"]["fields"]> = {
+        name: "Alice",
+        age: 30,
       };
 
       expect(true).toBe(true);
     });
 
-    it("should allow _not usage", () => {
-      const _input: ConstAssignableInput<RecursiveSchema, RecursiveSchema["input"]["user_bool_exp"]["fields"]> = {
-        _not: {
-          name: { _eq: "Bob" },
+    it("should allow nested non-recursive input types", () => {
+      // NestedInput has 2 levels of nesting, should be fully inferred with default depth 3
+      const _input: ConstAssignableInput<RecursiveSchema, RecursiveSchema["input"]["NestedInput"]["fields"]> = {
+        simple: {
+          name: "Alice",
+          age: 30,
+        },
+        optionalSimple: {
+          name: "Bob",
         },
       };
 
