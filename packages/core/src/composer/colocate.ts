@@ -36,8 +36,8 @@ export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersec
  * query.operation({
  *   name: "GetData",
  *   fields: ({ $ }) => $colocate({
- *     userCard: userCardFragment.embed({ userId: $.userId }),
- *     posts: postsFragment.embed({ userId: $.userId }),
+ *     userCard: userCardFragment.spread({ userId: $.userId }),
+ *     posts: postsFragment.spread({ userId: $.userId }),
  *   }),
  * });
  *
