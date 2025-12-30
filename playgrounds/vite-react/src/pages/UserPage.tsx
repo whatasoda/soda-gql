@@ -9,7 +9,7 @@ import { userCardFragment, userCardProjection } from "../components/UserCard/fra
  * Operation that composes multiple fragments using $colocate.
  * Each label must match the parser's label for result distribution.
  */
-export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },

@@ -67,7 +67,7 @@ When composing multiple fragments in a single operation, use `$colocate` to pref
 
 ```typescript
 // UserCard.tsx
-export const userCardFragment = gql.default(({ fragment }, { $var }) =>
+export const userCardFragment = gql.default(({ fragment, $var }) =>
   fragment.Query({
     variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
@@ -91,7 +91,7 @@ export const userCardProjection = createProjection(userCardFragment, {
 import { userCardFragment, userCardProjection } from "./UserCard";
 import { postListFragment, postListProjection } from "./PostList";
 
-export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
@@ -152,7 +152,7 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 import { gql } from "./graphql-system";
 
 export const postListFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),

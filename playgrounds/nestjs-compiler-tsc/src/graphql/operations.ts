@@ -5,7 +5,7 @@ import { gql } from "@/graphql-system";
  *
  * This will be transformed to zero-runtime code by the TypeScript compiler plugin.
  */
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },

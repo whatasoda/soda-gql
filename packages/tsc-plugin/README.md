@@ -84,7 +84,7 @@ The plugin transforms `gql.default()` calls at compile time:
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const userQuery = gql.default(({ query }, { $var }) =>
+export const userQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },

@@ -4,7 +4,7 @@ import { gql } from "../codegen-fixture/graphql-system";
 export const userFragment = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.email() }) }));
 
 // Simple operation for testing
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },

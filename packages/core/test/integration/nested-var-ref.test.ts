@@ -72,7 +72,7 @@ describe("nested VarRef with $var helpers", () => {
         },
       });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -106,7 +106,7 @@ describe("nested VarRef with $var helpers", () => {
         },
       });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -140,7 +140,7 @@ describe("nested VarRef with $var helpers", () => {
         },
       });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!"), ...$var("userAge").Int("?") },

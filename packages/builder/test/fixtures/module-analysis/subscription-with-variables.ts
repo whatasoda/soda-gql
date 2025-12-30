@@ -1,6 +1,6 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-export const userUpdatedSubscription = gql.default(({ subscription }, { $var }) =>
+export const userUpdatedSubscription = gql.default(({ subscription, $var }) =>
   subscription.operation({
     name: "UserUpdated",
     variables: { ...$var("userId").ID("!") },

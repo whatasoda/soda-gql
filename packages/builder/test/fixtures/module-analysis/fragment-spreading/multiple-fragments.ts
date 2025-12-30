@@ -17,7 +17,7 @@ export const simplePostFragment = gql.default(({ fragment }) =>
 /**
  * Operation that spreads multiple fragments in different fields
  */
-export const getDashboardQuery = gql.default(({ query }, { $var }) =>
+export const getDashboardQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetDashboard",
     variables: { ...$var("userId").ID("!"), ...$var("postLimit").Int("?") },

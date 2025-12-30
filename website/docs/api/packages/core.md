@@ -125,7 +125,7 @@ fragment.attachment2Name;
 Define runtime metadata on operations:
 
 ```typescript
-gql.default(({ query }, { $var }) =>
+gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },

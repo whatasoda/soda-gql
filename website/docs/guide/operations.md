@@ -36,17 +36,17 @@ soda-gql supports three operation types:
 
 ```typescript
 // Query - fetch data
-gql.default(({ query }, { $var }) =>
+gql.default(({ query, $var }) =>
   query.operation({ name: "GetUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
 
 // Mutation - modify data
-gql.default(({ mutation }, { $var }) =>
+gql.default(({ mutation, $var }) =>
   mutation.operation({ name: "CreateUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
 
 // Subscription - real-time updates (planned)
-gql.default(({ subscription }, { $var }) =>
+gql.default(({ subscription, $var }) =>
   subscription.operation({ name: "UserUpdated", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
 ```
@@ -58,7 +58,7 @@ A complete operation definition includes:
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",                                  // Operation name
     variables: { ...$var("userId").ID("!") },         // Variable declarations
@@ -117,7 +117,7 @@ Spread fragments to reuse field selections:
 ```typescript
 import { userFragment } from "./user.fragment";
 
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: {
@@ -176,7 +176,7 @@ type GetUserResult = typeof getUserQuery.$infer.output.projected;
 Mutations follow the same pattern as queries:
 
 ```typescript
-export const createUserMutation = gql.default(({ mutation }, { $var }) =>
+export const createUserMutation = gql.default(({ mutation, $var }) =>
   mutation.operation({
     name: "CreateUser",
     variables: { ...$var("input").CreateUserInput("!") },

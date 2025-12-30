@@ -34,7 +34,7 @@ Unlike GraphQL where omitting `!` means optional, soda-gql requires explicit `:!
 Variables are declared using `$var()` with object spread syntax:
 
 ```typescript
-gql.default(({ query }, { $var }) =>
+gql.default(({ query, $var }) =>
   query.operation({
     name: "SearchPosts",
     variables: {
@@ -112,7 +112,7 @@ Pass variables to spread fragments:
 
 ```typescript
 // Fragment with its own variable
-const userFragment = gql.default(({ fragment }, { $var }) =>
+const userFragment = gql.default(({ fragment, $var }) =>
   fragment.Query({
     variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
@@ -126,7 +126,7 @@ const userFragment = gql.default(({ fragment }, { $var }) =>
 );
 
 // Operation passing its variable to the fragment
-const getUserQuery = gql.default(({ query }, { $var }) =>
+const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },
@@ -170,7 +170,7 @@ export const scalar = {
 Variable types are fully inferred:
 
 ```typescript
-const query = gql.default(({ query }, { $var }) =>
+const query = gql.default(({ query, $var }) =>
   query.operation({
     name: "Search",
     variables: {

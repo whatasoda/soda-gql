@@ -78,7 +78,7 @@ describe("metadata adapter", () => {
       );
 
       // Create operation that spreads the fragment
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -96,7 +96,7 @@ describe("metadata adapter", () => {
     it("works with operations without spread fragments", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -167,7 +167,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -211,7 +211,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -251,7 +251,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUserWithPosts",
           variables: { ...$var("id").ID("!") },
@@ -302,7 +302,7 @@ describe("metadata adapter", () => {
       // Fragment without metadata
       const userFragment = gql(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -324,7 +324,7 @@ describe("metadata adapter", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       // Simple return type
-      const operation1 = gql(({ query }, { $var }) =>
+      const operation1 = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
@@ -337,7 +337,7 @@ describe("metadata adapter", () => {
       expect(operation1.metadata).toEqual({ simpleValue: 42 });
 
       // Complex nested return type
-      const operation2 = gql(({ query }, { $var }) =>
+      const operation2 = gql(({ query, $var }) =>
         query.operation({
           name: "GetUsers",
           variables: { ...$var("id").ID("!") },
@@ -363,7 +363,7 @@ describe("metadata adapter", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       // Operation with string metadata
-      const op1 = gql(({ query }, { $var }) =>
+      const op1 = gql(({ query, $var }) =>
         query.operation({
           name: "Op1",
           variables: { ...$var("id").ID("!") },
@@ -373,7 +373,7 @@ describe("metadata adapter", () => {
       );
 
       // Operation with number metadata
-      const op2 = gql(({ query }, { $var }) =>
+      const op2 = gql(({ query, $var }) =>
         query.operation({
           name: "Op2",
           variables: { ...$var("id").ID("!") },

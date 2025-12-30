@@ -20,7 +20,7 @@ export const userWithPostsFragment = gql.default(({ fragment }) =>
 // - filePath::createUserQueries.userById
 // - filePath::createUserQueries.userList
 export function createUserQueries() {
-  const userById = gql.default(({ query }, { $var }) =>
+  const userById = gql.default(({ query, $var }) =>
     query.operation({
       name: "UserById",
       variables: { ...$var("id").ID("!") },
@@ -28,7 +28,7 @@ export function createUserQueries() {
     }),
   );
 
-  const userList = gql.default(({ query }, { $var }) =>
+  const userList = gql.default(({ query, $var }) =>
     query.operation({
       name: "UserList",
       variables: { ...$var("limit").Int("?") },
@@ -59,14 +59,14 @@ export const queryFactory = () => {
 // - filePath::nestedQueries.users.byId
 export const nestedQueries = {
   users: {
-    list: gql.default(({ query }, { $var }) =>
+    list: gql.default(({ query, $var }) =>
       query.operation({
         name: "NestedUserList",
         variables: { ...$var("limit").Int("?") },
         fields: ({ f, $ }) => ({ ...f.users({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
       }),
     ),
-    byId: gql.default(({ query }, { $var }) =>
+    byId: gql.default(({ query, $var }) =>
       query.operation({
         name: "NestedUserById",
         variables: { ...$var("id").ID("!") },
@@ -79,7 +79,7 @@ export const nestedQueries = {
 // Case 6: Operation definition in function scope
 // Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
 export function createUserOperation() {
-  const getUserOperation = gql.default(({ query }, { $var }) =>
+  const getUserOperation = gql.default(({ query, $var }) =>
     query.operation({
       name: "GetUserById",
       variables: { ...$var("id").ID("!") },
@@ -93,7 +93,7 @@ export function createUserOperation() {
 // Case 7: Operation definition in arrow function
 // Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
 export const operationFactory = () => {
-  const listUsersOperation = gql.default(({ query }, { $var }) =>
+  const listUsersOperation = gql.default(({ query, $var }) =>
     query.operation({
       name: "ListUsers",
       variables: { ...$var("limit").Int("?") },
@@ -110,14 +110,14 @@ export const operationFactory = () => {
 // - filePath::nestedOperations.users.listUsers
 export const nestedOperations = {
   users: {
-    getUser: gql.default(({ query }, { $var }) =>
+    getUser: gql.default(({ query, $var }) =>
       query.operation({
         name: "NestedGetUser",
         variables: { ...$var("id").ID("!") },
         fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
       }),
     ),
-    listUsers: gql.default(({ query }, { $var }) =>
+    listUsers: gql.default(({ query, $var }) =>
       query.operation({
         name: "NestedListUsers",
         variables: { ...$var("limit").Int("?") },

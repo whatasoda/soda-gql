@@ -4,7 +4,7 @@ import { gql } from "@/graphql-system";
  * User fragment with nested posts
  * Demonstrates fragment definition with variables and nested field selections
  */
-export const userFragment = gql.default(({ fragment }, { $var }) =>
+export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").ID("!") },
     fields: ({ f, $ }) => ({

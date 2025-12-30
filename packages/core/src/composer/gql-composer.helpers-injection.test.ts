@@ -66,7 +66,7 @@ describe("helpers injection via adapter", () => {
 
     let capturedAuth: typeof authHelper | undefined;
 
-    gql(({ fragment }, { auth }) => {
+    gql(({ fragment, auth }) => {
       capturedAuth = auth;
       return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
@@ -93,7 +93,7 @@ describe("helpers injection via adapter", () => {
 
     let capturedCacheTTL: number | undefined;
 
-    gql(({ fragment }, { cache }) => {
+    gql(({ fragment, cache }) => {
       capturedCacheTTL = cache.ttl(300).cacheTTL;
       return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
@@ -111,7 +111,7 @@ describe("helpers injection via adapter", () => {
     let varBuilderAvailable = false;
     let customAvailable = false;
 
-    gql(({ query }, { $var, custom }) => {
+    gql(({ query, $var, custom }) => {
       varBuilderAvailable = typeof $var === "function";
       customAvailable = custom() === "test";
 
@@ -131,7 +131,7 @@ describe("helpers injection via adapter", () => {
 
     let varBuilderAvailable = false;
 
-    gql(({ fragment }, { $var }) => {
+    gql(({ fragment, $var }) => {
       varBuilderAvailable = typeof $var === "function";
       return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
     });
@@ -163,7 +163,7 @@ describe("helpers injection via adapter", () => {
     let capturedRole: string | undefined;
     let capturedEvent: string | undefined;
 
-    gql(({ fragment }, { auth, tracking }) => {
+    gql(({ fragment, auth, tracking }) => {
       capturedRole = auth.roles.admin().role;
       capturedEvent = tracking.analytics("page_view").event;
       return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });

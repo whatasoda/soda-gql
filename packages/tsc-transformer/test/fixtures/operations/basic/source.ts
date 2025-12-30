@@ -1,6 +1,6 @@
 import { gql } from "../../../codegen-fixture/graphql-system";
 
-export const profileQuery = gql.default(({ query }, { $var }) =>
+export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQuery",
     variables: { ...$var("userId").ID("!") },
@@ -8,7 +8,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
   }),
 );
 
-export const updateProfileMutation = gql.default(({ mutation }, { $var }) =>
+export const updateProfileMutation = gql.default(({ mutation, $var }) =>
   mutation.operation({
     name: "UpdateProfile",
     variables: { ...$var("userId").ID("!"), ...$var("name").String("!") },

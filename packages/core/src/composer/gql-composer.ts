@@ -6,8 +6,8 @@ import { createGqlFragmentComposers } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder, type InputTypeMethods } from "./var-builder";
 
-export type GqlElementComposer<TComposers, THelper> = <TResult extends AnyFragment | AnyOperation>(
-  composeElement: (composers: TComposers, helper: THelper) => TResult,
+export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOperation>(
+  composeElement: (context: TContext) => TResult,
 ) => TResult;
 
 /**
@@ -46,21 +46,17 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdap
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
-  const composers = {
+  const context = {
     fragment,
     query: { operation: createOperationComposer("query") },
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
-  };
-
-  const helper = {
     $var: createVarBuilder<TSchema>(inputTypeMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };
 
-  const elementComposer: GqlElementComposer<typeof composers, typeof helper> = (composeElement) =>
-    composeElement(composers, helper);
+  const elementComposer: GqlElementComposer<typeof context> = (composeElement) => composeElement(context);
 
   return elementComposer;
 };

@@ -8,7 +8,7 @@ export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields
 /**
  * User fragment that spreads the post fragment in its nested field
  */
-export const userWithPostsFragment = gql.default(({ fragment }, { $var }) =>
+export const userWithPostsFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
@@ -22,7 +22,7 @@ export const userWithPostsFragment = gql.default(({ fragment }, { $var }) =>
 /**
  * Operation that spreads the composed fragment
  */
-export const getUserWithPostsQuery = gql.default(({ query }, { $var }) =>
+export const getUserWithPostsQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUserWithPosts",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },

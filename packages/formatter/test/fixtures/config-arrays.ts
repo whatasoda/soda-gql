@@ -1,7 +1,7 @@
 import { gql } from "@/graphql-system";
 
 // Config objects should NOT be touched (variables object)
-export const model = gql.default(({ model }, { $var }) =>
+export const model = gql.default(({ model, $var }) =>
   model.User({ variables: { ...$var("id").ID("!") }, fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
 );
 

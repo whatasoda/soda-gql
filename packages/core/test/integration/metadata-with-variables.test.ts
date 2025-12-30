@@ -67,7 +67,7 @@ describe("metadata with variable access", () => {
     it("metadata callback receives $ with variable refs", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -88,7 +88,7 @@ describe("metadata with variable access", () => {
     it("$var.getName extracts variable name", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -109,7 +109,7 @@ describe("metadata with variable access", () => {
     it("works with multiple variables", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ mutation }, { $var }) =>
+      const operation = gql(({ mutation, $var }) =>
         mutation.operation({
           name: "UpdateUser",
           variables: { ...$var("userId").ID("!"), ...$var("userName").String("!") },
@@ -135,7 +135,7 @@ describe("metadata with variable access", () => {
     it("metadata is undefined when not provided", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -149,7 +149,7 @@ describe("metadata with variable access", () => {
     it("metadata callback receives document as DocumentNode", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },
@@ -170,7 +170,7 @@ describe("metadata with variable access", () => {
     it("metadata callback can access both $ and document", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      const operation = gql(({ query }, { $var }) =>
+      const operation = gql(({ query, $var }) =>
         query.operation({
           name: "GetUser",
           variables: { ...$var("userId").ID("!") },

@@ -49,7 +49,7 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({
@@ -98,7 +98,7 @@ import { gql } from "@/graphql-system";
 import { userCardFragment } from "./UserCard";
 import { postListFragment } from "./PostList";
 
-export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
@@ -282,7 +282,7 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: { ...$var("id").ID("!") },
       fields: ({ f, $ }) => ({
@@ -303,7 +303,7 @@ export const userCardFragment = gql
 
 // fragments/PostList.ts
 export const postListFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: {
         ...$var("userId").ID("!"),
@@ -331,7 +331,7 @@ import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { userCardFragment } from "./fragments/UserCard";
 import { postListFragment } from "./fragments/PostList";
 
-export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
