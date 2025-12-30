@@ -4,7 +4,7 @@ import {
   createLazyEvaluator,
   evaluateSync,
   type LazyEvaluatorContext,
-} from "../../src/types/element/lazy-evaluator";
+} from "./lazy-evaluator";
 
 describe("createLazyEvaluator", () => {
   // Helper to create a no-op dependency generator

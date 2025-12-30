@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { IfOmittable, OptionalArg, SwitchIfOmittable } from "../../src/utils/empty-object";
+import type { IfOmittable, OptionalArg, SwitchIfOmittable } from "./empty-object";
 
 /**
  * Type tests for omittable object utilities.
