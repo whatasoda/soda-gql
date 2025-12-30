@@ -157,6 +157,22 @@ fields: ({ f, $ }) => ({
 })
 ```
 
+**Shorthand for spread-only selections:**
+
+When the nested callback only contains fragment spreads (no direct field selections), the `f` parameter can be omitted:
+
+```typescript
+// Full form
+...f.user({ id: $.id })(({ f }) => ({
+  ...userFragment.spread({}),
+}))
+
+// Shorthand (spread-only)
+...f.user({ id: $.id })(() => ({
+  ...userFragment.spread({}),
+}))
+```
+
 ### Field Alias
 
 ```typescript

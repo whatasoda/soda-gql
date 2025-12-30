@@ -132,6 +132,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 | `...f.id()` | Select a field |
 | `...f.posts({ limit: 10 })` | Field with arguments |
 | `...f.posts()(({ f }) => ({...}))` | Nested selection (curried) |
+| `...f.user()(() => ({...}))` | Nested selection (spread-only, `f` omitted) |
 | `...f.id(null, { alias: "uuid" })` | Field with alias |
 | `...$var("name").ID("!")` | Required ID variable |
 | `...$var("name").String("?")` | Optional String variable |
