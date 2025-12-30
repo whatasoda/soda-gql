@@ -25,13 +25,13 @@ describe("createRuntimeFragment", () => {
     expect(fragment.typename).toBe("Post");
   });
 
-  test("has hidden embed function", () => {
+  test("has hidden spread function", () => {
     const input = createMockInput();
 
     const fragment = createRuntimeFragment(input);
 
-    // embed should be a hidden value (function)
-    expect(typeof fragment.embed).toBe("function");
+    // spread should be a hidden value (function)
+    expect(typeof fragment.spread).toBe("function");
   });
 
   test("creates multiple fragments with different typenames", () => {
@@ -50,6 +50,6 @@ describe("createRuntimeFragment", () => {
     const fragment = createRuntimeFragment(input);
 
     expect(Object.keys(fragment)).toContain("typename");
-    expect(Object.keys(fragment)).toContain("embed");
+    expect(Object.keys(fragment)).toContain("spread");
   });
 });
