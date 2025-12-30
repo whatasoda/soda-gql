@@ -473,6 +473,15 @@ const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
+const renderFragmentBuildersType = (objectTypeNames: string[], schemaName: string): string => {
+  if (objectTypeNames.length === 0) {
+    return `type FragmentBuilders_${schemaName} = Record<string, never>;`;
+  }
+
+  const entries = objectTypeNames.map((name) => `  readonly ${name}: FragmentBuilderFor<Schema_${schemaName}, "${name}">`);
+  return `type FragmentBuilders_${schemaName} = {\n${entries.join(";\n")};\n};`;
+};
+
 const collectInputTypeNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.inputs.keys())
     .filter((name) => !name.startsWith("__"))
@@ -553,6 +562,7 @@ type MultiRuntimeTemplateOptions = {
       readonly objectBlock: string;
       readonly unionBlock: string;
       readonly inputTypeMethodsBlock: string;
+      readonly fragmentBuildersTypeBlock: string;
     }
   >;
   readonly injection: RuntimeTemplateInjection;
@@ -614,11 +624,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
 
-    // Build type exports
+    // Build type exports with fragment builders type
     const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
     if (adapterVar) {
       typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
+    typeExports.push(config.fragmentBuildersTypeBlock);
 
     const inputTypeMethodsVar = `inputTypeMethods_${name}`;
     const factoryVar = `createMethod_${name}`;
@@ -640,20 +651,23 @@ const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock} satisfies InputTy
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options - inputTypeMethods is always required
+    // Include FragmentBuilders type for codegen optimization
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, Adapter_${name}>`;
+      const typeParams = `<Schema_${name}, Adapter_${name}, FragmentBuilders_${name}>`;
       gqlEntries.push(
         `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`,
       );
     } else {
+      const typeParams = `<Schema_${name}, never, FragmentBuilders_${name}>`;
       gqlEntries.push(
-        `  ${name}: createGqlElementComposer<Schema_${name}>(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`,
+        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`,
       );
     }
   }
 
   return `\
 import {
+  type FragmentBuilderFor,
   type InputTypeMethods,
   createGqlElementComposer,
   createVarMethodFactory,
@@ -722,6 +736,7 @@ export const generateMultiSchemaModule = (
 
     const factoryVar = `createMethod_${name}`;
     const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
+    const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name);
 
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";
@@ -737,6 +752,7 @@ export const generateMultiSchemaModule = (
       objectBlock,
       unionBlock,
       inputTypeMethodsBlock,
+      fragmentBuildersTypeBlock,
     };
 
     // Accumulate stats

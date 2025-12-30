@@ -9,6 +9,23 @@ import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments, type createVarRefs } from "./input";
 
+/**
+ * Type alias for a fragment builder function for a specific object type.
+ * Used in codegen to generate explicit fragment builder types instead of mapped types.
+ */
+export type FragmentBuilderFor<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
+> = <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
+  variables?: TVarDefinitions;
+  metadata?: FragmentMetadataBuilder<
+    ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>,
+    ExtractAdapterTypes<TAdapter>["fragmentMetadata"]
+  >;
+  fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
+}) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
+
 export const createGqlFragmentComposers = <
   TSchema extends AnyGraphqlSchema,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,

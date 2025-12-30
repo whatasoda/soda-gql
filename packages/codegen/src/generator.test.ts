@@ -421,4 +421,49 @@ describe("generateMultiSchemaModule", () => {
     expect(aFieldIndex).toBeLessThan(mFieldIndex);
     expect(mFieldIndex).toBeLessThan(zFieldIndex);
   });
+
+  test("generates fragment builder types", () => {
+    const document = parse(`
+      type Query { users: [User!]! }
+      type User { id: ID!, name: String! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Should import FragmentBuilderFor
+    expect(result.code).toContain("type FragmentBuilderFor");
+
+    // Should generate FragmentBuilders type
+    expect(result.code).toContain("type FragmentBuilders_default");
+    expect(result.code).toContain('FragmentBuilderFor<Schema_default, "Query">');
+    expect(result.code).toContain('FragmentBuilderFor<Schema_default, "User">');
+
+    // Should use FragmentBuilders type in createGqlElementComposer
+    expect(result.code).toContain("createGqlElementComposer<Schema_default, never, FragmentBuilders_default>");
+  });
+
+  test("generates fragment builder types for multiple schemas", () => {
+    const schema1 = parse(`
+      type Query { users: [User!]! }
+      type User { id: ID! }
+    `);
+
+    const schema2 = parse(`
+      type Query { posts: [Post!]! }
+      type Post { id: ID! }
+    `);
+
+    const schemas = new Map([
+      ["api", schema1],
+      ["blog", schema2],
+    ]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Should generate separate FragmentBuilders for each schema
+    expect(result.code).toContain("type FragmentBuilders_api");
+    expect(result.code).toContain("type FragmentBuilders_blog");
+    expect(result.code).toContain('FragmentBuilderFor<Schema_api, "User">');
+    expect(result.code).toContain('FragmentBuilderFor<Schema_blog, "Post">');
+  });
 });

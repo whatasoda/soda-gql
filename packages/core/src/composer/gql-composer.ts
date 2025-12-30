@@ -2,7 +2,7 @@ import type { AnyFragment, AnyOperation } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
-import { createGqlFragmentComposers } from "./fragment";
+import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder, type InputTypeMethods } from "./var-builder";
 
@@ -27,12 +27,36 @@ type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter extends { me
     : DefaultMetadataAdapter
   : DefaultMetadataAdapter;
 
+/**
+ * Default fragment builders type computed from schema.
+ * This is the mapped type that's expensive to compute for large schemas.
+ */
+export type FragmentBuildersAll<
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
+> = {
+  readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string
+    ? FragmentBuilderFor<TSchema, TTypeName, TAdapter>
+    : never;
+};
+
 export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter> = {
   adapter?: TAdapter;
   inputTypeMethods: InputTypeMethods<TSchema>;
 };
 
-export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter>(
+/**
+ * Creates a GQL element composer for a given schema.
+ *
+ * @typeParam TSchema - The GraphQL schema type
+ * @typeParam TAdapter - The adapter type (optional)
+ * @typeParam TFragmentBuilders - Pre-computed fragment builders type (optional, for codegen optimization)
+ */
+export const createGqlElementComposer = <
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyAdapter = DefaultAdapter,
+  TFragmentBuilders = FragmentBuildersAll<TSchema, ExtractMetadataAdapter<TAdapter>>,
+>(
   schema: NoInfer<TSchema>,
   options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>>,
 ) => {
@@ -41,7 +65,7 @@ export const createGqlElementComposer = <TSchema extends AnyGraphqlSchema, TAdap
   const { adapter, inputTypeMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
-  const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter);
+  const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
   const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(schema, metadataAdapter);
 
   // Wrap operation composers in objects with an `operation` method for extensibility
