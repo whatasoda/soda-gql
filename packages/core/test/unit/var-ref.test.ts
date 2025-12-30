@@ -110,23 +110,23 @@ describe("isVarRef", () => {
 
 describe("extractPath", () => {
   it("captures single property access", () => {
-    expect(extractPath((p) => p.user)).toEqual(["user"]);
+    expect(extractPath((p: any) => p.user)).toEqual(["user"]);
   });
 
   it("captures nested property access", () => {
-    expect(extractPath((p) => p.user.profile.name)).toEqual(["user", "profile", "name"]);
+    expect(extractPath((p: any) => p.user.profile.name)).toEqual(["user", "profile", "name"]);
   });
 
   it("captures array index access", () => {
-    expect(extractPath((p) => p.items[0])).toEqual(["items", 0]);
+    expect(extractPath((p: any) => p.items[0])).toEqual(["items", 0]);
   });
 
   it("captures mixed property and index access", () => {
-    expect(extractPath((p) => p.users[0].addresses[1].street)).toEqual(["users", 0, "addresses", 1, "street"]);
+    expect(extractPath((p: any) => p.users[0].addresses[1].street)).toEqual(["users", 0, "addresses", 1, "street"]);
   });
 
   it("returns empty array for identity function", () => {
-    expect(extractPath((p) => p)).toEqual([]);
+    expect(extractPath((p: any) => p)).toEqual([]);
   });
 });
 
@@ -164,57 +164,57 @@ describe("getNameAt", () => {
   it("extracts variable name from nested VarRef in object", () => {
     const innerVarRef = createVarRefFromVariable("userId");
     const varRef = createVarRefFromNestedValue({ user: { id: innerVarRef } });
-    expect(getNameAt(varRef, (p) => p.user.id)).toBe("userId");
+    expect(getNameAt(varRef, (p: any) => p.user.id)).toBe("userId");
   });
 
   it("extracts variable name from nested VarRef in array", () => {
     const innerVarRef = createVarRefFromVariable("firstId");
     const varRef = createVarRefFromNestedValue({ ids: [innerVarRef, "literal"] });
-    expect(getNameAt(varRef, (p) => p.ids[0])).toBe("firstId");
+    expect(getNameAt(varRef, (p: any) => p.ids[0])).toBe("firstId");
   });
 
   it("throws for non-nested-value VarRef", () => {
     const varRef = createVarRefFromVariable("userId");
-    expect(() => getNameAt(varRef, (p) => p.any)).toThrow("getNameAt requires a nested-value VarRef");
+    expect(() => getNameAt(varRef, (p: any) => p.any)).toThrow("getNameAt requires a nested-value VarRef");
   });
 
   it("throws when path leads to non-VarRef value", () => {
     const varRef = createVarRefFromNestedValue({ user: { name: "Alice" } });
-    expect(() => getNameAt(varRef, (p) => p.user.name)).toThrow("Expected VarRef at path [user.name], got string");
+    expect(() => getNameAt(varRef, (p: any) => p.user.name)).toThrow("Expected VarRef at path [user.name], got string");
   });
 
   it("throws when path is invalid", () => {
     const varRef = createVarRefFromNestedValue({ user: { name: "Alice" } });
-    expect(() => getNameAt(varRef, (p) => p.user.age)).toThrow("Expected VarRef at path [user.age], got undefined");
+    expect(() => getNameAt(varRef, (p: any) => p.user.age)).toThrow("Expected VarRef at path [user.age], got undefined");
   });
 });
 
 describe("getValueAt", () => {
   it("extracts const value from nested object", () => {
     const varRef = createVarRefFromNestedValue({ user: { name: "Alice", age: 30 } });
-    expect(getValueAt(varRef, (p) => p.user.name)).toBe("Alice");
-    expect(getValueAt(varRef, (p) => p.user.age)).toBe(30);
+    expect(getValueAt(varRef, (p: any) => p.user.name)).toBe("Alice");
+    expect(getValueAt(varRef, (p: any) => p.user.age)).toBe(30);
   });
 
   it("returns undefined for missing path", () => {
     const varRef = createVarRefFromNestedValue({ user: { name: "Alice" } });
-    expect(getValueAt(varRef, (p) => p.user.age)).toBeUndefined();
+    expect(getValueAt(varRef, (p: any) => p.user.age)).toBeUndefined();
   });
 
   it("throws when path leads to VarRef", () => {
     const innerVarRef = createVarRefFromVariable("userId");
     const varRef = createVarRefFromNestedValue({ user: { id: innerVarRef } });
-    expect(() => getValueAt(varRef, (p) => p.user.id)).toThrow("Expected const value at path [user.id], got VarRef");
+    expect(() => getValueAt(varRef, (p: any) => p.user.id)).toThrow("Expected const value at path [user.id], got VarRef");
   });
 
   it("throws when value at path contains nested VarRef", () => {
     const innerVarRef = createVarRefFromVariable("userId");
     const varRef = createVarRefFromNestedValue({ user: { profile: { id: innerVarRef } } });
-    expect(() => getValueAt(varRef, (p) => p.user)).toThrow("Value at path [user] contains nested VarRef");
+    expect(() => getValueAt(varRef, (p: any) => p.user)).toThrow("Value at path [user] contains nested VarRef");
   });
 
   it("throws for non-nested-value VarRef", () => {
     const varRef = createVarRefFromVariable("userId");
-    expect(() => getValueAt(varRef, (p) => p.any)).toThrow("getValueAt requires a nested-value VarRef");
+    expect(() => getValueAt(varRef, (p: any) => p.any)).toThrow("getValueAt requires a nested-value VarRef");
   });
 });

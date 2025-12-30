@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { createVarMethod } from "../../src/composer/var-builder";
+import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
@@ -21,7 +21,13 @@ const schema = {
     ...defineScalar<"Boolean", boolean, boolean>("Boolean"),
   },
   enum: {},
-  input: {},
+  input: {
+    Filter: define("Filter").input({
+      id: unsafeInputType.scalar("ID:!", {}),
+      name: unsafeInputType.scalar("String:!", {}),
+      age: unsafeInputType.scalar("Int:?", {}),
+    }),
+  },
   object: {
     Query: define("Query").object({
       user: unsafeOutputType.object("User:!", {
@@ -43,12 +49,14 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const createMethod = createVarMethodFactory<Schema>();
 const inputTypeMethods = {
-  Boolean: createVarMethod("scalar", "Boolean"),
-  ID: createVarMethod("scalar", "ID"),
-  Int: createVarMethod("scalar", "Int"),
-  String: createVarMethod("scalar", "String"),
-};
+  Boolean: createMethod("scalar", "Boolean"),
+  ID: createMethod("scalar", "ID"),
+  Int: createMethod("scalar", "Int"),
+  String: createMethod("scalar", "String"),
+  Filter: createMethod("input", "Filter"),
+} satisfies InputTypeMethods<Schema>;
 
 describe("nested VarRef with $var helpers", () => {
   describe("$var.getNameAt", () => {
@@ -71,7 +79,7 @@ describe("nested VarRef with $var helpers", () => {
           metadata: () => ({
             custom: {
               // Use getNameAt to extract variable name from nested structure
-              extractedVarName: $var.getNameAt(nestedRef, (p) => p.filter.id),
+              extractedVarName: $var.getNameAt(nestedRef, (p: any) => p.filter.id),
             },
           }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
@@ -88,9 +96,11 @@ describe("nested VarRef with $var helpers", () => {
     it("extracts const value from nested structure in metadata", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
-      // Create a nested structure with const values
+      // Create a nested structure with const values and a VarRef
+      const userIdVarRef = createVarRefFromVariable("userId");
       const nestedRef = createVarRefFromNestedValue({
         filter: {
+          id: userIdVarRef,
           name: "Alice",
           age: 30,
         },
@@ -103,8 +113,8 @@ describe("nested VarRef with $var helpers", () => {
           metadata: () => ({
             custom: {
               // Use getValueAt to extract const value from nested structure
-              extractedName: $var.getValueAt(nestedRef, (p) => p.filter.name),
-              extractedAge: $var.getValueAt(nestedRef, (p) => p.filter.age),
+              extractedName: $var.getValueAt(nestedRef, (p: any) => p.filter.name),
+              extractedAge: $var.getValueAt(nestedRef, (p: any) => p.filter.age),
             },
           }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
@@ -136,8 +146,8 @@ describe("nested VarRef with $var helpers", () => {
           variables: { ...$var("userId").ID("!"), ...$var("userAge").Int("?") },
           metadata: () => ({
             custom: {
-              constName: $var.getValueAt(nestedRef, (p) => p.user.name),
-              varAgeName: $var.getNameAt(nestedRef, (p) => p.user.age),
+              constName: $var.getValueAt(nestedRef, (p: any) => p.user.name),
+              varAgeName: $var.getNameAt(nestedRef, (p: any) => p.user.age),
             },
           }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
