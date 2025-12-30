@@ -15,7 +15,7 @@ export const simplePostFragment = gql.default(({ fragment }) =>
 );
 
 /**
- * Operation that embeds multiple fragments in different fields
+ * Operation that spreads multiple fragments in different fields
  */
 export const getDashboardQuery = gql.default(({ query }, { $var }) =>
   query.operation({

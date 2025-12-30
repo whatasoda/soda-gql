@@ -30,7 +30,7 @@ export type MetadataBuilderTools<
   readonly $: TVarRefs;
   /** The GraphQL DocumentNode (AST) for this operation */
   readonly document: DocumentNode;
-  /** Aggregated metadata from embedded fragments, evaluated before operation metadata */
+  /** Aggregated metadata from spread fragments, evaluated before operation metadata */
   readonly fragmentMetadata?: TAggregatedFragmentMetadata;
   /** Schema-level fixed values from the adapter */
   readonly schemaLevel?: TSchemaLevel;

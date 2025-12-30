@@ -89,7 +89,7 @@ module.exports = {
 
 The plugin tracks dependencies between:
 - Fragments and operations
-- Operations and their embedded fragments
+- Operations and their spread fragments
 
 Changes to a fragment automatically invalidate dependent operations.
 

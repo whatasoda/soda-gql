@@ -113,9 +113,9 @@ export const userFragment = gql.default(({ fragment }, { $var }) =>
 
 Variables are declared using object spread syntax with `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
 
-## Embedding Fragments
+## Spreading Fragments
 
-Embed fragments in other fragments or operations using `.spread()`:
+Spread fragments in other fragments or operations using `.spread()`:
 
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
@@ -131,7 +131,7 @@ export const postFragment = gql.default(({ fragment }) =>
 );
 ```
 
-When embedding a fragment with variables, pass the values through the first argument:
+When spreading a fragment with variables, pass the values through the first argument:
 
 ```typescript
 // Parent operation with its own variable
@@ -147,7 +147,7 @@ export const getPostQuery = gql.default(({ query }, { $var }) =>
         ...f.id(),
         ...f.title(),
         ...f.author()(({ f }) => ({
-          // Pass parent variable to embedded fragment
+          // Pass parent variable to spread fragment
           ...userFragment.spread({ includeEmail: $.showEmail }),
         })),
       })),

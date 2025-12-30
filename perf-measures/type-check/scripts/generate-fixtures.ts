@@ -249,7 +249,7 @@ function generateOperations(config: FixtureConfig): string {
   for (let i = 0; i < config.operations; i++) {
     // Compose multiple slices per operation
     const sliceCount = Math.min(3, config.slices);
-    const sliceEmbeds: string[] = [];
+    const sliceSpreads: string[] = [];
     const sliceVars: string[] = [];
 
     for (let j = 0; j < sliceCount; j++) {
@@ -257,11 +257,11 @@ function generateOperations(config: FixtureConfig): string {
       const isListSlice = sliceIndex % 2 !== 0;
 
       if (isListSlice) {
-        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.spread({ limit: $.limit${j}, offset: $.offset${j} }),`);
+        sliceSpreads.push(`        result${j}: slice${sliceIndex}.spread({ limit: $.limit${j}, offset: $.offset${j} }),`);
         sliceVars.push(`...$var("limit${j}").Int("?")`);
         sliceVars.push(`...$var("offset${j}").Int("?")`);
       } else {
-        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.spread({ id: $.id${j} }),`);
+        sliceSpreads.push(`        result${j}: slice${sliceIndex}.spread({ id: $.id${j} }),`);
         sliceVars.push(`...$var("id${j}").ID("!")`);
       }
     }
@@ -275,7 +275,7 @@ export const operation${i} = gql.default(({ query }, { $var }) =>
       variables: { ${sliceVars.join(", ")} },
     },
     ({ $ }) => ({
-${sliceEmbeds.join("\n")}
+${sliceSpreads.join("\n")}
     }),
   ),
 );`);

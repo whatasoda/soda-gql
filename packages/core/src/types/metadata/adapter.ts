@@ -2,12 +2,12 @@ import type { FieldPath } from "../../composer/field-path-context";
 import type { OperationMetadata } from "./metadata";
 
 /**
- * Information about a fragment's metadata when embedded in an operation.
+ * Information about a fragment's metadata when spread in an operation.
  */
 export type FragmentMetaInfo<TFragmentMetadata> = {
   /** The evaluated metadata from the fragment, if defined */
   readonly metadata: TFragmentMetadata | undefined;
-  /** Field path where the fragment was embedded */
+  /** Field path where the fragment was spread */
   readonly fieldPath: FieldPath | null;
 };
 
@@ -28,8 +28,8 @@ export type FragmentMetaInfo<TFragmentMetadata> = {
  */
 export type MetadataAdapter<TFragmentMetadata = unknown, TAggregatedFragmentMetadata = unknown, TSchemaLevel = unknown> = {
   /**
-   * Aggregates metadata from all embedded fragments in an operation.
-   * Called with the metadata from each embedded fragment.
+   * Aggregates metadata from all spread fragments in an operation.
+   * Called with the metadata from each spread fragment.
    * The return type becomes the `fragmentMetadata` parameter in operation metadata builders.
    */
   readonly aggregateFragmentMetadata: (fragments: readonly FragmentMetaInfo<TFragmentMetadata>[]) => TAggregatedFragmentMetadata;

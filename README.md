@@ -111,7 +111,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
   }),
 );
 
-// Operation with embedded fragment
+// Operation with spread fragment
 export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
   query.operation({
     name: "ProfileQueryWithFragment",

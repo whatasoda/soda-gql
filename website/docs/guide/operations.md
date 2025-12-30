@@ -110,9 +110,9 @@ Field selections in operations work the same as in fragments:
 })
 ```
 
-## Embedding Fragments
+## Spreading Fragments
 
-Embed fragments to reuse field selections:
+Spread fragments to reuse field selections:
 
 ```typescript
 import { userFragment } from "./user.fragment";
@@ -126,7 +126,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
     },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
-        // Embed fragment with variable passing
+        // Spread fragment with variable passing
         ...userFragment.spread({ includeEmail: $.includeEmail }),
       })),
     }),

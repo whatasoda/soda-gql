@@ -77,7 +77,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      // Create operation that embeds the fragment
+      // Create operation that spreads the fragment
       const operation = gql(({ query }, { $var }) =>
         query.operation({
           name: "GetUser",
@@ -93,7 +93,7 @@ describe("metadata adapter", () => {
       expect(meta.custom?.fragmentCount).toBe(1);
     });
 
-    it("works with operations without embedded fragments", () => {
+    it("works with operations without spread fragments", () => {
       const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
 
       const operation = gql(({ query }, { $var }) =>

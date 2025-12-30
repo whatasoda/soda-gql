@@ -41,9 +41,9 @@ const parser = createExecutionResultParser({
 });
 ```
 
-### Embedding Fragments
+### Spreading Fragments
 
-Fragments can be embedded in operations:
+Fragments can be spread in operations:
 
 ```typescript
 import { gql } from "./graphql-system";
