@@ -262,8 +262,7 @@ export const getValueAt = <T extends AnyVarRefMeta, U>(
   return inner.varInner.value as U;
 };
 
-
-export const getVariablePath= <T extends AnyVarRefMeta, U>(
+export const getVariablePath = <T extends AnyVarRefMeta, U>(
   varRef: VarRef<T>,
   selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
 ): readonly PathSegment[] => {
@@ -275,9 +274,9 @@ export const getVariablePath= <T extends AnyVarRefMeta, U>(
     return [`$${inner.varInner.varName}`, ...inner.segments.slice(inner.varInner.varSegments.length)];
   }
 
-  if (inner.varInner.type === "variable") { 
+  if (inner.varInner.type === "variable") {
     return [`$${inner.varInner.name}`];
   }
 
   throw new Error(`Value at path [${inner.segments.join(".")}] is not a variable or inside a variable`);
-}
+};

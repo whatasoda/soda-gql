@@ -6,7 +6,14 @@ import type {
   InferInputKind,
 } from "../types/schema";
 import type { InputTypeKind, TypeModifier } from "../types/type-foundation";
-import { getNameAt, getValueAt, getVariablePath, getVarRefInner, getVarRefName, getVarRefValue } from "../types/type-foundation/var-ref";
+import {
+  getNameAt,
+  getValueAt,
+  getVariablePath,
+  getVarRefInner,
+  getVarRefName,
+  getVarRefValue,
+} from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 
 /**
