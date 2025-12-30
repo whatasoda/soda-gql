@@ -3,6 +3,7 @@ import { collectAffectedFiles } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,
+  getSharedPluginSession,
   getSharedState,
   getStateKey,
   type PluginSession,
@@ -74,13 +75,32 @@ export class SodaGqlWebpackPlugin {
   private async initialize(): Promise<void> {
     if (this.pluginSession) return;
 
+    // Try to reuse existing shared session (e.g., from client compilation in Next.js)
+    const existingSession = getSharedPluginSession(this.stateKey);
+    if (existingSession) {
+      this.pluginSession = existingSession;
+
+      // Still need to build artifact for this compilation
+      this.currentArtifact = await this.pluginSession.getArtifactAsync();
+
+      // Update shared artifact
+      setSharedArtifact(this.stateKey, this.currentArtifact);
+
+      // Initialize SWC transformer if configured
+      await this.initializeSwcTransformer();
+
+      this.log(`Reusing session: ${Object.keys(this.currentArtifact?.elements ?? {}).length} elements`);
+      return;
+    }
+
+    // Fall back to creating new session (first plugin instance)
     this.pluginSession = createPluginSession(this.options, SodaGqlWebpackPlugin.pluginName);
     if (!this.pluginSession) {
       this.log("Plugin disabled or config load failed");
       return;
     }
 
-    // Share the plugin session with loader
+    // Share the plugin session with loader and other plugin instances
     setSharedPluginSession(this.stateKey, this.pluginSession);
 
     // Initial artifact build
