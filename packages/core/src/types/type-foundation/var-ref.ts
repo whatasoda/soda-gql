@@ -2,7 +2,7 @@ import type { ConstValue } from "./const-value";
 import type { TypeProfile } from "./type-profile";
 
 export interface AnyVarRefMeta {
-  readonly profile: TypeProfile;
+  readonly profile: TypeProfile.WithMeta;
   readonly signature: unknown;
 }
 
@@ -127,8 +127,7 @@ export type PathSegment = string | number;
  * Current implementation uses 'any' for simplicity.
  * The runtime behavior is correct; only compile-time type checking is limited.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type PathProxy<_T> = any;
+export type PathProxy<T> = { [K in keyof T]: PathProxy<T[K]> };
 
 /**
  * Type-safe path builder function.
@@ -141,7 +140,7 @@ export type PathProxy<_T> = any;
  * Current implementation supports runtime path extraction without
  * compile-time type checking of the path validity.
  */
-export type PathBuilder<T = unknown> = (proxy: PathProxy<T>) => PathProxy<unknown>;
+export type PathBuilder<T, U> = (proxy: T) => U;
 
 /**
  * Internal symbol to store path segments on PathProxy.
@@ -164,8 +163,7 @@ export const createPathProxy = <T>(segments: readonly PathSegment[] = []): PathP
       }
 
       // Handle both string keys and numeric indices
-      const segment: PathSegment =
-        typeof prop === "symbol" ? String(prop) : !Number.isNaN(Number(prop)) ? Number(prop) : prop;
+      const segment: PathSegment = typeof prop === "symbol" ? String(prop) : !Number.isNaN(Number(prop)) ? Number(prop) : prop;
 
       return createPathProxy([...target[PATH_SEGMENTS], segment]);
     },
@@ -175,9 +173,9 @@ export const createPathProxy = <T>(segments: readonly PathSegment[] = []): PathP
 /**
  * Extracts the path segments from a PathBuilder function.
  */
-export const extractPath = <T>(pathFn: PathBuilder<T>): readonly PathSegment[] => {
+export const extractPath = <T, U>(pathFn: PathBuilder<T, U>): readonly PathSegment[] => {
   const proxy = createPathProxy<T>();
-  const result = pathFn(proxy) as unknown as PathProxyInternal;
+  const result = pathFn(proxy as unknown as T) as unknown as PathProxyInternal;
   return result[PATH_SEGMENTS];
 };
 
@@ -224,7 +222,10 @@ export const getNestedValue = (value: NestedValue, path: readonly PathSegment[])
  * });
  * getNameAt(ref, p => p.user.age); // returns the variable name
  */
-export const getNameAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): string => {
+export const getNameAt = <T extends AnyVarRefMeta, U>(
+  varRef: VarRef<T>,
+  pathFn: PathBuilder<TypeProfile.Type<T["profile"]>, U>,
+): string => {
   const inner = VarRef.getInner(varRef);
   if (inner.type !== "nested-value") {
     throw new Error("getNameAt requires a nested-value VarRef");
@@ -254,7 +255,10 @@ export const getNameAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): string 
  * });
  * getValueAt(ref, p => p.user.name); // returns "Alice"
  */
-export const getValueAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): ConstValue => {
+export const getValueAt = <T extends AnyVarRefMeta, U>(
+  varRef: VarRef<T>,
+  pathFn: PathBuilder<TypeProfile.Type<T["profile"]>, U>,
+): U => {
   const inner = VarRef.getInner(varRef);
   if (inner.type !== "nested-value") {
     throw new Error("getValueAt requires a nested-value VarRef");
@@ -264,7 +268,7 @@ export const getValueAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): ConstV
   const valueAtPath = getNestedValue(inner.value, path);
 
   if (valueAtPath === undefined) {
-    return undefined;
+    return undefined as U;
   }
 
   if (isVarRef(valueAtPath)) {
@@ -275,5 +279,5 @@ export const getValueAt = <T>(varRef: AnyVarRef, pathFn: PathBuilder<T>): ConstV
     throw new Error(`Value at path [${path.join(".")}] contains nested VarRef`);
   }
 
-  return valueAtPath as ConstValue;
+  return valueAtPath as U;
 };

@@ -73,13 +73,17 @@ export declare namespace TypeProfile {
       : T
     : never;
 
+  // NOTE: AssignableVarRef should accept var refs with same profile and compatible signature.
+  // It doesn't matter modifiers or default input flag in the TProfile.
   export type AssignableVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: TProfile[0];
+    profile: [TProfile[0], any, any?];
     signature: AssignableSignature<TProfile>;
   };
 
+  // NOTE: AssigningVarRef should remember the full profile aside from signature.
+  // So that it can be used to extract const values from nested structure.
   export type AssigningVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: TProfile[0];
+    profile: TProfile;
     signature: Signature<TProfile>;
   };
 
