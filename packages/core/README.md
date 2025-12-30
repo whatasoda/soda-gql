@@ -232,6 +232,26 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 );
 ```
 
+### Variable Utilities
+
+The `$var` object provides utility functions for inspecting variable references:
+
+| Method | Description |
+|--------|-------------|
+| `$var.getName(ref)` | Get variable name from a VarRef |
+| `$var.getValue(ref)` | Get const value from a nested-value VarRef |
+| `$var.getInner(ref)` | Get the internal VarRefInner structure |
+| `$var.getNameAt(ref, selector)` | Get variable name at a specific path |
+| `$var.getValueAt(ref, selector)` | Get const value at a specific path |
+| `$var.getVariablePath(ref, selector)` | Get path segments to a variable |
+
+```typescript
+// Example: getVariablePath with nested structure
+const varRef = createVarRefFromVariable("user");
+$var.getVariablePath(varRef, (p) => p.profile.name);
+// Returns: ["$user", "name"] (variable name + path after variable reference point)
+```
+
 ## Runtime Exports
 
 The `/runtime` subpath provides utilities for operation registration and retrieval:
