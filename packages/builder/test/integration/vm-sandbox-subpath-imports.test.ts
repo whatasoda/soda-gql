@@ -88,6 +88,8 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
         default: {
           schema: path.join(workspaceRoot, "schema.graphql"),
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
         },
       },
       outPath,
@@ -109,6 +111,8 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
         default: {
           schema: path.join(workspaceRoot, "schema.graphql"),
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
         },
       },
       styles: {
@@ -184,6 +188,8 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
         default: {
           schema: path.join(workspaceRoot, "schema.graphql"),
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
         },
       },
       outPath,
@@ -205,6 +211,8 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
         default: {
           schema: path.join(workspaceRoot, "schema.graphql"),
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
         },
       },
       styles: {

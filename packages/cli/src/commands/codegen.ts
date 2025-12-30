@@ -67,6 +67,8 @@ const parseCodegenArgs = (argv: readonly string[]): Result<ParsedCommand, Codege
     schemas[name] = {
       schema: schemaConfig.schema,
       inject: schemaConfig.inject,
+      defaultInputDepth: schemaConfig.defaultInputDepth,
+      inputDepthOverrides: schemaConfig.inputDepthOverrides,
     };
   }
 
@@ -157,6 +159,8 @@ export const codegenCommand = async (argv: readonly string[]): Promise<number> =
           scalars: resolve(schemaConfig.inject.scalars),
           ...(schemaConfig.inject.adapter ? { adapter: resolve(schemaConfig.inject.adapter) } : {}),
         },
+        defaultInputDepth: schemaConfig.defaultInputDepth,
+        inputDepthOverrides: schemaConfig.inputDepthOverrides,
       };
     }
 

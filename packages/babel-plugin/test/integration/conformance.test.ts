@@ -62,6 +62,8 @@ const createTransformConfig = (): import("@soda-gql/config").ResolvedSodaGqlConf
     default: {
       schema: "/tmp/schema.graphql",
       inject: { scalars: "/tmp/scalars.ts" },
+      defaultInputDepth: 3,
+      inputDepthOverrides: {},
     },
   },
   styles: {

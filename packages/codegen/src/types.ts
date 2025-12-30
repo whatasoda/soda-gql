@@ -12,6 +12,8 @@ export type CodegenInjectConfig = {
 export type CodegenSchemaConfig = {
   readonly schema: string;
   readonly inject: CodegenInjectConfig;
+  readonly defaultInputDepth?: number;
+  readonly inputDepthOverrides?: Readonly<Record<string, number>>;
 };
 
 export type CodegenOptions = {
