@@ -137,6 +137,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 | `...$var("name").ID("!")` | Required ID variable |
 | `...$var("name").String("?")` | Optional String variable |
 | `...fragment.spread({})` | Spread fragment fields |
+| `...fragment.spread()` | Spread (all variables optional) |
 
 ### Variable Type Modifiers
 

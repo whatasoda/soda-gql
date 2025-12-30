@@ -164,13 +164,32 @@ When the nested callback only contains fragment spreads (no direct field selecti
 ```typescript
 // Full form
 ...f.user({ id: $.id })(({ f }) => ({
-  ...userFragment.spread({}),
+  ...userFragment.spread({ postLimit: $.limit }),
 }))
 
 // Shorthand (spread-only)
 ...f.user({ id: $.id })(() => ({
-  ...userFragment.spread({}),
+  ...userFragment.spread({ postLimit: $.limit }),
 }))
+```
+
+**Argument omission for spread:**
+
+When all fragment variables are optional, the spread argument can be omitted entirely:
+
+```typescript
+// Fragment with all optional variables
+const userFragment = gql.default(({ fragment, $var }) =>
+  fragment.User({
+    variables: { ...$var("postLimit").Int("?") }, // optional
+    fields: ({ f, $ }) => ({ ...f.id(), ...f.posts({ limit: $.postLimit })(...) }),
+  }),
+);
+
+// All of these are valid:
+...userFragment.spread({ postLimit: $.limit })  // explicit mapping
+...userFragment.spread({})                       // empty object
+...userFragment.spread()                         // argument omitted
 ```
 
 ### Field Alias
