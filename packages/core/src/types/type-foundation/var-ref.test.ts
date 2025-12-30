@@ -4,6 +4,7 @@ import {
   createVarRefFromVariable,
   getNameAt,
   getValueAt,
+  getVariablePath,
   getVarRefName,
   getVarRefValue,
   hasVarRefInside,
@@ -116,7 +117,7 @@ describe("getNameAt", () => {
 
   it("throws when trying to access children of variable VarRef", () => {
     const varRef = createVarRefFromVariable("userId");
-    expect(() => getNameAt(varRef, (p: any) => p.any)).toThrow("Cannot access children of variable at path []");
+    expect(() => getNameAt(varRef, (p: any) => p.any)).toThrow("Value at path [any] is inside a variable");
   });
 
   it("throws when path leads to non-VarRef value", () => {
@@ -153,6 +154,39 @@ describe("getValueAt", () => {
 
   it("throws when trying to access children of variable VarRef", () => {
     const varRef = createVarRefFromVariable("userId");
-    expect(() => getValueAt(varRef, (p: any) => p.any)).toThrow("Cannot access children of variable at path []");
+    expect(() => getValueAt(varRef, (p: any) => p.any)).toThrow("Value at path [any] is inside a variable");
+  });
+});
+
+describe("getVariablePath", () => {
+  it("returns path with variable name for direct variable reference", () => {
+    const varRef = createVarRefFromVariable("userId");
+    expect(getVariablePath(varRef, (p: any) => p)).toEqual(["$userId"]);
+  });
+
+  it("returns path segments when accessing inside a variable", () => {
+    const varRef = createVarRefFromVariable("user");
+    // Returns variable name + path after the variable reference point
+    expect(getVariablePath(varRef, (p: any) => p.profile.name)).toEqual(["$user", "name"]);
+  });
+
+  it("returns variable path from nested VarRef in object", () => {
+    const innerVarRef = createVarRefFromVariable("userId");
+    const varRef = createVarRefFromNestedValue({ user: { id: innerVarRef } });
+    expect(getVariablePath(varRef, (p: any) => p.user.id)).toEqual(["$userId"]);
+  });
+
+  it("returns path for variable inside nested-value with further path access", () => {
+    const innerVarRef = createVarRefFromVariable("user");
+    const varRef = createVarRefFromNestedValue({ data: { profile: innerVarRef } });
+    // Returns variable name + path after the variable reference point
+    expect(getVariablePath(varRef, (p: any) => p.data.profile.name)).toEqual(["$user"]);
+  });
+
+  it("throws when path leads to non-variable value", () => {
+    const varRef = createVarRefFromNestedValue({ user: { name: "Alice" } });
+    expect(() => getVariablePath(varRef, (p: any) => p.user.name)).toThrow(
+      "Value at path [user.name] is not a variable or inside a variable",
+    );
   });
 });
