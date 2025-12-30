@@ -1,6 +1,6 @@
 /** Field builder factories shared by model and slice helpers. */
 
-import type { IfEmpty } from "../../utils/empty-object";
+import type { IfOmittable } from "../../utils/empty-object";
 import type {
   AbstractFieldSelection,
   AnyAssignableInput,
@@ -84,7 +84,7 @@ export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
 export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> = <
   TAlias extends string | null = null,
 >(
-  fieldArgs: TSelection["args"] | IfEmpty<TSelection["args"], void | null>,
+  fieldArgs: TSelection["args"] | IfOmittable<TSelection["args"], void | null>,
   extras?: { alias?: TAlias; directives?: TSelection["directives"] },
 ) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
@@ -159,4 +159,4 @@ export type FieldSelectionFactoryPrimitiveReturn<
 
 export type FieldSelectionFactoryFieldArguments<TFieldSelectionTemplate extends AnyFieldSelection> =
   | TFieldSelectionTemplate["args"]
-  | IfEmpty<TFieldSelectionTemplate["args"], void | null>;
+  | IfOmittable<TFieldSelectionTemplate["args"], void | null>;

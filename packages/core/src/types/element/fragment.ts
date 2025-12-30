@@ -1,6 +1,6 @@
 /** Fragment helper types mirroring the `gql.fragment` API. */
 
-import type { SwitchIfEmpty } from "../../utils/empty-object";
+import type { OptionalArg } from "../../utils/empty-object";
 import type { AnyAssignableInput, AnyFields, AssignableInput, InferFields } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
@@ -53,12 +53,12 @@ export class Fragment<
   >(
     define: () => {
       typename: TTypeName;
-      spread: (variables: SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
+      spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
-    type Variables = SwitchIfEmpty<TVariableDefinitions, void, AssignableInput<TSchema, TVariableDefinitions>>;
+    type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
 
     return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
   }
