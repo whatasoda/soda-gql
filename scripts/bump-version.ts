@@ -16,7 +16,6 @@ type BumpType = "major" | "minor" | "patch";
 type PackageJson = {
   name: string;
   version: string;
-  optionalDependencies?: Record<string, string>;
   [key: string]: unknown;
 };
 
@@ -83,21 +82,6 @@ const writePackageJson = async (
     return ok(undefined);
   } catch (error) {
     return err(`Failed to write ${filePath}: ${String(error)}`);
-  }
-};
-
-/**
- * Update optionalDependencies versions for platform packages
- */
-const updateOptionalDependencies = (packageJson: PackageJson, newVersion: string): void => {
-  const optionalDeps = packageJson.optionalDependencies;
-  if (optionalDeps) {
-    for (const dep of Object.keys(optionalDeps)) {
-      // Update @soda-gql/swc-transformer-* platform package versions
-      if (dep.startsWith("@soda-gql/swc-transformer-")) {
-        optionalDeps[dep] = newVersion;
-      }
-    }
   }
 };
 
@@ -277,9 +261,6 @@ const executeBumpPlan = async (
     } else {
       // Update version
       pkg.version = plan.newVersion;
-
-      // Update optionalDependencies for platform packages
-      updateOptionalDependencies(pkg, plan.newVersion);
 
       const writeResult = await writePackageJson(packagePath, pkg);
       if (writeResult.isErr()) {

@@ -230,13 +230,6 @@
         "@soda-gql/tsc-transformer": "workspace:*",
         "prettier": "^3.4.2",
       },
-      "optionalDependencies": {
-        "@soda-gql/swc-transformer-darwin-arm64": "0.3.0",
-        "@soda-gql/swc-transformer-darwin-x64": "0.3.0",
-        "@soda-gql/swc-transformer-linux-x64-gnu": "0.3.0",
-        "@soda-gql/swc-transformer-linux-x64-musl": "0.3.0",
-        "@soda-gql/swc-transformer-win32-x64-msvc": "0.3.0",
-      },
       "peerDependencies": {
         "@swc/core": "^1.0.0",
       },
@@ -1156,16 +1149,6 @@
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
 
     "@soda-gql/swc-transformer": ["@soda-gql/swc-transformer@workspace:packages/swc-transformer"],
-
-    "@soda-gql/swc-transformer-darwin-arm64": ["@soda-gql/swc-transformer-darwin-arm64@0.3.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-+JXFhKV0KWTWyOk7L9+oqmMqY1XSJCGOLTGaz16k04w/bfDv4fJlIiG7ELFzmo3LD+KBUywEbc6X+cSyEGE0Ig=="],
-
-    "@soda-gql/swc-transformer-darwin-x64": ["@soda-gql/swc-transformer-darwin-x64@0.3.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-WuRAm++Eer0pPjJkhacaw/E0aer0v+QNwyoF4w+YYsTOU9oiva8hS+CUI9VBn+zjwpVYJHDYfEtlVU19FKw2Ww=="],
-
-    "@soda-gql/swc-transformer-linux-x64-gnu": ["@soda-gql/swc-transformer-linux-x64-gnu@0.3.0", "", { "os": "linux", "cpu": "x64" }, "sha512-eQazH77E9woN00TRtRxmctutuQPAIIwf2kSUi21Yb5vtt2LqNk45g0tXh8fxZf3ndZfTBIZbJ1NdaHwRdGejeA=="],
-
-    "@soda-gql/swc-transformer-linux-x64-musl": ["@soda-gql/swc-transformer-linux-x64-musl@0.3.0", "", { "os": "linux", "cpu": "x64" }, "sha512-CJp0QKlXS/YJk2Gq0o2tocrI2wxlxYk+D0+w7eeUtgyPbX7GMG14WfoqmvEdnEJ8t3XFhs9xwaJ9LUwZ1HTr1w=="],
-
-    "@soda-gql/swc-transformer-win32-x64-msvc": ["@soda-gql/swc-transformer-win32-x64-msvc@0.3.0", "", { "os": "win32", "cpu": "x64" }, "sha512-AWkgt3tTxcN+Hj51/8DWgfDooPIETz1uH1iNPCPtWHExO1xAlAvODZI96tpTlfeJJpIrVKLZdWIgO+AewBcqOA=="],
 
     "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
 
