@@ -9,7 +9,7 @@ describe("createProjection", () => {
   const createMockFragment = () => {
     return Fragment.create<any, "Query", {}, { user: { id: string; name: string } }>(() => ({
       typename: "Query",
-      embed: () => ({ user: { id: "1", name: "Test" } }),
+      spread: () => ({ user: { id: "1", name: "Test" } }),
     }));
   };
 
@@ -84,7 +84,7 @@ describe("createExecutionResultParser integration", () => {
   it("should parse execution result with labeled projections", () => {
     const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
       typename: "Query",
-      embed: () => ({ user: { id: "1" } }),
+      spread: () => ({ user: { id: "1" } }),
     }));
 
     const userProjection = createProjection(userFragment, {
@@ -120,7 +120,7 @@ describe("createExecutionResultParser integration", () => {
   it("should handle empty results", () => {
     const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
       typename: "Query",
-      embed: () => ({ user: { id: "1" } }),
+      spread: () => ({ user: { id: "1" } }),
     }));
 
     const userProjection = createProjection(userFragment, {
