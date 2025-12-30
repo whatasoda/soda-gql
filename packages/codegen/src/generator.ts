@@ -550,6 +550,7 @@ type RuntimeTemplateInjection =
 
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
+  readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -566,6 +567,7 @@ type MultiRuntimeTemplateOptions = {
       readonly unionBlock: string;
       readonly inputTypeMethodsBlock: string;
       readonly fragmentBuildersTypeBlock: string;
+      readonly inputDepthOverrides?: Readonly<Record<string, number>>;
     }
   >;
   readonly injection: RuntimeTemplateInjection;
@@ -637,6 +639,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     const inputTypeMethodsVar = `inputTypeMethods_${name}`;
     const factoryVar = `createMethod_${name}`;
 
+    // Generate __inputDepthOverrides block if there are overrides
+    const depthOverridesBlock =
+      config.inputDepthOverrides && Object.keys(config.inputDepthOverrides).length > 0
+        ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
+        : "";
+
     schemaBlocks.push(`
 const ${schemaVar} = {
   label: "${name}",
@@ -645,7 +653,7 @@ const ${schemaVar} = {
   enum: ${config.enumBlock},
   input: ${config.inputBlock},
   object: ${config.objectBlock},
-  union: ${config.unionBlock},
+  union: ${config.unionBlock},${depthOverridesBlock}
 } as const;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
@@ -759,6 +767,7 @@ export const generateMultiSchemaModule = (
       unionBlock,
       inputTypeMethodsBlock,
       fragmentBuildersTypeBlock,
+      inputDepthOverrides: options?.inputDepthOverrides?.get(name),
     };
 
     // Accumulate stats
