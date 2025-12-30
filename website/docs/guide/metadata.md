@@ -70,6 +70,7 @@ The `$var` object provides methods to inspect VarRef values:
 | `$var.getInner(ref)` | Get the raw inner structure of a VarRef |
 | `$var.getNameAt(ref, selector)` | Get variable name at a path in nested structure |
 | `$var.getValueAt(ref, selector)` | Get const value at a path in nested structure |
+| `$var.getVariablePath(ref, selector)` | Get path segments to a variable |
 
 ### Dynamic Metadata
 
