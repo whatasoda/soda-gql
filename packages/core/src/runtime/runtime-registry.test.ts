@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import {
-  __getRegisteredOperations,
-  __resetRuntimeRegistry,
-  getOperation,
-  registerOperation,
-} from "./runtime-registry";
 import type { AnyOperationOf } from "../types/element";
 import type { OperationType } from "../types/schema";
+import { __getRegisteredOperations, __resetRuntimeRegistry, getOperation, registerOperation } from "./runtime-registry";
 
 const createMockOperation = (name: string): AnyOperationOf<OperationType> =>
   ({

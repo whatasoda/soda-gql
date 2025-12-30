@@ -1,10 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import {
-  createEvaluationGenerator,
-  createLazyEvaluator,
-  evaluateSync,
-  type LazyEvaluatorContext,
-} from "./lazy-evaluator";
+import { createEvaluationGenerator, createLazyEvaluator, evaluateSync, type LazyEvaluatorContext } from "./lazy-evaluator";
 
 describe("createLazyEvaluator", () => {
   // Helper to create a no-op dependency generator

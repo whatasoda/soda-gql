@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getSharedState, getStateKey, SodaGqlWebpackPlugin } from "@soda-gql/webpack-plugin";
+import {
+  getSharedBuilderService,
+  getSharedPluginSession,
+  getSharedState,
+  getStateKey,
+  SodaGqlWebpackPlugin,
+  setSharedBuilderService,
+  setSharedPluginSession,
+} from "@soda-gql/webpack-plugin";
 
 describe("Webpack Plugin", () => {
   let tempDir: string;
@@ -114,5 +122,74 @@ describe("Webpack Loader", () => {
   it("should export raw flag as false", async () => {
     const loaderModule = await import("@soda-gql/webpack-plugin/loader");
     expect(loaderModule.raw).toBe(false);
+  });
+});
+
+describe("Session Reuse (Next.js Multi-Compilation)", () => {
+  // Generate unique test key to avoid test interference
+  const testKey = () => `session-reuse-${Date.now()}-${Math.random()}`;
+
+  it("should reuse shared PluginSession when available", () => {
+    const key = testKey();
+
+    // Simulate first plugin instance setting a session
+    const mockSession = {
+      config: {} as Parameters<typeof setSharedPluginSession>[1] extends { config: infer C } ? C : never,
+      getArtifact: () => null,
+      getArtifactAsync: async () => null,
+    } as Parameters<typeof setSharedPluginSession>[1];
+    setSharedPluginSession(key, mockSession);
+
+    // Verify session is retrievable
+    const retrieved = getSharedPluginSession(key);
+    expect(retrieved).toBe(mockSession);
+  });
+
+  it("should share BuilderService across PluginSession instances", () => {
+    const key = testKey();
+
+    // First call should return null
+    expect(getSharedBuilderService(key)).toBeNull();
+
+    // Simulate setting a BuilderService
+    const mockService = {
+      build: () => {},
+      buildAsync: async () => {},
+      getGeneration: () => 0,
+      getCurrentArtifact: () => null,
+      dispose: () => {},
+    } as unknown as Parameters<typeof setSharedBuilderService>[1];
+    setSharedBuilderService(key, mockService);
+
+    // Second call should return the same service
+    expect(getSharedBuilderService(key)).toBe(mockService);
+  });
+
+  it("should use same state key for plugins with same configPath", () => {
+    const configPath = `/tmp/test-config-${Date.now()}.ts`;
+
+    // Both plugins should derive the same state key
+    const key1 = getStateKey(configPath);
+    const key2 = getStateKey(configPath);
+
+    expect(key1).toBe(key2);
+    expect(key1).toBe(configPath);
+  });
+
+  it("should use different state keys for different configPaths", () => {
+    const configPath1 = `/tmp/config1-${Date.now()}.ts`;
+    const configPath2 = `/tmp/config2-${Date.now()}.ts`;
+
+    const key1 = getStateKey(configPath1);
+    const key2 = getStateKey(configPath2);
+
+    expect(key1).not.toBe(key2);
+  });
+
+  it("should initialize SharedState with null builderService", () => {
+    const key = testKey();
+    const state = getSharedState(key);
+
+    expect(state.builderService).toBeNull();
   });
 });

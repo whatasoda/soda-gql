@@ -1,4 +1,4 @@
-import type { BuilderArtifact } from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
 import type { PluginSession } from "./plugin-session";
 
 /**
@@ -31,6 +31,7 @@ export type SharedState = {
   generation: number;
   swcTransformer: SwcTransformerInterface | null;
   transformerType: TransformerType | null;
+  builderService: BuilderService | null;
 };
 
 // Global state for sharing between plugin and loader
@@ -49,6 +50,7 @@ export const getSharedState = (key: string): SharedState => {
       generation: 0,
       swcTransformer: null,
       transformerType: null,
+      builderService: null,
     };
     sharedStates.set(key, state);
   }
@@ -125,4 +127,18 @@ export const setSharedTransformerType = (key: string, transformerType: Transform
  */
 export const getSharedTransformerType = (key: string): TransformerType | null => {
   return getSharedState(key).transformerType;
+};
+
+/**
+ * Get shared BuilderService.
+ */
+export const getSharedBuilderService = (key: string): BuilderService | null => {
+  return getSharedState(key).builderService;
+};
+
+/**
+ * Set shared BuilderService.
+ */
+export const setSharedBuilderService = (key: string, service: BuilderService | null): void => {
+  getSharedState(key).builderService = service;
 };

@@ -3,10 +3,10 @@
  * Unified from plugin-babel and plugin-swc implementations.
  */
 
-import type { BuilderArtifact } from "@soda-gql/builder";
+import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
-import { cachedFn } from "@soda-gql/common";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { getSharedBuilderService, getStateKey, setSharedBuilderService } from "./shared-state";
 
 /**
  * Plugin options shared across all plugins.
@@ -47,7 +47,19 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
   }
 
   const config = configResult.value;
-  const ensureBuilderService = cachedFn(() => createBuilderService({ config }));
+  const stateKey = getStateKey(options.configPath);
+
+  // Use global BuilderService cache to share FileTracker state across plugin instances
+  const ensureBuilderService = (): BuilderService => {
+    const existing = getSharedBuilderService(stateKey);
+    if (existing) {
+      return existing;
+    }
+
+    const service = createBuilderService({ config });
+    setSharedBuilderService(stateKey, service);
+    return service;
+  };
 
   /**
    * Build artifact on every invocation (like tsc-plugin).
