@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/core",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Core types and utilities for zero-runtime GraphQL query generation",
   "type": "module",
   "private": false,
