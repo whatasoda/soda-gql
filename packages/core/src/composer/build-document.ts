@@ -45,8 +45,10 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
       };
     }
 
-    if (inner.type === "const-value") {
-      return buildConstValueNode(inner.value);
+    if (inner.type === "nested-value") {
+      // Recursively process the nested value
+      // This handles VarRefs inside the nested structure
+      return buildArgumentValue(inner.value as AnyAssignableInputValue);
     }
 
     throw new Error(`Unknown var ref type: ${inner satisfies never}`);

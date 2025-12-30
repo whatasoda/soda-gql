@@ -8,7 +8,15 @@ import { gql } from "@/graphql-system";
 export const postListFragment = gql
   .default(({ fragment }, { $var }) =>
     fragment.Query({
-      variables: { ...$var("userId").ID("!") },
+      variables: {
+        ...$var("userId").ID("!"),
+        ...$var("categoryId").String_comparison_exp("?"),
+      },
+      metadata: ({ $ }) => ({
+        custom: {
+          categoryId: $var.getValueAt($.categoryId, (p) => p._eq),
+        },
+      }),
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.userId })(({ f }) => ({
           ...f.posts({})(({ f }) => ({
