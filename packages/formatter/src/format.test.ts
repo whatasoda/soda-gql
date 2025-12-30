@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { format, needsFormat } from "../src/format";
+import { format, needsFormat } from "./format";
 
 const loadFixture = (name: string): string => {
-  const path = resolve(import.meta.dirname, "fixtures", `${name}.ts`);
+  const path = resolve(import.meta.dirname, "../test/fixtures", `${name}.ts`);
   return readFileSync(path, "utf-8");
 };
 
