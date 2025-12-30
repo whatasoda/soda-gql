@@ -166,17 +166,6 @@ fields: ({ f }) => ({
 })
 ```
 
-### Conditional Field
-
-Include a field conditionally based on a variable:
-
-```typescript
-fields: ({ f, $ }) => ({
-  ...f.id(),
-  ...f.email({ if: $.includeEmail }),
-})
-```
-
 ## Fragment Spreading
 
 ### fragment.spread(variableMappings)
@@ -187,11 +176,14 @@ Spread a fragment's fields into an operation or another fragment:
 // Define fragment
 export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
-    variables: { ...$var("includeEmail").Boolean("?") },
+    variables: { ...$var("postLimit").Int("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.posts({ limit: $.postLimit })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+      })),
     }),
   }),
 );
@@ -200,10 +192,10 @@ export const userFragment = gql.default(({ fragment, $var }) =>
 export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
-    variables: { ...$var("id").ID("!"), ...$var("showEmail").Boolean("?") },
+    variables: { ...$var("id").ID("!"), ...$var("limit").Int("?") },
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.id })(({ f }) => ({
-        ...userFragment.spread({ includeEmail: $.showEmail }),
+        ...userFragment.spread({ postLimit: $.limit }),
       })),
     }),
   }),
@@ -216,7 +208,7 @@ When spreading a fragment, map operation variables to fragment variables:
 
 ```typescript
 ...userFragment.spread({
-  includeEmail: $.showEmail,  // Map $.showEmail to fragment's $.includeEmail
+  postLimit: $.limit,  // Map $.limit to fragment's $.postLimit
 })
 ```
 
@@ -255,13 +247,12 @@ import { gql } from "@/graphql-system";
 export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: {
-      ...$var("includeEmail").Boolean("?"),
       ...$var("postLimit").Int("?"),
     },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.email(),
       ...f.posts({ limit: $.postLimit })(({ f }) => ({
         ...f.id(),
         ...f.title(),
@@ -277,7 +268,6 @@ export const getUsersQuery = gql.default(({ query, $var }) =>
     name: "GetUsers",
     variables: {
       ...$var("ids").ID("![]!"),
-      ...$var("showEmail").Boolean("?"),
       ...$var("limit").Int("?"),
     },
     metadata: ({ $ }) => ({
@@ -287,7 +277,6 @@ export const getUsersQuery = gql.default(({ query, $var }) =>
     fields: ({ f, $ }) => ({
       ...f.users({ ids: $.ids })(({ f }) => ({
         ...userFragment.spread({
-          includeEmail: $.showEmail,
           postLimit: $.limit,
         }),
       })),

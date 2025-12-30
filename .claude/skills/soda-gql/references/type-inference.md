@@ -32,19 +32,21 @@ Variables required by the fragment:
 const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: {
-      ...$var("includeEmail").Boolean("?"),
       ...$var("postLimit").Int("?"),
     },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.posts({ limit: $.postLimit })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+      })),
     }),
   }),
 );
 
 type UserFragmentInput = typeof userFragment.$infer.input;
-// { includeEmail?: boolean; postLimit?: number }
+// { postLimit?: number }
 ```
 
 ### Output Type
@@ -53,7 +55,7 @@ Fields selected by the fragment:
 
 ```typescript
 type UserFragmentOutput = typeof userFragment.$infer.output;
-// { id: string; name: string; email?: string }
+// { id: string; name: string; posts: Array<{ id: string; title: string }> }
 ```
 
 ## Operation Types

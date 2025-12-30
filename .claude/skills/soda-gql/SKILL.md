@@ -100,7 +100,7 @@ export const userFragment = gql.default(({ fragment, $var }) =>
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.email(),
     }),
   }),
 );
@@ -133,7 +133,6 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 | `...f.posts({ limit: 10 })` | Field with arguments |
 | `...f.posts()(({ f }) => ({...}))` | Nested selection (curried) |
 | `...f.id(null, { alias: "uuid" })` | Field with alias |
-| `...f.email({ if: $.includeEmail })` | Conditional field |
 | `...$var("name").ID("!")` | Required ID variable |
 | `...$var("name").String("?")` | Optional String variable |
 | `...fragment.spread({})` | Spread fragment fields |

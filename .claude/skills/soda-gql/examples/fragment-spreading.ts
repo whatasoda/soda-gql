@@ -16,7 +16,7 @@ export const userFragment = gql.default(({ fragment, $var }) =>
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.email(),
       ...f.posts({ limit: $.postLimit })(({ f }) => ({
         ...f.id(),
         ...f.title(),

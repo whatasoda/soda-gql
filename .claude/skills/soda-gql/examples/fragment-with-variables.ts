@@ -16,8 +16,7 @@ export const userFragment = gql.default(({ fragment, $var }) =>
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      // Conditional field: only included when includeEmail is true
-      ...f.email({ if: $.includeEmail }),
+      ...f.email(),
       // Parameterized nested selection
       ...f.posts({ limit: $.postLimit })(({ f }) => ({
         ...f.id(),
