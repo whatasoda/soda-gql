@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/builder",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Static analysis and artifact generation for soda-gql",
   "type": "module",
   "private": false,
