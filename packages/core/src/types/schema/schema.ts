@@ -1,10 +1,14 @@
 import type { WithTypeMeta } from "../../utils/type-meta";
 import type {
   AnyDefaultValue,
+  DecrementDepth,
+  DefaultDepth,
+  DepthCounter,
   InputEnumSpecifier,
   InputScalarSpecifier,
   InputTypeSpecifier,
   InputTypeSpecifiers,
+  IsDepthExhausted,
   OutputInferrableTypeSpecifier,
   OutputScalarSpecifier,
   OutputTypeSpecifiers,
@@ -96,21 +100,39 @@ export type UnionDefinition = {
   readonly types: { [typename: string]: true };
 };
 
-export type InferInputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = {
-  [_ in TSchema["label"]]: [
-    TSpecifier extends InputScalarSpecifier
-      ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
-      : TSpecifier extends InputEnumSpecifier
-        ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
-        : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-          ? {
-              [K in keyof TFields]: TFields[K] extends InputTypeSpecifier ? InferInputProfile<TSchema, TFields[K]> : never;
-            }
-          : never,
-    TSpecifier["modifier"],
-    TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
-  ];
-}[TSchema["label"]];
+/**
+ * Infers a TypeProfile from an input type specifier.
+ *
+ * @typeParam TSchema - The GraphQL schema
+ * @typeParam TSpecifier - The input type specifier to infer from
+ * @typeParam TDepth - Depth counter to limit recursion (default: 3 levels)
+ *
+ * When depth is exhausted, returns `never` to cause a type error.
+ * This prevents infinite recursion in self-referential types like `bool_exp`.
+ */
+export type InferInputProfile<
+  TSchema extends AnyGraphqlSchema,
+  TSpecifier extends InputTypeSpecifier,
+  TDepth extends DepthCounter = DefaultDepth,
+> = IsDepthExhausted<TDepth> extends true
+  ? never
+  : {
+      [_ in TSchema["label"]]: [
+        TSpecifier extends InputScalarSpecifier
+          ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
+          : TSpecifier extends InputEnumSpecifier
+            ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
+            : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
+              ? {
+                  [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
+                    ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
+                    : never;
+                }
+              : never,
+        TSpecifier["modifier"],
+        TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+      ];
+    }[TSchema["label"]];
 
 export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
   [_ in TSchema["label"]]: [
