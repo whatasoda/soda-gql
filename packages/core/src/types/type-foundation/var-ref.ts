@@ -19,9 +19,18 @@ export type NestedValue =
   | boolean
   | null
   | undefined
+  | { readonly [key: string]: NestedValueElement }
+  | readonly NestedValueElement[];
+
+type NestedValueElement =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
   | AnyVarRef
-  | { readonly [key: string]: NestedValue }
-  | readonly NestedValue[];
+  | { readonly [key: string]: NestedValueElement }
+  | readonly NestedValueElement[];
 
 export type VarRefInner =
   | {
@@ -54,7 +63,7 @@ export const isVarRef = (value: unknown): value is AnyVarRef => {
  * Recursively checks if a NestedValue contains any VarRef.
  * Used by getVarRefValue to determine if it's safe to return as ConstValue.
  */
-export const hasVarRefInside = (value: NestedValue): boolean => {
+export const hasVarRefInside = (value: NestedValueElement): boolean => {
   if (isVarRef(value)) {
     return true;
   }
@@ -117,102 +126,66 @@ export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
 /**
  * Path segment types for navigating nested values.
  */
-export type PathSegment = string | number;
+export type PathSegment = string;
 
 /**
  * Proxy type that records property accesses.
- * The actual implementation uses Proxy to capture the path.
- *
- * TODO: Full type-safe path inference is complex and deferred.
- * Current implementation uses 'any' for simplicity.
- * The runtime behavior is correct; only compile-time type checking is limited.
  */
-export type PathProxy<T> = { [K in keyof T]: PathProxy<T[K]> };
+export type SelectableProxy<T> = T;
 
 /**
  * Type-safe path builder function.
  * Used with getNameAt and getValueAt helpers.
- *
- * @example
- * getNameAt(varRef, p => p.user.addresses[0].street)
- *
- * Note: Full Proxy-based type inference is marked as TODO.
- * Current implementation supports runtime path extraction without
- * compile-time type checking of the path validity.
  */
-export type PathBuilder<T, U> = (proxy: T) => U;
+export type Selector<T, U> = (proxy: T) => U;
 
-/**
- * Internal symbol to store path segments on PathProxy.
- */
-export const PATH_SEGMENTS = Symbol("PATH_SEGMENTS");
+type ProxyInner = {
+  readonly inner: VarRefInner;
+  readonly segments: readonly PathSegment[];
+};
 
-interface PathProxyInternal {
-  readonly [PATH_SEGMENTS]: readonly PathSegment[];
-}
+const ProxyInnerRegistry = new WeakMap<any, ProxyInner>();
+const getProxyInner = (proxy: any): ProxyInner => {
+  const inner = ProxyInnerRegistry.get(proxy);
+  if (!inner) {
+    throw new Error(`Proxy inner not found`);
+  }
+  return inner;
+};
 
-/**
- * Creates a proxy that records property accesses as a path.
- * Used internally by getNameAt and getValueAt.
- */
-export const createPathProxy = <T>(segments: readonly PathSegment[] = []): PathProxy<T> => {
-  return new Proxy({ [PATH_SEGMENTS]: segments } as PathProxyInternal & PathProxy<T>, {
-    get(target, prop) {
-      if (prop === PATH_SEGMENTS) {
-        return target[PATH_SEGMENTS];
+const createProxy = <T>(current: ProxyInner): T => {
+  const proxy: T = new Proxy(Object.create(null), {
+    get(_, property) {
+      if (typeof property === "symbol") {
+        throw new Error(`Prohibited property access: ${String(property)}`);
       }
 
-      // Handle both string keys and numeric indices
-      const segment: PathSegment = typeof prop === "symbol" ? String(prop) : !Number.isNaN(Number(prop)) ? Number(prop) : prop;
+      if (current.inner.type === "variable") {
+        throw new Error(`Cannot access children of variable at path [${current.segments.join(".")}]`);
+      }
 
-      return createPathProxy([...target[PATH_SEGMENTS], segment]);
+      if (typeof current.inner.value === "object" && current.inner.value !== null) {
+        const value = (current.inner.value as { [key: string]: NestedValueElement })[property];
+        return createProxy({
+          inner: isVarRef(value) ? getVarRefInner(value) : { type: "nested-value", value },
+          segments: [...current.segments, property],
+        });
+      }
+
+      throw new Error(`Cannot access children of primitive value at path [${current.segments.join(".")}]`);
     },
   });
-};
 
-/**
- * Extracts the path segments from a PathBuilder function.
- */
-export const extractPath = <T, U>(pathFn: PathBuilder<T, U>): readonly PathSegment[] => {
-  const proxy = createPathProxy<T>();
-  const result = pathFn(proxy as unknown as T) as unknown as PathProxyInternal;
-  return result[PATH_SEGMENTS];
-};
+  ProxyInnerRegistry.set(proxy, { inner: current.inner, segments: current.segments });
 
-/**
- * Gets a value at the specified path within a NestedValue.
- * Returns undefined if path doesn't exist or encounters a VarRef before reaching the end.
- */
-export const getNestedValue = (value: NestedValue, path: readonly PathSegment[]): NestedValue | undefined => {
-  let current: NestedValue = value;
-
-  for (const segment of path) {
-    if (current === null || current === undefined) {
-      return undefined;
-    }
-
-    if (isVarRef(current)) {
-      // Cannot traverse into a VarRef
-      return undefined;
-    }
-
-    if (typeof segment === "number" && Array.isArray(current)) {
-      current = current[segment];
-    } else if (typeof segment === "string" && typeof current === "object") {
-      current = (current as { [key: string]: NestedValue })[segment];
-    } else {
-      return undefined;
-    }
-  }
-
-  return current;
+  return proxy;
 };
 
 /**
  * Get the variable name from a VarRef at a specific path.
  *
  * @param varRef - The VarRef containing a nested-value
- * @param pathFn - Path builder function, e.g., p => p.user.age
+ * @param selector - Path builder function, e.g., p => p.user.age
  * @returns The variable name at the specified path
  * @throws If path doesn't lead to a VarRef with type "variable"
  *
@@ -224,21 +197,17 @@ export const getNestedValue = (value: NestedValue, path: readonly PathSegment[])
  */
 export const getNameAt = <T extends AnyVarRefMeta, U>(
   varRef: VarRef<T>,
-  pathFn: PathBuilder<TypeProfile.Type<T["profile"]>, U>,
+  selector: (proxy: TypeProfile.Type<T["profile"]>) => U,
 ): string => {
-  const inner = VarRef.getInner(varRef);
-  if (inner.type !== "nested-value") {
-    throw new Error("getNameAt requires a nested-value VarRef");
+  const proxy = createProxy<TypeProfile.Type<T["profile"]>>({ inner: VarRef.getInner(varRef), segments: [] });
+  const selected = selector(proxy);
+  const inner = getProxyInner(selected);
+
+  if (inner.inner.type !== "variable") {
+    throw new Error(`Value at path [${inner.segments.join(".")}] is not a variable`);
   }
 
-  const path = extractPath(pathFn);
-  const valueAtPath = getNestedValue(inner.value, path);
-
-  if (!isVarRef(valueAtPath)) {
-    throw new Error(`Expected VarRef at path [${path.join(".")}], got ${typeof valueAtPath}`);
-  }
-
-  return getVarRefName(valueAtPath);
+  return inner.inner.name;
 };
 
 /**
@@ -257,27 +226,19 @@ export const getNameAt = <T extends AnyVarRefMeta, U>(
  */
 export const getValueAt = <T extends AnyVarRefMeta, U>(
   varRef: VarRef<T>,
-  pathFn: PathBuilder<TypeProfile.Type<T["profile"]>, U>,
+  selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
 ): U => {
-  const inner = VarRef.getInner(varRef);
-  if (inner.type !== "nested-value") {
-    throw new Error("getValueAt requires a nested-value VarRef");
+  const proxy = createProxy<TypeProfile.Type<T["profile"]>>({ inner: VarRef.getInner(varRef), segments: [] });
+  const selected = selector(proxy);
+  const inner = getProxyInner(selected);
+
+  if (inner.inner.type !== "nested-value") {
+    throw new Error(`Value at path [${inner.segments.join(".")}] is not a nested-value`);
   }
 
-  const path = extractPath(pathFn);
-  const valueAtPath = getNestedValue(inner.value, path);
-
-  if (valueAtPath === undefined) {
-    return undefined as U;
+  if (hasVarRefInside(inner.inner.value)) {
+    throw new Error(`Value at path [${inner.segments.join(".")}] contains nested VarRef`);
   }
 
-  if (isVarRef(valueAtPath)) {
-    throw new Error(`Expected const value at path [${path.join(".")}], got VarRef`);
-  }
-
-  if (hasVarRefInside(valueAtPath)) {
-    throw new Error(`Value at path [${path.join(".")}] contains nested VarRef`);
-  }
-
-  return valueAtPath as U;
+  return inner.inner.value as U;
 };
