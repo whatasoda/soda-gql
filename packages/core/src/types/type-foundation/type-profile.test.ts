@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeInputType } from "../../src/schema";
-import type { AssignableInput } from "../../src/types/fragment/assignable-input";
-import type { AnyGraphqlSchema } from "../../src/types/schema";
-import type { ConstAssignableInput } from "../../src/types/schema/const-assignable-input";
+import { define, defineScalar, unsafeInputType } from "../../schema";
+import type { AssignableInput } from "../fragment/assignable-input";
+import type { AnyGraphqlSchema } from "../schema";
+import type { ConstAssignableInput } from "../schema/const-assignable-input";
 
 /**
  * Test suite for verifying optional field inference in nested Input objects.

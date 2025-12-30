@@ -3,8 +3,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Kind, parse } from "graphql";
-import { hashSchema, loadSchema } from "../src/schema";
-import type { CodegenError } from "../src/types";
+import { hashSchema, loadSchema } from "./schema";
+import type { CodegenError } from "./types";
 
 // Type helper to extract specific error variant
 type ErrorOf<C extends CodegenError["code"]> = Extract<CodegenError, { code: C }>;

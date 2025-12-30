@@ -19,18 +19,18 @@ import {
   withOperationSpy,
 } from "@soda-gql/tsc-transformer/test";
 
-const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+const packageRoot = fileURLToPath(new URL("../../", import.meta.url));
 const baseOutputDir = join(packageRoot, ".cache", "runtime-test");
 
 const config = createTestConfig();
 
 // Check if native module is available before running tests
 let nativeModuleAvailable = false;
-let createTransformer: typeof import("../src/index").createTransformer;
+let createTransformer: typeof import("../../src/index").createTransformer;
 let initError: string | null = null;
 
 try {
-  const mod = await import("../src/index");
+  const mod = await import("../../src/index");
   createTransformer = mod.createTransformer;
   // Actually try to create a transformer - this will fail if native module is missing
   await createTransformer({

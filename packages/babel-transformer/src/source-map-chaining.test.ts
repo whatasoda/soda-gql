@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { loadTestCases } from "@soda-gql/tsc-transformer/test";
-import { createBabelTransformer, type TransformOptions } from "../src/transform";
+import { createBabelTransformer, type TransformOptions } from "./transform";
 
 /**
  * Create a minimal artifact for testing.

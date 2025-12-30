@@ -10,12 +10,12 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
-import type { LoadedPluginFixtureMulti } from "./test-cases";
-import { loadPluginFixtureMulti, transformWithTsc } from "./test-cases";
-import { createTestConfig } from "./test-cases/utils";
-import { clearTransformCache, withOperationSpy } from "./utils";
+import type { LoadedPluginFixtureMulti } from "../test-cases";
+import { loadPluginFixtureMulti, transformWithTsc } from "../test-cases";
+import { createTestConfig } from "../test-cases/utils";
+import { clearTransformCache, withOperationSpy } from "../utils";
 
-const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+const packageRoot = fileURLToPath(new URL("../../", import.meta.url));
 const baseOutputDir = join(packageRoot, ".cache", "runtime-test");
 
 const config = createTestConfig();

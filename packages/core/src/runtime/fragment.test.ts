@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createRuntimeFragment, type RuntimeFragmentInput } from "../../src/runtime/fragment";
+import { createRuntimeFragment, type RuntimeFragmentInput } from "./fragment";
 
 describe("createRuntimeFragment", () => {
   const createMockInput = (overrides?: Partial<RuntimeFragmentInput["prebuild"]>): RuntimeFragmentInput => ({

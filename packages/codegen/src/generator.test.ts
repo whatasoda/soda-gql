@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parse } from "graphql";
-import { createSchemaIndex, generateMultiSchemaModule } from "../src/generator";
+import { createSchemaIndex, generateMultiSchemaModule } from "./generator";
 
 describe("createSchemaIndex", () => {
   test("indexes object types", () => {

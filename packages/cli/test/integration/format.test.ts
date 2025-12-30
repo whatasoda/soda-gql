@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createTempConfigFile } from "@soda-gql/config/test";
-import { assertCliSuccess, getProjectRoot, runFormatCli } from "./utils/cli";
+import { assertCliSuccess, getProjectRoot, runFormatCli } from "../utils/cli";
 
 const projectRoot = getProjectRoot();
 
