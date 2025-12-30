@@ -1,4 +1,3 @@
-import type { TypeModifier } from "@soda-gql/core";
 import {
   type ConstDirectiveNode,
   type ConstValueNode,
@@ -274,8 +273,8 @@ const collectTypeLevels = (
   return { name: type.name.value, levels };
 };
 
-const buildTypeModifier = (levels: TypeLevel[]): TypeModifier => {
-  let modifier: TypeModifier = "?";
+const buildTypeModifier = (levels: TypeLevel[]): string => {
+  let modifier = "?";
 
   for (const level of levels.slice().reverse()) {
     if (level.kind === "named") {
@@ -286,7 +285,7 @@ const buildTypeModifier = (levels: TypeLevel[]): TypeModifier => {
 
     // List type: append []? or []! based on list's nullability
     const listSuffix = level.nonNull ? "[]!" : "[]?";
-    modifier = `${modifier}${listSuffix}` as TypeModifier;
+    modifier = `${modifier}${listSuffix}`;
   }
 
   return modifier;
@@ -297,7 +296,6 @@ const parseTypeReference = (type: TypeNode): { readonly name: string; readonly m
   return { name, modifier: buildTypeModifier(levels) };
 };
 
-const renderType = (name: string, modifier: string): string => JSON.stringify(`${name}:${modifier}`);
 
 const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
@@ -348,19 +346,19 @@ const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
 
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);
-  const tuple = renderType(name, modifier);
   const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
   const directives = renderDirectives(definition.directives);
 
+  let kind: "scalar" | "enum" | "input";
   if (isScalarName(schema, name)) {
-    return `unsafeInputType.scalar(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else {
+    kind = "input";
   }
 
-  if (isEnumName(schema, name)) {
-    return `unsafeInputType.enum(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
-  }
-
-  return `unsafeInputType.input(${tuple}, { default: ${defaultValue}, directives: ${directives} })`;
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: ${defaultValue}, directives: ${directives} }`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -373,26 +371,22 @@ const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinit
 
 const renderOutputRef = (schema: SchemaIndex, type: TypeNode, args: readonly InputValueDefinitionNode[] | undefined): string => {
   const { name, modifier } = parseTypeReference(type);
-  const modifiedType = renderType(name, modifier);
   const argumentMap = renderArgumentMap(schema, args);
 
+  let kind: "scalar" | "enum" | "union" | "object";
   if (isScalarName(schema, name)) {
-    return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap} })`;
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else if (isUnionName(schema, name)) {
+    kind = "union";
+  } else if (isObjectName(schema, name)) {
+    kind = "object";
+  } else {
+    kind = "scalar"; // fallback for unknown types
   }
 
-  if (isEnumName(schema, name)) {
-    return `unsafeOutputType.enum(${modifiedType}, { arguments: ${argumentMap} })`;
-  }
-
-  if (isUnionName(schema, name)) {
-    return `unsafeOutputType.union(${modifiedType}, { arguments: ${argumentMap} })`;
-  }
-
-  if (isObjectName(schema, name)) {
-    return `unsafeOutputType.object(${modifiedType}, { arguments: ${argumentMap} })`;
-  }
-
-  return `unsafeOutputType.scalar(${modifiedType}, { arguments: ${argumentMap} })`;
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -423,8 +417,7 @@ const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDe
 
 const renderScalarDefinition = (record: ScalarRecord): string => {
   const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
-  const scalarType = `type<{ input: ${typeInfo.input}; output: ${typeInfo.output} }>()`;
-  return `${record.name}: define("${record.name}").scalar(${scalarType})`;
+  return `${record.name}: { name: "${record.name}", $type: {} as { input: ${typeInfo.input}; output: ${typeInfo.output}; inputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.input} }; outputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.output} } } }`;
 };
 
 const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -434,7 +427,7 @@ const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string =
   }
 
   const fields = renderObjectFields(schema, record.fields);
-  return `${record.name}: define("${record.name}").object(${fields})`;
+  return `${record.name}: { name: "${record.name}", fields: ${fields} }`;
 };
 
 const renderInputDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -444,7 +437,7 @@ const renderInputDefinition = (schema: SchemaIndex, typeName: string): string =>
   }
 
   const fields = renderInputFields(schema, record.fields);
-  return `${record.name}: define("${record.name}").input(${fields})`;
+  return `${record.name}: { name: "${record.name}", fields: ${fields} }`;
 };
 
 const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -453,13 +446,13 @@ const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => 
     return "";
   }
 
-  const values = Array.from(record.values.values())
+  const valueNames = Array.from(record.values.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((value) => `${value.name.value}: true`)
-    .join(", ");
-  const body = values.length === 0 ? "{}" : `{ ${values} }`;
+    .map((value) => value.name.value);
+  const valuesObj = valueNames.length === 0 ? "{}" : `{ ${valueNames.map((v) => `${v}: true`).join(", ")} }`;
+  const valueUnion = valueNames.length === 0 ? "never" : valueNames.map((v) => `"${v}"`).join(" | ");
 
-  return `${record.name}: define("${record.name}").enum(${body})`;
+  return `${record.name}: { name: "${record.name}", values: ${valuesObj}, $type: {} as { name: "${record.name}"; inputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} }; outputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} } } }`;
 };
 
 const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string => {
@@ -468,13 +461,12 @@ const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string =>
     return "";
   }
 
-  const members = Array.from(record.members.values())
+  const memberNames = Array.from(record.members.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((member) => `${member.name.value}: true`)
-    .join(", ");
-  const body = members.length === 0 ? "{}" : `{ ${members} }`;
+    .map((member) => member.name.value);
+  const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
 
-  return `${record.name}: define("${record.name}").union(${body})`;
+  return `${record.name}: { name: "${record.name}", types: ${typesObj} }`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
@@ -634,18 +626,14 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
     schemaBlocks.push(`
 const ${schemaVar} = {
-  label: "${name}" as const,
-  operations: defineOperationRoots({
-    query: "${config.queryType}",
-    mutation: "${config.mutationType}",
-    subscription: "${config.subscriptionType}",
-  }),
+  label: "${name}",
+  operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" },
   scalar: ${scalarBlock},
   enum: ${config.enumBlock},
   input: ${config.inputBlock},
   object: ${config.objectBlock},
   union: ${config.unionBlock},
-} satisfies AnyGraphqlSchema;
+} as const;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
 const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock} satisfies InputTypeMethods<typeof ${schemaVar}>;
@@ -667,14 +655,9 @@ ${typeExports.join("\n")}`);
 
   return `\
 import {
-  type AnyGraphqlSchema,
   type InputTypeMethods,
   createGqlElementComposer,
   createVarMethodFactory,
-  define,
-  defineOperationRoots,
-  unsafeInputType,
-  unsafeOutputType,
 } from "@soda-gql/core";
 ${extraImports}
 ${schemaBlocks.join("\n")}

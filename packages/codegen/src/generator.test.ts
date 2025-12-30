@@ -248,8 +248,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain("Status: define");
-    expect(result.code).toContain(".enum(");
+    expect(result.code).toContain('Status: { name: "Status"');
+    expect(result.code).toContain("values:");
     expect(result.code).toContain("ACTIVE: true");
     expect(result.code).toContain("INACTIVE: true");
     expect(result.stats.enums).toBe(1);
@@ -269,8 +269,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain("CreateUserInput: define");
-    expect(result.code).toContain(".input(");
+    expect(result.code).toContain('CreateUserInput: { name: "CreateUserInput"');
+    expect(result.code).toContain("fields:");
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -285,8 +285,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain("SearchResult: define");
-    expect(result.code).toContain(".union(");
+    expect(result.code).toContain('SearchResult: { name: "SearchResult"');
+    expect(result.code).toContain("types:");
     expect(result.code).toContain("User: true");
     expect(result.code).toContain("Post: true");
     expect(result.stats.unions).toBe(1);
@@ -301,8 +301,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain("DateTime: define");
-    expect(result.code).toContain(".scalar(");
+    expect(result.code).toContain('DateTime: { name: "DateTime"');
+    expect(result.code).toContain("$type:");
   });
 
   test("handles builtin scalar types", () => {
@@ -320,11 +320,11 @@ describe("generateMultiSchemaModule", () => {
     const result = generateMultiSchemaModule(schemas);
 
     // Builtin scalars should be defined
-    expect(result.code).toContain("ID: define");
-    expect(result.code).toContain("String: define");
-    expect(result.code).toContain("Int: define");
-    expect(result.code).toContain("Float: define");
-    expect(result.code).toContain("Boolean: define");
+    expect(result.code).toContain('ID: { name: "ID"');
+    expect(result.code).toContain('String: { name: "String"');
+    expect(result.code).toContain('Int: { name: "Int"');
+    expect(result.code).toContain('Float: { name: "Float"');
+    expect(result.code).toContain('Boolean: { name: "Boolean"');
   });
 
   test("excludes introspection types", () => {
@@ -393,11 +393,11 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Code should contain type modifiers
-    expect(result.code).toContain("String:!");
-    expect(result.code).toContain("String:?");
-    expect(result.code).toContain("[]!");
-    expect(result.code).toContain("[]?");
+    // Code should contain type modifiers in the new format
+    expect(result.code).toContain('modifier: "!"');
+    expect(result.code).toContain('modifier: "?"');
+    expect(result.code).toContain('modifier: "![]!"');
+    expect(result.code).toContain('modifier: "![]?"');
   });
 
   test("generates sorted field definitions", () => {
