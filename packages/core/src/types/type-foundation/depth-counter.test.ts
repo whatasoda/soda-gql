@@ -1,5 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import type { DecrementDepth, DefaultDepth, DepthCounter, IsDepthExhausted } from "./depth-counter";
+import type {
+  DecrementDepth,
+  DefaultDepth,
+  DepthCounter,
+  GetInputTypeDepth,
+  InputDepthOverrides,
+  IsDepthExhausted,
+  NumberToDepth,
+} from "./depth-counter";
 
 /**
  * Test suite for depth counter type utilities.
@@ -96,6 +104,87 @@ describe("depth-counter", () => {
       type _Test2 = AssertTrue<_Valid2>;
       type _Test3 = AssertTrue<_Valid3>;
       type _Test4 = AssertTrue<_Valid4>;
+
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("NumberToDepth", () => {
+    it("should convert 0 to empty tuple", () => {
+      type _Test = AssertEqual<NumberToDepth<0>, []>;
+      expect(true).toBe(true);
+    });
+
+    it("should convert 1 to tuple of length 1", () => {
+      type _Test = AssertEqual<NumberToDepth<1>["length"], 1>;
+      expect(true).toBe(true);
+    });
+
+    it("should convert 3 to tuple of length 3 (matching DefaultDepth)", () => {
+      type _Test = AssertEqual<NumberToDepth<3>["length"], 3>;
+      expect(true).toBe(true);
+    });
+
+    it("should convert 5 to tuple of length 5", () => {
+      type _Test = AssertEqual<NumberToDepth<5>["length"], 5>;
+      expect(true).toBe(true);
+    });
+
+    it("should convert 10 to tuple of length 10", () => {
+      type _Test = AssertEqual<NumberToDepth<10>["length"], 10>;
+      expect(true).toBe(true);
+    });
+
+    it("should fallback to DefaultDepth for unsupported numbers", () => {
+      // Numbers > 10 should fallback to DefaultDepth (3)
+      type _Test = AssertEqual<NumberToDepth<100>["length"], 3>;
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("GetInputTypeDepth", () => {
+    it("should return overridden depth for matching type name", () => {
+      type Overrides = { user_bool_exp: 5; post_bool_exp: 7 };
+      type Depth = GetInputTypeDepth<Overrides, "user_bool_exp">;
+
+      // Should be tuple of length 5
+      type _Test = AssertEqual<Depth["length"], 5>;
+      expect(true).toBe(true);
+    });
+
+    it("should return DefaultDepth for non-matching type name", () => {
+      type Overrides = { user_bool_exp: 5 };
+      type Depth = GetInputTypeDepth<Overrides, "other_type">;
+
+      // Should fallback to DefaultDepth (length 3)
+      type _Test = AssertEqual<Depth["length"], 3>;
+      expect(true).toBe(true);
+    });
+
+    it("should return DefaultDepth when overrides is undefined", () => {
+      type Depth = GetInputTypeDepth<undefined, "any_type">;
+
+      // Should fallback to DefaultDepth (length 3)
+      type _Test = AssertEqual<Depth["length"], 3>;
+      expect(true).toBe(true);
+    });
+
+    it("should return DefaultDepth for empty overrides", () => {
+      type Overrides = Record<string, never>;
+      type Depth = GetInputTypeDepth<Overrides, "any_type">;
+
+      // Should fallback to DefaultDepth (length 3)
+      type _Test = AssertEqual<Depth["length"], 3>;
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("InputDepthOverrides constraint", () => {
+    it("should accept readonly record of string to number", () => {
+      type Valid = { user_bool_exp: 5; post_bool_exp: 10 };
+
+      type _Test = Valid extends InputDepthOverrides ? true : false;
+      type _Assert = AssertTrue<_Test>;
 
       expect(true).toBe(true);
     });

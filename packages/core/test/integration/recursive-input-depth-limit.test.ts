@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { define, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType } from "../../src/schema/type-specifier-builder";
 import type { AnyGraphqlSchema, InferInputProfile } from "../../src/types/schema";
-import type { DefaultDepth, DepthCounter } from "../../src/types/type-foundation";
 import type { ConstAssignableInput } from "../../src/types/schema/const-assignable-input";
+import type { InputDepthOverrides } from "../../src/types/type-foundation";
 
 /**
  * Test suite for verifying depth limit behavior in recursive input types.
@@ -200,6 +200,108 @@ describe("Recursive input type depth limit", () => {
 
       // Just verify the test completes
       type _Exists = Profile extends never ? false : true;
+
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("Schema-based depth overrides", () => {
+    // Schema with __inputDepthOverrides for per-type depth configuration
+    const createSchemaWithDepthOverrides = <T extends InputDepthOverrides>(overrides: T) =>
+      ({
+        label: "with_overrides" as const,
+        operations: {
+          query: "Query" as const,
+          mutation: null,
+          subscription: null,
+        },
+        scalar: {
+          ...defineScalar<"String", string, string>("String"),
+          ...defineScalar<"Int", number, number>("Int"),
+        },
+        enum: {},
+        input: {
+          // Self-referential input type
+          user_bool_exp: define("user_bool_exp").input({
+            _and: unsafeInputType.input("user_bool_exp:![]?", {}),
+            _or: unsafeInputType.input("user_bool_exp:![]?", {}),
+            _not: unsafeInputType.input("user_bool_exp:?", {}),
+            name: unsafeInputType.scalar("String:?", {}),
+          }),
+          // Another recursive input
+          post_bool_exp: define("post_bool_exp").input({
+            _and: unsafeInputType.input("post_bool_exp:![]?", {}),
+            title: unsafeInputType.scalar("String:?", {}),
+          }),
+          // Simple input
+          SimpleInput: define("SimpleInput").input({
+            name: unsafeInputType.scalar("String:!", {}),
+          }),
+        },
+        object: {
+          Query: define("Query").object({}),
+        },
+        union: {},
+        __inputDepthOverrides: overrides,
+      }) satisfies AnyGraphqlSchema;
+
+    type SchemaWithOverrides5 = ReturnType<typeof createSchemaWithDepthOverrides<{ user_bool_exp: 5 }>>;
+    type SchemaWithOverrides1 = ReturnType<typeof createSchemaWithDepthOverrides<{ user_bool_exp: 1 }>>;
+    type SchemaNoOverrides = ReturnType<typeof createSchemaWithDepthOverrides<Record<string, never>>>;
+
+    type GetInputSpecifierForSchema<TSchema extends AnyGraphqlSchema, TInputName extends keyof TSchema["input"]> = {
+      kind: "input";
+      name: TInputName;
+      modifier: "!";
+      defaultValue: null;
+    };
+
+    it("should use overridden depth for specific input types", () => {
+      // user_bool_exp has depth override of 5
+      type Profile = InferInputProfile<SchemaWithOverrides5, GetInputSpecifierForSchema<SchemaWithOverrides5, "user_bool_exp">>;
+
+      // Should not be never (depth 5 is sufficient for top-level)
+      type _Test = AssertNotNever<Profile>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should fallback to DefaultDepth for non-overridden types", () => {
+      // post_bool_exp has no override, should use DefaultDepth (3)
+      type Profile = InferInputProfile<SchemaWithOverrides5, GetInputSpecifierForSchema<SchemaWithOverrides5, "post_bool_exp">>;
+
+      // Should not be never (DefaultDepth 3 is sufficient)
+      type _Test = AssertNotNever<Profile>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should use DefaultDepth when no overrides are present", () => {
+      // Schema has no depth overrides
+      type Profile = InferInputProfile<SchemaNoOverrides, GetInputSpecifierForSchema<SchemaNoOverrides, "user_bool_exp">>;
+
+      // Should not be never (DefaultDepth 3 is sufficient)
+      type _Test = AssertNotNever<Profile>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should handle depth 1 override correctly", () => {
+      // user_bool_exp has depth override of 1
+      type Profile = InferInputProfile<SchemaWithOverrides1, GetInputSpecifierForSchema<SchemaWithOverrides1, "user_bool_exp">>;
+
+      // Should not be never (depth 1 allows top-level)
+      type _Test = AssertNotNever<Profile>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should work with SimpleInput regardless of overrides", () => {
+      // SimpleInput is not recursive, should always work
+      type Profile = InferInputProfile<SchemaWithOverrides5, GetInputSpecifierForSchema<SchemaWithOverrides5, "SimpleInput">>;
+
+      // Should not be never
+      type _Test = AssertNotNever<Profile>;
 
       expect(true).toBe(true);
     });

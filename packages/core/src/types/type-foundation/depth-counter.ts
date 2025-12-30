@@ -33,48 +33,54 @@ export type DecrementDepth<D extends DepthCounter> = D extends readonly [unknown
 export type IsDepthExhausted<D extends DepthCounter> = D extends readonly [] ? true : false;
 
 // =============================================================================
-// Future Extensibility: Per-Type Depth Configuration
+// Per-Type Depth Configuration
 // =============================================================================
 
 /**
- * Type for per-input-type depth overrides.
- *
- * @example
- * ```typescript
- * // Future usage (not yet implemented):
- * type MyDepthOverrides = {
- *   user_bool_exp: [unknown, unknown, unknown, unknown, unknown]; // depth 5
- *   post_bool_exp: [unknown, unknown]; // depth 2
- * };
- * ```
- *
- * @remarks
- * This type is a placeholder for future per-type depth configuration.
- * Currently, all input types use the same default depth (3).
+ * Convert a number literal to a depth counter tuple.
+ * Supports depths 0-10 (sufficient for most use cases).
  */
-export type TypeDepthOverrides = {
-  readonly [typeName: string]: DepthCounter;
-};
+export type NumberToDepth<N extends number> = N extends 0
+  ? []
+  : N extends 1
+    ? [unknown]
+    : N extends 2
+      ? [unknown, unknown]
+      : N extends 3
+        ? [unknown, unknown, unknown]
+        : N extends 4
+          ? [unknown, unknown, unknown, unknown]
+          : N extends 5
+            ? [unknown, unknown, unknown, unknown, unknown]
+            : N extends 6
+              ? [unknown, unknown, unknown, unknown, unknown, unknown]
+              : N extends 7
+                ? [unknown, unknown, unknown, unknown, unknown, unknown, unknown]
+                : N extends 8
+                  ? [unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]
+                  : N extends 9
+                    ? [unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]
+                    : N extends 10
+                      ? [unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown]
+                      : DefaultDepth; // Fallback to default for unsupported numbers
 
 /**
- * Get depth for a specific type name from overrides, falling back to default.
- *
- * @typeParam TTypeName - The input type name to look up
- * @typeParam TOverrides - The depth overrides map
- * @typeParam TDefault - The default depth to use if no override exists
- *
- * @example
- * ```typescript
- * // Future usage (not yet implemented):
- * type Depth = GetDepthForType<"user_bool_exp", MyDepthOverrides, DefaultDepth>;
- * ```
- *
- * @remarks
- * This type is a placeholder for future per-type depth configuration.
- * It will be used when depth overrides are configurable via schema or config.
+ * Type for per-input-type depth overrides (number-based, as stored in schema).
  */
-export type GetDepthForType<
+export type InputDepthOverrides = Readonly<Record<string, number>>;
+
+/**
+ * Get depth for a specific input type from schema overrides.
+ * Falls back to DefaultDepth if no override exists.
+ *
+ * @typeParam TOverrides - The input depth overrides from schema
+ * @typeParam TTypeName - The input type name to look up
+ */
+export type GetInputTypeDepth<
+  TOverrides extends InputDepthOverrides | undefined,
   TTypeName extends string,
-  TOverrides extends TypeDepthOverrides,
-  TDefault extends DepthCounter,
-> = TTypeName extends keyof TOverrides ? TOverrides[TTypeName] : TDefault;
+> = TOverrides extends InputDepthOverrides
+  ? TTypeName extends keyof TOverrides
+    ? NumberToDepth<TOverrides[TTypeName]>
+    : DefaultDepth
+  : DefaultDepth;

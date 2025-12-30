@@ -466,4 +466,54 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).toContain('FragmentBuilderFor<Schema_api, "User">');
     expect(result.code).toContain('FragmentBuilderFor<Schema_blog, "Post">');
   });
+
+  test("generates __inputDepthOverrides when provided", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input UserBoolExp {
+        _and: [UserBoolExp!]
+        _or: [UserBoolExp!]
+        id: IDComparisonExp
+      }
+      input IDComparisonExp {
+        _eq: ID
+      }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      inputDepthOverrides: new Map([["default", { UserBoolExp: 5, OtherInput: 10 }]]),
+    });
+
+    expect(result.code).toContain("__inputDepthOverrides:");
+    expect(result.code).toContain('"UserBoolExp":5');
+    expect(result.code).toContain('"OtherInput":10');
+  });
+
+  test("does not generate __inputDepthOverrides when empty", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      inputDepthOverrides: new Map([["default", {}]]),
+    });
+
+    expect(result.code).not.toContain("__inputDepthOverrides");
+  });
+
+  test("does not generate __inputDepthOverrides when not provided", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    expect(result.code).not.toContain("__inputDepthOverrides");
+  });
 });
