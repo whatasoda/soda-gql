@@ -74,6 +74,7 @@ const InjectConfigSchema: z.ZodType<InjectConfig> = z.union([
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: z.string().min(1),
   inject: InjectConfigSchema,
+  inputDepthOverrides: z.record(z.string(), z.number().int().positive()).optional(),
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({

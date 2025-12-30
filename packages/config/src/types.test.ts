@@ -82,6 +82,7 @@ describe("types.ts", () => {
         default: {
           schema: "/abs/path/to/schema.graphql",
           inject: { scalars: "/abs/path/to/scalars.ts" },
+          inputDepthOverrides: {},
         },
       },
       styles: {
@@ -106,6 +107,7 @@ describe("types.ts", () => {
         default: {
           schema: "/abs/path/to/schema.graphql",
           inject: { scalars: "/abs/path/to/scalars.ts" },
+          inputDepthOverrides: {},
         },
       },
       styles: {

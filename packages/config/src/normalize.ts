@@ -49,6 +49,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
         {
           schema: resolve(configDir, schemaConfig.schema),
           inject: normalizeInject(schemaConfig.inject, configDir),
+          inputDepthOverrides: schemaConfig.inputDepthOverrides ?? {},
         },
       ]),
     ),

@@ -26,6 +26,13 @@ export type SchemaConfig = {
    * @example Object: { scalars: "./scalars.ts", adapter: "./adapter.ts" }
    */
   readonly inject: InjectConfig;
+  /**
+   * Override the default depth limit for specific input types.
+   * Useful for recursive input types like Hasura's `bool_exp`.
+   *
+   * @example { user_bool_exp: 5, post_bool_exp: 5 }
+   */
+  readonly inputDepthOverrides?: Readonly<Record<string, number>>;
 };
 
 // Output styles configuration for codegen
@@ -106,6 +113,7 @@ export type ResolvedInjectConfig = {
 export type ResolvedSchemaConfig = {
   readonly schema: string;
   readonly inject: ResolvedInjectConfig;
+  readonly inputDepthOverrides: Readonly<Record<string, number>>;
 };
 
 // Resolved config (normalized and validated)

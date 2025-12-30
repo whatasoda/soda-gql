@@ -113,6 +113,7 @@ describe("swc-transformer", async () => {
                 default: {
                   schema: "/tmp/schema.graphql",
                   inject: { scalars: "/tmp/scalars.ts" },
+                  inputDepthOverrides: {},
                 },
               },
               styles: { importExtension: false },
@@ -151,6 +152,7 @@ describe("swc-transformer", async () => {
                 default: {
                   schema: "/tmp/schema.graphql",
                   inject: { scalars: "/tmp/scalars.ts" },
+                  inputDepthOverrides: {},
                 },
               },
               styles: { importExtension: false },
@@ -184,6 +186,7 @@ describe("swc-transformer", async () => {
                 default: {
                   schema: "/tmp/schema.graphql",
                   inject: { scalars: "/tmp/scalars.ts" },
+                  inputDepthOverrides: {},
                 },
               },
               styles: { importExtension: false },
