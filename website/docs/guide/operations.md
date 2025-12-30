@@ -127,7 +127,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
     fields: ({ f, $ }) => ({
       ...f.user({ id: $.userId })(({ f }) => ({
         // Embed fragment with variable passing
-        ...userFragment.embed({ includeEmail: $.includeEmail }),
+        ...userFragment.spread({ includeEmail: $.includeEmail }),
       })),
     }),
   }),

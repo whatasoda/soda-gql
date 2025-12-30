@@ -207,8 +207,8 @@ Complete reference for field selection API:
 | With arguments | `f.posts({ limit: 10 })` | Field with arguments |
 | Nested (curried) | `f.posts()(({ f }) => ({ ... }))` | Nested selections |
 | With alias | `f.id(null, { alias: "userId" })` | Renamed field |
-| Fragment embed | `userFragment.embed({})` | Embed fragment fields |
-| Fragment with vars | `userFragment.embed({ a: $.b })` | Pass variables |
+| Fragment embed | `userFragment.spread({})` | Embed fragment fields |
+| Fragment with vars | `userFragment.spread({ a: $.b })` | Pass variables |
 
 ## Type Inference
 

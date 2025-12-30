@@ -120,7 +120,7 @@ export const profileQueryWithFragment = gql.default(({ query }, { $var }) =>
       ...f.users({
         id: [$.userId],
         categoryId: $.categoryId,
-      })(({ f }) => ({ ...userFragment.embed({ categoryId: $.categoryId }) })),
+      })(({ f }) => ({ ...userFragment.spread({ categoryId: $.categoryId }) })),
     }),
   }),
 );

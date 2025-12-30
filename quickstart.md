@@ -170,7 +170,7 @@ export const profileQuery = gql.default(({ query }, { $var }) =>
       ...f.users({
         id: [$.userId],
         categoryId: $.categoryId,
-      })(({ f }) => ({ ...userWithPosts.embed({ categoryId: $.categoryId }) })),
+      })(({ f }) => ({ ...userWithPosts.spread({ categoryId: $.categoryId }) })),
     }),
   }),
 );
@@ -219,7 +219,7 @@ describe("userBasic fragment", () => {
   });
 
   test("builds fragments", () => {
-    const fragment = userBasic.embed();
+    const fragment = userBasic.spread();
     expect(fragment.id).toBeDefined();
     expect(fragment.name).toBeDefined();
   });
@@ -279,7 +279,7 @@ export const safeGetUserQuery = gql.default(({ query }, { $var }) =>
     name: "SafeGetUser",
     variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...userBasic.embed() })),
+      ...f.user({ id: $.id })(({ f }) => ({ ...userBasic.spread() })),
     }),
   }),
 );

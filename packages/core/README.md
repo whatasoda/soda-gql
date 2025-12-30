@@ -69,7 +69,7 @@ export const getUserWithFragment = gql.default(({ query }, { $var }) =>
     name: "GetUserWithFragment",
     variables: { ...$var("id").ID("!"), ...$var("includeEmail").Boolean("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.embed({ includeEmail: $.includeEmail }) })),
+      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.spread({ includeEmail: $.includeEmail }) })),
     }),
   }),
 );
@@ -96,7 +96,7 @@ Variables are declared using a string-based type syntax:
 | `...f.posts()(({ f }) => ({ ... }))` | Nested selection (curried) |
 | `...f.id(null, { alias: "uuid" })` | Field with alias |
 | `...f.email({ if: $.includeEmail })` | Conditional field |
-| `...userFragment.embed({})` | Use fragment fields |
+| `...userFragment.spread({})` | Use fragment fields |
 
 ## Understanding the Inject Module
 

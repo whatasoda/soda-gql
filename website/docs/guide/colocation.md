@@ -27,7 +27,7 @@ soda-gql takes a different approach:
 
 | Aspect | Traditional GraphQL | soda-gql |
 |--------|---------------------|----------|
-| **Composition** | Fragment spread `...Name` | `$colocate({ label: fragment.embed() })` |
+| **Composition** | Fragment spread `...Name` | `$colocate({ label: fragment.spread() })` |
 | **Labeling** | Implicit by fragment name | Explicit labels for each slice |
 | **Data Extraction** | Manual traversal | `createExecutionResultParser` with projections |
 | **Error Handling** | Manual per-fragment | Built-in `SlicedExecutionResult` with Success/Error/Empty states |
@@ -103,8 +103,8 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
-      userCard: userCardFragment.embed({ userId: $.userId }),
-      postList: postListFragment.embed({ userId: $.userId }),
+      userCard: userCardFragment.spread({ userId: $.userId }),
+      postList: postListFragment.spread({ userId: $.userId }),
     }),
   }),
 );
@@ -336,8 +336,8 @@ export const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },
     fields: ({ $ }) => $colocate({
-      userCard: userCardFragment.embed({ id: $.userId }),
-      postList: postListFragment.embed({ userId: $.userId, limit: 10 }),
+      userCard: userCardFragment.spread({ id: $.userId }),
+      postList: postListFragment.spread({ userId: $.userId, limit: 10 }),
     }),
   }),
 );
