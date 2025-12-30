@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { type DocumentNode, Kind } from "graphql";
-import { createRuntimeOperation, type RuntimeOperationInput } from "../../src/runtime/operation";
-import { __getRegisteredOperations, __resetRuntimeRegistry } from "../../src/runtime/runtime-registry";
+import { createRuntimeOperation, type RuntimeOperationInput } from "./operation";
+import { __getRegisteredOperations, __resetRuntimeRegistry } from "./runtime-registry";
 
 describe("createRuntimeOperation", () => {
   beforeEach(() => {

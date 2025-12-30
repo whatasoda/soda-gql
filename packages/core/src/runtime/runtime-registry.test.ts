@@ -4,9 +4,9 @@ import {
   __resetRuntimeRegistry,
   getOperation,
   registerOperation,
-} from "../../src/runtime/runtime-registry";
-import type { AnyOperationOf } from "../../src/types/element";
-import type { OperationType } from "../../src/types/schema";
+} from "./runtime-registry";
+import type { AnyOperationOf } from "../types/element";
+import type { OperationType } from "../types/schema";
 
 const createMockOperation = (name: string): AnyOperationOf<OperationType> =>
   ({
