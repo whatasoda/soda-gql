@@ -48,7 +48,7 @@ describe("createGqlInvoker", () => {
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;
 
-    const userFragment = gql(({ fragment }, { $var }) => {
+    const userFragment = gql(({ fragment, $var }) => {
       idVarRef = $var("id").ID("!");
 
       return fragment.User({
@@ -91,7 +91,7 @@ describe("createGqlInvoker", () => {
       }),
     );
 
-    const profileQuery = gql(({ query }, { $var }) =>
+    const profileQuery = gql(({ query, $var }) =>
       query.operation({
         name: "ProfilePageQuery",
         variables: { ...$var("userId").ID("!") },

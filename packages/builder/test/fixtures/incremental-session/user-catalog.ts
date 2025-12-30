@@ -1,7 +1,7 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
 export const collections = {
-  byCategory: gql.default(({ query }, { $var }) =>
+  byCategory: gql.default(({ query, $var }) =>
     query.operation({
       name: "UsersByCategory",
       variables: { ...$var("categoryId").ID("?") },

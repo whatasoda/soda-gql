@@ -160,7 +160,7 @@ Create GraphQL operations in `src/graphql/operations.ts`:
 import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
-export const getUserQuery = gql.default(({ operation }, { $var }) =>
+export const getUserQuery = gql.default(({ operation, $var }) =>
   operation.query({
     name: 'GetUser',
     variables: { ...$var('userId').ID('!') },

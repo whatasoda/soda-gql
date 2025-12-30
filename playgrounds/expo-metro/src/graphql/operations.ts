@@ -4,7 +4,7 @@ import { userFragment } from "./fragments";
 /**
  * Query operation to fetch a single user
  */
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("!") },
@@ -15,7 +15,7 @@ export const getUserQuery = gql.default(({ query }, { $var }) =>
 /**
  * Query operation to fetch multiple users
  */
-export const listUsersQuery = gql.default(({ query }, { $var }) =>
+export const listUsersQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ListUsers",
     variables: { ...$var("categoryId").ID("?") },
@@ -26,7 +26,7 @@ export const listUsersQuery = gql.default(({ query }, { $var }) =>
 /**
  * Mutation operation to update user
  */
-export const updateUserMutation = gql.default(({ mutation }, { $var }) =>
+export const updateUserMutation = gql.default(({ mutation, $var }) =>
   mutation.operation({
     name: "UpdateUser",
     variables: { ...$var("userId").ID("!"), ...$var("name").String("!") },

@@ -240,7 +240,7 @@ import {
 
 // Define fragment with projection
 export const userCardFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
@@ -257,7 +257,7 @@ export const userCardFragment = gql
   );
 
 // Compose in operation
-export const pageQuery = gql.default(({ query }, { $var, $colocate }) =>
+export const pageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "Page",
     variables: { ...$var("userId").ID("!") },

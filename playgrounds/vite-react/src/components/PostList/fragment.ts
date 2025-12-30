@@ -6,7 +6,7 @@ import { gql } from "@/graphql-system";
  * Fetches posts for a specific user.
  */
 export const postListFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: {
         ...$var("userId").ID("!"),

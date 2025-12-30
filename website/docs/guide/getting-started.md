@@ -106,7 +106,7 @@ export const userFragment = gql.default(({ fragment }) =>
 Operations define complete GraphQL queries with field selections:
 
 ```typescript
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query , $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },

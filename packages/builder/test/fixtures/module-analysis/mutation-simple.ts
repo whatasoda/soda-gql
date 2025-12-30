@@ -1,6 +1,6 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-export const createPostMutation = gql.default(({ mutation }, { $var }) =>
+export const createPostMutation = gql.default(({ mutation, $var }) =>
   mutation.operation({
     name: "CreatePost",
     variables: { ...$var("title").String("!"), ...$var("body").String("?") },

@@ -3,7 +3,7 @@ import { topLevelModel } from "../common/top-level";
 
 export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id() }) }));
 
-export const pageQuery = gql.default(({ query }, { $var }) =>
+export const pageQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "PageQuery",
     variables: { ...$var("userId").ID("!"), ...$var("postId").ID("!") },

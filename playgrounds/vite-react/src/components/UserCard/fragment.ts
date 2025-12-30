@@ -5,7 +5,7 @@ import { gql } from "@/graphql-system";
  * Fragment for UserCard component.
  * Defines the data requirements colocated with the component.
  */
-export const userCardFragment = gql.default(({ fragment }, { $var }) =>
+export const userCardFragment = gql.default(({ fragment, $var }) =>
   fragment.Query({
     variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({

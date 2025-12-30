@@ -54,7 +54,7 @@ Your soda-gql code before transformation:
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query , $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },

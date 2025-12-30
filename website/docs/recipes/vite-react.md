@@ -99,7 +99,7 @@ my-vite-app/
 // src/queries/user.query.ts
 import { gql } from "@/graphql-system";
 
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },
@@ -174,7 +174,7 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment }, { $var }) =>
+  .default(({ fragment, $var }) =>
     fragment.Query({
       variables: { ...$var("userId").ID("!") },
       fields: ({ f, $ }) => ({
@@ -218,7 +218,7 @@ import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { userCardFragment, UserCard } from "@/components/UserCard";
 import { postListFragment, PostList } from "@/components/PostList";
 
-const userPageQuery = gql.default(({ query }, { $var, $colocate }) =>
+const userPageQuery = gql.default(({ query, $var, $colocate }) =>
   query.operation({
     name: "UserPage",
     variables: { ...$var("userId").ID("!") },

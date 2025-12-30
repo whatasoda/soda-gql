@@ -122,7 +122,7 @@ export const userFragment = gql.default(({ fragment }) =>
 import { gql } from "@/graphql-system";
 import { userFragment } from "@/fragments/user.fragment";
 
-export const getUserQuery = gql.default(({ query }, { $var }) =>
+export const getUserQuery = gql.default(({ query , $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },

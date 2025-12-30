@@ -1,6 +1,6 @@
 import { gql } from "../../codegen-fixture/graphql-system";
 
-export const pageAction = gql.default(({ mutation }, { $var }) =>
+export const pageAction = gql.default(({ mutation, $var }) =>
   mutation.operation({
     name: "PageAction",
     variables: { ...$var("title").String("!") },
