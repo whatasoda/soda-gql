@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { IfOmittable, SwitchIfOmittable } from "../../src/utils/empty-object";
+import type { IfOmittable, OptionalArg, SwitchIfOmittable } from "../../src/utils/empty-object";
 
 /**
  * Type tests for omittable object utilities.
@@ -81,6 +81,32 @@ describe("IsOmittable / IfOmittable / SwitchIfOmittable", () => {
       type AllOptional = { foo?: string };
       type Result = IfOmittable<AllOptional, "fallback">;
       type _Test = Expect<Equal<Result, "fallback">>;
+
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("OptionalArg utility", () => {
+    it("should return void for empty object", () => {
+      type EmptyObj = {};
+      type Result = OptionalArg<EmptyObj>;
+      type _Test = Expect<Equal<Result, void>>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should return T | void for all-optional object (can omit or provide)", () => {
+      type AllOptional = { foo?: string; bar?: number };
+      type Result = OptionalArg<AllOptional>;
+      type _Test = Expect<Equal<Result, AllOptional | void>>;
+
+      expect(true).toBe(true);
+    });
+
+    it("should return T for object with required fields (must provide)", () => {
+      type WithRequired = { foo: string; bar?: number };
+      type Result = OptionalArg<WithRequired>;
+      type _Test = Expect<Equal<Result, WithRequired>>;
 
       expect(true).toBe(true);
     });
