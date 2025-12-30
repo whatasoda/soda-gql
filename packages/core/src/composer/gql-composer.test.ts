@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, defineOperationRoots, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
-import { createGqlElementComposer } from "./gql-composer";
+import { type FragmentBuildersAll, createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -43,7 +43,7 @@ const inputTypeMethods = {
 };
 
 describe("createGqlInvoker", () => {
-  const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;

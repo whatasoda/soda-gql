@@ -54,8 +54,8 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
  */
 export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
+  TFragmentBuilders,
   TAdapter extends AnyAdapter = DefaultAdapter,
-  TFragmentBuilders = FragmentBuildersAll<TSchema, ExtractMetadataAdapter<TAdapter>>,
 >(
   schema: NoInfer<TSchema>,
   options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>>,

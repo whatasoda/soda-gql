@@ -653,12 +653,12 @@ ${typeExports.join("\n")}`);
     // Build gql entry with options - inputTypeMethods is always required
     // Include FragmentBuilders type for codegen optimization
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, Adapter_${name}, FragmentBuilders_${name}>`;
+      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, Adapter_${name}>`;
       gqlEntries.push(
         `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`,
       );
     } else {
-      const typeParams = `<Schema_${name}, never, FragmentBuilders_${name}>`;
+      const typeParams = `<Schema_${name}, FragmentBuilders_${name}>`;
       gqlEntries.push(
         `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`,
       );

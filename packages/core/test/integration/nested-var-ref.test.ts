@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createGqlElementComposer } from "../../src/composer/gql-composer";
+import { type FragmentBuildersAll, createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
@@ -61,7 +61,7 @@ const inputTypeMethods = {
 describe("nested VarRef with $var helpers", () => {
   describe("$var.getNameAt", () => {
     it("extracts variable name from nested structure in metadata", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       // Create a nested structure with a VarRef inside
       const userIdVarRef = createVarRefFromVariable("userId");
@@ -94,7 +94,7 @@ describe("nested VarRef with $var helpers", () => {
 
   describe("$var.getValueAt", () => {
     it("extracts const value from nested structure in metadata", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       // Create a nested structure with const values and a VarRef
       const userIdVarRef = createVarRefFromVariable("userId");
@@ -130,7 +130,7 @@ describe("nested VarRef with $var helpers", () => {
 
   describe("mixed nested VarRef usage", () => {
     it("handles nested structure with both VarRef and const values", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const ageVarRef = createVarRefFromVariable("userAge");
       const nestedRef = createVarRefFromNestedValue({

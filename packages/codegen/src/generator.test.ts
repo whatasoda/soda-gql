@@ -440,7 +440,7 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).toContain('FragmentBuilderFor<Schema_default, "User">');
 
     // Should use FragmentBuilders type in createGqlElementComposer
-    expect(result.code).toContain("createGqlElementComposer<Schema_default, never, FragmentBuilders_default>");
+    expect(result.code).toContain("createGqlElementComposer<Schema_default, FragmentBuilders_default>");
   });
 
   test("generates fragment builder types for multiple schemas", () => {

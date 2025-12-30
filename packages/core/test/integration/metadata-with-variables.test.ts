@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
 import { print } from "graphql";
-import { createGqlElementComposer } from "../../src/composer/gql-composer";
+import { type FragmentBuildersAll, createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
@@ -65,7 +65,7 @@ const inputTypeMethods = {
 describe("metadata with variable access", () => {
   describe("operation", () => {
     it("metadata callback receives $ with variable refs", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -86,7 +86,7 @@ describe("metadata with variable access", () => {
     });
 
     it("$var.getName extracts variable name", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -107,7 +107,7 @@ describe("metadata with variable access", () => {
     });
 
     it("works with multiple variables", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ mutation, $var }) =>
         mutation.operation({
@@ -133,7 +133,7 @@ describe("metadata with variable access", () => {
     });
 
     it("metadata is undefined when not provided", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -147,7 +147,7 @@ describe("metadata with variable access", () => {
     });
 
     it("metadata callback receives document as DocumentNode", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -168,7 +168,7 @@ describe("metadata with variable access", () => {
     });
 
     it("metadata callback can access both $ and document", () => {
-      const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
