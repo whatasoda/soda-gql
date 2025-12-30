@@ -14,9 +14,9 @@
     "start:prod": "node dist/main"
   },
   "dependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/common": "^11.1.11",
+    "@nestjs/core": "^11.1.11",
+    "@nestjs/platform-express": "^11.1.11",
     "@soda-gql/core": "workspace:*",
     "@soda-gql/runtime": "workspace:*",
     "reflect-metadata": "^0.2.0",
