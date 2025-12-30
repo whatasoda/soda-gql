@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { type AnalyzerType, loadTestCases, normalizeCode, transformWithTsc } from "./test-cases";
+import { type AnalyzerType, loadTestCases, normalizeCode, transformWithTsc } from "../test/test-cases";
 
 const analyzers: AnalyzerType[] = ["ts", "swc"];
 

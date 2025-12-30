@@ -12,7 +12,7 @@ import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/
 // This needs to be evaluated synchronously at module load time
 // because it.skipIf() evaluates its condition at test registration time
 let nativeModuleAvailable = false;
-let createTransformer: typeof import("../src/index").createTransformer;
+let createTransformer: typeof import("./index").createTransformer;
 let initError: string | null = null;
 
 // Synchronously check if native module can be loaded
