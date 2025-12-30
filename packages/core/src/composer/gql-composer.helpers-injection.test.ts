@@ -3,7 +3,7 @@ import { defineAdapter } from "../adapter/define-adapter";
 import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
-import { createGqlElementComposer } from "./gql-composer";
+import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -62,7 +62,10 @@ describe("helpers injection via adapter", () => {
       helpers: { auth: authHelper },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter, inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     let capturedAuth: typeof authHelper | undefined;
 
@@ -89,7 +92,10 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter, inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     let capturedCacheTTL: number | undefined;
 
@@ -106,7 +112,10 @@ describe("helpers injection via adapter", () => {
       helpers: { custom: () => "test" },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter, inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     let varBuilderAvailable = false;
     let customAvailable = false;
@@ -127,7 +136,7 @@ describe("helpers injection via adapter", () => {
   });
 
   it("works with inputTypeMethods option", () => {
-    const gql = createGqlElementComposer<Schema>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
 
     let varBuilderAvailable = false;
 
@@ -158,7 +167,10 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, typeof adapter>(schema, { adapter, inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     let capturedRole: string | undefined;
     let capturedEvent: string | undefined;
