@@ -26,7 +26,7 @@ All metadata has two base properties:
 Add metadata to an operation using the `metadata` option:
 
 ```typescript
-export const getUserQuery = gql.default(({ query , $var }) =>
+export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("id").ID("!") },
@@ -91,7 +91,7 @@ metadata: ({ $, $var }) => ({
 When a variable is defined with an input type (like `String_comparison_exp`), you can extract specific fields from it using `getValueAt`:
 
 ```typescript
-gql.default(({ fragment , $var }) =>
+gql.default(({ fragment, $var }) =>
   fragment.Query({
     variables: {
       ...$var("userId").ID("!"),

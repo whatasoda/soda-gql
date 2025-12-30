@@ -194,7 +194,7 @@ function generateQueryOperationFile(index: number, entityIndex: number): string 
     return `// Auto-generated query operation for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const query${index} = gql.default(({ query , $var }) =>
+export const query${index} = gql.default(({ query, $var }) =>
   query.operation({
     name: "Query${index}",
     variables: { ...$var("limit").Int("?"), ...$var("offset").Int("?") },
@@ -215,7 +215,7 @@ export const query${index} = gql.default(({ query , $var }) =>
   return `// Auto-generated query operation for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const query${index} = gql.default(({ query , $var }) =>
+export const query${index} = gql.default(({ query, $var }) =>
   query.operation({
     name: "Query${index}",
     variables: { ...$var("id").ID("!") },
@@ -255,7 +255,7 @@ function generateOperationWithModelsFile(index: number, modelCount: number): str
 import { gql } from "../../graphql-system";
 ${individualImports}
 
-export const operation${index} = gql.default(({ query , $var }) =>
+export const operation${index} = gql.default(({ query, $var }) =>
   query.operation({
     name: "Operation${index}",
     variables: { ...$var("id").ID("!") },

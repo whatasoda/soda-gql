@@ -193,7 +193,7 @@ function generateSlices(config: FixtureConfig): string {
     if (i % 2 === 0) {
       slices.push(`
 // Slice ${i}: Get single ${typeName} by ID
-export const slice${i} = gql.default(({ query , $var }) =>
+export const slice${i} = gql.default(({ query, $var }) =>
   query.slice(
     {
       variables: { ...$var("id").ID("!") },
@@ -215,7 +215,7 @@ export const slice${i} = gql.default(({ query , $var }) =>
     } else {
       slices.push(`
 // Slice ${i}: Get list of ${typeName}
-export const slice${i} = gql.default(({ query , $var }) =>
+export const slice${i} = gql.default(({ query, $var }) =>
   query.slice(
     {
       variables: { ...$var("limit").Int("?"), ...$var("offset").Int("?") },
@@ -268,7 +268,7 @@ function generateOperations(config: FixtureConfig): string {
 
     operations.push(`
 // Operation ${i}: Composed operation with ${sliceCount} slices
-export const operation${i} = gql.default(({ query , $var }) =>
+export const operation${i} = gql.default(({ query, $var }) =>
   query.composed(
     {
       name: "Operation${i}",

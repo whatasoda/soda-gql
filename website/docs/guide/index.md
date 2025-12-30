@@ -55,7 +55,7 @@ export const userFragment = gql.default(({ fragment }) =>
 Operations define complete GraphQL queries, mutations, or subscriptions with field selections:
 
 ```typescript
-export const profileQuery = gql.default(({ query , $var }) =>
+export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQuery",
     variables: { ...$var("userId").ID("!") },

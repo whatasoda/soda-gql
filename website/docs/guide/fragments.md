@@ -97,7 +97,7 @@ Rename fields in the response using the alias option:
 Unlike standard GraphQL fragments, soda-gql fragments can declare their own variables:
 
 ```typescript
-export const userFragment = gql.default(({ fragment , $var }) =>
+export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("userId").ID("!") },
     fields: ({ f, $ }) => ({
@@ -135,7 +135,7 @@ When spreading a fragment with variables, pass the values through the first argu
 
 ```typescript
 // Parent operation with its own variable
-export const getPostQuery = gql.default(({ query , $var }) =>
+export const getPostQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetPost",
     variables: {

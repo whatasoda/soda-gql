@@ -79,7 +79,7 @@ The generated module imports your scalar definitions from the inject file. Keep 
 import { gql } from "@/graphql-system";
 
 // Define a reusable fragment
-export const userFragment = gql.default(({ fragment , $var }) =>
+export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
@@ -94,7 +94,7 @@ export const userFragment = gql.default(({ fragment , $var }) =>
 );
 
 // Build a complete operation
-export const profileQuery = gql.default(({ query , $var }) =>
+export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQuery",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
@@ -112,7 +112,7 @@ export const profileQuery = gql.default(({ query , $var }) =>
 );
 
 // Operation with spread fragment
-export const profileQueryWithFragment = gql.default(({ query , $var }) =>
+export const profileQueryWithFragment = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQueryWithFragment",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
@@ -134,7 +134,7 @@ Attach runtime information to operations for HTTP headers and application-specif
 
 ```typescript
 // Operation with metadata
-export const userQuery = gql.default(({ query , $var }) =>
+export const userQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },
