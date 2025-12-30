@@ -155,6 +155,73 @@ console.log(meta.headers);
 console.log(meta.custom);
 ```
 
+## $var Helper Methods
+
+The `$var` object provides methods for inspecting VarRef values. These are available in the metadata callback and can be used to extract information from variable references.
+
+### $var.getName(ref)
+
+Get the variable name from a VarRef.
+
+```typescript
+$var.getName($.userId)  // Returns "userId"
+```
+
+**Throws**: If the VarRef contains a nested-value instead of a variable reference.
+
+### $var.getValue(ref)
+
+Get the const value from a VarRef when the variable was assigned a literal value.
+
+```typescript
+// When $.status was assigned a literal value like "active"
+$var.getValue($.status)  // Returns "active"
+```
+
+**Throws**: If the VarRef contains a variable reference, or if the nested-value contains any VarRef inside.
+
+### $var.getInner(ref)
+
+Get the raw inner structure of a VarRef.
+
+```typescript
+$var.getInner($.userId)
+// Returns { type: "variable", name: "userId" }
+```
+
+### $var.getNameAt(ref, selector)
+
+Get the variable name at a specific path within an input type variable.
+
+```typescript
+// Given a variable defined with an input type containing nested VarRefs
+// e.g., $var("filter").UserFilter("!") where UserFilter has { userId: $.id }
+$var.getNameAt($.filter, p => p.userId)  // Returns "id"
+```
+
+**Parameters**:
+- `ref`: A VarRef (typically from `$` in metadata callback)
+- `selector`: A function that navigates to the target path, e.g., `p => p.userId`
+
+**Throws**: If the path doesn't lead to a VarRef with type "variable".
+
+### $var.getValueAt(ref, selector)
+
+Get the const value at a specific path within an input type variable.
+
+```typescript
+// Given a variable like $var("categoryId").String_comparison_exp("?")
+// When called with { _eq: "tech", _neq: "spam" }
+$var.getValueAt($.categoryId, p => p._eq)   // Returns "tech"
+$var.getValueAt($.categoryId, p => p._neq)  // Returns "spam"
+```
+
+**Parameters**:
+- `ref`: A VarRef (typically from `$` in metadata callback)
+- `selector`: A function that navigates to the target path, e.g., `p => p._eq`
+
+**Throws**: If the path leads to a VarRef, or if the value at the path contains any nested VarRef.
+
 ## Variable Type Syntax Reference
 
 Complete reference for the `$var().Type()` type specifier:

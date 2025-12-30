@@ -5,7 +5,10 @@ export const adminFragment = gql.admin(({ fragment }) => fragment.User({ fields:
 
 // Multi-schema: default schema (should still work)
 export const defaultQuery = gql.default(({ query }) =>
-  query.operation({ name: "GetData", fields: ({ f }) => ({ ...f.users({})(({ f }) => ({ ...f.id() })) }) }),
+  query.operation({
+    name: "GetData",
+    fields: ({ f }) => ({ ...f.users({})(({ f }) => ({ ...f.id() })) }),
+  }),
 );
 
 // Multi-schema: nested selections
