@@ -19,7 +19,7 @@ export const postListFragment = gql
       }),
       fields: ({ f, $ }) => ({
         ...f.user({ id: $.userId })(({ f }) => ({
-          ...f.posts({})(({ f }) => ({
+          ...f.posts()(({ f }) => ({
             ...f.id(),
             ...f.title(),
           })),

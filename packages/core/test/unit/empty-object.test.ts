@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import type { IfEmpty, SwitchIfEmpty } from "../../src/utils/empty-object";
+import type { IfOmittable, SwitchIfOmittable } from "../../src/utils/empty-object";
 
 /**
- * Type tests for empty-object utilities.
+ * Type tests for omittable object utilities.
  *
- * IsEmptyObject uses `{} extends T` pattern to detect:
+ * IsOmittable uses `{} extends T` pattern to detect:
  * - Empty objects (no properties)
  * - Objects where all properties are optional
  */
@@ -13,65 +13,65 @@ import type { IfEmpty, SwitchIfEmpty } from "../../src/utils/empty-object";
 type Expect<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 
-describe("IsEmptyObject / IfEmpty / SwitchIfEmpty", () => {
+describe("IsOmittable / IfOmittable / SwitchIfOmittable", () => {
   describe("empty object detection", () => {
-    it("should detect empty object as empty", () => {
+    it("should detect empty object as omittable", () => {
       type EmptyObj = {};
-      type Result = SwitchIfEmpty<EmptyObj, "empty", "not-empty">;
-      type _Test = Expect<Equal<Result, "empty">>;
+      type Result = SwitchIfOmittable<EmptyObj, "omittable", "required">;
+      type _Test = Expect<Equal<Result, "omittable">>;
 
       expect(true).toBe(true);
     });
 
-    it("should detect object with required property as not empty", () => {
+    it("should detect object with required property as not omittable", () => {
       type ObjWithRequired = { foo: string };
-      type Result = SwitchIfEmpty<ObjWithRequired, "empty", "not-empty">;
-      type _Test = Expect<Equal<Result, "not-empty">>;
+      type Result = SwitchIfOmittable<ObjWithRequired, "omittable", "required">;
+      type _Test = Expect<Equal<Result, "required">>;
 
       expect(true).toBe(true);
     });
   });
 
   describe("all-optional object detection", () => {
-    it("should detect object with all optional properties as empty", () => {
+    it("should detect object with all optional properties as omittable", () => {
       type AllOptional = { foo?: string; bar?: number };
-      type Result = SwitchIfEmpty<AllOptional, "empty", "not-empty">;
-      type _Test = Expect<Equal<Result, "empty">>;
+      type Result = SwitchIfOmittable<AllOptional, "omittable", "required">;
+      type _Test = Expect<Equal<Result, "omittable">>;
 
       expect(true).toBe(true);
     });
 
-    it("should detect object with single optional property as empty", () => {
+    it("should detect object with single optional property as omittable", () => {
       type SingleOptional = { foo?: string };
-      type Result = SwitchIfEmpty<SingleOptional, "empty", "not-empty">;
-      type _Test = Expect<Equal<Result, "empty">>;
+      type Result = SwitchIfOmittable<SingleOptional, "omittable", "required">;
+      type _Test = Expect<Equal<Result, "omittable">>;
 
       expect(true).toBe(true);
     });
   });
 
   describe("mixed required/optional object detection", () => {
-    it("should detect object with mixed properties as not empty", () => {
+    it("should detect object with mixed properties as not omittable", () => {
       type MixedObj = { required: string; optional?: number };
-      type Result = SwitchIfEmpty<MixedObj, "empty", "not-empty">;
-      type _Test = Expect<Equal<Result, "not-empty">>;
+      type Result = SwitchIfOmittable<MixedObj, "omittable", "required">;
+      type _Test = Expect<Equal<Result, "required">>;
 
       expect(true).toBe(true);
     });
   });
 
-  describe("IfEmpty utility", () => {
+  describe("IfOmittable utility", () => {
     it("should return provided type for empty object", () => {
       type EmptyObj = {};
-      type Result = IfEmpty<EmptyObj, "fallback">;
+      type Result = IfOmittable<EmptyObj, "fallback">;
       type _Test = Expect<Equal<Result, "fallback">>;
 
       expect(true).toBe(true);
     });
 
-    it("should return never for non-empty object", () => {
+    it("should return never for non-omittable object", () => {
       type NonEmpty = { foo: string };
-      type Result = IfEmpty<NonEmpty, "fallback">;
+      type Result = IfOmittable<NonEmpty, "fallback">;
       type _Test = Expect<Equal<Result, never>>;
 
       expect(true).toBe(true);
@@ -79,7 +79,7 @@ describe("IsEmptyObject / IfEmpty / SwitchIfEmpty", () => {
 
     it("should return provided type for all-optional object", () => {
       type AllOptional = { foo?: string };
-      type Result = IfEmpty<AllOptional, "fallback">;
+      type Result = IfOmittable<AllOptional, "fallback">;
       type _Test = Expect<Equal<Result, "fallback">>;
 
       expect(true).toBe(true);
