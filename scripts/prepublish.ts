@@ -279,10 +279,46 @@ const preparePlatformPackages = async () => {
   }
 };
 
+/**
+ * Add optionalDependencies to swc-transformer dist package.json
+ * This dynamically generates optionalDependencies based on platform packages found
+ */
+const addOptionalDependenciesToSwcTransformer = async () => {
+  const platformPackagesDir = "packages/swc-transformer/npm";
+  const swcTransformerDistPath = "dist/swc-transformer/package.json";
+
+  try {
+    const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
+    const optionalDependencies: Record<string, string> = {};
+
+    for (const entry of platformDirEntries) {
+      if (entry.isDirectory()) {
+        const packageName = `@soda-gql/swc-transformer-${entry.name}`;
+        optionalDependencies[packageName] = rootVersion;
+      }
+    }
+
+    if (Object.keys(optionalDependencies).length === 0) {
+      console.log("No platform packages found, skipping optionalDependencies injection");
+      return;
+    }
+
+    const packageJson = JSON.parse(await readFile(swcTransformerDistPath, "utf-8"));
+    packageJson.optionalDependencies = optionalDependencies;
+    await writeFile(swcTransformerDistPath, JSON.stringify(packageJson, null, 2));
+
+    console.log(`Added optionalDependencies to swc-transformer: ${Object.keys(optionalDependencies).join(", ")}`);
+  } catch (error) {
+    // Platform packages may not exist yet (e.g., first build)
+    console.log("Could not add optionalDependencies to swc-transformer (this is expected for local builds)", error);
+  }
+};
+
 const main = async () => {
   const packageEntries = await prepare();
   await validate(packageEntries);
   await preparePlatformPackages();
+  await addOptionalDependenciesToSwcTransformer();
 };
 
 await main();
