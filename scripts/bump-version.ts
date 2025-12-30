@@ -292,7 +292,7 @@ const createCommitAndPR = async (
   if (dryRun) {
     console.log("\n[DRY RUN] Would execute the following git commands:");
     console.log(`  git checkout -b ${branchName}`);
-    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json bun.lockb`);
+    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json bun.lock`);
     console.log(`  git commit -m "${commitMessage}"`);
     console.log(`  git push -u origin ${branchName}`);
     console.log(`  gh pr create --title "${commitMessage}" --base main`);
@@ -303,7 +303,7 @@ const createCommitAndPR = async (
   await $`git checkout -b ${branchName}`;
 
   // Stage all package.json changes (including platform packages) and lockfile
-  await $`git add package.json packages/*/package.json bun.lockb`;
+  await $`git add package.json packages/*/package.json bun.lock`;
   try {
     await $`git add packages/swc-transformer/npm/*/package.json`;
   } catch {
