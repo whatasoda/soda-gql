@@ -244,7 +244,7 @@ function generateOperationWithModelsFile(index: number, modelCount: number): str
   for (let j = 0; j < modelsPerOp; j++) {
     const modelIndex = (index * modelsPerOp + j) % modelCount;
     modelImports.push(`model${modelIndex}`);
-    modelEmbeds.push(`        ...model${modelIndex}.embed(),`);
+    modelEmbeds.push(`        ...model${modelIndex}.spread(),`);
   }
 
   // Generate individual imports for each model (from ../entities/ since operations are in src/pages/)

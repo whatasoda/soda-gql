@@ -257,11 +257,11 @@ function generateOperations(config: FixtureConfig): string {
       const isListSlice = sliceIndex % 2 !== 0;
 
       if (isListSlice) {
-        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ limit: $.limit${j}, offset: $.offset${j} }),`);
+        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.spread({ limit: $.limit${j}, offset: $.offset${j} }),`);
         sliceVars.push(`...$var("limit${j}").Int("?")`);
         sliceVars.push(`...$var("offset${j}").Int("?")`);
       } else {
-        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.embed({ id: $.id${j} }),`);
+        sliceEmbeds.push(`        result${j}: slice${sliceIndex}.spread({ id: $.id${j} }),`);
         sliceVars.push(`...$var("id${j}").ID("!")`);
       }
     }
