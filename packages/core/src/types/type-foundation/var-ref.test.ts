@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
   createVarRefFromNestedValue,
+  createVarRefFromNestedValueV2,
   createVarRefFromVariable,
+  createVarRefFromVariableV2,
   getNameAt,
   getValueAt,
   getVariablePath,
@@ -188,5 +190,48 @@ describe("getVariablePath", () => {
     expect(() => getVariablePath(varRef, (p: any) => p.user.name)).toThrow(
       "Value at path [user.name] is not a variable or inside a variable",
     );
+  });
+});
+
+// ============================================================================
+// V2 Functions Tests
+// ============================================================================
+
+describe("createVarRefFromVariableV2", () => {
+  it("creates a VarRef from variable name", () => {
+    const varRef = createVarRefFromVariableV2<"String", "scalar", "[TYPE_SIGNATURE]">("userId");
+    expect(isVarRef(varRef)).toBe(true);
+    expect(getVarRefName(varRef)).toBe("userId");
+  });
+
+  it("works with different type kinds", () => {
+    const scalarRef = createVarRefFromVariableV2<"String", "scalar", "[TYPE_SIGNATURE]">("name");
+    const enumRef = createVarRefFromVariableV2<"Status", "enum", "[TYPE_SIGNATURE]">("status");
+    const inputRef = createVarRefFromVariableV2<"UserInput", "input", "[TYPE_SIGNATURE]">("user");
+
+    expect(isVarRef(scalarRef)).toBe(true);
+    expect(isVarRef(enumRef)).toBe(true);
+    expect(isVarRef(inputRef)).toBe(true);
+  });
+});
+
+describe("createVarRefFromNestedValueV2", () => {
+  it("creates a VarRef from nested value", () => {
+    const varRef = createVarRefFromNestedValueV2<"UserInput", "input", "[TYPE_SIGNATURE]">({
+      name: "Alice",
+      age: 30,
+    });
+    expect(isVarRef(varRef)).toBe(true);
+    expect(getVarRefValue(varRef)).toEqual({ name: "Alice", age: 30 });
+  });
+
+  it("works with nested VarRefs inside", () => {
+    const innerVarRef = createVarRefFromVariableV2<"String", "scalar", "[TYPE_SIGNATURE]">("userId");
+    const varRef = createVarRefFromNestedValueV2<"UserInput", "input", "[TYPE_SIGNATURE]">({
+      user: { id: innerVarRef, name: "Alice" },
+    });
+    expect(isVarRef(varRef)).toBe(true);
+    // getVarRefValue throws when nested value contains VarRef
+    expect(() => getVarRefValue(varRef)).toThrow("Cannot get const value: nested-value contains VarRef");
   });
 });
