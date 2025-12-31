@@ -2,21 +2,12 @@ import type {
   AnyFieldSelectionFactory,
   AnyFieldSelectionFactoryReturn,
   FieldSelectionFactories,
-  FieldSelectionFactoryObjectReturn,
-  FieldSelectionFactoryPrimitiveReturn,
-  FieldSelectionFactoryUnionReturn,
   NestedObjectFieldsBuilder,
   NestedUnionFieldsBuilder,
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
-import type {
-  OutputEnumSpecifier,
-  OutputObjectSpecifier,
-  OutputScalarSpecifier,
-  OutputTypenameSpecifier,
-  OutputUnionSpecifier,
-} from "../types/type-foundation";
+import type { OutputObjectSpecifier, OutputUnionSpecifier } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
@@ -70,7 +61,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
 
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
-        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedObject>(
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = <TNested extends AnyNestedObject>(
           nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
         ) => {
           // Build new path for this field
@@ -92,15 +83,15 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             directives: extras?.directives ?? {},
             object: nestedFields,
             union: null,
-          } satisfies AnyFieldSelection);
-        }) satisfies FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>;
+          });
+        };
 
         return factoryReturn;
       }
 
       if (type.kind === "union") {
         type TSelection = AnyFieldSelection & { type: OutputUnionSpecifier };
-        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = (<TNested extends AnyNestedUnion>(
+        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = <TNested extends AnyNestedUnion>(
           nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
         ) => {
           // Build new path for this field
@@ -132,14 +123,13 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             directives: extras?.directives ?? {},
             object: null,
             union: nestedUnion,
-          } satisfies AnyFieldSelection);
-        }) satisfies FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>;
+          });
+        };
 
         return factoryReturn;
       }
 
       if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
-        type TSelection = AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier };
         const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = wrap({
           parent: typeName,
           field: fieldName,
@@ -148,7 +138,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           directives: extras?.directives ?? {},
           object: null,
           union: null,
-        } satisfies AnyFieldSelection) satisfies FieldSelectionFactoryPrimitiveReturn<TSelection, TAlias>;
+        });
         return factoryReturn;
       }
 
