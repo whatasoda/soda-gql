@@ -4,6 +4,7 @@ import {
   detectDirectChanges,
   getLastReleaseTag,
   getRootVersion,
+  type BumpType,
   type DependencyGraph,
 } from "./lib/version-utils";
 
@@ -69,14 +70,20 @@ const validateVersions = async (
 const main = async (): Promise<void> => {
   const args = process.argv.slice(2);
   const mode = args[0] as CheckMode | undefined;
+  const bumpType = (args[1] as BumpType | undefined) ?? "minor";
 
   if (!mode || !["validate", "list-bump", "list-skip"].includes(mode)) {
-    console.error("Usage: bun scripts/version-check.ts <validate|list-bump|list-skip>");
+    console.error("Usage: bun scripts/version-check.ts <validate|list-bump|list-skip> [bump-type]");
     console.error("");
     console.error("Modes:");
     console.error("  validate   - Validate that all package versions match expected bump plan");
     console.error("  list-bump  - List packages that should be bumped");
     console.error("  list-skip  - List packages that should be skipped");
+    console.error("");
+    console.error("Bump types (optional, default: minor):");
+    console.error("  patch - Only directly changed packages (no cascade)");
+    console.error("  minor - Include cascade to dependents");
+    console.error("  major - Include cascade to dependents");
     process.exit(1);
   }
 
@@ -104,8 +111,8 @@ const main = async (): Promise<void> => {
   }
   const directChanges = directChangesResult.value;
 
-  // Compute all packages to bump (including cascade)
-  const toBump = computePackagesToBump(directChanges, graph);
+  // Compute all packages to bump (including cascade based on bump type)
+  const toBump = computePackagesToBump(directChanges, graph, bumpType);
 
   // Compute packages to skip
   const toSkip = new Set<string>();

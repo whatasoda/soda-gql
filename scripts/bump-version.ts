@@ -141,7 +141,7 @@ const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, stri
   const directChanges = directChangesResult.value;
 
   // Compute all packages to bump (including cascade)
-  const toBump = computePackagesToBump(directChanges, graph);
+  const toBump = computePackagesToBump(directChanges, graph, bumpType);
 
   // Cascade changes = toBump - directChanges
   const cascadeChanges = new Set<string>();
