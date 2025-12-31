@@ -188,4 +188,3 @@ website/.rspress/
 
 # Local publish artifacts
 .publish/
-/tsc-trace-full
