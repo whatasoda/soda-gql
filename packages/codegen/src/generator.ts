@@ -665,6 +665,13 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     // Granular: skip individual scalar vars when using injection (scalars come from import)
     const scalarVarsSection = $$.injection.mode === "inject" ? "// (scalars imported)" : scalarVarsBlock;
 
+    // When injecting scalars, use the imported alias directly; otherwise use the assembled category object
+    const scalarAssemblyLine =
+      $$.injection.mode === "inject"
+        ? `// scalar_${name} is imported directly`
+        : `const scalar_${name} = ${scalarAssembly} as const;`;
+    const scalarRef = $$.injection.mode === "inject" ? (scalarAliases.get(name) ?? `scalar_${name}`) : `scalar_${name}`;
+
     schemaBlocks.push(`
 // Individual scalar definitions
 ${scalarVarsSection}
@@ -682,7 +689,7 @@ ${objectVarsBlock}
 ${unionVarsBlock}
 
 // Category assembly
-const scalar_${name} = ${scalarAssembly} as const;
+${scalarAssemblyLine}
 const enum_${name} = ${enumAssembly} as const;
 const input_${name} = ${inputAssembly} as const;
 const object_${name} = ${objectAssembly} as const;
@@ -692,7 +699,7 @@ const union_${name} = ${unionAssembly} as const;
 const ${schemaVar} = {
   label: "${name}" as const,
   operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
-  scalar: scalar_${name},
+  scalar: ${scalarRef},
   enum: enum_${name},
   input: input_${name},
   object: object_${name},
