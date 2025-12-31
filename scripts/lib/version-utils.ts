@@ -232,15 +232,28 @@ export const detectDirectChanges = async (
   return ok(changed);
 };
 
+export type BumpType = "major" | "minor" | "patch";
+
 /**
  * Compute all packages that need to be bumped (including cascade)
  * Uses worklist algorithm to propagate changes through the dependency graph
+ *
+ * For patch bumps: Only bump directly changed packages (no cascade)
+ * For minor/major bumps: Cascade to all dependents
  */
 export const computePackagesToBump = (
   directlyChanged: Set<string>,
   graph: DependencyGraph,
+  bumpType: BumpType,
 ): Set<string> => {
   const toBump = new Set(directlyChanged);
+
+  // For patch bumps, don't cascade to dependents
+  if (bumpType === "patch") {
+    return toBump;
+  }
+
+  // For minor/major bumps, propagate to all dependents
   const worklist = [...directlyChanged];
 
   while (worklist.length > 0) {

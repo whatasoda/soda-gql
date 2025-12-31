@@ -2,7 +2,6 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
 import { z } from "zod";
-import { version as rootVersion } from "../package.json" with { type: "json" };
 
 type ArgEntries<T extends object> = { [K in keyof T]-?: [value: T[K], key: K] }[keyof T];
 type Entries<T extends object> = { [K in keyof T]: [key: K, value: T[K]] }[keyof T];
@@ -14,6 +13,16 @@ export const mapValues = <TObject extends object, TMappedValue>(
   Object.fromEntries((Object.entries(obj) as Entries<TObject>[]).map(([key, value]) => [key, fn(value, key)])) as {
     [K in keyof TObject]: TMappedValue;
   };
+
+/**
+ * Convert a version string to a tilde range
+ * e.g., "0.5.3" -> "~0.5.0"
+ */
+const toTildeRange = (version: string): string => {
+  const match = version.match(/^(\d+)\.(\d+)\./);
+  if (!match) return version;
+  return `~${match[1]}.${match[2]}.0`;
+};
 
 // Schema for public packages (strict validation for npm registry)
 type PackageJson = z.output<typeof packageJsonSchema>;
@@ -146,9 +155,11 @@ const prepare = async () => {
             ].filter((key) => key !== name && key.startsWith("@soda-gql/")),
           );
 
+          const tildeRange = toTildeRange(packageJsonSource.version);
+
           const packageJsonDist: PackageJson = {
             name,
-            version: rootVersion,
+            version: packageJsonSource.version,
             description,
             type,
             private: false,
@@ -165,9 +176,9 @@ const prepare = async () => {
             module,
             types,
             exports,
-            dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? rootVersion : value)),
-            devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? rootVersion : value)),
-            peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? rootVersion : value)),
+            dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
+            devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
+            peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             ...rest,
           };
 
@@ -244,6 +255,12 @@ const preparePlatformPackages = async () => {
   const platformPackagesDir = "packages/swc-transformer/npm";
   const platformDistDir = "dist";
 
+  // Read swc-transformer's version to use for platform packages
+  const swcTransformerPackageJson = JSON.parse(
+    await readFile("packages/swc-transformer/package.json", "utf-8"),
+  );
+  const swcTransformerVersion = swcTransformerPackageJson.version as string;
+
   try {
     const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
 
@@ -256,7 +273,7 @@ const preparePlatformPackages = async () => {
       // Copy the platform package directory
       await $`cp -rf ${sourceDir} ${distDir}`;
 
-      // Read and update package.json with root version
+      // Read and update package.json with swc-transformer's version
       const packageJsonPath = path.join(distDir, "package.json");
       const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
 
@@ -267,8 +284,8 @@ const preparePlatformPackages = async () => {
         continue;
       }
 
-      // Update version to root version
-      packageJson.version = rootVersion;
+      // Update version to match swc-transformer's version
+      packageJson.version = swcTransformerVersion;
       await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       console.log(`Prepared platform package: ${packageJson.name}`);
@@ -287,6 +304,12 @@ const addOptionalDependenciesToSwcTransformer = async () => {
   const platformPackagesDir = "packages/swc-transformer/npm";
   const swcTransformerDistPath = "dist/swc-transformer/package.json";
 
+  // Read swc-transformer's version and convert to tilde range
+  const swcTransformerSourceJson = JSON.parse(
+    await readFile("packages/swc-transformer/package.json", "utf-8"),
+  );
+  const tildeRange = toTildeRange(swcTransformerSourceJson.version as string);
+
   try {
     const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
     const optionalDependencies: Record<string, string> = {};
@@ -294,7 +317,7 @@ const addOptionalDependenciesToSwcTransformer = async () => {
     for (const entry of platformDirEntries) {
       if (entry.isDirectory()) {
         const packageName = `@soda-gql/swc-transformer-${entry.name}`;
-        optionalDependencies[packageName] = rootVersion;
+        optionalDependencies[packageName] = tildeRange;
       }
     }
 
