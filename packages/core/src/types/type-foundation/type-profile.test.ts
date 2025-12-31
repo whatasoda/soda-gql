@@ -249,16 +249,32 @@ describe("VarRef in nested input objects", () => {
       expect(true).toBe(true);
     });
 
-    it("should allow VarRef in nested input array field", () => {
-      const innerFilterVarRef = createVarRefFromVariable<
+    it("should allow VarRef for entire array field", () => {
+      // VarRef for the whole array type (InnerFilter ![]?)
+      const wholeArrayVarRef = createVarRefFromVariable<
+        "InnerFilter",
+        "input",
+        "[TYPE_SIGNATURE]"[] | null | undefined
+      >("wholeArray");
+
+      // This should compile - VarRef for entire array should work
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: wholeArrayVarRef,
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow VarRef at array element level", () => {
+      // VarRef for array element type (InnerFilter !)
+      const elementVarRef = createVarRefFromVariable<
         "InnerFilter",
         "input",
         "[TYPE_SIGNATURE]"
-      >("innerFilter");
+      >("element");
 
-      // This should compile - VarRef in array should work
+      // This should compile - VarRef in array element position should work
       const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
-        innerFilterArray: [innerFilterVarRef],
+        innerFilterArray: [elementVarRef],
       };
       expect(true).toBe(true);
     });

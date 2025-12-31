@@ -1,6 +1,6 @@
 import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
+import type { GetNestedAssignableType } from "./type-modifier-extension.generated";
 import type { InputTypeKind } from "./type-specifier";
-import type { VarRef } from "./var-ref";
 
 export interface PrimitiveTypeProfile {
   readonly kind: "scalar" | "enum";
@@ -49,25 +49,20 @@ export declare namespace TypeProfile {
 
   /**
    * Nested assignable type - used for fields within input objects.
-   * For primitives: allows const value OR VarRef with typeName + kind from profile.
-   * For nested input objects: allows const value OR VarRef with typeName + kind from ObjectTypeProfile.
+   * Delegates to GetNestedAssignableType which properly handles:
+   * - VarRef at current level (e.g., VarRef for the whole array)
+   * - VarRef at element level for arrays (e.g., VarRef for array elements)
+   * - Recursive VarRef support in nested object fields
    */
   type NestedAssignableType<TProfile extends WithMeta> =
-    | ApplyTypeModifier<
-        TProfile[0] extends PrimitiveTypeProfile
-          ? TProfile[0]["value"]
-          : TProfile[0] extends ObjectTypeProfile
-            ? AssignableObjectTypeProfile<TProfile[0]["fields"]>
-            : never,
-        TProfile[1]
-      >
-    | (TProfile[0] extends PrimitiveTypeProfile
-        ? VarRef<AssignableVarRefMeta<TProfile[0]["name"], TProfile[0]["kind"], AssignableSignature<TProfile>>>
-        : TProfile[0] extends ObjectTypeProfile
-          ? VarRef<AssignableVarRefMeta<TProfile[0]["name"], "input", AssignableSignature<TProfile>>>
-          : never);
+    //
+    TProfile[0] extends PrimitiveTypeProfile
+      ? GetNestedAssignableType<TProfile[0]["name"], TProfile[0]["kind"], TProfile>
+      : TProfile[0] extends ObjectTypeProfile
+        ? GetNestedAssignableType<TProfile[0]["name"], "input", TProfile>
+        : never;
 
-  type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
+  export type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
     {
       readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
         ? NestedAssignableType<TProfileObject[K]>
@@ -132,7 +127,7 @@ export declare namespace TypeProfile {
     TProfile[0] extends PrimitiveTypeProfile
       ? TProfile[0]["value"]
       : TProfile[0] extends ObjectTypeProfile
-        ? AssignableObjectTypeProfile<TProfile[0]["fields"]>
+        ? ObjectTypeProfileType<TProfile[0]["fields"]>
         : never,
     TProfile[1]
   >;
@@ -143,3 +138,20 @@ export type GetModifiedType<TProfile extends TypeProfile, TModifier extends Type
 >;
 
 export type GetConstAssignableType<TProfile extends TypeProfile.WithMeta> = TypeProfile.Type<TProfile>;
+
+/**
+ * Const type for nested fields that recursively allows VarRef in child fields.
+ * Unlike ConstAssignableType, this uses AssignableObjectTypeProfile which contains
+ * NestedAssignableType for nested objects, thus propagating VarRef support.
+ *
+ * Used as the base type in NestedAssignable_* (generated), where array element
+ * positions need to allow VarRef assignment.
+ */
+export type NestedConstAssignableType<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
+  TProfile[0] extends PrimitiveTypeProfile
+    ? TProfile[0]["value"]
+    : TProfile[0] extends ObjectTypeProfile
+      ? TypeProfile.AssignableObjectTypeProfile<TProfile[0]["fields"]>
+      : never,
+  TProfile[1]
+>;

@@ -56,8 +56,9 @@ export const UserFragment = gql.default(({ fragment }) =>
 );
 
 // User profile fragment
-export const UserProfileFragment = gql.default(({ fragment }) =>
+export const UserProfileFragment = gql.default(({ fragment, $var }) =>
   fragment.user_profiles({
+    variables: { ...$var("condition").user_profiles_bool_exp("!") },
     fields: ({ f }) => ({
       ...f.id(),
       ...f.user_id(),
@@ -66,6 +67,16 @@ export const UserProfileFragment = gql.default(({ fragment }) =>
       ...f.birthday(),
       ...f.is_private(),
       ...f.created_at(),
+    }),
+  }),
+);
+
+gql.default(({ fragment, $var }) =>
+  fragment.user_profiles({
+    variables: { ...$var("condition").user_profiles_bool_exp("!") },
+    fields: ({ f, $ }) => ({
+      ...UserProfileFragment.spread({ condition: { _or: [$.condition] } }),
+      ...f.id(),
     }),
   }),
 );

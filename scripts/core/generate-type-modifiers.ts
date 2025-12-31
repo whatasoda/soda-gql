@@ -68,7 +68,7 @@ ${embedEntries({ from: 0, to: DEPTH })`
 `
 
 const extension_content = `\
-import type { InputTypeKind, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { InputTypeKind, NestedConstAssignableType, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
 interface Op<T> {
   readonly 0: T[];
@@ -86,10 +86,10 @@ ${embedEntries({ from: 1, to: DEPTH })`
 ${({ label, inner, outer }) => `type Signature_${label} = Op<Signature_${inner}>[${outer}];`}
 `}
 
-// Assignable
+// Assignable - uses NestedConstAssignableType to allow VarRef in nested object fields
 // depth = 0
-type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.ConstAssignableType<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
-type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.ConstAssignableType<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
+type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
+type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
 
 ${embedEntries({ from: 1, to: DEPTH })`
 ${({ label, inner, outer, modifier }) => `type Assignable_${label}<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_${label}> | Op<Assignable_${inner}<TTypeName, TKind, [T[0], "${modifier[0]}"]>>[${outer}];`}
@@ -98,11 +98,16 @@ ${({ label, inner, outer, modifier }) => `type Assignable_${label}<TTypeName ext
 /**
  * Assignable type using typeName + kind for VarRef comparison.
  * Accepts const values or VarRefs with matching typeName + kind + signature.
+ * Allows VarRef at any level in nested object fields.
  */
 export type GetAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
 ${embedEntries({ from: 0, to: DEPTH })`
   ${({ label, modifier }) => `T[1] extends "${modifier}" ? Assignable_${label}<TTypeName, TKind, T> :`}
 `} never;
+
+// Alias for backwards compatibility and clarity in nested contexts
+export type GetNestedAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
+  GetAssignableType<TTypeName, TKind, T>;
 `
 
 await Bun.write(CORE, core_content);
