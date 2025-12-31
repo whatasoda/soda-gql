@@ -7,10 +7,8 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { buildClientSchema, getIntrospectionQuery, printSchema } from "graphql";
 
-const HASURA_ENDPOINT =
-  process.env.HASURA_ENDPOINT || "http://localhost:8080/v1/graphql";
-const HASURA_ADMIN_SECRET =
-  process.env.HASURA_ADMIN_SECRET || "my-admin-secret";
+const HASURA_ENDPOINT = process.env.HASURA_ENDPOINT || "http://localhost:8080/v1/graphql";
+const HASURA_ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET || "my-admin-secret";
 
 async function exportSchema(): Promise<void> {
   console.log(`Fetching schema from ${HASURA_ENDPOINT}...`);
@@ -27,9 +25,7 @@ async function exportSchema(): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch schema: ${response.status} ${response.statusText}`
-    );
+    throw new Error(`Failed to fetch schema: ${response.status} ${response.statusText}`);
   }
 
   const result = (await response.json()) as {
@@ -38,18 +34,14 @@ async function exportSchema(): Promise<void> {
   };
 
   if (result.errors) {
-    throw new Error(
-      `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`
-    );
+    throw new Error(`GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`);
   }
 
   if (!result.data) {
     throw new Error("No data returned from introspection query");
   }
 
-  const schema = buildClientSchema(
-    result.data as Parameters<typeof buildClientSchema>[0]
-  );
+  const schema = buildClientSchema(result.data as Parameters<typeof buildClientSchema>[0]);
   const schemaString = printSchema(schema);
 
   const outputPath = join(import.meta.dirname, "..", "schema.graphql");

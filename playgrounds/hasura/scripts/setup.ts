@@ -20,11 +20,7 @@ const HASURA_ENDPOINT = "http://localhost:8080";
 const HASURA_ADMIN_SECRET = "my-admin-secret";
 // const POSTGRES_URL = "postgres://postgres:postgres-password@localhost:5432/hasura_perf";
 
-async function run(
-  command: string,
-  args: string[],
-  cwd?: string
-): Promise<void> {
+async function run(command: string, args: string[], cwd?: string): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log(`\n$ ${command} ${args.join(" ")}`);
     const proc = spawn(command, args, {
@@ -68,15 +64,7 @@ async function waitForHasura(maxAttempts = 30): Promise<void> {
 async function applyMigrations(): Promise<void> {
   console.log("\nApplying migrations...");
 
-  const migrationPath = join(
-    import.meta.dirname,
-    "..",
-    "hasura",
-    "migrations",
-    "default",
-    "20240101000000_init",
-    "up.sql"
-  );
+  const migrationPath = join(import.meta.dirname, "..", "hasura", "migrations", "default", "20240101000000_init", "up.sql");
 
   const sql = await readFile(migrationPath, "utf-8");
 

@@ -54,9 +54,7 @@ const EC_CORE_TABLES: TableDef[] = [
       { name: "last_name", type: "text" },
       { name: "phone", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "customer_addresses",
@@ -262,10 +260,7 @@ const EC_CORE_TABLES: TableDef[] = [
   },
   {
     name: "wishlists",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text", default: "'Default'" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text", default: "'Default'" }],
     foreignKeys: [
       {
         column: "customer_id",
@@ -275,10 +270,7 @@ const EC_CORE_TABLES: TableDef[] = [
   },
   {
     name: "wishlist_items",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "added_at", type: "timestamptz", default: "now()" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "added_at", type: "timestamptz", default: "now()" }],
     foreignKeys: [
       {
         column: "wishlist_id",
@@ -300,16 +292,11 @@ const EC_CORE_TABLES: TableDef[] = [
       { name: "starts_at", type: "timestamptz" },
       { name: "expires_at", type: "timestamptz", nullable: true },
     ],
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "order_coupons",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "discount_amount", type: "numeric(12,2)" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "discount_amount", type: "numeric(12,2)" }],
     foreignKeys: [
       { column: "order_id", references: { table: "orders", column: "id" } },
       { column: "coupon_id", references: { table: "coupons", column: "id" } },
@@ -323,9 +310,7 @@ const EC_CORE_TABLES: TableDef[] = [
       { name: "address", type: "text", nullable: true },
       { name: "is_active", type: "boolean", default: "true" },
     ],
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "inventory_levels",
@@ -347,11 +332,7 @@ const EC_CORE_TABLES: TableDef[] = [
   },
   {
     name: "return_requests",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "reason", type: "text" },
-      { name: "notes", type: "text", nullable: true },
-    ],
+    columns: [...BASE_COLUMNS, { name: "reason", type: "text" }, { name: "notes", type: "text", nullable: true }],
     foreignKeys: [
       { column: "order_id", references: { table: "orders", column: "id" } },
       {
@@ -490,9 +471,7 @@ const SNS_TABLES: TableDef[] = [
       { name: "birthday", type: "date", nullable: true },
       { name: "is_private", type: "boolean", default: "false" },
     ],
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
   {
     name: "posts",
@@ -503,9 +482,7 @@ const SNS_TABLES: TableDef[] = [
       { name: "published_at", type: "timestamptz", nullable: true },
       { name: "view_count", type: "bigint", default: "0" },
     ],
-    foreignKeys: [
-      { column: "author_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "author_id", references: { table: "users", column: "id" } }],
     selfRef: { column: "reply_to_id", nullable: true },
   },
   {
@@ -518,9 +495,7 @@ const SNS_TABLES: TableDef[] = [
       { name: "alt_text", type: "text", nullable: true },
       { name: "sort_order", type: "integer", default: "0" },
     ],
-    foreignKeys: [
-      { column: "post_id", references: { table: "posts", column: "id" } },
-    ],
+    foreignKeys: [{ column: "post_id", references: { table: "posts", column: "id" } }],
   },
   {
     name: "likes",
@@ -540,10 +515,7 @@ const SNS_TABLES: TableDef[] = [
   },
   {
     name: "follows",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "is_approved", type: "boolean", default: "true" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "is_approved", type: "boolean", default: "true" }],
     foreignKeys: [
       { column: "follower_id", references: { table: "users", column: "id" } },
       { column: "following_id", references: { table: "users", column: "id" } },
@@ -583,11 +555,7 @@ const SNS_TABLES: TableDef[] = [
   },
   {
     name: "messages",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "content", type: "text" },
-      { name: "read_at", type: "timestamptz", nullable: true },
-    ],
+    columns: [...BASE_COLUMNS, { name: "content", type: "text" }, { name: "read_at", type: "timestamptz", nullable: true }],
     foreignKeys: [
       {
         column: "conversation_id",
@@ -622,11 +590,7 @@ const SNS_TABLES: TableDef[] = [
   },
   {
     name: "hashtags",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "post_count", type: "bigint", default: "0" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "post_count", type: "bigint", default: "0" }],
   },
   {
     name: "post_hashtags",
@@ -680,9 +644,7 @@ const SNS_TABLES: TableDef[] = [
       { name: "theme", type: "text", default: "'system'" },
       { name: "language", type: "text", default: "'en'" },
     ],
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
   {
     name: "user_sessions",
@@ -694,9 +656,7 @@ const SNS_TABLES: TableDef[] = [
       { name: "last_active_at", type: "timestamptz", default: "now()" },
       { name: "expires_at", type: "timestamptz" },
     ],
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
 ];
 
@@ -720,9 +680,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "bio", type: "text", nullable: true },
       { name: "avatar_url", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "pages",
@@ -754,9 +712,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "slug", type: "text" },
       { name: "schema", type: "jsonb", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "page_versions",
@@ -799,9 +755,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "description", type: "text", nullable: true },
       { name: "sort_order", type: "integer", default: "0" },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -817,14 +771,8 @@ const CMS_TABLES: TableDef[] = [
   },
   {
     name: "tags",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "slug", type: "text" },
-    ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "slug", type: "text" }],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "article_tags",
@@ -843,9 +791,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "content", type: "text" },
       { name: "is_approved", type: "boolean", default: "false" },
     ],
-    foreignKeys: [
-      { column: "article_id", references: { table: "articles", column: "id" } },
-    ],
+    foreignKeys: [{ column: "article_id", references: { table: "articles", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -869,14 +815,8 @@ const CMS_TABLES: TableDef[] = [
   },
   {
     name: "media_folders",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "path", type: "text" },
-    ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "path", type: "text" }],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -887,9 +827,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "slug", type: "text" },
       { name: "location", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "menu_items",
@@ -915,9 +853,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "schema", type: "jsonb" },
       { name: "success_message", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "form_submissions",
@@ -927,9 +863,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "ip_address", type: "text", nullable: true },
       { name: "user_agent", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "form_id", references: { table: "forms", column: "id" } },
-    ],
+    foreignKeys: [{ column: "form_id", references: { table: "forms", column: "id" } }],
   },
   {
     name: "redirects",
@@ -940,9 +874,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "status_code", type: "integer", default: "301" },
       { name: "is_active", type: "boolean", default: "true" },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "seo_settings",
@@ -954,9 +886,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "og_image_url", type: "text", nullable: true },
       { name: "robots_txt", type: "text", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "analytics_events",
@@ -969,9 +899,7 @@ const CMS_TABLES: TableDef[] = [
       { name: "ip_address", type: "text", nullable: true },
       { name: "metadata", type: "jsonb", nullable: true },
     ],
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
 ];
 
@@ -998,9 +926,7 @@ const JUNCTION_TABLES: TableDef[] = [
       { name: "image_url", type: "text", nullable: true },
       { name: "sort_order", type: "integer", default: "0" },
     ],
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -1102,10 +1028,7 @@ const JUNCTION_TABLES: TableDef[] = [
   },
   {
     name: "author_articles",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "is_primary", type: "boolean", default: "false" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "is_primary", type: "boolean", default: "false" }],
     foreignKeys: [
       { column: "author_id", references: { table: "authors", column: "id" } },
       { column: "article_id", references: { table: "articles", column: "id" } },
@@ -1113,10 +1036,7 @@ const JUNCTION_TABLES: TableDef[] = [
   },
   {
     name: "site_authors",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "is_admin", type: "boolean", default: "false" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "is_admin", type: "boolean", default: "false" }],
     foreignKeys: [
       { column: "site_id", references: { table: "sites", column: "id" } },
       { column: "author_id", references: { table: "authors", column: "id" } },
@@ -1124,10 +1044,7 @@ const JUNCTION_TABLES: TableDef[] = [
   },
   {
     name: "customer_stores",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "is_favorite", type: "boolean", default: "false" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "is_favorite", type: "boolean", default: "false" }],
     foreignKeys: [
       {
         column: "customer_id",
@@ -1138,10 +1055,7 @@ const JUNCTION_TABLES: TableDef[] = [
   },
   {
     name: "product_collections",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "sort_order", type: "integer", default: "0" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "sort_order", type: "integer", default: "0" }],
     foreignKeys: [
       { column: "product_id", references: { table: "products", column: "id" } },
       {
@@ -1160,9 +1074,7 @@ const JUNCTION_TABLES: TableDef[] = [
       { name: "image_url", type: "text", nullable: true },
       { name: "is_published", type: "boolean", default: "false" },
     ],
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
 ];
 
@@ -1170,30 +1082,16 @@ const JUNCTION_TABLES: TableDef[] = [
 const DEEP_NESTING_TABLES: TableDef[] = [
   {
     name: "regions",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "code", type: "text" },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "code", type: "text" }],
   },
   {
     name: "districts",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "code", type: "text" },
-    ],
-    foreignKeys: [
-      { column: "region_id", references: { table: "regions", column: "id" } },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "code", type: "text" }],
+    foreignKeys: [{ column: "region_id", references: { table: "regions", column: "id" } }],
   },
   {
     name: "cities",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "postal_code_prefix", type: "text", nullable: true },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "postal_code_prefix", type: "text", nullable: true }],
     foreignKeys: [
       {
         column: "district_id",
@@ -1203,22 +1101,12 @@ const DEEP_NESTING_TABLES: TableDef[] = [
   },
   {
     name: "neighborhoods",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "population", type: "integer", nullable: true },
-    ],
-    foreignKeys: [
-      { column: "city_id", references: { table: "cities", column: "id" } },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "population", type: "integer", nullable: true }],
+    foreignKeys: [{ column: "city_id", references: { table: "cities", column: "id" } }],
   },
   {
     name: "streets",
-    columns: [
-      ...BASE_COLUMNS,
-      { name: "name", type: "text" },
-      { name: "postal_code", type: "text", nullable: true },
-    ],
+    columns: [...BASE_COLUMNS, { name: "name", type: "text" }, { name: "postal_code", type: "text", nullable: true }],
     foreignKeys: [
       {
         column: "neighborhood_id",
@@ -1233,26 +1121,18 @@ const ALL_TABLES: TableDef[] = [
   // Master tables first (no foreign keys)
   ...EC_MASTER_TABLES,
   { ...DEEP_NESTING_TABLES[0] }, // regions
-  ...SNS_TABLES.filter(
-    (t) => t.name === "users" || t.name === "report_statuses"
-  ),
+  ...SNS_TABLES.filter((t) => t.name === "users" || t.name === "report_statuses"),
   ...CMS_TABLES.filter((t) => t.name === "sites"),
-  ...JUNCTION_TABLES.filter(
-    (t) => t.name === "roles" || t.name === "permissions"
-  ),
+  ...JUNCTION_TABLES.filter((t) => t.name === "roles" || t.name === "permissions"),
   // Then dependent tables
   { ...DEEP_NESTING_TABLES[1] }, // districts
   { ...DEEP_NESTING_TABLES[2] }, // cities
   { ...DEEP_NESTING_TABLES[3] }, // neighborhoods
   { ...DEEP_NESTING_TABLES[4] }, // streets
   ...EC_CORE_TABLES,
-  ...SNS_TABLES.filter(
-    (t) => t.name !== "users" && t.name !== "report_statuses"
-  ),
+  ...SNS_TABLES.filter((t) => t.name !== "users" && t.name !== "report_statuses"),
   ...CMS_TABLES.filter((t) => t.name !== "sites"),
-  ...JUNCTION_TABLES.filter(
-    (t) => t.name !== "roles" && t.name !== "permissions"
-  ),
+  ...JUNCTION_TABLES.filter((t) => t.name !== "roles" && t.name !== "permissions"),
 ];
 
 function generateColumnSQL(col: Column): string {
@@ -1306,7 +1186,7 @@ function generateForeignKeySQL(table: TableDef): string[] {
     for (const fk of table.foreignKeys) {
       statements.push(
         `ALTER TABLE "${table.name}" ADD CONSTRAINT "fk_${table.name}_${fk.column}" ` +
-          `FOREIGN KEY ("${fk.column}") REFERENCES "${fk.references.table}" ("${fk.references.column}");`
+          `FOREIGN KEY ("${fk.column}") REFERENCES "${fk.references.table}" ("${fk.references.column}");`,
       );
     }
   }
@@ -1315,7 +1195,7 @@ function generateForeignKeySQL(table: TableDef): string[] {
   if (table.selfRef) {
     statements.push(
       `ALTER TABLE "${table.name}" ADD CONSTRAINT "fk_${table.name}_${table.selfRef.column}" ` +
-        `FOREIGN KEY ("${table.selfRef.column}") REFERENCES "${table.name}" ("id");`
+        `FOREIGN KEY ("${table.selfRef.column}") REFERENCES "${table.name}" ("id");`,
     );
   }
 
@@ -1323,13 +1203,7 @@ function generateForeignKeySQL(table: TableDef): string[] {
 }
 
 async function main() {
-  const migrationsDir = join(
-    import.meta.dirname,
-    "..",
-    "hasura",
-    "migrations",
-    "default"
-  );
+  const migrationsDir = join(import.meta.dirname, "..", "hasura", "migrations", "default");
   const timestamp = "20240101000000";
   const migrationDir = join(migrationsDir, `${timestamp}_init`);
 

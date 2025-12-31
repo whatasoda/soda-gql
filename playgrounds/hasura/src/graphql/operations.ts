@@ -1,12 +1,12 @@
 import { gql } from "@/graphql-system";
 import {
-  ProductFragment,
-  ProductVariantFragment,
-  UserFragment,
   ArticleFragment,
   OrderFragment,
   OrderItemFragment,
+  ProductFragment,
+  ProductVariantFragment,
   StreetFragment,
+  UserFragment,
 } from "./fragments";
 
 /**

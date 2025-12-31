@@ -36,9 +36,7 @@ const TABLES: TableMeta[] = [
   { name: "regions" },
   {
     name: "districts",
-    foreignKeys: [
-      { column: "region_id", references: { table: "regions", column: "id" } },
-    ],
+    foreignKeys: [{ column: "region_id", references: { table: "regions", column: "id" } }],
   },
   {
     name: "cities",
@@ -51,9 +49,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "neighborhoods",
-    foreignKeys: [
-      { column: "city_id", references: { table: "cities", column: "id" } },
-    ],
+    foreignKeys: [{ column: "city_id", references: { table: "cities", column: "id" } }],
   },
   {
     name: "streets",
@@ -80,9 +76,7 @@ const TABLES: TableMeta[] = [
   { name: "stores" },
   {
     name: "customers",
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "customer_addresses",
@@ -236,9 +230,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "coupons",
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "order_coupons",
@@ -249,9 +241,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "inventory_locations",
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "inventory_levels",
@@ -280,22 +270,16 @@ const TABLES: TableMeta[] = [
   // SNS
   {
     name: "user_profiles",
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
   {
     name: "posts",
-    foreignKeys: [
-      { column: "author_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "author_id", references: { table: "users", column: "id" } }],
     selfRef: { column: "reply_to_id", nullable: true },
   },
   {
     name: "post_media",
-    foreignKeys: [
-      { column: "post_id", references: { table: "posts", column: "id" } },
-    ],
+    foreignKeys: [{ column: "post_id", references: { table: "posts", column: "id" } }],
   },
   {
     name: "likes",
@@ -389,29 +373,21 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "user_settings",
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
   {
     name: "user_sessions",
-    foreignKeys: [
-      { column: "user_id", references: { table: "users", column: "id" } },
-    ],
+    foreignKeys: [{ column: "user_id", references: { table: "users", column: "id" } }],
   },
 
   // CMS
   {
     name: "authors",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "page_templates",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "pages",
@@ -440,9 +416,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "article_categories",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -457,9 +431,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "tags",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "article_tags",
@@ -470,16 +442,12 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "comments",
-    foreignKeys: [
-      { column: "article_id", references: { table: "articles", column: "id" } },
-    ],
+    foreignKeys: [{ column: "article_id", references: { table: "articles", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
     name: "media_folders",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -494,9 +462,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "menus",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "menu_items",
@@ -508,41 +474,29 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "forms",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "form_submissions",
-    foreignKeys: [
-      { column: "form_id", references: { table: "forms", column: "id" } },
-    ],
+    foreignKeys: [{ column: "form_id", references: { table: "forms", column: "id" } }],
   },
   {
     name: "redirects",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "seo_settings",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
   {
     name: "analytics_events",
-    foreignKeys: [
-      { column: "site_id", references: { table: "sites", column: "id" } },
-    ],
+    foreignKeys: [{ column: "site_id", references: { table: "sites", column: "id" } }],
   },
 
   // Junction tables
   {
     name: "ec_categories",
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
     selfRef: { column: "parent_id", nullable: true },
   },
   {
@@ -638,9 +592,7 @@ const TABLES: TableMeta[] = [
   },
   {
     name: "collections",
-    foreignKeys: [
-      { column: "store_id", references: { table: "stores", column: "id" } },
-    ],
+    foreignKeys: [{ column: "store_id", references: { table: "stores", column: "id" } }],
   },
   {
     name: "product_collections",
@@ -655,10 +607,7 @@ const TABLES: TableMeta[] = [
 ];
 
 // Build reverse relationship map
-function buildReverseRelationships(): Map<
-  string,
-  { fromTable: string; column: string }[]
-> {
+function buildReverseRelationships(): Map<string, { fromTable: string; column: string }[]> {
   const map = new Map<string, { fromTable: string; column: string }[]>();
 
   for (const table of TABLES) {
@@ -668,18 +617,14 @@ function buildReverseRelationships(): Map<
         if (!map.has(targetTable)) {
           map.set(targetTable, []);
         }
-        map
-          .get(targetTable)
-          ?.push({ fromTable: table.name, column: fk.column });
+        map.get(targetTable)?.push({ fromTable: table.name, column: fk.column });
       }
     }
     if (table.selfRef) {
       if (!map.has(table.name)) {
         map.set(table.name, []);
       }
-      map
-        .get(table.name)
-        ?.push({ fromTable: table.name, column: table.selfRef.column });
+      map.get(table.name)?.push({ fromTable: table.name, column: table.selfRef.column });
     }
   }
 
@@ -801,9 +746,7 @@ async function main() {
   }
 
   // Write tables.yaml index
-  const tablesIndex = TABLES.map(
-    (t) => `- "!include public_${t.name}.yaml"`
-  ).join("\n");
+  const tablesIndex = TABLES.map((t) => `- "!include public_${t.name}.yaml"`).join("\n");
   await writeFile(join(tablesDir, "tables.yaml"), `${tablesIndex}\n`);
 
   // Write version.yaml
@@ -841,9 +784,7 @@ function toYaml(obj: TableYaml, indent = 0): string {
     for (const rel of obj.object_relationships) {
       lines.push(`${spaces}  - name: ${rel.name}`);
       lines.push(`${spaces}    using:`);
-      lines.push(
-        `${spaces}      foreign_key_constraint_on: ${rel.using.foreign_key_constraint_on}`
-      );
+      lines.push(`${spaces}      foreign_key_constraint_on: ${rel.using.foreign_key_constraint_on}`);
     }
   }
 
@@ -854,16 +795,10 @@ function toYaml(obj: TableYaml, indent = 0): string {
       lines.push(`${spaces}  - name: ${rel.name}`);
       lines.push(`${spaces}    using:`);
       lines.push(`${spaces}      foreign_key_constraint_on:`);
-      lines.push(
-        `${spaces}        column: ${rel.using.foreign_key_constraint_on.column}`
-      );
+      lines.push(`${spaces}        column: ${rel.using.foreign_key_constraint_on.column}`);
       lines.push(`${spaces}        table:`);
-      lines.push(
-        `${spaces}          name: ${rel.using.foreign_key_constraint_on.table.name}`
-      );
-      lines.push(
-        `${spaces}          schema: ${rel.using.foreign_key_constraint_on.table.schema}`
-      );
+      lines.push(`${spaces}          name: ${rel.using.foreign_key_constraint_on.table.name}`);
+      lines.push(`${spaces}          schema: ${rel.using.foreign_key_constraint_on.table.schema}`);
     }
   }
 

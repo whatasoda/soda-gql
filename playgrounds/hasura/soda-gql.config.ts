@@ -1,13 +1,13 @@
-import { defineConfig } from '@soda-gql/config';
+import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
-  outdir: './graphql-system',
-  include: ['./src/**/*.ts'],
-  analyzer: 'ts',
+  outdir: "./graphql-system",
+  include: ["./src/**/*.ts"],
+  analyzer: "ts",
   schemas: {
     default: {
-      schema: './schema.graphql',
-      inject: { scalars: './scalars.ts' },
+      schema: "./schema.graphql",
+      inject: { scalars: "./scalars.ts" },
     },
   },
 });
