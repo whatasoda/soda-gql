@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/tsc-plugin",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "TypeScript compiler plugin for soda-gql",
   "type": "module",
   "private": false,

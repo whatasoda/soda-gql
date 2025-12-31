@@ -42,7 +42,7 @@
     },
     "packages/babel-plugin": {
       "name": "@soda-gql/babel-plugin",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@babel/traverse": "^7.24.0",
@@ -97,7 +97,7 @@
     },
     "packages/cli": {
       "name": "@soda-gql/cli",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "bin": {
         "soda-gql": "./dist/index.cjs",
       },
@@ -114,7 +114,7 @@
     },
     "packages/codegen": {
       "name": "@soda-gql/codegen",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -179,7 +179,7 @@
     },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@soda-gql/babel-plugin": "workspace:*",
@@ -216,7 +216,7 @@
     },
     "packages/swc-transformer": {
       "name": "@soda-gql/swc-transformer",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@soda-gql/builder": "workspace:*",
@@ -236,7 +236,7 @@
     },
     "packages/tsc-plugin": {
       "name": "@soda-gql/tsc-plugin",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -249,7 +249,7 @@
     },
     "packages/tsc-transformer": {
       "name": "@soda-gql/tsc-transformer",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -268,7 +268,7 @@
     },
     "packages/vite-plugin": {
       "name": "@soda-gql/vite-plugin",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@soda-gql/babel-plugin": "workspace:*",
@@ -287,7 +287,7 @@
     },
     "packages/webpack-plugin": {
       "name": "@soda-gql/webpack-plugin",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "dependencies": {
         "@soda-gql/babel-transformer": "workspace:*",
         "@soda-gql/builder": "workspace:*",
