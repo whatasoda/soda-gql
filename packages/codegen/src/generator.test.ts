@@ -248,7 +248,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain('Status: { name: "Status"');
+    // Granular format: const enum_default_Status = { name: "Status", ...
+    expect(result.code).toContain('const enum_default_Status = { name: "Status"');
     expect(result.code).toContain("values:");
     expect(result.code).toContain("ACTIVE: true");
     expect(result.code).toContain("INACTIVE: true");
@@ -269,7 +270,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain('CreateUserInput: { name: "CreateUserInput"');
+    // Granular format: const input_default_CreateUserInput = { name: "CreateUserInput", ...
+    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput"');
     expect(result.code).toContain("fields:");
     expect(result.stats.inputs).toBe(1);
   });
@@ -285,7 +287,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain('SearchResult: { name: "SearchResult"');
+    // Granular format: const union_default_SearchResult = { name: "SearchResult", ...
+    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult"');
     expect(result.code).toContain("types:");
     expect(result.code).toContain("User: true");
     expect(result.code).toContain("Post: true");
@@ -301,7 +304,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    expect(result.code).toContain('DateTime: { name: "DateTime"');
+    // Granular format: const scalar_default_DateTime = { name: "DateTime", ...
+    expect(result.code).toContain('const scalar_default_DateTime = { name: "DateTime"');
     expect(result.code).toContain("$type:");
   });
 
@@ -319,12 +323,12 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Builtin scalars should be defined
-    expect(result.code).toContain('ID: { name: "ID"');
-    expect(result.code).toContain('String: { name: "String"');
-    expect(result.code).toContain('Int: { name: "Int"');
-    expect(result.code).toContain('Float: { name: "Float"');
-    expect(result.code).toContain('Boolean: { name: "Boolean"');
+    // Builtin scalars should be defined (granular format)
+    expect(result.code).toContain('const scalar_default_ID = { name: "ID"');
+    expect(result.code).toContain('const scalar_default_String = { name: "String"');
+    expect(result.code).toContain('const scalar_default_Int = { name: "Int"');
+    expect(result.code).toContain('const scalar_default_Float = { name: "Float"');
+    expect(result.code).toContain('const scalar_default_Boolean = { name: "Boolean"');
   });
 
   test("excludes introspection types", () => {
