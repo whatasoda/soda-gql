@@ -1,190 +1,235 @@
-import { fragment } from '@soda-gql/core';
+import { gql } from "@/graphql-system";
 
 /**
  * Example fragments for testing type-check performance.
+ * Note: This schema uses flat table structure without explicit Hasura relationships.
  */
 
-export const ProductBasic = fragment('Products', {
-  id: true,
-  name: true,
-  slug: true,
-  basePrice: true,
-  isPublished: true,
-  createdAt: true,
-});
+// Product fragment
+export const ProductFragment = gql.default(({ fragment }) =>
+  fragment.products({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.slug(),
+      ...f.description(),
+      ...f.base_price(),
+      ...f.is_published(),
+      ...f.brand_id(),
+      ...f.store_id(),
+      ...f.created_at(),
+      ...f.updated_at(),
+    }),
+  }),
+);
 
-export const ProductWithBrand = fragment('Products', {
-  ...ProductBasic.selection,
-  brand: {
-    id: true,
-    name: true,
-    slug: true,
-  },
-});
+// Product variant fragment
+export const ProductVariantFragment = gql.default(({ fragment }) =>
+  fragment.product_variants({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.sku(),
+      ...f.price(),
+      ...f.stock_quantity(),
+      ...f.product_id(),
+      ...f.color_id(),
+      ...f.size_id(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-export const ProductWithVariants = fragment('Products', {
-  ...ProductWithBrand.selection,
-  productVariants: {
-    id: true,
-    sku: true,
-    price: true,
-    stockQuantity: true,
-    color: {
-      id: true,
-      name: true,
-      hexCode: true,
-    },
-    size: {
-      id: true,
-      name: true,
-      code: true,
-    },
-  },
-});
+// User fragment
+export const UserFragment = gql.default(({ fragment }) =>
+  fragment.users({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.username(),
+      ...f.email(),
+      ...f.display_name(),
+      ...f.is_verified(),
+      ...f.bio(),
+      ...f.avatar_url(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-export const UserBasic = fragment('Users', {
-  id: true,
-  username: true,
-  email: true,
-  displayName: true,
-  isVerified: true,
-});
+// User profile fragment
+export const UserProfileFragment = gql.default(({ fragment }) =>
+  fragment.user_profiles({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.user_id(),
+      ...f.website(),
+      ...f.location(),
+      ...f.birthday(),
+      ...f.is_private(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-export const UserWithProfile = fragment('Users', {
-  ...UserBasic.selection,
-  userProfile: {
-    website: true,
-    location: true,
-    birthday: true,
-    isPrivate: true,
-  },
-});
+// Post fragment
+export const PostFragment = gql.default(({ fragment }) =>
+  fragment.posts({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.author_id(),
+      ...f.content(),
+      ...f.is_published(),
+      ...f.published_at(),
+      ...f.view_count(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-export const PostWithAuthor = fragment('Posts', {
-  id: true,
-  content: true,
-  isPublished: true,
-  publishedAt: true,
-  viewCount: true,
-  author: UserBasic.selection,
-});
+// Article fragment
+export const ArticleFragment = gql.default(({ fragment }) =>
+  fragment.articles({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.title(),
+      ...f.slug(),
+      ...f.excerpt(),
+      ...f.content(),
+      ...f.is_featured(),
+      ...f.is_published(),
+      ...f.published_at(),
+      ...f.view_count(),
+      ...f.author_id(),
+      ...f.site_id(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-export const ArticleWithCategories = fragment('Articles', {
-  id: true,
-  title: true,
-  slug: true,
-  excerpt: true,
-  content: true,
-  isFeatured: true,
-  isPublished: true,
-  publishedAt: true,
-  viewCount: true,
-  author: {
-    id: true,
-    name: true,
-    email: true,
-  },
-  articleCategoryAssignments: {
-    category: {
-      id: true,
-      name: true,
-      slug: true,
-      parent: {
-        id: true,
-        name: true,
-      },
-    },
-  },
-});
+// Order fragment
+export const OrderFragment = gql.default(({ fragment }) =>
+  fragment.orders({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.order_number(),
+      ...f.total_amount(),
+      ...f.notes(),
+      ...f.customer_id(),
+      ...f.status_id(),
+      ...f.shipping_address_id(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-// Deep nesting example (5+ levels)
-export const DeepNestedLocation = fragment('Streets', {
-  id: true,
-  name: true,
-  postalCode: true,
-  neighborhood: {
-    id: true,
-    name: true,
-    population: true,
-    city: {
-      id: true,
-      name: true,
-      postalCodePrefix: true,
-      district: {
-        id: true,
-        name: true,
-        code: true,
-        region: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-    },
-  },
-});
+// Order item fragment
+export const OrderItemFragment = gql.default(({ fragment }) =>
+  fragment.order_items({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.order_id(),
+      ...f.variant_id(),
+      ...f.quantity(),
+      ...f.unit_price(),
+      ...f.total_price(),
+      ...f.created_at(),
+    }),
+  }),
+);
 
-// Order with multiple relations
-export const OrderComplete = fragment('Orders', {
-  id: true,
-  orderNumber: true,
-  totalAmount: true,
-  notes: true,
-  createdAt: true,
-  customer: {
-    id: true,
-    email: true,
-    firstName: true,
-    lastName: true,
-  },
-  status: {
-    id: true,
-    name: true,
-    code: true,
-    isFinal: true,
-  },
-  shippingAddress: {
-    id: true,
-    label: true,
-    street: true,
-    city: true,
-    postalCode: true,
-    country: {
-      id: true,
-      name: true,
-      code: true,
-    },
-  },
-  orderItems: {
-    id: true,
-    quantity: true,
-    unitPrice: true,
-    totalPrice: true,
-    variant: {
-      id: true,
-      sku: true,
-      price: true,
-      product: {
-        id: true,
-        name: true,
-        slug: true,
-      },
-    },
-  },
-  payments: {
-    id: true,
-    amount: true,
-    transactionId: true,
-    paidAt: true,
-    method: {
-      id: true,
-      name: true,
-      code: true,
-    },
-    status: {
-      id: true,
-      name: true,
-      code: true,
-    },
-  },
-});
+// Brand fragment
+export const BrandFragment = gql.default(({ fragment }) =>
+  fragment.brands({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.slug(),
+      ...f.logo_url(),
+      ...f.created_at(),
+    }),
+  }),
+);
+
+// Color fragment
+export const ColorFragment = gql.default(({ fragment }) =>
+  fragment.colors({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.hex_code(),
+      ...f.sort_order(),
+    }),
+  }),
+);
+
+// Size fragment
+export const SizeFragment = gql.default(({ fragment }) =>
+  fragment.sizes({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.code(),
+      ...f.sort_order(),
+    }),
+  }),
+);
+
+// Street fragment (for deep nesting chain)
+export const StreetFragment = gql.default(({ fragment }) =>
+  fragment.streets({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.postal_code(),
+      ...f.neighborhood_id(),
+      ...f.created_at(),
+    }),
+  }),
+);
+
+// Neighborhood fragment
+export const NeighborhoodFragment = gql.default(({ fragment }) =>
+  fragment.neighborhoods({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.population(),
+      ...f.city_id(),
+    }),
+  }),
+);
+
+// City fragment
+export const CityFragment = gql.default(({ fragment }) =>
+  fragment.cities({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.postal_code_prefix(),
+      ...f.district_id(),
+    }),
+  }),
+);
+
+// District fragment
+export const DistrictFragment = gql.default(({ fragment }) =>
+  fragment.districts({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.code(),
+      ...f.region_id(),
+    }),
+  }),
+);
+
+// Region fragment
+export const RegionFragment = gql.default(({ fragment }) =>
+  fragment.regions({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+      ...f.code(),
+      ...f.created_at(),
+    }),
+  }),
+);

@@ -5,6 +5,7 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "types": ["node"],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
@@ -18,8 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+      "@/graphql-system": ["./graphql-system/index.ts"]
     }
   },
-  "include": ["src", "scripts", "codegen-fixture"]
+  "include": ["src", "scripts"]
 }

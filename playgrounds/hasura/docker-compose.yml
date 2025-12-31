@@ -1,18 +1,19 @@
-version: '3.8'
+# cspell:words isready,healthcheck
+version: "3.8"
 
 services:
   postgres:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_PASSWORD: postgres-password
       POSTGRES_DB: hasura_perf
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,15 +21,15 @@ services:
   hasura:
     image: hasura/graphql-engine:v2.40.0
     ports:
-      - '8080:8080'
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/hasura_perf
-      HASURA_GRAPHQL_ENABLE_CONSOLE: 'true'
-      HASURA_GRAPHQL_DEV_MODE: 'true'
-      HASURA_GRAPHQL_ADMIN_SECRET: myadminsecret
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgres-password@postgres:5432/hasura_perf
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: my-admin-secret
       HASURA_GRAPHQL_METADATA_DIR: /hasura-metadata
     volumes:
       - ./hasura/metadata:/hasura-metadata

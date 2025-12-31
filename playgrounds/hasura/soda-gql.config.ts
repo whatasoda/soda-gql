@@ -7,6 +7,7 @@ export default defineConfig({
   schemas: {
     default: {
       schema: './schema.graphql',
+      inject: { scalars: './scalars.ts' },
     },
   },
 });

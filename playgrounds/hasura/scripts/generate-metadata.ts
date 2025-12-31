@@ -3,8 +3,8 @@
  * Generates Hasura metadata for table tracking and relationships.
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 interface ForeignKey {
   column: string;
@@ -20,475 +20,645 @@ interface TableMeta {
 // Same table definitions as generate-schema.ts (simplified for metadata)
 const TABLES: TableMeta[] = [
   // EC Master
-  { name: 'brands' },
-  { name: 'colors' },
-  { name: 'sizes' },
-  { name: 'currencies' },
-  { name: 'countries' },
-  { name: 'order_statuses' },
-  { name: 'payment_methods' },
-  { name: 'payment_statuses' },
-  { name: 'shipping_carriers' },
-  { name: 'shipment_statuses' },
-  { name: 'return_statuses' },
+  { name: "brands" },
+  { name: "colors" },
+  { name: "sizes" },
+  { name: "currencies" },
+  { name: "countries" },
+  { name: "order_statuses" },
+  { name: "payment_methods" },
+  { name: "payment_statuses" },
+  { name: "shipping_carriers" },
+  { name: "shipment_statuses" },
+  { name: "return_statuses" },
 
   // Deep nesting
-  { name: 'regions' },
+  { name: "regions" },
   {
-    name: 'districts',
-    foreignKeys: [{ column: 'region_id', references: { table: 'regions', column: 'id' } }],
+    name: "districts",
+    foreignKeys: [
+      { column: "region_id", references: { table: "regions", column: "id" } },
+    ],
   },
   {
-    name: 'cities',
-    foreignKeys: [{ column: 'district_id', references: { table: 'districts', column: 'id' } }],
+    name: "cities",
+    foreignKeys: [
+      {
+        column: "district_id",
+        references: { table: "districts", column: "id" },
+      },
+    ],
   },
   {
-    name: 'neighborhoods',
-    foreignKeys: [{ column: 'city_id', references: { table: 'cities', column: 'id' } }],
+    name: "neighborhoods",
+    foreignKeys: [
+      { column: "city_id", references: { table: "cities", column: "id" } },
+    ],
   },
   {
-    name: 'streets',
-    foreignKeys: [{ column: 'neighborhood_id', references: { table: 'neighborhoods', column: 'id' } }],
+    name: "streets",
+    foreignKeys: [
+      {
+        column: "neighborhood_id",
+        references: { table: "neighborhoods", column: "id" },
+      },
+    ],
   },
 
   // SNS base
-  { name: 'users' },
-  { name: 'report_statuses' },
+  { name: "users" },
+  { name: "report_statuses" },
 
   // CMS base
-  { name: 'sites' },
+  { name: "sites" },
 
   // Junction base
-  { name: 'roles' },
-  { name: 'permissions' },
+  { name: "roles" },
+  { name: "permissions" },
 
   // EC Core
-  { name: 'stores' },
+  { name: "stores" },
   {
-    name: 'customers',
-    foreignKeys: [{ column: 'store_id', references: { table: 'stores', column: 'id' } }],
-  },
-  {
-    name: 'customer_addresses',
+    name: "customers",
     foreignKeys: [
-      { column: 'customer_id', references: { table: 'customers', column: 'id' } },
-      { column: 'country_id', references: { table: 'countries', column: 'id' } },
+      { column: "store_id", references: { table: "stores", column: "id" } },
     ],
   },
   {
-    name: 'products',
+    name: "customer_addresses",
     foreignKeys: [
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
-      { column: 'brand_id', references: { table: 'brands', column: 'id' } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
+      {
+        column: "country_id",
+        references: { table: "countries", column: "id" },
+      },
     ],
   },
   {
-    name: 'product_variants',
+    name: "products",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'color_id', references: { table: 'colors', column: 'id' } },
-      { column: 'size_id', references: { table: 'sizes', column: 'id' } },
+      { column: "store_id", references: { table: "stores", column: "id" } },
+      { column: "brand_id", references: { table: "brands", column: "id" } },
     ],
   },
   {
-    name: 'product_images',
+    name: "product_variants",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'variant_id', references: { table: 'product_variants', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      { column: "color_id", references: { table: "colors", column: "id" } },
+      { column: "size_id", references: { table: "sizes", column: "id" } },
     ],
   },
   {
-    name: 'carts',
-    foreignKeys: [{ column: 'customer_id', references: { table: 'customers', column: 'id' } }],
-  },
-  {
-    name: 'cart_items',
+    name: "product_images",
     foreignKeys: [
-      { column: 'cart_id', references: { table: 'carts', column: 'id' } },
-      { column: 'variant_id', references: { table: 'product_variants', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      {
+        column: "variant_id",
+        references: { table: "product_variants", column: "id" },
+      },
     ],
   },
   {
-    name: 'orders',
+    name: "carts",
     foreignKeys: [
-      { column: 'customer_id', references: { table: 'customers', column: 'id' } },
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
-      { column: 'status_id', references: { table: 'order_statuses', column: 'id' } },
-      { column: 'shipping_address_id', references: { table: 'customer_addresses', column: 'id' } },
-      { column: 'billing_address_id', references: { table: 'customer_addresses', column: 'id' } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
     ],
   },
   {
-    name: 'order_items',
+    name: "cart_items",
     foreignKeys: [
-      { column: 'order_id', references: { table: 'orders', column: 'id' } },
-      { column: 'variant_id', references: { table: 'product_variants', column: 'id' } },
+      { column: "cart_id", references: { table: "carts", column: "id" } },
+      {
+        column: "variant_id",
+        references: { table: "product_variants", column: "id" },
+      },
     ],
   },
   {
-    name: 'payments',
+    name: "orders",
     foreignKeys: [
-      { column: 'order_id', references: { table: 'orders', column: 'id' } },
-      { column: 'method_id', references: { table: 'payment_methods', column: 'id' } },
-      { column: 'status_id', references: { table: 'payment_statuses', column: 'id' } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
+      { column: "store_id", references: { table: "stores", column: "id" } },
+      {
+        column: "status_id",
+        references: { table: "order_statuses", column: "id" },
+      },
+      {
+        column: "shipping_address_id",
+        references: { table: "customer_addresses", column: "id" },
+      },
+      {
+        column: "billing_address_id",
+        references: { table: "customer_addresses", column: "id" },
+      },
     ],
   },
   {
-    name: 'shipments',
+    name: "order_items",
     foreignKeys: [
-      { column: 'order_id', references: { table: 'orders', column: 'id' } },
-      { column: 'carrier_id', references: { table: 'shipping_carriers', column: 'id' } },
-      { column: 'status_id', references: { table: 'shipment_statuses', column: 'id' } },
+      { column: "order_id", references: { table: "orders", column: "id" } },
+      {
+        column: "variant_id",
+        references: { table: "product_variants", column: "id" },
+      },
     ],
   },
   {
-    name: 'reviews',
+    name: "payments",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'customer_id', references: { table: 'customers', column: 'id' } },
-      { column: 'order_item_id', references: { table: 'order_items', column: 'id' } },
+      { column: "order_id", references: { table: "orders", column: "id" } },
+      {
+        column: "method_id",
+        references: { table: "payment_methods", column: "id" },
+      },
+      {
+        column: "status_id",
+        references: { table: "payment_statuses", column: "id" },
+      },
     ],
   },
   {
-    name: 'wishlists',
-    foreignKeys: [{ column: 'customer_id', references: { table: 'customers', column: 'id' } }],
-  },
-  {
-    name: 'wishlist_items',
+    name: "shipments",
     foreignKeys: [
-      { column: 'wishlist_id', references: { table: 'wishlists', column: 'id' } },
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
+      { column: "order_id", references: { table: "orders", column: "id" } },
+      {
+        column: "carrier_id",
+        references: { table: "shipping_carriers", column: "id" },
+      },
+      {
+        column: "status_id",
+        references: { table: "shipment_statuses", column: "id" },
+      },
     ],
   },
   {
-    name: 'coupons',
-    foreignKeys: [{ column: 'store_id', references: { table: 'stores', column: 'id' } }],
-  },
-  {
-    name: 'order_coupons',
+    name: "reviews",
     foreignKeys: [
-      { column: 'order_id', references: { table: 'orders', column: 'id' } },
-      { column: 'coupon_id', references: { table: 'coupons', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
+      {
+        column: "order_item_id",
+        references: { table: "order_items", column: "id" },
+      },
     ],
   },
   {
-    name: 'inventory_locations',
-    foreignKeys: [{ column: 'store_id', references: { table: 'stores', column: 'id' } }],
-  },
-  {
-    name: 'inventory_levels',
+    name: "wishlists",
     foreignKeys: [
-      { column: 'variant_id', references: { table: 'product_variants', column: 'id' } },
-      { column: 'location_id', references: { table: 'inventory_locations', column: 'id' } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
     ],
   },
   {
-    name: 'return_requests',
+    name: "wishlist_items",
     foreignKeys: [
-      { column: 'order_id', references: { table: 'orders', column: 'id' } },
-      { column: 'status_id', references: { table: 'return_statuses', column: 'id' } },
+      {
+        column: "wishlist_id",
+        references: { table: "wishlists", column: "id" },
+      },
+      { column: "product_id", references: { table: "products", column: "id" } },
+    ],
+  },
+  {
+    name: "coupons",
+    foreignKeys: [
+      { column: "store_id", references: { table: "stores", column: "id" } },
+    ],
+  },
+  {
+    name: "order_coupons",
+    foreignKeys: [
+      { column: "order_id", references: { table: "orders", column: "id" } },
+      { column: "coupon_id", references: { table: "coupons", column: "id" } },
+    ],
+  },
+  {
+    name: "inventory_locations",
+    foreignKeys: [
+      { column: "store_id", references: { table: "stores", column: "id" } },
+    ],
+  },
+  {
+    name: "inventory_levels",
+    foreignKeys: [
+      {
+        column: "variant_id",
+        references: { table: "product_variants", column: "id" },
+      },
+      {
+        column: "location_id",
+        references: { table: "inventory_locations", column: "id" },
+      },
+    ],
+  },
+  {
+    name: "return_requests",
+    foreignKeys: [
+      { column: "order_id", references: { table: "orders", column: "id" } },
+      {
+        column: "status_id",
+        references: { table: "return_statuses", column: "id" },
+      },
     ],
   },
 
   // SNS
   {
-    name: 'user_profiles',
-    foreignKeys: [{ column: 'user_id', references: { table: 'users', column: 'id' } }],
-  },
-  {
-    name: 'posts',
-    foreignKeys: [{ column: 'author_id', references: { table: 'users', column: 'id' } }],
-    selfRef: { column: 'reply_to_id', nullable: true },
-  },
-  {
-    name: 'post_media',
-    foreignKeys: [{ column: 'post_id', references: { table: 'posts', column: 'id' } }],
-  },
-  {
-    name: 'likes',
+    name: "user_profiles",
     foreignKeys: [
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
-      { column: 'post_id', references: { table: 'posts', column: 'id' } },
+      { column: "user_id", references: { table: "users", column: "id" } },
     ],
   },
   {
-    name: 'bookmarks',
+    name: "posts",
     foreignKeys: [
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
-      { column: 'post_id', references: { table: 'posts', column: 'id' } },
+      { column: "author_id", references: { table: "users", column: "id" } },
+    ],
+    selfRef: { column: "reply_to_id", nullable: true },
+  },
+  {
+    name: "post_media",
+    foreignKeys: [
+      { column: "post_id", references: { table: "posts", column: "id" } },
     ],
   },
   {
-    name: 'follows',
+    name: "likes",
     foreignKeys: [
-      { column: 'follower_id', references: { table: 'users', column: 'id' } },
-      { column: 'following_id', references: { table: 'users', column: 'id' } },
+      { column: "user_id", references: { table: "users", column: "id" } },
+      { column: "post_id", references: { table: "posts", column: "id" } },
     ],
   },
   {
-    name: 'blocks',
+    name: "bookmarks",
     foreignKeys: [
-      { column: 'blocker_id', references: { table: 'users', column: 'id' } },
-      { column: 'blocked_id', references: { table: 'users', column: 'id' } },
-    ],
-  },
-  { name: 'conversations' },
-  {
-    name: 'conversation_participants',
-    foreignKeys: [
-      { column: 'conversation_id', references: { table: 'conversations', column: 'id' } },
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
+      { column: "user_id", references: { table: "users", column: "id" } },
+      { column: "post_id", references: { table: "posts", column: "id" } },
     ],
   },
   {
-    name: 'messages',
+    name: "follows",
     foreignKeys: [
-      { column: 'conversation_id', references: { table: 'conversations', column: 'id' } },
-      { column: 'sender_id', references: { table: 'users', column: 'id' } },
-    ],
-    selfRef: { column: 'reply_to_id', nullable: true },
-  },
-  {
-    name: 'message_reactions',
-    foreignKeys: [
-      { column: 'message_id', references: { table: 'messages', column: 'id' } },
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
+      { column: "follower_id", references: { table: "users", column: "id" } },
+      { column: "following_id", references: { table: "users", column: "id" } },
     ],
   },
   {
-    name: 'notifications',
+    name: "blocks",
     foreignKeys: [
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
-      { column: 'actor_id', references: { table: 'users', column: 'id' } },
+      { column: "blocker_id", references: { table: "users", column: "id" } },
+      { column: "blocked_id", references: { table: "users", column: "id" } },
     ],
   },
-  { name: 'hashtags' },
+  { name: "conversations" },
   {
-    name: 'post_hashtags',
+    name: "conversation_participants",
     foreignKeys: [
-      { column: 'post_id', references: { table: 'posts', column: 'id' } },
-      { column: 'hashtag_id', references: { table: 'hashtags', column: 'id' } },
-    ],
-  },
-  {
-    name: 'mentions',
-    foreignKeys: [
-      { column: 'post_id', references: { table: 'posts', column: 'id' } },
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
+      {
+        column: "conversation_id",
+        references: { table: "conversations", column: "id" },
+      },
+      { column: "user_id", references: { table: "users", column: "id" } },
     ],
   },
   {
-    name: 'reports',
+    name: "messages",
     foreignKeys: [
-      { column: 'reporter_id', references: { table: 'users', column: 'id' } },
-      { column: 'post_id', references: { table: 'posts', column: 'id' } },
-      { column: 'status_id', references: { table: 'report_statuses', column: 'id' } },
+      {
+        column: "conversation_id",
+        references: { table: "conversations", column: "id" },
+      },
+      { column: "sender_id", references: { table: "users", column: "id" } },
+    ],
+    selfRef: { column: "reply_to_id", nullable: true },
+  },
+  {
+    name: "message_reactions",
+    foreignKeys: [
+      { column: "message_id", references: { table: "messages", column: "id" } },
+      { column: "user_id", references: { table: "users", column: "id" } },
     ],
   },
   {
-    name: 'user_settings',
-    foreignKeys: [{ column: 'user_id', references: { table: 'users', column: 'id' } }],
+    name: "notifications",
+    foreignKeys: [
+      { column: "user_id", references: { table: "users", column: "id" } },
+      { column: "actor_id", references: { table: "users", column: "id" } },
+    ],
+  },
+  { name: "hashtags" },
+  {
+    name: "post_hashtags",
+    foreignKeys: [
+      { column: "post_id", references: { table: "posts", column: "id" } },
+      { column: "hashtag_id", references: { table: "hashtags", column: "id" } },
+    ],
   },
   {
-    name: 'user_sessions',
-    foreignKeys: [{ column: 'user_id', references: { table: 'users', column: 'id' } }],
+    name: "mentions",
+    foreignKeys: [
+      { column: "post_id", references: { table: "posts", column: "id" } },
+      { column: "user_id", references: { table: "users", column: "id" } },
+    ],
+  },
+  {
+    name: "reports",
+    foreignKeys: [
+      { column: "reporter_id", references: { table: "users", column: "id" } },
+      { column: "post_id", references: { table: "posts", column: "id" } },
+      {
+        column: "status_id",
+        references: { table: "report_statuses", column: "id" },
+      },
+    ],
+  },
+  {
+    name: "user_settings",
+    foreignKeys: [
+      { column: "user_id", references: { table: "users", column: "id" } },
+    ],
+  },
+  {
+    name: "user_sessions",
+    foreignKeys: [
+      { column: "user_id", references: { table: "users", column: "id" } },
+    ],
   },
 
   // CMS
   {
-    name: 'authors',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-  },
-  {
-    name: 'page_templates',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-  },
-  {
-    name: 'pages',
+    name: "authors",
     foreignKeys: [
-      { column: 'site_id', references: { table: 'sites', column: 'id' } },
-      { column: 'template_id', references: { table: 'page_templates', column: 'id' } },
-    ],
-    selfRef: { column: 'parent_id', nullable: true },
-  },
-  {
-    name: 'page_versions',
-    foreignKeys: [
-      { column: 'page_id', references: { table: 'pages', column: 'id' } },
-      { column: 'author_id', references: { table: 'authors', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
     ],
   },
   {
-    name: 'articles',
+    name: "page_templates",
     foreignKeys: [
-      { column: 'site_id', references: { table: 'sites', column: 'id' } },
-      { column: 'author_id', references: { table: 'authors', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
     ],
   },
   {
-    name: 'article_categories',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-    selfRef: { column: 'parent_id', nullable: true },
+    name: "pages",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+      {
+        column: "template_id",
+        references: { table: "page_templates", column: "id" },
+      },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
   },
   {
-    name: 'article_category_assignments',
+    name: "page_versions",
     foreignKeys: [
-      { column: 'article_id', references: { table: 'articles', column: 'id' } },
-      { column: 'category_id', references: { table: 'article_categories', column: 'id' } },
+      { column: "page_id", references: { table: "pages", column: "id" } },
+      { column: "author_id", references: { table: "authors", column: "id" } },
     ],
   },
   {
-    name: 'tags',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-  },
-  {
-    name: 'article_tags',
+    name: "articles",
     foreignKeys: [
-      { column: 'article_id', references: { table: 'articles', column: 'id' } },
-      { column: 'tag_id', references: { table: 'tags', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
+      { column: "author_id", references: { table: "authors", column: "id" } },
     ],
   },
   {
-    name: 'comments',
-    foreignKeys: [{ column: 'article_id', references: { table: 'articles', column: 'id' } }],
-    selfRef: { column: 'parent_id', nullable: true },
-  },
-  {
-    name: 'media_folders',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-    selfRef: { column: 'parent_id', nullable: true },
-  },
-  {
-    name: 'media_files',
+    name: "article_categories",
     foreignKeys: [
-      { column: 'site_id', references: { table: 'sites', column: 'id' } },
-      { column: 'folder_id', references: { table: 'media_folders', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
+  },
+  {
+    name: "article_category_assignments",
+    foreignKeys: [
+      { column: "article_id", references: { table: "articles", column: "id" } },
+      {
+        column: "category_id",
+        references: { table: "article_categories", column: "id" },
+      },
     ],
   },
   {
-    name: 'menus',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
-  },
-  {
-    name: 'menu_items',
+    name: "tags",
     foreignKeys: [
-      { column: 'menu_id', references: { table: 'menus', column: 'id' } },
-      { column: 'page_id', references: { table: 'pages', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
     ],
-    selfRef: { column: 'parent_id', nullable: true },
   },
   {
-    name: 'forms',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
+    name: "article_tags",
+    foreignKeys: [
+      { column: "article_id", references: { table: "articles", column: "id" } },
+      { column: "tag_id", references: { table: "tags", column: "id" } },
+    ],
   },
   {
-    name: 'form_submissions',
-    foreignKeys: [{ column: 'form_id', references: { table: 'forms', column: 'id' } }],
+    name: "comments",
+    foreignKeys: [
+      { column: "article_id", references: { table: "articles", column: "id" } },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
   },
   {
-    name: 'redirects',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
+    name: "media_folders",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
   },
   {
-    name: 'seo_settings',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
+    name: "media_files",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+      {
+        column: "folder_id",
+        references: { table: "media_folders", column: "id" },
+      },
+    ],
   },
   {
-    name: 'analytics_events',
-    foreignKeys: [{ column: 'site_id', references: { table: 'sites', column: 'id' } }],
+    name: "menus",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+  },
+  {
+    name: "menu_items",
+    foreignKeys: [
+      { column: "menu_id", references: { table: "menus", column: "id" } },
+      { column: "page_id", references: { table: "pages", column: "id" } },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
+  },
+  {
+    name: "forms",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+  },
+  {
+    name: "form_submissions",
+    foreignKeys: [
+      { column: "form_id", references: { table: "forms", column: "id" } },
+    ],
+  },
+  {
+    name: "redirects",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+  },
+  {
+    name: "seo_settings",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
+  },
+  {
+    name: "analytics_events",
+    foreignKeys: [
+      { column: "site_id", references: { table: "sites", column: "id" } },
+    ],
   },
 
   // Junction tables
   {
-    name: 'ec_categories',
-    foreignKeys: [{ column: 'store_id', references: { table: 'stores', column: 'id' } }],
-    selfRef: { column: 'parent_id', nullable: true },
+    name: "ec_categories",
+    foreignKeys: [
+      { column: "store_id", references: { table: "stores", column: "id" } },
+    ],
+    selfRef: { column: "parent_id", nullable: true },
   },
   {
-    name: 'product_categories',
+    name: "product_categories",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'category_id', references: { table: 'ec_categories', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      {
+        column: "category_id",
+        references: { table: "ec_categories", column: "id" },
+      },
     ],
   },
   {
-    name: 'store_payment_methods',
+    name: "store_payment_methods",
     foreignKeys: [
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
-      { column: 'payment_method_id', references: { table: 'payment_methods', column: 'id' } },
+      { column: "store_id", references: { table: "stores", column: "id" } },
+      {
+        column: "payment_method_id",
+        references: { table: "payment_methods", column: "id" },
+      },
     ],
   },
   {
-    name: 'store_shipping_carriers',
+    name: "store_shipping_carriers",
     foreignKeys: [
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
-      { column: 'carrier_id', references: { table: 'shipping_carriers', column: 'id' } },
+      { column: "store_id", references: { table: "stores", column: "id" } },
+      {
+        column: "carrier_id",
+        references: { table: "shipping_carriers", column: "id" },
+      },
     ],
   },
   {
-    name: 'store_currencies',
+    name: "store_currencies",
     foreignKeys: [
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
-      { column: 'currency_id', references: { table: 'currencies', column: 'id' } },
+      { column: "store_id", references: { table: "stores", column: "id" } },
+      {
+        column: "currency_id",
+        references: { table: "currencies", column: "id" },
+      },
     ],
   },
   {
-    name: 'related_products',
+    name: "related_products",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'related_product_id', references: { table: 'products', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      {
+        column: "related_product_id",
+        references: { table: "products", column: "id" },
+      },
     ],
   },
   {
-    name: 'user_roles',
+    name: "user_roles",
     foreignKeys: [
-      { column: 'user_id', references: { table: 'users', column: 'id' } },
-      { column: 'role_id', references: { table: 'roles', column: 'id' } },
+      { column: "user_id", references: { table: "users", column: "id" } },
+      { column: "role_id", references: { table: "roles", column: "id" } },
     ],
   },
   {
-    name: 'role_permissions',
+    name: "role_permissions",
     foreignKeys: [
-      { column: 'role_id', references: { table: 'roles', column: 'id' } },
-      { column: 'permission_id', references: { table: 'permissions', column: 'id' } },
+      { column: "role_id", references: { table: "roles", column: "id" } },
+      {
+        column: "permission_id",
+        references: { table: "permissions", column: "id" },
+      },
     ],
   },
   {
-    name: 'author_articles',
+    name: "author_articles",
     foreignKeys: [
-      { column: 'author_id', references: { table: 'authors', column: 'id' } },
-      { column: 'article_id', references: { table: 'articles', column: 'id' } },
+      { column: "author_id", references: { table: "authors", column: "id" } },
+      { column: "article_id", references: { table: "articles", column: "id" } },
     ],
   },
   {
-    name: 'site_authors',
+    name: "site_authors",
     foreignKeys: [
-      { column: 'site_id', references: { table: 'sites', column: 'id' } },
-      { column: 'author_id', references: { table: 'authors', column: 'id' } },
+      { column: "site_id", references: { table: "sites", column: "id" } },
+      { column: "author_id", references: { table: "authors", column: "id" } },
     ],
   },
   {
-    name: 'customer_stores',
+    name: "customer_stores",
     foreignKeys: [
-      { column: 'customer_id', references: { table: 'customers', column: 'id' } },
-      { column: 'store_id', references: { table: 'stores', column: 'id' } },
+      {
+        column: "customer_id",
+        references: { table: "customers", column: "id" },
+      },
+      { column: "store_id", references: { table: "stores", column: "id" } },
     ],
   },
   {
-    name: 'collections',
-    foreignKeys: [{ column: 'store_id', references: { table: 'stores', column: 'id' } }],
+    name: "collections",
+    foreignKeys: [
+      { column: "store_id", references: { table: "stores", column: "id" } },
+    ],
   },
   {
-    name: 'product_collections',
+    name: "product_collections",
     foreignKeys: [
-      { column: 'product_id', references: { table: 'products', column: 'id' } },
-      { column: 'collection_id', references: { table: 'collections', column: 'id' } },
+      { column: "product_id", references: { table: "products", column: "id" } },
+      {
+        column: "collection_id",
+        references: { table: "collections", column: "id" },
+      },
     ],
   },
 ];
 
 // Build reverse relationship map
-function buildReverseRelationships(): Map<string, { fromTable: string; column: string }[]> {
+function buildReverseRelationships(): Map<
+  string,
+  { fromTable: string; column: string }[]
+> {
   const map = new Map<string, { fromTable: string; column: string }[]>();
 
   for (const table of TABLES) {
@@ -498,14 +668,18 @@ function buildReverseRelationships(): Map<string, { fromTable: string; column: s
         if (!map.has(targetTable)) {
           map.set(targetTable, []);
         }
-        map.get(targetTable)!.push({ fromTable: table.name, column: fk.column });
+        map
+          .get(targetTable)
+          ?.push({ fromTable: table.name, column: fk.column });
       }
     }
     if (table.selfRef) {
       if (!map.has(table.name)) {
         map.set(table.name, []);
       }
-      map.get(table.name)!.push({ fromTable: table.name, column: table.selfRef.column });
+      map
+        .get(table.name)
+        ?.push({ fromTable: table.name, column: table.selfRef.column });
     }
   }
 
@@ -518,13 +692,13 @@ function snakeToCamel(str: string): string {
 
 function getRelationshipName(column: string): string {
   // Remove _id suffix and convert to camelCase
-  const name = column.replace(/_id$/, '');
+  const name = column.replace(/_id$/, "");
   return snakeToCamel(name);
 }
 
 function getArrayRelationshipName(fromTable: string, column: string): string {
   // For array relationships, use plural form or table name
-  if (column.endsWith('_id')) {
+  if (column.endsWith("_id")) {
     // If column is like "customer_id", the relationship is already named by the table
     return snakeToCamel(fromTable);
   }
@@ -540,14 +714,17 @@ interface TableYaml {
   array_relationships?: Array<{
     name: string;
     using: {
-      foreign_key_constraint_on: { column: string; table: { name: string; schema: string } };
+      foreign_key_constraint_on: {
+        column: string;
+        table: { name: string; schema: string };
+      };
     };
   }>;
 }
 
 async function main() {
-  const metadataDir = join(import.meta.dirname, '..', 'hasura', 'metadata');
-  const tablesDir = join(metadataDir, 'databases', 'default', 'tables');
+  const metadataDir = join(import.meta.dirname, "..", "hasura", "metadata");
+  const tablesDir = join(metadataDir, "databases", "default", "tables");
 
   await mkdir(tablesDir, { recursive: true });
 
@@ -556,11 +733,11 @@ async function main() {
 
   for (const table of TABLES) {
     const yaml: TableYaml = {
-      table: { name: table.name, schema: 'public' },
+      table: { name: table.name, schema: "public" },
     };
 
     // Object relationships (foreign keys pointing outward)
-    const objectRels: TableYaml['object_relationships'] = [];
+    const objectRels: TableYaml["object_relationships"] = [];
 
     if (table.foreignKeys) {
       for (const fk of table.foreignKeys) {
@@ -583,7 +760,7 @@ async function main() {
     }
 
     // Array relationships (foreign keys pointing inward)
-    const arrayRels: TableYaml['array_relationships'] = [];
+    const arrayRels: TableYaml["array_relationships"] = [];
     const incomingRels = reverseRels.get(table.name) || [];
 
     for (const rel of incomingRels) {
@@ -591,11 +768,11 @@ async function main() {
       if (rel.fromTable === table.name) {
         // Add children relationship for self-ref
         arrayRels.push({
-          name: 'children',
+          name: "children",
           using: {
             foreign_key_constraint_on: {
               column: rel.column,
-              table: { name: rel.fromTable, schema: 'public' },
+              table: { name: rel.fromTable, schema: "public" },
             },
           },
         });
@@ -605,7 +782,7 @@ async function main() {
           using: {
             foreign_key_constraint_on: {
               column: rel.column,
-              table: { name: rel.fromTable, schema: 'public' },
+              table: { name: rel.fromTable, schema: "public" },
             },
           },
         });
@@ -624,11 +801,13 @@ async function main() {
   }
 
   // Write tables.yaml index
-  const tablesIndex = TABLES.map((t) => `- "!include public_${t.name}.yaml"`).join('\n');
-  await writeFile(join(tablesDir, 'tables.yaml'), tablesIndex + '\n');
+  const tablesIndex = TABLES.map(
+    (t) => `- "!include public_${t.name}.yaml"`
+  ).join("\n");
+  await writeFile(join(tablesDir, "tables.yaml"), `${tablesIndex}\n`);
 
   // Write version.yaml
-  await writeFile(join(metadataDir, 'version.yaml'), 'version: 3\n');
+  await writeFile(join(metadataDir, "version.yaml"), "version: 3\n");
 
   // Write databases.yaml
   const databasesYaml = `- name: default
@@ -641,14 +820,14 @@ async function main() {
       use_prepared_statements: false
   tables: "!include databases/default/tables/tables.yaml"
 `;
-  await writeFile(join(metadataDir, 'databases.yaml'), databasesYaml);
+  await writeFile(join(metadataDir, "databases.yaml"), databasesYaml);
 
   console.log(`Generated metadata for ${TABLES.length} tables`);
   console.log(`Metadata directory: ${metadataDir}`);
 }
 
 function toYaml(obj: TableYaml, indent = 0): string {
-  const spaces = '  '.repeat(indent);
+  const spaces = "  ".repeat(indent);
   const lines: string[] = [];
 
   // table
@@ -662,7 +841,9 @@ function toYaml(obj: TableYaml, indent = 0): string {
     for (const rel of obj.object_relationships) {
       lines.push(`${spaces}  - name: ${rel.name}`);
       lines.push(`${spaces}    using:`);
-      lines.push(`${spaces}      foreign_key_constraint_on: ${rel.using.foreign_key_constraint_on}`);
+      lines.push(
+        `${spaces}      foreign_key_constraint_on: ${rel.using.foreign_key_constraint_on}`
+      );
     }
   }
 
@@ -673,14 +854,20 @@ function toYaml(obj: TableYaml, indent = 0): string {
       lines.push(`${spaces}  - name: ${rel.name}`);
       lines.push(`${spaces}    using:`);
       lines.push(`${spaces}      foreign_key_constraint_on:`);
-      lines.push(`${spaces}        column: ${rel.using.foreign_key_constraint_on.column}`);
+      lines.push(
+        `${spaces}        column: ${rel.using.foreign_key_constraint_on.column}`
+      );
       lines.push(`${spaces}        table:`);
-      lines.push(`${spaces}          name: ${rel.using.foreign_key_constraint_on.table.name}`);
-      lines.push(`${spaces}          schema: ${rel.using.foreign_key_constraint_on.table.schema}`);
+      lines.push(
+        `${spaces}          name: ${rel.using.foreign_key_constraint_on.table.name}`
+      );
+      lines.push(
+        `${spaces}          schema: ${rel.using.foreign_key_constraint_on.table.schema}`
+      );
     }
   }
 
-  return lines.join('\n') + '\n';
+  return `${lines.join("\n")}\n`;
 }
 
 main().catch(console.error);

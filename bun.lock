@@ -333,6 +333,20 @@
         "typescript": "~5.3.3",
       },
     },
+    "playgrounds/hasura": {
+      "name": "@soda-gql-playgrounds/hasura",
+      "dependencies": {
+        "@soda-gql/core": "workspace:*",
+        "@soda-gql/runtime": "workspace:*",
+      },
+      "devDependencies": {
+        "@soda-gql/cli": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@types/node": "^22.0.0",
+        "graphql": "^16.8.1",
+        "typescript": "^5.0.0",
+      },
+    },
     "playgrounds/nestjs-compiler-tsc": {
       "name": "@soda-gql-playgrounds/nestjs-compiler-tsc",
       "version": "0.0.1",
@@ -1113,6 +1127,8 @@
     "@sinonjs/fake-timers": ["@sinonjs/fake-timers@10.3.0", "", { "dependencies": { "@sinonjs/commons": "^3.0.0" } }, "sha512-V4BG07kuYSUkTCSBHG8G8TNhM+F19jXFWnQtzj+we8DrkpSBCee9Z3Ms8yiGer/dlmhe35/Xdgyo3/0rQKg7YA=="],
 
     "@soda-gql-playgrounds/expo-metro": ["@soda-gql-playgrounds/expo-metro@workspace:playgrounds/expo-metro"],
+
+    "@soda-gql-playgrounds/hasura": ["@soda-gql-playgrounds/hasura@workspace:playgrounds/hasura"],
 
     "@soda-gql-playgrounds/nestjs-compiler-tsc": ["@soda-gql-playgrounds/nestjs-compiler-tsc@workspace:playgrounds/nestjs-compiler-tsc"],
 
@@ -3010,6 +3026,8 @@
 
     "@soda-gql-playgrounds/expo-metro/typescript": ["typescript@5.3.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw=="],
 
+    "@soda-gql-playgrounds/hasura/@types/node": ["@types/node@22.19.3", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA=="],
+
     "@soda-gql-playgrounds/nestjs-compiler-tsc/@types/node": ["@types/node@20.19.21", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-CsGG2P3I5y48RPMfprQGfy4JPRZ6csfC3ltBZSRItG3ngggmNY/qs2uZKp4p9VbrpqNNSMzUZNFZKzgOGnd/VA=="],
 
     "@soda-gql-playgrounds/nextjs-webpack/@types/node": ["@types/node@22.19.3", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA=="],
@@ -3335,6 +3353,8 @@
     "@react-native/codegen/@babel/parser/@babel/types": ["@babel/types@7.28.5", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA=="],
 
     "@react-native/codegen/glob/minimatch": ["minimatch@3.1.2", "", { "dependencies": { "brace-expansion": "^1.1.7" } }, "sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw=="],
+
+    "@soda-gql-playgrounds/hasura/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@soda-gql-playgrounds/nestjs-compiler-tsc/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 

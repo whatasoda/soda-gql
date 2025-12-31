@@ -12,23 +12,27 @@
  * 7. Export GraphQL schema
  */
 
-import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-const HASURA_ENDPOINT = 'http://localhost:8080';
-const HASURA_ADMIN_SECRET = 'myadminsecret';
-const POSTGRES_URL = 'postgres://postgres:postgrespassword@localhost:5432/hasura_perf';
+const HASURA_ENDPOINT = "http://localhost:8080";
+const HASURA_ADMIN_SECRET = "my-admin-secret";
+// const POSTGRES_URL = "postgres://postgres:postgres-password@localhost:5432/hasura_perf";
 
-async function run(command: string, args: string[], cwd?: string): Promise<void> {
+async function run(
+  command: string,
+  args: string[],
+  cwd?: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log(`\n$ ${command} ${args.join(' ')}`);
+    console.log(`\n$ ${command} ${args.join(" ")}`);
     const proc = spawn(command, args, {
-      cwd: cwd || join(import.meta.dirname, '..'),
-      stdio: 'inherit',
+      cwd: cwd || join(import.meta.dirname, ".."),
+      stdio: "inherit",
     });
 
-    proc.on('close', (code) => {
+    proc.on("close", (code) => {
       if (code === 0) {
         resolve();
       } else {
@@ -36,56 +40,56 @@ async function run(command: string, args: string[], cwd?: string): Promise<void>
       }
     });
 
-    proc.on('error', reject);
+    proc.on("error", reject);
   });
 }
 
 async function waitForHasura(maxAttempts = 30): Promise<void> {
-  console.log('\nWaiting for Hasura to be ready...');
+  console.log("\nWaiting for Hasura to be ready...");
 
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await fetch(`${HASURA_ENDPOINT}/healthz`);
       if (response.ok) {
-        console.log('Hasura is ready!');
+        console.log("Hasura is ready!");
         return;
       }
     } catch {
       // Ignore connection errors
     }
 
-    process.stdout.write('.');
+    process.stdout.write(".");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  throw new Error('Hasura did not become ready in time');
+  throw new Error("Hasura did not become ready in time");
 }
 
 async function applyMigrations(): Promise<void> {
-  console.log('\nApplying migrations...');
+  console.log("\nApplying migrations...");
 
   const migrationPath = join(
     import.meta.dirname,
-    '..',
-    'hasura',
-    'migrations',
-    'default',
-    '20240101000000_init',
-    'up.sql'
+    "..",
+    "hasura",
+    "migrations",
+    "default",
+    "20240101000000_init",
+    "up.sql"
   );
 
-  const sql = await readFile(migrationPath, 'utf-8');
+  const sql = await readFile(migrationPath, "utf-8");
 
   const response = await fetch(`${HASURA_ENDPOINT}/v2/query`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'X-Hasura-Admin-Secret': HASURA_ADMIN_SECRET,
+      "Content-Type": "application/json",
+      "X-Hasura-Admin-Secret": HASURA_ADMIN_SECRET,
     },
     body: JSON.stringify({
-      type: 'run_sql',
+      type: "run_sql",
       args: {
-        source: 'default',
+        source: "default",
         sql,
         cascade: false,
         read_only: false,
@@ -98,23 +102,23 @@ async function applyMigrations(): Promise<void> {
     throw new Error(`Failed to apply migrations: ${text}`);
   }
 
-  console.log('Migrations applied successfully');
+  console.log("Migrations applied successfully");
 }
 
 async function trackTables(): Promise<void> {
-  console.log('\nTracking tables...');
+  console.log("\nTracking tables...");
 
   // Get list of tables from the database
   const tablesResponse = await fetch(`${HASURA_ENDPOINT}/v2/query`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'X-Hasura-Admin-Secret': HASURA_ADMIN_SECRET,
+      "Content-Type": "application/json",
+      "X-Hasura-Admin-Secret": HASURA_ADMIN_SECRET,
     },
     body: JSON.stringify({
-      type: 'run_sql',
+      type: "run_sql",
       args: {
-        source: 'default',
+        source: "default",
         sql: `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
         cascade: false,
         read_only: true,
@@ -123,7 +127,7 @@ async function trackTables(): Promise<void> {
   });
 
   if (!tablesResponse.ok) {
-    throw new Error('Failed to get table list');
+    throw new Error("Failed to get table list");
   }
 
   const tablesResult = (await tablesResponse.json()) as { result: string[][] };
@@ -134,17 +138,17 @@ async function trackTables(): Promise<void> {
   // Track each table
   for (const tableName of tables) {
     const response = await fetch(`${HASURA_ENDPOINT}/v1/metadata`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-Hasura-Admin-Secret': HASURA_ADMIN_SECRET,
+        "Content-Type": "application/json",
+        "X-Hasura-Admin-Secret": HASURA_ADMIN_SECRET,
       },
       body: JSON.stringify({
-        type: 'pg_track_table',
+        type: "pg_track_table",
         args: {
-          source: 'default',
+          source: "default",
           table: {
-            schema: 'public',
+            schema: "public",
             name: tableName,
           },
         },
@@ -154,29 +158,29 @@ async function trackTables(): Promise<void> {
     if (!response.ok) {
       const text = await response.text();
       // Ignore "already tracked" errors
-      if (!text.includes('already tracked')) {
+      if (!text.includes("already tracked")) {
         console.warn(`Warning: Failed to track ${tableName}: ${text}`);
       }
     }
   }
 
-  console.log('Tables tracked successfully');
+  console.log("Tables tracked successfully");
 }
 
 async function trackRelationships(): Promise<void> {
-  console.log('\nTracking foreign key relationships...');
+  console.log("\nTracking foreign key relationships...");
 
   const response = await fetch(`${HASURA_ENDPOINT}/v1/metadata`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'X-Hasura-Admin-Secret': HASURA_ADMIN_SECRET,
+      "Content-Type": "application/json",
+      "X-Hasura-Admin-Secret": HASURA_ADMIN_SECRET,
     },
     body: JSON.stringify({
-      type: 'pg_suggest_relationships',
+      type: "pg_suggest_relationships",
       args: {
         omit_tracked: true,
-        source: 'default',
+        source: "default",
       },
     }),
   });
@@ -186,7 +190,9 @@ async function trackRelationships(): Promise<void> {
     throw new Error(`Failed to suggest relationships: ${text}`);
   }
 
-  const result = (await response.json()) as { relationships: Array<{ type: string; args: unknown }> };
+  const result = (await response.json()) as {
+    relationships: Array<{ type: string; args: unknown }>;
+  };
   const relationships = result.relationships || [];
 
   console.log(`Found ${relationships.length} relationships to create`);
@@ -194,10 +200,10 @@ async function trackRelationships(): Promise<void> {
   // Create each relationship
   for (const rel of relationships) {
     const createResponse = await fetch(`${HASURA_ENDPOINT}/v1/metadata`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-Hasura-Admin-Secret': HASURA_ADMIN_SECRET,
+        "Content-Type": "application/json",
+        "X-Hasura-Admin-Secret": HASURA_ADMIN_SECRET,
       },
       body: JSON.stringify(rel),
     });
@@ -205,29 +211,29 @@ async function trackRelationships(): Promise<void> {
     if (!createResponse.ok) {
       const text = await createResponse.text();
       // Ignore "already exists" errors
-      if (!text.includes('already exists')) {
+      if (!text.includes("already exists")) {
         console.warn(`Warning: Failed to create relationship: ${text}`);
       }
     }
   }
 
-  console.log('Relationships tracked successfully');
+  console.log("Relationships tracked successfully");
 }
 
 async function main(): Promise<void> {
-  console.log('=== Hasura Playground Setup ===\n');
+  console.log("=== Hasura Playground Setup ===\n");
 
   // Step 1: Generate migrations
-  console.log('Step 1: Generating SQL migrations...');
-  await run('bun', ['scripts/generate-schema.ts']);
+  console.log("Step 1: Generating SQL migrations...");
+  await run("bun", ["scripts/generate-schema.ts"]);
 
   // Step 2: Generate metadata
-  console.log('\nStep 2: Generating Hasura metadata...');
-  await run('bun', ['scripts/generate-metadata.ts']);
+  console.log("\nStep 2: Generating Hasura metadata...");
+  await run("bun", ["scripts/generate-metadata.ts"]);
 
   // Step 3: Start Docker
-  console.log('\nStep 3: Starting Docker containers...');
-  await run('docker', ['compose', 'up', '-d']);
+  console.log("\nStep 3: Starting Docker containers...");
+  await run("docker", ["compose", "up", "-d"]);
 
   // Step 4: Wait for Hasura
   await waitForHasura();
@@ -240,15 +246,15 @@ async function main(): Promise<void> {
   await trackRelationships();
 
   // Step 7: Export schema
-  console.log('\nStep 7: Exporting GraphQL schema...');
-  await run('bun', ['scripts/export-schema.ts']);
+  console.log("\nStep 7: Exporting GraphQL schema...");
+  await run("bun", ["scripts/export-schema.ts"]);
 
-  console.log('\n=== Setup Complete ===');
-  console.log('\nHasura Console: http://localhost:8080/console');
-  console.log('Admin Secret: myadminsecret');
+  console.log("\n=== Setup Complete ===");
+  console.log("\nHasura Console: http://localhost:8080/console");
+  console.log("Admin Secret: myadminsecret");
 }
 
 main().catch((error) => {
-  console.error('\nSetup failed:', error);
+  console.error("\nSetup failed:", error);
   process.exit(1);
 });
