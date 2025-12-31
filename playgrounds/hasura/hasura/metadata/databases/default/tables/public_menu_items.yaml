@@ -1,0 +1,21 @@
+table:
+  name: menu_items
+  schema: public
+object_relationships:
+  - name: menu
+    using:
+      foreign_key_constraint_on: menu_id
+  - name: page
+    using:
+      foreign_key_constraint_on: page_id
+  - name: parent
+    using:
+      foreign_key_constraint_on: parent_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: parent_id
+        table:
+          name: menu_items
+          schema: public

@@ -1,0 +1,81 @@
+table:
+  name: stores
+  schema: public
+array_relationships:
+  - name: customers
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: customers
+          schema: public
+  - name: products
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: products
+          schema: public
+  - name: orders
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: orders
+          schema: public
+  - name: coupons
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: coupons
+          schema: public
+  - name: inventoryLocations
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: inventory_locations
+          schema: public
+  - name: ecCategories
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: ec_categories
+          schema: public
+  - name: storePaymentMethods
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: store_payment_methods
+          schema: public
+  - name: storeShippingCarriers
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: store_shipping_carriers
+          schema: public
+  - name: storeCurrencies
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: store_currencies
+          schema: public
+  - name: customerStores
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: customer_stores
+          schema: public
+  - name: collections
+    using:
+      foreign_key_constraint_on:
+        column: store_id
+        table:
+          name: collections
+          schema: public

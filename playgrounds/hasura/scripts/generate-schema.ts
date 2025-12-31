@@ -1079,7 +1079,7 @@ function generateColumnSQL(col: Column): string {
   return sql;
 }
 
-function generateTableSQL(table: TableDef): string {
+function generateCreateTableSQL(table: TableDef): string {
   const lines: string[] = [];
   lines.push(`CREATE TABLE IF NOT EXISTS "${table.name}" (`);
 
@@ -1108,10 +1108,16 @@ function generateTableSQL(table: TableDef): string {
   lines.push(columnDefs.join(',\n'));
   lines.push(');');
 
+  return lines.join('\n');
+}
+
+function generateForeignKeySQL(table: TableDef): string[] {
+  const statements: string[] = [];
+
   // Add foreign key constraints
   if (table.foreignKeys) {
     for (const fk of table.foreignKeys) {
-      lines.push(
+      statements.push(
         `ALTER TABLE "${table.name}" ADD CONSTRAINT "fk_${table.name}_${fk.column}" ` +
           `FOREIGN KEY ("${fk.column}") REFERENCES "${fk.references.table}" ("${fk.references.column}");`
       );
@@ -1120,13 +1126,13 @@ function generateTableSQL(table: TableDef): string {
 
   // Add self-referential constraint
   if (table.selfRef) {
-    lines.push(
+    statements.push(
       `ALTER TABLE "${table.name}" ADD CONSTRAINT "fk_${table.name}_${table.selfRef.column}" ` +
         `FOREIGN KEY ("${table.selfRef.column}") REFERENCES "${table.name}" ("id");`
     );
   }
 
-  return lines.join('\n');
+  return statements;
 }
 
 async function main() {
@@ -1139,10 +1145,20 @@ async function main() {
   const upSQL: string[] = [];
   const downSQL: string[] = [];
 
-  // Generate CREATE statements
+  // Phase 1: Create all tables (without foreign keys)
+  upSQL.push('-- Phase 1: Create all tables');
   for (const table of ALL_TABLES) {
-    upSQL.push(generateTableSQL(table));
+    upSQL.push(generateCreateTableSQL(table));
     upSQL.push('');
+  }
+
+  // Phase 2: Add all foreign key constraints
+  upSQL.push('-- Phase 2: Add foreign key constraints');
+  for (const table of ALL_TABLES) {
+    const fkStatements = generateForeignKeySQL(table);
+    for (const stmt of fkStatements) {
+      upSQL.push(stmt);
+    }
   }
 
   // Generate DROP statements (reverse order)

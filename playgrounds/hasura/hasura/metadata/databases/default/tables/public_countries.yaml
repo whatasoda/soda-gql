@@ -1,0 +1,11 @@
+table:
+  name: countries
+  schema: public
+array_relationships:
+  - name: customerAddresses
+    using:
+      foreign_key_constraint_on:
+        column: country_id
+        table:
+          name: customer_addresses
+          schema: public

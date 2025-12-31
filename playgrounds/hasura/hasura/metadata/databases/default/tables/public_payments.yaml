@@ -1,0 +1,13 @@
+table:
+  name: payments
+  schema: public
+object_relationships:
+  - name: order
+    using:
+      foreign_key_constraint_on: order_id
+  - name: method
+    using:
+      foreign_key_constraint_on: method_id
+  - name: status
+    using:
+      foreign_key_constraint_on: status_id

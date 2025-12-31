@@ -1,0 +1,130 @@
+table:
+  name: users
+  schema: public
+array_relationships:
+  - name: userProfiles
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_profiles
+          schema: public
+  - name: posts
+    using:
+      foreign_key_constraint_on:
+        column: author_id
+        table:
+          name: posts
+          schema: public
+  - name: likes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: likes
+          schema: public
+  - name: bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: bookmarks
+          schema: public
+  - name: follows
+    using:
+      foreign_key_constraint_on:
+        column: follower_id
+        table:
+          name: follows
+          schema: public
+  - name: follows
+    using:
+      foreign_key_constraint_on:
+        column: following_id
+        table:
+          name: follows
+          schema: public
+  - name: blocks
+    using:
+      foreign_key_constraint_on:
+        column: blocker_id
+        table:
+          name: blocks
+          schema: public
+  - name: blocks
+    using:
+      foreign_key_constraint_on:
+        column: blocked_id
+        table:
+          name: blocks
+          schema: public
+  - name: conversationParticipants
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: conversation_participants
+          schema: public
+  - name: messages
+    using:
+      foreign_key_constraint_on:
+        column: sender_id
+        table:
+          name: messages
+          schema: public
+  - name: messageReactions
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: message_reactions
+          schema: public
+  - name: notifications
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: notifications
+          schema: public
+  - name: notifications
+    using:
+      foreign_key_constraint_on:
+        column: actor_id
+        table:
+          name: notifications
+          schema: public
+  - name: mentions
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: mentions
+          schema: public
+  - name: reports
+    using:
+      foreign_key_constraint_on:
+        column: reporter_id
+        table:
+          name: reports
+          schema: public
+  - name: userSettings
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_settings
+          schema: public
+  - name: userSessions
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_sessions
+          schema: public
+  - name: userRoles
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: user_roles
+          schema: public

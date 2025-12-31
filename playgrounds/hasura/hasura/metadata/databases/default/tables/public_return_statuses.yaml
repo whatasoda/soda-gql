@@ -1,0 +1,11 @@
+table:
+  name: return_statuses
+  schema: public
+array_relationships:
+  - name: returnRequests
+    using:
+      foreign_key_constraint_on:
+        column: status_id
+        table:
+          name: return_requests
+          schema: public

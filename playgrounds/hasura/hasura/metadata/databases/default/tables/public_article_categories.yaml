@@ -1,0 +1,25 @@
+table:
+  name: article_categories
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+  - name: parent
+    using:
+      foreign_key_constraint_on: parent_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: parent_id
+        table:
+          name: article_categories
+          schema: public
+  - name: articleCategoryAssignments
+    using:
+      foreign_key_constraint_on:
+        column: category_id
+        table:
+          name: article_category_assignments
+          schema: public

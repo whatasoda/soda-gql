@@ -1,0 +1,18 @@
+table:
+  name: shipping_carriers
+  schema: public
+array_relationships:
+  - name: shipments
+    using:
+      foreign_key_constraint_on:
+        column: carrier_id
+        table:
+          name: shipments
+          schema: public
+  - name: storeShippingCarriers
+    using:
+      foreign_key_constraint_on:
+        column: carrier_id
+        table:
+          name: store_shipping_carriers
+          schema: public

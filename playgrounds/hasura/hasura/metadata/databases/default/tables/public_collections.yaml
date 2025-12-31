@@ -1,0 +1,15 @@
+table:
+  name: collections
+  schema: public
+object_relationships:
+  - name: store
+    using:
+      foreign_key_constraint_on: store_id
+array_relationships:
+  - name: productCollections
+    using:
+      foreign_key_constraint_on:
+        column: collection_id
+        table:
+          name: product_collections
+          schema: public

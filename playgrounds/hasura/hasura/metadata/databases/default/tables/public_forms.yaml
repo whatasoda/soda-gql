@@ -1,0 +1,15 @@
+table:
+  name: forms
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+array_relationships:
+  - name: formSubmissions
+    using:
+      foreign_key_constraint_on:
+        column: form_id
+        table:
+          name: form_submissions
+          schema: public

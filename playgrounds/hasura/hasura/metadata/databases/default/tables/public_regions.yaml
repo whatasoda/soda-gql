@@ -1,0 +1,11 @@
+table:
+  name: regions
+  schema: public
+array_relationships:
+  - name: districts
+    using:
+      foreign_key_constraint_on:
+        column: region_id
+        table:
+          name: districts
+          schema: public

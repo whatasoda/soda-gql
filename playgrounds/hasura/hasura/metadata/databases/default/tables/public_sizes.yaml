@@ -1,0 +1,11 @@
+table:
+  name: sizes
+  schema: public
+array_relationships:
+  - name: productVariants
+    using:
+      foreign_key_constraint_on:
+        column: size_id
+        table:
+          name: product_variants
+          schema: public

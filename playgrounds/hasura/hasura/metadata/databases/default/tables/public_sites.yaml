@@ -1,0 +1,102 @@
+table:
+  name: sites
+  schema: public
+array_relationships:
+  - name: authors
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: authors
+          schema: public
+  - name: pageTemplates
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: page_templates
+          schema: public
+  - name: pages
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: pages
+          schema: public
+  - name: articles
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: articles
+          schema: public
+  - name: articleCategories
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: article_categories
+          schema: public
+  - name: tags
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: tags
+          schema: public
+  - name: mediaFolders
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: media_folders
+          schema: public
+  - name: mediaFiles
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: media_files
+          schema: public
+  - name: menus
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: menus
+          schema: public
+  - name: forms
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: forms
+          schema: public
+  - name: redirects
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: redirects
+          schema: public
+  - name: seoSettings
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: seo_settings
+          schema: public
+  - name: analyticsEvents
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: analytics_events
+          schema: public
+  - name: siteAuthors
+    using:
+      foreign_key_constraint_on:
+        column: site_id
+        table:
+          name: site_authors
+          schema: public

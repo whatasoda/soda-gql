@@ -1,0 +1,11 @@
+table:
+  name: currencies
+  schema: public
+array_relationships:
+  - name: storeCurrencies
+    using:
+      foreign_key_constraint_on:
+        column: currency_id
+        table:
+          name: store_currencies
+          schema: public

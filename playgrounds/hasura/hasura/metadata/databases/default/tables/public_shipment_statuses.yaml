@@ -1,0 +1,11 @@
+table:
+  name: shipment_statuses
+  schema: public
+array_relationships:
+  - name: shipments
+    using:
+      foreign_key_constraint_on:
+        column: status_id
+        table:
+          name: shipments
+          schema: public

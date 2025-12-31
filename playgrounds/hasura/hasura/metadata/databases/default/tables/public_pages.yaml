@@ -1,0 +1,35 @@
+table:
+  name: pages
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+  - name: template
+    using:
+      foreign_key_constraint_on: template_id
+  - name: parent
+    using:
+      foreign_key_constraint_on: parent_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: parent_id
+        table:
+          name: pages
+          schema: public
+  - name: pageVersions
+    using:
+      foreign_key_constraint_on:
+        column: page_id
+        table:
+          name: page_versions
+          schema: public
+  - name: menuItems
+    using:
+      foreign_key_constraint_on:
+        column: page_id
+        table:
+          name: menu_items
+          schema: public

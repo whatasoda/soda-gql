@@ -1,0 +1,18 @@
+table:
+  name: order_items
+  schema: public
+object_relationships:
+  - name: order
+    using:
+      foreign_key_constraint_on: order_id
+  - name: variant
+    using:
+      foreign_key_constraint_on: variant_id
+array_relationships:
+  - name: reviews
+    using:
+      foreign_key_constraint_on:
+        column: order_item_id
+        table:
+          name: reviews
+          schema: public

@@ -1,0 +1,10 @@
+table:
+  name: article_tags
+  schema: public
+object_relationships:
+  - name: article
+    using:
+      foreign_key_constraint_on: article_id
+  - name: tag
+    using:
+      foreign_key_constraint_on: tag_id

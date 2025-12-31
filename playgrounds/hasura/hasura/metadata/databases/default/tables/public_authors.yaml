@@ -1,0 +1,36 @@
+table:
+  name: authors
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+array_relationships:
+  - name: pageVersions
+    using:
+      foreign_key_constraint_on:
+        column: author_id
+        table:
+          name: page_versions
+          schema: public
+  - name: articles
+    using:
+      foreign_key_constraint_on:
+        column: author_id
+        table:
+          name: articles
+          schema: public
+  - name: authorArticles
+    using:
+      foreign_key_constraint_on:
+        column: author_id
+        table:
+          name: author_articles
+          schema: public
+  - name: siteAuthors
+    using:
+      foreign_key_constraint_on:
+        column: author_id
+        table:
+          name: site_authors
+          schema: public

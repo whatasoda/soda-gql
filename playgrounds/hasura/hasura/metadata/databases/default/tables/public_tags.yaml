@@ -1,0 +1,15 @@
+table:
+  name: tags
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+array_relationships:
+  - name: articleTags
+    using:
+      foreign_key_constraint_on:
+        column: tag_id
+        table:
+          name: article_tags
+          schema: public

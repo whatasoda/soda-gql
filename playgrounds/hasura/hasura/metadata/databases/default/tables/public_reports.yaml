@@ -1,0 +1,13 @@
+table:
+  name: reports
+  schema: public
+object_relationships:
+  - name: reporter
+    using:
+      foreign_key_constraint_on: reporter_id
+  - name: post
+    using:
+      foreign_key_constraint_on: post_id
+  - name: status
+    using:
+      foreign_key_constraint_on: status_id

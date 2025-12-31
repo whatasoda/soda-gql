@@ -1,0 +1,28 @@
+table:
+  name: messages
+  schema: public
+object_relationships:
+  - name: conversation
+    using:
+      foreign_key_constraint_on: conversation_id
+  - name: sender
+    using:
+      foreign_key_constraint_on: sender_id
+  - name: replyTo
+    using:
+      foreign_key_constraint_on: reply_to_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: reply_to_id
+        table:
+          name: messages
+          schema: public
+  - name: messageReactions
+    using:
+      foreign_key_constraint_on:
+        column: message_id
+        table:
+          name: message_reactions
+          schema: public

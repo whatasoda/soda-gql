@@ -1,0 +1,10 @@
+table:
+  name: related_products
+  schema: public
+object_relationships:
+  - name: product
+    using:
+      foreign_key_constraint_on: product_id
+  - name: relatedProduct
+    using:
+      foreign_key_constraint_on: related_product_id

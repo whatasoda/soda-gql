@@ -1,0 +1,10 @@
+table:
+  name: customer_stores
+  schema: public
+object_relationships:
+  - name: customer
+    using:
+      foreign_key_constraint_on: customer_id
+  - name: store
+    using:
+      foreign_key_constraint_on: store_id

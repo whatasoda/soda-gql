@@ -1,0 +1,7 @@
+table:
+  name: form_submissions
+  schema: public
+object_relationships:
+  - name: form
+    using:
+      foreign_key_constraint_on: form_id
