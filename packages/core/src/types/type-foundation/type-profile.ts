@@ -99,24 +99,28 @@ export declare namespace TypeProfile {
     : never;
 
   /**
-   * Assignment validation meta using typeName + kind.
-   * Type structure comparison is not needed - typeName uniquely identifies the type.
+   * VarRef meta using typeName + kind + signature.
+   * - Used as AssignableVarRefMeta for type positions that accept VarRefs
+   * - Used as AssigningVarRefMeta for VarRef creation functions
    */
-  export type AssignableVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
+  export type VarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
     typeName: TTypeName;
     kind: TKind;
     signature: TSignature;
   };
 
-  /**
-   * Assigning meta using typeName + kind + signature.
-   * Type structure is resolved from schema at call site (e.g., getValueAt).
-   */
-  export type AssigningVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
-    typeName: TTypeName;
-    kind: TKind;
-    signature: TSignature;
-  };
+  // Semantic aliases for clarity in different contexts
+  export type AssignableVarRefMeta<
+    TTypeName extends string,
+    TKind extends InputTypeKind,
+    TSignature,
+  > = VarRefMeta<TTypeName, TKind, TSignature>;
+
+  export type AssigningVarRefMeta<
+    TTypeName extends string,
+    TKind extends InputTypeKind,
+    TSignature,
+  > = VarRefMeta<TTypeName, TKind, TSignature>;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<
