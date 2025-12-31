@@ -1,4 +1,4 @@
-import type { InputTypeKind, NestedConstAssignableType, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { AssignableConstBase, InputTypeKind, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
 interface Op<T> {
   readonly 0: T[];
@@ -46,10 +46,10 @@ type Signature_1101 = Op<Signature_110>[1];
 type Signature_1110 = Op<Signature_111>[0];
 type Signature_1111 = Op<Signature_111>[1];
 
-// Assignable - uses NestedConstAssignableType to allow VarRef in nested object fields
+// Assignable - uses AssignableConstBase to allow VarRef in nested object fields
 // depth = 0
-type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
-type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
+type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
+type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
 
 // depth = 1
 type Assignable_00<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_00> | Op<Assignable_0<TTypeName, TKind, [T[0], "!"]>>[0];

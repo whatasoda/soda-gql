@@ -68,7 +68,7 @@ ${embedEntries({ from: 0, to: DEPTH })`
 `
 
 const extension_content = `\
-import type { InputTypeKind, NestedConstAssignableType, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { AssignableConstBase, InputTypeKind, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
 interface Op<T> {
   readonly 0: T[];
@@ -86,10 +86,10 @@ ${embedEntries({ from: 1, to: DEPTH })`
 ${({ label, inner, outer }) => `type Signature_${label} = Op<Signature_${inner}>[${outer}];`}
 `}
 
-// Assignable - uses NestedConstAssignableType to allow VarRef in nested object fields
+// Assignable - uses AssignableConstBase to allow VarRef in nested object fields
 // depth = 0
-type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
-type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = NestedConstAssignableType<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
+type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
+type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
 
 ${embedEntries({ from: 1, to: DEPTH })`
 ${({ label, inner, outer, modifier }) => `type Assignable_${label}<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_${label}> | Op<Assignable_${inner}<TTypeName, TKind, [T[0], "${modifier[0]}"]>>[${outer}];`}
