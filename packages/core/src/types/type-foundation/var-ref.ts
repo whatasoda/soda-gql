@@ -1,8 +1,22 @@
 import type { ConstValue } from "./const-value";
+import type { InputTypeKind } from "./type-specifier";
 import type { TypeProfile } from "./type-profile";
 
+/**
+ * @deprecated Use VarRefMetaV2 instead. Will be removed in a future version.
+ */
 export interface AnyVarRefMeta {
   readonly profile: TypeProfile.WithMeta;
+  readonly signature: unknown;
+}
+
+/**
+ * New VarRef meta interface using typeName + kind instead of full profile.
+ * This simplifies type comparison and improves error messages.
+ */
+export interface VarRefMetaV2 {
+  readonly typeName: string;
+  readonly kind: InputTypeKind;
   readonly signature: unknown;
 }
 

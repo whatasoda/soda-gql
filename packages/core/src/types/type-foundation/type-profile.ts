@@ -1,4 +1,5 @@
 import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
+import type { InputTypeKind } from "./type-specifier";
 import type { VarRef } from "./var-ref";
 
 export interface PrimitiveTypeProfile {
@@ -76,20 +77,61 @@ export declare namespace TypeProfile {
       : T
     : never;
 
-  // NOTE: AssignableVarRef should accept var refs with same profile and compatible signature.
-  // It doesn't matter modifiers or default input flag in the TProfile.
+  /**
+   * @deprecated Use AssignableVarRefMetaV2 instead. Will be removed in a future version.
+   * NOTE: AssignableVarRef should accept var refs with same profile and compatible signature.
+   * It doesn't matter modifiers or default input flag in the TProfile.
+   */
   export type AssignableVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
     profile: [TProfile[0], any, any?];
     signature: AssignableSignature<TProfile>;
   };
 
-  // NOTE: AssigningVarRef should remember the full profile aside from signature.
-  // So that it can be used to extract const values from nested structure.
+  /**
+   * @deprecated Use AssigningVarRefMetaV2 instead. Will be removed in a future version.
+   * NOTE: AssigningVarRef should remember the full profile aside from signature.
+   * So that it can be used to extract const values from nested structure.
+   */
   export type AssigningVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
     profile: TProfile;
     signature: Signature<TProfile>;
   };
 
+  // ============================================================================
+  // V2 Meta Types - Use typeName + kind instead of full profile
+  // ============================================================================
+
+  /**
+   * New assignment validation meta using typeName + kind.
+   * Type structure comparison is not needed - typeName uniquely identifies the type.
+   */
+  export type AssignableVarRefMetaV2<
+    TTypeName extends string,
+    TKind extends InputTypeKind,
+    TSignature,
+  > = {
+    typeName: TTypeName;
+    kind: TKind;
+    signature: TSignature;
+  };
+
+  /**
+   * New assigning meta using typeName + kind + signature.
+   * Type structure is resolved from schema at call site (e.g., getValueAt).
+   */
+  export type AssigningVarRefMetaV2<
+    TTypeName extends string,
+    TKind extends InputTypeKind,
+    TSignature,
+  > = {
+    typeName: TTypeName;
+    kind: TKind;
+    signature: TSignature;
+  };
+
+  /**
+   * @deprecated Use GetAssignableTypeV2 instead. Will be removed in a future version.
+   */
   export type AssignableType<TProfile extends TypeProfile.WithMeta> =
     | ApplyTypeModifier<
         TProfile[0] extends [PrimitiveTypeProfile]
@@ -101,6 +143,9 @@ export declare namespace TypeProfile {
       >
     | VarRef<AssignableVarRefMeta<TProfile>>;
 
+  /**
+   * @deprecated Use new AssigningVarRefMetaV2 with typeName + kind instead.
+   */
   export type AssigningType<TProfile extends TypeProfile.WithMeta> = VarRef<AssigningVarRefMeta<TProfile>>;
 }
 
