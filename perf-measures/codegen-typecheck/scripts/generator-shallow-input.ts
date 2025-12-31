@@ -494,7 +494,7 @@ const ${schemaVar} = {
 } as const;
 
 const createMethod_${name} = createVarMethodFactory<typeof ${schemaVar}>();
-const inputTypeMethods_${name} = ${inputTypeMethodsBlock} satisfies InputTypeMethods<typeof ${schemaVar}>;
+const inputTypeMethods_${name} = ${inputTypeMethodsBlock};
 
 export type Schema_${name} = typeof ${schemaVar} & { _?: never };
 ${fragmentBuildersTypeBlock}`);
@@ -508,7 +508,6 @@ ${fragmentBuildersTypeBlock}`);
   const code = `\
 import {
   type FragmentBuilderFor,
-  type InputTypeMethods,
   createGqlElementComposer,
   createVarMethodFactory,
 } from "@soda-gql/core";
