@@ -53,11 +53,14 @@ export declare namespace TypeProfile {
   >;
 
   export type Type<TProfile extends TypeProfile.WithMeta> =
-    | (TProfile[0] extends [PrimitiveTypeProfile]
-        ? ApplyTypeModifier<TProfile[0][0]["value"], TProfile[1]>
-        : TProfile[0] extends { readonly [key: string]: WithMeta }
-          ? ObjectTypeProfile<TProfile[0]>
-          : never)
+    | ApplyTypeModifier<
+        TProfile[0] extends [PrimitiveTypeProfile]
+          ? TProfile[0][0]["value"]
+          : TProfile[0] extends { readonly [key: string]: WithMeta }
+            ? ObjectTypeProfile<TProfile[0]>
+            : never,
+        TProfile[1]
+      >
     | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
 
   export type AssignableSignature<TProfile extends TypeProfile.WithMeta> =

@@ -14,7 +14,7 @@ export const postListFragment = gql
       },
       metadata: ({ $ }) => ({
         custom: {
-          categoryId: $var.getValueAt($.categoryId, (p) => p._eq),
+          categoryId: $var.getValueAt($.categoryId, (p) => p?._eq),
         },
       }),
       fields: ({ f, $ }) => ({
