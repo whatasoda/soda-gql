@@ -1,0 +1,18 @@
+table:
+  name: payment_methods
+  schema: public
+array_relationships:
+  - name: payments
+    using:
+      foreign_key_constraint_on:
+        column: method_id
+        table:
+          name: payments
+          schema: public
+  - name: storePaymentMethods
+    using:
+      foreign_key_constraint_on:
+        column: payment_method_id
+        table:
+          name: store_payment_methods
+          schema: public

@@ -1,0 +1,10 @@
+table:
+  name: role_permissions
+  schema: public
+object_relationships:
+  - name: role
+    using:
+      foreign_key_constraint_on: role_id
+  - name: permission
+    using:
+      foreign_key_constraint_on: permission_id

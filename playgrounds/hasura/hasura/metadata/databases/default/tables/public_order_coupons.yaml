@@ -1,0 +1,10 @@
+table:
+  name: order_coupons
+  schema: public
+object_relationships:
+  - name: order
+    using:
+      foreign_key_constraint_on: order_id
+  - name: coupon
+    using:
+      foreign_key_constraint_on: coupon_id

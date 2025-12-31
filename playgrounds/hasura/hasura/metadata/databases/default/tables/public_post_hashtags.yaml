@@ -1,0 +1,10 @@
+table:
+  name: post_hashtags
+  schema: public
+object_relationships:
+  - name: post
+    using:
+      foreign_key_constraint_on: post_id
+  - name: hashtag
+    using:
+      foreign_key_constraint_on: hashtag_id

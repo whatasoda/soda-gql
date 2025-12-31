@@ -1,0 +1,42 @@
+table:
+  name: product_variants
+  schema: public
+object_relationships:
+  - name: product
+    using:
+      foreign_key_constraint_on: product_id
+  - name: color
+    using:
+      foreign_key_constraint_on: color_id
+  - name: size
+    using:
+      foreign_key_constraint_on: size_id
+array_relationships:
+  - name: productImages
+    using:
+      foreign_key_constraint_on:
+        column: variant_id
+        table:
+          name: product_images
+          schema: public
+  - name: cartItems
+    using:
+      foreign_key_constraint_on:
+        column: variant_id
+        table:
+          name: cart_items
+          schema: public
+  - name: orderItems
+    using:
+      foreign_key_constraint_on:
+        column: variant_id
+        table:
+          name: order_items
+          schema: public
+  - name: inventoryLevels
+    using:
+      foreign_key_constraint_on:
+        column: variant_id
+        table:
+          name: inventory_levels
+          schema: public

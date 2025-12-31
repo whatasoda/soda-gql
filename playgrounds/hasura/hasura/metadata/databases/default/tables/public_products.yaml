@@ -1,0 +1,67 @@
+table:
+  name: products
+  schema: public
+object_relationships:
+  - name: store
+    using:
+      foreign_key_constraint_on: store_id
+  - name: brand
+    using:
+      foreign_key_constraint_on: brand_id
+array_relationships:
+  - name: productVariants
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: product_variants
+          schema: public
+  - name: productImages
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: product_images
+          schema: public
+  - name: reviews
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: reviews
+          schema: public
+  - name: wishlistItems
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: wishlist_items
+          schema: public
+  - name: productCategories
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: product_categories
+          schema: public
+  - name: relatedProducts
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: related_products
+          schema: public
+  - name: relatedProducts
+    using:
+      foreign_key_constraint_on:
+        column: related_product_id
+        table:
+          name: related_products
+          schema: public
+  - name: productCollections
+    using:
+      foreign_key_constraint_on:
+        column: product_id
+        table:
+          name: product_collections
+          schema: public

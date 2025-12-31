@@ -1,0 +1,11 @@
+table:
+  name: permissions
+  schema: public
+array_relationships:
+  - name: rolePermissions
+    using:
+      foreign_key_constraint_on:
+        column: permission_id
+        table:
+          name: role_permissions
+          schema: public

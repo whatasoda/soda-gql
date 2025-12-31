@@ -1,0 +1,10 @@
+table:
+  name: article_category_assignments
+  schema: public
+object_relationships:
+  - name: article
+    using:
+      foreign_key_constraint_on: article_id
+  - name: category
+    using:
+      foreign_key_constraint_on: category_id

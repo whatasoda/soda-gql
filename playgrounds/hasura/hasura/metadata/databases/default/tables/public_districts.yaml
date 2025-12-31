@@ -1,0 +1,15 @@
+table:
+  name: districts
+  schema: public
+object_relationships:
+  - name: region
+    using:
+      foreign_key_constraint_on: region_id
+array_relationships:
+  - name: cities
+    using:
+      foreign_key_constraint_on:
+        column: district_id
+        table:
+          name: cities
+          schema: public

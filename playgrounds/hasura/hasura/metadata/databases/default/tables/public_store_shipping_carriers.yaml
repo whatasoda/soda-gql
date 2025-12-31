@@ -1,0 +1,10 @@
+table:
+  name: store_shipping_carriers
+  schema: public
+object_relationships:
+  - name: store
+    using:
+      foreign_key_constraint_on: store_id
+  - name: carrier
+    using:
+      foreign_key_constraint_on: carrier_id

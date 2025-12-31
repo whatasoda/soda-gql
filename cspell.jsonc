@@ -14,6 +14,7 @@
     "prebuild",
     "Shota",
     "t_wada",
+    "timestamptz",
     "toplevel",
     "whatasoda",
     "xxhash-wasm"

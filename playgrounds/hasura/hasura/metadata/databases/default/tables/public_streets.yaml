@@ -1,0 +1,7 @@
+table:
+  name: streets
+  schema: public
+object_relationships:
+  - name: neighborhood
+    using:
+      foreign_key_constraint_on: neighborhood_id

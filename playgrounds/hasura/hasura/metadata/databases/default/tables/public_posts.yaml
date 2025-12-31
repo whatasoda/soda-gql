@@ -1,0 +1,60 @@
+table:
+  name: posts
+  schema: public
+object_relationships:
+  - name: author
+    using:
+      foreign_key_constraint_on: author_id
+  - name: replyTo
+    using:
+      foreign_key_constraint_on: reply_to_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: reply_to_id
+        table:
+          name: posts
+          schema: public
+  - name: postMedia
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: post_media
+          schema: public
+  - name: likes
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: likes
+          schema: public
+  - name: bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: bookmarks
+          schema: public
+  - name: postHashtags
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: post_hashtags
+          schema: public
+  - name: mentions
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: mentions
+          schema: public
+  - name: reports
+    using:
+      foreign_key_constraint_on:
+        column: post_id
+        table:
+          name: reports
+          schema: public

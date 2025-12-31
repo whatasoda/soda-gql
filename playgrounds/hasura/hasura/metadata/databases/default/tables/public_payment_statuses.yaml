@@ -1,0 +1,11 @@
+table:
+  name: payment_statuses
+  schema: public
+array_relationships:
+  - name: payments
+    using:
+      foreign_key_constraint_on:
+        column: status_id
+        table:
+          name: payments
+          schema: public

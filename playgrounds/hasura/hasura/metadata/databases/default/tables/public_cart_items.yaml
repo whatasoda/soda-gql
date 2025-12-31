@@ -1,0 +1,10 @@
+table:
+  name: cart_items
+  schema: public
+object_relationships:
+  - name: cart
+    using:
+      foreign_key_constraint_on: cart_id
+  - name: variant
+    using:
+      foreign_key_constraint_on: variant_id

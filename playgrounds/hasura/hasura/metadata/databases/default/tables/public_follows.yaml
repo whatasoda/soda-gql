@@ -1,0 +1,10 @@
+table:
+  name: follows
+  schema: public
+object_relationships:
+  - name: follower
+    using:
+      foreign_key_constraint_on: follower_id
+  - name: following
+    using:
+      foreign_key_constraint_on: following_id

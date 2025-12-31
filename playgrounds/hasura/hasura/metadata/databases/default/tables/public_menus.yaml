@@ -1,0 +1,15 @@
+table:
+  name: menus
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+array_relationships:
+  - name: menuItems
+    using:
+      foreign_key_constraint_on:
+        column: menu_id
+        table:
+          name: menu_items
+          schema: public

@@ -1,0 +1,11 @@
+table:
+  name: brands
+  schema: public
+array_relationships:
+  - name: products
+    using:
+      foreign_key_constraint_on:
+        column: brand_id
+        table:
+          name: products
+          schema: public

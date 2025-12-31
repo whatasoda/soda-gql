@@ -1,0 +1,10 @@
+table:
+  name: wishlist_items
+  schema: public
+object_relationships:
+  - name: wishlist
+    using:
+      foreign_key_constraint_on: wishlist_id
+  - name: product
+    using:
+      foreign_key_constraint_on: product_id

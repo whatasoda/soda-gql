@@ -1,0 +1,10 @@
+table:
+  name: media_files
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
+  - name: folder
+    using:
+      foreign_key_constraint_on: folder_id

@@ -1,0 +1,13 @@
+table:
+  name: reviews
+  schema: public
+object_relationships:
+  - name: product
+    using:
+      foreign_key_constraint_on: product_id
+  - name: customer
+    using:
+      foreign_key_constraint_on: customer_id
+  - name: orderItem
+    using:
+      foreign_key_constraint_on: order_item_id

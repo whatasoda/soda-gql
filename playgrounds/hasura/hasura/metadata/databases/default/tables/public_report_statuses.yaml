@@ -1,0 +1,11 @@
+table:
+  name: report_statuses
+  schema: public
+array_relationships:
+  - name: reports
+    using:
+      foreign_key_constraint_on:
+        column: status_id
+        table:
+          name: reports
+          schema: public

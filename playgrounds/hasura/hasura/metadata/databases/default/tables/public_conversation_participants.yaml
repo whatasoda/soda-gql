@@ -1,0 +1,10 @@
+table:
+  name: conversation_participants
+  schema: public
+object_relationships:
+  - name: conversation
+    using:
+      foreign_key_constraint_on: conversation_id
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id

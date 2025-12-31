@@ -1,0 +1,7 @@
+table:
+  name: analytics_events
+  schema: public
+object_relationships:
+  - name: site
+    using:
+      foreign_key_constraint_on: site_id
