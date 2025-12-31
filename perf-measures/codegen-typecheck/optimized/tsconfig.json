@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+    "paths": {
+      "@soda-gql/core": ["../../../packages/core/src"]
+    }
+  },
+  "include": ["generated/**/*.ts", "client.ts"]
+}
