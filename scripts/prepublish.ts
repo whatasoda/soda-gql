@@ -144,6 +144,7 @@ const prepare = async () => {
             dependencies,
             devDependencies,
             peerDependencies,
+            optionalDependencies,
             ...rest
           } = packageJsonSource;
 
@@ -152,6 +153,7 @@ const prepare = async () => {
               ...Object.keys(dependencies ?? {}),
               ...Object.keys(devDependencies ?? {}),
               ...Object.keys(peerDependencies ?? {}),
+              ...Object.keys(optionalDependencies ?? {}),
             ].filter((key) => key !== name && key.startsWith("@soda-gql/")),
           );
 
@@ -179,6 +181,7 @@ const prepare = async () => {
             dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
+            optionalDependencies: mapValues(optionalDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             ...rest,
           };
 
