@@ -414,58 +414,37 @@ const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDe
   return renderPropertyLines({ entries, indentSize: 6 });
 };
 
-const renderScalarDefinition = (record: ScalarRecord): string => {
+// Granular render functions - each type as its own const variable
+const renderScalarVar = (schemaName: string, record: ScalarRecord): string => {
   const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
-  return `${record.name}: { name: "${record.name}", $type: {} as { input: ${typeInfo.input}; output: ${typeInfo.output}; inputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.input} }; outputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.output} } } }`;
+  return `const scalar_${schemaName}_${record.name} = { name: "${record.name}", $type: {} as { input: ${typeInfo.input}; output: ${typeInfo.output}; inputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.input} }; outputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.output} } } } as const;`;
 };
 
-const renderObjectDefinition = (schema: SchemaIndex, typeName: string): string => {
-  const record = schema.objects.get(typeName);
-  if (!record) {
-    return "";
-  }
-
-  const fields = renderObjectFields(schema, record.fields);
-  return `${record.name}: { name: "${record.name}", fields: ${fields} }`;
-};
-
-const renderInputDefinition = (schema: SchemaIndex, typeName: string): string => {
-  const record = schema.inputs.get(typeName);
-  if (!record) {
-    return "";
-  }
-
-  const fields = renderInputFields(schema, record.fields);
-  return `${record.name}: { name: "${record.name}", fields: ${fields} }`;
-};
-
-const renderEnumDefinition = (schema: SchemaIndex, typeName: string): string => {
-  const record = schema.enums.get(typeName);
-  if (!record) {
-    return "";
-  }
-
+const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
   const valueNames = Array.from(record.values.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((value) => value.name.value);
   const valuesObj = valueNames.length === 0 ? "{}" : `{ ${valueNames.map((v) => `${v}: true`).join(", ")} }`;
   const valueUnion = valueNames.length === 0 ? "never" : valueNames.map((v) => `"${v}"`).join(" | ");
-
-  return `${record.name}: { name: "${record.name}", values: ${valuesObj}, $type: {} as { name: "${record.name}"; inputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} }; outputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} } } }`;
+  return `const enum_${schemaName}_${record.name} = { name: "${record.name}", values: ${valuesObj}, $type: {} as { name: "${record.name}"; inputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} }; outputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} } } } as const;`;
 };
 
-const renderUnionDefinition = (schema: SchemaIndex, typeName: string): string => {
-  const record = schema.unions.get(typeName);
-  if (!record) {
-    return "";
-  }
+const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
+  const fields = renderInputFields(schema, record.fields);
+  return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+};
 
+const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord): string => {
+  const fields = renderObjectFields(schema, record.fields);
+  return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+};
+
+const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
   const memberNames = Array.from(record.members.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((member) => member.name.value);
   const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
-
-  return `${record.name}: { name: "${record.name}", types: ${typesObj} }`;
+  return `const union_${schemaName}_${record.name} = { name: "${record.name}", types: ${typesObj} } as const;`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
@@ -561,11 +540,18 @@ type MultiRuntimeTemplateOptions = {
       readonly queryType: string;
       readonly mutationType: string;
       readonly subscriptionType: string;
-      readonly scalarBlock: string;
-      readonly enumBlock: string;
-      readonly inputBlock: string;
-      readonly objectBlock: string;
-      readonly unionBlock: string;
+      // Granular: individual variable declarations
+      readonly scalarVars: string[];
+      readonly enumVars: string[];
+      readonly inputVars: string[];
+      readonly objectVars: string[];
+      readonly unionVars: string[];
+      // Granular: type name lists for assembly
+      readonly scalarNames: string[];
+      readonly enumNames: string[];
+      readonly inputNames: string[];
+      readonly objectNames: string[];
+      readonly unionNames: string[];
       readonly inputTypeMethodsBlock: string;
       readonly fragmentBuildersTypeBlock: string;
       readonly defaultInputDepth?: number;
@@ -620,13 +606,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
   const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
 
-  // Generate per-schema definitions
+  // Generate per-schema definitions (granular pattern)
   const schemaBlocks: string[] = [];
   const gqlEntries: string[] = [];
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const schemaVar = `${name}Schema`;
-    const scalarBlock = $$.injection.mode === "inject" ? scalarAliases.get(name) : config.scalarBlock;
 
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
@@ -653,15 +638,65 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
         : "";
 
+    // Granular: generate individual variable declarations
+    const scalarVarsBlock = config.scalarVars.join("\n");
+    const enumVarsBlock = config.enumVars.length > 0 ? config.enumVars.join("\n") : "// (no enums)";
+    const inputVarsBlock = config.inputVars.length > 0 ? config.inputVars.join("\n") : "// (no inputs)";
+    const objectVarsBlock = config.objectVars.length > 0 ? config.objectVars.join("\n") : "// (no objects)";
+    const unionVarsBlock = config.unionVars.length > 0 ? config.unionVars.join("\n") : "// (no unions)";
+
+    // Granular: generate assembly references
+    // For injection mode, use imported scalar object; otherwise assemble from individual vars
+    const scalarAssembly =
+      $$.injection.mode === "inject"
+        ? (scalarAliases.get(name) ?? "{}")
+        : config.scalarNames.length > 0
+          ? `{ ${config.scalarNames.map((n) => `${n}: scalar_${name}_${n}`).join(", ")} }`
+          : "{}";
+    const enumAssembly =
+      config.enumNames.length > 0 ? `{ ${config.enumNames.map((n) => `${n}: enum_${name}_${n}`).join(", ")} }` : "{}";
+    const inputAssembly =
+      config.inputNames.length > 0 ? `{ ${config.inputNames.map((n) => `${n}: input_${name}_${n}`).join(", ")} }` : "{}";
+    const objectAssembly =
+      config.objectNames.length > 0 ? `{ ${config.objectNames.map((n) => `${n}: object_${name}_${n}`).join(", ")} }` : "{}";
+    const unionAssembly =
+      config.unionNames.length > 0 ? `{ ${config.unionNames.map((n) => `${n}: union_${name}_${n}`).join(", ")} }` : "{}";
+
+    // Granular: skip individual scalar vars when using injection (scalars come from import)
+    const scalarVarsSection = $$.injection.mode === "inject" ? "// (scalars imported)" : scalarVarsBlock;
+
     schemaBlocks.push(`
+// Individual scalar definitions
+${scalarVarsSection}
+
+// Individual enum definitions
+${enumVarsBlock}
+
+// Individual input definitions
+${inputVarsBlock}
+
+// Individual object definitions
+${objectVarsBlock}
+
+// Individual union definitions
+${unionVarsBlock}
+
+// Category assembly
+const scalar_${name} = ${scalarAssembly} as const;
+const enum_${name} = ${enumAssembly} as const;
+const input_${name} = ${inputAssembly} as const;
+const object_${name} = ${objectAssembly} as const;
+const union_${name} = ${unionAssembly} as const;
+
+// Schema assembly
 const ${schemaVar} = {
-  label: "${name}",
-  operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" },
-  scalar: ${scalarBlock},
-  enum: ${config.enumBlock},
-  input: ${config.inputBlock},
-  object: ${config.objectBlock},
-  union: ${config.unionBlock},${defaultDepthBlock}${depthOverridesBlock}
+  label: "${name}" as const,
+  operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
+  scalar: scalar_${name},
+  enum: enum_${name},
+  input: input_${name},
+  object: object_${name},
+  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
 } as const;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
@@ -716,42 +751,68 @@ export const generateMultiSchemaModule = (
   for (const [name, document] of schemas.entries()) {
     const schema = createSchemaIndex(document);
 
-    const builtinScalarDefinitions = Array.from(builtinScalarTypes.keys()).map((name) =>
-      renderScalarDefinition(schema.scalars.get(name) ?? { name, directives: [] }),
-    );
-
-    const customScalarDefinitions = collectScalarNames(schema)
-      .filter((name) => !builtinScalarTypes.has(name))
-      .map((name) => {
-        const record = schema.scalars.get(name);
-        return record ? renderScalarDefinition(record) : "";
-      })
-      .filter((definition) => definition.length > 0);
-
-    const allScalarDefinitions = builtinScalarDefinitions.concat(customScalarDefinitions);
-
+    // Collect type names
     const objectTypeNames = collectObjectTypeNames(schema);
     const enumTypeNames = collectEnumTypeNames(schema);
     const inputTypeNames = collectInputTypeNames(schema);
     const unionTypeNames = collectUnionTypeNames(schema);
+    const customScalarNames = collectScalarNames(schema).filter((n) => !builtinScalarTypes.has(n));
 
-    const scalarBlock = renderPropertyLines({ entries: allScalarDefinitions, indentSize: 4 });
-    const enumDefinitions = enumTypeNames
-      .map((name) => renderEnumDefinition(schema, name))
-      .filter((definition) => definition.length > 0);
-    const enumBlock = renderPropertyLines({ entries: enumDefinitions, indentSize: 4 });
-    const inputDefinitions = inputTypeNames
-      .map((name) => renderInputDefinition(schema, name))
-      .filter((definition) => definition.length > 0);
-    const inputBlock = renderPropertyLines({ entries: inputDefinitions, indentSize: 4 });
-    const objectDefinitions = objectTypeNames
-      .map((name) => renderObjectDefinition(schema, name))
-      .filter((definition) => definition.length > 0);
-    const objectBlock = renderPropertyLines({ entries: objectDefinitions, indentSize: 4 });
-    const unionDefinitions = unionTypeNames
-      .map((name) => renderUnionDefinition(schema, name))
-      .filter((definition) => definition.length > 0);
-    const unionBlock = renderPropertyLines({ entries: unionDefinitions, indentSize: 4 });
+    // Generate individual variable declarations (granular pattern)
+    const scalarVars: string[] = [];
+    const enumVars: string[] = [];
+    const inputVars: string[] = [];
+    const objectVars: string[] = [];
+    const unionVars: string[] = [];
+
+    // Builtin scalars
+    for (const scalarName of builtinScalarTypes.keys()) {
+      const record = schema.scalars.get(scalarName) ?? { name: scalarName, directives: [] };
+      scalarVars.push(renderScalarVar(name, record));
+    }
+
+    // Custom scalars
+    for (const scalarName of customScalarNames) {
+      const record = schema.scalars.get(scalarName);
+      if (record) {
+        scalarVars.push(renderScalarVar(name, record));
+      }
+    }
+
+    // Enums
+    for (const enumName of enumTypeNames) {
+      const record = schema.enums.get(enumName);
+      if (record) {
+        enumVars.push(renderEnumVar(name, record));
+      }
+    }
+
+    // Inputs
+    for (const inputName of inputTypeNames) {
+      const record = schema.inputs.get(inputName);
+      if (record) {
+        inputVars.push(renderInputVar(name, schema, record));
+      }
+    }
+
+    // Objects
+    for (const objectName of objectTypeNames) {
+      const record = schema.objects.get(objectName);
+      if (record) {
+        objectVars.push(renderObjectVar(name, schema, record));
+      }
+    }
+
+    // Unions
+    for (const unionName of unionTypeNames) {
+      const record = schema.unions.get(unionName);
+      if (record) {
+        unionVars.push(renderUnionVar(name, record));
+      }
+    }
+
+    // Type name lists for assembly
+    const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
 
     const factoryVar = `createMethod_${name}`;
     const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
@@ -767,11 +828,18 @@ export const generateMultiSchemaModule = (
       queryType,
       mutationType,
       subscriptionType,
-      scalarBlock,
-      enumBlock,
-      inputBlock,
-      objectBlock,
-      unionBlock,
+      // Granular: individual variable declarations
+      scalarVars,
+      enumVars,
+      inputVars,
+      objectVars,
+      unionVars,
+      // Granular: type name lists for assembly
+      scalarNames: allScalarNames,
+      enumNames: enumTypeNames,
+      inputNames: inputTypeNames,
+      objectNames: objectTypeNames,
+      unionNames: unionTypeNames,
       inputTypeMethodsBlock,
       fragmentBuildersTypeBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
@@ -779,10 +847,10 @@ export const generateMultiSchemaModule = (
     };
 
     // Accumulate stats
-    allStats.objects += objectDefinitions.length;
-    allStats.enums += enumDefinitions.length;
-    allStats.inputs += inputDefinitions.length;
-    allStats.unions += unionDefinitions.length;
+    allStats.objects += objectVars.length;
+    allStats.enums += enumVars.length;
+    allStats.inputs += inputVars.length;
+    allStats.unions += unionVars.length;
   }
 
   const injection: RuntimeTemplateInjection = options?.injection
