@@ -14,7 +14,7 @@ export interface ObjectTypeProfile {
   readonly fields: { readonly [key: string]: TypeProfile.WithMeta };
 }
 
-export type TypeProfile = [PrimitiveTypeProfile] | [ObjectTypeProfile];
+export type TypeProfile = PrimitiveTypeProfile | ObjectTypeProfile;
 
 export declare namespace TypeProfile {
   export type WITH_DEFAULT_INPUT = "with_default_input";
@@ -54,17 +54,17 @@ export declare namespace TypeProfile {
    */
   type NestedAssignableType<TProfile extends WithMeta> =
     | ApplyTypeModifier<
-        TProfile[0] extends [PrimitiveTypeProfile]
-          ? TProfile[0][0]["value"]
-          : TProfile[0] extends [ObjectTypeProfile]
-            ? AssignableObjectTypeProfile<TProfile[0][0]["fields"]>
+        TProfile[0] extends PrimitiveTypeProfile
+          ? TProfile[0]["value"]
+          : TProfile[0] extends ObjectTypeProfile
+            ? AssignableObjectTypeProfile<TProfile[0]["fields"]>
             : never,
         TProfile[1]
       >
-    | (TProfile[0] extends [PrimitiveTypeProfile]
-        ? VarRef<AssignableVarRefMeta<TProfile[0][0]["name"], TProfile[0][0]["kind"], AssignableSignature<TProfile>>>
-        : TProfile[0] extends [ObjectTypeProfile]
-          ? VarRef<AssignableVarRefMeta<TProfile[0][0]["name"], "input", AssignableSignature<TProfile>>>
+    | (TProfile[0] extends PrimitiveTypeProfile
+        ? VarRef<AssignableVarRefMeta<TProfile[0]["name"], TProfile[0]["kind"], AssignableSignature<TProfile>>>
+        : TProfile[0] extends ObjectTypeProfile
+          ? VarRef<AssignableVarRefMeta<TProfile[0]["name"], "input", AssignableSignature<TProfile>>>
           : never);
 
   type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
@@ -81,10 +81,10 @@ export declare namespace TypeProfile {
 
   export type Type<TProfile extends TypeProfile.WithMeta> =
     | ApplyTypeModifier<
-        TProfile[0] extends [PrimitiveTypeProfile]
-          ? TProfile[0][0]["value"]
-          : TProfile[0] extends [ObjectTypeProfile]
-            ? ObjectTypeProfileType<TProfile[0][0]["fields"]>
+        TProfile[0] extends PrimitiveTypeProfile
+          ? TProfile[0]["value"]
+          : TProfile[0] extends ObjectTypeProfile
+            ? ObjectTypeProfileType<TProfile[0]["fields"]>
             : never,
         TProfile[1]
       >
@@ -129,10 +129,10 @@ export declare namespace TypeProfile {
    * Nested VarRefs use typeName extraction from profile.
    */
   export type ConstAssignableType<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
-    TProfile[0] extends [PrimitiveTypeProfile]
-      ? TProfile[0][0]["value"]
-      : TProfile[0] extends [ObjectTypeProfile]
-        ? AssignableObjectTypeProfile<TProfile[0][0]["fields"]>
+    TProfile[0] extends PrimitiveTypeProfile
+      ? TProfile[0]["value"]
+      : TProfile[0] extends ObjectTypeProfile
+        ? AssignableObjectTypeProfile<TProfile[0]["fields"]>
         : never,
     TProfile[1]
   >;

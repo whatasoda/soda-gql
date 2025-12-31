@@ -137,11 +137,11 @@ export type InferInputProfile<
     ? never
     : [
         TSpecifier extends InputScalarSpecifier
-          ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
+          ? TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]
           : TSpecifier extends InputEnumSpecifier
-            ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
+            ? TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]
             : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-              ? [{
+              ? {
                   kind: "input";
                   name: TSpecifier["name"];
                   fields: {
@@ -149,7 +149,7 @@ export type InferInputProfile<
                       ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
                       : never;
                   };
-                }]
+                }
               : never,
         TSpecifier["modifier"],
         TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
@@ -157,11 +157,9 @@ export type InferInputProfile<
 }[TSchema["label"]];
 
 export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
-  [_ in TSchema["label"]]: [
-    (TSpecifier extends OutputScalarSpecifier
-      ? TSchema["scalar"][TSpecifier["name"]]
-      : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
-  ];
+  [_ in TSchema["label"]]: (TSpecifier extends OutputScalarSpecifier
+    ? TSchema["scalar"][TSpecifier["name"]]
+    : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"];
 }[TSchema["label"]];
 
 export type PickTypeSpecifierByFieldName<
