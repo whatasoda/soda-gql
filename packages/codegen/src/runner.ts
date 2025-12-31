@@ -121,9 +121,24 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     });
   }
 
+  // Build defaultInputDepth and inputDepthOverrides config for each schema
+  const defaultInputDepthConfig = new Map<string, number>();
+  const inputDepthOverridesConfig = new Map<string, Readonly<Record<string, number>>>();
+
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    if (schemaConfig.defaultInputDepth !== undefined && schemaConfig.defaultInputDepth !== 3) {
+      defaultInputDepthConfig.set(schemaName, schemaConfig.defaultInputDepth);
+    }
+    if (schemaConfig.inputDepthOverrides && Object.keys(schemaConfig.inputDepthOverrides).length > 0) {
+      inputDepthOverridesConfig.set(schemaName, schemaConfig.inputDepthOverrides);
+    }
+  }
+
   // Generate multi-schema module
   const { code } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
+    defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
+    inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
   });
 
   // Calculate individual schema stats and hashes
