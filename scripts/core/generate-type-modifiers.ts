@@ -75,60 +75,33 @@ interface Op<T> {
   readonly 1: T[] | null | undefined;
 }
 
-// ============================================================================
-// Legacy Types (deprecated, use V2 versions)
-// ============================================================================
+type Ref<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRef<TypeProfile.AssignableVarRefMeta<TTypeName, TKind, TSignature>>
 
-type Ref<TProfile extends TypeProfile.WithMeta> = VarRef<TypeProfile.AssignableVarRefMeta<TProfile>>
+// Signature
+// depth = 0
+type Signature_0 = "[TYPE_SIGNATURE]";
+type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
+
+${embedEntries({ from: 1, to: DEPTH })`
+${({ label, inner, outer }) => `type Signature_${label} = Op<Signature_${inner}>[${outer}];`}
+`}
 
 // Assignable
 // depth = 0
-type Assignable_0<T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "!", T[2]]>;
-type Assignable_1<T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "?", T[2]]>;
+type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.ConstAssignableType<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
+type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.ConstAssignableType<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer, modifier }) => `type Assignable_${label}<T extends TypeProfile.WithMeta> = Ref<[T[0], "${modifier}", T[2]]> | Op<Assignable_${inner}<[T[0], "${modifier[0]}"]>>[${outer}];`}
+${({ label, inner, outer, modifier }) => `type Assignable_${label}<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_${label}> | Op<Assignable_${inner}<TTypeName, TKind, [T[0], "${modifier[0]}"]>>[${outer}];`}
 `}
 
 /**
- * @deprecated Use GetAssignableTypeV2 instead. Will be removed in a future version.
- */
-export type GetAssignableType<T extends TypeProfile.WithMeta> =
-${embedEntries({ from: 0, to: DEPTH })`
-  ${({ label, modifier }) => `T[1] extends "${modifier}" ? Assignable_${label}<T> :`}
-`} never;
-
-// ============================================================================
-// V2 Types - Use typeName + kind instead of profile structure comparison
-// ============================================================================
-
-type RefV2<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRef<TypeProfile.AssignableVarRefMetaV2<TTypeName, TKind, TSignature>>
-
-// SignatureV2
-// depth = 0
-type SignatureV2_0 = "[TYPE_SIGNATURE]";
-type SignatureV2_1 = "[TYPE_SIGNATURE]" | null | undefined;
-
-${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer }) => `type SignatureV2_${label} = Op<SignatureV2_${inner}>[${outer}];`}
-`}
-
-// AssignableV2
-// depth = 0
-type AssignableV2_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "!", T[2]]> | RefV2<TTypeName, TKind, SignatureV2_0>;
-type AssignableV2_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "?", T[2]]> | RefV2<TTypeName, TKind, SignatureV2_1>;
-
-${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer, modifier }) => `type AssignableV2_${label}<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = RefV2<TTypeName, TKind, SignatureV2_${label}> | Op<AssignableV2_${inner}<TTypeName, TKind, [T[0], "${modifier[0]}"]>>[${outer}];`}
-`}
-
-/**
- * New assignable type using typeName + kind for VarRef comparison.
+ * Assignable type using typeName + kind for VarRef comparison.
  * Accepts const values or VarRefs with matching typeName + kind + signature.
  */
-export type GetAssignableTypeV2<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
+export type GetAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
 ${embedEntries({ from: 0, to: DEPTH })`
-  ${({ label, modifier }) => `T[1] extends "${modifier}" ? AssignableV2_${label}<TTypeName, TKind, T> :`}
+  ${({ label, modifier }) => `T[1] extends "${modifier}" ? Assignable_${label}<TTypeName, TKind, T> :`}
 `} never;
 `
 

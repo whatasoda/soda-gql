@@ -41,14 +41,32 @@ export declare namespace TypeProfile {
     }
   >;
 
+  /**
+   * Nested assignable type - used for fields within input objects.
+   * For primitives: allows const value OR VarRef with typeName + kind from profile.
+   * For nested input objects: only const value (VarRef not supported at nested input level).
+   */
+  type NestedAssignableType<TProfile extends WithMeta> =
+    | ApplyTypeModifier<
+        TProfile[0] extends [PrimitiveTypeProfile]
+          ? TProfile[0][0]["value"]
+          : TProfile[0] extends { readonly [key: string]: WithMeta }
+            ? AssignableObjectTypeProfile<TProfile[0]>
+            : never,
+        TProfile[1]
+      >
+    | (TProfile[0] extends [PrimitiveTypeProfile]
+        ? VarRef<AssignableVarRefMeta<TProfile[0][0]["name"], TProfile[0][0]["kind"], AssignableSignature<TProfile>>>
+        : never);
+
   type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
     {
       readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
-        ? AssignableType<TProfileObject[K]>
+        ? NestedAssignableType<TProfileObject[K]>
         : never;
     } & {
       readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
-        ? AssignableType<TProfileObject[K]>
+        ? NestedAssignableType<TProfileObject[K]>
         : never;
     }
   >;
@@ -78,34 +96,10 @@ export declare namespace TypeProfile {
     : never;
 
   /**
-   * @deprecated Use AssignableVarRefMetaV2 instead. Will be removed in a future version.
-   * NOTE: AssignableVarRef should accept var refs with same profile and compatible signature.
-   * It doesn't matter modifiers or default input flag in the TProfile.
-   */
-  export type AssignableVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: [TProfile[0], any, any?];
-    signature: AssignableSignature<TProfile>;
-  };
-
-  /**
-   * @deprecated Use AssigningVarRefMetaV2 instead. Will be removed in a future version.
-   * NOTE: AssigningVarRef should remember the full profile aside from signature.
-   * So that it can be used to extract const values from nested structure.
-   */
-  export type AssigningVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: TProfile;
-    signature: Signature<TProfile>;
-  };
-
-  // ============================================================================
-  // V2 Meta Types - Use typeName + kind instead of full profile
-  // ============================================================================
-
-  /**
-   * New assignment validation meta using typeName + kind.
+   * Assignment validation meta using typeName + kind.
    * Type structure comparison is not needed - typeName uniquely identifies the type.
    */
-  export type AssignableVarRefMetaV2<
+  export type AssignableVarRefMeta<
     TTypeName extends string,
     TKind extends InputTypeKind,
     TSignature,
@@ -116,10 +110,10 @@ export declare namespace TypeProfile {
   };
 
   /**
-   * New assigning meta using typeName + kind + signature.
+   * Assigning meta using typeName + kind + signature.
    * Type structure is resolved from schema at call site (e.g., getValueAt).
    */
-  export type AssigningVarRefMetaV2<
+  export type AssigningVarRefMeta<
     TTypeName extends string,
     TKind extends InputTypeKind,
     TSignature,
@@ -130,23 +124,18 @@ export declare namespace TypeProfile {
   };
 
   /**
-   * @deprecated Use GetAssignableTypeV2 instead. Will be removed in a future version.
+   * Const value type that allows VarRef in nested input object fields.
+   * The top-level VarRef is NOT included - use GetAssignableType for that.
+   * Nested VarRefs use profile-based comparison (typeName extraction from profile).
    */
-  export type AssignableType<TProfile extends TypeProfile.WithMeta> =
-    | ApplyTypeModifier<
-        TProfile[0] extends [PrimitiveTypeProfile]
-          ? TProfile[0][0]["value"]
-          : TProfile[0] extends { readonly [key: string]: WithMeta }
-            ? AssignableObjectTypeProfile<TProfile[0]>
-            : never,
-        TProfile[1]
-      >
-    | VarRef<AssignableVarRefMeta<TProfile>>;
-
-  /**
-   * @deprecated Use new AssigningVarRefMetaV2 with typeName + kind instead.
-   */
-  export type AssigningType<TProfile extends TypeProfile.WithMeta> = VarRef<AssigningVarRefMeta<TProfile>>;
+  export type ConstAssignableType<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
+    TProfile[0] extends [PrimitiveTypeProfile]
+      ? TProfile[0][0]["value"]
+      : TProfile[0] extends { readonly [key: string]: WithMeta }
+        ? AssignableObjectTypeProfile<TProfile[0]>
+        : never,
+    TProfile[1]
+  >;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<
@@ -154,5 +143,3 @@ export type GetModifiedType<TProfile extends TypeProfile, TModifier extends Type
 >;
 
 export type GetConstAssignableType<TProfile extends TypeProfile.WithMeta> = TypeProfile.Type<TProfile>;
-
-export type GetAssigningType<TProfile extends TypeProfile.WithMeta> = TypeProfile.AssigningType<TProfile>;

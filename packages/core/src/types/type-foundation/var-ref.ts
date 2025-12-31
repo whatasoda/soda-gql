@@ -3,27 +3,14 @@ import type { InputTypeKind } from "./type-specifier";
 import type { TypeProfile } from "./type-profile";
 
 /**
- * @deprecated Use VarRefMetaV2 instead. Will be removed in a future version.
- */
-export interface AnyVarRefMeta {
-  readonly profile: TypeProfile.WithMeta;
-  readonly signature: unknown;
-}
-
-/**
- * New VarRef meta interface using typeName + kind instead of full profile.
+ * VarRef meta interface using typeName + kind instead of full profile.
  * This simplifies type comparison and improves error messages.
  */
-export interface VarRefMetaV2 {
+export interface AnyVarRefMeta {
   readonly typeName: string;
   readonly kind: InputTypeKind;
   readonly signature: unknown;
 }
-
-/**
- * Union of all VarRef meta types. Used as constraint for VarRef class.
- */
-export type AnyVarRefMetaBase = AnyVarRefMeta | VarRefMetaV2;
 
 /**
  * A nested value that can contain:
@@ -64,7 +51,7 @@ export type VarRefInner =
 export type AnyVarRef = VarRef<any>;
 
 declare const __VAR_REF_BRAND__: unique symbol;
-export class VarRef<TMeta extends AnyVarRefMetaBase> {
+export class VarRef<TMeta extends AnyVarRefMeta> {
   declare readonly [__VAR_REF_BRAND__]: TMeta;
 
   constructor(private readonly inner: VarRefInner) {}
@@ -99,49 +86,31 @@ export const hasVarRefInside = (value: NestedValueElement): boolean => {
 };
 
 /**
- * @deprecated Use createVarRefFromVariableV2 instead. Will be removed in a future version.
- */
-export const createVarRefFromVariable = <TProfile extends TypeProfile.WithMeta>(name: string) => {
-  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "variable", name });
-};
-
-/**
- * @deprecated Use createVarRefFromNestedValueV2 instead. Will be removed in a future version.
- */
-export const createVarRefFromNestedValue = <TProfile extends TypeProfile.WithMeta>(value: NestedValue) => {
-  return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "nested-value", value });
-};
-
-// ============================================================================
-// V2 Creation Functions - Use typeName + kind instead of full profile
-// ============================================================================
-
-/**
- * Creates a VarRef with VarRefMetaV2 (typeName + kind + signature).
+ * Creates a VarRef with typeName + kind + signature meta.
  * Signature is computed from the type modifier.
  */
-export const createVarRefFromVariableV2 = <
+export const createVarRefFromVariable = <
   TTypeName extends string,
   TKind extends InputTypeKind,
   TSignature,
 >(
   name: string,
 ) => {
-  return new VarRef<TypeProfile.AssigningVarRefMetaV2<TTypeName, TKind, TSignature>>({ type: "variable", name });
+  return new VarRef<TypeProfile.AssigningVarRefMeta<TTypeName, TKind, TSignature>>({ type: "variable", name });
 };
 
 /**
- * Creates a VarRef from a nested value with VarRefMetaV2 (typeName + kind + signature).
+ * Creates a VarRef from a nested value with typeName + kind + signature meta.
  * Signature is computed from the type modifier.
  */
-export const createVarRefFromNestedValueV2 = <
+export const createVarRefFromNestedValue = <
   TTypeName extends string,
   TKind extends InputTypeKind,
   TSignature,
 >(
   value: NestedValue,
 ) => {
-  return new VarRef<TypeProfile.AssigningVarRefMetaV2<TTypeName, TKind, TSignature>>({ type: "nested-value", value });
+  return new VarRef<TypeProfile.AssigningVarRefMeta<TTypeName, TKind, TSignature>>({ type: "nested-value", value });
 };
 
 export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
@@ -263,11 +232,11 @@ const createSelectableProxy = <T>(current: ProxyInner): T => {
  * });
  * getNameAt(ref, p => p.user.age); // returns the variable name
  */
-export const getNameAt = <T extends AnyVarRefMeta, U>(
-  varRef: VarRef<T>,
-  selector: (proxy: TypeProfile.Type<T["profile"]>) => U,
+export const getNameAt = <T, U>(
+  varRef: VarRef<AnyVarRefMeta>,
+  selector: (proxy: T) => U,
 ): string => {
-  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
+  const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
 
@@ -296,11 +265,11 @@ export const getNameAt = <T extends AnyVarRefMeta, U>(
  * });
  * getValueAt(ref, p => p.user.name); // returns "Alice"
  */
-export const getValueAt = <T extends AnyVarRefMeta, U>(
-  varRef: VarRef<T>,
-  selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
+export const getValueAt = <T, U>(
+  varRef: VarRef<AnyVarRefMeta>,
+  selector: (proxy: SelectableProxy<T>) => U,
 ): U => {
-  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
+  const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
 
@@ -319,11 +288,11 @@ export const getValueAt = <T extends AnyVarRefMeta, U>(
   return inner.varInner.value as U;
 };
 
-export const getVariablePath = <T extends AnyVarRefMeta, U>(
-  varRef: VarRef<T>,
-  selector: (proxy: SelectableProxy<TypeProfile.Type<T["profile"]>>) => U,
+export const getVariablePath = <T, U>(
+  varRef: VarRef<AnyVarRefMeta>,
+  selector: (proxy: SelectableProxy<T>) => U,
 ): readonly PathSegment[] => {
-  const proxy = createSelectableProxy<TypeProfile.Type<T["profile"]>>({ varInner: VarRef.getInner(varRef), segments: [] });
+  const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
 

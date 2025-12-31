@@ -4,10 +4,10 @@ import type {
   AnyVarRef,
   ConstValue,
   GetAssignableType,
-  GetAssignableTypeV2,
-  GetAssigningType,
   InputTypeSpecifier,
   InputTypeSpecifiers,
+  TypeProfile,
+  VarRef,
 } from "../type-foundation";
 
 export type AnyAssignableInputValue =
@@ -45,23 +45,22 @@ export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extend
 };
 
 /**
- * @deprecated Use AssignableInputValueV2 instead. Will be removed in a future version.
- */
-export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
-  InferInputProfile<TSchema, TSpecifier>
->;
-
-/**
  * Assignable input value type using typeName + kind for VarRef comparison.
- * Uses GetAssignableTypeV2 which compares typeName + kind instead of full profile structure.
+ * Uses GetAssignableType which compares typeName + kind instead of full profile structure.
  */
-export type AssignableInputValueV2<
+export type AssignableInputValue<
   TSchema extends AnyGraphqlSchema,
   TSpecifier extends InputTypeSpecifier,
-> = GetAssignableTypeV2<TSpecifier["name"], TSpecifier["kind"], InferInputProfile<TSchema, TSpecifier>>;
+> = GetAssignableType<TSpecifier["name"], TSpecifier["kind"], InferInputProfile<TSchema, TSpecifier>>;
 
 export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
-  readonly [K in keyof TSpecifiers]-?: GetAssigningType<InferInputProfile<TSchema, TSpecifiers[K]>>;
+  readonly [K in keyof TSpecifiers]-?: VarRef<
+    TypeProfile.AssigningVarRefMeta<
+      TSpecifiers[K]["name"],
+      TSpecifiers[K]["kind"],
+      TypeProfile.Signature<InferInputProfile<TSchema, TSpecifiers[K]>>
+    >
+  >;
 };
 
 export type AssignableInputByFieldName<
