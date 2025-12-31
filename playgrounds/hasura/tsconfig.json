@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "customConditions": ["@soda-gql"],
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+    }
+  },
+  "include": ["src", "scripts", "codegen-fixture"]
+}

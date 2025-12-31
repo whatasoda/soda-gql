@@ -1,0 +1,26 @@
+{
+  "name": "@soda-gql-playgrounds/hasura",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:reset": "docker-compose down -v && docker-compose up -d",
+    "docker:logs": "docker-compose logs -f hasura",
+    "db:generate-schema": "bun scripts/generate-schema.ts",
+    "db:generate-metadata": "bun scripts/generate-metadata.ts",
+    "schema:export": "bun scripts/export-schema.ts",
+    "setup": "bun scripts/setup.ts",
+    "codegen": "soda-gql codegen"
+  },
+  "dependencies": {
+    "@soda-gql/core": "workspace:*",
+    "@soda-gql/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@soda-gql/cli": "workspace:*",
+    "@types/node": "^22.0.0",
+    "graphql": "^16.8.1",
+    "typescript": "^5.0.0"
+  }
+}
