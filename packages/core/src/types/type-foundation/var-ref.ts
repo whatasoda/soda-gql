@@ -21,6 +21,11 @@ export interface VarRefMetaV2 {
 }
 
 /**
+ * Union of all VarRef meta types. Used as constraint for VarRef class.
+ */
+export type AnyVarRefMetaBase = AnyVarRefMeta | VarRefMetaV2;
+
+/**
  * A nested value that can contain:
  * - Primitive ConstValue (string, number, boolean, null, undefined)
  * - VarRef at any nesting level
@@ -59,7 +64,7 @@ export type VarRefInner =
 export type AnyVarRef = VarRef<any>;
 
 declare const __VAR_REF_BRAND__: unique symbol;
-export class VarRef<TMeta extends AnyVarRefMeta> {
+export class VarRef<TMeta extends AnyVarRefMetaBase> {
   declare readonly [__VAR_REF_BRAND__]: TMeta;
 
   constructor(private readonly inner: VarRefInner) {}
