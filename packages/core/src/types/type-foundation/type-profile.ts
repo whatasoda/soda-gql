@@ -1,5 +1,5 @@
 import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
-import type { GetNestedAssignableType } from "./type-modifier-extension.generated";
+import type { GetAssignableType } from "./type-modifier-extension.generated";
 import type { InputTypeKind } from "./type-specifier";
 
 export interface PrimitiveTypeProfile {
@@ -49,7 +49,7 @@ export declare namespace TypeProfile {
 
   /**
    * Nested assignable type - used for fields within input objects.
-   * Delegates to GetNestedAssignableType which properly handles:
+   * Delegates to GetAssignableType which properly handles:
    * - VarRef at current level (e.g., VarRef for the whole array)
    * - VarRef at element level for arrays (e.g., VarRef for array elements)
    * - Recursive VarRef support in nested object fields
@@ -57,9 +57,9 @@ export declare namespace TypeProfile {
   type NestedAssignableType<TProfile extends WithMeta> =
     //
     TProfile[0] extends PrimitiveTypeProfile
-      ? GetNestedAssignableType<TProfile[0]["name"], TProfile[0]["kind"], TProfile>
+      ? GetAssignableType<TProfile[0]["name"], TProfile[0]["kind"], TProfile>
       : TProfile[0] extends ObjectTypeProfile
-        ? GetNestedAssignableType<TProfile[0]["name"], "input", TProfile>
+        ? GetAssignableType<TProfile[0]["name"], "input", TProfile>
         : never;
 
   export type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
@@ -117,20 +117,6 @@ export declare namespace TypeProfile {
     kind: TKind;
     signature: TSignature;
   };
-
-  /**
-   * Const value type that allows VarRef in nested input object fields.
-   * The top-level VarRef is NOT included - use GetAssignableType for that.
-   * Nested VarRefs use typeName extraction from profile.
-   */
-  export type ConstAssignableType<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
-    TProfile[0] extends PrimitiveTypeProfile
-      ? TProfile[0]["value"]
-      : TProfile[0] extends ObjectTypeProfile
-        ? ObjectTypeProfileType<TProfile[0]["fields"]>
-        : never,
-    TProfile[1]
-  >;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<

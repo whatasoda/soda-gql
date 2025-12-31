@@ -128,7 +128,3 @@ export type GetAssignableType<TTypeName extends string, TKind extends InputTypeK
   T[1] extends "?[]?[]![]?" ? Assignable_1101<TTypeName, TKind, T> :
   T[1] extends "?[]?[]?[]!" ? Assignable_1110<TTypeName, TKind, T> :
   T[1] extends "?[]?[]?[]?" ? Assignable_1111<TTypeName, TKind, T> : never;
-
-// Alias for backwards compatibility and clarity in nested contexts
-export type GetNestedAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
-  GetAssignableType<TTypeName, TKind, T>;

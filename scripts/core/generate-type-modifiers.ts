@@ -104,10 +104,6 @@ export type GetAssignableType<TTypeName extends string, TKind extends InputTypeK
 ${embedEntries({ from: 0, to: DEPTH })`
   ${({ label, modifier }) => `T[1] extends "${modifier}" ? Assignable_${label}<TTypeName, TKind, T> :`}
 `} never;
-
-// Alias for backwards compatibility and clarity in nested contexts
-export type GetNestedAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
-  GetAssignableType<TTypeName, TKind, T>;
 `
 
 await Bun.write(CORE, core_content);
