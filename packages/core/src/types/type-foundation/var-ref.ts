@@ -98,12 +98,50 @@ export const hasVarRefInside = (value: NestedValueElement): boolean => {
   return false;
 };
 
+/**
+ * @deprecated Use createVarRefFromVariableV2 instead. Will be removed in a future version.
+ */
 export const createVarRefFromVariable = <TProfile extends TypeProfile.WithMeta>(name: string) => {
   return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "variable", name });
 };
 
+/**
+ * @deprecated Use createVarRefFromNestedValueV2 instead. Will be removed in a future version.
+ */
 export const createVarRefFromNestedValue = <TProfile extends TypeProfile.WithMeta>(value: NestedValue) => {
   return new VarRef<TypeProfile.AssigningVarRefMeta<TProfile>>({ type: "nested-value", value });
+};
+
+// ============================================================================
+// V2 Creation Functions - Use typeName + kind instead of full profile
+// ============================================================================
+
+/**
+ * Creates a VarRef with VarRefMetaV2 (typeName + kind + signature).
+ * Signature is computed from the type modifier.
+ */
+export const createVarRefFromVariableV2 = <
+  TTypeName extends string,
+  TKind extends InputTypeKind,
+  TSignature,
+>(
+  name: string,
+) => {
+  return new VarRef<TypeProfile.AssigningVarRefMetaV2<TTypeName, TKind, TSignature>>({ type: "variable", name });
+};
+
+/**
+ * Creates a VarRef from a nested value with VarRefMetaV2 (typeName + kind + signature).
+ * Signature is computed from the type modifier.
+ */
+export const createVarRefFromNestedValueV2 = <
+  TTypeName extends string,
+  TKind extends InputTypeKind,
+  TSignature,
+>(
+  value: NestedValue,
+) => {
+  return new VarRef<TypeProfile.AssigningVarRefMetaV2<TTypeName, TKind, TSignature>>({ type: "nested-value", value });
 };
 
 export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
