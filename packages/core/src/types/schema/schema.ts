@@ -131,10 +131,10 @@ export type InferInputProfile<
     TSpecifier["name"],
     TSchema["__defaultInputDepth"]
   >,
-> = IsDepthExhausted<TDepth> extends true
-  ? never
-  : {
-      [_ in TSchema["label"]]: [
+> = {
+  [_ in TSchema["label"]]: IsDepthExhausted<TDepth> extends true
+    ? never
+    : [
         TSpecifier extends InputScalarSpecifier
           ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
           : TSpecifier extends InputEnumSpecifier
@@ -149,7 +149,7 @@ export type InferInputProfile<
         TSpecifier["modifier"],
         TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
       ];
-    }[TSchema["label"]];
+}[TSchema["label"]];
 
 export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
   [_ in TSchema["label"]]: [
