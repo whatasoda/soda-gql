@@ -3,6 +3,8 @@ import { define, defineScalar, unsafeInputType } from "../../schema";
 import type { AssignableInput } from "../fragment/assignable-input";
 import type { AnyGraphqlSchema } from "../schema";
 import type { ConstAssignableInput } from "../schema/const-assignable-input";
+import { createVarRefFromVariable, type VarRef } from "./var-ref";
+import type { TypeProfile } from "./type-profile";
 
 /**
  * Test suite for verifying optional field inference in nested Input objects.
@@ -180,6 +182,118 @@ describe("Input object optional field inference", () => {
           // optionalField can be omitted
         },
         // optionalNested can be omitted
+      };
+      expect(true).toBe(true);
+    });
+  });
+});
+
+/**
+ * Test suite for verifying VarRef assignment in nested Input objects.
+ *
+ * Problem: Nested input object fields could not accept VarRef because
+ * ObjectTypeProfile lost the type name information.
+ *
+ * Expected behavior:
+ * - VarRef should be assignable to nested input object fields
+ * - VarRef for self-referential types like bool_exp should work
+ */
+
+// Schema with non-self-referential nested input types for basic verification
+const createNestedInputSchema = () =>
+  ({
+    label: "nested_input_test" as const,
+    operations: {
+      query: "Query" as const,
+      mutation: null,
+      subscription: null,
+    },
+    scalar: {
+      ...defineScalar<"String", string, string>("String"),
+      ...defineScalar<"Int", number, number>("Int"),
+    },
+    enum: {},
+    input: {
+      // Outer input with nested input field
+      OuterFilter: define("OuterFilter").input({
+        innerFilter: unsafeInputType.input("InnerFilter:?", {}),
+        innerFilterArray: unsafeInputType.input("InnerFilter:![]?", {}),
+      }),
+      InnerFilter: define("InnerFilter").input({
+        value: unsafeInputType.scalar("String:!", {}),
+        count: unsafeInputType.scalar("Int:?", {}),
+      }),
+    },
+    object: {
+      Query: define("Query").object({}),
+    },
+    union: {},
+  }) satisfies AnyGraphqlSchema;
+
+type NestedInputSchema = ReturnType<typeof createNestedInputSchema>;
+
+describe("VarRef in nested input objects", () => {
+  describe("Non-self-referential nested input types", () => {
+    it("should allow VarRef for nested input object field", () => {
+      // Create a VarRef with proper meta for InnerFilter
+      const innerFilterVarRef = createVarRefFromVariable<
+        "InnerFilter",
+        "input",
+        "[TYPE_SIGNATURE]" | null | undefined
+      >("innerFilter");
+
+      // This should compile - VarRef should be assignable to innerFilter field
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilter: innerFilterVarRef,
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow VarRef in nested input array field", () => {
+      const innerFilterVarRef = createVarRefFromVariable<
+        "InnerFilter",
+        "input",
+        "[TYPE_SIGNATURE]"
+      >("innerFilter");
+
+      // This should compile - VarRef in array should work
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: [innerFilterVarRef],
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow mixed const values and VarRef in nested array", () => {
+      const innerFilterVarRef = createVarRefFromVariable<
+        "InnerFilter",
+        "input",
+        "[TYPE_SIGNATURE]"
+      >("innerFilter");
+
+      // This should compile - mixing const with VarRef
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: [
+          { value: "const1" },
+          innerFilterVarRef,
+          { value: "const2", count: 5 },
+        ],
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should reject VarRef with wrong type name", () => {
+      // VarRef with wrong type name
+      const wrongTypeVarRef = createVarRefFromVariable<
+        "OuterFilter",
+        "input",
+        "[TYPE_SIGNATURE]" | null | undefined
+      >("wrongType");
+
+      // OuterFilter VarRef should not be assignable to InnerFilter field
+      // The type error is expected on the wrongTypeVarRef value
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        // @ts-expect-error - OuterFilter VarRef should not be assignable to InnerFilter field
+        innerFilter: wrongTypeVarRef,
       };
       expect(true).toBe(true);
     });

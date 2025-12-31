@@ -141,11 +141,15 @@ export type InferInputProfile<
           : TSpecifier extends InputEnumSpecifier
             ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
             : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-              ? {
-                  [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
-                    ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
-                    : never;
-                }
+              ? [{
+                  kind: "input";
+                  name: TSpecifier["name"];
+                  fields: {
+                    [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
+                      ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
+                      : never;
+                  };
+                }]
               : never,
         TSpecifier["modifier"],
         TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
