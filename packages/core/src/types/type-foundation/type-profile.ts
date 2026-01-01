@@ -1,6 +1,5 @@
 import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
 import type { GetAssignableType } from "./type-modifier-extension.generated";
-import type { InputTypeKind } from "./type-specifier";
 
 export interface PrimitiveTypeProfile {
   readonly kind: "scalar" | "enum";
@@ -105,13 +104,14 @@ export declare namespace TypeProfile {
   };
 
   /**
-   * VarRef brand with explicit parameters.
-   * Used by AssigningInput where signature is computed via Signature<T>.
+   * VarRef brand derived from WithMeta.
+   * Used by AssigningInput to type variable references.
+   * Derives typeName, kind, and signature from the profile.
    */
-  export type AssigningVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
-    typeName: TTypeName;
-    kind: TKind;
-    signature: TSignature;
+  export type AssigningVarRefBrand<T extends WithMeta> = {
+    typeName: T[0]["name"];
+    kind: T[0]["kind"];
+    signature: Signature<T>;
   };
 }
 

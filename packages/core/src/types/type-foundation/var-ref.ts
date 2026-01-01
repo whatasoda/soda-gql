@@ -1,4 +1,3 @@
-import type { TypeProfile } from "./type-profile";
 import type { InputTypeKind } from "./type-specifier";
 
 /**
@@ -61,19 +60,17 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
 }
 
 /**
- * Creates a VarRef with typeName + kind + signature meta.
- * Signature is computed from the type modifier.
+ * Creates a VarRef from a variable name.
+ * Returns AnyVarRef - type safety is enforced at assignment sites.
  */
-export function createVarRefFromVariable<TTypeName extends string, TKind extends InputTypeKind, TSignature>(name: string) {
-  return new VarRef<TypeProfile.AssigningVarRefBrand<TTypeName, TKind, TSignature>>({ type: "variable", name });
+export function createVarRefFromVariable(name: string): AnyVarRef {
+  return new VarRef({ type: "variable", name });
 }
 
 /**
- * Creates a VarRef from a nested value with typeName + kind + signature meta.
- * Signature is computed from the type modifier.
+ * Creates a VarRef from a nested value.
+ * Returns AnyVarRef - type safety is enforced at assignment sites.
  */
-export function createVarRefFromNestedValue<TTypeName extends string, TKind extends InputTypeKind, TSignature>(
-  value: NestedValue,
-) {
-  return new VarRef<TypeProfile.AssigningVarRefBrand<TTypeName, TKind, TSignature>>({ type: "nested-value", value });
+export function createVarRefFromNestedValue(value: NestedValue): AnyVarRef {
+  return new VarRef({ type: "nested-value", value });
 }

@@ -54,11 +54,7 @@ export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier ex
 
 export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
   readonly [K in keyof TSpecifiers]-?: VarRef<
-    TypeProfile.AssigningVarRefBrand<
-      TSpecifiers[K]["name"],
-      TSpecifiers[K]["kind"],
-      TypeProfile.Signature<InferInputProfile<TSchema, TSpecifiers[K]>>
-    >
+    TypeProfile.AssigningVarRefBrand<InferInputProfile<TSchema, TSpecifiers[K]>>
   >;
 };
 
