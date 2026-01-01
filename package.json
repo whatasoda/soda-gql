@@ -1,6 +1,6 @@
 {
   "name": "soda-gql",
-  "version": "0.5.4",
+  "version": "0.5.3",
   "type": "module",
   "private": true,
   "workspaces": [

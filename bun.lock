@@ -114,7 +114,7 @@
     },
     "packages/codegen": {
       "name": "@soda-gql/codegen",
-      "version": "0.5.4",
+      "version": "0.5.3",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
@@ -150,7 +150,7 @@
     },
     "packages/core": {
       "name": "@soda-gql/core",
-      "version": "0.5.4",
+      "version": "0.5.2",
       "dependencies": {
         "@graphql-typed-document-node/core": "^3.2.0",
         "graphql": "^16.11.0",
