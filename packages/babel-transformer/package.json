@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/babel-transformer",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Babel AST transformer for soda-gql",
   "type": "module",
   "private": false,
