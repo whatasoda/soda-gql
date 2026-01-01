@@ -5,7 +5,7 @@ interface Op<T> {
   readonly 1: T[] | null | undefined;
 }
 
-type Ref<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRef<TypeProfile.AssignableVarRefMeta<TTypeName, TKind, TSignature>>
+type Ref<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRef<TypeProfile.AssignableVarRefBrand<TTypeName, TKind, TSignature>>
 
 // Signature
 // depth = 0

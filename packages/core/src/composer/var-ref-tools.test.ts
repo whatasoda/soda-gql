@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import {
-  createVarRefFromNestedValue,
-  createVarRefFromVariable,
   getNameAt,
   getValueAt,
   getVariablePath,
@@ -9,7 +8,7 @@ import {
   getVarRefValue,
   hasVarRefInside,
   isVarRef,
-} from "./var-ref";
+} from "./var-ref-tools";
 
 describe("hasVarRefInside", () => {
   it("returns false for primitive values", () => {

@@ -7,16 +7,10 @@ import type {
   ResolveInputProfileFromMeta,
 } from "../types/schema";
 import type { InputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
-import type { AnyVarRefMeta, SelectableProxy, VarRef } from "../types/type-foundation/var-ref";
-import {
-  getNameAt,
-  getValueAt,
-  getVariablePath,
-  getVarRefInner,
-  getVarRefName,
-  getVarRefValue,
-} from "../types/type-foundation/var-ref";
+import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
+import type { SelectableProxy } from "./var-ref-tools";
+import { getNameAt, getValueAt, getVariablePath, getVarRefInner, getVarRefName, getVarRefValue } from "./var-ref-tools";
 
 /**
  * Type for the default value function for a variable.
@@ -182,7 +176,7 @@ export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
  * Resolves the TypeScript type from VarRef meta using schema.
  * This is used for getValueAt/getNameAt with type structure resolution.
  */
-export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends AnyVarRefMeta> = TypeProfile.Type<
+export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends AnyVarRefBrand> = TypeProfile.Type<
   ResolveInputProfileFromMeta<TSchema, TMeta["typeName"], TMeta["kind"], "!">
 >;
 
@@ -190,7 +184,7 @@ export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends 
  * Schema-aware getValueAt type.
  * Resolves type structure from schema using typeName + kind.
  */
-export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefMeta, U>(
+export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
   varRef: VarRef<T>,
   selector: (proxy: SelectableProxy<ResolveTypeFromMeta<TSchema, T>>) => U,
 ) => U;
@@ -199,7 +193,7 @@ export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends
  * Schema-aware getNameAt type.
  * Resolves type structure from schema using typeName + kind.
  */
-export type SchemaAwareGetNameAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefMeta, U>(
+export type SchemaAwareGetNameAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
   varRef: VarRef<T>,
   selector: (proxy: ResolveTypeFromMeta<TSchema, T>) => U,
 ) => string;

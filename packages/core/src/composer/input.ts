@@ -3,7 +3,7 @@ import {
   type AssigningInput,
   createVarRefFromNestedValue,
   createVarRefFromVariable,
-  isVarRef,
+  VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, InputTypeKind, InputTypeSpecifiers, NestedValue } from "../types/type-foundation";
@@ -20,7 +20,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
     }
 
     const provided = providedValues[varName];
-    if (isVarRef(provided)) {
+    if (provided instanceof VarRef) {
       return provided;
     }
 

@@ -104,20 +104,20 @@ export declare namespace TypeProfile {
    * - Used as AssignableVarRefMeta for type positions that accept VarRefs
    * - Used as AssigningVarRefMeta for VarRef creation functions
    */
-  export type VarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
+  export type VarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
     typeName: TTypeName;
     kind: TKind;
     signature: TSignature;
   };
 
   // Semantic aliases for clarity in different contexts
-  export type AssignableVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefMeta<
+  export type AssignableVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefBrand<
     TTypeName,
     TKind,
     TSignature
   >;
 
-  export type AssigningVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefMeta<
+  export type AssigningVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefBrand<
     TTypeName,
     TKind,
     TSignature
