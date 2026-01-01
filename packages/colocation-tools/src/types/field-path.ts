@@ -1,48 +1,36 @@
-/** Utilities for computing type-safe field path selectors and projections. */
+/** Utilities for computing type-safe field path selectors. */
 
-import type { AnyFields, AnyGraphqlSchema, AnyNestedObject, InferField } from "@soda-gql/core";
+import type { AnyFields, AnyNestedObject } from "@soda-gql/core";
 
 export type AnyFieldPath = string;
+
+/** Maximum recursion depth to prevent infinite type instantiation. */
+type MaxDepth = [unknown, unknown, unknown, unknown, unknown]; // 5 levels
+
+/** Decrement depth counter for recursion limiting. */
+type DecrementDepth<D extends readonly unknown[]> = D extends readonly [unknown, ...infer Rest] ? Rest : [];
 
 /**
  * Computes strongly typed "$.foo.bar" style selectors for a set of fields so
  * slice result transforms can reference response paths safely.
+ *
+ * Note: TSchema is not needed - only uses TFields.object for nesting.
  */
-export type AvailableFieldPathOf<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = AvailableFieldPathsInner<
-  TSchema,
-  TFields,
-  "$"
->;
+export type AvailableFieldPathOf<TFields extends AnyFields> = AvailableFieldPathsInner<TFields, "$", MaxDepth>;
 
 /** Recursive helper used to build path strings for nested selections. */
-type AvailableFieldPathsInner<TSchema extends AnyGraphqlSchema, TFields extends AnyFields, TCurr extends AnyFieldPath> = {
-  readonly [TAliasName in keyof TFields & string]:
-    | `${TCurr}.${TAliasName}`
-    | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
-        ? AvailableFieldPathsInner<TSchema, TNested, `${TCurr}.${TAliasName}`>
-        : never);
-}[keyof TFields & string];
-
-/** Resolve the TypeScript type located at a given field path. */
-export type InferByFieldPath<
-  TSchema extends AnyGraphqlSchema,
+type AvailableFieldPathsInner<
   TFields extends AnyFields,
-  TPath extends AnyFieldPath,
-  // biome-ignore lint/suspicious/noExplicitAny: Fallback when TFields has wide string index signature
-> = string extends keyof TFields ? any : TPath extends "$" ? never : InferByFieldPathInner<TSchema, TFields, TPath, "$">;
-
-/** Internal helper that walks a field tree while matching a path literal. */
-type InferByFieldPathInner<
-  TSchema extends AnyGraphqlSchema,
-  TFields extends AnyFields,
-  TPathTarget extends AnyFieldPath,
-  TPathCurrent extends AnyFieldPath,
-> = {
-  readonly [TAliasName in keyof TFields]: TAliasName extends string
-    ? `${TPathCurrent}.${TAliasName}` extends TPathTarget
-      ? InferField<TSchema, TFields[TAliasName]>
-      : TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
-        ? InferByFieldPathInner<TSchema, TNested, TPathTarget, `${TPathCurrent}.${TAliasName}`>
-        : never
-    : never;
-}[keyof TFields];
+  TCurr extends AnyFieldPath,
+  TDepth extends readonly unknown[],
+> = TDepth extends readonly []
+  ? never
+  : {
+      readonly [TAliasName in keyof TFields]-?: TAliasName extends string
+        ?
+            | `${TCurr}.${TAliasName}`
+            | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
+                ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`, DecrementDepth<TDepth>>
+                : never)
+        : never;
+    }[keyof TFields];

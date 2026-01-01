@@ -181,7 +181,9 @@ const prepare = async () => {
             dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
             peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
-            optionalDependencies: mapValues(optionalDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
+            optionalDependencies: mapValues(optionalDependencies ?? {}, (value) =>
+              value === "workspace:*" ? tildeRange : value,
+            ),
             ...rest,
           };
 
@@ -259,9 +261,7 @@ const preparePlatformPackages = async () => {
   const platformDistDir = "dist";
 
   // Read swc-transformer's version to use for platform packages
-  const swcTransformerPackageJson = JSON.parse(
-    await readFile("packages/swc-transformer/package.json", "utf-8"),
-  );
+  const swcTransformerPackageJson = JSON.parse(await readFile("packages/swc-transformer/package.json", "utf-8"));
   const swcTransformerVersion = swcTransformerPackageJson.version as string;
 
   try {
@@ -308,9 +308,7 @@ const addOptionalDependenciesToSwcTransformer = async () => {
   const swcTransformerDistPath = "dist/swc-transformer/package.json";
 
   // Read swc-transformer's version and convert to tilde range
-  const swcTransformerSourceJson = JSON.parse(
-    await readFile("packages/swc-transformer/package.json", "utf-8"),
-  );
+  const swcTransformerSourceJson = JSON.parse(await readFile("packages/swc-transformer/package.json", "utf-8"));
   const tildeRange = toTildeRange(swcTransformerSourceJson.version as string);
 
   try {

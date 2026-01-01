@@ -27,7 +27,7 @@ export const userCardProjection = createProjection(userCardFragment, {
   handle: (result) => {
     if (result.isError()) return { error: result.error, user: null };
     if (result.isEmpty()) return { error: null, user: null };
-    const data = result.unwrap();
-    return { error: null, user: data.user };
+    const [user] = result.unwrap();
+    return { error: null, user };
   },
 });

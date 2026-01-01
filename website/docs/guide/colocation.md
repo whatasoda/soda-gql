@@ -71,7 +71,8 @@ export const userCardFragment = gql
         if (result.isEmpty()) {
           return { error: null, user: null };
         }
-        return { error: null, user: result.unwrap().user };
+        const [user] = result.unwrap();
+        return { error: null, user };
       },
     }),
   );
@@ -172,10 +173,11 @@ const fragment = gql
     createProjectionAttachment({
       paths: ["$.user"],
       handle: (result) => {
-        // Transform the sliced result
+        // Transform the sliced result (receives tuple of values for each path)
         if (result.isError()) return { error: result.error };
         if (result.isEmpty()) return { data: null };
-        return { data: result.unwrap().user };
+        const [user] = result.unwrap();
+        return { data: user };
       },
     }),
   );
@@ -297,7 +299,7 @@ export const userCardFragment = gql
   .attach(
     createProjectionAttachment({
       paths: ["$.user"],
-      handle: (result) => result.safeUnwrap((data) => data.user),
+      handle: (result) => result.safeUnwrap(([user]) => user),
     }),
   );
 
@@ -322,7 +324,7 @@ export const postListFragment = gql
   .attach(
     createProjectionAttachment({
       paths: ["$.user.posts"],
-      handle: (result) => result.safeUnwrap((data) => data.user?.posts ?? []),
+      handle: (result) => result.safeUnwrap(([posts]) => posts ?? []),
     }),
   );
 
