@@ -19,15 +19,18 @@ type DecrementDepth<D extends readonly unknown[]> = D extends readonly [unknown,
 export type AvailableFieldPathOf<TFields extends AnyFields> = AvailableFieldPathsInner<TFields, "$", MaxDepth>;
 
 /** Recursive helper used to build path strings for nested selections. */
-type AvailableFieldPathsInner<TFields extends AnyFields, TCurr extends AnyFieldPath, TDepth extends readonly unknown[]> =
-  TDepth extends readonly []
-    ? never
-    : {
-        readonly [TAliasName in keyof TFields]: TAliasName extends string
-          ?
-              | `${TCurr}.${TAliasName}`
-              | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
-                  ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`, DecrementDepth<TDepth>>
-                  : never)
-          : never;
-      }[keyof TFields];
+type AvailableFieldPathsInner<
+  TFields extends AnyFields,
+  TCurr extends AnyFieldPath,
+  TDepth extends readonly unknown[],
+> = TDepth extends readonly []
+  ? never
+  : {
+      readonly [TAliasName in keyof TFields]-?: TAliasName extends string
+        ?
+            | `${TCurr}.${TAliasName}`
+            | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
+                ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`, DecrementDepth<TDepth>>
+                : never)
+        : never;
+    }[keyof TFields];

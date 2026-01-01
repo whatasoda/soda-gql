@@ -22,24 +22,21 @@ export type InferByOutputPath<TOutput extends object, TPath extends AnyOutputPat
  * Internal helper that walks the output type while matching path segments.
  * Handles arrays and nullables transparently.
  */
-type InferByOutputPathInner<TOutput, TPathTarget extends AnyOutputPath, TPathCurrent extends AnyOutputPath> =
-  TOutput extends readonly (infer TElement)[]
-    ? InferByOutputPathInner<TElement, TPathTarget, TPathCurrent>
-    : TOutput extends object
-      ? {
-          readonly [K in keyof TOutput]: K extends string
-            ? `${TPathCurrent}.${K}` extends TPathTarget
-              ? TOutput[K]
-              : InferByOutputPathInner<NonNullable<TOutput[K]>, TPathTarget, `${TPathCurrent}.${K}`> extends infer TInner
-                ? TInner extends never
-                  ? never
-                  : null extends TOutput[K]
-                    ? TInner | null
-                    : TInner
-                : never
-            : never;
-        }[keyof TOutput]
-      : never;
+type InferByOutputPathInner<
+  TOutput,
+  TPathTarget extends AnyOutputPath,
+  TPathCurrent extends AnyOutputPath,
+> = TOutput extends readonly (infer _)[] // Arrays are not supported
+  ? never
+  : TOutput extends object
+    ? {
+        readonly [K in keyof TOutput]-?: K extends string
+          ? `${TPathCurrent}.${K}` extends TPathTarget
+            ? TOutput[K]
+            : InferByOutputPathInner<TOutput[K], TPathTarget, `${TPathCurrent}.${K}`>
+          : never;
+      }[keyof TOutput]
+    : Extract<TOutput, undefined | null>; // Should keep undefined and null in the middle of the path
 
 /**
  * Infer a tuple of types from a tuple of paths.
