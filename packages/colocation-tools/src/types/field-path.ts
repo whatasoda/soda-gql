@@ -14,9 +14,11 @@ export type AvailableFieldPathOf<TFields extends AnyFields> = AvailableFieldPath
 
 /** Recursive helper used to build path strings for nested selections. */
 type AvailableFieldPathsInner<TFields extends AnyFields, TCurr extends AnyFieldPath> = {
-  readonly [TAliasName in keyof TFields & string]:
-    | `${TCurr}.${TAliasName}`
-    | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
-        ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`>
-        : never);
-}[keyof TFields & string];
+  readonly [TAliasName in keyof TFields]: TAliasName extends string
+    ?
+        | `${TCurr}.${TAliasName}`
+        | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
+            ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`>
+            : never)
+    : never;
+}[keyof TFields];

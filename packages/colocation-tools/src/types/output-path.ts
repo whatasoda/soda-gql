@@ -33,21 +33,23 @@ type InferByOutputPathInner<
     ? InferByOutputPathInner<TElement, TPathTarget, TPathCurrent, TDepth>
     : TOutput extends object
       ? {
-          readonly [K in keyof TOutput & string]: `${TPathCurrent}.${K}` extends TPathTarget
-            ? TOutput[K]
-            : InferByOutputPathInner<
-                  NonNullable<TOutput[K]>,
-                  TPathTarget,
-                  `${TPathCurrent}.${K}`,
-                  DecrementDepth<TDepth>
-                > extends infer TInner
-              ? TInner extends never
-                ? never
-                : null extends TOutput[K]
-                  ? TInner | null
-                  : TInner
-              : never;
-        }[keyof TOutput & string]
+          readonly [K in keyof TOutput]: K extends string
+            ? `${TPathCurrent}.${K}` extends TPathTarget
+              ? TOutput[K]
+              : InferByOutputPathInner<
+                    NonNullable<TOutput[K]>,
+                    TPathTarget,
+                    `${TPathCurrent}.${K}`,
+                    DecrementDepth<TDepth>
+                  > extends infer TInner
+                ? TInner extends never
+                  ? never
+                  : null extends TOutput[K]
+                    ? TInner | null
+                    : TInner
+                : never
+            : never;
+        }[keyof TOutput]
       : never;
 
 /** Decrement depth counter for recursion limiting. */
