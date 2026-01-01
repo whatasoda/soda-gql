@@ -100,7 +100,7 @@ export declare namespace TypeProfile {
    */
   export type VarRefBrand<T extends TypeProfile, TSignature> = {
     typeName: T["name"];
-    kind: T extends PrimitiveTypeProfile ? T["kind"] : "input";
+    kind: T["kind"];
     signature: TSignature;
   };
 
