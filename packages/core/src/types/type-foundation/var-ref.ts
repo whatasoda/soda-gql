@@ -1,6 +1,6 @@
 import type { ConstValue } from "./const-value";
-import type { InputTypeKind } from "./type-specifier";
 import type { TypeProfile } from "./type-profile";
+import type { InputTypeKind } from "./type-specifier";
 
 /**
  * VarRef meta interface using typeName + kind instead of full profile.
@@ -89,13 +89,7 @@ export const hasVarRefInside = (value: NestedValueElement): boolean => {
  * Creates a VarRef with typeName + kind + signature meta.
  * Signature is computed from the type modifier.
  */
-export const createVarRefFromVariable = <
-  TTypeName extends string,
-  TKind extends InputTypeKind,
-  TSignature,
->(
-  name: string,
-) => {
+export const createVarRefFromVariable = <TTypeName extends string, TKind extends InputTypeKind, TSignature>(name: string) => {
   return new VarRef<TypeProfile.AssigningVarRefMeta<TTypeName, TKind, TSignature>>({ type: "variable", name });
 };
 
@@ -103,11 +97,7 @@ export const createVarRefFromVariable = <
  * Creates a VarRef from a nested value with typeName + kind + signature meta.
  * Signature is computed from the type modifier.
  */
-export const createVarRefFromNestedValue = <
-  TTypeName extends string,
-  TKind extends InputTypeKind,
-  TSignature,
->(
+export const createVarRefFromNestedValue = <TTypeName extends string, TKind extends InputTypeKind, TSignature>(
   value: NestedValue,
 ) => {
   return new VarRef<TypeProfile.AssigningVarRefMeta<TTypeName, TKind, TSignature>>({ type: "nested-value", value });
@@ -232,10 +222,7 @@ const createSelectableProxy = <T>(current: ProxyInner): T => {
  * });
  * getNameAt(ref, p => p.user.age); // returns the variable name
  */
-export const getNameAt = <T, U>(
-  varRef: VarRef<AnyVarRefMeta>,
-  selector: (proxy: T) => U,
-): string => {
+export const getNameAt = <T, U>(varRef: VarRef<AnyVarRefMeta>, selector: (proxy: T) => U): string => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
@@ -265,10 +252,7 @@ export const getNameAt = <T, U>(
  * });
  * getValueAt(ref, p => p.user.name); // returns "Alice"
  */
-export const getValueAt = <T, U>(
-  varRef: VarRef<AnyVarRefMeta>,
-  selector: (proxy: SelectableProxy<T>) => U,
-): U => {
+export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefMeta>, selector: (proxy: SelectableProxy<T>) => U): U => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);

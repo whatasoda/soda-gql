@@ -48,10 +48,11 @@ export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extend
  * Assignable input value type using typeName + kind for VarRef comparison.
  * Uses GetAssignableType which compares typeName + kind instead of full profile structure.
  */
-export type AssignableInputValue<
-  TSchema extends AnyGraphqlSchema,
-  TSpecifier extends InputTypeSpecifier,
-> = GetAssignableType<TSpecifier["name"], TSpecifier["kind"], InferInputProfile<TSchema, TSpecifier>>;
+export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
+  TSpecifier["name"],
+  TSpecifier["kind"],
+  InferInputProfile<TSchema, TSpecifier>
+>;
 
 export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
   readonly [K in keyof TSpecifiers]-?: VarRef<

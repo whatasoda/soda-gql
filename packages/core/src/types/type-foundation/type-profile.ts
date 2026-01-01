@@ -111,17 +111,17 @@ export declare namespace TypeProfile {
   };
 
   // Semantic aliases for clarity in different contexts
-  export type AssignableVarRefMeta<
-    TTypeName extends string,
-    TKind extends InputTypeKind,
-    TSignature,
-  > = VarRefMeta<TTypeName, TKind, TSignature>;
+  export type AssignableVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefMeta<
+    TTypeName,
+    TKind,
+    TSignature
+  >;
 
-  export type AssigningVarRefMeta<
-    TTypeName extends string,
-    TKind extends InputTypeKind,
-    TSignature,
-  > = VarRefMeta<TTypeName, TKind, TSignature>;
+  export type AssigningVarRefMeta<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefMeta<
+    TTypeName,
+    TKind,
+    TSignature
+  >;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<

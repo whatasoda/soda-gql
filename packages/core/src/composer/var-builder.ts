@@ -182,10 +182,9 @@ export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
  * Resolves the TypeScript type from VarRef meta using schema.
  * This is used for getValueAt/getNameAt with type structure resolution.
  */
-export type ResolveTypeFromMeta<
-  TSchema extends AnyGraphqlSchema,
-  TMeta extends AnyVarRefMeta,
-> = TypeProfile.Type<ResolveInputProfileFromMeta<TSchema, TMeta["typeName"], TMeta["kind"], "!">>;
+export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends AnyVarRefMeta> = TypeProfile.Type<
+  ResolveInputProfileFromMeta<TSchema, TMeta["typeName"], TMeta["kind"], "!">
+>;
 
 /**
  * Schema-aware getValueAt type.

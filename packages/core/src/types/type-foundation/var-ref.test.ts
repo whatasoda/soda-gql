@@ -148,7 +148,9 @@ describe("getValueAt", () => {
 
   it("throws when value at path contains nested VarRef", () => {
     const innerVarRef = createVarRefFromVariable<"String", "scalar", "[TYPE_SIGNATURE]">("userId");
-    const varRef = createVarRefFromNestedValue<"UserInput", "input", "[TYPE_SIGNATURE]">({ user: { profile: { id: innerVarRef } } });
+    const varRef = createVarRefFromNestedValue<"UserInput", "input", "[TYPE_SIGNATURE]">({
+      user: { profile: { id: innerVarRef } },
+    });
     expect(() => getValueAt(varRef, (p: any) => p.user)).toThrow("Value at path [user] contains nested VarRef");
   });
 

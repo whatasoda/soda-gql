@@ -3,8 +3,7 @@ import { define, defineScalar, unsafeInputType } from "../../schema";
 import type { AssignableInput } from "../fragment/assignable-input";
 import type { AnyGraphqlSchema } from "../schema";
 import type { ConstAssignableInput } from "../schema/const-assignable-input";
-import { createVarRefFromVariable, type VarRef } from "./var-ref";
-import type { TypeProfile } from "./type-profile";
+import { createVarRefFromVariable } from "./var-ref";
 
 /**
  * Test suite for verifying optional field inference in nested Input objects.
@@ -236,11 +235,9 @@ describe("VarRef in nested input objects", () => {
   describe("Non-self-referential nested input types", () => {
     it("should allow VarRef for nested input object field", () => {
       // Create a VarRef with proper meta for InnerFilter
-      const innerFilterVarRef = createVarRefFromVariable<
-        "InnerFilter",
-        "input",
-        "[TYPE_SIGNATURE]" | null | undefined
-      >("innerFilter");
+      const innerFilterVarRef = createVarRefFromVariable<"InnerFilter", "input", "[TYPE_SIGNATURE]" | null | undefined>(
+        "innerFilter",
+      );
 
       // This should compile - VarRef should be assignable to innerFilter field
       const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
@@ -251,11 +248,9 @@ describe("VarRef in nested input objects", () => {
 
     it("should allow VarRef for entire array field", () => {
       // VarRef for the whole array type (InnerFilter ![]?)
-      const wholeArrayVarRef = createVarRefFromVariable<
-        "InnerFilter",
-        "input",
-        "[TYPE_SIGNATURE]"[] | null | undefined
-      >("wholeArray");
+      const wholeArrayVarRef = createVarRefFromVariable<"InnerFilter", "input", "[TYPE_SIGNATURE]"[] | null | undefined>(
+        "wholeArray",
+      );
 
       // This should compile - VarRef for entire array should work
       const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
@@ -266,11 +261,7 @@ describe("VarRef in nested input objects", () => {
 
     it("should allow VarRef at array element level", () => {
       // VarRef for array element type (InnerFilter !)
-      const elementVarRef = createVarRefFromVariable<
-        "InnerFilter",
-        "input",
-        "[TYPE_SIGNATURE]"
-      >("element");
+      const elementVarRef = createVarRefFromVariable<"InnerFilter", "input", "[TYPE_SIGNATURE]">("element");
 
       // This should compile - VarRef in array element position should work
       const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
@@ -280,30 +271,20 @@ describe("VarRef in nested input objects", () => {
     });
 
     it("should allow mixed const values and VarRef in nested array", () => {
-      const innerFilterVarRef = createVarRefFromVariable<
-        "InnerFilter",
-        "input",
-        "[TYPE_SIGNATURE]"
-      >("innerFilter");
+      const innerFilterVarRef = createVarRefFromVariable<"InnerFilter", "input", "[TYPE_SIGNATURE]">("innerFilter");
 
       // This should compile - mixing const with VarRef
       const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
-        innerFilterArray: [
-          { value: "const1" },
-          innerFilterVarRef,
-          { value: "const2", count: 5 },
-        ],
+        innerFilterArray: [{ value: "const1" }, innerFilterVarRef, { value: "const2", count: 5 }],
       };
       expect(true).toBe(true);
     });
 
     it("should reject VarRef with wrong type name", () => {
       // VarRef with wrong type name
-      const wrongTypeVarRef = createVarRefFromVariable<
-        "OuterFilter",
-        "input",
-        "[TYPE_SIGNATURE]" | null | undefined
-      >("wrongType");
+      const wrongTypeVarRef = createVarRefFromVariable<"OuterFilter", "input", "[TYPE_SIGNATURE]" | null | undefined>(
+        "wrongType",
+      );
 
       // OuterFilter VarRef should not be assignable to InnerFilter field
       // The type error is expected on the wrongTypeVarRef value
