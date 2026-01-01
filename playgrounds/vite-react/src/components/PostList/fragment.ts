@@ -33,8 +33,8 @@ export const postListFragment = gql
       handle: (result) => {
         if (result.isError()) return { error: result.error, posts: null };
         if (result.isEmpty()) return { error: null, posts: null };
-        const data = result.unwrap();
-        return { error: null, posts: data.user?.posts ?? [] };
+        const [posts] = result.unwrap();
+        return { error: null, posts: posts ?? [] };
       },
     }),
   );
@@ -47,7 +47,7 @@ export const postListProjection = createProjection(postListFragment, {
   handle: (result) => {
     if (result.isError()) return { error: result.error, posts: null };
     if (result.isEmpty()) return { error: null, posts: null };
-    const data = result.unwrap();
-    return { error: null, posts: data.user?.posts ?? [] };
+    const [posts] = result.unwrap();
+    return { error: null, posts: posts ?? [] };
   },
 });

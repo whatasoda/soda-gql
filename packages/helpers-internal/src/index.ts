@@ -28,4 +28,4 @@ export type {
   NormalizedError,
   NormalizedExecutionResult,
 } from "./types";
-export type { AnyFieldPath, AvailableFieldPathOf, InferByFieldPath } from "./types/field-path";
+export type { AnyFieldPath, AvailableFieldPathOf } from "./types/field-path";

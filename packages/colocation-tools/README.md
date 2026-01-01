@@ -26,12 +26,12 @@ import { userFragment } from "./graphql-system";
 
 // Create a projection with paths and handle function
 const userProjection = createProjection(userFragment, {
-  paths: ["$.user.id", "$.user.name"],
+  paths: ["$.user"],
   handle: (result) => {
     if (result.isError()) return { error: result.error, user: null };
     if (result.isEmpty()) return { error: null, user: null };
-    const data = result.unwrap();
-    return { error: null, user: data };
+    const [user] = result.unwrap(); // tuple of values for each path
+    return { error: null, user };
   },
 });
 
@@ -79,7 +79,8 @@ export const userCardProjection = createProjection(userCardFragment, {
   handle: (result) => {
     if (result.isError()) return { error: result.error, user: null };
     if (result.isEmpty()) return { error: null, user: null };
-    return { error: null, user: result.unwrap().user };
+    const [user] = result.unwrap();
+    return { error: null, user };
   },
 });
 ```
@@ -133,12 +134,13 @@ import { createProjection } from "@soda-gql/colocation-tools";
 
 const projection = createProjection(fragment, {
   // Field paths to extract (must start with "$.")
-  paths: ["$.user.id", "$.user.name"],
-  // Handler to transform the sliced result
+  paths: ["$.user"],
+  // Handler to transform the sliced result (receives tuple of values for each path)
   handle: (result) => {
     if (result.isError()) return { error: result.error, data: null };
     if (result.isEmpty()) return { error: null, data: null };
-    return { error: null, data: result.unwrap() };
+    const [user] = result.unwrap();
+    return { error: null, data: user };
   },
 });
 ```
@@ -164,7 +166,8 @@ export const postListFragment = gql
       handle: (result) => {
         if (result.isError()) return { error: result.error, posts: null };
         if (result.isEmpty()) return { error: null, posts: null };
-        return { error: null, posts: result.unwrap().user?.posts ?? [] };
+        const [posts] = result.unwrap();
+        return { error: null, posts: posts ?? [] };
       },
     }),
   );
