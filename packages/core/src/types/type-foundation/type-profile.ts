@@ -54,13 +54,7 @@ export declare namespace TypeProfile {
    * - VarRef at element level for arrays (e.g., VarRef for array elements)
    * - Recursive VarRef support in nested object fields
    */
-  type NestedAssignableType<TProfile extends WithMeta> =
-    //
-    TProfile[0] extends PrimitiveTypeProfile
-      ? GetAssignableType<TProfile[0]["name"], TProfile[0]["kind"], TProfile>
-      : TProfile[0] extends ObjectTypeProfile
-        ? GetAssignableType<TProfile[0]["name"], "input", TProfile>
-        : never;
+  type NestedAssignableType<TProfile extends WithMeta> = GetAssignableType<TProfile>;
 
   // Helper type to build object type with VarRef allowed in nested fields
   export type AssignableObjectType<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
@@ -100,28 +94,25 @@ export declare namespace TypeProfile {
     : never;
 
   /**
-   * VarRef meta using typeName + kind + signature.
-   * - Used as AssignableVarRefMeta for type positions that accept VarRefs
-   * - Used as AssigningVarRefMeta for VarRef creation functions
+   * VarRef brand derived from TypeProfile.
+   * Extracts typeName and kind from the profile, takes pre-computed signature.
+   * Used by generated Assignable types for efficient type checking.
    */
-  export type VarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
+  export type VarRefBrand<T extends TypeProfile, TSignature> = {
+    typeName: T["name"];
+    kind: T extends PrimitiveTypeProfile ? T["kind"] : "input";
+    signature: TSignature;
+  };
+
+  /**
+   * VarRef brand with explicit parameters.
+   * Used by AssigningInput where signature is computed via Signature<T>.
+   */
+  export type AssigningVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = {
     typeName: TTypeName;
     kind: TKind;
     signature: TSignature;
   };
-
-  // Semantic aliases for clarity in different contexts
-  export type AssignableVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefBrand<
-    TTypeName,
-    TKind,
-    TSignature
-  >;
-
-  export type AssigningVarRefBrand<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRefBrand<
-    TTypeName,
-    TKind,
-    TSignature
-  >;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<

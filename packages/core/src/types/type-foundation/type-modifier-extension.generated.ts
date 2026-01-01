@@ -1,13 +1,14 @@
-import type { AssignableConstBase, InputTypeKind, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { AssignableConstBase, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
 interface Op<T> {
   readonly 0: T[];
   readonly 1: T[] | null | undefined;
 }
 
-type Ref<TTypeName extends string, TKind extends InputTypeKind, TSignature> = VarRef<TypeProfile.AssignableVarRefBrand<TTypeName, TKind, TSignature>>
+// Ref derives typeName and kind from T (TypeProfile), takes pre-computed signature
+type Ref<T extends TypeProfile, TSignature> = VarRef<TypeProfile.VarRefBrand<T, TSignature>>;
 
-// Signature
+// Signature - pre-computed signature patterns
 // depth = 0
 type Signature_0 = "[TYPE_SIGNATURE]";
 type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
@@ -46,85 +47,96 @@ type Signature_1101 = Op<Signature_110>[1];
 type Signature_1110 = Op<Signature_111>[0];
 type Signature_1111 = Op<Signature_111>[1];
 
-// Assignable - uses AssignableConstBase to allow VarRef in nested object fields
+// AssignableInternal - recursive types without default value consideration
+// T is TypeProfile (not WithMeta) since signature is pre-computed
 // depth = 0
-type Assignable_0<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "!", T[2]]> | Ref<TTypeName, TKind, Signature_0>;
-type Assignable_1<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = AssignableConstBase<[T[0], "?", T[2]]> | Ref<TTypeName, TKind, Signature_1>;
+type AssignableInternal_0<T extends TypeProfile> = AssignableConstBase<[T, "!"]> | Ref<T, Signature_0>;
+type AssignableInternal_1<T extends TypeProfile> = AssignableConstBase<[T, "?"]> | Ref<T, Signature_1>;
 
 // depth = 1
-type Assignable_00<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_00> | Op<Assignable_0<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_01<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_01> | Op<Assignable_0<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_10<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_10> | Op<Assignable_1<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_11<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_11> | Op<Assignable_1<TTypeName, TKind, [T[0], "?"]>>[1];
+type AssignableInternal_00<T extends TypeProfile> = Ref<T, Signature_00> | Op<AssignableInternal_0<T>>[0];
+type AssignableInternal_01<T extends TypeProfile> = Ref<T, Signature_01> | Op<AssignableInternal_0<T>>[1];
+type AssignableInternal_10<T extends TypeProfile> = Ref<T, Signature_10> | Op<AssignableInternal_1<T>>[0];
+type AssignableInternal_11<T extends TypeProfile> = Ref<T, Signature_11> | Op<AssignableInternal_1<T>>[1];
 
 // depth = 2
-type Assignable_000<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_000> | Op<Assignable_00<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_001<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_001> | Op<Assignable_00<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_010<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_010> | Op<Assignable_01<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_011<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_011> | Op<Assignable_01<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_100<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_100> | Op<Assignable_10<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_101<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_101> | Op<Assignable_10<TTypeName, TKind, [T[0], "?"]>>[1];
-type Assignable_110<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_110> | Op<Assignable_11<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_111<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_111> | Op<Assignable_11<TTypeName, TKind, [T[0], "?"]>>[1];
+type AssignableInternal_000<T extends TypeProfile> = Ref<T, Signature_000> | Op<AssignableInternal_00<T>>[0];
+type AssignableInternal_001<T extends TypeProfile> = Ref<T, Signature_001> | Op<AssignableInternal_00<T>>[1];
+type AssignableInternal_010<T extends TypeProfile> = Ref<T, Signature_010> | Op<AssignableInternal_01<T>>[0];
+type AssignableInternal_011<T extends TypeProfile> = Ref<T, Signature_011> | Op<AssignableInternal_01<T>>[1];
+type AssignableInternal_100<T extends TypeProfile> = Ref<T, Signature_100> | Op<AssignableInternal_10<T>>[0];
+type AssignableInternal_101<T extends TypeProfile> = Ref<T, Signature_101> | Op<AssignableInternal_10<T>>[1];
+type AssignableInternal_110<T extends TypeProfile> = Ref<T, Signature_110> | Op<AssignableInternal_11<T>>[0];
+type AssignableInternal_111<T extends TypeProfile> = Ref<T, Signature_111> | Op<AssignableInternal_11<T>>[1];
 
 // depth = 3
-type Assignable_0000<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0000> | Op<Assignable_000<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_0001<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0001> | Op<Assignable_000<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_0010<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0010> | Op<Assignable_001<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_0011<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0011> | Op<Assignable_001<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_0100<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0100> | Op<Assignable_010<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_0101<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0101> | Op<Assignable_010<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_0110<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0110> | Op<Assignable_011<TTypeName, TKind, [T[0], "!"]>>[0];
-type Assignable_0111<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_0111> | Op<Assignable_011<TTypeName, TKind, [T[0], "!"]>>[1];
-type Assignable_1000<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1000> | Op<Assignable_100<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_1001<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1001> | Op<Assignable_100<TTypeName, TKind, [T[0], "?"]>>[1];
-type Assignable_1010<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1010> | Op<Assignable_101<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_1011<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1011> | Op<Assignable_101<TTypeName, TKind, [T[0], "?"]>>[1];
-type Assignable_1100<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1100> | Op<Assignable_110<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_1101<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1101> | Op<Assignable_110<TTypeName, TKind, [T[0], "?"]>>[1];
-type Assignable_1110<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1110> | Op<Assignable_111<TTypeName, TKind, [T[0], "?"]>>[0];
-type Assignable_1111<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> = Ref<TTypeName, TKind, Signature_1111> | Op<Assignable_111<TTypeName, TKind, [T[0], "?"]>>[1];
+type AssignableInternal_0000<T extends TypeProfile> = Ref<T, Signature_0000> | Op<AssignableInternal_000<T>>[0];
+type AssignableInternal_0001<T extends TypeProfile> = Ref<T, Signature_0001> | Op<AssignableInternal_000<T>>[1];
+type AssignableInternal_0010<T extends TypeProfile> = Ref<T, Signature_0010> | Op<AssignableInternal_001<T>>[0];
+type AssignableInternal_0011<T extends TypeProfile> = Ref<T, Signature_0011> | Op<AssignableInternal_001<T>>[1];
+type AssignableInternal_0100<T extends TypeProfile> = Ref<T, Signature_0100> | Op<AssignableInternal_010<T>>[0];
+type AssignableInternal_0101<T extends TypeProfile> = Ref<T, Signature_0101> | Op<AssignableInternal_010<T>>[1];
+type AssignableInternal_0110<T extends TypeProfile> = Ref<T, Signature_0110> | Op<AssignableInternal_011<T>>[0];
+type AssignableInternal_0111<T extends TypeProfile> = Ref<T, Signature_0111> | Op<AssignableInternal_011<T>>[1];
+type AssignableInternal_1000<T extends TypeProfile> = Ref<T, Signature_1000> | Op<AssignableInternal_100<T>>[0];
+type AssignableInternal_1001<T extends TypeProfile> = Ref<T, Signature_1001> | Op<AssignableInternal_100<T>>[1];
+type AssignableInternal_1010<T extends TypeProfile> = Ref<T, Signature_1010> | Op<AssignableInternal_101<T>>[0];
+type AssignableInternal_1011<T extends TypeProfile> = Ref<T, Signature_1011> | Op<AssignableInternal_101<T>>[1];
+type AssignableInternal_1100<T extends TypeProfile> = Ref<T, Signature_1100> | Op<AssignableInternal_110<T>>[0];
+type AssignableInternal_1101<T extends TypeProfile> = Ref<T, Signature_1101> | Op<AssignableInternal_110<T>>[1];
+type AssignableInternal_1110<T extends TypeProfile> = Ref<T, Signature_1110> | Op<AssignableInternal_111<T>>[0];
+type AssignableInternal_1111<T extends TypeProfile> = Ref<T, Signature_1111> | Op<AssignableInternal_111<T>>[1];
+
+// AssignableInternalByModifier - selects AssignableInternal type based on modifier
+// Takes WithMeta and passes T[0] (TypeProfile) to internal types
+type AssignableInternalByModifier<T extends TypeProfile.WithMeta> =
+  // depth = 0
+  T[1] extends "!" ? AssignableInternal_0<T[0]> :
+  T[1] extends "?" ? AssignableInternal_1<T[0]> :
+
+  // depth = 1
+  T[1] extends "![]!" ? AssignableInternal_00<T[0]> :
+  T[1] extends "![]?" ? AssignableInternal_01<T[0]> :
+  T[1] extends "?[]!" ? AssignableInternal_10<T[0]> :
+  T[1] extends "?[]?" ? AssignableInternal_11<T[0]> :
+
+  // depth = 2
+  T[1] extends "![]![]!" ? AssignableInternal_000<T[0]> :
+  T[1] extends "![]![]?" ? AssignableInternal_001<T[0]> :
+  T[1] extends "![]?[]!" ? AssignableInternal_010<T[0]> :
+  T[1] extends "![]?[]?" ? AssignableInternal_011<T[0]> :
+  T[1] extends "?[]![]!" ? AssignableInternal_100<T[0]> :
+  T[1] extends "?[]![]?" ? AssignableInternal_101<T[0]> :
+  T[1] extends "?[]?[]!" ? AssignableInternal_110<T[0]> :
+  T[1] extends "?[]?[]?" ? AssignableInternal_111<T[0]> :
+
+  // depth = 3
+  T[1] extends "![]![]![]!" ? AssignableInternal_0000<T[0]> :
+  T[1] extends "![]![]![]?" ? AssignableInternal_0001<T[0]> :
+  T[1] extends "![]![]?[]!" ? AssignableInternal_0010<T[0]> :
+  T[1] extends "![]![]?[]?" ? AssignableInternal_0011<T[0]> :
+  T[1] extends "![]?[]![]!" ? AssignableInternal_0100<T[0]> :
+  T[1] extends "![]?[]![]?" ? AssignableInternal_0101<T[0]> :
+  T[1] extends "![]?[]?[]!" ? AssignableInternal_0110<T[0]> :
+  T[1] extends "![]?[]?[]?" ? AssignableInternal_0111<T[0]> :
+  T[1] extends "?[]![]![]!" ? AssignableInternal_1000<T[0]> :
+  T[1] extends "?[]![]![]?" ? AssignableInternal_1001<T[0]> :
+  T[1] extends "?[]![]?[]!" ? AssignableInternal_1010<T[0]> :
+  T[1] extends "?[]![]?[]?" ? AssignableInternal_1011<T[0]> :
+  T[1] extends "?[]?[]![]!" ? AssignableInternal_1100<T[0]> :
+  T[1] extends "?[]?[]![]?" ? AssignableInternal_1101<T[0]> :
+  T[1] extends "?[]?[]?[]!" ? AssignableInternal_1110<T[0]> :
+  T[1] extends "?[]?[]?[]?" ? AssignableInternal_1111<T[0]> : never;
+
+// Assignable - entrypoint that handles default value at the outermost level
+type Assignable<T extends TypeProfile.WithMeta> =
+  | AssignableInternalByModifier<T>
+  | (T[2] extends TypeProfile.WITH_DEFAULT_INPUT ? undefined : never);
 
 /**
  * Assignable type using typeName + kind for VarRef comparison.
  * Accepts const values or VarRefs with matching typeName + kind + signature.
  * Allows VarRef at any level in nested object fields.
+ * Default value handling is applied at the outermost level only.
  */
-export type GetAssignableType<TTypeName extends string, TKind extends InputTypeKind, T extends TypeProfile.WithMeta> =
-  // depth = 0
-  T[1] extends "!" ? Assignable_0<TTypeName, TKind, T> :
-  T[1] extends "?" ? Assignable_1<TTypeName, TKind, T> :
-
-  // depth = 1
-  T[1] extends "![]!" ? Assignable_00<TTypeName, TKind, T> :
-  T[1] extends "![]?" ? Assignable_01<TTypeName, TKind, T> :
-  T[1] extends "?[]!" ? Assignable_10<TTypeName, TKind, T> :
-  T[1] extends "?[]?" ? Assignable_11<TTypeName, TKind, T> :
-
-  // depth = 2
-  T[1] extends "![]![]!" ? Assignable_000<TTypeName, TKind, T> :
-  T[1] extends "![]![]?" ? Assignable_001<TTypeName, TKind, T> :
-  T[1] extends "![]?[]!" ? Assignable_010<TTypeName, TKind, T> :
-  T[1] extends "![]?[]?" ? Assignable_011<TTypeName, TKind, T> :
-  T[1] extends "?[]![]!" ? Assignable_100<TTypeName, TKind, T> :
-  T[1] extends "?[]![]?" ? Assignable_101<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]!" ? Assignable_110<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]?" ? Assignable_111<TTypeName, TKind, T> :
-
-  // depth = 3
-  T[1] extends "![]![]![]!" ? Assignable_0000<TTypeName, TKind, T> :
-  T[1] extends "![]![]![]?" ? Assignable_0001<TTypeName, TKind, T> :
-  T[1] extends "![]![]?[]!" ? Assignable_0010<TTypeName, TKind, T> :
-  T[1] extends "![]![]?[]?" ? Assignable_0011<TTypeName, TKind, T> :
-  T[1] extends "![]?[]![]!" ? Assignable_0100<TTypeName, TKind, T> :
-  T[1] extends "![]?[]![]?" ? Assignable_0101<TTypeName, TKind, T> :
-  T[1] extends "![]?[]?[]!" ? Assignable_0110<TTypeName, TKind, T> :
-  T[1] extends "![]?[]?[]?" ? Assignable_0111<TTypeName, TKind, T> :
-  T[1] extends "?[]![]![]!" ? Assignable_1000<TTypeName, TKind, T> :
-  T[1] extends "?[]![]![]?" ? Assignable_1001<TTypeName, TKind, T> :
-  T[1] extends "?[]![]?[]!" ? Assignable_1010<TTypeName, TKind, T> :
-  T[1] extends "?[]![]?[]?" ? Assignable_1011<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]![]!" ? Assignable_1100<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]![]?" ? Assignable_1101<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]?[]!" ? Assignable_1110<TTypeName, TKind, T> :
-  T[1] extends "?[]?[]?[]?" ? Assignable_1111<TTypeName, TKind, T> : never;
+export type GetAssignableType<T extends TypeProfile.WithMeta> = Assignable<T>;
