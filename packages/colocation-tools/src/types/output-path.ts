@@ -2,11 +2,11 @@
 
 export type AnyOutputPath = string;
 
-/** Maximum recursion depth to prevent infinite type instantiation. */
-type MaxDepth = [unknown, unknown, unknown, unknown, unknown]; // 5 levels
-
 /**
  * Get the TypeScript type at a given path from TOutput.
+ *
+ * Note: No depth limiting needed here because TOutput is already
+ * computed from InferFields and has finite depth.
  *
  * @example
  * ```typescript
@@ -16,32 +16,21 @@ type MaxDepth = [unknown, unknown, unknown, unknown, unknown]; // 5 levels
  */
 export type InferByOutputPath<TOutput extends object, TPath extends AnyOutputPath> = TPath extends "$"
   ? TOutput
-  : InferByOutputPathInner<TOutput, TPath, "$", MaxDepth>;
+  : InferByOutputPathInner<TOutput, TPath, "$">;
 
 /**
  * Internal helper that walks the output type while matching path segments.
  * Handles arrays and nullables transparently.
  */
-type InferByOutputPathInner<
-  TOutput,
-  TPathTarget extends AnyOutputPath,
-  TPathCurrent extends AnyOutputPath,
-  TDepth extends readonly unknown[],
-> = TDepth extends readonly []
-  ? never
-  : TOutput extends readonly (infer TElement)[]
-    ? InferByOutputPathInner<TElement, TPathTarget, TPathCurrent, TDepth>
+type InferByOutputPathInner<TOutput, TPathTarget extends AnyOutputPath, TPathCurrent extends AnyOutputPath> =
+  TOutput extends readonly (infer TElement)[]
+    ? InferByOutputPathInner<TElement, TPathTarget, TPathCurrent>
     : TOutput extends object
       ? {
           readonly [K in keyof TOutput]: K extends string
             ? `${TPathCurrent}.${K}` extends TPathTarget
               ? TOutput[K]
-              : InferByOutputPathInner<
-                    NonNullable<TOutput[K]>,
-                    TPathTarget,
-                    `${TPathCurrent}.${K}`,
-                    DecrementDepth<TDepth>
-                  > extends infer TInner
+              : InferByOutputPathInner<NonNullable<TOutput[K]>, TPathTarget, `${TPathCurrent}.${K}`> extends infer TInner
                 ? TInner extends never
                   ? never
                   : null extends TOutput[K]
@@ -51,9 +40,6 @@ type InferByOutputPathInner<
             : never;
         }[keyof TOutput]
       : never;
-
-/** Decrement depth counter for recursion limiting. */
-type DecrementDepth<D extends readonly unknown[]> = D extends readonly [unknown, ...infer Rest] ? Rest : [];
 
 /**
  * Infer a tuple of types from a tuple of paths.
