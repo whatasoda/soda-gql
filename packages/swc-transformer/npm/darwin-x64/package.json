@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/swc-transformer-darwin-x64",
-  "version": "0.2.0",
+  "version": "0.7.0",
   "os": [
     "darwin"
   ],
