@@ -31,7 +31,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
 export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
   definitions: TVarDefinitions,
 ) =>
-  mapValues(
-    definitions as InputTypeSpecifiers,
-    (_, name): AnyVarRef => createVarRefFromVariable(name),
-  ) as AssigningInput<TSchema, TVarDefinitions>;
+  mapValues(definitions as InputTypeSpecifiers, (_, name): AnyVarRef => createVarRefFromVariable(name)) as AssigningInput<
+    TSchema,
+    TVarDefinitions
+  >;

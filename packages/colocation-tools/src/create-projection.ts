@@ -91,12 +91,7 @@ export const createProjection = <
   TProjected,
 >(
   _fragment: TFragment,
-  options: CreateProjectionOptions<
-    FragmentFields<TFragment>,
-    TFragment["$infer"]["output"],
-    TPaths,
-    TProjected
-  >,
+  options: CreateProjectionOptions<FragmentFields<TFragment>, TFragment["$infer"]["output"], TPaths, TProjected>,
 ): Projection<TProjected> => {
   return new Projection(options.paths, options.handle);
 };
