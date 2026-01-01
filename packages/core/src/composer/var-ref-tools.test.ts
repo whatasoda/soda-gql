@@ -1,15 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import {
-  createVarRefFromNestedValue,
-  createVarRefFromVariable,
-  getNameAt,
-  getValueAt,
-  getVariablePath,
-  getVarRefName,
-  getVarRefValue,
-  hasVarRefInside,
-  isVarRef,
-} from "./var-ref";
+import { createVarRefFromNestedValue, createVarRefFromVariable, VarRef } from "../types/type-foundation/var-ref";
+import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue, hasVarRefInside } from "./var-ref-tools";
 
 describe("hasVarRefInside", () => {
   it("returns false for primitive values", () => {
@@ -86,22 +77,6 @@ describe("getVarRefName", () => {
   });
 });
 
-describe("isVarRef", () => {
-  it("returns true for VarRef instances", () => {
-    expect(isVarRef(createVarRefFromVariable("test"))).toBe(true);
-    expect(isVarRef(createVarRefFromNestedValue({ test: "value" }))).toBe(true);
-  });
-
-  it("returns false for non-VarRef values", () => {
-    expect(isVarRef("string")).toBe(false);
-    expect(isVarRef(123)).toBe(false);
-    expect(isVarRef(null)).toBe(false);
-    expect(isVarRef(undefined)).toBe(false);
-    expect(isVarRef({})).toBe(false);
-    expect(isVarRef([])).toBe(false);
-  });
-});
-
 describe("getNameAt", () => {
   it("extracts variable name from nested VarRef in object", () => {
     const innerVarRef = createVarRefFromVariable("userId");
@@ -148,7 +123,9 @@ describe("getValueAt", () => {
 
   it("throws when value at path contains nested VarRef", () => {
     const innerVarRef = createVarRefFromVariable("userId");
-    const varRef = createVarRefFromNestedValue({ user: { profile: { id: innerVarRef } } });
+    const varRef = createVarRefFromNestedValue({
+      user: { profile: { id: innerVarRef } },
+    });
     expect(() => getValueAt(varRef, (p: any) => p.user)).toThrow("Value at path [user] contains nested VarRef");
   });
 
@@ -188,5 +165,48 @@ describe("getVariablePath", () => {
     expect(() => getVariablePath(varRef, (p: any) => p.user.name)).toThrow(
       "Value at path [user.name] is not a variable or inside a variable",
     );
+  });
+});
+
+// ============================================================================
+// VarRef Creation Tests
+// ============================================================================
+
+describe("createVarRefFromVariable", () => {
+  it("creates a VarRef from variable name", () => {
+    const varRef = createVarRefFromVariable("userId");
+    expect(varRef).toBeInstanceOf(VarRef);
+    expect(getVarRefName(varRef)).toBe("userId");
+  });
+
+  it("creates VarRef instances consistently", () => {
+    const ref1 = createVarRefFromVariable("name");
+    const ref2 = createVarRefFromVariable("status");
+    const ref3 = createVarRefFromVariable("user");
+
+    expect(ref1).toBeInstanceOf(VarRef);
+    expect(ref2).toBeInstanceOf(VarRef);
+    expect(ref3).toBeInstanceOf(VarRef);
+  });
+});
+
+describe("createVarRefFromNestedValue", () => {
+  it("creates a VarRef from nested value", () => {
+    const varRef = createVarRefFromNestedValue({
+      name: "Alice",
+      age: 30,
+    });
+    expect(varRef).toBeInstanceOf(VarRef);
+    expect(getVarRefValue(varRef)).toEqual({ name: "Alice", age: 30 });
+  });
+
+  it("works with nested VarRefs inside", () => {
+    const innerVarRef = createVarRefFromVariable("userId");
+    const varRef = createVarRefFromNestedValue({
+      user: { id: innerVarRef, name: "Alice" },
+    });
+    expect(varRef).toBeInstanceOf(VarRef);
+    // getVarRefValue throws when nested value contains VarRef
+    expect(() => getVarRefValue(varRef)).toThrow("Cannot get const value: nested-value contains VarRef");
   });
 });

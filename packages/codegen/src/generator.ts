@@ -341,7 +341,7 @@ const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined)
 };
 
 const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
-  value ? `() => (${renderConstValue(value)})` : "null";
+  value ? `{ default: ${renderConstValue(value)} }` : "null";
 
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);

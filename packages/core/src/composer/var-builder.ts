@@ -4,17 +4,13 @@ import type {
   AnyGraphqlSchema,
   ConstAssignableInputValue,
   InferInputKind,
+  ResolveInputProfileFromMeta,
 } from "../types/schema";
-import type { InputTypeKind, TypeModifier } from "../types/type-foundation";
-import {
-  getNameAt,
-  getValueAt,
-  getVariablePath,
-  getVarRefInner,
-  getVarRefName,
-  getVarRefValue,
-} from "../types/type-foundation/var-ref";
+import type { InputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
+import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
+import type { SelectableProxy } from "./var-ref-tools";
+import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue } from "./var-ref-tools";
 
 /**
  * Type for the default value function for a variable.
@@ -166,11 +162,40 @@ export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
   <TVarName extends string>(varName: TVarName): VarBuilderMethods<TVarName, TSchema>;
   getName: typeof getVarRefName;
   getValue: typeof getVarRefValue;
-  getInner: typeof getVarRefInner;
-  getNameAt: typeof getNameAt;
-  getValueAt: typeof getValueAt;
+  getNameAt: SchemaAwareGetNameAt<TSchema>;
+  getValueAt: SchemaAwareGetValueAt<TSchema>;
   getVariablePath: typeof getVariablePath;
 };
+
+// ============================================================================
+// Schema-aware Type Resolution for VarRef Meta
+// ============================================================================
+
+/**
+ * Resolves the TypeScript type from VarRef meta using schema.
+ * This is used for getValueAt/getNameAt with type structure resolution.
+ */
+export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends AnyVarRefBrand> = TypeProfile.Type<
+  ResolveInputProfileFromMeta<TSchema, TMeta["typeName"], TMeta["kind"], "!">
+>;
+
+/**
+ * Schema-aware getValueAt type.
+ * Resolves type structure from schema using typeName + kind.
+ */
+export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
+  varRef: VarRef<T>,
+  selector: (proxy: SelectableProxy<ResolveTypeFromMeta<TSchema, T>>) => U,
+) => U;
+
+/**
+ * Schema-aware getNameAt type.
+ * Resolves type structure from schema using typeName + kind.
+ */
+export type SchemaAwareGetNameAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
+  varRef: VarRef<T>,
+  selector: (proxy: ResolveTypeFromMeta<TSchema, T>) => U,
+) => string;
 
 /**
  * Generic input type method that can be called with any modifier.
@@ -202,7 +227,6 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
 
   varBuilder.getName = getVarRefName;
   varBuilder.getValue = getVarRefValue;
-  varBuilder.getInner = getVarRefInner;
   varBuilder.getNameAt = getNameAt;
   varBuilder.getValueAt = getValueAt;
   varBuilder.getVariablePath = getVariablePath;

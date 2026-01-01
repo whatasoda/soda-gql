@@ -1,5 +1,4 @@
-import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
-import type { VarRef } from "./var-ref";
+import type { ApplyTypeModifier, GetSignature, TypeModifier } from "./type-modifier-core.generated";
 
 export interface PrimitiveTypeProfile {
   readonly kind: "scalar" | "enum";
@@ -7,7 +6,13 @@ export interface PrimitiveTypeProfile {
   readonly value: any;
 }
 
-export type TypeProfile = [PrimitiveTypeProfile] | { readonly [key: string]: TypeProfile.WithMeta };
+export interface ObjectTypeProfile {
+  readonly kind: "input";
+  readonly name: string;
+  readonly fields: { readonly [key: string]: TypeProfile.WithMeta };
+}
+
+export type TypeProfile = PrimitiveTypeProfile | ObjectTypeProfile;
 
 export declare namespace TypeProfile {
   export type WITH_DEFAULT_INPUT = "with_default_input";
@@ -31,8 +36,8 @@ export declare namespace TypeProfile {
   // Simplify utility to flatten intersection types into a single object type
   type Simplify<T> = { [K in keyof T]: T[K] } & {};
 
-  // Helper type to build object type with correct optional/required fields
-  type ObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
+  // Helper type to build object type with correct optional/required fields (VarRef not allowed)
+  type ConstObjectType<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
     {
       readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta ? Type<TProfileObject[K]> : never;
     } & {
@@ -40,68 +45,38 @@ export declare namespace TypeProfile {
     }
   >;
 
-  type AssignableObjectTypeProfile<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
-    {
-      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
-        ? AssignableType<TProfileObject[K]>
-        : never;
-    } & {
-      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
-        ? AssignableType<TProfileObject[K]>
-        : never;
-    }
-  >;
-
   export type Type<TProfile extends TypeProfile.WithMeta> =
     | ApplyTypeModifier<
-        TProfile[0] extends [PrimitiveTypeProfile]
-          ? TProfile[0][0]["value"]
-          : TProfile[0] extends { readonly [key: string]: WithMeta }
-            ? ObjectTypeProfile<TProfile[0]>
+        TProfile[0] extends PrimitiveTypeProfile
+          ? TProfile[0]["value"]
+          : TProfile[0] extends ObjectTypeProfile
+            ? ConstObjectType<TProfile[0]["fields"]>
             : never,
         TProfile[1]
       >
     | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
 
-  export type AssignableSignature<TProfile extends TypeProfile.WithMeta> =
-    | ApplyTypeModifier<"[TYPE_SIGNATURE]", TProfile[1]>
-    | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
-
-  export type Signature<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
-    "[TYPE_SIGNATURE]",
-    TProfile[1]
-  > extends infer T
-    ? TProfile[2] extends WITH_DEFAULT_INPUT
-      ? Exclude<T, undefined>
-      : T
-    : never;
-
-  // NOTE: AssignableVarRef should accept var refs with same profile and compatible signature.
-  // It doesn't matter modifiers or default input flag in the TProfile.
-  export type AssignableVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: [TProfile[0], any, any?];
-    signature: AssignableSignature<TProfile>;
+  /**
+   * VarRef brand derived from TypeProfile.
+   * Extracts typeName and kind from the profile, takes pre-computed signature.
+   * Used by generated Assignable types for efficient type checking.
+   */
+  export type VarRefBrand<T extends TypeProfile, TSignature> = {
+    typeName: T["name"];
+    kind: T["kind"];
+    signature: TSignature;
   };
 
-  // NOTE: AssigningVarRef should remember the full profile aside from signature.
-  // So that it can be used to extract const values from nested structure.
-  export type AssigningVarRefMeta<TProfile extends TypeProfile.WithMeta> = {
-    profile: TProfile;
-    signature: Signature<TProfile>;
+  /**
+   * VarRef brand derived from WithMeta.
+   * Used by AssigningInput to type variable references.
+   * Derives typeName, kind, and signature from the profile.
+   */
+  export type AssigningVarRefBrand<T extends WithMeta> = {
+    typeName: T[0]["name"];
+    kind: T[0]["kind"];
+    signature: GetSignature<T[1]>;
   };
-
-  export type AssignableType<TProfile extends TypeProfile.WithMeta> =
-    | ApplyTypeModifier<
-        TProfile[0] extends [PrimitiveTypeProfile]
-          ? TProfile[0][0]["value"]
-          : TProfile[0] extends { readonly [key: string]: WithMeta }
-            ? AssignableObjectTypeProfile<TProfile[0]>
-            : never,
-        TProfile[1]
-      >
-    | VarRef<AssignableVarRefMeta<TProfile>>;
-
-  export type AssigningType<TProfile extends TypeProfile.WithMeta> = VarRef<AssigningVarRefMeta<TProfile>>;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<
@@ -109,5 +84,3 @@ export type GetModifiedType<TProfile extends TypeProfile, TModifier extends Type
 >;
 
 export type GetConstAssignableType<TProfile extends TypeProfile.WithMeta> = TypeProfile.Type<TProfile>;
-
-export type GetAssigningType<TProfile extends TypeProfile.WithMeta> = TypeProfile.AssigningType<TProfile>;

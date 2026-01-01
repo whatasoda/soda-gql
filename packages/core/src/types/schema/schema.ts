@@ -14,6 +14,7 @@ import type {
   OutputScalarSpecifier,
   OutputTypeSpecifiers,
   OutputUnionSpecifier,
+  TypeModifier,
   TypeProfile,
 } from "../type-foundation";
 
@@ -136,14 +137,18 @@ export type InferInputProfile<
     ? never
     : [
         TSpecifier extends InputScalarSpecifier
-          ? [TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]]
+          ? TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]
           : TSpecifier extends InputEnumSpecifier
-            ? [TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]]
+            ? TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]
             : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
               ? {
-                  [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
-                    ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
-                    : never;
+                  kind: "input";
+                  name: TSpecifier["name"];
+                  fields: {
+                    [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
+                      ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
+                      : never;
+                  };
                 }
               : never,
         TSpecifier["modifier"],
@@ -152,11 +157,9 @@ export type InferInputProfile<
 }[TSchema["label"]];
 
 export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
-  [_ in TSchema["label"]]: [
-    (TSpecifier extends OutputScalarSpecifier
-      ? TSchema["scalar"][TSpecifier["name"]]
-      : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"],
-  ];
+  [_ in TSchema["label"]]: (TSpecifier extends OutputScalarSpecifier
+    ? TSchema["scalar"][TSpecifier["name"]]
+    : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"];
 }[TSchema["label"]];
 
 export type PickTypeSpecifierByFieldName<
@@ -205,3 +208,51 @@ export type InferInputKind<
     : TName extends keyof TSchema["input"]
       ? "input"
       : never;
+
+/**
+ * Resolves a TypeProfile from VarRefMetaV2 parameters (typeName + kind).
+ * This is used by schema-aware functions like getValueAt to resolve type structure
+ * from the schema at call site, rather than storing full profile in VarRef.
+ *
+ * @typeParam TSchema - The GraphQL schema
+ * @typeParam TTypeName - The GraphQL type name (e.g., "String", "UserInput")
+ * @typeParam TKind - The type kind ("scalar" | "enum" | "input")
+ * @typeParam TModifier - The type modifier (e.g., "!", "?", "![]!")
+ */
+export type ResolveInputProfileFromMeta<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends string,
+  TKind extends "scalar" | "enum" | "input",
+  TModifier extends TypeModifier,
+> = TKind extends "scalar"
+  ? InferInputProfile<
+      TSchema,
+      {
+        kind: "scalar";
+        name: TTypeName;
+        modifier: TModifier;
+        defaultValue: null;
+        directives: {};
+      }
+    >
+  : TKind extends "enum"
+    ? InferInputProfile<
+        TSchema,
+        {
+          kind: "enum";
+          name: TTypeName;
+          modifier: TModifier;
+          defaultValue: null;
+          directives: {};
+        }
+      >
+    : InferInputProfile<
+        TSchema,
+        {
+          kind: "input";
+          name: TTypeName;
+          modifier: TModifier;
+          defaultValue: null;
+          directives: {};
+        }
+      >;

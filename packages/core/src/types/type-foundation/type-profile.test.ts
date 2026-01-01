@@ -3,6 +3,7 @@ import { define, defineScalar, unsafeInputType } from "../../schema";
 import type { AssignableInput } from "../fragment/assignable-input";
 import type { AnyGraphqlSchema } from "../schema";
 import type { ConstAssignableInput } from "../schema/const-assignable-input";
+import { createVarRefFromVariable } from "./var-ref";
 
 /**
  * Test suite for verifying optional field inference in nested Input objects.
@@ -183,5 +184,101 @@ describe("Input object optional field inference", () => {
       };
       expect(true).toBe(true);
     });
+  });
+});
+
+/**
+ * Test suite for verifying VarRef assignment in nested Input objects.
+ *
+ * Problem: Nested input object fields could not accept VarRef because
+ * ObjectTypeProfile lost the type name information.
+ *
+ * Expected behavior:
+ * - VarRef should be assignable to nested input object fields
+ * - VarRef for self-referential types like bool_exp should work
+ */
+
+// Schema with non-self-referential nested input types for basic verification
+const createNestedInputSchema = () =>
+  ({
+    label: "nested_input_test" as const,
+    operations: {
+      query: "Query" as const,
+      mutation: null,
+      subscription: null,
+    },
+    scalar: {
+      ...defineScalar<"String", string, string>("String"),
+      ...defineScalar<"Int", number, number>("Int"),
+    },
+    enum: {},
+    input: {
+      // Outer input with nested input field
+      OuterFilter: define("OuterFilter").input({
+        innerFilter: unsafeInputType.input("InnerFilter:?", {}),
+        innerFilterArray: unsafeInputType.input("InnerFilter:![]?", {}),
+      }),
+      InnerFilter: define("InnerFilter").input({
+        value: unsafeInputType.scalar("String:!", {}),
+        count: unsafeInputType.scalar("Int:?", {}),
+      }),
+    },
+    object: {
+      Query: define("Query").object({}),
+    },
+    union: {},
+  }) satisfies AnyGraphqlSchema;
+
+type NestedInputSchema = ReturnType<typeof createNestedInputSchema>;
+
+describe("VarRef in nested input objects", () => {
+  describe("Non-self-referential nested input types", () => {
+    it("should allow VarRef for nested input object field", () => {
+      // Create a VarRef - type safety is enforced at assignment site
+      const innerFilterVarRef = createVarRefFromVariable("innerFilter");
+
+      // This should compile - VarRef should be assignable to innerFilter field
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilter: innerFilterVarRef,
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow VarRef for entire array field", () => {
+      // VarRef for the whole array type
+      const wholeArrayVarRef = createVarRefFromVariable("wholeArray");
+
+      // This should compile - VarRef for entire array should work
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: wholeArrayVarRef,
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow VarRef at array element level", () => {
+      // VarRef for array element
+      const elementVarRef = createVarRefFromVariable("element");
+
+      // This should compile - VarRef in array element position should work
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: [elementVarRef],
+      };
+      expect(true).toBe(true);
+    });
+
+    it("should allow mixed const values and VarRef in nested array", () => {
+      const innerFilterVarRef = createVarRefFromVariable("innerFilter");
+
+      // This should compile - mixing const with VarRef
+      const _input: AssignableInput<NestedInputSchema, NestedInputSchema["input"]["OuterFilter"]["fields"]> = {
+        innerFilterArray: [{ value: "const1" }, innerFilterVarRef, { value: "const2", count: 5 }],
+      };
+      expect(true).toBe(true);
+    });
+
+    // Note: Type-level rejection tests are no longer applicable since
+    // createVarRefFromVariable now returns AnyVarRef. Type safety for
+    // VarRef assignment is enforced at the AssigningInput level, not
+    // at VarRef creation time.
   });
 });

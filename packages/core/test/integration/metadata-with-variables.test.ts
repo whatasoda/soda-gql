@@ -7,6 +7,7 @@ import { define, defineOperationRoots, defineScalar } from "../../src/schema/sch
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
+import { VarRef } from "../../src/types/type-foundation";
 
 const schema = {
   label: "test" as const,
@@ -73,7 +74,7 @@ describe("metadata with variable access", () => {
           variables: { ...$var("userId").ID("!") },
           metadata: ({ $ }) => ({
             custom: {
-              trackedVariables: [$var.getInner($.userId)],
+              trackedVariables: [VarRef.getInner($.userId)],
             },
           }),
           fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),

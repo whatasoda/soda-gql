@@ -1,8 +1,3 @@
-export {
-  getVarRefInner,
-  getVarRefName,
-  getVarRefValue,
-} from "../types/type-foundation/var-ref";
 export * from "./build-document";
 export * from "./colocate";
 export * from "./field-path-context";

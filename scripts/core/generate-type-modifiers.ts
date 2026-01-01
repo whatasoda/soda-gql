@@ -47,49 +47,118 @@ ${embedEntries({ from: 0, to: DEPTH })`
   ${({ modifier }) => `| "${modifier}"`}
 `};
 
-interface Op<T> {
-  readonly 0: T[];
-  readonly 1: T[] | null | undefined;
-}
+type Op_0<T> = T[];
+type Op_1<T> = T[] | null | undefined;
 
-// Modified
+// Modified - applies type modifier to a value type
 // depth = 0
 type Modified_0<T> = T;
 type Modified_1<T> = T | null | undefined;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer }) => `type Modified_${label}<T> = Op<Modified_${inner}<T>>[${outer}];`}
+${({ label, inner, outer }) => `type Modified_${label}<T> = Op_${outer}<Modified_${inner}<T>>;`}
 `}
 
 export type ApplyTypeModifier<T, M extends TypeModifier> =
 ${embedEntries({ from: 0, to: DEPTH })`
   ${({ label, modifier }) => `M extends "${modifier}" ? Modified_${label}<T> :`}
 `} never;
+
+// Signature - pre-computed signature patterns for VarRef type matching
+// depth = 0
+type Signature_0 = "[TYPE_SIGNATURE]";
+type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
+
+${embedEntries({ from: 1, to: DEPTH })`
+${({ label, inner, outer }) => `type Signature_${label} = Op_${outer}<Signature_${inner}>;`}
+`}
+
+export type GetSignature<M extends TypeModifier> =
+${embedEntries({ from: 0, to: DEPTH })`
+  ${({ label, modifier }) => `M extends "${modifier}" ? Signature_${label} :`}
+`} never;
 `
 
 const extension_content = `\
-import type { TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { ApplyTypeModifier, GetSignature } from "./type-modifier-core.generated";
+import type { ObjectTypeProfile, PrimitiveTypeProfile, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
-interface Op<T> {
-  readonly 0: T[];
-  readonly 1: T[] | null | undefined;
-}
+type Op_0<T> = T[];
+type Op_1<T> = T[] | null | undefined;
 
-type Ref<TProfile extends TypeProfile.WithMeta> = VarRef<TypeProfile.AssignableVarRefMeta<TProfile>>
+// Ref derives typeName and kind from T (TypeProfile), uses GetSignature for type matching
+type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.VarRefBrand<T, GetSignature<M>>>;
 
-// Assignable
+// Helper types for optional field detection in nested Input objects
+type IsOptionalProfile<TField extends TypeProfile.WithMeta> = TField[1] extends \`\${string}?\`
+  ? true
+  : TField[2] extends TypeProfile.WITH_DEFAULT_INPUT
+    ? true
+    : false;
+
+type OptionalProfileKeys<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = {
+  [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends true ? K : never;
+}[keyof TProfileObject];
+
+type RequiredProfileKeys<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = {
+  [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends false ? K : never;
+}[keyof TProfileObject];
+
+type Simplify<T> = { [K in keyof T]: T[K] } & {};
+
+// AssignableObjectType - builds object type with VarRef allowed in nested fields
+// Uses forward reference to GetAssignableType for recursive VarRef support
+type AssignableObjectType<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = Simplify<
+  {
+    readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends TypeProfile.WithMeta
+      ? GetAssignableType<TProfileObject[K]>
+      : never;
+  } & {
+    readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends TypeProfile.WithMeta
+      ? GetAssignableType<TProfileObject[K]>
+      : never;
+  }
+>;
+
+// AssignableConstBase - base const type with VarRef allowed in nested object fields
+type AssignableConstBase<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
+  TProfile[0] extends PrimitiveTypeProfile
+    ? TProfile[0]["value"]
+    : TProfile[0] extends ObjectTypeProfile
+      ? AssignableObjectType<TProfile[0]["fields"]>
+      : never,
+  TProfile[1]
+>;
+
+// AssignableInternal - recursive types without default value consideration
+// T is TypeProfile (not WithMeta) since signature is pre-computed via GetSignature
 // depth = 0
-type Assignable_0<T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "!", T[2]]>;
-type Assignable_1<T extends TypeProfile.WithMeta> = TypeProfile.AssignableType<[T[0], "?", T[2]]>;
+type AssignableInternal_0<T extends TypeProfile> = AssignableConstBase<[T, "!"]> | Ref<T, "!">;
+type AssignableInternal_1<T extends TypeProfile> = AssignableConstBase<[T, "?"]> | Ref<T, "?">;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer, modifier }) => `type Assignable_${label}<T extends TypeProfile.WithMeta> = Ref<[T[0], "${modifier}", T[2]]> | Op<Assignable_${inner}<[T[0], "${modifier[0]}"]>>[${outer}];`}
+${({ label, inner, outer, modifier }) => `type AssignableInternal_${label}<T extends TypeProfile> = Ref<T, "${modifier}"> | Op_${outer}<AssignableInternal_${inner}<T>>;`}
 `}
 
-export type GetAssignableType<T extends TypeProfile.WithMeta> =
+// AssignableInternalByModifier - selects AssignableInternal type based on modifier
+// Takes WithMeta and passes T[0] (TypeProfile) to internal types
+type AssignableInternalByModifier<T extends TypeProfile.WithMeta> =
 ${embedEntries({ from: 0, to: DEPTH })`
-  ${({ label, modifier }) => `T[1] extends "${modifier}" ? Assignable_${label}<T> :`}
+  ${({ label, modifier }) => `T[1] extends "${modifier}" ? AssignableInternal_${label}<T[0]> :`}
 `} never;
+
+// Assignable - entrypoint that handles default value at the outermost level
+type Assignable<T extends TypeProfile.WithMeta> =
+  | AssignableInternalByModifier<T>
+  | (T[2] extends TypeProfile.WITH_DEFAULT_INPUT ? undefined : never);
+
+/**
+ * Assignable type using typeName + kind for VarRef comparison.
+ * Accepts const values or VarRefs with matching typeName + kind + signature.
+ * Allows VarRef at any level in nested object fields.
+ * Default value handling is applied at the outermost level only.
+ */
+export type GetAssignableType<T extends TypeProfile.WithMeta> = Assignable<T>;
 `
 
 await Bun.write(CORE, core_content);
