@@ -1,14 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
-import {
-  getNameAt,
-  getValueAt,
-  getVariablePath,
-  getVarRefName,
-  getVarRefValue,
-  hasVarRefInside,
-  isVarRef,
-} from "./var-ref-tools";
+import { createVarRefFromNestedValue, createVarRefFromVariable, VarRef } from "../types/type-foundation/var-ref";
+import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue, hasVarRefInside } from "./var-ref-tools";
 
 describe("hasVarRefInside", () => {
   it("returns false for primitive values", () => {
@@ -82,22 +74,6 @@ describe("getVarRefName", () => {
   it("throws for nested-value type", () => {
     const varRef = createVarRefFromNestedValue<"TestInput", "input", "[TYPE_SIGNATURE]">({ test: "value" });
     expect(() => getVarRefName(varRef)).toThrow("Expected variable reference, got nested-value");
-  });
-});
-
-describe("isVarRef", () => {
-  it("returns true for VarRef instances", () => {
-    expect(isVarRef(createVarRefFromVariable<"String", "scalar", "[TYPE_SIGNATURE]">("test"))).toBe(true);
-    expect(isVarRef(createVarRefFromNestedValue<"TestInput", "input", "[TYPE_SIGNATURE]">({ test: "value" }))).toBe(true);
-  });
-
-  it("returns false for non-VarRef values", () => {
-    expect(isVarRef("string")).toBe(false);
-    expect(isVarRef(123)).toBe(false);
-    expect(isVarRef(null)).toBe(false);
-    expect(isVarRef(undefined)).toBe(false);
-    expect(isVarRef({})).toBe(false);
-    expect(isVarRef([])).toBe(false);
   });
 });
 
@@ -199,7 +175,7 @@ describe("getVariablePath", () => {
 describe("createVarRefFromVariable with type parameters", () => {
   it("creates a VarRef from variable name", () => {
     const varRef = createVarRefFromVariable<"String", "scalar", "[TYPE_SIGNATURE]">("userId");
-    expect(isVarRef(varRef)).toBe(true);
+    expect(varRef).toBeInstanceOf(VarRef);
     expect(getVarRefName(varRef)).toBe("userId");
   });
 
@@ -208,9 +184,9 @@ describe("createVarRefFromVariable with type parameters", () => {
     const enumRef = createVarRefFromVariable<"Status", "enum", "[TYPE_SIGNATURE]">("status");
     const inputRef = createVarRefFromVariable<"UserInput", "input", "[TYPE_SIGNATURE]">("user");
 
-    expect(isVarRef(scalarRef)).toBe(true);
-    expect(isVarRef(enumRef)).toBe(true);
-    expect(isVarRef(inputRef)).toBe(true);
+    expect(scalarRef).toBeInstanceOf(VarRef);
+    expect(enumRef).toBeInstanceOf(VarRef);
+    expect(inputRef).toBeInstanceOf(VarRef);
   });
 });
 
@@ -220,7 +196,7 @@ describe("createVarRefFromNestedValue with type parameters", () => {
       name: "Alice",
       age: 30,
     });
-    expect(isVarRef(varRef)).toBe(true);
+    expect(varRef).toBeInstanceOf(VarRef);
     expect(getVarRefValue(varRef)).toEqual({ name: "Alice", age: 30 });
   });
 
@@ -229,7 +205,7 @@ describe("createVarRefFromNestedValue with type parameters", () => {
     const varRef = createVarRefFromNestedValue<"UserInput", "input", "[TYPE_SIGNATURE]">({
       user: { id: innerVarRef, name: "Alice" },
     });
-    expect(isVarRef(varRef)).toBe(true);
+    expect(varRef).toBeInstanceOf(VarRef);
     // getVarRefValue throws when nested value contains VarRef
     expect(() => getVarRefValue(varRef)).toThrow("Cannot get const value: nested-value contains VarRef");
   });

@@ -240,7 +240,6 @@ The `$var` object provides utility functions for inspecting variable references:
 |--------|-------------|
 | `$var.getName(ref)` | Get variable name from a VarRef |
 | `$var.getValue(ref)` | Get const value from a nested-value VarRef |
-| `$var.getInner(ref)` | Get the internal VarRefInner structure |
 | `$var.getNameAt(ref, selector)` | Get variable name at a specific path |
 | `$var.getValueAt(ref, selector)` | Get const value at a specific path |
 | `$var.getVariablePath(ref, selector)` | Get path segments to a variable |

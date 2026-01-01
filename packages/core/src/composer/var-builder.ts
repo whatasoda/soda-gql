@@ -10,7 +10,7 @@ import type { InputTypeKind, TypeModifier, TypeProfile } from "../types/type-fou
 import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 import type { SelectableProxy } from "./var-ref-tools";
-import { getNameAt, getValueAt, getVariablePath, getVarRefInner, getVarRefName, getVarRefValue } from "./var-ref-tools";
+import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue } from "./var-ref-tools";
 
 /**
  * Type for the default value function for a variable.
@@ -162,7 +162,6 @@ export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
   <TVarName extends string>(varName: TVarName): VarBuilderMethods<TVarName, TSchema>;
   getName: typeof getVarRefName;
   getValue: typeof getVarRefValue;
-  getInner: typeof getVarRefInner;
   getNameAt: SchemaAwareGetNameAt<TSchema>;
   getValueAt: SchemaAwareGetValueAt<TSchema>;
   getVariablePath: typeof getVariablePath;
@@ -228,7 +227,6 @@ export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
 
   varBuilder.getName = getVarRefName;
   varBuilder.getValue = getVarRefValue;
-  varBuilder.getInner = getVarRefInner;
   varBuilder.getNameAt = getNameAt;
   varBuilder.getValueAt = getValueAt;
   varBuilder.getVariablePath = getVariablePath;

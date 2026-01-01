@@ -7,16 +7,13 @@ import {
   type VarRefInner,
 } from "../types/type-foundation/var-ref";
 
-export const isVarRef = (value: unknown): value is AnyVarRef => {
-  return typeof value === "object" && value !== null && value instanceof VarRef;
-};
 /**
  * Recursively checks if a NestedValue contains any VarRef.
  * Used by getVarRefValue to determine if it's safe to return as ConstValue.
  */
 
 export const hasVarRefInside = (value: NestedValueElement): boolean => {
-  if (isVarRef(value)) {
+  if (value instanceof VarRef) {
     return true;
   }
 
@@ -29,10 +26,6 @@ export const hasVarRefInside = (value: NestedValueElement): boolean => {
   }
 
   return false;
-};
-
-export const getVarRefInner = (varRef: AnyVarRef): VarRefInner => {
-  return VarRef.getInner(varRef);
 };
 
 /**
@@ -120,7 +113,7 @@ const createSelectableProxy = <T>(current: ProxyInner): T => {
       if (typeof current.varInner.value === "object" && current.varInner.value !== null) {
         const value = (current.varInner.value as { [key: string]: NestedValueElement })[property];
         return createSelectableProxy({
-          varInner: isVarRef(value) ? getVarRefInner(value) : { type: "nested-value", value },
+          varInner: value instanceof VarRef ? VarRef.getInner(value) : { type: "nested-value", value },
           segments: nextSegments,
         });
       }
