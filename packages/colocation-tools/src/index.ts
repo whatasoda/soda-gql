@@ -54,4 +54,7 @@ export type { AnySlicePayload, AnySlicePayloads, ProjectionPathGraphNode } from 
 export { createPathGraphFromSliceEntries } from "./projection-path-graph";
 
 // Field path utilities (for advanced type inference)
-export type { AnyFieldPath, AvailableFieldPathOf, InferByFieldPath } from "./types/field-path";
+export type { AnyFieldPath, AvailableFieldPathOf } from "./types/field-path";
+
+// Output path utilities (for type inference from TOutput)
+export type { AnyOutputPath, InferByOutputPath, InferPathsOutput } from "./types/output-path";
