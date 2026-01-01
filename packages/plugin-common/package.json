@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/plugin-common",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Shared utilities for soda-gql build plugins",
   "type": "module",
   "private": false,
