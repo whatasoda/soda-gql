@@ -1,7 +1,7 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../codegen-fixture/graphql-system";
 
 // Multi-schema: admin schema (should be formatted)
-export const adminFragment = gql.admin(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
+export const adminFragment = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));
 
 // Multi-schema: default schema (should still work)
 export const defaultQuery = gql.default(({ query }) =>
@@ -11,7 +11,7 @@ export const defaultQuery = gql.default(({ query }) =>
   }),
 );
 
-// Multi-schema: nested selections
-export const nestedAdmin = gql.admin(({ model }) =>
-  model.Post({ fields: ({ f }) => ({ ...f.id(), ...f.author()(({ f }) => ({ ...f.id(), ...f.name() })) }) }),
+// Multi-schema: nested selections (Post only has id, title, body - no nested fields)
+export const nestedAdmin = gql.admin(({ fragment }) =>
+  fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.body() }) }),
 );
