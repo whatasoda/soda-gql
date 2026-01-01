@@ -50,6 +50,41 @@ Each entry in `schemas` requires:
 |--------|------|-------------|
 | `schema` | `string` | Path to GraphQL schema file |
 | `inject` | `string` | Path to inject file (scalars and adapter definitions) |
+| `defaultInputDepth` | `number` | Depth limit for recursive input types (default: `3`, max: `10`) |
+| `inputDepthOverrides` | `Record<string, number>` | Per-type depth overrides for specific input types |
+
+### Recursive Input Type Handling
+
+For schemas with self-referential input types (like Hasura's `bool_exp` pattern), configure depth limits to prevent infinite type inference:
+
+```typescript
+import { defineConfig } from "@soda-gql/config";
+
+export default defineConfig({
+  outdir: "./src/graphql-system",
+  include: ["./src/**/*.ts"],
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      inject: "./src/graphql-system/default.inject.ts",
+      defaultInputDepth: 3,  // Default depth for all input types
+      inputDepthOverrides: {
+        // Override for specific recursive types
+        user_bool_exp: 5,
+        post_bool_exp: 5,
+      },
+    },
+  },
+});
+```
+
+**When to use**:
+- Hasura GraphQL schemas with `*_bool_exp` types
+- Any schema with self-referential input types (e.g., `_and`, `_or`, `_not` fields)
+
+**Default behavior**:
+- `defaultInputDepth`: `3` (types nested deeper than 3 levels become `never`)
+- `inputDepthOverrides`: `{}` (no per-type overrides)
 
 ## Multi-Schema Configuration
 
