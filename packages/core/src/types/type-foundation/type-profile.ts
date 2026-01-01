@@ -1,5 +1,4 @@
 import type { ApplyTypeModifier, GetSignature, TypeModifier } from "./type-modifier-core.generated";
-import type { GetAssignableType } from "./type-modifier-extension.generated";
 
 export interface PrimitiveTypeProfile {
   readonly kind: "scalar" | "enum";
@@ -46,28 +45,6 @@ export declare namespace TypeProfile {
     }
   >;
 
-  /**
-   * Nested assignable type - used for fields within input objects.
-   * Delegates to GetAssignableType which properly handles:
-   * - VarRef at current level (e.g., VarRef for the whole array)
-   * - VarRef at element level for arrays (e.g., VarRef for array elements)
-   * - Recursive VarRef support in nested object fields
-   */
-  type NestedAssignableType<TProfile extends WithMeta> = GetAssignableType<TProfile>;
-
-  // Helper type to build object type with VarRef allowed in nested fields
-  export type AssignableObjectType<TProfileObject extends { readonly [key: string]: WithMeta }> = Simplify<
-    {
-      readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends WithMeta
-        ? NestedAssignableType<TProfileObject[K]>
-        : never;
-    } & {
-      readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends WithMeta
-        ? NestedAssignableType<TProfileObject[K]>
-        : never;
-    }
-  >;
-
   export type Type<TProfile extends TypeProfile.WithMeta> =
     | ApplyTypeModifier<
         TProfile[0] extends PrimitiveTypeProfile
@@ -107,20 +84,3 @@ export type GetModifiedType<TProfile extends TypeProfile, TModifier extends Type
 >;
 
 export type GetConstAssignableType<TProfile extends TypeProfile.WithMeta> = TypeProfile.Type<TProfile>;
-
-/**
- * Base const type for assignable positions that allows VarRef in nested object fields.
- * Uses AssignableObjectType which contains NestedAssignableType for nested objects,
- * thus propagating VarRef support through the object structure.
- *
- * Used as the base type in Assignable_* (generated), where array element
- * positions and nested fields allow VarRef assignment.
- */
-export type AssignableConstBase<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
-  TProfile[0] extends PrimitiveTypeProfile
-    ? TProfile[0]["value"]
-    : TProfile[0] extends ObjectTypeProfile
-      ? TypeProfile.AssignableObjectType<TProfile[0]["fields"]>
-      : never,
-  TProfile[1]
->;

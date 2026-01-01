@@ -1,5 +1,5 @@
-import type { GetSignature } from "./type-modifier-core.generated";
-import type { AssignableConstBase, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+import type { ApplyTypeModifier, GetSignature } from "./type-modifier-core.generated";
+import type { ObjectTypeProfile, PrimitiveTypeProfile, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
 interface Op<T> {
   readonly 0: T[];
@@ -8,6 +8,47 @@ interface Op<T> {
 
 // Ref derives typeName and kind from T (TypeProfile), uses GetSignature for type matching
 type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.VarRefBrand<T, GetSignature<M>>>;
+
+// Helper types for optional field detection in nested Input objects
+type IsOptionalProfile<TField extends TypeProfile.WithMeta> = TField[1] extends `${string}?`
+  ? true
+  : TField[2] extends TypeProfile.WITH_DEFAULT_INPUT
+    ? true
+    : false;
+
+type OptionalProfileKeys<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = {
+  [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends true ? K : never;
+}[keyof TProfileObject];
+
+type RequiredProfileKeys<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = {
+  [K in keyof TProfileObject]: IsOptionalProfile<TProfileObject[K]> extends false ? K : never;
+}[keyof TProfileObject];
+
+type Simplify<T> = { [K in keyof T]: T[K] } & {};
+
+// AssignableObjectType - builds object type with VarRef allowed in nested fields
+// Uses forward reference to GetAssignableType for recursive VarRef support
+type AssignableObjectType<TProfileObject extends { readonly [key: string]: TypeProfile.WithMeta }> = Simplify<
+  {
+    readonly [K in OptionalProfileKeys<TProfileObject>]+?: TProfileObject[K] extends TypeProfile.WithMeta
+      ? GetAssignableType<TProfileObject[K]>
+      : never;
+  } & {
+    readonly [K in RequiredProfileKeys<TProfileObject>]-?: TProfileObject[K] extends TypeProfile.WithMeta
+      ? GetAssignableType<TProfileObject[K]>
+      : never;
+  }
+>;
+
+// AssignableConstBase - base const type with VarRef allowed in nested object fields
+type AssignableConstBase<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
+  TProfile[0] extends PrimitiveTypeProfile
+    ? TProfile[0]["value"]
+    : TProfile[0] extends ObjectTypeProfile
+      ? AssignableObjectType<TProfile[0]["fields"]>
+      : never,
+  TProfile[1]
+>;
 
 // AssignableInternal - recursive types without default value consideration
 // T is TypeProfile (not WithMeta) since signature is pre-computed via GetSignature
