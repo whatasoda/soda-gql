@@ -52,7 +52,7 @@ interface Op<T> {
   readonly 1: T[] | null | undefined;
 }
 
-// Modified
+// Modified - applies type modifier to a value type
 // depth = 0
 type Modified_0<T> = T;
 type Modified_1<T> = T | null | undefined;
@@ -65,20 +65,8 @@ export type ApplyTypeModifier<T, M extends TypeModifier> =
 ${embedEntries({ from: 0, to: DEPTH })`
   ${({ label, modifier }) => `M extends "${modifier}" ? Modified_${label}<T> :`}
 `} never;
-`
 
-const extension_content = `\
-import type { AssignableConstBase, TypeProfile, VarRef } from "./type-modifier-extension.injection";
-
-interface Op<T> {
-  readonly 0: T[];
-  readonly 1: T[] | null | undefined;
-}
-
-// Ref derives typeName and kind from T (TypeProfile), takes pre-computed signature
-type Ref<T extends TypeProfile, TSignature> = VarRef<TypeProfile.VarRefBrand<T, TSignature>>;
-
-// Signature - pre-computed signature patterns
+// Signature - pre-computed signature patterns for VarRef type matching
 // depth = 0
 type Signature_0 = "[TYPE_SIGNATURE]";
 type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
@@ -87,14 +75,32 @@ ${embedEntries({ from: 1, to: DEPTH })`
 ${({ label, inner, outer }) => `type Signature_${label} = Op<Signature_${inner}>[${outer}];`}
 `}
 
+export type GetSignature<M extends TypeModifier> =
+${embedEntries({ from: 0, to: DEPTH })`
+  ${({ label, modifier }) => `M extends "${modifier}" ? Signature_${label} :`}
+`} never;
+`
+
+const extension_content = `\
+import type { GetSignature } from "./type-modifier-core.generated";
+import type { AssignableConstBase, TypeProfile, VarRef } from "./type-modifier-extension.injection";
+
+interface Op<T> {
+  readonly 0: T[];
+  readonly 1: T[] | null | undefined;
+}
+
+// Ref derives typeName and kind from T (TypeProfile), uses GetSignature for type matching
+type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.VarRefBrand<T, GetSignature<M>>>;
+
 // AssignableInternal - recursive types without default value consideration
-// T is TypeProfile (not WithMeta) since signature is pre-computed
+// T is TypeProfile (not WithMeta) since signature is pre-computed via GetSignature
 // depth = 0
-type AssignableInternal_0<T extends TypeProfile> = AssignableConstBase<[T, "!"]> | Ref<T, Signature_0>;
-type AssignableInternal_1<T extends TypeProfile> = AssignableConstBase<[T, "?"]> | Ref<T, Signature_1>;
+type AssignableInternal_0<T extends TypeProfile> = AssignableConstBase<[T, "!"]> | Ref<T, "!">;
+type AssignableInternal_1<T extends TypeProfile> = AssignableConstBase<[T, "?"]> | Ref<T, "?">;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer, modifier }) => `type AssignableInternal_${label}<T extends TypeProfile> = Ref<T, Signature_${label}> | Op<AssignableInternal_${inner}<T>>[${outer}];`}
+${({ label, inner, outer, modifier }) => `type AssignableInternal_${label}<T extends TypeProfile> = Ref<T, "${modifier}"> | Op<AssignableInternal_${inner}<T>>[${outer}];`}
 `}
 
 // AssignableInternalByModifier - selects AssignableInternal type based on modifier

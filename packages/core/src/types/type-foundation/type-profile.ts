@@ -1,4 +1,4 @@
-import type { ApplyTypeModifier, TypeModifier } from "./type-modifier-core.generated";
+import type { ApplyTypeModifier, GetSignature, TypeModifier } from "./type-modifier-core.generated";
 import type { GetAssignableType } from "./type-modifier-extension.generated";
 
 export interface PrimitiveTypeProfile {
@@ -79,19 +79,6 @@ export declare namespace TypeProfile {
       >
     | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
 
-  export type AssignableSignature<TProfile extends TypeProfile.WithMeta> =
-    | ApplyTypeModifier<"[TYPE_SIGNATURE]", TProfile[1]>
-    | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
-
-  export type Signature<TProfile extends TypeProfile.WithMeta> = ApplyTypeModifier<
-    "[TYPE_SIGNATURE]",
-    TProfile[1]
-  > extends infer T
-    ? TProfile[2] extends WITH_DEFAULT_INPUT
-      ? Exclude<T, undefined>
-      : T
-    : never;
-
   /**
    * VarRef brand derived from TypeProfile.
    * Extracts typeName and kind from the profile, takes pre-computed signature.
@@ -111,7 +98,7 @@ export declare namespace TypeProfile {
   export type AssigningVarRefBrand<T extends WithMeta> = {
     typeName: T[0]["name"];
     kind: T[0]["kind"];
-    signature: Signature<T>;
+    signature: GetSignature<T[1]>;
   };
 }
 
