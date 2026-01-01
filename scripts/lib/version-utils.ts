@@ -239,7 +239,9 @@ export type BumpType = "major" | "minor" | "patch";
  * Uses worklist algorithm to propagate changes through the dependency graph
  *
  * For patch bumps: Only bump directly changed packages (no cascade)
- * For minor/major bumps: Cascade to all dependents
+ * For minor/major bumps: Bidirectional cascade
+ *   - Phase 1: Forward cascade to all dependents (packages that depend ON changed packages)
+ *   - Phase 2: Backward cascade to all workspace dependencies (packages that bumped packages depend ON)
  */
 export const computePackagesToBump = (
   directlyChanged: Set<string>,
@@ -248,22 +250,37 @@ export const computePackagesToBump = (
 ): Set<string> => {
   const toBump = new Set(directlyChanged);
 
-  // For patch bumps, don't cascade to dependents
+  // For patch bumps, don't cascade
   if (bumpType === "patch") {
     return toBump;
   }
 
-  // For minor/major bumps, propagate to all dependents
-  const worklist = [...directlyChanged];
-
-  while (worklist.length > 0) {
-    const pkg = worklist.pop()!;
+  // Phase 1: Forward cascade - propagate to all dependents
+  const forwardWorklist = [...directlyChanged];
+  while (forwardWorklist.length > 0) {
+    const pkg = forwardWorklist.pop()!;
     const dependents = graph.dependedBy.get(pkg) ?? new Set();
 
     for (const dependent of dependents) {
       if (!toBump.has(dependent)) {
         toBump.add(dependent);
-        worklist.push(dependent);
+        forwardWorklist.push(dependent);
+      }
+    }
+  }
+
+  // Phase 2: Backward cascade - propagate to workspace dependencies
+  // If a package is bumped, its workspace deps must also be bumped
+  const backwardWorklist = [...toBump];
+  while (backwardWorklist.length > 0) {
+    const pkg = backwardWorklist.pop()!;
+    const info = graph.packages.get(pkg);
+    if (!info) continue;
+
+    for (const dep of info.workspaceDeps) {
+      if (!toBump.has(dep)) {
+        toBump.add(dep);
+        backwardWorklist.push(dep);
       }
     }
   }
