@@ -47,10 +47,8 @@ ${embedEntries({ from: 0, to: DEPTH })`
   ${({ modifier }) => `| "${modifier}"`}
 `};
 
-interface Op<T> {
-  readonly 0: T[];
-  readonly 1: T[] | null | undefined;
-}
+type Op_0<T> = T[];
+type Op_1<T> = T[] | null | undefined;
 
 // Modified - applies type modifier to a value type
 // depth = 0
@@ -58,7 +56,7 @@ type Modified_0<T> = T;
 type Modified_1<T> = T | null | undefined;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer }) => `type Modified_${label}<T> = Op<Modified_${inner}<T>>[${outer}];`}
+${({ label, inner, outer }) => `type Modified_${label}<T> = Op_${outer}<Modified_${inner}<T>>;`}
 `}
 
 export type ApplyTypeModifier<T, M extends TypeModifier> =
@@ -72,7 +70,7 @@ type Signature_0 = "[TYPE_SIGNATURE]";
 type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer }) => `type Signature_${label} = Op<Signature_${inner}>[${outer}];`}
+${({ label, inner, outer }) => `type Signature_${label} = Op_${outer}<Signature_${inner}>;`}
 `}
 
 export type GetSignature<M extends TypeModifier> =
@@ -85,10 +83,8 @@ const extension_content = `\
 import type { ApplyTypeModifier, GetSignature } from "./type-modifier-core.generated";
 import type { ObjectTypeProfile, PrimitiveTypeProfile, TypeProfile, VarRef } from "./type-modifier-extension.injection";
 
-interface Op<T> {
-  readonly 0: T[];
-  readonly 1: T[] | null | undefined;
-}
+type Op_0<T> = T[];
+type Op_1<T> = T[] | null | undefined;
 
 // Ref derives typeName and kind from T (TypeProfile), uses GetSignature for type matching
 type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.VarRefBrand<T, GetSignature<M>>>;
@@ -141,7 +137,7 @@ type AssignableInternal_0<T extends TypeProfile> = AssignableConstBase<[T, "!"]>
 type AssignableInternal_1<T extends TypeProfile> = AssignableConstBase<[T, "?"]> | Ref<T, "?">;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer, modifier }) => `type AssignableInternal_${label}<T extends TypeProfile> = Ref<T, "${modifier}"> | Op<AssignableInternal_${inner}<T>>[${outer}];`}
+${({ label, inner, outer, modifier }) => `type AssignableInternal_${label}<T extends TypeProfile> = Ref<T, "${modifier}"> | Op_${outer}<AssignableInternal_${inner}<T>>;`}
 `}
 
 // AssignableInternalByModifier - selects AssignableInternal type based on modifier
