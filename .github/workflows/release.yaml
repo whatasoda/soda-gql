@@ -85,8 +85,24 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Determine bump type
+        id: bump-type
+        run: |
+          OLD_VERSION=$(git show HEAD~1:package.json | jq -r '.version')
+          NEW_VERSION=$(jq -r '.version' package.json)
+          IFS='.' read -ra OLD <<< "$OLD_VERSION"
+          IFS='.' read -ra NEW <<< "$NEW_VERSION"
+          if [ "${OLD[0]}" != "${NEW[0]}" ]; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif [ "${OLD[1]}" != "${NEW[1]}" ]; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+          echo "Detected bump type: $(cat $GITHUB_OUTPUT | grep type | cut -d= -f2)"
+
       - name: Validate package versions
-        run: bun scripts/version-check.ts validate
+        run: bun scripts/version-check.ts validate ${{ steps.bump-type.outputs.type }}
 
   build-native:
     needs: [check-version, validate-versions]
