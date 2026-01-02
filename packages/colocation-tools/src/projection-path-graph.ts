@@ -23,7 +23,7 @@ type ExecutionResultProjectionPathGraphIntermediate = {
   [segment: string]: { label: string; raw: string; segments: string[] }[];
 };
 
-function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[string]): ProjectionPathGraphNode {
+export function createPathGraph(paths: ExecutionResultProjectionPathGraphIntermediate[string]): ProjectionPathGraphNode {
   const intermediate = paths.reduce(
     (acc: ExecutionResultProjectionPathGraphIntermediate, { label, raw, segments: [segment, ...segments] }) => {
       if (segment) {
