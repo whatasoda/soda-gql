@@ -2,13 +2,7 @@ import { dirname, resolve } from "node:path";
 import type { Result } from "neverthrow";
 import { ok } from "neverthrow";
 import type { ConfigError } from "./errors";
-import type {
-  InjectConfig,
-  ResolvedArtifactConfig,
-  ResolvedInjectConfig,
-  ResolvedSodaGqlConfig,
-  SodaGqlConfig,
-} from "./types";
+import type { InjectConfig, ResolvedArtifactConfig, ResolvedInjectConfig, ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
 
 /**
  * Normalize inject config to resolved object form.
@@ -32,10 +26,7 @@ function normalizeInject(inject: InjectConfig, configDir: string): ResolvedInjec
  * Normalize artifact config to resolved form.
  * Returns undefined if no path is specified.
  */
-function normalizeArtifact(
-  artifact: SodaGqlConfig["artifact"],
-  configDir: string,
-): ResolvedArtifactConfig | undefined {
+function normalizeArtifact(artifact: SodaGqlConfig["artifact"], configDir: string): ResolvedArtifactConfig | undefined {
   if (!artifact?.path) {
     return undefined;
   }

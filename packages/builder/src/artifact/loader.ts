@@ -7,10 +7,7 @@ import type { BuilderArtifact } from "./types";
 /**
  * Error codes for artifact loading failures.
  */
-export type ArtifactLoadErrorCode =
-  | "ARTIFACT_NOT_FOUND"
-  | "ARTIFACT_PARSE_ERROR"
-  | "ARTIFACT_VALIDATION_ERROR";
+export type ArtifactLoadErrorCode = "ARTIFACT_NOT_FOUND" | "ARTIFACT_PARSE_ERROR" | "ARTIFACT_VALIDATION_ERROR";
 
 /**
  * Error type for artifact loading operations.
