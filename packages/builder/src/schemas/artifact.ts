@@ -41,7 +41,13 @@ const BuilderArtifactElementSchema = z.discriminatedUnion("type", [
   BuilderArtifactFragmentSchema,
 ]);
 
+const BuilderArtifactMetaSchema = z.object({
+  version: z.string(),
+  createdAt: z.string(),
+});
+
 export const BuilderArtifactSchema = z.object({
+  meta: BuilderArtifactMetaSchema.optional(),
   elements: z.record(z.string<CanonicalId>(), BuilderArtifactElementSchema),
   report: z.object({
     durationMs: z.number(),

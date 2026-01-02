@@ -26,7 +26,20 @@ export type BuilderArtifactFragment = BuilderArtifactElementBase & {
 
 export type BuilderArtifactElement = BuilderArtifactOperation | BuilderArtifactFragment;
 
+/**
+ * Metadata for pre-built artifacts.
+ * Contains version and creation timestamp for compatibility checks.
+ */
+export type BuilderArtifactMeta = {
+  readonly version: string;
+  readonly createdAt: string;
+};
+
 export type BuilderArtifact = {
+  /**
+   * Artifact metadata. Present in pre-built artifacts for version tracking.
+   */
+  readonly meta?: BuilderArtifactMeta;
   readonly elements: Record<CanonicalId, BuilderArtifactElement>;
 
   readonly report: {

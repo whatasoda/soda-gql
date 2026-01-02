@@ -137,6 +137,7 @@ describe("Session Reuse (Next.js Multi-Compilation)", () => {
       config: {} as Parameters<typeof setSharedPluginSession>[1] extends { config: infer C } ? C : never,
       getArtifact: () => null,
       getArtifactAsync: async () => null,
+      isPrebuiltMode: false,
     } as Parameters<typeof setSharedPluginSession>[1];
     setSharedPluginSession(key, mockSession);
 

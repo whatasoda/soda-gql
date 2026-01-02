@@ -1,4 +1,5 @@
 import { buildCommand } from "./build";
+import { validateCommand } from "./validate";
 
 const ARTIFACT_HELP = `Usage: soda-gql artifact <subcommand> [options]
 
@@ -6,6 +7,7 @@ Manage soda-gql artifacts.
 
 Subcommands:
   build        Build artifacts (validate definitions)
+  validate     Validate a pre-built artifact file
 
 Run 'soda-gql artifact <subcommand> --help' for more information.
 `;
@@ -23,6 +25,10 @@ export const artifactCommand = async (argv: readonly string[]): Promise<number> 
 
   if (subcommand === "build") {
     return buildCommand(rest);
+  }
+
+  if (subcommand === "validate") {
+    return validateCommand(rest);
   }
 
   process.stderr.write(`Unknown subcommand: ${subcommand}\n`);

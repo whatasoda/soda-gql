@@ -2,7 +2,7 @@ import { dirname, resolve } from "node:path";
 import type { Result } from "neverthrow";
 import { ok } from "neverthrow";
 import type { ConfigError } from "./errors";
-import type { InjectConfig, ResolvedInjectConfig, ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
+import type { InjectConfig, ResolvedArtifactConfig, ResolvedInjectConfig, ResolvedSodaGqlConfig, SodaGqlConfig } from "./types";
 
 /**
  * Normalize inject config to resolved object form.
@@ -23,6 +23,19 @@ function normalizeInject(inject: InjectConfig, configDir: string): ResolvedInjec
 }
 
 /**
+ * Normalize artifact config to resolved form.
+ * Returns undefined if no path is specified.
+ */
+function normalizeArtifact(artifact: SodaGqlConfig["artifact"], configDir: string): ResolvedArtifactConfig | undefined {
+  if (!artifact?.path) {
+    return undefined;
+  }
+  return {
+    path: resolve(configDir, artifact.path),
+  };
+}
+
+/**
  * Resolve and normalize config with defaults.
  * Paths in the config are resolved relative to the config file's directory.
  */
@@ -36,6 +49,9 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
 
   // Default exclude to empty array
   const exclude = config.exclude ?? [];
+
+  // Normalize artifact config (only if path is specified)
+  const artifact = normalizeArtifact(config.artifact, configDir);
 
   const resolved: ResolvedSodaGqlConfig = {
     analyzer,
@@ -58,6 +74,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
       importExtension: config.styles?.importExtension ?? false,
     },
     plugins: config.plugins ?? {},
+    ...(artifact ? { artifact } : {}),
   };
 
   return ok(resolved);
