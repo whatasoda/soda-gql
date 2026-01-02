@@ -127,7 +127,7 @@ export const createBuilderSession = (options: {
     prefix: ["builder"],
     persistence: {
       enabled: true,
-      filePath: join(process.cwd(), ".cache", "soda-gql", "builder", "cache.json"),
+      filePath: join(process.cwd(), "node_modules", ".cache", "soda-gql", "builder", "cache.json"),
     },
   });
 
