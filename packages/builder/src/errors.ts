@@ -25,6 +25,7 @@ export type BuilderErrorCode =
   // Runtime evaluation errors
   | "RUNTIME_MODULE_LOAD_FAILED"
   | "ARTIFACT_REGISTRATION_FAILED"
+  | "ELEMENT_EVALUATION_FAILED"
   // Internal invariant violations
   | "INTERNAL_INVARIANT";
 
@@ -125,6 +126,13 @@ export type BuilderError =
       readonly message: string;
       readonly elementId: string;
       readonly reason: string;
+    }
+  | {
+      readonly code: "ELEMENT_EVALUATION_FAILED";
+      readonly message: string;
+      readonly modulePath: string;
+      readonly astPath: string;
+      readonly cause?: unknown;
     }
   // Internal invariant
   | {
@@ -246,6 +254,19 @@ export const builderErrors = {
     reason,
   }),
 
+  elementEvaluationFailed: (
+    modulePath: string,
+    astPath: string,
+    message: string,
+    cause?: unknown,
+  ): BuilderError => ({
+    code: "ELEMENT_EVALUATION_FAILED",
+    message,
+    modulePath,
+    astPath,
+    cause,
+  }),
+
   internalInvariant: (message: string, context?: string, cause?: unknown): BuilderError => ({
     code: "INTERNAL_INVARIANT",
     message: `Internal invariant violated: ${message}`,
@@ -338,6 +359,12 @@ export const formatBuilderError = (error: BuilderError): string => {
     case "ARTIFACT_REGISTRATION_FAILED":
       lines.push(`  Element ID: ${error.elementId}`);
       lines.push(`  Reason: ${error.reason}`);
+      break;
+    case "ELEMENT_EVALUATION_FAILED":
+      lines.push(`  at ${error.modulePath}`);
+      if (error.astPath) {
+        lines.push(`  in ${error.astPath}`);
+      }
       break;
     case "INTERNAL_INVARIANT":
       if (error.context) {
