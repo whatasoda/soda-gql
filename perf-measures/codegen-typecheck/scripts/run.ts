@@ -4,6 +4,19 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
 const BENCH_DIR = path.join(import.meta.dirname, "..");
+const PROJECT_ROOT = path.resolve(BENCH_DIR, "../..");
+
+const ALL_MODES = [
+  "baseline",
+  "optimized",
+  "granular",
+  "precomputed",
+  "shallowInput",
+  "typedAssertion",
+  "branded",
+  "looseConstraint",
+  "noSatisfies",
+] as const;
 
 type BenchMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies";
 
@@ -12,6 +25,7 @@ interface RunOptions {
   generate: boolean;
   trace: boolean;
   iterations: number;
+  json: boolean;
 }
 
 function parseArgs(): RunOptions {
@@ -21,6 +35,7 @@ function parseArgs(): RunOptions {
     generate: false,
     trace: false,
     iterations: 1,
+    json: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -65,6 +80,9 @@ function parseArgs(): RunOptions {
       case "--iterations":
         options.iterations = parseInt(args[++i] ?? "1", 10);
         break;
+      case "--json":
+        options.json = true;
+        break;
     }
   }
 
@@ -86,6 +104,13 @@ interface DiagnosticMetrics {
   checkTime: number;
   emitTime: number;
   totalTime: number;
+}
+
+interface BenchmarkResult {
+  timestamp: string;
+  mode: BenchMode;
+  generatedStats: { lines: number; sizeKB: number };
+  metrics: DiagnosticMetrics;
 }
 
 function parseDiagnostics(output: string): DiagnosticMetrics {
@@ -196,6 +221,21 @@ async function getGeneratedStats(mode: BenchMode): Promise<{ lines: number; size
   }
 }
 
+async function saveResults(result: BenchmarkResult): Promise<string> {
+  const cacheDir = path.join(
+    PROJECT_ROOT,
+    ".cache",
+    "perf",
+    result.timestamp,
+    "codegen-typecheck",
+    result.mode,
+  );
+  await fs.mkdir(cacheDir, { recursive: true });
+  const filePath = path.join(cacheDir, "metrics.json");
+  await fs.writeFile(filePath, JSON.stringify(result, null, 2));
+  return filePath;
+}
+
 function formatMetrics(metrics: DiagnosticMetrics): string {
   return [
     `  Check time:      ${metrics.checkTime.toFixed(2)}s`,
@@ -211,20 +251,23 @@ function formatMetrics(metrics: DiagnosticMetrics): string {
 async function runBenchmark(
   mode: BenchMode,
   options: RunOptions,
-): Promise<DiagnosticMetrics> {
+  timestamp: string,
+): Promise<BenchmarkResult> {
   const exists = await checkGeneratedExists(mode);
   if (options.generate || !exists) {
     await generateCode(mode);
   }
 
   const stats = await getGeneratedStats(mode);
-  console.log(`\n${mode.toUpperCase()} (${stats.lines} lines, ${(stats.size / 1024).toFixed(1)} KB)`);
-  console.log("─".repeat(50));
+  if (!options.json) {
+    console.log(`\n${mode.toUpperCase()} (${stats.lines} lines, ${(stats.size / 1024).toFixed(1)} KB)`);
+    console.log("─".repeat(50));
+  }
 
   let totalMetrics: DiagnosticMetrics | null = null;
 
   for (let i = 0; i < options.iterations; i++) {
-    if (options.iterations > 1) {
+    if (options.iterations > 1 && !options.json) {
       console.log(`  Iteration ${i + 1}/${options.iterations}...`);
     }
 
@@ -239,7 +282,7 @@ async function runBenchmark(
       }
     }
 
-    if (traceDir) {
+    if (traceDir && !options.json) {
       console.log(`  Trace saved to: ${traceDir}`);
     }
   }
@@ -251,33 +294,57 @@ async function runBenchmark(
     }
   }
 
-  console.log(formatMetrics(totalMetrics!));
-  return totalMetrics!;
+  if (!options.json) {
+    console.log(formatMetrics(totalMetrics!));
+  }
+
+  return {
+    timestamp,
+    mode,
+    generatedStats: { lines: stats.lines, sizeKB: stats.size / 1024 },
+    metrics: totalMetrics!,
+  };
 }
 
 async function main() {
   const options = parseArgs();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-  console.log("@soda-gql Codegen TypeCheck Benchmark");
-  console.log("=====================================");
+  if (!options.json) {
+    console.log("@soda-gql Codegen TypeCheck Benchmark");
+    console.log("=====================================");
+  }
 
   const modes: BenchMode[] =
     options.mode === "all" ? ["baseline", "noSatisfies"] : [options.mode as BenchMode];
 
-  const results: Record<string, DiagnosticMetrics> = {};
+  const results: Record<string, BenchmarkResult> = {};
 
   for (const mode of modes) {
-    results[mode] = await runBenchmark(mode, options);
+    const result = await runBenchmark(mode, options, timestamp);
+    results[mode] = result;
+
+    // Save result to cache
+    const savedPath = await saveResults(result);
+    if (!options.json) {
+      console.log(`  Result saved: ${savedPath}`);
+    }
+  }
+
+  if (options.json) {
+    // Output JSON to stdout
+    console.log(JSON.stringify(Object.values(results), null, 2));
+    return;
   }
 
   if (modes.length > 1 && results.baseline) {
-    const baseline = results.baseline;
+    const baseline = results.baseline.metrics;
 
     console.log("\nCOMPARISON (vs Baseline)");
     console.log("─".repeat(50));
 
     for (const mode of modes.filter((m) => m !== "baseline")) {
-      const current = results[mode];
+      const current = results[mode]?.metrics;
       if (!current) continue;
       const improvement = ((baseline.checkTime - current.checkTime) / baseline.checkTime) * 100;
       console.log(`  ${mode}:`);
