@@ -125,7 +125,7 @@
     },
     "packages/colocation-tools": {
       "name": "@soda-gql/colocation-tools",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "graphql": "^16.11.0",
