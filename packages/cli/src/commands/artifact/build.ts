@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { createBuilderService } from "@soda-gql/builder";
-import { formatBuilderErrorForCLI } from "@soda-gql/builder/errors";
+import { createBuilderService, formatBuilderErrorForCLI } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
 
 const BUILD_HELP = `Usage: soda-gql artifact build [options]

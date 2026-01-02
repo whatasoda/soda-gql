@@ -44,13 +44,6 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./errors": {
-      "@soda-gql": "./src/errors/index.ts",
-      "types": "./dist/errors/index.d.mts",
-      "import": "./dist/errors/index.mjs",
-      "require": "./dist/errors/index.cjs",
-      "default": "./dist/errors/index.mjs"
-    },
     "./package.json": "./package.json"
   },
   "dependencies": {

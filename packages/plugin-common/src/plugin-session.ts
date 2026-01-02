@@ -4,8 +4,7 @@
  */
 
 import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
-import { createBuilderService } from "@soda-gql/builder";
-import { formatBuilderErrorForCLI } from "@soda-gql/builder/errors";
+import { createBuilderService, formatBuilderErrorForCLI } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { getSharedBuilderService, getStateKey, setSharedBuilderService } from "./shared-state";
 
