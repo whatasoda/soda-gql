@@ -4,7 +4,7 @@
  */
 
 import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
-import { createBuilderService, formatBuilderErrorForCLI } from "@soda-gql/builder";
+import { createBuilderService, formatBuilderErrorForCLI, loadArtifactSync } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { getSharedBuilderService, getStateKey, setSharedBuilderService } from "./shared-state";
 
@@ -29,6 +29,11 @@ export type PluginSession = {
   readonly config: ResolvedSodaGqlConfig;
   readonly getArtifact: () => BuilderArtifact | null;
   readonly getArtifactAsync: () => Promise<BuilderArtifact | null>;
+  /**
+   * Whether the session is using a pre-built artifact.
+   * When true, artifacts are loaded from a file instead of built dynamically.
+   */
+  readonly isPrebuiltMode: boolean;
 };
 
 /**
@@ -62,6 +67,35 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
   }
 
   const config = configResult.value;
+
+  // Check if pre-built artifact mode is enabled
+  if (config.artifact?.path) {
+    const artifactResult = loadArtifactSync(config.artifact.path);
+
+    if (artifactResult.isErr()) {
+      const errorMsg = `[${pluginName}] Failed to load pre-built artifact: ${artifactResult.error.message}`;
+      console.error(errorMsg, {
+        code: artifactResult.error.code,
+        filePath: artifactResult.error.filePath,
+      });
+      if (failOnError) {
+        throw new Error(errorMsg);
+      }
+      return null;
+    }
+
+    const prebuiltArtifact = artifactResult.value;
+    console.log(`[${pluginName}] Using pre-built artifact: ${config.artifact.path}`);
+
+    return {
+      config,
+      getArtifact: () => prebuiltArtifact,
+      getArtifactAsync: async () => prebuiltArtifact,
+      isPrebuiltMode: true,
+    };
+  }
+
+  // Dynamic build mode
   const stateKey = getStateKey(options.configPath);
 
   // Use global BuilderService cache to share FileTracker state across plugin instances
@@ -78,7 +112,6 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
 
   /**
    * Build artifact on every invocation (like tsc-plugin).
-   * If artifact.useBuilder is false and artifact.path is provided, load from file instead.
    * This ensures the artifact is always up-to-date with the latest source files.
    *
    * @throws Error if failOnError is true and build fails
@@ -121,5 +154,6 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
     config,
     getArtifact,
     getArtifactAsync,
+    isPrebuiltMode: false,
   };
 };

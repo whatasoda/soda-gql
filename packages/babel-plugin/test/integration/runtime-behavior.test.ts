@@ -53,6 +53,7 @@ const transformWithBabel = async ({
         config,
         getArtifact: () => artifact,
         getArtifactAsync: async () => artifact,
+        isPrebuiltMode: false,
       },
     });
 
