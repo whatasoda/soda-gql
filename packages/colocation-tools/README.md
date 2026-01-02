@@ -208,6 +208,24 @@ const results = parser(executionResult);
 // results.userData, results.postsData
 ```
 
+### createDirectParser
+
+For single fragment operations (like mutations), use `createDirectParser` for simpler parsing without `$colocate`:
+
+```typescript
+import { createDirectParser } from "@soda-gql/colocation-tools";
+
+// Fragment with attached projection
+const productFragment = gql
+  .default(({ fragment }) => fragment.Mutation({ ... }))
+  .attach(createProjectionAttachment({ ... }));
+
+// Direct parser - no labels needed
+const parseResult = createDirectParser(productFragment);
+const result = parseResult(executionResult);
+// result is the projected type directly
+```
+
 ## Related Packages
 
 - [@soda-gql/core](../core) - Core types and fragment definitions
