@@ -4,8 +4,7 @@ import type { BuilderError, BuilderErrorCode } from "../errors";
  * Hints for each error code to help users understand and fix issues.
  */
 const errorHints: Partial<Record<BuilderErrorCode, string>> = {
-  ELEMENT_EVALUATION_FAILED:
-    "Check if all imported fragments are properly exported and included in entry patterns.",
+  ELEMENT_EVALUATION_FAILED: "Check if all imported fragments are properly exported and included in entry patterns.",
   GRAPH_CIRCULAR_DEPENDENCY: "Break the circular import by extracting shared types to a common module.",
   GRAPH_MISSING_IMPORT: "Verify the import path exists and the module is included in entry patterns.",
   RUNTIME_MODULE_LOAD_FAILED: "Ensure the module can be imported and all dependencies are installed.",

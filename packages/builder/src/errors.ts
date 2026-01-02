@@ -254,12 +254,7 @@ export const builderErrors = {
     reason,
   }),
 
-  elementEvaluationFailed: (
-    modulePath: string,
-    astPath: string,
-    message: string,
-    cause?: unknown,
-  ): BuilderError => ({
+  elementEvaluationFailed: (modulePath: string, astPath: string, message: string, cause?: unknown): BuilderError => ({
     code: "ELEMENT_EVALUATION_FAILED",
     message,
     modulePath,

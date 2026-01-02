@@ -173,7 +173,7 @@ export class ElementEvaluationEffect extends Effect<void> {
     try {
       // Run generator synchronously - throws if async operation is required
       const generator = GqlElement.createEvaluationGenerator(this.element);
-      let result = generator.next();
+      const result = generator.next();
       while (!result.done) {
         // If generator yields, it means async operation is needed
         throw new Error("Async operation required during sync element evaluation");
