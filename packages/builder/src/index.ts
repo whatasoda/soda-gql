@@ -1,8 +1,11 @@
+export type { ArtifactLoadError, ArtifactLoadErrorCode } from "./artifact/loader";
+export { loadArtifact, loadArtifactSync } from "./artifact/loader";
 export type {
   BuilderArtifact,
   BuilderArtifactElement,
   BuilderArtifactElementMetadata,
   BuilderArtifactFragment,
+  BuilderArtifactMeta,
   BuilderArtifactOperation,
 } from "./artifact/types";
 export type {
