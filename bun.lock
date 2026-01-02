@@ -169,14 +169,6 @@
         "@swc/core": "^1.0.0",
       },
     },
-    "packages/helpers-internal": {
-      "name": "@soda-gql/helpers-internal",
-      "version": "0.8.0",
-      "dependencies": {
-        "@soda-gql/core": "workspace:*",
-        "graphql": "^16.11.0",
-      },
-    },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
       "version": "0.8.0",
@@ -1155,8 +1147,6 @@
     "@soda-gql/core": ["@soda-gql/core@workspace:packages/core"],
 
     "@soda-gql/formatter": ["@soda-gql/formatter@workspace:packages/formatter"],
-
-    "@soda-gql/helpers-internal": ["@soda-gql/helpers-internal@workspace:packages/helpers-internal"],
 
     "@soda-gql/metro-plugin": ["@soda-gql/metro-plugin@workspace:packages/metro-plugin"],
 

@@ -70,8 +70,7 @@
         "**/tests/**/*",
         "**/packages/*/test/**/*",
         "packages/core/src/types/**/*.ts",
-        "packages/core/src/utils/**/*.ts",
-        "packages/helpers-internal/**/*.ts"
+        "packages/core/src/utils/**/*.ts"
       ],
       "linter": {
         "rules": {
