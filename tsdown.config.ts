@@ -225,6 +225,19 @@ export default defineConfig([
     platform: "node",
     target: "node18",
     clean: true,
+    onSuccess: async () => {
+      // Copy native module from src/native to dist/native after build
+      const { cpSync, existsSync, mkdirSync } = await import("node:fs");
+      const srcNative = join(packagesDir, "swc-transformer/src/native");
+      const distNative = join(packagesDir, "swc-transformer/dist/native");
+      if (existsSync(srcNative)) {
+        if (!existsSync(distNative)) {
+          mkdirSync(distNative, { recursive: true });
+        }
+        cpSync(srcNative, distNative, { recursive: true });
+        console.log("[swc-transformer] Copied native module to dist/native");
+      }
+    },
   },
 
   // Plugin packages (externalize host bundler deps)
