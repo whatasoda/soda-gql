@@ -1,8 +1,8 @@
-import { gql } from "@/graphql-system";
+import { gql } from "../codegen-fixture/graphql-system";
 
 // Already has newline - should be skipped
-export const model1 = gql.default(({ model }) =>
-  model.User({
+export const fragment1 = gql.default(({ fragment }) =>
+  fragment.User({
     fields: ({ f }) => ({
       ...f.id(),
       ...f.name(),
@@ -11,11 +11,11 @@ export const model1 = gql.default(({ model }) =>
 );
 
 // Nested with newlines
-export const model2 = gql.default(({ model }) =>
-  model.User({
+export const fragment2 = gql.default(({ fragment }) =>
+  fragment.User({
     fields: ({ f }) => ({
       ...f.id(),
-      ...f.posts()(({ f }) => ({
+      ...f.posts({})(({ f }) => ({
         ...f.id(),
         ...f.title(),
       })),

@@ -1,16 +1,18 @@
 import { describe, expect, it } from "bun:test";
-import { Fragment } from "@soda-gql/core";
+import { type AnyFragment, Fragment } from "@soda-gql/core";
 import { createProjection } from "./create-projection";
 import { createExecutionResultParser } from "./parse-execution-result";
 import { SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
+import type { NormalizedError } from "./types";
 
 describe("createProjection", () => {
   // Create a mock Fragment for testing
-  const createMockFragment = () => {
-    return Fragment.create<any, "Query", {}, { user: { id: string; name: string } }>(() => ({
+  const createMockFragment = (): AnyFragment => {
+    const mockBuilder = () => ({
       typename: "Query",
       spread: () => ({ user: { id: "1", name: "Test" } }),
-    }));
+    });
+    return Fragment.create(mockBuilder as any) as AnyFragment;
   };
 
   it("should create a projection with paths and handle function", () => {
@@ -31,7 +33,7 @@ describe("createProjection", () => {
     });
 
     expect(projection.paths).toHaveLength(1);
-    expect(projection.paths[0].full).toBe("$.user");
+    expect(projection.paths[0]!.full).toBe("$.user");
   });
 
   it("should handle success result correctly", () => {
@@ -62,7 +64,14 @@ describe("createProjection", () => {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isError()) {
-          return { error: result.error.message, data: null };
+          const error = result.error;
+          if (error.type === "graphql-error") {
+            return { error: error.errors[0]?.message ?? "Unknown error", data: null };
+          }
+          return { error: "Non-GraphQL error", data: null };
+        }
+        if (result.isEmpty()) {
+          return { error: null, data: null };
         }
         const [user] = result.unwrap();
         return { error: null, data: user };
@@ -70,11 +79,11 @@ describe("createProjection", () => {
     });
 
     // Simulate an error result
-    const errorResult = new SlicedExecutionResultError({
-      message: "User not found",
-      locations: [],
-      path: ["user"],
-    });
+    const normalizedError: NormalizedError = {
+      type: "graphql-error",
+      errors: [{ message: "User not found", locations: [], path: ["user"] }],
+    };
+    const errorResult = new SlicedExecutionResultError(normalizedError);
     const projected = projection.projector(errorResult);
 
     expect(projected).toEqual({ error: "User not found", data: null });
@@ -83,18 +92,19 @@ describe("createProjection", () => {
 
 describe("createExecutionResultParser integration", () => {
   it("should parse execution result with labeled projections", () => {
-    const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
+    const mockBuilder = () => ({
       typename: "Query",
       spread: () => ({ user: { id: "1" } }),
-    }));
+    });
+    const userFragment = Fragment.create(mockBuilder as any) as AnyFragment;
 
     const userProjection = createProjection(userFragment, {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isSuccess()) {
           // The data comes as an array of values for each path
-          const [userData] = result.unwrap() as [{ id: string }];
-          return { userId: userData.id };
+          const data = result.unwrap() as [{ id: string }];
+          return { userId: data[0]?.id };
         }
         return null;
       },
@@ -119,10 +129,11 @@ describe("createExecutionResultParser integration", () => {
   });
 
   it("should handle empty results", () => {
-    const userFragment = Fragment.create<any, "Query", {}, { user: { id: string } }>(() => ({
+    const mockBuilder = () => ({
       typename: "Query",
       spread: () => ({ user: { id: "1" } }),
-    }));
+    });
+    const userFragment = Fragment.create(mockBuilder as any) as AnyFragment;
 
     const userProjection = createProjection(userFragment, {
       paths: ["$.user"],

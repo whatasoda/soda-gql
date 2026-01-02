@@ -14,9 +14,16 @@ export type AnyOutputPath = string;
  * type IdType = InferByOutputPath<Output, "$.user.id">; // string
  * ```
  */
-export type InferByOutputPath<TOutput extends object, TPath extends AnyOutputPath> = TPath extends "$"
-  ? TOutput
-  : InferByOutputPathInner<TOutput, TPath, "$">;
+export type InferByOutputPath<TOutput extends object, TPath extends AnyOutputPath> = boolean extends (
+  TOutput extends never
+    ? true
+    : false
+)
+  ? // biome-ignore lint/suspicious/noExplicitAny: Strip any to avoid infinite recursion when passing any to InferByOutputPathInner
+    any
+  : TPath extends "$"
+    ? TOutput
+    : InferByOutputPathInner<TOutput, TPath, "$">;
 
 /**
  * Internal helper that walks the output type while matching path segments.
