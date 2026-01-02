@@ -19,7 +19,6 @@
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
     { "path": "./packages/formatter/tsconfig.editor.json" },
-    { "path": "./packages/helpers-internal/tsconfig.editor.json" },
     { "path": "./packages/metro-plugin/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },

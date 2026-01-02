@@ -1,7 +1,13 @@
 import type { GraphQLFormattedError } from "graphql";
+import type { InferExecutionResultProjection } from "./projection";
 import { type AnySlicePayloads, createPathGraphFromSliceEntries, type ProjectionPathGraphNode } from "./projection-path-graph";
 import { SlicedExecutionResultEmpty, SlicedExecutionResultError, SlicedExecutionResultSuccess } from "./sliced-execution-result";
 import type { NormalizedExecutionResult } from "./types";
+
+/** Inferred result type for parsed slices */
+type ParsedSlices<TSlices extends AnySlicePayloads> = {
+  [K in keyof TSlices]: InferExecutionResultProjection<TSlices[K]["projection"]>;
+};
 
 // Internal function to build path graph from slices
 const createPathGraphFromSlices = createPathGraphFromSliceEntries;
@@ -94,7 +100,9 @@ const accessDataByPathSegments = (data: object, pathSegments: string[]) => {
  * });
  * ```
  */
-export const createExecutionResultParser = <TSlices extends AnySlicePayloads>(slices: TSlices) => {
+export const createExecutionResultParser = <TSlices extends AnySlicePayloads>(
+  slices: TSlices,
+): ((result: NormalizedExecutionResult<object, object>) => ParsedSlices<TSlices>) => {
   // Build path graph from slices
   const projectionPathGraph = createPathGraphFromSlices(slices);
   const fragments = slices;
