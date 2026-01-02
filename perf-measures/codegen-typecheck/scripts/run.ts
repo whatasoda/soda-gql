@@ -2,6 +2,13 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import {
+  compareResults,
+  formatPercent,
+  getLatestResult,
+  getPreviousResult,
+  isRegression,
+} from "./process-results.ts";
 
 const BENCH_DIR = path.join(import.meta.dirname, "..");
 const PROJECT_ROOT = path.resolve(BENCH_DIR, "../..");
@@ -20,22 +27,30 @@ const ALL_MODES = [
 
 type BenchMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies";
 
+type CompareMode = "none" | "previous" | "baseline";
+
 interface RunOptions {
   mode: BenchMode | "all";
+  modes: BenchMode[] | null;
   generate: boolean;
   trace: boolean;
   iterations: number;
   json: boolean;
+  compare: CompareMode;
+  threshold: number;
 }
 
 function parseArgs(): RunOptions {
   const args = process.argv.slice(2);
   const options: RunOptions = {
     mode: "all",
+    modes: null,
     generate: false,
     trace: false,
     iterations: 1,
     json: false,
+    compare: "none",
+    threshold: 10,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -82,6 +97,24 @@ function parseArgs(): RunOptions {
         break;
       case "--json":
         options.json = true;
+        break;
+      case "--compare":
+      case "--compare-previous":
+        options.compare = "previous";
+        break;
+      case "--compare-baseline":
+        options.compare = "baseline";
+        break;
+      case "--modes": {
+        const modesArg = args[++i] ?? "";
+        const parsed = modesArg.split(",").filter((m): m is BenchMode => ALL_MODES.includes(m as BenchMode));
+        if (parsed.length > 0) {
+          options.modes = parsed;
+        }
+        break;
+      }
+      case "--threshold":
+        options.threshold = parseFloat(args[++i] ?? "10");
         break;
     }
   }
@@ -315,10 +348,21 @@ async function main() {
     console.log("=====================================");
   }
 
-  const modes: BenchMode[] =
-    options.mode === "all" ? ["baseline", "noSatisfies"] : [options.mode as BenchMode];
+  // Determine which modes to run
+  let modes: BenchMode[];
+  if (options.modes) {
+    // --modes flag takes priority
+    modes = options.modes;
+  } else if (options.mode === "all") {
+    // --all runs all 9 modes
+    modes = [...ALL_MODES];
+  } else {
+    // Single mode
+    modes = [options.mode as BenchMode];
+  }
 
   const results: Record<string, BenchmarkResult> = {};
+  let hasRegression = false;
 
   for (const mode of modes) {
     const result = await runBenchmark(mode, options, timestamp);
@@ -329,6 +373,21 @@ async function main() {
     if (!options.json) {
       console.log(`  Result saved: ${savedPath}`);
     }
+
+    // Show comparison if requested
+    if (!options.json && options.compare !== "none") {
+      const baselineResult = await getComparisonBaseline(mode, options);
+      if (baselineResult) {
+        const comparison = compareResults(result.metrics, baselineResult.metrics);
+        const label = options.compare === "baseline" ? "vs baseline mode" : "vs previous";
+        console.log(`  ${label}: ${formatPercent(comparison.checkTimePercent)} check time`);
+
+        if (isRegression(comparison, options.threshold)) {
+          console.log(`  ⚠️  Regression detected (>${options.threshold}% threshold)`);
+          hasRegression = true;
+        }
+      }
+    }
   }
 
   if (options.json) {
@@ -337,10 +396,11 @@ async function main() {
     return;
   }
 
+  // Show comparison table for multiple modes run together
   if (modes.length > 1 && results.baseline) {
     const baseline = results.baseline.metrics;
 
-    console.log("\nCOMPARISON (vs Baseline)");
+    console.log("\nCOMPARISON (vs Baseline in this run)");
     console.log("─".repeat(50));
 
     for (const mode of modes.filter((m) => m !== "baseline")) {
@@ -354,6 +414,22 @@ async function main() {
 
     console.log(`\n  Baseline reference: ${baseline.checkTime.toFixed(2)}s`);
   }
+
+  if (hasRegression) {
+    console.log("\n⚠️  Some modes showed regression above threshold");
+  }
+}
+
+async function getComparisonBaseline(
+  mode: BenchMode,
+  options: RunOptions,
+): Promise<BenchmarkResult | null> {
+  if (options.compare === "baseline") {
+    // Compare against baseline mode's latest result
+    return getLatestResult("baseline");
+  }
+  // Compare against same mode's previous result
+  return getPreviousResult(mode);
 }
 
 main().catch((error) => {
