@@ -1,12 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import type { BuilderArtifact, BuilderArtifactMeta } from "@soda-gql/builder";
 import { createBuilderService, formatBuilderErrorForCLI } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
-
-const require = createRequire(import.meta.url);
-const packageJson = require("../../package.json") as { version: string };
 
 const BUILD_HELP = `Usage: soda-gql artifact build [options]
 
@@ -104,20 +100,23 @@ export const buildCommand = async (argv: readonly string[]): Promise<number> => 
   const fragmentCount = Object.values(artifact.elements).filter((e) => e.type === "fragment").length;
   const operationCount = Object.values(artifact.elements).filter((e) => e.type === "operation").length;
 
-  // Create artifact with metadata
-  const version = args.version ?? packageJson.version;
-  const meta: BuilderArtifactMeta = {
-    version,
-    createdAt: new Date().toISOString(),
-  };
+  // Create artifact with metadata (only if version is specified)
+  const meta: BuilderArtifactMeta | undefined = args.version
+    ? {
+        version: args.version,
+        createdAt: new Date().toISOString(),
+      }
+    : undefined;
   const artifactWithMeta: BuilderArtifact = {
-    meta,
+    ...(meta ? { meta } : {}),
     ...artifact,
   };
 
   if (args.dryRun) {
     process.stdout.write(`Validation passed: ${fragmentCount} fragments, ${operationCount} operations\n`);
-    process.stdout.write(`  Version: ${version}\n`);
+    if (args.version) {
+      process.stdout.write(`  Version: ${args.version}\n`);
+    }
   } else {
     // Write artifact to output file
     const outputPath = resolve(process.cwd(), args.outputPath);
@@ -126,7 +125,9 @@ export const buildCommand = async (argv: readonly string[]): Promise<number> => 
     await writeFile(outputPath, JSON.stringify(artifactWithMeta, null, 2));
 
     process.stdout.write(`Build complete: ${fragmentCount} fragments, ${operationCount} operations\n`);
-    process.stdout.write(`  Version: ${version}\n`);
+    if (args.version) {
+      process.stdout.write(`  Version: ${args.version}\n`);
+    }
     process.stdout.write(`Artifact written to: ${outputPath}\n`);
   }
 
