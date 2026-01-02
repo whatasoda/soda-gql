@@ -23,3 +23,24 @@ export const createCanonicalId = (filePath: string, astPath: string): CanonicalI
 
   return idParts.join(canonicalIdSeparator) as CanonicalId;
 };
+
+/**
+ * Parse a canonical ID into its components.
+ * @param canonicalId - The canonical ID to parse (e.g., "/app/src/user.ts::userFragment")
+ * @returns An object with filePath and astPath
+ */
+export const parseCanonicalId = (
+  canonicalId: CanonicalId | string,
+): {
+  filePath: string;
+  astPath: string;
+} => {
+  const idx = canonicalId.indexOf(canonicalIdSeparator);
+  if (idx === -1) {
+    return { filePath: canonicalId, astPath: "" };
+  }
+  return {
+    filePath: canonicalId.slice(0, idx),
+    astPath: canonicalId.slice(idx + canonicalIdSeparator.length),
+  };
+};

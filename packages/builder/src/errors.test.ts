@@ -138,6 +138,21 @@ describe("builderErrors factory functions", () => {
     expect(error.message).toContain("Invalid state");
     expect(error.context).toBe("context");
   });
+
+  test("elementEvaluationFailed creates correct error", () => {
+    const cause = new Error("original error");
+    const error = builderErrors.elementEvaluationFailed(
+      "/app/src/user.ts",
+      "userFragment",
+      "Cannot read properties of undefined",
+      cause,
+    ) as ErrorOf<"ELEMENT_EVALUATION_FAILED">;
+    expect(error.code).toBe("ELEMENT_EVALUATION_FAILED");
+    expect(error.message).toBe("Cannot read properties of undefined");
+    expect(error.modulePath).toBe("/app/src/user.ts");
+    expect(error.astPath).toBe("userFragment");
+    expect(error.cause).toBe(cause);
+  });
 });
 
 describe("builderErr", () => {
@@ -175,6 +190,7 @@ describe("isBuilderError", () => {
       builderErrors.cacheCorrupted("msg"),
       builderErrors.runtimeModuleLoadFailed("/path", "astPath", "msg"),
       builderErrors.artifactRegistrationFailed("id", "reason"),
+      builderErrors.elementEvaluationFailed("/path", "astPath", "msg"),
       builderErrors.internalInvariant("msg"),
     ];
 
@@ -328,6 +344,28 @@ describe("formatBuilderError", () => {
     expect(formatted).toContain("[ARTIFACT_REGISTRATION_FAILED]");
     expect(formatted).toContain("Element ID: id");
     expect(formatted).toContain("Reason: reason");
+  });
+
+  test("formats ELEMENT_EVALUATION_FAILED error", () => {
+    const error = builderErrors.elementEvaluationFailed(
+      "/app/src/user.ts",
+      "userFragment",
+      "Cannot read properties of undefined",
+    );
+    const formatted = formatBuilderError(error);
+
+    expect(formatted).toContain("[ELEMENT_EVALUATION_FAILED]");
+    expect(formatted).toContain("at /app/src/user.ts");
+    expect(formatted).toContain("in userFragment");
+  });
+
+  test("formats ELEMENT_EVALUATION_FAILED error without astPath", () => {
+    const error = builderErrors.elementEvaluationFailed("/app/src/user.ts", "", "Error");
+    const formatted = formatBuilderError(error);
+
+    expect(formatted).toContain("[ELEMENT_EVALUATION_FAILED]");
+    expect(formatted).toContain("at /app/src/user.ts");
+    expect(formatted).not.toContain("in ");
   });
 
   test("formats INTERNAL_INVARIANT error with context", () => {

@@ -1,7 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
-import { Effect, Effects } from "@soda-gql/common";
+import { Effect, Effects, parseCanonicalId } from "@soda-gql/common";
 import { type AnyFragment, type AnyOperation, GqlElement } from "@soda-gql/core";
+import { builderErrors } from "../errors";
 
 type AcceptableArtifact = AnyFragment | AnyOperation;
 
@@ -145,6 +146,8 @@ export class OptionalFileStatEffect extends Effect<FileStats | null> {
  * Supports both sync and async schedulers, enabling parallel element evaluation
  * when using async scheduler.
  *
+ * Wraps errors with module context for better debugging.
+ *
  * @example
  * yield* new ElementEvaluationEffect(element).run();
  */
@@ -153,23 +156,44 @@ export class ElementEvaluationEffect extends Effect<void> {
     super();
   }
 
+  /**
+   * Wrap an error with element context for better debugging.
+   */
+  private wrapError(error: unknown): never {
+    const context = GqlElement.getContext(this.element);
+    if (context) {
+      const { filePath, astPath } = parseCanonicalId(context.canonicalId);
+      const message = error instanceof Error ? error.message : String(error);
+      throw builderErrors.elementEvaluationFailed(filePath, astPath, message, error);
+    }
+    throw error;
+  }
+
   protected _executeSync(): void {
-    // Run generator synchronously - throws if async operation is required
-    const generator = GqlElement.createEvaluationGenerator(this.element);
-    const result = generator.next();
-    while (!result.done) {
-      // If generator yields, it means async operation is needed
-      throw new Error("Async operation required during sync element evaluation");
+    try {
+      // Run generator synchronously - throws if async operation is required
+      const generator = GqlElement.createEvaluationGenerator(this.element);
+      const result = generator.next();
+      while (!result.done) {
+        // If generator yields, it means async operation is needed
+        throw new Error("Async operation required during sync element evaluation");
+      }
+    } catch (error) {
+      this.wrapError(error);
     }
   }
 
   protected async _executeAsync(): Promise<void> {
-    const generator = GqlElement.createEvaluationGenerator(this.element);
-    let result = generator.next();
-    while (!result.done) {
-      // Yield value is a Promise<void>
-      await result.value;
-      result = generator.next();
+    try {
+      const generator = GqlElement.createEvaluationGenerator(this.element);
+      let result = generator.next();
+      while (!result.done) {
+        // Yield value is a Promise<void>
+        await result.value;
+        result = generator.next();
+      }
+    } catch (error) {
+      this.wrapError(error);
     }
   }
 }
