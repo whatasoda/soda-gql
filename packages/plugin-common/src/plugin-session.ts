@@ -5,6 +5,7 @@
 
 import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
+import { formatBuilderErrorForCLI } from "@soda-gql/builder/errors";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { getSharedBuilderService, getStateKey, setSharedBuilderService } from "./shared-state";
 
@@ -14,6 +15,12 @@ import { getSharedBuilderService, getStateKey, setSharedBuilderService } from ".
 export type PluginOptions = {
   readonly configPath?: string;
   readonly enabled?: boolean;
+  /**
+   * Whether to fail the build on error.
+   * When true (default), throws an error that fails the bundler build.
+   * When false, logs the error and continues (graceful degradation).
+   */
+  readonly failOnError?: boolean;
 };
 
 /**
@@ -28,21 +35,30 @@ export type PluginSession = {
 /**
  * Create plugin session by loading config and creating cached builder service.
  * Returns null if disabled or config load fails.
+ *
+ * @param options - Plugin options
+ * @param pluginName - Name of the plugin for error messages
+ * @throws Error if failOnError is true and config load fails
  */
 export const createPluginSession = (options: PluginOptions, pluginName: string): PluginSession | null => {
   const enabled = options.enabled ?? true;
+  const failOnError = options.failOnError ?? true;
+
   if (!enabled) {
     return null;
   }
 
   const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
-    console.error(`[${pluginName}] Failed to load config:`, {
+    const errorMsg = `[${pluginName}] Failed to load config: ${configResult.error.message}`;
+    console.error(errorMsg, {
       code: configResult.error.code,
-      message: configResult.error.message,
       filePath: configResult.error.filePath,
       cause: configResult.error.cause,
     });
+    if (failOnError) {
+      throw new Error(errorMsg);
+    }
     return null;
   }
 
@@ -65,12 +81,18 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
    * Build artifact on every invocation (like tsc-plugin).
    * If artifact.useBuilder is false and artifact.path is provided, load from file instead.
    * This ensures the artifact is always up-to-date with the latest source files.
+   *
+   * @throws Error if failOnError is true and build fails
    */
   const getArtifact = (): BuilderArtifact | null => {
     const builderService = ensureBuilderService();
     const buildResult = builderService.build();
     if (buildResult.isErr()) {
-      console.error(`[${pluginName}] Failed to build artifact: ${buildResult.error.message}`);
+      const formattedError = formatBuilderErrorForCLI(buildResult.error);
+      console.error(`[${pluginName}] Build failed:\n${formattedError}`);
+      if (failOnError) {
+        throw new Error(`[${pluginName}] ${buildResult.error.message}`);
+      }
       return null;
     }
     return buildResult.value;
@@ -79,12 +101,18 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
   /**
    * Async version of getArtifact.
    * Supports async metadata factories and parallel element evaluation.
+   *
+   * @throws Error if failOnError is true and build fails
    */
   const getArtifactAsync = async (): Promise<BuilderArtifact | null> => {
     const builderService = ensureBuilderService();
     const buildResult = await builderService.buildAsync();
     if (buildResult.isErr()) {
-      console.error(`[${pluginName}] Failed to build artifact: ${buildResult.error.message}`);
+      const formattedError = formatBuilderErrorForCLI(buildResult.error);
+      console.error(`[${pluginName}] Build failed:\n${formattedError}`);
+      if (failOnError) {
+        throw new Error(`[${pluginName}] ${buildResult.error.message}`);
+      }
       return null;
     }
     return buildResult.value;
