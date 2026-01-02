@@ -8,7 +8,9 @@ export {
 export { findConfigFile, loadConfig, loadConfigFrom } from "./loader";
 export { normalizeConfig } from "./normalize";
 export type {
+  ArtifactConfig,
   PluginConfig,
+  ResolvedArtifactConfig,
   ResolvedSodaGqlConfig,
   SchemaConfig,
   SodaGqlConfig,

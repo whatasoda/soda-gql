@@ -62,6 +62,27 @@ export type ResolvedStylesConfig = {
 // Plugin-specific config (extensible)
 export type PluginConfig = Record<string, unknown>;
 
+/**
+ * Configuration for pre-built artifact loading.
+ * When specified, plugins will load the artifact from the file instead of building dynamically.
+ */
+export type ArtifactConfig = {
+  /**
+   * Path to pre-built artifact JSON file.
+   * This path is resolved relative to the config file's directory.
+   *
+   * @example "./dist/soda-gql-artifact.json"
+   */
+  readonly path?: string;
+};
+
+/**
+ * Resolved artifact configuration with absolute path.
+ */
+export type ResolvedArtifactConfig = {
+  readonly path: string;
+};
+
 // Unified soda-gql configuration (single project)
 export type SodaGqlConfig = {
   /**
@@ -109,6 +130,19 @@ export type SodaGqlConfig = {
    * The plugins to use for the project.
    */
   readonly plugins?: PluginConfig;
+  /**
+   * Configuration for pre-built artifact loading.
+   * When specified, plugins will load the artifact from the file instead of building dynamically.
+   *
+   * @example
+   * ```ts
+   * // Use pre-built artifact in CI/production
+   * artifact: process.env.CI
+   *   ? { path: "./dist/soda-gql-artifact.json" }
+   *   : undefined
+   * ```
+   */
+  readonly artifact?: ArtifactConfig;
 };
 
 // Resolved inject config with absolute paths (always object form)
@@ -135,4 +169,9 @@ export type ResolvedSodaGqlConfig = {
   readonly schemas: Readonly<Record<string, ResolvedSchemaConfig>>;
   readonly styles: ResolvedStylesConfig;
   readonly plugins: PluginConfig;
+  /**
+   * Resolved artifact configuration.
+   * Only present when artifact.path is specified in the config.
+   */
+  readonly artifact?: ResolvedArtifactConfig;
 };
