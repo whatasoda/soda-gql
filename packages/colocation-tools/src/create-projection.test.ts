@@ -70,6 +70,9 @@ describe("createProjection", () => {
           }
           return { error: "Non-GraphQL error", data: null };
         }
+        if (result.isEmpty()) {
+          return { error: null, data: null };
+        }
         const [user] = result.unwrap();
         return { error: null, data: user };
       },
