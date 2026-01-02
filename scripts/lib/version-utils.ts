@@ -235,57 +235,23 @@ export const detectDirectChanges = async (
 export type BumpType = "major" | "minor" | "patch";
 
 /**
- * Compute all packages that need to be bumped (including cascade)
- * Uses worklist algorithm to propagate changes through the dependency graph
+ * Compute all packages that need to be bumped
  *
- * For patch bumps: Only bump directly changed packages (no cascade)
- * For minor/major bumps: Bidirectional cascade
- *   - Phase 1: Forward cascade to all dependents (packages that depend ON changed packages)
- *   - Phase 2: Backward cascade to all workspace dependencies (packages that bumped packages depend ON)
+ * For patch bumps: Only bump directly changed packages
+ * For minor/major bumps: Bump all packages in the workspace
  */
 export const computePackagesToBump = (
   directlyChanged: Set<string>,
   graph: DependencyGraph,
   bumpType: BumpType,
 ): Set<string> => {
-  const toBump = new Set(directlyChanged);
-
-  // For patch bumps, don't cascade
+  // For patch bumps, only bump directly changed packages
   if (bumpType === "patch") {
-    return toBump;
+    return new Set(directlyChanged);
   }
 
-  // Phase 1: Forward cascade - propagate to all dependents
-  const forwardWorklist = [...directlyChanged];
-  while (forwardWorklist.length > 0) {
-    const pkg = forwardWorklist.pop()!;
-    const dependents = graph.dependedBy.get(pkg) ?? new Set();
-
-    for (const dependent of dependents) {
-      if (!toBump.has(dependent)) {
-        toBump.add(dependent);
-        forwardWorklist.push(dependent);
-      }
-    }
-  }
-
-  // Phase 2: Backward cascade - propagate to workspace dependencies
-  // If a package is bumped, its workspace deps must also be bumped
-  const backwardWorklist = [...toBump];
-  while (backwardWorklist.length > 0) {
-    const pkg = backwardWorklist.pop()!;
-    const info = graph.packages.get(pkg);
-    if (!info) continue;
-
-    for (const dep of info.workspaceDeps) {
-      if (!toBump.has(dep)) {
-        toBump.add(dep);
-        backwardWorklist.push(dep);
-      }
-    }
-  }
-
-  return toBump;
+  // For minor/major bumps, bump all packages
+  return new Set(graph.packages.keys());
 };
 
 /**

@@ -1,29 +1,40 @@
-import type { Fragment, GqlElementAttachment } from "@soda-gql/core";
+import type { AnyFields, Fragment, GqlElementAttachment } from "@soda-gql/core";
 import { Projection } from "./projection";
 import type { SlicedExecutionResult } from "./sliced-execution-result";
+import type { AvailableFieldPathOf } from "./types/field-path";
+import type { InferPathsOutput } from "./types/output-path";
 import type { Tuple } from "./utils/type-utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: Type alias for any Fragment regardless of type parameters
 type AnyFragment = Fragment<string, any, any, any>;
 
+/** Get TFields from Fragment via spread's return type. */
+type FragmentFields<TFragment extends AnyFragment> = ReturnType<TFragment["spread"]>;
+
 /**
  * Options for creating a projection from a Fragment.
  */
-export type CreateProjectionOptions<TOutput extends object, TProjected> = {
+export type CreateProjectionOptions<
+  TFields extends AnyFields,
+  TOutput extends object,
+  TPaths extends Tuple<AvailableFieldPathOf<TFields>>,
+  TProjected,
+> = {
   /**
    * Field paths to extract from the execution result.
    * Each path starts with "$." and follows the field selection structure.
+   * Paths are type-checked against the Fragment's field structure.
    *
    * @example
    * ```typescript
    * paths: ["$.user.id", "$.user.name"]
    * ```
    */
-  paths: Tuple<string>;
+  paths: TPaths;
 
   /**
    * Handler function to transform the sliced execution result.
-   * Receives a SlicedExecutionResult with the Fragment's output type.
+   * Receives a SlicedExecutionResult with types inferred from the specified paths.
    * Handles all cases: success, error, and empty.
    *
    * @example
@@ -31,22 +42,22 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
    * handle: (result) => {
    *   if (result.isError()) return { error: result.error, data: null };
    *   if (result.isEmpty()) return { error: null, data: null };
-   *   const data = result.unwrap();
-   *   return { error: null, data: { userId: data.user.id } };
+   *   const [id, name] = result.unwrap(); // tuple of types from paths
+   *   return { error: null, data: { id, name } };
    * }
    * ```
    */
-  handle: (result: SlicedExecutionResult<TOutput>) => TProjected;
+  handle: (result: SlicedExecutionResult<InferPathsOutput<TOutput, TPaths>>) => TProjected;
 };
 
 /**
  * Creates a type-safe projection from a Fragment.
  *
  * The projection extracts and transforms data from GraphQL execution results,
- * with full type inference from the Fragment's output type.
+ * with full type inference from the Fragment's field structure and output type.
  *
- * Note: The Fragment parameter is used only for type inference.
- * The actual paths must be specified explicitly.
+ * - Paths are validated against Fragment's TFields via `ReturnType<Fragment["spread"]>`
+ * - Handler receives types inferred from the specified paths
  *
  * @param _fragment - The Fragment to infer types from (used for type inference only)
  * @param options - Projection options including paths and handle function
@@ -64,25 +75,53 @@ export type CreateProjectionOptions<TOutput extends object, TProjected> = {
  * );
  *
  * const userProjection = createProjection(userFragment, {
- *   paths: ["$.user"],
+ *   paths: ["$.user.id", "$.user.name"],
  *   handle: (result) => {
- *     if (result.isError()) return { error: result.error, user: null };
- *     if (result.isEmpty()) return { error: null, user: null };
- *     const data = result.unwrap();
- *     return { error: null, user: data.user };
+ *     if (result.isError()) return { error: result.error, data: null };
+ *     if (result.isEmpty()) return { error: null, data: null };
+ *     const [id, name] = result.unwrap(); // tuple: [string, string]
+ *     return { error: null, data: { id, name } };
  *   },
  * });
  * ```
  */
-export const createProjection = <TFragment extends AnyFragment, TProjected>(
+export const createProjection = <
+  TFragment extends AnyFragment,
+  const TPaths extends Tuple<AvailableFieldPathOf<FragmentFields<TFragment>>>,
+  TProjected,
+>(
   _fragment: TFragment,
-  options: CreateProjectionOptions<TFragment["$infer"]["output"], TProjected>,
+  options: CreateProjectionOptions<FragmentFields<TFragment>, TFragment["$infer"]["output"], TPaths, TProjected>,
 ): Projection<TProjected> => {
   return new Projection(options.paths, options.handle);
 };
 
-export const createProjectionAttachment = <TFragment extends AnyFragment, TProjected>(
-  options: CreateProjectionOptions<NoInfer<TFragment>["$infer"]["output"], TProjected>,
+/**
+ * Creates a projection attachment for use with Fragment.attach().
+ *
+ * @example
+ * ```typescript
+ * const fragment = gql(({ fragment }) =>
+ *   fragment.Query({
+ *     fields: ({ f }) => ({ ...f.user()(({ f }) => ({ ...f.id() })) }),
+ *   })
+ * ).attach(createProjectionAttachment({
+ *   paths: ["$.user.id"],
+ *   handle: (result) => result.isSuccess() ? result.unwrap()[0] : null,
+ * }));
+ * ```
+ */
+export const createProjectionAttachment = <
+  TFragment extends AnyFragment,
+  const TPaths extends Tuple<AvailableFieldPathOf<FragmentFields<NoInfer<TFragment>>>>,
+  TProjected,
+>(
+  options: CreateProjectionOptions<
+    FragmentFields<NoInfer<TFragment>>,
+    NoInfer<TFragment>["$infer"]["output"],
+    TPaths,
+    TProjected
+  >,
 ): GqlElementAttachment<TFragment, "projection", Projection<TProjected>> => {
   return {
     name: "projection",

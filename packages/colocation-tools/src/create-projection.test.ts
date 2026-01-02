@@ -27,8 +27,8 @@ describe("createProjection", () => {
         if (result.isEmpty()) {
           return { error: null, data: null };
         }
-        const data = result.unwrap();
-        return { error: null, data: { userId: data.user.id } };
+        const [user] = result.unwrap();
+        return { error: null, data: { userId: user.id } };
       },
     });
 
@@ -43,15 +43,15 @@ describe("createProjection", () => {
       paths: ["$.user"],
       handle: (result) => {
         if (result.isSuccess()) {
-          const data = result.unwrap();
-          return { userId: data.user.id, userName: data.user.name };
+          const [user] = result.unwrap();
+          return { userId: user.id, userName: user.name };
         }
         return null;
       },
     });
 
-    // Simulate a success result
-    const successResult = new SlicedExecutionResultSuccess({ user: { id: "1", name: "Alice" } });
+    // Simulate a success result (tuple with single element for single path)
+    const successResult = new SlicedExecutionResultSuccess([{ id: "1", name: "Alice" }]);
     const projected = projection.projector(successResult);
 
     expect(projected).toEqual({ userId: "1", userName: "Alice" });
@@ -70,7 +70,8 @@ describe("createProjection", () => {
           }
           return { error: "Non-GraphQL error", data: null };
         }
-        return { error: null, data: result.unwrap() };
+        const [user] = result.unwrap();
+        return { error: null, data: user };
       },
     });
 
