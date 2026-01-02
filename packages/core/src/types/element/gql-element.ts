@@ -56,6 +56,10 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     element[GQL_ELEMENT_CONTEXT] = context;
   }
 
+  static getContext(element: GqlElement<any, any>): GqlElementContext | null {
+    return element[GQL_ELEMENT_CONTEXT];
+  }
+
   static createEvaluationGenerator(element: GqlElement<any, any>): Generator<Promise<void>, void, void> {
     return lazyCreateEvaluationGenerator(element[GQL_ELEMENT_FACTORY], element[GQL_ELEMENT_CONTEXT]);
   }
