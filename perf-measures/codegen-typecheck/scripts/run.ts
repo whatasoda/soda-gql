@@ -2,25 +2,55 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import {
+  compareResults,
+  formatPercent,
+  getLatestResult,
+  getPreviousResult,
+  isRegression,
+} from "./process-results.ts";
 
 const BENCH_DIR = path.join(import.meta.dirname, "..");
+const PROJECT_ROOT = path.resolve(BENCH_DIR, "../..");
+
+const ALL_MODES = [
+  "baseline",
+  "optimized",
+  "granular",
+  "precomputed",
+  "shallowInput",
+  "typedAssertion",
+  "branded",
+  "looseConstraint",
+  "noSatisfies",
+] as const;
 
 type BenchMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies";
 
+type CompareMode = "none" | "previous" | "baseline";
+
 interface RunOptions {
   mode: BenchMode | "all";
+  modes: BenchMode[] | null;
   generate: boolean;
   trace: boolean;
   iterations: number;
+  json: boolean;
+  compare: CompareMode;
+  threshold: number;
 }
 
 function parseArgs(): RunOptions {
   const args = process.argv.slice(2);
   const options: RunOptions = {
     mode: "all",
+    modes: null,
     generate: false,
     trace: false,
     iterations: 1,
+    json: false,
+    compare: "none",
+    threshold: 10,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -65,6 +95,27 @@ function parseArgs(): RunOptions {
       case "--iterations":
         options.iterations = parseInt(args[++i] ?? "1", 10);
         break;
+      case "--json":
+        options.json = true;
+        break;
+      case "--compare":
+      case "--compare-previous":
+        options.compare = "previous";
+        break;
+      case "--compare-baseline":
+        options.compare = "baseline";
+        break;
+      case "--modes": {
+        const modesArg = args[++i] ?? "";
+        const parsed = modesArg.split(",").filter((m): m is BenchMode => ALL_MODES.includes(m as BenchMode));
+        if (parsed.length > 0) {
+          options.modes = parsed;
+        }
+        break;
+      }
+      case "--threshold":
+        options.threshold = parseFloat(args[++i] ?? "10");
+        break;
     }
   }
 
@@ -86,6 +137,13 @@ interface DiagnosticMetrics {
   checkTime: number;
   emitTime: number;
   totalTime: number;
+}
+
+interface BenchmarkResult {
+  timestamp: string;
+  mode: BenchMode;
+  generatedStats: { lines: number; sizeKB: number };
+  metrics: DiagnosticMetrics;
 }
 
 function parseDiagnostics(output: string): DiagnosticMetrics {
@@ -196,6 +254,21 @@ async function getGeneratedStats(mode: BenchMode): Promise<{ lines: number; size
   }
 }
 
+async function saveResults(result: BenchmarkResult): Promise<string> {
+  const cacheDir = path.join(
+    PROJECT_ROOT,
+    ".cache",
+    "perf",
+    result.timestamp,
+    "codegen-typecheck",
+    result.mode,
+  );
+  await fs.mkdir(cacheDir, { recursive: true });
+  const filePath = path.join(cacheDir, "metrics.json");
+  await fs.writeFile(filePath, JSON.stringify(result, null, 2));
+  return filePath;
+}
+
 function formatMetrics(metrics: DiagnosticMetrics): string {
   return [
     `  Check time:      ${metrics.checkTime.toFixed(2)}s`,
@@ -211,20 +284,23 @@ function formatMetrics(metrics: DiagnosticMetrics): string {
 async function runBenchmark(
   mode: BenchMode,
   options: RunOptions,
-): Promise<DiagnosticMetrics> {
+  timestamp: string,
+): Promise<BenchmarkResult> {
   const exists = await checkGeneratedExists(mode);
   if (options.generate || !exists) {
     await generateCode(mode);
   }
 
   const stats = await getGeneratedStats(mode);
-  console.log(`\n${mode.toUpperCase()} (${stats.lines} lines, ${(stats.size / 1024).toFixed(1)} KB)`);
-  console.log("─".repeat(50));
+  if (!options.json) {
+    console.log(`\n${mode.toUpperCase()} (${stats.lines} lines, ${(stats.size / 1024).toFixed(1)} KB)`);
+    console.log("─".repeat(50));
+  }
 
   let totalMetrics: DiagnosticMetrics | null = null;
 
   for (let i = 0; i < options.iterations; i++) {
-    if (options.iterations > 1) {
+    if (options.iterations > 1 && !options.json) {
       console.log(`  Iteration ${i + 1}/${options.iterations}...`);
     }
 
@@ -239,7 +315,7 @@ async function runBenchmark(
       }
     }
 
-    if (traceDir) {
+    if (traceDir && !options.json) {
       console.log(`  Trace saved to: ${traceDir}`);
     }
   }
@@ -251,33 +327,84 @@ async function runBenchmark(
     }
   }
 
-  console.log(formatMetrics(totalMetrics!));
-  return totalMetrics!;
+  if (!options.json) {
+    console.log(formatMetrics(totalMetrics!));
+  }
+
+  return {
+    timestamp,
+    mode,
+    generatedStats: { lines: stats.lines, sizeKB: stats.size / 1024 },
+    metrics: totalMetrics!,
+  };
 }
 
 async function main() {
   const options = parseArgs();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-  console.log("@soda-gql Codegen TypeCheck Benchmark");
-  console.log("=====================================");
-
-  const modes: BenchMode[] =
-    options.mode === "all" ? ["baseline", "noSatisfies"] : [options.mode as BenchMode];
-
-  const results: Record<string, DiagnosticMetrics> = {};
-
-  for (const mode of modes) {
-    results[mode] = await runBenchmark(mode, options);
+  if (!options.json) {
+    console.log("@soda-gql Codegen TypeCheck Benchmark");
+    console.log("=====================================");
   }
 
-  if (modes.length > 1 && results.baseline) {
-    const baseline = results.baseline;
+  // Determine which modes to run
+  let modes: BenchMode[];
+  if (options.modes) {
+    // --modes flag takes priority
+    modes = options.modes;
+  } else if (options.mode === "all") {
+    // --all runs all 9 modes
+    modes = [...ALL_MODES];
+  } else {
+    // Single mode
+    modes = [options.mode as BenchMode];
+  }
 
-    console.log("\nCOMPARISON (vs Baseline)");
+  const results: Record<string, BenchmarkResult> = {};
+  let hasRegression = false;
+
+  for (const mode of modes) {
+    const result = await runBenchmark(mode, options, timestamp);
+    results[mode] = result;
+
+    // Save result to cache
+    const savedPath = await saveResults(result);
+    if (!options.json) {
+      console.log(`  Result saved: ${savedPath}`);
+    }
+
+    // Show comparison if requested
+    if (!options.json && options.compare !== "none") {
+      const baselineResult = await getComparisonBaseline(mode, options);
+      if (baselineResult) {
+        const comparison = compareResults(result.metrics, baselineResult.metrics);
+        const label = options.compare === "baseline" ? "vs baseline mode" : "vs previous";
+        console.log(`  ${label}: ${formatPercent(comparison.checkTimePercent)} check time`);
+
+        if (isRegression(comparison, options.threshold)) {
+          console.log(`  ⚠️  Regression detected (>${options.threshold}% threshold)`);
+          hasRegression = true;
+        }
+      }
+    }
+  }
+
+  if (options.json) {
+    // Output JSON to stdout
+    console.log(JSON.stringify(Object.values(results), null, 2));
+    return;
+  }
+
+  // Show comparison table for multiple modes run together
+  if (modes.length > 1 && results.baseline) {
+    const baseline = results.baseline.metrics;
+
+    console.log("\nCOMPARISON (vs Baseline in this run)");
     console.log("─".repeat(50));
 
     for (const mode of modes.filter((m) => m !== "baseline")) {
-      const current = results[mode];
+      const current = results[mode]?.metrics;
       if (!current) continue;
       const improvement = ((baseline.checkTime - current.checkTime) / baseline.checkTime) * 100;
       console.log(`  ${mode}:`);
@@ -287,6 +414,22 @@ async function main() {
 
     console.log(`\n  Baseline reference: ${baseline.checkTime.toFixed(2)}s`);
   }
+
+  if (hasRegression) {
+    console.log("\n⚠️  Some modes showed regression above threshold");
+  }
+}
+
+async function getComparisonBaseline(
+  mode: BenchMode,
+  options: RunOptions,
+): Promise<BenchmarkResult | null> {
+  if (options.compare === "baseline") {
+    // Compare against baseline mode's latest result
+    return getLatestResult("baseline");
+  }
+  // Compare against same mode's previous result
+  return getPreviousResult(mode);
 }
 
 main().catch((error) => {

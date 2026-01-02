@@ -4,10 +4,11 @@ This document provides a quick reference for soda-gql's performance measurement 
 
 ## Overview
 
-soda-gql provides two benchmark suites:
+soda-gql provides three benchmark suites:
 
 1. **Type-check benchmarks** (`perf:typecheck`) - Measures TypeScript compiler performance on soda-gql types
-2. **Runtime builder benchmarks** (`perf:builder`) - Measures builder execution performance
+2. **Codegen type-check benchmarks** (`perf:codegen-typecheck`) - Compares type-check performance across codegen strategies
+3. **Runtime builder benchmarks** (`perf:builder`) - Measures builder execution performance
 
 ## Quick Reference
 
@@ -49,6 +50,83 @@ bun run perf:typecheck --objectTypes 20 --models 15 --slices 10 --operations 8
 - Memory used
 - Files, Lines, Identifiers, Symbols
 - Type instantiations
+
+### Codegen Type-check Benchmarks
+
+**Location:** `perf-measures/codegen-typecheck/`
+
+**Purpose:** Compare TypeScript type-checking performance across different codegen strategies to identify optimal approaches for generated code.
+
+**Commands:**
+```bash
+# Run baseline strategy
+bun run perf:codegen-typecheck:baseline
+
+# Run all 9 strategies with comparison
+bun run perf:codegen-typecheck:all
+
+# Run specific modes
+bun run perf:codegen-typecheck --modes baseline,optimized,granular
+
+# Compare with previous run
+bun run perf:codegen-typecheck --baseline --compare
+
+# Compare with baseline mode
+bun run perf:codegen-typecheck --optimized --compare-baseline
+
+# JSON output
+bun run perf:codegen-typecheck --baseline --json
+
+# Generate TypeScript trace
+bun run perf:codegen-typecheck --baseline --trace
+```
+
+**CLI Options:**
+
+*Mode Selection:*
+| Option | Description |
+|--------|-------------|
+| `--baseline` | Run baseline strategy only |
+| `--optimized`, `--granular`, etc. | Run single strategy |
+| `--modes <list>` | Comma-separated list of strategies |
+| `--all` | Run all 9 strategies |
+
+*Comparison:*
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--compare`, `--compare-previous` | none | Compare with same mode's previous run |
+| `--compare-baseline` | none | Compare with baseline mode's latest result |
+| `--threshold <n>` | 10 | Regression warning threshold (%) |
+
+*Other:*
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--generate` | false | Force regenerate fixtures |
+| `--trace` | false | Generate TypeScript trace files |
+| `--iterations <n>` | 1 | Number of iterations |
+| `--json` | false | Output as JSON |
+
+**Available Strategies (9 total):**
+| Strategy | Description |
+|----------|-------------|
+| `baseline` | Standard codegen output |
+| `optimized` | Optimized type inference |
+| `granular` | Granular type exports |
+| `precomputed` | Precomputed type relationships |
+| `shallowInput` | Shallow input types |
+| `typedAssertion` | Type assertions for inference |
+| `branded` | Branded types approach |
+| `looseConstraint` | Loose type constraints |
+| `noSatisfies` | Without satisfies operators |
+
+**Output Metrics:**
+- Check time, Parse time, Bind time, Total time
+- Types, Instantiations
+- Memory used
+- Generated file stats (lines, size)
+
+**Result Storage:**
+Results are saved to `.cache/perf/<timestamp>/codegen-typecheck/<mode>/metrics.json`
 
 ### Runtime Builder Benchmarks
 
@@ -159,6 +237,8 @@ Builder benchmarks simulate realistic applications with noise files (non-gql fil
 | Benchmark | Output |
 |-----------|--------|
 | Type-check traces | `perf-measures/type-check/.traces/` |
+| Codegen type-check results | `.cache/perf/<timestamp>/codegen-typecheck/<mode>/metrics.json` |
+| Codegen type-check traces | `perf-measures/codegen-typecheck/.traces/` |
 | Builder metrics | `.cache/perf/<timestamp>/<fixture>/metrics.json` |
 
 ## Implementation Details
@@ -174,6 +254,20 @@ Builder benchmarks simulate realistic applications with noise files (non-gql fil
 - `scripts/generate-fixtures.ts` - Fixture generation
 - `scripts/process-results.ts` - Result parsing and formatting
 - `client.ts` - Type inference target
+
+### Codegen Type-check Benchmark (`perf-measures/codegen-typecheck/`)
+
+- Compares TypeScript type-checking across 9 different codegen strategies
+- Generates code using strategy-specific generators
+- Saves results to `.cache/perf/` for historical comparison
+- Supports regression detection with configurable thresholds
+
+**Files:**
+- `scripts/run.ts` - Main CLI entry
+- `scripts/generate.ts` - Dispatcher for strategy generators
+- `scripts/generator-*.ts` - Strategy-specific generators
+- `scripts/process-results.ts` - Result history and comparison
+- `{mode}/generated/index.ts` - Generated output for each strategy
 
 ### Builder Benchmark (`perf-measures/runtime-builder/`)
 
