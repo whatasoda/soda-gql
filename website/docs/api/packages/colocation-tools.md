@@ -107,6 +107,41 @@ const { userCard, postList } = parseResult(graphqlResponse);
 3. Extracts data for each label using prefixed path segments
 4. Invokes each projection's handler with the sliced result
 
+## createDirectParser()
+
+Create a parser for single fragment operations without `$colocate` label prefixing:
+
+```typescript
+import { createDirectParser } from "@soda-gql/colocation-tools";
+
+const parseResult = createDirectParser(productFragment);
+
+const result = parseResult({
+  type: "graphql",
+  body: { data: { createProduct: { id: "123" } }, errors: undefined },
+});
+// result is the projected type directly (not wrapped in { label: value })
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fragmentWithProjection` | `{ projection: Projection<TProjected> }` | Fragment with attached projection |
+
+### Return Type
+
+Returns a parser function:
+- Accepts: `NormalizedExecutionResult<object, object>`
+- Returns: `TProjected` (projected type directly)
+
+### When to Use
+
+| Scenario | API |
+|----------|-----|
+| Single fragment spread (mutations) | `createDirectParser` |
+| Multi-fragment with `$colocate` | `createExecutionResultParser` |
+
 ## SlicedExecutionResult
 
 The result type passed to projection handlers. Three possible states:

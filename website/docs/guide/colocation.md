@@ -350,6 +350,53 @@ export const parseUserPageResult = createExecutionResultParser({
 });
 ```
 
+## Single Fragment Operations
+
+For simple operations like mutations with a single fragment spread, you can use
+`createDirectParser` instead of `$colocate` + `createExecutionResultParser`:
+
+```typescript
+import { createProjectionAttachment, createDirectParser } from "@soda-gql/colocation-tools";
+
+// Define mutation fragment with projection
+const createProductFragment = gql
+  .default(({ fragment, $var }) =>
+    fragment.Mutation({
+      variables: { ...$var("input").ProductInput("!") },
+      fields: ({ f, $ }) => ({
+        ...f.insert_products_one({ object: $.input })(({ f }) => ({
+          ...f.id(),
+          ...f.name(),
+        })),
+      }),
+    }),
+  )
+  .attach(
+    createProjectionAttachment({
+      paths: ["$.insert_products_one"],
+      handle: (result) => result.safeUnwrap(([product]) => product),
+    }),
+  );
+
+// Create operation (no $colocate needed)
+const createProductMutation = gql.default(({ mutation, $var }) =>
+  mutation.operation({
+    name: "CreateProduct",
+    variables: { ...$var("input").ProductInput("!") },
+    fields: ({ $ }) => createProductFragment.spread({ input: $.input }),
+  }),
+);
+
+// Use createDirectParser (returns projected value directly)
+const parseCreateProduct = createDirectParser(createProductFragment);
+
+// Usage
+const response = await client.execute(createProductMutation);
+const { data, error } = parseCreateProduct(response);
+```
+
+This is simpler than `$colocate` when you only have one fragment to parse.
+
 ## Next Steps
 
 - See [@soda-gql/colocation-tools](/api/packages/colocation-tools) for the complete API reference

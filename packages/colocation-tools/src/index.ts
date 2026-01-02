@@ -5,7 +5,8 @@
 export type { CreateProjectionOptions } from "./create-projection";
 // Create a type-safe projection from a Model
 export { createProjection, createProjectionAttachment } from "./create-projection";
-
+// Create a direct execution result parser (no $colocate label prefixing)
+export { createDirectParser } from "./parse-direct-result";
 // Create an execution result parser from labeled projections
 export { createExecutionResultParser } from "./parse-execution-result";
 
