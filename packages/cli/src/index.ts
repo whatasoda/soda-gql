@@ -1,3 +1,4 @@
+import { artifactCommand } from "./commands/artifact";
 import { codegenCommand } from "./commands/codegen";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
@@ -12,6 +13,7 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
     process.stdout.write(`  init       Initialize a new soda-gql project\n`);
     process.stdout.write(`  codegen    Generate graphql-system runtime module\n`);
     process.stdout.write(`  format     Format soda-gql field selections\n`);
+    process.stdout.write(`  artifact   Manage soda-gql artifacts\n`);
     return 0;
   }
 
@@ -25,6 +27,10 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
 
   if (command === "format") {
     return formatCommand(rest);
+  }
+
+  if (command === "artifact") {
+    return artifactCommand(rest);
   }
 
   process.stderr.write(`Unknown command: ${command}\n`);
