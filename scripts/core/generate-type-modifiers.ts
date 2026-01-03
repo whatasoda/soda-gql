@@ -111,7 +111,8 @@ type Op_0<T> = T[];
 type Op_1<T> = T[] | null | undefined;
 
 // Ref derives typeName and kind from T (TypeProfile), uses GetSignature for type matching
-type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.VarRefBrand<T, GetSignature<M>>>;
+// Uses ExpectedVariableType which appears in error messages when types don't match
+type Ref<T extends TypeProfile, M extends string> = VarRef<TypeProfile.ExpectedVariableType<T, GetSignature<M>>>;
 
 // Helper types for optional field detection in nested Input objects
 type IsOptionalProfile<TField extends TypeProfile.WithMeta> = TField[1] extends \`\${string}?\`

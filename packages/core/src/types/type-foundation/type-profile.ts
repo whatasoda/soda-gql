@@ -57,26 +57,34 @@ export declare namespace TypeProfile {
     | (TProfile[2] extends WITH_DEFAULT_INPUT ? undefined : never);
 
   /**
-   * VarRef brand derived from TypeProfile.
+   * Expected variable type derived from TypeProfile.
    * Extracts typeName and kind from the profile, takes pre-computed signature.
    * Used by generated Assignable types for efficient type checking.
+   * This name appears in TypeScript error messages when VarRef types don't match.
    */
-  export type VarRefBrand<T extends TypeProfile, TSignature> = {
+  export type ExpectedVariableType<T extends TypeProfile, TSignature> = {
     typeName: T["name"];
     kind: T["kind"];
     signature: TSignature;
   };
 
   /**
-   * VarRef brand derived from WithMeta.
-   * Used by AssigningInput to type variable references.
+   * Declared variable type derived from WithMeta.
+   * Used by DeclaredVariables to type variable references.
    * Derives typeName, kind, and signature from the profile.
+   * This name appears in TypeScript error messages when VarRef types don't match.
    */
-  export type AssigningVarRefBrand<T extends WithMeta> = {
+  export type DeclaredVariableType<T extends WithMeta> = {
     typeName: T[0]["name"];
     kind: T[0]["kind"];
     signature: GetSignature<T[1]>;
   };
+
+  // Backwards compatibility aliases (deprecated)
+  /** @deprecated Use ExpectedVariableType instead */
+  export type VarRefBrand<T extends TypeProfile, TSignature> = ExpectedVariableType<T, TSignature>;
+  /** @deprecated Use DeclaredVariableType instead */
+  export type AssigningVarRefBrand<T extends WithMeta> = DeclaredVariableType<T>;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<
