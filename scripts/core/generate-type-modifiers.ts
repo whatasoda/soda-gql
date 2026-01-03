@@ -3,17 +3,39 @@ interface Entry {
   inner: string;
   outer: string;
   modifier: string;
+  signatureName: string;
+  innerSignatureName: string;
+}
+
+/**
+ * Converts a modifier string to a readable signature name.
+ * Examples:
+ * - "!" -> "Required"
+ * - "?" -> "Optional"
+ * - "![]!" -> "RequiredList_Required"
+ * - "![]?" -> "RequiredList_Optional"
+ * - "?[]!" -> "OptionalList_Required"
+ * - "?[]?" -> "OptionalList_Optional"
+ */
+function modifierToSignatureName(modifier: string): string {
+  const parts = modifier.split("[]");
+  return parts.map(p => p === "!" ? "Required" : "Optional").join("List_");
 }
 
 function* generateEntriesForDepth (depth: number): Generator<Entry> {
   const width = depth + 1;
   for (let i = 0; i < 2 ** width; i++) {
     const label = i.toString(2).padStart(width, "0");
+    const modifier = label.split("").map((num) => num === "1" ? "?" : "!").join("[]");
+    const innerLabel = label.slice(0, -1);
+    const innerModifier = innerLabel.split("").map((num) => num === "1" ? "?" : "!").join("[]");
     yield {
       label,
-      inner: label.slice(0, -1),
+      inner: innerLabel,
       outer: label.slice(-1),
-      modifier: label.split("").map((num) => num === "1" ? "?" : "!").join("[]"),
+      modifier,
+      signatureName: modifierToSignatureName(modifier),
+      innerSignatureName: innerLabel ? modifierToSignatureName(innerModifier) : "",
     };
   }
 }
@@ -65,17 +87,19 @@ ${embedEntries({ from: 0, to: DEPTH })`
 `} never;
 
 // Signature - pre-computed signature patterns for VarRef type matching
+// These type names are designed to appear in TypeScript error messages,
+// making it clear what modifier mismatch occurred.
 // depth = 0
-type Signature_0 = "[TYPE_SIGNATURE]";
-type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
+type Signature_Required = "[TYPE_SIGNATURE]";
+type Signature_Optional = Signature_Required | null | undefined;
 
 ${embedEntries({ from: 1, to: DEPTH })`
-${({ label, inner, outer }) => `type Signature_${label} = Op_${outer}<Signature_${inner}>;`}
+${({ signatureName, innerSignatureName, outer }) => `type Signature_${signatureName} = Op_${outer}<Signature_${innerSignatureName}>;`}
 `}
 
 export type GetSignature<M extends TypeModifier> =
 ${embedEntries({ from: 0, to: DEPTH })`
-  ${({ label, modifier }) => `M extends "${modifier}" ? Signature_${label} :`}
+  ${({ signatureName, modifier }) => `M extends "${modifier}" ? Signature_${signatureName} :`}
 `} never;
 `
 

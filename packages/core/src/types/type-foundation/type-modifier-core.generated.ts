@@ -120,79 +120,81 @@ export type ApplyTypeModifier<T, M extends TypeModifier> =
   M extends "?[]?[]?[]?" ? Modified_1111<T> : never;
 
 // Signature - pre-computed signature patterns for VarRef type matching
+// These type names are designed to appear in TypeScript error messages,
+// making it clear what modifier mismatch occurred.
 // depth = 0
-type Signature_0 = "[TYPE_SIGNATURE]";
-type Signature_1 = "[TYPE_SIGNATURE]" | null | undefined;
+type Signature_Required = "[TYPE_SIGNATURE]";
+type Signature_Optional = Signature_Required | null | undefined;
 
 // depth = 1
-type Signature_00 = Op_0<Signature_0>;
-type Signature_01 = Op_1<Signature_0>;
-type Signature_10 = Op_0<Signature_1>;
-type Signature_11 = Op_1<Signature_1>;
+type Signature_RequiredList_Required = Op_0<Signature_Required>;
+type Signature_RequiredList_Optional = Op_1<Signature_Required>;
+type Signature_OptionalList_Required = Op_0<Signature_Optional>;
+type Signature_OptionalList_Optional = Op_1<Signature_Optional>;
 
 // depth = 2
-type Signature_000 = Op_0<Signature_00>;
-type Signature_001 = Op_1<Signature_00>;
-type Signature_010 = Op_0<Signature_01>;
-type Signature_011 = Op_1<Signature_01>;
-type Signature_100 = Op_0<Signature_10>;
-type Signature_101 = Op_1<Signature_10>;
-type Signature_110 = Op_0<Signature_11>;
-type Signature_111 = Op_1<Signature_11>;
+type Signature_RequiredList_RequiredList_Required = Op_0<Signature_RequiredList_Required>;
+type Signature_RequiredList_RequiredList_Optional = Op_1<Signature_RequiredList_Required>;
+type Signature_RequiredList_OptionalList_Required = Op_0<Signature_RequiredList_Optional>;
+type Signature_RequiredList_OptionalList_Optional = Op_1<Signature_RequiredList_Optional>;
+type Signature_OptionalList_RequiredList_Required = Op_0<Signature_OptionalList_Required>;
+type Signature_OptionalList_RequiredList_Optional = Op_1<Signature_OptionalList_Required>;
+type Signature_OptionalList_OptionalList_Required = Op_0<Signature_OptionalList_Optional>;
+type Signature_OptionalList_OptionalList_Optional = Op_1<Signature_OptionalList_Optional>;
 
 // depth = 3
-type Signature_0000 = Op_0<Signature_000>;
-type Signature_0001 = Op_1<Signature_000>;
-type Signature_0010 = Op_0<Signature_001>;
-type Signature_0011 = Op_1<Signature_001>;
-type Signature_0100 = Op_0<Signature_010>;
-type Signature_0101 = Op_1<Signature_010>;
-type Signature_0110 = Op_0<Signature_011>;
-type Signature_0111 = Op_1<Signature_011>;
-type Signature_1000 = Op_0<Signature_100>;
-type Signature_1001 = Op_1<Signature_100>;
-type Signature_1010 = Op_0<Signature_101>;
-type Signature_1011 = Op_1<Signature_101>;
-type Signature_1100 = Op_0<Signature_110>;
-type Signature_1101 = Op_1<Signature_110>;
-type Signature_1110 = Op_0<Signature_111>;
-type Signature_1111 = Op_1<Signature_111>;
+type Signature_RequiredList_RequiredList_RequiredList_Required = Op_0<Signature_RequiredList_RequiredList_Required>;
+type Signature_RequiredList_RequiredList_RequiredList_Optional = Op_1<Signature_RequiredList_RequiredList_Required>;
+type Signature_RequiredList_RequiredList_OptionalList_Required = Op_0<Signature_RequiredList_RequiredList_Optional>;
+type Signature_RequiredList_RequiredList_OptionalList_Optional = Op_1<Signature_RequiredList_RequiredList_Optional>;
+type Signature_RequiredList_OptionalList_RequiredList_Required = Op_0<Signature_RequiredList_OptionalList_Required>;
+type Signature_RequiredList_OptionalList_RequiredList_Optional = Op_1<Signature_RequiredList_OptionalList_Required>;
+type Signature_RequiredList_OptionalList_OptionalList_Required = Op_0<Signature_RequiredList_OptionalList_Optional>;
+type Signature_RequiredList_OptionalList_OptionalList_Optional = Op_1<Signature_RequiredList_OptionalList_Optional>;
+type Signature_OptionalList_RequiredList_RequiredList_Required = Op_0<Signature_OptionalList_RequiredList_Required>;
+type Signature_OptionalList_RequiredList_RequiredList_Optional = Op_1<Signature_OptionalList_RequiredList_Required>;
+type Signature_OptionalList_RequiredList_OptionalList_Required = Op_0<Signature_OptionalList_RequiredList_Optional>;
+type Signature_OptionalList_RequiredList_OptionalList_Optional = Op_1<Signature_OptionalList_RequiredList_Optional>;
+type Signature_OptionalList_OptionalList_RequiredList_Required = Op_0<Signature_OptionalList_OptionalList_Required>;
+type Signature_OptionalList_OptionalList_RequiredList_Optional = Op_1<Signature_OptionalList_OptionalList_Required>;
+type Signature_OptionalList_OptionalList_OptionalList_Required = Op_0<Signature_OptionalList_OptionalList_Optional>;
+type Signature_OptionalList_OptionalList_OptionalList_Optional = Op_1<Signature_OptionalList_OptionalList_Optional>;
 
 export type GetSignature<M extends TypeModifier> =
   // depth = 0
-  M extends "!" ? Signature_0 :
-  M extends "?" ? Signature_1 :
+  M extends "!" ? Signature_Required :
+  M extends "?" ? Signature_Optional :
 
   // depth = 1
-  M extends "![]!" ? Signature_00 :
-  M extends "![]?" ? Signature_01 :
-  M extends "?[]!" ? Signature_10 :
-  M extends "?[]?" ? Signature_11 :
+  M extends "![]!" ? Signature_RequiredList_Required :
+  M extends "![]?" ? Signature_RequiredList_Optional :
+  M extends "?[]!" ? Signature_OptionalList_Required :
+  M extends "?[]?" ? Signature_OptionalList_Optional :
 
   // depth = 2
-  M extends "![]![]!" ? Signature_000 :
-  M extends "![]![]?" ? Signature_001 :
-  M extends "![]?[]!" ? Signature_010 :
-  M extends "![]?[]?" ? Signature_011 :
-  M extends "?[]![]!" ? Signature_100 :
-  M extends "?[]![]?" ? Signature_101 :
-  M extends "?[]?[]!" ? Signature_110 :
-  M extends "?[]?[]?" ? Signature_111 :
+  M extends "![]![]!" ? Signature_RequiredList_RequiredList_Required :
+  M extends "![]![]?" ? Signature_RequiredList_RequiredList_Optional :
+  M extends "![]?[]!" ? Signature_RequiredList_OptionalList_Required :
+  M extends "![]?[]?" ? Signature_RequiredList_OptionalList_Optional :
+  M extends "?[]![]!" ? Signature_OptionalList_RequiredList_Required :
+  M extends "?[]![]?" ? Signature_OptionalList_RequiredList_Optional :
+  M extends "?[]?[]!" ? Signature_OptionalList_OptionalList_Required :
+  M extends "?[]?[]?" ? Signature_OptionalList_OptionalList_Optional :
 
   // depth = 3
-  M extends "![]![]![]!" ? Signature_0000 :
-  M extends "![]![]![]?" ? Signature_0001 :
-  M extends "![]![]?[]!" ? Signature_0010 :
-  M extends "![]![]?[]?" ? Signature_0011 :
-  M extends "![]?[]![]!" ? Signature_0100 :
-  M extends "![]?[]![]?" ? Signature_0101 :
-  M extends "![]?[]?[]!" ? Signature_0110 :
-  M extends "![]?[]?[]?" ? Signature_0111 :
-  M extends "?[]![]![]!" ? Signature_1000 :
-  M extends "?[]![]![]?" ? Signature_1001 :
-  M extends "?[]![]?[]!" ? Signature_1010 :
-  M extends "?[]![]?[]?" ? Signature_1011 :
-  M extends "?[]?[]![]!" ? Signature_1100 :
-  M extends "?[]?[]![]?" ? Signature_1101 :
-  M extends "?[]?[]?[]!" ? Signature_1110 :
-  M extends "?[]?[]?[]?" ? Signature_1111 : never;
+  M extends "![]![]![]!" ? Signature_RequiredList_RequiredList_RequiredList_Required :
+  M extends "![]![]![]?" ? Signature_RequiredList_RequiredList_RequiredList_Optional :
+  M extends "![]![]?[]!" ? Signature_RequiredList_RequiredList_OptionalList_Required :
+  M extends "![]![]?[]?" ? Signature_RequiredList_RequiredList_OptionalList_Optional :
+  M extends "![]?[]![]!" ? Signature_RequiredList_OptionalList_RequiredList_Required :
+  M extends "![]?[]![]?" ? Signature_RequiredList_OptionalList_RequiredList_Optional :
+  M extends "![]?[]?[]!" ? Signature_RequiredList_OptionalList_OptionalList_Required :
+  M extends "![]?[]?[]?" ? Signature_RequiredList_OptionalList_OptionalList_Optional :
+  M extends "?[]![]![]!" ? Signature_OptionalList_RequiredList_RequiredList_Required :
+  M extends "?[]![]![]?" ? Signature_OptionalList_RequiredList_RequiredList_Optional :
+  M extends "?[]![]?[]!" ? Signature_OptionalList_RequiredList_OptionalList_Required :
+  M extends "?[]![]?[]?" ? Signature_OptionalList_RequiredList_OptionalList_Optional :
+  M extends "?[]?[]![]!" ? Signature_OptionalList_OptionalList_RequiredList_Required :
+  M extends "?[]?[]![]?" ? Signature_OptionalList_OptionalList_RequiredList_Optional :
+  M extends "?[]?[]?[]!" ? Signature_OptionalList_OptionalList_OptionalList_Required :
+  M extends "?[]?[]?[]?" ? Signature_OptionalList_OptionalList_OptionalList_Optional : never;
