@@ -1,3 +1,12 @@
+/**
+ * Utilities for extracting values and paths from VarRefs.
+ *
+ * Provides type-safe access to nested values within VarRefs,
+ * supporting both variable references and literal values.
+ *
+ * @module
+ */
+
 import type { ConstValue } from "../types/type-foundation/const-value";
 import {
   type AnyVarRef,
@@ -9,9 +18,10 @@ import {
 
 /**
  * Recursively checks if a NestedValue contains any VarRef.
+ *
  * Used by getVarRefValue to determine if it's safe to return as ConstValue.
+ * @internal
  */
-
 export const hasVarRefInside = (value: NestedValueElement): boolean => {
   if (value instanceof VarRef) {
     return true;
@@ -191,6 +201,18 @@ export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (prox
   return inner.varInner.value as U;
 };
 
+/**
+ * Gets the full path to a variable within a nested structure.
+ *
+ * Returns path segments starting with `$variableName` followed by
+ * property accesses within that variable's value.
+ *
+ * @example
+ * ```typescript
+ * getVariablePath($.filter, p => p.user.id)
+ * // Returns: ["$filter", "user", "id"]
+ * ```
+ */
 export const getVariablePath = <T, U>(
   varRef: VarRef<AnyVarRefBrand>,
   selector: (proxy: SelectableProxy<T>) => U,

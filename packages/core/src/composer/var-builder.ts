@@ -1,3 +1,12 @@
+/**
+ * Variable builder utilities for defining operation variables.
+ *
+ * Provides type-safe methods for creating variable definitions with
+ * proper type inference for all input types in the schema.
+ *
+ * @module
+ */
+
 import type {
   AllInputTypeNames,
   AnyConstDirectiveAttachments,
@@ -30,7 +39,9 @@ type AssignableDefaultValue<
 >;
 
 /**
- * Variable specifier type.
+ * Represents a variable definition with its type, modifier, and optional default.
+ *
+ * Created by `$var.TypeName("modifier", { default?: ... })` calls.
  */
 export type VarSpecifier<
   TKind extends InputTypeKind,
@@ -156,7 +167,19 @@ export type VarBuilderMethods<TVarName extends string, TSchema extends AnyGraphq
 };
 
 /**
- * Type for the variable builder function.
+ * Variable builder function type.
+ *
+ * Call with a variable name to get type-specific methods.
+ * Also provides utilities for extracting values from VarRefs.
+ *
+ * @example
+ * ```typescript
+ * // In operation definition:
+ * variables: { userId: $var("userId").ID("!") }
+ *
+ * // In metadata builder:
+ * $var.getValueAt($.userId, p => p)
+ * ```
  */
 export type VarBuilder<TSchema extends AnyGraphqlSchema> = {
   <TVarName extends string>(varName: TVarName): VarBuilderMethods<TVarName, TSchema>;
@@ -206,7 +229,16 @@ type AnyInputTypeMethod = (
 ) => unknown;
 
 /**
- * Creates a variable builder that uses injected input type methods.
+ * Creates a variable builder using injected input type methods.
+ *
+ * The returned builder provides type-safe variable definition methods
+ * for all input types in the schema. Also includes utilities for
+ * extracting variable names and values from VarRefs.
+ *
+ * @param inputTypeMethods - Methods for each input type (from codegen)
+ * @returns Variable builder with methods for all input types
+ *
+ * @internal Used by `createGqlElementComposer`
  */
 export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
   inputTypeMethods: InputTypeMethods<TSchema>,

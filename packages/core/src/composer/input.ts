@@ -1,3 +1,8 @@
+/**
+ * Utilities for creating variable assignments and references.
+ * @module
+ */
+
 import {
   type AnyAssignableInput,
   type AssigningInput,
@@ -9,6 +14,17 @@ import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, InputTypeSpecifiers, NestedValue } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 
+/**
+ * Creates variable assignments from provided values.
+ *
+ * Maps variable definitions to VarRefs. If a value is provided,
+ * wraps it as a nested-value VarRef. If not provided, creates
+ * an undefined VarRef (field will be omitted).
+ *
+ * Used when spreading fragments with partial variable values.
+ *
+ * @internal
+ */
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
   definitions: TVariableDefinitions,
   providedValues: AnyAssignableInput | void,
@@ -28,6 +44,14 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
   }) as AssigningInput<TSchema, TVariableDefinitions>;
 };
 
+/**
+ * Creates variable references from variable definitions.
+ *
+ * Maps each variable definition to a VarRef pointing to that variable.
+ * Used in operation builders to create the `$` context object.
+ *
+ * @internal
+ */
 export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
   definitions: TVarDefinitions,
 ) =>
