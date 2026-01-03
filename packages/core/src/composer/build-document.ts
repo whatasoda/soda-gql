@@ -1,3 +1,12 @@
+/**
+ * Builds GraphQL AST nodes from field selections.
+ *
+ * Converts the type-safe field selection DSL into GraphQL AST,
+ * producing a TypedDocumentNode for use with GraphQL clients.
+ *
+ * @module
+ */
+
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import {
   type ArgumentNode,
@@ -25,6 +34,12 @@ import {
 import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
 import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
+/**
+ * Converts an assignable input value to a GraphQL AST ValueNode.
+ *
+ * Handles primitives, arrays, objects, and variable references.
+ * Returns null for undefined values (field is omitted).
+ */
 export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
   if (value === undefined) {
     return null;
@@ -159,6 +174,12 @@ const buildField = (field: AnyFields): FieldNode[] =>
     }),
   );
 
+/**
+ * Converts a constant value to a GraphQL AST ConstValueNode.
+ *
+ * Unlike `buildArgumentValue`, this only handles literal values
+ * (no variable references). Used for default values.
+ */
 export const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
   if (value === undefined) {
     return null;
@@ -210,6 +231,18 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
 };
 
+/**
+ * Wraps a named type with modifiers (non-null, list).
+ *
+ * Modifier format: starts with `?` (nullable) or `!` (non-null),
+ * followed by `[]?` or `[]!` pairs for lists.
+ *
+ * @example
+ * - `"!"` → `String!`
+ * - `"?"` → `String`
+ * - `"![]!"` → `[String!]!`
+ * - `"?[]?"` → `[String]`
+ */
 export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => NamedTypeNode): TypeNode => {
   const baseType = buildType();
 
@@ -297,6 +330,9 @@ const buildVariables = (variables: InputTypeSpecifiers): VariableDefinitionNode[
   );
 };
 
+/**
+ * Converts an operation type string to a GraphQL AST OperationTypeNode.
+ */
 export const buildOperationTypeNode = (operation: OperationType): OperationTypeNode => {
   switch (operation) {
     case "query":
@@ -310,7 +346,16 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
   }
 };
 
-// Overloaded function signatures for flexible usage
+/**
+ * Builds a TypedDocumentNode from operation options.
+ *
+ * This is the main entry point for converting field selections into
+ * a GraphQL document AST. The result can be used with any GraphQL
+ * client that supports TypedDocumentNode.
+ *
+ * @param options - Operation configuration (name, type, variables, fields)
+ * @returns TypedDocumentNode with inferred input/output types
+ */
 export const buildDocument = <
   TSchema extends AnyGraphqlSchema,
   TFields extends AnyFields,
