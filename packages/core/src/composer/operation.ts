@@ -1,3 +1,8 @@
+/**
+ * Operation composer factory for creating typed GraphQL operations.
+ * @module
+ */
+
 import { type FieldsBuilder, Operation } from "../types/element";
 import type { AnyFields } from "../types/fragment";
 import type {
@@ -16,6 +21,21 @@ import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs } from "./input";
 
+/**
+ * Creates a factory for composing GraphQL operations.
+ *
+ * Returns a curried function: first select operation type (query/mutation/subscription),
+ * then define the operation with name, variables, and fields.
+ *
+ * Handles metadata aggregation from fragments (sync or async) and builds
+ * the TypedDocumentNode automatically.
+ *
+ * @param schema - The GraphQL schema definition
+ * @param adapter - Optional metadata adapter for custom metadata handling
+ * @returns Operation type selector function
+ *
+ * @internal Used by `createGqlElementComposer`
+ */
 export const createOperationComposerFactory = <
   TSchema extends AnyGraphqlSchema,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,

@@ -1,3 +1,8 @@
+/**
+ * Fragment composer factory for creating reusable field selections.
+ * @module
+ */
+
 import { type FieldsBuilder, Fragment } from "../types/element";
 import type { AnyFields, AssigningInput } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
@@ -11,7 +16,9 @@ import { createVarAssignments, type createVarRefs } from "./input";
 
 /**
  * Type alias for a fragment builder function for a specific object type.
- * Used in codegen to generate explicit fragment builder types instead of mapped types.
+ *
+ * Used by codegen to generate explicit fragment builder types instead of
+ * expensive mapped types. This improves IDE performance for large schemas.
  */
 export type FragmentBuilderFor<
   TSchema extends AnyGraphqlSchema,
@@ -26,6 +33,18 @@ export type FragmentBuilderFor<
   fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
 }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
 
+/**
+ * Creates fragment builder functions for all object types in the schema.
+ *
+ * Returns an object with a builder for each type (e.g., `fragment.User`, `fragment.Post`).
+ * Each builder creates a `Fragment` that can be spread into operations.
+ *
+ * @param schema - The GraphQL schema definition
+ * @param _adapter - Optional metadata adapter (for fragment metadata)
+ * @returns Object mapping type names to fragment builder functions
+ *
+ * @internal Used by `createGqlElementComposer`
+ */
 export const createGqlFragmentComposers = <
   TSchema extends AnyGraphqlSchema,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,

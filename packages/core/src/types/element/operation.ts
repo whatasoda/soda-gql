@@ -1,10 +1,22 @@
+/**
+ * Operation types for GraphQL queries, mutations, and subscriptions.
+ * @module
+ */
+
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { AnyFields, InferFields } from "../fragment";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
+/**
+ * Type alias for any Operation instance.
+ */
 export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> | AnyOperationOf<"subscription">;
+
+/**
+ * Type alias for an Operation of a specific type.
+ */
 export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   TOperationType,
   string,
@@ -14,6 +26,10 @@ export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   any
 >;
 
+/**
+ * Type inference metadata for operations.
+ * Access via `typeof operation.$infer`.
+ */
 export type OperationInferMeta<TVariables, TData extends object> = {
   readonly input: TVariables;
   readonly output: TData;
@@ -21,6 +37,10 @@ export type OperationInferMeta<TVariables, TData extends object> = {
 
 declare const __OPERATION_BRAND__: unique symbol;
 
+/**
+ * Internal artifact shape produced by operation evaluation.
+ * @internal
+ */
 type OperationArtifact<
   TOperationType extends OperationType,
   TOperationName extends string,
@@ -37,6 +57,19 @@ type OperationArtifact<
   readonly metadata?: unknown;
 };
 
+/**
+ * Represents a GraphQL operation (query, mutation, or subscription).
+ *
+ * Operations are created via `gql(({ query }) => query.operation({ ... }))`.
+ * Produces a TypedDocumentNode for type-safe execution with GraphQL clients.
+ *
+ * @template TOperationType - 'query' | 'mutation' | 'subscription'
+ * @template TOperationName - The unique operation name
+ * @template TVariableNames - Tuple of variable names
+ * @template TVariables - Variable types for the operation
+ * @template TFields - Selected fields structure
+ * @template TData - Inferred response data type
+ */
 export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
@@ -63,25 +96,44 @@ export class Operation<
     super(define);
   }
 
+  /** The operation type: 'query', 'mutation', or 'subscription'. */
   public get operationType() {
     return GqlElement.get(this).operationType;
   }
+
+  /** The unique name of this operation. */
   public get operationName() {
     return GqlElement.get(this).operationName;
   }
+
+  /** List of variable names defined for this operation. */
   public get variableNames() {
     return GqlElement.get(this).variableNames;
   }
+
+  /**
+   * Returns the field selections. Used for document reconstruction.
+   * @internal
+   */
   public get documentSource() {
     return GqlElement.get(this).documentSource;
   }
+
+  /** The TypedDocumentNode for use with GraphQL clients. */
   public get document() {
     return GqlElement.get(this).document;
   }
+
+  /** Custom metadata attached to this operation, if any. */
   public get metadata() {
     return GqlElement.get(this).metadata;
   }
 
+  /**
+   * Creates a new Operation instance.
+   * Prefer using the `gql(({ query }) => ...)` API instead.
+   * @internal
+   */
   static create<
     TSchema extends AnyGraphqlSchema,
     TOperationType extends OperationType,

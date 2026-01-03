@@ -1,4 +1,7 @@
-/** Field builder factories shared by model and slice helpers. */
+/**
+ * Field builder types for constructing GraphQL field selections.
+ * @module
+ */
 
 import type { IfOmittable } from "../../utils/empty-object";
 import type {
@@ -34,6 +37,11 @@ export type FieldsBuilder<
   TFields extends AnyFields,
 > = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 
+/**
+ * Tools provided to field builder callbacks.
+ * - `f`: Field selection factories for the current type
+ * - `$`: Variable references for the current scope
+ */
 export type FieldsBuilderTools<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
@@ -43,13 +51,20 @@ export type FieldsBuilderTools<
   $: AssigningInput<TSchema, TVariableDefinitions>;
 };
 
-/** Narrow builder used when a field resolves to an object and we need nested selections. */
+/**
+ * Builder for nested object field selections.
+ * Used when a field returns an object type requiring sub-selections.
+ */
 export type NestedObjectFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyNestedObject,
 > = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchema, TTypeName>>) => TFields;
 
+/**
+ * Tools for nested object builders (no variable access).
+ * @internal
+ */
 export type NestedObjectFieldsBuilderTools<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
@@ -57,6 +72,9 @@ export type NestedObjectFieldsBuilderTools<
   f: FieldSelectionFactories<TSchema, TTypeName>;
 };
 
+/**
+ * Builder for union type selections with per-member field definitions.
+ */
 export type NestedUnionFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TMemberName extends string,
@@ -76,11 +94,19 @@ export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName 
     : never;
 };
 
+/**
+ * Type-erased field selection factory.
+ * @internal
+ */
 export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
   fieldArgs: AnyAssignableInput | void,
   extras?: { alias?: TAlias; directives?: AnyDirectiveAttachments },
 ) => AnyFieldSelectionFactoryReturn<TAlias>;
 
+/**
+ * Factory function for creating a typed field selection.
+ * Accepts field arguments and optional alias/directives.
+ */
 export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> = <
   TAlias extends string | null = null,
 >(

@@ -1,3 +1,8 @@
+/**
+ * Creates field selection factories for building GraphQL selections.
+ * @module
+ */
+
 import type {
   AnyFieldSelectionFactory,
   AnyFieldSelectionFactoryReturn,
@@ -12,7 +17,11 @@ import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
 
-// Cache is schema-scoped to avoid cross-schema contamination when multiple schemas share type names
+/**
+ * Cache map type for field factories.
+ * Schema-scoped to avoid cross-schema contamination.
+ * @internal
+ */
 type CacheMap = Map<string, Record<string, AnyFieldSelectionFactory>>;
 
 const cacheMapBySchema = new WeakMap<AnyGraphqlSchema, CacheMap>();
@@ -27,6 +36,18 @@ const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
   return cacheMap;
 };
 
+/**
+ * Creates field selection factories for a given object type.
+ *
+ * Returns an object with a factory for each field defined on the type.
+ * Factories are cached per schema+type to avoid recreation.
+ *
+ * @param schema - The GraphQL schema definition
+ * @param typeName - The object type name to create factories for
+ * @returns Object mapping field names to their selection factories
+ *
+ * @internal Used by operation and fragment composers
+ */
 export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
   schema: TSchema,
   typeName: TTypeName,

@@ -9,16 +9,39 @@ import {
 const GQL_ELEMENT_FACTORY = Symbol("GQL_ELEMENT_FACTORY");
 const GQL_ELEMENT_CONTEXT = Symbol("GQL_ELEMENT_CONTEXT");
 
+/**
+ * Context passed to element definition factories, containing the canonical ID.
+ */
 export type GqlElementContext = LazyEvaluatorContext;
 
+/**
+ * Factory function that produces the element definition.
+ * May be sync or async (async requires async build mode).
+ */
 export type GqlElementDefinitionFactory<T> = (context: GqlElementContext | null) => T | Promise<T>;
 
+/**
+ * Configuration for attaching a computed property to an element.
+ */
 export type GqlElementAttachment<TElement extends object, TName extends string, TValue extends object> = {
   name: TName;
   createValue: (element: TElement) => TValue;
 };
 
+/**
+ * Abstract base class for all GraphQL elements (Fragment, Operation).
+ *
+ * Uses lazy evaluation with caching - definition is computed on first access.
+ * Subclasses should not be instantiated directly; use static `create` methods.
+ *
+ * @template TDefinition - The shape of the evaluated definition
+ * @template TInfer - Type inference metadata (access via `$infer`)
+ */
 export abstract class GqlElement<TDefinition extends object, TInfer extends object> {
+  /**
+   * Type-only property for inference. Throws at runtime.
+   * Use with `typeof element.$infer` to extract input/output types.
+   */
   declare readonly $infer: TInfer;
 
   private [GQL_ELEMENT_FACTORY]: LazyEvaluatorExecutor<TDefinition>;
@@ -34,6 +57,10 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     });
   }
 
+  /**
+   * Attaches a lazily-computed property to this element.
+   * The property is computed once on first access after evaluation.
+   */
   public attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<this, TName, TValue>) {
     let cache: TValue | null = null;
 
@@ -52,14 +79,26 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     return this as this & { [_ in TName]: TValue };
   }
 
+  /**
+   * Sets the canonical context for an element. Used by the builder.
+   * @internal
+   */
   static setContext<TElement extends GqlElement<any, any>>(element: TElement, context: GqlElementContext): void {
     element[GQL_ELEMENT_CONTEXT] = context;
   }
 
+  /**
+   * Gets the canonical context of an element, if set.
+   * @internal
+   */
   static getContext(element: GqlElement<any, any>): GqlElementContext | null {
     return element[GQL_ELEMENT_CONTEXT];
   }
 
+  /**
+   * Creates a generator for async evaluation. Used by the builder.
+   * @internal
+   */
   static createEvaluationGenerator(element: GqlElement<any, any>): Generator<Promise<void>, void, void> {
     return lazyCreateEvaluationGenerator(element[GQL_ELEMENT_FACTORY], element[GQL_ELEMENT_CONTEXT]);
   }
@@ -68,10 +107,19 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
     return lazyEvaluateSync(element[GQL_ELEMENT_FACTORY], element[GQL_ELEMENT_CONTEXT]);
   }
 
+  /**
+   * Forces synchronous evaluation. Throws if async operation is needed.
+   * @internal
+   */
   static evaluateSync(element: GqlElement<any, any>): void {
     void GqlElement.evaluateInstantly(element);
   }
 
+  /**
+   * Evaluates and returns the element's definition.
+   * Throws if async operation is needed.
+   * @internal
+   */
   static get<TValue extends object>(element: GqlElement<TValue, any>): TValue {
     return GqlElement.evaluateInstantly(element);
   }
