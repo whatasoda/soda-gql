@@ -33,12 +33,12 @@ type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] 
     : false;
 
 export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
-  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: AssignableInputValue<
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: FieldArgumentValue<
     TSchema,
     TSpecifiers[K]
   >;
 } & {
-  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: AssignableInputValue<
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: FieldArgumentValue<
     TSchema,
     TSpecifiers[K]
   >;
@@ -61,12 +61,6 @@ export type FieldArgumentValue<TSchema extends AnyGraphqlSchema, TSpecifier exte
 export type DeclaredVariables<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
   readonly [K in keyof TSpecifiers]-?: VarRef<TypeProfile.DeclaredVariableType<InferInputProfile<TSchema, TSpecifiers[K]>>>;
 };
-
-// Backwards compatibility aliases (deprecated)
-/** @deprecated Use FieldArgumentValue instead */
-export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = FieldArgumentValue<TSchema, TSpecifier>;
-/** @deprecated Use DeclaredVariables instead */
-export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = DeclaredVariables<TSchema, TSpecifiers>;
 
 export type AssignableInputByFieldName<
   TSchema extends AnyGraphqlSchema,

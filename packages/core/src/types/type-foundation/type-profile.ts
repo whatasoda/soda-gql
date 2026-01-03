@@ -80,11 +80,6 @@ export declare namespace TypeProfile {
     signature: GetSignature<T[1]>;
   };
 
-  // Backwards compatibility aliases (deprecated)
-  /** @deprecated Use ExpectedVariableType instead */
-  export type VarRefBrand<T extends TypeProfile, TSignature> = ExpectedVariableType<T, TSignature>;
-  /** @deprecated Use DeclaredVariableType instead */
-  export type AssigningVarRefBrand<T extends WithMeta> = DeclaredVariableType<T>;
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<

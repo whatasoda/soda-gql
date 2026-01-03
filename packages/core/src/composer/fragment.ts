@@ -4,7 +4,7 @@
  */
 
 import { type FieldsBuilder, Fragment } from "../types/element";
-import type { AnyFields, AssigningInput } from "../types/fragment";
+import type { AnyFields, DeclaredVariables } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -68,7 +68,7 @@ export const createGqlFragmentComposers = <
   ): FragmentBuilder<TTypeName> => {
     return <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
       variables?: TVarDefinitions;
-      metadata?: FragmentMetadataBuilder<AssigningInput<TSchema, TVarDefinitions>, TFragmentMetadata>;
+      metadata?: FragmentMetadataBuilder<DeclaredVariables<TSchema, TVarDefinitions>, TFragmentMetadata>;
       fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
     }) => {
       const varDefinitions = (options.variables ?? {}) as TVarDefinitions;

@@ -12,7 +12,7 @@ import type {
   AnyFields,
   AnyNestedObject,
   AnyNestedUnion,
-  AssigningInput,
+  DeclaredVariables,
   FieldSelectionTemplateOf,
 } from "../fragment";
 import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "../schema";
@@ -48,7 +48,7 @@ export type FieldsBuilderTools<
   TVariableDefinitions extends InputTypeSpecifiers,
 > = {
   f: FieldSelectionFactories<TSchema, TTypeName>;
-  $: AssigningInput<TSchema, TVariableDefinitions>;
+  $: DeclaredVariables<TSchema, TVariableDefinitions>;
 };
 
 /**
