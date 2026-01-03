@@ -33,27 +33,33 @@ type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] 
     : false;
 
 export type AssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
-  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: AssignableInputValue<
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends true ? K : never]+?: FieldArgumentValue<
     TSchema,
     TSpecifiers[K]
   >;
 } & {
-  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: AssignableInputValue<
+  readonly [K in keyof TSpecifiers as IsOptional<TSpecifiers[K]> extends false ? K : never]-?: FieldArgumentValue<
     TSchema,
     TSpecifiers[K]
   >;
 };
 
 /**
- * Assignable input value type using typeName + kind for VarRef comparison.
+ * Field argument value type using typeName + kind for VarRef comparison.
  * Uses GetAssignableType which derives typeName + kind from the profile.
+ * This name appears in TypeScript error messages when argument types don't match.
  */
-export type AssignableInputValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
+export type FieldArgumentValue<TSchema extends AnyGraphqlSchema, TSpecifier extends InputTypeSpecifier> = GetAssignableType<
   InferInputProfile<TSchema, TSpecifier>
 >;
 
-export type AssigningInput<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
-  readonly [K in keyof TSpecifiers]-?: VarRef<TypeProfile.AssigningVarRefBrand<InferInputProfile<TSchema, TSpecifiers[K]>>>;
+/**
+ * Declared variables record for an operation or fragment.
+ * Maps variable names to their VarRef types with proper branding.
+ * This name appears in TypeScript error messages when variable access fails.
+ */
+export type DeclaredVariables<TSchema extends AnyGraphqlSchema, TSpecifiers extends InputTypeSpecifiers> = {
+  readonly [K in keyof TSpecifiers]-?: VarRef<TypeProfile.DeclaredVariableType<InferInputProfile<TSchema, TSpecifiers[K]>>>;
 };
 
 export type AssignableInputByFieldName<

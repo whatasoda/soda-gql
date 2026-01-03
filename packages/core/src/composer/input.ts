@@ -5,7 +5,7 @@
 
 import {
   type AnyAssignableInput,
-  type AssigningInput,
+  type DeclaredVariables,
   createVarRefFromNestedValue,
   createVarRefFromVariable,
   VarRef,
@@ -28,7 +28,7 @@ import { mapValues } from "../utils/map-values";
 export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
   definitions: TVariableDefinitions,
   providedValues: AnyAssignableInput | void,
-): AssigningInput<TSchema, TVariableDefinitions> => {
+): DeclaredVariables<TSchema, TVariableDefinitions> => {
   return mapValues(definitions, (_, key): AnyVarRef => {
     const varName = key as string;
     if (!providedValues || providedValues[varName] === undefined) {
@@ -41,7 +41,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
     }
 
     return createVarRefFromNestedValue(provided as NestedValue);
-  }) as AssigningInput<TSchema, TVariableDefinitions>;
+  }) as DeclaredVariables<TSchema, TVariableDefinitions>;
 };
 
 /**
@@ -55,7 +55,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
 export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
   definitions: TVarDefinitions,
 ) =>
-  mapValues(definitions as InputTypeSpecifiers, (_, name): AnyVarRef => createVarRefFromVariable(name)) as AssigningInput<
+  mapValues(definitions as InputTypeSpecifiers, (_, name): AnyVarRef => createVarRefFromVariable(name)) as DeclaredVariables<
     TSchema,
     TVarDefinitions
   >;
