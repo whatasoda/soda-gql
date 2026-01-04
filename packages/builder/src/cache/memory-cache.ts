@@ -1,6 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { getPortableHasher } from "@soda-gql/common";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { getPortableFS, getPortableHasher } from "@soda-gql/common";
 import { z } from "zod";
 
 type CacheNamespace = readonly string[];
@@ -56,6 +55,34 @@ type PersistedData = {
 
 const PERSISTENCE_VERSION = "v1";
 
+/**
+ * Validate persisted data structure.
+ * Uses simple validation to detect corruption without strict schema.
+ */
+const isValidPersistedData = (data: unknown): data is PersistedData => {
+  if (typeof data !== "object" || data === null) return false;
+  const record = data as Record<string, unknown>;
+
+  if (typeof record.version !== "string") return false;
+  if (typeof record.storage !== "object" || record.storage === null) return false;
+
+  // Validate each namespace has array of entries
+  for (const value of Object.values(record.storage as Record<string, unknown>)) {
+    if (!Array.isArray(value)) return false;
+    for (const entry of value) {
+      if (!Array.isArray(entry) || entry.length !== 2) return false;
+      if (typeof entry[0] !== "string") return false;
+      // Validate envelope has required fields
+      const envelope = entry[1];
+      if (typeof envelope !== "object" || envelope === null) return false;
+      const env = envelope as Record<string, unknown>;
+      if (typeof env.key !== "string" || typeof env.version !== "string") return false;
+    }
+  }
+
+  return true;
+};
+
 export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOptions = {}): CacheFactory => {
   // Global in-memory storage: Map<namespaceKey, Map<hashedKey, Envelope>>
   const storage = new Map<string, Map<string, Envelope<unknown>>>();
@@ -65,21 +92,46 @@ export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOpti
     try {
       if (existsSync(persistence.filePath)) {
         const content = readFileSync(persistence.filePath, "utf-8");
-        const data: PersistedData = JSON.parse(content);
 
-        if (data.version === PERSISTENCE_VERSION && data.storage) {
-          // Restore Map structure from persisted data
-          for (const [namespaceKey, entries] of Object.entries(data.storage)) {
-            const namespaceMap = new Map<string, Envelope<unknown>>();
-            for (const [hashedKey, envelope] of entries) {
-              namespaceMap.set(hashedKey, envelope);
-            }
-            storage.set(namespaceKey, namespaceMap);
+        // Parse and validate JSON structure
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          // Invalid JSON - delete corrupt file and start fresh
+          console.warn(`[cache] Corrupt cache file (invalid JSON), starting fresh: ${persistence.filePath}`);
+          try {
+            unlinkSync(persistence.filePath);
+          } catch {
+            // Ignore deletion errors
           }
+          parsed = null;
+        }
+
+        if (parsed) {
+          // Validate structure to detect corruption
+          if (!isValidPersistedData(parsed)) {
+            console.warn(`[cache] Corrupt cache file (invalid structure), starting fresh: ${persistence.filePath}`);
+            try {
+              unlinkSync(persistence.filePath);
+            } catch {
+              // Ignore deletion errors
+            }
+          } else if (parsed.version === PERSISTENCE_VERSION) {
+            // Restore Map structure from validated data
+            for (const [namespaceKey, entries] of Object.entries(parsed.storage)) {
+              const namespaceMap = new Map<string, Envelope<unknown>>();
+              for (const [hashedKey, envelope] of entries) {
+                namespaceMap.set(hashedKey, envelope);
+              }
+              storage.set(namespaceKey, namespaceMap);
+            }
+          }
+          // Version mismatch - start fresh without warning (expected on version upgrade)
         }
       }
     } catch (error) {
-      // Silently continue with empty cache on load failure
+      // Unexpected error during load - start fresh
       console.warn(`[cache] Failed to load cache from ${persistence.filePath}:`, error);
     }
   }
@@ -223,14 +275,10 @@ export const createMemoryCache = ({ prefix = [], persistence }: CacheFactoryOpti
           storage: serialized,
         };
 
-        // Ensure directory exists
-        const dir = dirname(persistence.filePath);
-        if (!existsSync(dir)) {
-          mkdirSync(dir, { recursive: true });
-        }
-
-        // Write to file synchronously
-        writeFileSync(persistence.filePath, JSON.stringify(data), "utf-8");
+        // Use atomic write to prevent corruption on crash
+        // mkdirSync with recursive is idempotent - no TOCTOU race
+        const fs = getPortableFS();
+        fs.writeFileSyncAtomic(persistence.filePath, JSON.stringify(data));
       } catch (error) {
         console.warn(`[cache] Failed to save cache to ${persistence.filePath}:`, error);
       }
