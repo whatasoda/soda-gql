@@ -79,7 +79,7 @@
     },
     "packages/builder": {
       "name": "@soda-gql/builder",
-      "version": "0.8.2",
+      "version": "0.8.3",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
@@ -171,7 +171,7 @@
     },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
-      "version": "0.8.0",
+      "version": "0.8.3",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@soda-gql/babel-plugin": "workspace:*",
@@ -279,7 +279,7 @@
     },
     "packages/webpack-plugin": {
       "name": "@soda-gql/webpack-plugin",
-      "version": "0.8.0",
+      "version": "0.8.3",
       "dependencies": {
         "@soda-gql/babel-transformer": "workspace:*",
         "@soda-gql/builder": "workspace:*",
