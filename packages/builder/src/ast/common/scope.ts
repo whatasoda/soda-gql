@@ -7,7 +7,7 @@
  * Scope frame for tracking AST path segments
  */
 export type ScopeFrame = {
-  /** Name segment (e.g., "MyComponent", "useQuery", "arrow#1") */
+  /** Name segment (e.g., "MyComponent", "useQuery", "_arrow_1") */
   readonly nameSegment: string;
   /** Kind of scope */
   readonly kind: "function" | "class" | "variable" | "property" | "method" | "expression";

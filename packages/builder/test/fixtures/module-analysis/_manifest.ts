@@ -45,6 +45,8 @@ export const fixtures = [
   // Anonymous/inline patterns
   "anonymous-function-arg",
   "anonymous-destructure",
+  "anonymous-method-chain-destructure",
+  "anonymous-hasura-destructure",
 
   // Fragment spreading
   "fragment-spreading/basic-spread",
