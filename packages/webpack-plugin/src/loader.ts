@@ -4,6 +4,7 @@ import {
   createPluginSession,
   getSharedArtifact,
   getSharedPluginSession,
+  getSharedState,
   getSharedSwcTransformer,
   getStateKey,
   type PluginSession,
@@ -77,14 +78,34 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         return;
       }
 
-      // Add dependencies to webpack for HMR
-      // This ensures webpack rebuilds this file when its dependencies change
-      for (const element of Object.values(artifact.elements)) {
-        const elementPath = element.metadata.sourcePath;
-        if (elementPath && elementPath !== filename) {
-          // Add all soda-gql source files as dependencies
-          // This is a conservative approach that ensures rebuilds propagate
-          this.addDependency(elementPath);
+      // Add dependencies based on module adjacency for precise HMR
+      const sharedState = getSharedState(stateKey);
+      const normalizedFilename = normalizePath(filename);
+
+      // Use module adjacency for efficient dependency tracking
+      // moduleAdjacency maps: importedFile -> Set<importingFiles>
+      if (sharedState.moduleAdjacency.size > 0) {
+        // Add files that import this file (reverse dependencies)
+        const importers = sharedState.moduleAdjacency.get(normalizedFilename);
+        if (importers) {
+          for (const importer of importers) {
+            this.addDependency(importer);
+          }
+        }
+
+        // Add files that this file imports (forward dependencies)
+        for (const [importedFile, importingFiles] of sharedState.moduleAdjacency) {
+          if (importingFiles.has(normalizedFilename)) {
+            this.addDependency(importedFile);
+          }
+        }
+      } else {
+        // Fallback: Add all soda-gql source files as dependencies (conservative approach)
+        for (const element of Object.values(artifact.elements)) {
+          const elementPath = element.metadata.sourcePath;
+          if (elementPath && elementPath !== filename) {
+            this.addDependency(elementPath);
+          }
         }
       }
 

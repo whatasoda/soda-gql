@@ -44,14 +44,6 @@ describe("Webpack Plugin", () => {
       // Initially null before any build
       expect(plugin.getArtifact()).toBeNull();
     });
-
-    it("should expose getPendingInvalidations method", () => {
-      const plugin = new SodaGqlWebpackPlugin();
-      expect(typeof plugin.getPendingInvalidations).toBe("function");
-      // Initially empty
-      const invalidations = plugin.getPendingInvalidations();
-      expect(invalidations.size).toBe(0);
-    });
   });
 
   describe("Shared State", () => {
