@@ -85,17 +85,19 @@ describe("Type error examples for documentation", () => {
 
       // This should compile: Required (!) -> Optional (?) is allowed
       // TypeScript's structural typing allows this because ! is a subtype of ?
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> =
-        {
-          id: requiredIdVar,
-        };
+      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> = {
+        id: requiredIdVar,
+      };
       expect(true).toBe(true);
     });
 
     it("rejects optional variable to required argument", () => {
       // Create variables with different modifiers
       // Note: createVarRefFromVariable returns AnyVarRef, so we need to cast through DeclaredVariables
-      type OptionalIdVars = DeclaredVariables<TestSchema, { id: { kind: "scalar"; name: "ID"; modifier: "?"; defaultValue: null; directives: {} } }>;
+      type OptionalIdVars = DeclaredVariables<
+        TestSchema,
+        { id: { kind: "scalar"; name: "ID"; modifier: "?"; defaultValue: null; directives: {} } }
+      >;
       const $ = { id: createVarRefFromVariable("id") } as unknown as OptionalIdVars;
 
       // Optional (?) variable cannot be assigned to required (!) argument
@@ -111,7 +113,10 @@ describe("Type error examples for documentation", () => {
   describe("Variable type name mismatch", () => {
     it("rejects wrong type name (Int -> ID)", () => {
       // Declare a variable with Int type
-      type IntVars = DeclaredVariables<TestSchema, { userId: { kind: "scalar"; name: "Int"; modifier: "!"; defaultValue: null; directives: {} } }>;
+      type IntVars = DeclaredVariables<
+        TestSchema,
+        { userId: { kind: "scalar"; name: "Int"; modifier: "!"; defaultValue: null; directives: {} } }
+      >;
       const $ = { userId: createVarRefFromVariable("userId") } as unknown as IntVars;
 
       // Int variable cannot be assigned to ID argument
@@ -124,7 +129,10 @@ describe("Type error examples for documentation", () => {
     });
 
     it("rejects wrong type name (ID -> String)", () => {
-      type IdVars = DeclaredVariables<TestSchema, { id: { kind: "scalar"; name: "ID"; modifier: "!"; defaultValue: null; directives: {} } }>;
+      type IdVars = DeclaredVariables<
+        TestSchema,
+        { id: { kind: "scalar"; name: "ID"; modifier: "!"; defaultValue: null; directives: {} } }
+      >;
       const $ = { id: createVarRefFromVariable("id") } as unknown as IdVars;
 
       // ID variable cannot be assigned to String argument
@@ -140,7 +148,10 @@ describe("Type error examples for documentation", () => {
   describe("List modifier mismatch", () => {
     it("rejects single value to list argument", () => {
       // Declare a single ID variable (not a list)
-      type SingleIdVars = DeclaredVariables<TestSchema, { id: { kind: "scalar"; name: "ID"; modifier: "!"; defaultValue: null; directives: {} } }>;
+      type SingleIdVars = DeclaredVariables<
+        TestSchema,
+        { id: { kind: "scalar"; name: "ID"; modifier: "!"; defaultValue: null; directives: {} } }
+      >;
       const $ = { id: createVarRefFromVariable("id") } as unknown as SingleIdVars;
 
       // Single ID (!) cannot be assigned to list argument ([ID!]?)
@@ -154,7 +165,10 @@ describe("Type error examples for documentation", () => {
 
     it("allows list variable to list argument", () => {
       // Declare a list ID variable
-      type ListIdVars = DeclaredVariables<TestSchema, { ids: { kind: "scalar"; name: "ID"; modifier: "![]?"; defaultValue: null; directives: {} } }>;
+      type ListIdVars = DeclaredVariables<
+        TestSchema,
+        { ids: { kind: "scalar"; name: "ID"; modifier: "![]?"; defaultValue: null; directives: {} } }
+      >;
       const $ = { ids: createVarRefFromVariable("ids") } as unknown as ListIdVars;
 
       // This should compile: [ID!]? -> [ID!]? is allowed
@@ -176,8 +190,7 @@ describe("Type error examples for documentation", () => {
 
     it("allows omitting optional arguments", () => {
       // This should compile: optional arguments can be omitted
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> =
-        {};
+      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> = {};
       expect(true).toBe(true);
     });
   });

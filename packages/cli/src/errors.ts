@@ -3,10 +3,10 @@
  * @module
  */
 
-import { err, type Result } from "neverthrow";
 import type { ArtifactLoadError, BuilderError } from "@soda-gql/builder";
 import type { CodegenError } from "@soda-gql/codegen";
 import type { ConfigError } from "@soda-gql/config";
+import { err, type Result } from "neverthrow";
 
 /**
  * CLI-specific error codes.

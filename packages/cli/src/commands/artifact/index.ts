@@ -1,5 +1,5 @@
-import { err, ok, type Result } from "neverthrow";
-import { cliErrors, type CliError } from "../../errors";
+import { err, ok } from "neverthrow";
+import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";
 import { buildCommand } from "./build";
 import { validateCommand } from "./validate";

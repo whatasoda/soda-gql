@@ -85,10 +85,7 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  const unexpectedError = cliErrors.unexpected(
-    error instanceof Error ? error.message : String(error),
-    error,
-  );
+  const unexpectedError = cliErrors.unexpected(error instanceof Error ? error.message : String(error), error);
   const format = getOutputFormat(process.argv.slice(2));
   process.stderr.write(`${formatCliError(unexpectedError, format)}\n`);
   process.exitCode = 1;

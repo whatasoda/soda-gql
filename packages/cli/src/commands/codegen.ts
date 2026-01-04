@@ -3,7 +3,7 @@ import type { CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
 import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
-import { cliErrors, type CliError, type CliResult } from "../errors";
+import { type CliResult, cliErrors } from "../errors";
 import { CodegenArgsSchema } from "../schemas/args";
 import type { CommandResult, CommandSuccess } from "../types";
 import { parseArgs } from "../utils/parse-args";

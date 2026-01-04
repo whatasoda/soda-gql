@@ -140,7 +140,7 @@ export const formatCliErrorHuman = (error: CliError): string => {
  */
 export const formatCliErrorJson = (error: CliError): string => {
   if (error.category === "cli") {
-    const { category, ...rest } = error;
+    const { category: _category, ...rest } = error;
     return JSON.stringify({ error: rest }, null, 2);
   }
   return JSON.stringify({ error: error.error }, null, 2);

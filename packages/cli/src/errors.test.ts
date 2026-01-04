@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { cliErrors, cliErr, getErrorCode, getErrorMessage, isCliError } from "./errors";
+import { cliErr, cliErrors, getErrorCode, getErrorMessage, isCliError } from "./errors";
 
 describe("cliErrors", () => {
   describe("CLI-specific error constructors", () => {

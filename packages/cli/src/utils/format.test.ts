@@ -171,7 +171,7 @@ describe("formatCliErrorJson", () => {
   });
 
   it("produces valid JSON", () => {
-    const error = cliErrors.fileExists("/path/with/special\"chars");
+    const error = cliErrors.fileExists('/path/with/special"chars');
     const result = formatCliErrorJson(error);
 
     expect(() => JSON.parse(result)).not.toThrow();

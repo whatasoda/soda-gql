@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { err, ok, type Result } from "neverthrow";
 
-import { cliErrors, type CliError } from "../errors";
+import { type CliError, cliErrors } from "../errors";
 import { InitArgsSchema } from "../schemas/args";
 import { getConfigTemplate } from "../templates/config.template";
 import { getGitignoreTemplate } from "../templates/gitignore.template";
