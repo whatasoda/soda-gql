@@ -3,7 +3,7 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
-import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
+import { createCanonicalId, createCanonicalTracker, type ScopeHandle } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
@@ -378,31 +378,51 @@ const collectAllDefinitions = ({
     if (node.type === "CallExpression") {
       const gqlCall = unwrapMethodChains(gqlIdentifiers, node);
       if (gqlCall) {
-        // Use tracker to get astPath
-        const { astPath } = tracker.registerDefinition();
-        const isTopLevel = stack.length === 1;
+        // If scopeStack is empty (unbound gql call), enter an anonymous scope
+        const needsAnonymousScope = tracker.currentDepth() === 0;
+        let anonymousScopeHandle: ScopeHandle | undefined;
 
-        // Determine if exported
-        let isExported = false;
-        let exportBinding: string | undefined;
-
-        if (isTopLevel && stack[0]) {
-          const topLevelName = stack[0].nameSegment;
-          if (exportBindings.has(topLevelName)) {
-            isExported = true;
-            exportBinding = exportBindings.get(topLevelName);
-          }
+        if (needsAnonymousScope) {
+          const anonymousName = getAnonymousName("anonymous");
+          anonymousScopeHandle = tracker.enterScope({
+            segment: anonymousName,
+            kind: "expression",
+            stableKey: "anonymous",
+          });
         }
 
-        handledCalls.push(node);
-        pending.push({
-          astPath,
-          isTopLevel,
-          isExported,
-          exportBinding,
-          // Use the unwrapped gql call expression (without .attach() chain)
-          expression: expressionFromCall(gqlCall),
-        });
+        try {
+          // Use tracker to get astPath
+          const { astPath } = tracker.registerDefinition();
+          const isTopLevel = stack.length === 1;
+
+          // Determine if exported
+          let isExported = false;
+          let exportBinding: string | undefined;
+
+          if (isTopLevel && stack[0]) {
+            const topLevelName = stack[0].nameSegment;
+            if (exportBindings.has(topLevelName)) {
+              isExported = true;
+              exportBinding = exportBindings.get(topLevelName);
+            }
+          }
+
+          handledCalls.push(node);
+          pending.push({
+            astPath,
+            isTopLevel,
+            isExported,
+            exportBinding,
+            // Use the unwrapped gql call expression (without .attach() chain)
+            expression: expressionFromCall(gqlCall),
+          });
+        } finally {
+          // Exit anonymous scope if we entered one
+          if (anonymousScopeHandle) {
+            tracker.exitScope(anonymousScopeHandle);
+          }
+        }
 
         // Don't visit children of gql calls
         return;
@@ -421,6 +441,10 @@ const collectAllDefinitions = ({
               visit(decl.init, newStack);
             });
           }
+        } else if (decl.init) {
+          // Handle destructuring patterns (ObjectPattern, ArrayPattern)
+          // Visit the initializer without entering a scope (anonymous gql calls will handle their own scope)
+          visit(decl.init, stack);
         }
       });
       return;
