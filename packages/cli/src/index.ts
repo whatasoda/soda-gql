@@ -18,7 +18,14 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   }
 
   if (command === "init") {
-    return initCommand(rest);
+    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
+    const result = await initCommand(rest);
+    if (result.isOk()) {
+      process.stdout.write(`${result.value.message}\n`);
+      return 0;
+    }
+    process.stderr.write(`${formatCliError(result.error)}\n`);
+    return 1;
   }
 
   if (command === "codegen") {

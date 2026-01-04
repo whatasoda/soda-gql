@@ -2,20 +2,14 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { err, ok, type Result } from "neverthrow";
 
+import { cliErrors, type CliError } from "../errors";
 import { InitArgsSchema } from "../schemas/args";
 import { getConfigTemplate } from "../templates/config.template";
 import { getGitignoreTemplate } from "../templates/gitignore.template";
 import { getInjectTemplate } from "../templates/inject.template";
 import { getSchemaTemplate } from "../templates/schema.template";
+import type { CommandResult, CommandSuccess } from "../types";
 import { parseArgs } from "../utils/parse-args";
-
-type InitErrorCode = "FILE_EXISTS" | "WRITE_FAILED" | "PARSE_ERROR";
-
-type InitError = {
-  readonly code: InitErrorCode;
-  readonly message: string;
-  readonly filePath?: string;
-};
 
 type FileToGenerate = {
   readonly path: string;
@@ -42,25 +36,21 @@ Generated files:
   graphql-system/.gitignore         Ignore generated files
 `;
 
-const checkFilesExist = (files: readonly FileToGenerate[], force: boolean): Result<void, InitError> => {
+const checkFilesExist = (files: readonly FileToGenerate[], force: boolean): Result<void, CliError> => {
   if (force) {
     return ok(undefined);
   }
 
   for (const file of files) {
     if (existsSync(file.path)) {
-      return err({
-        code: "FILE_EXISTS",
-        message: `File already exists: ${file.path}. Use --force to overwrite.`,
-        filePath: file.path,
-      });
+      return err(cliErrors.fileExists(file.path));
     }
   }
 
   return ok(undefined);
 };
 
-const writeFiles = (files: readonly FileToGenerate[]): Result<InitSuccess, InitError> => {
+const writeFiles = (files: readonly FileToGenerate[]): Result<InitSuccess, CliError> => {
   const createdPaths: string[] = [];
 
   for (const file of files) {
@@ -71,11 +61,7 @@ const writeFiles = (files: readonly FileToGenerate[]): Result<InitSuccess, InitE
       createdPaths.push(file.path);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return err({
-        code: "WRITE_FAILED",
-        message: `Failed to write ${file.description}: ${message}`,
-        filePath: file.path,
-      });
+      return err(cliErrors.writeFailed(file.path, `Failed to write ${file.description}: ${message}`, error));
     }
   }
 
@@ -94,25 +80,17 @@ const formatSuccess = (result: InitSuccess): string => {
   return lines.join("\n");
 };
 
-const formatInitError = (error: InitError): string => {
-  return `${error.code}: ${error.message}`;
-};
+type InitCommandResult = CommandResult<CommandSuccess & { data?: InitSuccess }>;
 
-export const initCommand = async (argv: readonly string[]): Promise<number> => {
+export const initCommand = async (argv: readonly string[]): Promise<InitCommandResult> => {
   if (argv.includes("--help") || argv.includes("-h")) {
-    process.stdout.write(INIT_HELP);
-    return 0;
+    return ok({ message: INIT_HELP });
   }
 
   const parsed = parseArgs([...argv], InitArgsSchema);
 
   if (!parsed.isOk()) {
-    const error: InitError = {
-      code: "PARSE_ERROR",
-      message: parsed.error,
-    };
-    process.stderr.write(`${formatInitError(error)}\n`);
-    return 1;
+    return err(cliErrors.argsInvalid("init", parsed.error));
   }
 
   const args = parsed.value;
@@ -144,16 +122,13 @@ export const initCommand = async (argv: readonly string[]): Promise<number> => {
 
   const existsCheck = checkFilesExist(files, force);
   if (existsCheck.isErr()) {
-    process.stderr.write(`${formatInitError(existsCheck.error)}\n`);
-    return 1;
+    return err(existsCheck.error);
   }
 
   const writeResult = writeFiles(files);
   if (writeResult.isErr()) {
-    process.stderr.write(`${formatInitError(writeResult.error)}\n`);
-    return 1;
+    return err(writeResult.error);
   }
 
-  process.stdout.write(`${formatSuccess(writeResult.value)}\n`);
-  return 0;
+  return ok({ message: formatSuccess(writeResult.value), data: writeResult.value });
 };
