@@ -52,7 +52,14 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   }
 
   if (command === "artifact") {
-    return artifactCommand(rest);
+    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
+    const result = await artifactCommand(rest);
+    if (result.isOk()) {
+      process.stdout.write(`${result.value.message}\n`);
+      return 0;
+    }
+    process.stderr.write(`${formatCliError(result.error)}\n`);
+    return 1;
   }
 
   process.stderr.write(`Unknown command: ${command}\n`);

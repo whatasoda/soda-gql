@@ -4,7 +4,7 @@
  */
 
 import { err, type Result } from "neverthrow";
-import type { BuilderError } from "@soda-gql/builder";
+import type { ArtifactLoadError, BuilderError } from "@soda-gql/builder";
 import type { CodegenError } from "@soda-gql/codegen";
 import type { ConfigError } from "@soda-gql/config";
 
@@ -37,6 +37,7 @@ export type CliError =
   // Wrapped external errors (preserve original structure)
   | { readonly category: "codegen"; readonly error: CodegenError }
   | { readonly category: "builder"; readonly error: BuilderError }
+  | { readonly category: "artifact"; readonly error: ArtifactLoadError }
   | { readonly category: "config"; readonly error: ConfigError }
   // CLI-specific errors
   | {
@@ -133,6 +134,7 @@ type CliFormatErrorError = Extract<CliError, { code: "CLI_FORMAT_ERROR" }>;
 type CliUnexpectedError = Extract<CliError, { code: "CLI_UNEXPECTED" }>;
 type CliCodegenError = Extract<CliError, { category: "codegen" }>;
 type CliBuilderError = Extract<CliError, { category: "builder" }>;
+type CliArtifactError = Extract<CliError, { category: "artifact" }>;
 type CliConfigError = Extract<CliError, { category: "config" }>;
 
 /**
@@ -236,6 +238,11 @@ export const cliErrors = {
     error,
   }),
 
+  fromArtifact: (error: ArtifactLoadError): CliArtifactError => ({
+    category: "artifact",
+    error,
+  }),
+
   fromConfig: (error: ConfigError): CliConfigError => ({
     category: "config",
     error,
@@ -261,6 +268,7 @@ export const getErrorCode = (error: CliError): string => {
   if (error.category === "cli") {
     return error.code;
   }
+  // codegen, builder, artifact, config all have error.code
   return error.error.code;
 };
 

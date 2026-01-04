@@ -46,6 +46,15 @@ const configErrorHints: Record<string, string> = {
 };
 
 /**
+ * Artifact-specific error hints.
+ */
+const artifactErrorHints: Record<string, string> = {
+  ARTIFACT_NOT_FOUND: "Verify the artifact file path exists",
+  ARTIFACT_PARSE_ERROR: "Check that the artifact file is valid JSON",
+  ARTIFACT_VALIDATION_ERROR: "Verify the artifact was built with a compatible version of soda-gql",
+};
+
+/**
  * Get hint for any error type.
  */
 const getErrorHint = (error: CliError): string | undefined => {
@@ -57,6 +66,9 @@ const getErrorHint = (error: CliError): string | undefined => {
   }
   if (error.category === "config") {
     return configErrorHints[error.error.code];
+  }
+  if (error.category === "artifact") {
+    return artifactErrorHints[error.error.code];
   }
   // Builder errors use their own hints via formatBuilderErrorForCLI
   return undefined;
@@ -92,6 +104,12 @@ export const formatCliErrorHuman = (error: CliError): string => {
     lines.push(`Error [${configError.code}]: ${configError.message}`);
     if (configError.filePath) {
       lines.push(`  Config: ${configError.filePath}`);
+    }
+  } else if (error.category === "artifact") {
+    const artifactError = error.error;
+    lines.push(`Error [${artifactError.code}]: ${artifactError.message}`);
+    if (artifactError.filePath) {
+      lines.push(`  Artifact: ${artifactError.filePath}`);
     }
   } else {
     // CLI errors

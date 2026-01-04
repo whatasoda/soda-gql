@@ -1,5 +1,9 @@
 import { resolve } from "node:path";
+import type { BuilderArtifact } from "@soda-gql/builder";
 import { loadArtifact } from "@soda-gql/builder";
+import { err, ok } from "neverthrow";
+import { cliErrors } from "../../errors";
+import type { CommandResult, CommandSuccess } from "../../types";
 
 const VALIDATE_HELP = `Usage: soda-gql artifact validate [options] <path>
 
@@ -41,47 +45,43 @@ const parseValidateArgs = (argv: readonly string[]): ValidateArgs => {
   return args;
 };
 
+const formatSuccess = (artifact: BuilderArtifact): string => {
+  const fragmentCount = Object.values(artifact.elements).filter((e) => e.type === "fragment").length;
+  const operationCount = Object.values(artifact.elements).filter((e) => e.type === "operation").length;
+  const lines: string[] = [`Artifact valid: ${fragmentCount} fragments, ${operationCount} operations`];
+
+  if (artifact.meta) {
+    lines.push(`  Version: ${artifact.meta.version}`);
+    lines.push(`  Created: ${artifact.meta.createdAt}`);
+  } else {
+    lines.push(`  (No metadata - legacy artifact format)`);
+  }
+
+  return lines.join("\n");
+};
+
+type ValidateCommandResult = CommandResult<CommandSuccess & { data?: BuilderArtifact }>;
+
 /**
  * Validate command - validates a pre-built artifact file.
  */
-export const validateCommand = async (argv: readonly string[]): Promise<number> => {
+export const validateCommand = async (argv: readonly string[]): Promise<ValidateCommandResult> => {
   const args = parseValidateArgs(argv);
 
   if (args.help) {
-    process.stdout.write(VALIDATE_HELP);
-    return 0;
+    return ok({ message: VALIDATE_HELP });
   }
 
   if (!args.artifactPath) {
-    process.stderr.write("Error: Missing artifact path argument\n\n");
-    process.stdout.write(VALIDATE_HELP);
-    return 1;
+    return err(cliErrors.argsInvalid("artifact validate", "Missing artifact path argument"));
   }
 
   const artifactPath = resolve(process.cwd(), args.artifactPath);
   const result = await loadArtifact(artifactPath);
 
   if (result.isErr()) {
-    const error = result.error;
-    process.stderr.write(`Validation failed: ${error.message}\n`);
-    if (error.filePath) {
-      process.stderr.write(`  File: ${error.filePath}\n`);
-    }
-    return 1;
+    return err(cliErrors.fromArtifact(result.error));
   }
 
-  const artifact = result.value;
-  const fragmentCount = Object.values(artifact.elements).filter((e) => e.type === "fragment").length;
-  const operationCount = Object.values(artifact.elements).filter((e) => e.type === "operation").length;
-
-  process.stdout.write(`Artifact valid: ${fragmentCount} fragments, ${operationCount} operations\n`);
-
-  if (artifact.meta) {
-    process.stdout.write(`  Version: ${artifact.meta.version}\n`);
-    process.stdout.write(`  Created: ${artifact.meta.createdAt}\n`);
-  } else {
-    process.stdout.write(`  (No metadata - legacy artifact format)\n`);
-  }
-
-  return 0;
+  return ok({ message: formatSuccess(result.value), data: result.value });
 };
