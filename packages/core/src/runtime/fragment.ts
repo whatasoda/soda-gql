@@ -15,9 +15,7 @@ export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment 
         | GqlElementAttachment<typeof fragment, string, object>
         | readonly GqlElementAttachment<typeof fragment, string, object>[],
     ) {
-      const attachments = Array.isArray(attachmentOrAttachments)
-        ? attachmentOrAttachments
-        : [attachmentOrAttachments];
+      const attachments = Array.isArray(attachmentOrAttachments) ? attachmentOrAttachments : [attachmentOrAttachments];
 
       for (const attachment of attachments) {
         const value = attachment.createValue(fragment);

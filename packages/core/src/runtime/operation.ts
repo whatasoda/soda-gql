@@ -27,9 +27,7 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
         | GqlElementAttachment<typeof operation, string, object>
         | readonly GqlElementAttachment<typeof operation, string, object>[],
     ) {
-      const attachments = Array.isArray(attachmentOrAttachments)
-        ? attachmentOrAttachments
-        : [attachmentOrAttachments];
+      const attachments = Array.isArray(attachmentOrAttachments) ? attachmentOrAttachments : [attachmentOrAttachments];
 
       for (const attachment of attachments) {
         const value = attachment.createValue(operation);

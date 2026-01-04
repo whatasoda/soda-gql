@@ -1,3 +1,4 @@
+import type { AttachmentShape, AttachmentsTupleToIntersection } from "../../utils/type-utils";
 import {
   createLazyEvaluator,
   type LazyEvaluatorContext,
@@ -5,7 +6,6 @@ import {
   createEvaluationGenerator as lazyCreateEvaluationGenerator,
   evaluateSync as lazyEvaluateSync,
 } from "./lazy-evaluator";
-import type { AttachmentShape, AttachmentsTupleToIntersection } from "../../utils/type-utils";
 
 const GQL_ELEMENT_FACTORY = Symbol("GQL_ELEMENT_FACTORY");
 const GQL_ELEMENT_CONTEXT = Symbol("GQL_ELEMENT_CONTEXT");
@@ -86,9 +86,7 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
   public attach<TName extends string, TValue extends object>(
     attachmentOrAttachments: GqlElementAttachment<this, TName, TValue> | readonly AttachmentShape[],
   ): this & { [K in TName]: TValue } {
-    const attachments = Array.isArray(attachmentOrAttachments)
-      ? attachmentOrAttachments
-      : [attachmentOrAttachments];
+    const attachments = Array.isArray(attachmentOrAttachments) ? attachmentOrAttachments : [attachmentOrAttachments];
 
     for (const attachment of attachments) {
       let cache: object | null = null;
