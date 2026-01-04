@@ -4,7 +4,7 @@
  */
 
 import { extname } from "node:path";
-import { createCanonicalId, createCanonicalTracker } from "@soda-gql/common";
+import { createCanonicalId, createCanonicalTracker, type ScopeHandle } from "@soda-gql/common";
 import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
@@ -294,31 +294,51 @@ const collectAllDefinitions = ({
     if (ts.isCallExpression(node)) {
       const gqlCall = unwrapMethodChains(identifiers, node);
       if (gqlCall) {
-        // Use tracker to get astPath
-        const { astPath } = tracker.registerDefinition();
-        const isTopLevel = stack.length === 1;
+        // If scopeStack is empty (unbound gql call), enter an anonymous scope
+        const needsAnonymousScope = tracker.currentDepth() === 0;
+        let anonymousScopeHandle: ScopeHandle | undefined;
 
-        // Determine if exported
-        let isExported = false;
-        let exportBinding: string | undefined;
-
-        if (isTopLevel && stack[0]) {
-          const topLevelName = stack[0].nameSegment;
-          if (exportBindings.has(topLevelName)) {
-            isExported = true;
-            exportBinding = exportBindings.get(topLevelName);
-          }
+        if (needsAnonymousScope) {
+          const anonymousName = getAnonymousName("anonymous");
+          anonymousScopeHandle = tracker.enterScope({
+            segment: anonymousName,
+            kind: "expression",
+            stableKey: "anonymous",
+          });
         }
 
-        handledCalls.push(node);
-        pending.push({
-          astPath,
-          isTopLevel,
-          isExported,
-          exportBinding,
-          // Use the unwrapped gql call expression (without .attach() chain)
-          expression: gqlCall.getText(sourceFile),
-        });
+        try {
+          // Use tracker to get astPath
+          const { astPath } = tracker.registerDefinition();
+          const isTopLevel = stack.length === 1;
+
+          // Determine if exported
+          let isExported = false;
+          let exportBinding: string | undefined;
+
+          if (isTopLevel && stack[0]) {
+            const topLevelName = stack[0].nameSegment;
+            if (exportBindings.has(topLevelName)) {
+              isExported = true;
+              exportBinding = exportBindings.get(topLevelName);
+            }
+          }
+
+          handledCalls.push(node);
+          pending.push({
+            astPath,
+            isTopLevel,
+            isExported,
+            exportBinding,
+            // Use the unwrapped gql call expression (without .attach() chain)
+            expression: gqlCall.getText(sourceFile),
+          });
+        } finally {
+          // Exit anonymous scope if we entered one
+          if (anonymousScopeHandle) {
+            tracker.exitScope(anonymousScopeHandle);
+          }
+        }
 
         // Don't visit children of gql calls
         return;
