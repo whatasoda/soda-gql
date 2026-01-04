@@ -122,4 +122,49 @@ describe("createRuntimeOperation", () => {
     expect(registered.has("Query1")).toBe(true);
     expect(registered.has("Query2")).toBe(true);
   });
+
+  describe("attach", () => {
+    test("attaches single property", () => {
+      const input = createMockInput();
+
+      const operation = createRuntimeOperation(input);
+      const attached = operation.attach({
+        name: "custom",
+        createValue: () => ({ value: 42 }),
+      });
+
+      expect((attached as { custom: { value: number } }).custom.value).toBe(42);
+    });
+
+    test("attaches multiple properties from array", () => {
+      const input = createMockInput();
+
+      const operation = createRuntimeOperation(input);
+      const attached = operation.attach([
+        { name: "first", createValue: () => ({ a: 1 }) },
+        { name: "second", createValue: () => ({ b: 2 }) },
+      ]);
+
+      expect((attached as { first: { a: number } }).first.a).toBe(1);
+      expect((attached as { second: { b: number } }).second.b).toBe(2);
+    });
+
+    test("returns same operation reference", () => {
+      const input = createMockInput();
+
+      const operation = createRuntimeOperation(input);
+      const attached = operation.attach({ name: "test", createValue: () => ({ x: 1 }) });
+
+      expect(attached === operation).toBe(true);
+    });
+
+    test("handles empty array", () => {
+      const input = createMockInput();
+
+      const operation = createRuntimeOperation(input);
+      const attached = operation.attach([]);
+
+      expect(attached).toBe(operation);
+    });
+  });
 });
