@@ -118,25 +118,43 @@ export type CliError =
  */
 export type CliResult<T> = Result<T, CliError>;
 
+// Extract CLI-specific error types for type-safe constructors
+type CliArgsInvalidError = Extract<CliError, { code: "CLI_ARGS_INVALID" }>;
+type CliUnknownCommandError = Extract<CliError, { code: "CLI_UNKNOWN_COMMAND" }>;
+type CliUnknownSubcommandError = Extract<CliError, { code: "CLI_UNKNOWN_SUBCOMMAND" }>;
+type CliFileExistsError = Extract<CliError, { code: "CLI_FILE_EXISTS" }>;
+type CliFileNotFoundError = Extract<CliError, { code: "CLI_FILE_NOT_FOUND" }>;
+type CliWriteFailedError = Extract<CliError, { code: "CLI_WRITE_FAILED" }>;
+type CliReadFailedError = Extract<CliError, { code: "CLI_READ_FAILED" }>;
+type CliNoPatternsError = Extract<CliError, { code: "CLI_NO_PATTERNS" }>;
+type CliFormatterNotInstalledError = Extract<CliError, { code: "CLI_FORMATTER_NOT_INSTALLED" }>;
+type CliParseErrorError = Extract<CliError, { code: "CLI_PARSE_ERROR" }>;
+type CliFormatErrorError = Extract<CliError, { code: "CLI_FORMAT_ERROR" }>;
+type CliUnexpectedError = Extract<CliError, { code: "CLI_UNEXPECTED" }>;
+type CliCodegenError = Extract<CliError, { category: "codegen" }>;
+type CliBuilderError = Extract<CliError, { category: "builder" }>;
+type CliConfigError = Extract<CliError, { category: "config" }>;
+
 /**
  * Error constructor helpers for concise error creation.
+ * Each function returns a specific error type for better type inference.
  */
 export const cliErrors = {
-  argsInvalid: (command: string, message: string): CliError => ({
+  argsInvalid: (command: string, message: string): CliArgsInvalidError => ({
     category: "cli",
     code: "CLI_ARGS_INVALID",
     message,
     command,
   }),
 
-  unknownCommand: (command: string): CliError => ({
+  unknownCommand: (command: string): CliUnknownCommandError => ({
     category: "cli",
     code: "CLI_UNKNOWN_COMMAND",
     message: `Unknown command: ${command}`,
     command,
   }),
 
-  unknownSubcommand: (parent: string, subcommand: string): CliError => ({
+  unknownSubcommand: (parent: string, subcommand: string): CliUnknownSubcommandError => ({
     category: "cli",
     code: "CLI_UNKNOWN_SUBCOMMAND",
     message: `Unknown subcommand: ${subcommand}`,
@@ -144,21 +162,21 @@ export const cliErrors = {
     subcommand,
   }),
 
-  fileExists: (filePath: string, message?: string): CliError => ({
+  fileExists: (filePath: string, message?: string): CliFileExistsError => ({
     category: "cli",
     code: "CLI_FILE_EXISTS",
     message: message ?? `File already exists: ${filePath}. Use --force to overwrite.`,
     filePath,
   }),
 
-  fileNotFound: (filePath: string, message?: string): CliError => ({
+  fileNotFound: (filePath: string, message?: string): CliFileNotFoundError => ({
     category: "cli",
     code: "CLI_FILE_NOT_FOUND",
     message: message ?? `File not found: ${filePath}`,
     filePath,
   }),
 
-  writeFailed: (filePath: string, message?: string, cause?: unknown): CliError => ({
+  writeFailed: (filePath: string, message?: string, cause?: unknown): CliWriteFailedError => ({
     category: "cli",
     code: "CLI_WRITE_FAILED",
     message: message ?? `Failed to write file: ${filePath}`,
@@ -166,7 +184,7 @@ export const cliErrors = {
     cause,
   }),
 
-  readFailed: (filePath: string, message?: string, cause?: unknown): CliError => ({
+  readFailed: (filePath: string, message?: string, cause?: unknown): CliReadFailedError => ({
     category: "cli",
     code: "CLI_READ_FAILED",
     message: message ?? `Failed to read file: ${filePath}`,
@@ -174,33 +192,33 @@ export const cliErrors = {
     cause,
   }),
 
-  noPatterns: (message?: string): CliError => ({
+  noPatterns: (message?: string): CliNoPatternsError => ({
     category: "cli",
     code: "CLI_NO_PATTERNS",
     message: message ?? "No patterns provided and config not found. Usage: soda-gql format [patterns...] [--check]",
   }),
 
-  formatterNotInstalled: (message?: string): CliError => ({
+  formatterNotInstalled: (message?: string): CliFormatterNotInstalledError => ({
     category: "cli",
     code: "CLI_FORMATTER_NOT_INSTALLED",
     message: message ?? "@soda-gql/formatter is not installed. Run: bun add @soda-gql/formatter",
   }),
 
-  parseError: (message: string, filePath?: string): CliError => ({
+  parseError: (message: string, filePath?: string): CliParseErrorError => ({
     category: "cli",
     code: "CLI_PARSE_ERROR",
     message,
     filePath,
   }),
 
-  formatError: (message: string, filePath?: string): CliError => ({
+  formatError: (message: string, filePath?: string): CliFormatErrorError => ({
     category: "cli",
     code: "CLI_FORMAT_ERROR",
     message,
     filePath,
   }),
 
-  unexpected: (message: string, cause?: unknown): CliError => ({
+  unexpected: (message: string, cause?: unknown): CliUnexpectedError => ({
     category: "cli",
     code: "CLI_UNEXPECTED",
     message,
@@ -208,17 +226,17 @@ export const cliErrors = {
   }),
 
   // Wrappers for external errors
-  fromCodegen: (error: CodegenError): CliError => ({
+  fromCodegen: (error: CodegenError): CliCodegenError => ({
     category: "codegen",
     error,
   }),
 
-  fromBuilder: (error: BuilderError): CliError => ({
+  fromBuilder: (error: BuilderError): CliBuilderError => ({
     category: "builder",
     error,
   }),
 
-  fromConfig: (error: ConfigError): CliError => ({
+  fromConfig: (error: ConfigError): CliConfigError => ({
     category: "config",
     error,
   }),

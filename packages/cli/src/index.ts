@@ -2,7 +2,7 @@ import { artifactCommand } from "./commands/artifact";
 import { codegenCommand } from "./commands/codegen";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
-import { formatError } from "./utils/format";
+import { formatCliError, formatError } from "./utils/format";
 
 const dispatch = async (argv: readonly string[]): Promise<number> => {
   const [command, ...rest] = argv;
@@ -22,7 +22,14 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   }
 
   if (command === "codegen") {
-    return codegenCommand(rest);
+    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
+    const result = await codegenCommand(rest);
+    if (result.isOk()) {
+      process.stdout.write(`${result.value.message}\n`);
+      return 0;
+    }
+    process.stderr.write(`${formatCliError(result.error)}\n`);
+    return 1;
   }
 
   if (command === "format") {
