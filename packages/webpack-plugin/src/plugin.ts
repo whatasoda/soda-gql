@@ -27,7 +27,6 @@ export class SodaGqlWebpackPlugin {
   private pluginSession: PluginSession | null = null;
   private currentArtifact: BuilderArtifact | null = null;
   private previousArtifact: BuilderArtifact | null = null;
-  private pendingInvalidations: Set<string> = new Set();
   private swcTransformer: SwcTransformerInterface | null = null;
 
   constructor(options: WebpackPluginOptions = {}) {
@@ -142,18 +141,13 @@ export class SodaGqlWebpackPlugin {
       return;
     }
 
-    // If we have a previous artifact, compute what changed
+    // Log artifact changes for debugging (loader handles dependency tracking)
     if (this.previousArtifact && this.hasArtifactChanged()) {
       const changedFiles = this.getChangedSodaGqlFiles();
       const sharedState = getSharedState(this.stateKey);
       const affectedFiles = this.computeAffectedFiles(changedFiles, sharedState.moduleAdjacency);
 
       this.log(`Changed files: ${changedFiles.size}, Affected files: ${affectedFiles.size}`);
-
-      // Store affected files for webpack to pick up
-      for (const filePath of affectedFiles) {
-        this.pendingInvalidations.add(filePath);
-      }
     }
   }
 
@@ -253,15 +247,6 @@ export class SodaGqlWebpackPlugin {
   }
 
   /**
-   * Get pending invalidations and clear the set.
-   */
-  getPendingInvalidations(): Set<string> {
-    const invalidations = new Set(this.pendingInvalidations);
-    this.pendingInvalidations.clear();
-    return invalidations;
-  }
-
-  /**
    * Initialize SWC transformer if configured.
    * Creates a new transformer instance with the current artifact.
    */
@@ -302,7 +287,6 @@ export class SodaGqlWebpackPlugin {
     this.pluginSession = null;
     this.currentArtifact = null;
     this.previousArtifact = null;
-    this.pendingInvalidations.clear();
     this.swcTransformer = null;
     setSharedPluginSession(this.stateKey, null);
     setSharedArtifact(this.stateKey, null);
