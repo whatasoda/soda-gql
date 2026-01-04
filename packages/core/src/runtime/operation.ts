@@ -22,16 +22,24 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
     documentSource: hidden(),
     document: input.prebuild.document,
     metadata: input.prebuild.metadata,
-    attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<typeof operation, TName, TValue>) {
-      const value = attachment.createValue(operation);
+    attach(
+      attachmentOrAttachments:
+        | GqlElementAttachment<typeof operation, string, object>
+        | readonly GqlElementAttachment<typeof operation, string, object>[],
+    ) {
+      const attachments = Array.isArray(attachmentOrAttachments) ? attachmentOrAttachments : [attachmentOrAttachments];
 
-      Object.defineProperty(operation, attachment.name, {
-        get() {
-          return value;
-        },
-      });
+      for (const attachment of attachments) {
+        const value = attachment.createValue(operation);
 
-      return operation as typeof operation & { [_ in TName]: TValue };
+        Object.defineProperty(operation, attachment.name, {
+          get() {
+            return value;
+          },
+        });
+      }
+
+      return operation;
     },
   } satisfies StripSymbols<AnyOperationOf<OperationType>> as AnyOperationOf<OperationType>;
 

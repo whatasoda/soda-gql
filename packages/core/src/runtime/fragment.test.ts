@@ -52,4 +52,49 @@ describe("createRuntimeFragment", () => {
     expect(Object.keys(fragment)).toContain("typename");
     expect(Object.keys(fragment)).toContain("spread");
   });
+
+  describe("attach", () => {
+    test("attaches single property", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+      const attached = fragment.attach({
+        name: "custom",
+        createValue: () => ({ value: 42 }),
+      });
+
+      expect((attached as { custom: { value: number } }).custom.value).toBe(42);
+    });
+
+    test("attaches multiple properties from array", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+      const attached = fragment.attach([
+        { name: "first", createValue: () => ({ a: 1 }) },
+        { name: "second", createValue: () => ({ b: 2 }) },
+      ]);
+
+      expect((attached as { first: { a: number } }).first.a).toBe(1);
+      expect((attached as { second: { b: number } }).second.b).toBe(2);
+    });
+
+    test("returns same fragment reference", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+      const attached = fragment.attach({ name: "test", createValue: () => ({ x: 1 }) });
+
+      expect(attached === fragment).toBe(true);
+    });
+
+    test("handles empty array", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+      const attached = fragment.attach([]);
+
+      expect(attached).toBe(fragment);
+    });
+  });
 });
