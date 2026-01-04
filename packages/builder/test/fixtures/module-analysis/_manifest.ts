@@ -42,6 +42,10 @@ export const fixtures = [
   // Method chaining patterns
   "attach-chaining",
 
+  // Anonymous/inline patterns
+  "anonymous-function-arg",
+  "anonymous-destructure",
+
   // Fragment spreading
   "fragment-spreading/basic-spread",
   "fragment-spreading/fragment-in-fragment",
