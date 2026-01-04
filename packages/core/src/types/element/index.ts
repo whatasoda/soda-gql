@@ -1,3 +1,4 @@
+export * from "./attachment-types";
 export * from "./fields-builder";
 export * from "./fragment";
 export * from "./gql-element";

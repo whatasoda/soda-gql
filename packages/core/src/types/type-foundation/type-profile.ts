@@ -79,7 +79,6 @@ export declare namespace TypeProfile {
     kind: T[0]["kind"];
     signature: GetSignature<T[1]>;
   };
-
 }
 
 export type GetModifiedType<TProfile extends TypeProfile, TModifier extends TypeModifier> = TypeProfile.Type<

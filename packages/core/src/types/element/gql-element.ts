@@ -1,4 +1,4 @@
-import type { AttachmentShape, AttachmentsTupleToIntersection } from "../../utils/type-utils";
+import type { AttachmentShape, AttachmentsTupleToIntersection } from "./attachment-types";
 import {
   createLazyEvaluator,
   type LazyEvaluatorContext,

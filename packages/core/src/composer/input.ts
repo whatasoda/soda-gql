@@ -5,9 +5,9 @@
 
 import {
   type AnyAssignableInput,
-  type DeclaredVariables,
   createVarRefFromNestedValue,
   createVarRefFromVariable,
+  type DeclaredVariables,
   VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
