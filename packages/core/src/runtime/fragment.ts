@@ -10,16 +10,26 @@ export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment 
   const fragment = {
     typename: input.prebuild.typename,
     spread: hidden(),
-    attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<typeof fragment, TName, TValue>) {
-      const value = attachment.createValue(fragment);
+    attach(
+      attachmentOrAttachments:
+        | GqlElementAttachment<typeof fragment, string, object>
+        | readonly GqlElementAttachment<typeof fragment, string, object>[],
+    ) {
+      const attachments = Array.isArray(attachmentOrAttachments)
+        ? attachmentOrAttachments
+        : [attachmentOrAttachments];
 
-      Object.defineProperty(fragment, attachment.name, {
-        get() {
-          return value;
-        },
-      });
+      for (const attachment of attachments) {
+        const value = attachment.createValue(fragment);
 
-      return fragment as typeof fragment & { [_ in TName]: TValue };
+        Object.defineProperty(fragment, attachment.name, {
+          get() {
+            return value;
+          },
+        });
+      }
+
+      return fragment;
     },
   } satisfies StripSymbols<AnyFragment> as unknown as AnyFragment;
 
