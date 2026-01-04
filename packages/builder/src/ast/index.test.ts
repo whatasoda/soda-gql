@@ -357,4 +357,36 @@ describe("AST Analyzer", () => {
       expect(definition?.astPath).toBe("pageQuery");
     });
   });
+
+  describe("Anonymous/inline patterns", () => {
+    it("generates astPath for gql call passed to function argument", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("anonymous-function-arg");
+
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
+
+      expect(tsAnalysis.definitions).toHaveLength(1);
+      expect(swcAnalysis.definitions).toHaveLength(1);
+
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toMatch(/^anonymous#\d+$/);
+    });
+
+    it("generates astPath for gql call in destructuring assignment", () => {
+      const { filePath, source } = loadModuleAnalysisFixture("anonymous-destructure");
+
+      const tsAnalysis = analyzeWithTS({ filePath, source });
+      const swcAnalysis = analyzeWithSWC({ filePath, source });
+
+      expect(tsAnalysis.definitions).toHaveLength(1);
+      expect(swcAnalysis.definitions).toHaveLength(1);
+
+      const tsDef = expectDefinition(tsAnalysis.definitions, 0);
+      const swcDef = expectDefinition(swcAnalysis.definitions, 0);
+      expect(tsDef.astPath).toBe(swcDef.astPath);
+      expect(tsDef.astPath).toMatch(/^anonymous#\d+$/);
+    });
+  });
 });
