@@ -40,7 +40,15 @@ const dispatch = async (argv: readonly string[]): Promise<number> => {
   }
 
   if (command === "format") {
-    return formatCommand(rest);
+    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
+    const result = await formatCommand(rest);
+    if (result.isOk()) {
+      process.stdout.write(`${result.value.message}\n`);
+      // Format command uses exit 1 for unformatted files in check mode or errors
+      return result.value.data?.hasFormattingIssues ? 1 : 0;
+    }
+    process.stderr.write(`${formatCliError(result.error)}\n`);
+    return 1;
   }
 
   if (command === "artifact") {

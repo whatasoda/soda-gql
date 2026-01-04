@@ -1,7 +1,10 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import { loadConfig } from "@soda-gql/config";
 import fg from "fast-glob";
+import { err, ok } from "neverthrow";
+import { cliErrors } from "../errors";
 import { FormatArgsSchema } from "../schemas/args";
+import type { CommandResult, CommandSuccess } from "../types";
 import { parseArgs } from "../utils/parse-args";
 
 type FormatterModule = typeof import("@soda-gql/formatter");
@@ -14,44 +17,36 @@ const loadFormatter = async (): Promise<FormatterModule | null> => {
   }
 };
 
-type FormatError = {
-  code: "PARSE_ERROR" | "NO_PATTERNS" | "FORMAT_ERROR" | "FORMATTER_NOT_INSTALLED";
-  message: string;
-};
-
-type FormatResult = {
+type FormatData = {
   mode: "format" | "check";
   total: number;
   modified: number;
   unchanged: number;
   errors: number;
   unformatted: string[];
+  hasFormattingIssues: boolean;
 };
 
-const formatFormatError = (error: FormatError): string => {
-  return `${error.code}: ${error.message}`;
-};
-
-const formatResult = (result: FormatResult): string => {
-  if (result.mode === "check") {
-    if (result.unformatted.length > 0) {
-      const files = result.unformatted.map((f) => `  ${f}`).join("\n");
-      return `${result.unformatted.length} file(s) need formatting:\n${files}`;
+const formatResultMessage = (data: FormatData): string => {
+  if (data.mode === "check") {
+    if (data.unformatted.length > 0) {
+      const files = data.unformatted.map((f) => `  ${f}`).join("\n");
+      return `${data.unformatted.length} file(s) need formatting:\n${files}`;
     }
-    return `All ${result.total} file(s) are properly formatted`;
+    return `All ${data.total} file(s) are properly formatted`;
   }
 
   const parts: string[] = [];
-  if (result.modified > 0) {
-    parts.push(`${result.modified} formatted`);
+  if (data.modified > 0) {
+    parts.push(`${data.modified} formatted`);
   }
-  if (result.unchanged > 0) {
-    parts.push(`${result.unchanged} unchanged`);
+  if (data.unchanged > 0) {
+    parts.push(`${data.unchanged} unchanged`);
   }
-  if (result.errors > 0) {
-    parts.push(`${result.errors} errors`);
+  if (data.errors > 0) {
+    parts.push(`${data.errors} errors`);
   }
-  return `${result.total} file(s) checked: ${parts.join(", ")}`;
+  return `${data.total} file(s) checked: ${parts.join(", ")}`;
 };
 
 const isGlobPattern = (pattern: string): boolean => {
@@ -99,21 +94,17 @@ Examples:
   soda-gql format --check             # Check mode with config
 `;
 
-export const formatCommand = async (argv: readonly string[]): Promise<number> => {
+type FormatCommandResult = CommandResult<CommandSuccess & { data?: FormatData }>;
+
+export const formatCommand = async (argv: readonly string[]): Promise<FormatCommandResult> => {
   if (argv.includes("--help") || argv.includes("-h")) {
-    process.stdout.write(FORMAT_HELP);
-    return 0;
+    return ok({ message: FORMAT_HELP });
   }
 
   const parsed = parseArgs([...argv], FormatArgsSchema);
 
   if (!parsed.isOk()) {
-    const error: FormatError = {
-      code: "PARSE_ERROR",
-      message: parsed.error,
-    };
-    process.stderr.write(`${formatFormatError(error)}\n`);
-    return 1;
+    return err(cliErrors.argsInvalid("format", parsed.error));
   }
 
   const args = parsed.value;
@@ -130,12 +121,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
     // Try to load patterns from config
     const configResult = loadConfig(args.config);
     if (configResult.isErr()) {
-      const error: FormatError = {
-        code: "NO_PATTERNS",
-        message: "No patterns provided and config not found. Usage: soda-gql format [patterns...] [--check]",
-      };
-      process.stderr.write(`${formatFormatError(error)}\n`);
-      return 1;
+      return err(cliErrors.noPatterns());
     }
     targetPatterns = configResult.value.include;
     excludePatterns = configResult.value.exclude;
@@ -144,27 +130,22 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
   // Load formatter lazily - it's an optional dependency
   const formatter = await loadFormatter();
   if (!formatter) {
-    const error: FormatError = {
-      code: "FORMATTER_NOT_INSTALLED",
-      message: "@soda-gql/formatter is not installed. Run: npm install @soda-gql/formatter",
-    };
-    process.stderr.write(`${formatFormatError(error)}\n`);
-    return 1;
+    return err(cliErrors.formatterNotInstalled());
   }
 
   const files = await expandGlobPatterns(targetPatterns, excludePatterns);
 
   if (files.length === 0) {
-    const result: FormatResult = {
+    const data: FormatData = {
       mode: isCheckMode ? "check" : "format",
       total: 0,
       modified: 0,
       unchanged: 0,
       errors: 0,
       unformatted: [],
+      hasFormattingIssues: false,
     };
-    process.stdout.write(`${formatResult(result)}\n`);
-    return 0;
+    return ok({ message: formatResultMessage(data), data });
   }
 
   let modified = 0;
@@ -202,20 +183,15 @@ export const formatCommand = async (argv: readonly string[]): Promise<number> =>
     }
   }
 
-  const result: FormatResult = {
+  const data: FormatData = {
     mode: isCheckMode ? "check" : "format",
     total: files.length,
     modified,
     unchanged,
     errors,
     unformatted,
+    hasFormattingIssues: (isCheckMode && unformatted.length > 0) || errors > 0,
   };
 
-  process.stdout.write(`${formatResult(result)}\n`);
-
-  if (isCheckMode && unformatted.length > 0) {
-    return 1;
-  }
-
-  return errors > 0 ? 1 : 0;
+  return ok({ message: formatResultMessage(data), data });
 };
