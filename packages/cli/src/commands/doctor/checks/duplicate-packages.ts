@@ -32,7 +32,7 @@ export const checkDuplicatePackages = (): CheckResult<DuplicatePackageData> => {
   }
 
   // Find duplicates (same name, multiple paths)
-  const duplicates: DuplicatePackageData["duplicates"] = [];
+  const duplicates: DuplicatePackageData["duplicates"][number][] = [];
   for (const [name, instances] of byName) {
     if (instances.length > 1) {
       duplicates.push({

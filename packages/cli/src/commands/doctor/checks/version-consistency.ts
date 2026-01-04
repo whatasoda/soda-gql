@@ -41,7 +41,9 @@ export const checkVersionConsistency = (): CheckResult<VersionConsistencyData> =
   }
 
   // Get unique packages (first instance of each)
-  const uniquePackages = Array.from(byName.values()).map((instances) => instances[0]!);
+  const uniquePackages = Array.from(byName.values())
+    .map((instances) => instances[0])
+    .filter((pkg): pkg is (typeof packages)[number] => pkg !== undefined);
 
   // Determine expected version (most common version)
   const versionCounts = new Map<string, number>();

@@ -81,9 +81,7 @@ const discoverAtPath = (nodeModulesPath: string): DiscoveredPackage[] => {
  * Discover all @soda-gql packages including nested node_modules.
  * Uses breadth-first search to avoid deep recursion.
  */
-export const discoverAllSodaGqlPackages = (
-  startDir: string = process.cwd(),
-): Result<DiscoveredPackage[], string> => {
+export const discoverAllSodaGqlPackages = (startDir: string = process.cwd()): Result<DiscoveredPackage[], string> => {
   const rootNodeModules = findNodeModules(startDir);
   if (!rootNodeModules) {
     return err("No node_modules directory found");
@@ -94,7 +92,8 @@ export const discoverAllSodaGqlPackages = (
   const queue: string[] = [rootNodeModules];
 
   while (queue.length > 0) {
-    const nodeModulesPath = queue.shift()!;
+    const nodeModulesPath = queue.shift();
+    if (!nodeModulesPath) continue;
 
     // Resolve to handle symlinks
     let realPath: string;
@@ -155,8 +154,9 @@ export const discoverAllSodaGqlPackages = (
  */
 export const getCliVersion = (): string => {
   try {
-    // Navigate from this file to package.json
-    const cliPackageJsonPath = join(dirname(import.meta.dirname), "..", "package.json");
+    // Navigate from this file (commands/doctor/discovery.ts) to package.json
+    // Path: discovery.ts -> doctor/ -> commands/ -> src/ -> cli/package.json
+    const cliPackageJsonPath = join(import.meta.dirname, "..", "..", "..", "package.json");
     const content = readFileSync(cliPackageJsonPath, "utf-8");
     const pkg = JSON.parse(content) as { version?: string };
     return pkg.version ?? "unknown";

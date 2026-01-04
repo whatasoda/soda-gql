@@ -3,19 +3,20 @@
  * @module
  */
 
-import type {
-  CheckResult,
-  CheckStatus,
-  DoctorResult,
-  DuplicatePackageData,
-  VersionConsistencyData,
-} from "./types";
+import type { CheckResult, CheckStatus, DoctorResult, DuplicatePackageData, VersionConsistencyData } from "./types";
 
 const STATUS_SYMBOLS: Record<CheckStatus, string> = {
   pass: "\u2713", // checkmark
   warn: "!",
   fail: "\u2717", // X
   skip: "-",
+};
+
+/**
+ * Type guard to check if data is an object (not null/primitive).
+ */
+const isObject = (data: unknown): data is Record<string, unknown> => {
+  return typeof data === "object" && data !== null;
 };
 
 /**
@@ -29,22 +30,24 @@ const formatCheckResult = (result: CheckResult): string[] => {
 
   // Add detailed data for failures/warnings
   if (result.status === "fail" || result.status === "warn") {
+    const data = result.data;
+
     // Version consistency details
-    if (result.data && "packages" in result.data && "expectedVersion" in result.data) {
-      const data = result.data as VersionConsistencyData;
-      const mismatched = data.packages.filter((p) => p.isMismatch);
+    if (isObject(data) && "packages" in data && "expectedVersion" in data) {
+      const versionData = data as VersionConsistencyData;
+      const mismatched = versionData.packages.filter((p) => p.isMismatch);
       for (const pkg of mismatched) {
         lines.push(`  ${pkg.name}: ${pkg.version}  <- mismatch`);
       }
-      if (data.expectedVersion && mismatched.length > 0) {
-        lines.push(`  Expected: ${data.expectedVersion}`);
+      if (versionData.expectedVersion && mismatched.length > 0) {
+        lines.push(`  Expected: ${versionData.expectedVersion}`);
       }
     }
 
     // Duplicate packages details
-    if (result.data && "duplicates" in result.data) {
-      const data = result.data as DuplicatePackageData;
-      for (const dup of data.duplicates) {
+    if (isObject(data) && "duplicates" in data) {
+      const dupData = data as DuplicatePackageData;
+      for (const dup of dupData.duplicates) {
         lines.push(`  ${dup.name}:`);
         for (const instance of dup.instances) {
           lines.push(`    ${instance.version} at ${instance.path}`);

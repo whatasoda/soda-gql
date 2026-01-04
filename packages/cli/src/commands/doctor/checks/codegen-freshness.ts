@@ -50,7 +50,7 @@ export const checkCodegenFreshness = (): CheckResult<CodegenFreshnessData> => {
   const generatedStat = statSync(generatedPath);
   const generatedMtime = generatedStat.mtimeMs;
 
-  const schemaResults: CodegenFreshnessData["schemas"] = [];
+  const schemaResults: CodegenFreshnessData["schemas"][number][] = [];
   let hasStale = false;
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
