@@ -303,9 +303,11 @@ export function getCacheKey(): string {
 
   // Include element content hashes for precise cache invalidation
   if (artifact) {
-    const sortedIds = Object.keys(artifact.elements).sort();
-    for (const id of sortedIds) {
-      hash.update(artifact.elements[id].metadata.contentHash);
+    const contentHashes = Object.values(artifact.elements)
+      .map((el) => el.metadata.contentHash)
+      .sort();
+    for (const contentHash of contentHashes) {
+      hash.update(contentHash);
     }
   }
 

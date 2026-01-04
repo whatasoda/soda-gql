@@ -44,7 +44,6 @@ describe("Webpack Plugin", () => {
       // Initially null before any build
       expect(plugin.getArtifact()).toBeNull();
     });
-
   });
 
   describe("Shared State", () => {

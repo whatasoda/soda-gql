@@ -50,7 +50,7 @@ describe("Loader Dependency Optimization", () => {
 
       // When fileA is being processed, it should add baseModel as dependency
       // because fileA imports baseModel (baseModel's importers include fileA)
-      let forwardDeps: string[] = [];
+      const forwardDeps: string[] = [];
       for (const [importedFile, importingFiles] of state.moduleAdjacency) {
         if (importingFiles.has(fileA)) {
           forwardDeps.push(importedFile);
