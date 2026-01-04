@@ -1,84 +1,97 @@
+import { err, ok } from "neverthrow";
 import { artifactCommand } from "./commands/artifact";
 import { codegenCommand } from "./commands/codegen";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
-import { formatCliError, formatError } from "./utils/format";
+import { cliErrors } from "./errors";
+import type { CommandResult, CommandSuccess, OutputFormat } from "./types";
+import { formatCliError } from "./utils/format";
 
-const dispatch = async (argv: readonly string[]): Promise<number> => {
+const MAIN_HELP = `Usage: soda-gql <command> [options]
+
+Commands:
+  init       Initialize a new soda-gql project
+  codegen    Generate graphql-system runtime module
+  format     Format soda-gql field selections
+  artifact   Manage soda-gql artifacts
+
+Run 'soda-gql <command> --help' for more information on a specific command.
+`;
+
+/**
+ * Parse output format from argv.
+ * Returns "json" if --format=json or --json flag is present, otherwise "human".
+ */
+const getOutputFormat = (argv: readonly string[]): OutputFormat => {
+  for (const arg of argv) {
+    if (arg === "--format=json" || arg === "--json") {
+      return "json";
+    }
+    if (arg === "--format=human") {
+      return "human";
+    }
+  }
+  return "human";
+};
+
+type DispatchResult = CommandResult<CommandSuccess & { exitCode?: number }>;
+
+const dispatch = async (argv: readonly string[]): Promise<DispatchResult> => {
   const [command, ...rest] = argv;
 
   if (!command || command === "--help" || command === "-h") {
-    process.stdout.write(`Usage: soda-gql <command> [options]\n`);
-    process.stdout.write(`\nCommands:\n`);
-    process.stdout.write(`  init       Initialize a new soda-gql project\n`);
-    process.stdout.write(`  codegen    Generate graphql-system runtime module\n`);
-    process.stdout.write(`  format     Format soda-gql field selections\n`);
-    process.stdout.write(`  artifact   Manage soda-gql artifacts\n`);
-    return 0;
+    return ok({ message: MAIN_HELP });
   }
 
   if (command === "init") {
-    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
-    const result = await initCommand(rest);
-    if (result.isOk()) {
-      process.stdout.write(`${result.value.message}\n`);
-      return 0;
-    }
-    process.stderr.write(`${formatCliError(result.error)}\n`);
-    return 1;
+    return initCommand(rest);
   }
 
   if (command === "codegen") {
-    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
-    const result = await codegenCommand(rest);
-    if (result.isOk()) {
-      process.stdout.write(`${result.value.message}\n`);
-      return 0;
-    }
-    process.stderr.write(`${formatCliError(result.error)}\n`);
-    return 1;
+    return codegenCommand(rest);
   }
 
   if (command === "format") {
-    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
     const result = await formatCommand(rest);
     if (result.isOk()) {
-      process.stdout.write(`${result.value.message}\n`);
       // Format command uses exit 1 for unformatted files in check mode or errors
-      return result.value.data?.hasFormattingIssues ? 1 : 0;
+      const exitCode = result.value.data?.hasFormattingIssues ? 1 : 0;
+      return ok({ ...result.value, exitCode });
     }
-    process.stderr.write(`${formatCliError(result.error)}\n`);
-    return 1;
+    return err(result.error);
   }
 
   if (command === "artifact") {
-    // Temporary wrapper: convert Result to exit code (will be unified in dispatch refactor)
-    const result = await artifactCommand(rest);
-    if (result.isOk()) {
-      process.stdout.write(`${result.value.message}\n`);
-      return 0;
-    }
-    process.stderr.write(`${formatCliError(result.error)}\n`);
-    return 1;
+    return artifactCommand(rest);
   }
 
-  process.stderr.write(`Unknown command: ${command}\n`);
-  return 1;
+  return err(cliErrors.unknownCommand(command));
 };
 
 // Run CLI when executed directly
-dispatch(process.argv.slice(2))
-  .then((exitCode) => {
-    process.exitCode = exitCode;
-  })
-  .catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    const unexpectedError = {
-      code: "UNEXPECTED_ERROR",
-      message,
-    };
-    process.stderr.write(`${formatError(unexpectedError, "json")}\n`);
+const main = async () => {
+  const argv = process.argv.slice(2);
+  const format = getOutputFormat(argv);
+
+  const result = await dispatch(argv);
+
+  if (result.isOk()) {
+    process.stdout.write(`${result.value.message}\n`);
+    process.exitCode = result.value.exitCode ?? 0;
+  } else {
+    process.stderr.write(`${formatCliError(result.error, format)}\n`);
     process.exitCode = 1;
-  });
+  }
+};
+
+main().catch((error) => {
+  const unexpectedError = cliErrors.unexpected(
+    error instanceof Error ? error.message : String(error),
+    error,
+  );
+  const format = getOutputFormat(process.argv.slice(2));
+  process.stderr.write(`${formatCliError(unexpectedError, format)}\n`);
+  process.exitCode = 1;
+});
 
 export { dispatch };
