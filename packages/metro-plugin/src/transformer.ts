@@ -291,7 +291,7 @@ export function getCacheKey(): string {
   const upstream = getUpstreamTransformer();
 
   const hash = crypto.createHash("md5");
-  hash.update("@soda-gql/metro-plugin:v1");
+  hash.update("@soda-gql/metro-plugin:v2");
 
   // Include upstream cache key if available
   if (upstream.getCacheKey) {
@@ -301,9 +301,12 @@ export function getCacheKey(): string {
   // Include artifact generation for cache invalidation
   hash.update(String(state.generation));
 
-  // Include element count as additional cache key component
+  // Include element content hashes for precise cache invalidation
   if (artifact) {
-    hash.update(String(Object.keys(artifact.elements).length));
+    const sortedIds = Object.keys(artifact.elements).sort();
+    for (const id of sortedIds) {
+      hash.update(artifact.elements[id].metadata.contentHash);
+    }
   }
 
   return hash.digest("hex");
