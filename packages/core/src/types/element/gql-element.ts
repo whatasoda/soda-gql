@@ -5,6 +5,7 @@ import {
   createEvaluationGenerator as lazyCreateEvaluationGenerator,
   evaluateSync as lazyEvaluateSync,
 } from "./lazy-evaluator";
+import type { AttachmentShape, AttachmentsTupleToIntersection } from "../../utils/type-utils";
 
 const GQL_ELEMENT_FACTORY = Symbol("GQL_ELEMENT_FACTORY");
 const GQL_ELEMENT_CONTEXT = Symbol("GQL_ELEMENT_CONTEXT");
@@ -58,25 +59,55 @@ export abstract class GqlElement<TDefinition extends object, TInfer extends obje
   }
 
   /**
-   * Attaches a lazily-computed property to this element.
-   * The property is computed once on first access after evaluation.
+   * Attaches lazily-computed properties to this element.
+   * Properties are computed once on first access after evaluation.
+   *
+   * @example Single attachment
+   * ```typescript
+   * const fragment = gql.default(...)
+   *   .attach({ name: "utils", createValue: (el) => ({ ... }) });
+   * ```
+   *
+   * @example Multiple attachments (use `as const` for full type inference)
+   * ```typescript
+   * const fragment = gql.default(...)
+   *   .attach([
+   *     { name: "a", createValue: () => ({ x: 1 }) },
+   *     { name: "b", createValue: () => ({ y: 2 }) },
+   *   ] as const);
+   * ```
    */
-  public attach<TName extends string, TValue extends object>(attachment: GqlElementAttachment<this, TName, TValue>) {
-    let cache: TValue | null = null;
+  public attach<TName extends string, TValue extends object>(
+    attachment: GqlElementAttachment<this, TName, TValue>,
+  ): this & { [K in TName]: TValue };
+  public attach<const TAttachments extends readonly AttachmentShape[]>(
+    attachments: TAttachments,
+  ): this & AttachmentsTupleToIntersection<TAttachments>;
+  public attach<TName extends string, TValue extends object>(
+    attachmentOrAttachments: GqlElementAttachment<this, TName, TValue> | readonly AttachmentShape[],
+  ): this & { [K in TName]: TValue } {
+    const attachments = Array.isArray(attachmentOrAttachments)
+      ? attachmentOrAttachments
+      : [attachmentOrAttachments];
 
-    Object.defineProperty(this, attachment.name, {
-      get() {
-        if (cache) {
-          return cache;
-        }
+    for (const attachment of attachments) {
+      let cache: object | null = null;
+      const self = this;
 
-        GqlElement.evaluateInstantly(this);
+      Object.defineProperty(this, attachment.name, {
+        get() {
+          if (cache) {
+            return cache;
+          }
 
-        return (cache = attachment.createValue(this));
-      },
-    });
+          GqlElement.evaluateInstantly(self);
 
-    return this as this & { [_ in TName]: TValue };
+          return (cache = attachment.createValue(self));
+        },
+      });
+    }
+
+    return this as this & { [K in TName]: TValue };
   }
 
   /**
