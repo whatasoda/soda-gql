@@ -35,7 +35,7 @@ export function createUserQueries() {
 }
 
 // Case 4: Arrow function with nested definitions
-// Should be collected with canonical ID: filePath::queryFactory.arrow#0.baseQuery
+// Should be collected with canonical ID: filePath::queryFactory._arrow_0.baseQuery
 export const queryFactory = () => {
   const baseQuery = gql.default(({ query }) =>
     query.operation({
@@ -85,7 +85,7 @@ export function createUserOperation() {
 }
 
 // Case 7: Operation definition in arrow function
-// Should be collected with canonical ID: filePath::operationFactory.arrow#0.listUsersOperation
+// Should be collected with canonical ID: filePath::operationFactory._arrow_0.listUsersOperation
 export const operationFactory = () => {
   const listUsersOperation = gql.default(({ query, $var }) =>
     query.operation({

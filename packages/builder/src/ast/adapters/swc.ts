@@ -324,11 +324,12 @@ const collectAllDefinitions = ({
   });
 
   // Anonymous scope counters (for naming only, not occurrence tracking)
+  // Use underscore separator instead of # to ensure valid JavaScript identifiers
   const anonymousCounters = new Map<string, number>();
   const getAnonymousName = (kind: string): string => {
     const count = anonymousCounters.get(kind) ?? 0;
     anonymousCounters.set(kind, count + 1);
-    return `${kind}#${count}`;
+    return `_${kind}_${count}`;
   };
 
   // Helper to synchronize tracker with immutable stack pattern

@@ -78,7 +78,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toMatch(/^factory\.arrow#\d+\.fragment$/);
+      expect(tsDef.astPath).toMatch(/^factory\._arrow_\d+\.fragment$/);
     });
 
     it("generates same astPath for class method definitions", () => {
@@ -208,7 +208,7 @@ describe("AST Analyzer", () => {
       expect(analysis.definitions).toHaveLength(1);
       const [definition] = analysis.definitions;
       expect(definition).toBeDefined();
-      expect(definition?.astPath).toBe("buildOperation.arrow#0.invalid");
+      expect(definition?.astPath).toBe("buildOperation._arrow_0.invalid");
       expect(definition?.isTopLevel).toBe(false);
       expect(definition?.isExported).toBe(false);
       expect(definition?.exportBinding).toBeUndefined();
@@ -371,7 +371,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toMatch(/^anonymous#\d+$/);
+      expect(tsDef.astPath).toMatch(/^_anonymous_\d+$/);
     });
 
     it("generates astPath for gql call in destructuring assignment", () => {
@@ -386,7 +386,7 @@ describe("AST Analyzer", () => {
       const tsDef = expectDefinition(tsAnalysis.definitions, 0);
       const swcDef = expectDefinition(swcAnalysis.definitions, 0);
       expect(tsDef.astPath).toBe(swcDef.astPath);
-      expect(tsDef.astPath).toMatch(/^anonymous#\d+$/);
+      expect(tsDef.astPath).toMatch(/^_anonymous_\d+$/);
     });
   });
 });
