@@ -1,8 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { BuilderArtifact, BuilderArtifactMeta } from "@soda-gql/builder";
-import { createBuilderService, formatBuilderErrorForCLI } from "@soda-gql/builder";
+import { createBuilderService } from "@soda-gql/builder";
 import { loadConfig } from "@soda-gql/config";
+import { err, ok } from "neverthrow";
+import { cliErrors } from "../../errors";
+import type { CommandResult, CommandSuccess } from "../../types";
 
 const BUILD_HELP = `Usage: soda-gql artifact build [options]
 
@@ -63,25 +66,51 @@ const parseBuildArgs = (argv: readonly string[]): BuildArgs => {
   return args;
 };
 
+type BuildData = {
+  artifact: BuilderArtifact;
+  outputPath?: string;
+  dryRun: boolean;
+};
+
+const formatSuccess = (data: BuildData): string => {
+  const { artifact, outputPath, dryRun } = data;
+  const fragmentCount = Object.values(artifact.elements).filter((e) => e.type === "fragment").length;
+  const operationCount = Object.values(artifact.elements).filter((e) => e.type === "operation").length;
+
+  const lines: string[] = [];
+  if (dryRun) {
+    lines.push(`Validation passed: ${fragmentCount} fragments, ${operationCount} operations`);
+  } else {
+    lines.push(`Build complete: ${fragmentCount} fragments, ${operationCount} operations`);
+  }
+
+  if (artifact.meta?.version) {
+    lines.push(`  Version: ${artifact.meta.version}`);
+  }
+
+  if (outputPath && !dryRun) {
+    lines.push(`Artifact written to: ${outputPath}`);
+  }
+
+  return lines.join("\n");
+};
+
+type BuildCommandResult = CommandResult<CommandSuccess & { data?: BuildData }>;
+
 /**
  * Build command - builds and validates soda-gql artifacts.
  */
-export const buildCommand = async (argv: readonly string[]): Promise<number> => {
+export const buildCommand = async (argv: readonly string[]): Promise<BuildCommandResult> => {
   const args = parseBuildArgs(argv);
 
   if (args.help) {
-    process.stdout.write(BUILD_HELP);
-    return 0;
+    return ok({ message: BUILD_HELP });
   }
 
   // Load config
   const configResult = loadConfig(args.configPath);
   if (configResult.isErr()) {
-    const error = configResult.error;
-    process.stderr.write(`Error: Failed to load config\n`);
-    process.stderr.write(`  at ${error.filePath}\n`);
-    process.stderr.write(`  ${error.message}\n`);
-    return 1;
+    return err(cliErrors.fromConfig(configResult.error));
   }
 
   const config = configResult.value;
@@ -91,14 +120,10 @@ export const buildCommand = async (argv: readonly string[]): Promise<number> => 
   const buildResult = await service.buildAsync();
 
   if (buildResult.isErr()) {
-    const formattedError = formatBuilderErrorForCLI(buildResult.error);
-    process.stderr.write(`${formattedError}\n`);
-    return 1;
+    return err(cliErrors.fromBuilder(buildResult.error));
   }
 
   const artifact = buildResult.value;
-  const fragmentCount = Object.values(artifact.elements).filter((e) => e.type === "fragment").length;
-  const operationCount = Object.values(artifact.elements).filter((e) => e.type === "operation").length;
 
   // Create artifact with metadata (only if version is specified)
   const meta: BuilderArtifactMeta | undefined = args.version
@@ -113,23 +138,21 @@ export const buildCommand = async (argv: readonly string[]): Promise<number> => 
   };
 
   if (args.dryRun) {
-    process.stdout.write(`Validation passed: ${fragmentCount} fragments, ${operationCount} operations\n`);
-    if (args.version) {
-      process.stdout.write(`  Version: ${args.version}\n`);
-    }
-  } else {
-    // Write artifact to output file
-    const outputPath = resolve(process.cwd(), args.outputPath);
-    const outputDir = dirname(outputPath);
-    await mkdir(outputDir, { recursive: true });
-    await writeFile(outputPath, JSON.stringify(artifactWithMeta, null, 2));
-
-    process.stdout.write(`Build complete: ${fragmentCount} fragments, ${operationCount} operations\n`);
-    if (args.version) {
-      process.stdout.write(`  Version: ${args.version}\n`);
-    }
-    process.stdout.write(`Artifact written to: ${outputPath}\n`);
+    const data: BuildData = { artifact: artifactWithMeta, dryRun: true };
+    return ok({ message: formatSuccess(data), data });
   }
 
-  return 0;
+  // Write artifact to output file
+  const outputPath = resolve(process.cwd(), args.outputPath);
+  const outputDir = dirname(outputPath);
+  try {
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(outputPath, JSON.stringify(artifactWithMeta, null, 2));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return err(cliErrors.writeFailed(outputPath, `Failed to write artifact: ${message}`, error));
+  }
+
+  const data: BuildData = { artifact: artifactWithMeta, outputPath, dryRun: false };
+  return ok({ message: formatSuccess(data), data });
 };

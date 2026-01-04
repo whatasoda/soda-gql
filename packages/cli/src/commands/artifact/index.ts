@@ -1,3 +1,6 @@
+import { err, ok } from "neverthrow";
+import { cliErrors } from "../../errors";
+import type { CommandResult, CommandSuccess } from "../../types";
 import { buildCommand } from "./build";
 import { validateCommand } from "./validate";
 
@@ -12,15 +15,16 @@ Subcommands:
 Run 'soda-gql artifact <subcommand> --help' for more information.
 `;
 
+type ArtifactCommandResult = CommandResult<CommandSuccess>;
+
 /**
  * Dispatcher for artifact subcommands.
  */
-export const artifactCommand = async (argv: readonly string[]): Promise<number> => {
+export const artifactCommand = async (argv: readonly string[]): Promise<ArtifactCommandResult> => {
   const [subcommand, ...rest] = argv;
 
   if (!subcommand || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(ARTIFACT_HELP);
-    return 0;
+    return ok({ message: ARTIFACT_HELP });
   }
 
   if (subcommand === "build") {
@@ -31,7 +35,5 @@ export const artifactCommand = async (argv: readonly string[]): Promise<number> 
     return validateCommand(rest);
   }
 
-  process.stderr.write(`Unknown subcommand: ${subcommand}\n`);
-  process.stderr.write(`Run 'soda-gql artifact --help' for available subcommands.\n`);
-  return 1;
+  return err(cliErrors.unknownSubcommand("artifact", subcommand));
 };

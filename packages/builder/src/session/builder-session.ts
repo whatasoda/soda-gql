@@ -4,7 +4,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
 import { createAstAnalyzer, type ModuleAnalysis } from "../ast";
-import { createMemoryCache } from "../cache/memory-cache";
+import { type CacheFactory, createMemoryCache } from "../cache/memory-cache";
 import {
   createDiscoveryCache,
   type DiscoveryCache,
@@ -100,6 +100,49 @@ export interface BuilderSession {
 }
 
 /**
+ * Singleton state for beforeExit handler registration.
+ * Ensures only one handler is registered regardless of how many sessions are created.
+ */
+const exitHandlerState = {
+  registered: false,
+  factories: new Set<CacheFactory>(),
+};
+
+/**
+ * Register a cache factory for save on process exit.
+ * Uses singleton pattern to prevent multiple handler registrations.
+ */
+const registerExitHandler = (cacheFactory: CacheFactory): void => {
+  exitHandlerState.factories.add(cacheFactory);
+
+  if (!exitHandlerState.registered) {
+    exitHandlerState.registered = true;
+    process.on("beforeExit", () => {
+      // Save all registered cache factories sequentially
+      for (const factory of exitHandlerState.factories) {
+        factory.save();
+      }
+    });
+  }
+};
+
+/**
+ * Unregister a cache factory from the exit handler.
+ */
+const unregisterExitHandler = (cacheFactory: CacheFactory): void => {
+  exitHandlerState.factories.delete(cacheFactory);
+};
+
+/**
+ * Reset exit handler state for testing.
+ * @internal
+ */
+export const __resetExitHandlerForTests = (): void => {
+  exitHandlerState.registered = false;
+  exitHandlerState.factories.clear();
+};
+
+/**
  * Create a new builder session.
  *
  * The session maintains in-memory state across builds to enable incremental processing.
@@ -131,10 +174,8 @@ export const createBuilderSession = (options: {
     },
   });
 
-  // Auto-save cache on process exit
-  process.on("beforeExit", () => {
-    cacheFactory.save();
-  });
+  // Register for auto-save on process exit using singleton handler
+  registerExitHandler(cacheFactory);
 
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
   const ensureAstAnalyzer = cachedFn(() =>
@@ -325,6 +366,8 @@ export const createBuilderSession = (options: {
     getCurrentArtifact: () => state.lastArtifact,
     dispose: () => {
       cacheFactory.save();
+      // Unregister from exit handler to prevent duplicate saves
+      unregisterExitHandler(cacheFactory);
     },
   };
 };
