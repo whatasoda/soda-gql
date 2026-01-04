@@ -79,7 +79,7 @@
     },
     "packages/builder": {
       "name": "@soda-gql/builder",
-      "version": "0.8.0",
+      "version": "0.8.2",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@soda-gql/core": "workspace:*",
@@ -97,7 +97,7 @@
     },
     "packages/cli": {
       "name": "@soda-gql/cli",
-      "version": "0.8.0",
+      "version": "0.8.2",
       "bin": {
         "soda-gql": "./dist/index.cjs",
       },
@@ -133,7 +133,7 @@
     },
     "packages/common": {
       "name": "@soda-gql/common",
-      "version": "0.8.0",
+      "version": "0.8.2",
       "dependencies": {
         "zod": "^4.1.11",
       },
@@ -150,7 +150,7 @@
     },
     "packages/core": {
       "name": "@soda-gql/core",
-      "version": "0.8.0",
+      "version": "0.8.2",
       "dependencies": {
         "@graphql-typed-document-node/core": "^3.2.0",
         "graphql": "^16.11.0",
