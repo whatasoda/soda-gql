@@ -1,11 +1,6 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
-import {
-  createDirectiveMethod,
-  createStandardDirectives,
-  createDirectiveBuilder,
-  isDirectiveRef,
-} from "./directive-builder";
+import { createDirectiveBuilder, createDirectiveMethod, createStandardDirectives, isDirectiveRef } from "./directive-builder";
 
 describe("directive-builder", () => {
   describe("createDirectiveMethod", () => {

@@ -55,11 +55,17 @@ export type FragmentBuildersAll<
 /**
  * Configuration options for `createGqlElementComposer`.
  */
-export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter> = {
+export type GqlElementComposerOptions<
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyAdapter = DefaultAdapter,
+  TDirectiveMethods extends StandardDirectives = StandardDirectives,
+> = {
   /** Optional adapter for custom helpers and metadata handling. */
   adapter?: TAdapter;
   /** Methods for building variable type specifiers. */
   inputTypeMethods: InputTypeMethods<TSchema>;
+  /** Optional custom directive methods (including schema-defined directives). */
+  directiveMethods?: TDirectiveMethods;
 };
 
 /**
@@ -99,13 +105,14 @@ export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
   TFragmentBuilders,
   TAdapter extends AnyAdapter = DefaultAdapter,
+  TDirectiveMethods extends StandardDirectives = StandardDirectives,
 >(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>>,
+  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>, NoInfer<TDirectiveMethods>>,
 ) => {
   type THelpers = ExtractHelpers<TAdapter>;
   type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;
-  const { adapter, inputTypeMethods } = options;
+  const { adapter, inputTypeMethods, directiveMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
@@ -119,7 +126,7 @@ export const createGqlElementComposer = <
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
     $var: createVarBuilder<TSchema>(inputTypeMethods),
-    $directive: createStandardDirectives(),
+    $directive: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };

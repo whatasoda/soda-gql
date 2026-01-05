@@ -8,18 +8,16 @@
  * @module
  */
 
+import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
 import type { AnyVarRef } from "../types/type-foundation/var-ref";
-import { DirectiveRef, type AnyDirectiveRef, type DirectiveLocation } from "../types/type-foundation/directive-ref";
 
 /**
  * A method that creates a DirectiveRef with specific type information.
  * The TArgs type defines the expected argument shape for the directive.
  */
-export type DirectiveMethod<
-  TDirectiveName extends string,
-  TLocations extends readonly DirectiveLocation[],
-  TArgs,
-> = (args: TArgs) => DirectiveRef<{
+export type DirectiveMethod<TDirectiveName extends string, TLocations extends readonly DirectiveLocation[], TArgs> = (
+  args: TArgs,
+) => DirectiveRef<{
   directiveName: TDirectiveName;
   locations: TLocations;
 }>;
@@ -50,11 +48,7 @@ export type StandardDirectives = {
    * f.email({}, { directives: [$directive.include({ if: $.showEmail })] })
    * ```
    */
-  include: DirectiveMethod<
-    "include",
-    readonly ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
-    { if: DirectiveArgValue }
-  >;
+  include: DirectiveMethod<"include", readonly ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"], { if: DirectiveArgValue }>;
 };
 
 /**
@@ -70,13 +64,12 @@ export type StandardDirectives = {
  * const skipDirective = skipMethod({ if: true });
  * ```
  */
-export const createDirectiveMethod = <
-  TDirectiveName extends string,
-  const TLocations extends readonly DirectiveLocation[],
->(
+export const createDirectiveMethod = <TDirectiveName extends string, const TLocations extends readonly DirectiveLocation[]>(
   name: TDirectiveName,
   locations: TLocations,
-): (<TArgs extends Record<string, unknown>>(args: TArgs) => DirectiveRef<{
+): (<TArgs extends Record<string, unknown>>(
+  args: TArgs,
+) => DirectiveRef<{
   directiveName: TDirectiveName;
   locations: TLocations;
 }>) => {
@@ -123,8 +116,8 @@ export type AnyDirectiveMethod = (args: any) => AnyDirectiveRef;
  * Type for the directive builder that includes standard directives
  * and can be extended with schema-specific directives.
  */
-export type DirectiveBuilder<TCustomDirectives extends Record<string, AnyDirectiveMethod> = {}> =
-  StandardDirectives & TCustomDirectives;
+export type DirectiveBuilder<TCustomDirectives extends Record<string, AnyDirectiveMethod> = {}> = StandardDirectives &
+  TCustomDirectives;
 
 /**
  * Creates a directive builder with standard directives and optional custom directives.
@@ -134,9 +127,7 @@ export type DirectiveBuilder<TCustomDirectives extends Record<string, AnyDirecti
  *
  * @internal Used by codegen to create schema-specific directive builders
  */
-export const createDirectiveBuilder = <
-  TCustomDirectives extends Record<string, AnyDirectiveMethod> = {},
->(
+export const createDirectiveBuilder = <TCustomDirectives extends Record<string, AnyDirectiveMethod> = {}>(
   customDirectives?: TCustomDirectives,
 ): DirectiveBuilder<TCustomDirectives> => {
   return {

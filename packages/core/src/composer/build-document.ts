@@ -35,7 +35,7 @@ import {
 } from "../types/fragment";
 import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
 import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
-import { DirectiveRef, type AnyDirectiveRef, type DirectiveLocation } from "../types/type-foundation/directive-ref";
+import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
 
 /**
  * Converts an assignable input value to a GraphQL AST ValueNode.
@@ -148,8 +148,7 @@ const validateDirectiveLocation = (directive: AnyDirectiveRef, expectedLocation:
   const inner = DirectiveRef.getInner(directive);
   if (!inner.locations.includes(expectedLocation)) {
     throw new Error(
-      `Directive @${inner.name} cannot be used on ${expectedLocation}. ` +
-        `Valid locations: ${inner.locations.join(", ")}`,
+      `Directive @${inner.name} cannot be used on ${expectedLocation}. ` + `Valid locations: ${inner.locations.join(", ")}`,
     );
   }
 };
@@ -198,29 +197,27 @@ const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
     .filter((item) => item !== null);
 
 const buildField = (field: AnyFields): FieldNode[] =>
-  Object.entries(field).map(
-    ([alias, { args, field, object, union, directives }]): FieldNode => {
-      const builtDirectives = buildDirectives(directives, "FIELD");
-      return {
-        kind: Kind.FIELD,
-        name: { kind: Kind.NAME, value: field },
-        alias: alias !== field ? { kind: Kind.NAME, value: alias } : undefined,
-        arguments: buildArguments(args),
-        directives: builtDirectives.length > 0 ? builtDirectives : undefined,
-        selectionSet: object
+  Object.entries(field).map(([alias, { args, field, object, union, directives }]): FieldNode => {
+    const builtDirectives = buildDirectives(directives, "FIELD");
+    return {
+      kind: Kind.FIELD,
+      name: { kind: Kind.NAME, value: field },
+      alias: alias !== field ? { kind: Kind.NAME, value: alias } : undefined,
+      arguments: buildArguments(args),
+      directives: builtDirectives.length > 0 ? builtDirectives : undefined,
+      selectionSet: object
+        ? {
+            kind: Kind.SELECTION_SET,
+            selections: buildField(object),
+          }
+        : union
           ? {
               kind: Kind.SELECTION_SET,
-              selections: buildField(object),
+              selections: buildUnionSelection(union),
             }
-          : union
-            ? {
-                kind: Kind.SELECTION_SET,
-                selections: buildUnionSelection(union),
-              }
-            : undefined,
-      };
-    },
-  );
+          : undefined,
+    };
+  });
 
 /**
  * Converts a constant value to a GraphQL AST ConstValueNode.

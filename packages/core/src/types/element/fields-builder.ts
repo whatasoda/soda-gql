@@ -7,7 +7,6 @@ import type { IfOmittable } from "../../utils/empty-object";
 import type {
   AbstractFieldSelection,
   AnyAssignableInput,
-  AnyDirectiveAttachments,
   AnyFieldSelection,
   AnyFields,
   AnyNestedObject,

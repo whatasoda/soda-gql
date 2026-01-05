@@ -453,7 +453,6 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    // biome-ignore lint/suspicious/noExplicitAny: test helper
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
@@ -515,7 +514,6 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    // biome-ignore lint/suspicious/noExplicitAny: test helper
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
@@ -559,7 +557,6 @@ describe("DirectiveRef in buildDocument", () => {
     };
 
     expect(() => {
-      // biome-ignore lint/suspicious/noExplicitAny: test helper
       buildDocument({
         operationName: "GetUser",
         operationType: "query",
@@ -604,7 +601,6 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    // biome-ignore lint/suspicious/noExplicitAny: test helper
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
@@ -630,12 +626,7 @@ describe("DirectiveRef in buildDocument", () => {
         field: "user",
         type: { kind: "object" as const, name: "User", modifier: "?" as const },
         args: {},
-        directives: [
-          "not a directive" as unknown,
-          validDirective,
-          { name: "fake" } as unknown,
-          null as unknown,
-        ],
+        directives: ["not a directive" as unknown, validDirective, { name: "fake" } as unknown, null as unknown],
         object: {
           id: {
             parent: "User",
@@ -652,7 +643,6 @@ describe("DirectiveRef in buildDocument", () => {
     };
 
     // Should not throw, only valid DirectiveRef is processed
-    // biome-ignore lint/suspicious/noExplicitAny: test helper
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
