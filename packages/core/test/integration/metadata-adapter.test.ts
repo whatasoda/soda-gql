@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { defineAdapter } from "../../src/adapter/define-adapter";
+import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
@@ -65,7 +66,7 @@ const inputTypeMethods = {
 describe("metadata adapter", () => {
   describe("default adapter", () => {
     it("aggregates fragment metadata as readonly array", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a fragment with metadata
       const userFragment = gql(({ fragment }) =>
@@ -94,7 +95,7 @@ describe("metadata adapter", () => {
     });
 
     it("works with operations without spread fragments", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -153,10 +154,13 @@ describe("metadata adapter", () => {
     });
 
     it("supports custom fragment metadata types", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof headerMergingAdapter>(schema, {
-        adapter: headerMergingAdapter,
-        inputTypeMethods,
-      });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof headerMergingAdapter>(
+        schema,
+        {
+          adapter: headerMergingAdapter,
+          inputTypeMethods,
+        },
+      );
 
       const userFragment = gql(({ fragment }) =>
         fragment.User({
@@ -197,10 +201,13 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof capturingAdapter>(schema, {
-        adapter: capturingAdapter,
-        inputTypeMethods,
-      });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof capturingAdapter>(
+        schema,
+        {
+          adapter: capturingAdapter,
+          inputTypeMethods,
+        },
+      );
 
       const userFragment = gql(({ fragment }) =>
         fragment.User({
@@ -228,10 +235,13 @@ describe("metadata adapter", () => {
     });
 
     it("provides aggregated metadata to operation callback", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof headerMergingAdapter>(schema, {
-        adapter: headerMergingAdapter,
-        inputTypeMethods,
-      });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof headerMergingAdapter>(
+        schema,
+        {
+          adapter: headerMergingAdapter,
+          inputTypeMethods,
+        },
+      );
 
       const userFragment = gql(({ fragment }) =>
         fragment.User({
@@ -294,10 +304,13 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, typeof capturingAdapter>(schema, {
-        adapter: capturingAdapter,
-        inputTypeMethods,
-      });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof capturingAdapter>(
+        schema,
+        {
+          adapter: capturingAdapter,
+          inputTypeMethods,
+        },
+      );
 
       // Fragment without metadata
       const userFragment = gql(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
@@ -321,7 +334,7 @@ describe("metadata adapter", () => {
 
   describe("operation metadata inference", () => {
     it("infers operation metadata type from callback return", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
 
       // Simple return type
       const operation1 = gql(({ query, $var }) =>
@@ -360,7 +373,7 @@ describe("metadata adapter", () => {
     });
 
     it("allows different metadata types per operation", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
 
       // Operation with string metadata
       const op1 = gql(({ query, $var }) =>

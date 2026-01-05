@@ -57,8 +57,8 @@ export type FragmentBuildersAll<
  */
 export type GqlElementComposerOptions<
   TSchema extends AnyGraphqlSchema,
+  TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
-  TDirectiveMethods extends StandardDirectives = StandardDirectives,
 > = {
   /** Optional adapter for custom helpers and metadata handling. */
   adapter?: TAdapter;
@@ -104,11 +104,11 @@ export type GqlElementComposerOptions<
 export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
   TFragmentBuilders,
+  TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
-  TDirectiveMethods extends StandardDirectives = StandardDirectives,
 >(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>, NoInfer<TDirectiveMethods>>,
+  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TDirectiveMethods>, NoInfer<TAdapter>>,
 ) => {
   type THelpers = ExtractHelpers<TAdapter>;
   type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;

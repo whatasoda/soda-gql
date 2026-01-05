@@ -486,7 +486,7 @@ describe("generateMultiSchemaModule", () => {
 
     // Should use FragmentBuilders type in createGqlElementComposer
     expect(result.code).toContain(
-      "createGqlElementComposer<Schema_default, FragmentBuilders_default, undefined, typeof customDirectives_default>",
+      "createGqlElementComposer<Schema_default, FragmentBuilders_default, typeof customDirectives_default>",
     );
   });
 
