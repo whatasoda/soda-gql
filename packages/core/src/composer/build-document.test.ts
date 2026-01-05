@@ -415,35 +415,7 @@ describe("buildArgumentValue", () => {
 });
 
 describe("DirectiveRef in buildDocument", () => {
-  const createTestSchema = () =>
-    ({
-      label: "test" as const,
-      operations: { query: "Query", mutation: null, subscription: null } as const,
-      scalar: {},
-      enum: {},
-      input: {},
-      object: {
-        Query: {
-          name: "Query",
-          fields: {
-            user: { kind: "object" as const, name: "User", modifier: "?" as const },
-          },
-        },
-        User: {
-          name: "User",
-          fields: {
-            id: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
-            name: { kind: "scalar" as const, name: "String", modifier: "?" as const },
-            email: { kind: "scalar" as const, name: "String", modifier: "?" as const },
-          },
-        },
-      },
-      union: {},
-    }) as const;
-
   it("includes @skip directive on field", () => {
-    type Schema = ReturnType<typeof createTestSchema>;
-
     const skipDirective = new DirectiveRef({
       name: "skip",
       arguments: { if: true },
@@ -481,11 +453,12 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    const doc = buildDocument<Schema, typeof fields, {}>({
+    // biome-ignore lint/suspicious/noExplicitAny: test helper
+    const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
       variables: {},
-      fields,
+      fields: fields as any,
     });
 
     const printed = print(doc);
@@ -494,8 +467,6 @@ describe("DirectiveRef in buildDocument", () => {
   });
 
   it("includes @include directive with variable reference", () => {
-    type Schema = ReturnType<typeof createTestSchema>;
-
     const showEmailVar = createVarRefFromVariable("showEmail");
     const includeDirective = new DirectiveRef({
       name: "include",
@@ -544,11 +515,12 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    const doc = buildDocument<Schema, typeof fields, typeof variables>({
+    // biome-ignore lint/suspicious/noExplicitAny: test helper
+    const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
       variables,
-      fields,
+      fields: fields as any,
     });
 
     const printed = print(doc);
@@ -557,8 +529,6 @@ describe("DirectiveRef in buildDocument", () => {
   });
 
   it("throws error for directive with invalid location", () => {
-    type Schema = ReturnType<typeof createTestSchema>;
-
     // Create a directive that only allows QUERY location
     const queryOnlyDirective = new DirectiveRef({
       name: "queryOnly",
@@ -589,18 +559,17 @@ describe("DirectiveRef in buildDocument", () => {
     };
 
     expect(() => {
-      buildDocument<Schema, typeof fields, {}>({
+      // biome-ignore lint/suspicious/noExplicitAny: test helper
+      buildDocument({
         operationName: "GetUser",
         operationType: "query",
         variables: {},
-        fields,
+        fields: fields as any,
       });
     }).toThrow("Directive @queryOnly cannot be used on FIELD");
   });
 
   it("supports multiple directives on same field", () => {
-    type Schema = ReturnType<typeof createTestSchema>;
-
     const skipDirective = new DirectiveRef({
       name: "skip",
       arguments: { if: false },
@@ -635,11 +604,12 @@ describe("DirectiveRef in buildDocument", () => {
       },
     };
 
-    const doc = buildDocument<Schema, typeof fields, {}>({
+    // biome-ignore lint/suspicious/noExplicitAny: test helper
+    const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
       variables: {},
-      fields,
+      fields: fields as any,
     });
 
     const printed = print(doc);
@@ -648,8 +618,6 @@ describe("DirectiveRef in buildDocument", () => {
   });
 
   it("ignores non-DirectiveRef values in directives array", () => {
-    type Schema = ReturnType<typeof createTestSchema>;
-
     const validDirective = new DirectiveRef({
       name: "skip",
       arguments: { if: true },
@@ -684,11 +652,12 @@ describe("DirectiveRef in buildDocument", () => {
     };
 
     // Should not throw, only valid DirectiveRef is processed
-    const doc = buildDocument<Schema, typeof fields, {}>({
+    // biome-ignore lint/suspicious/noExplicitAny: test helper
+    const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
       variables: {},
-      fields,
+      fields: fields as any,
     });
 
     const printed = print(doc);

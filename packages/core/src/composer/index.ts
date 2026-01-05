@@ -1,5 +1,6 @@
 export * from "./build-document";
 export * from "./colocate";
+export * from "./directive-builder";
 export * from "./field-path-context";
 export * from "./fields-builder";
 export * from "./fragment";

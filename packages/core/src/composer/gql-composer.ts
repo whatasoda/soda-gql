@@ -7,6 +7,7 @@ import type { AnyFragment, AnyOperation } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
+import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder, type InputTypeMethods } from "./var-builder";
@@ -69,6 +70,7 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
  * - `fragment`: Builders for each object type
  * - `query/mutation/subscription`: Operation builders
  * - `$var`: Variable definition helpers
+ * - `$directive`: Field directive helpers (@skip, @include)
  * - `$colocate`: Fragment colocation utilities
  *
  * @param schema - The GraphQL schema definition
@@ -79,11 +81,16 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
  * ```typescript
  * const gql = createGqlElementComposer(schema, { inputTypeMethods });
  *
- * const GetUser = gql(({ query, $var }) =>
+ * const GetUser = gql(({ query, $var, $directive }) =>
  *   query.operation({
  *     name: "GetUser",
- *     variables: { id: $var.ID("!") },
- *     fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(...) }),
+ *     variables: { showEmail: $var("showEmail").Boolean("!") },
+ *     fields: ({ f, $ }) => ({
+ *       ...f.user({ id: "1" })(({ f }) => ({
+ *         ...f.name(),
+ *         ...f.email({}, { directives: [$directive.skip({ if: $.showEmail })] }),
+ *       })),
+ *     }),
  *   })
  * );
  * ```
@@ -112,6 +119,7 @@ export const createGqlElementComposer = <
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
     $var: createVarBuilder<TSchema>(inputTypeMethods),
+    $directive: createStandardDirectives(),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };
