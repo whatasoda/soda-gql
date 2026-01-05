@@ -76,9 +76,10 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
   const entries = Object.entries(typeDef.fields).map(([fieldName, type]): [string, AnyFieldSelectionFactory] => {
     const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
       fieldArgs: AnyFieldSelection["args"] | null | void,
-      extras?: { alias?: TAlias; directives?: AnyFieldSelection["directives"] },
+      extras?: { alias?: TAlias; directives?: unknown[] },
     ) => {
       const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
+      const directives = (extras?.directives ?? []) as AnyFieldSelection["directives"];
 
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
@@ -101,7 +102,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             field: fieldName,
             type: type,
             args: fieldArgs ?? {},
-            directives: extras?.directives ?? {},
+            directives,
             object: nestedFields,
             union: null,
           });
@@ -141,7 +142,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             field: fieldName,
             type: type,
             args: fieldArgs ?? {},
-            directives: extras?.directives ?? {},
+            directives,
             object: null,
             union: nestedUnion,
           });
@@ -156,7 +157,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           field: fieldName,
           type,
           args: fieldArgs ?? {},
-          directives: extras?.directives ?? {},
+          directives,
           object: null,
           union: null,
         });

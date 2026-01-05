@@ -100,18 +100,21 @@ export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName 
  */
 export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
   fieldArgs: AnyAssignableInput | void,
-  extras?: { alias?: TAlias; directives?: AnyDirectiveAttachments },
+  extras?: { alias?: TAlias; directives?: unknown[] },
 ) => AnyFieldSelectionFactoryReturn<TAlias>;
 
 /**
  * Factory function for creating a typed field selection.
  * Accepts field arguments and optional alias/directives.
+ *
+ * Note: directives parameter uses `unknown[]` for relaxed type checking.
+ * Directive validation is performed at build time in build-document.ts.
  */
 export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> = <
   TAlias extends string | null = null,
 >(
   fieldArgs: TSelection["args"] | IfOmittable<TSelection["args"], void | null>,
-  extras?: { alias?: TAlias; directives?: TSelection["directives"] },
+  extras?: { alias?: TAlias; directives?: unknown[] },
 ) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
 export type AnyFieldSelectionFactoryReturn<TAlias extends string | null> =
