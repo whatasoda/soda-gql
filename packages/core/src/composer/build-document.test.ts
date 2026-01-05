@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { Kind } from "graphql";
+import { Kind, print } from "graphql";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "./build-document";
 
@@ -410,5 +411,289 @@ describe("buildArgumentValue", () => {
       expect(buildArgumentValue(true)).toEqual({ kind: Kind.BOOLEAN, value: true });
       expect(buildArgumentValue(false)).toEqual({ kind: Kind.BOOLEAN, value: false });
     });
+  });
+});
+
+describe("DirectiveRef in buildDocument", () => {
+  const createTestSchema = () =>
+    ({
+      label: "test" as const,
+      operations: { query: "Query", mutation: null, subscription: null } as const,
+      scalar: {},
+      enum: {},
+      input: {},
+      object: {
+        Query: {
+          name: "Query",
+          fields: {
+            user: { kind: "object" as const, name: "User", modifier: "?" as const },
+          },
+        },
+        User: {
+          name: "User",
+          fields: {
+            id: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            name: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            email: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+          },
+        },
+      },
+      union: {},
+    }) as const;
+
+  it("includes @skip directive on field", () => {
+    type Schema = ReturnType<typeof createTestSchema>;
+
+    const skipDirective = new DirectiveRef({
+      name: "skip",
+      arguments: { if: true },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+          email: {
+            parent: "User",
+            field: "email",
+            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            args: {},
+            directives: [skipDirective],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const doc = buildDocument<Schema, typeof fields, {}>({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields,
+    });
+
+    const printed = print(doc);
+    expect(printed).toContain("@skip(if: true)");
+    expect(printed).toContain("email @skip");
+  });
+
+  it("includes @include directive with variable reference", () => {
+    type Schema = ReturnType<typeof createTestSchema>;
+
+    const showEmailVar = createVarRefFromVariable("showEmail");
+    const includeDirective = new DirectiveRef({
+      name: "include",
+      arguments: { if: showEmailVar },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+          email: {
+            parent: "User",
+            field: "email",
+            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            args: {},
+            directives: [includeDirective],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const variables = {
+      showEmail: {
+        kind: "scalar" as const,
+        name: "Boolean",
+        modifier: "!" as const,
+        defaultValue: null,
+        directives: {},
+      },
+    };
+
+    const doc = buildDocument<Schema, typeof fields, typeof variables>({
+      operationName: "GetUser",
+      operationType: "query",
+      variables,
+      fields,
+    });
+
+    const printed = print(doc);
+    expect(printed).toContain("@include(if: $showEmail)");
+    expect(printed).toContain("$showEmail: Boolean!");
+  });
+
+  it("throws error for directive with invalid location", () => {
+    type Schema = ReturnType<typeof createTestSchema>;
+
+    // Create a directive that only allows QUERY location
+    const queryOnlyDirective = new DirectiveRef({
+      name: "queryOnly",
+      arguments: {},
+      locations: ["QUERY"],
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [queryOnlyDirective], // Invalid: FIELD location not allowed
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    expect(() => {
+      buildDocument<Schema, typeof fields, {}>({
+        operationName: "GetUser",
+        operationType: "query",
+        variables: {},
+        fields,
+      });
+    }).toThrow("Directive @queryOnly cannot be used on FIELD");
+  });
+
+  it("supports multiple directives on same field", () => {
+    type Schema = ReturnType<typeof createTestSchema>;
+
+    const skipDirective = new DirectiveRef({
+      name: "skip",
+      arguments: { if: false },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+    });
+
+    const includeDirective = new DirectiveRef({
+      name: "include",
+      arguments: { if: true },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [],
+        object: {
+          name: {
+            parent: "User",
+            field: "name",
+            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            args: {},
+            directives: [skipDirective, includeDirective],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const doc = buildDocument<Schema, typeof fields, {}>({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields,
+    });
+
+    const printed = print(doc);
+    expect(printed).toContain("@skip(if: false)");
+    expect(printed).toContain("@include(if: true)");
+  });
+
+  it("ignores non-DirectiveRef values in directives array", () => {
+    type Schema = ReturnType<typeof createTestSchema>;
+
+    const validDirective = new DirectiveRef({
+      name: "skip",
+      arguments: { if: true },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [
+          "not a directive" as unknown,
+          validDirective,
+          { name: "fake" } as unknown,
+          null as unknown,
+        ],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    // Should not throw, only valid DirectiveRef is processed
+    const doc = buildDocument<Schema, typeof fields, {}>({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields,
+    });
+
+    const printed = print(doc);
+    expect(printed).toContain("@skip(if: true)");
+    // Should only have one directive
+    expect(printed.match(/@/g)?.length).toBe(1);
   });
 });
