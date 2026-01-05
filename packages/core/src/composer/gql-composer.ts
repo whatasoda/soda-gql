@@ -76,7 +76,7 @@ export type GqlElementComposerOptions<
  * - `fragment`: Builders for each object type
  * - `query/mutation/subscription`: Operation builders
  * - `$var`: Variable definition helpers
- * - `$directive`: Field directive helpers (@skip, @include)
+ * - `$dir`: Field directive helpers (@skip, @include)
  * - `$colocate`: Fragment colocation utilities
  *
  * @param schema - The GraphQL schema definition
@@ -87,14 +87,14 @@ export type GqlElementComposerOptions<
  * ```typescript
  * const gql = createGqlElementComposer(schema, { inputTypeMethods });
  *
- * const GetUser = gql(({ query, $var, $directive }) =>
+ * const GetUser = gql(({ query, $var, $dir }) =>
  *   query.operation({
  *     name: "GetUser",
  *     variables: { showEmail: $var("showEmail").Boolean("!") },
  *     fields: ({ f, $ }) => ({
  *       ...f.user({ id: "1" })(({ f }) => ({
  *         ...f.name(),
- *         ...f.email({}, { directives: [$directive.skip({ if: $.showEmail })] }),
+ *         ...f.email({}, { directives: [$dir.skip({ if: $.showEmail })] }),
  *       })),
  *     }),
  *   })
@@ -126,7 +126,7 @@ export const createGqlElementComposer = <
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
     $var: createVarBuilder<TSchema>(inputTypeMethods),
-    $directive: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
+    $dir: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };

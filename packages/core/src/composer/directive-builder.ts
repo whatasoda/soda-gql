@@ -36,7 +36,7 @@ export type StandardDirectives = {
    * @skip directive - conditionally skip a field.
    * @example
    * ```typescript
-   * f.email({}, { directives: [$directive.skip({ if: $.hideEmail })] })
+   * f.email({}, { directives: [$dir.skip({ if: $.hideEmail })] })
    * ```
    */
   skip: DirectiveMethod<"skip", readonly ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"], { if: DirectiveArgValue }>;
@@ -45,7 +45,7 @@ export type StandardDirectives = {
    * @include directive - conditionally include a field.
    * @example
    * ```typescript
-   * f.email({}, { directives: [$directive.include({ if: $.showEmail })] })
+   * f.email({}, { directives: [$dir.include({ if: $.showEmail })] })
    * ```
    */
   include: DirectiveMethod<"include", readonly ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"], { if: DirectiveArgValue }>;
@@ -97,8 +97,8 @@ const CONDITIONAL_DIRECTIVE_LOCATIONS = ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRA
  *
  * @example
  * ```typescript
- * const $directive = createStandardDirectives();
- * const skipDirective = $directive.skip({ if: true });
+ * const $dir = createStandardDirectives();
+ * const skipDirective = $dir.skip({ if: true });
  * ```
  */
 export const createStandardDirectives = (): StandardDirectives => ({
