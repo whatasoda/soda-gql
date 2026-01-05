@@ -23,6 +23,7 @@ import type {
   OutputTypenameSpecifier,
   OutputUnionSpecifier,
 } from "../type-foundation";
+import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
 
 /**
  * Builder signature exposed to userland `model` and `slice` helpers. The
@@ -99,21 +100,18 @@ export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName 
  */
 export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
   fieldArgs: AnyAssignableInput | void,
-  extras?: { alias?: TAlias; directives?: unknown[] },
+  extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
 ) => AnyFieldSelectionFactoryReturn<TAlias>;
 
 /**
  * Factory function for creating a typed field selection.
  * Accepts field arguments and optional alias/directives.
- *
- * Note: directives parameter uses `unknown[]` for relaxed type checking.
- * Directive validation is performed at build time in build-document.ts.
  */
 export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> = <
   TAlias extends string | null = null,
 >(
   fieldArgs: TSelection["args"] | IfOmittable<TSelection["args"], void | null>,
-  extras?: { alias?: TAlias; directives?: unknown[] },
+  extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
 ) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
 export type AnyFieldSelectionFactoryReturn<TAlias extends string | null> =

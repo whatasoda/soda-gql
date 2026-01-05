@@ -13,6 +13,7 @@ import type {
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
 import type { OutputObjectSpecifier, OutputUnionSpecifier } from "../types/type-foundation";
+import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
@@ -76,10 +77,10 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
   const entries = Object.entries(typeDef.fields).map(([fieldName, type]): [string, AnyFieldSelectionFactory] => {
     const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
       fieldArgs: AnyFieldSelection["args"] | null | void,
-      extras?: { alias?: TAlias; directives?: unknown[] },
+      extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
     ) => {
       const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
-      const directives = (extras?.directives ?? []) as AnyFieldSelection["directives"];
+      const directives = extras?.directives ?? [];
 
       if (type.kind === "object") {
         type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
