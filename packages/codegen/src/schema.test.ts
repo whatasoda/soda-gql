@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Kind, parse } from "graphql";
-import { hashSchema, loadSchema } from "./schema";
+import { hashSchema, loadSchema, loadSingleSchema } from "./schema";
 import type { CodegenError } from "./types";
 
 // Type helper to extract specific error variant
@@ -21,7 +21,7 @@ describe("loadSchema", () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  test("loads and parses a valid schema file", () => {
+  test("loads and parses a valid schema file from array", () => {
     const schemaContent = `
       type Query {
         hello: String!
@@ -30,7 +30,7 @@ describe("loadSchema", () => {
     const schemaPath = join(tempDir, "schema.graphql");
     writeFileSync(schemaPath, schemaContent);
 
-    const result = loadSchema(schemaPath);
+    const result = loadSchema([schemaPath]);
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
@@ -42,7 +42,7 @@ describe("loadSchema", () => {
   test("returns error for non-existent schema file", () => {
     const schemaPath = join(tempDir, "nonexistent.graphql");
 
-    const result = loadSchema(schemaPath);
+    const result = loadSchema([schemaPath]);
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
@@ -58,7 +58,7 @@ describe("loadSchema", () => {
     const schemaPath = join(tempDir, "invalid.graphql");
     writeFileSync(schemaPath, invalidContent);
 
-    const result = loadSchema(schemaPath);
+    const result = loadSchema([schemaPath]);
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
@@ -76,7 +76,7 @@ describe("loadSchema", () => {
     const originalCwd = process.cwd();
     try {
       process.chdir(tempDir);
-      const result = loadSchema("./schema.graphql");
+      const result = loadSchema(["./schema.graphql"]);
       expect(result.isOk()).toBe(true);
     } finally {
       process.chdir(originalCwd);
@@ -120,12 +120,100 @@ describe("loadSchema", () => {
     const schemaPath = join(tempDir, "complex.graphql");
     writeFileSync(schemaPath, schemaContent);
 
-    const result = loadSchema(schemaPath);
+    const result = loadSchema([schemaPath]);
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       // Query, Mutation, User, Post, CreateUserInput, Role
       expect(result.value.definitions.length).toBe(6);
+    }
+  });
+
+  test("merges multiple schema files", () => {
+    const mainSchema = `
+      type Query {
+        hello: String!
+      }
+    `;
+    const directivesSchema = `
+      directive @auth on FIELD_DEFINITION
+
+      type User {
+        id: ID!
+        name: String!
+      }
+    `;
+    const mainPath = join(tempDir, "main.graphql");
+    const directivesPath = join(tempDir, "directives.graphql");
+    writeFileSync(mainPath, mainSchema);
+    writeFileSync(directivesPath, directivesSchema);
+
+    const result = loadSchema([mainPath, directivesPath]);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      // Query, @auth directive, User
+      expect(result.value.definitions.length).toBe(3);
+    }
+  });
+
+  test("returns error if any file in array is missing", () => {
+    const schemaContent = "type Query { hello: String! }";
+    const existingPath = join(tempDir, "existing.graphql");
+    const missingPath = join(tempDir, "missing.graphql");
+    writeFileSync(existingPath, schemaContent);
+
+    const result = loadSchema([existingPath, missingPath]);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      const error = result.error as ErrorOf<"SCHEMA_NOT_FOUND">;
+      expect(error.code).toBe("SCHEMA_NOT_FOUND");
+      expect(error.schemaPath).toBe(missingPath);
+    }
+  });
+
+  test("returns error if any file in array is invalid", () => {
+    const validSchema = "type Query { hello: String! }";
+    const invalidSchema = "this is not valid GraphQL {{{";
+    const validPath = join(tempDir, "valid.graphql");
+    const invalidPath = join(tempDir, "invalid.graphql");
+    writeFileSync(validPath, validSchema);
+    writeFileSync(invalidPath, invalidSchema);
+
+    const result = loadSchema([validPath, invalidPath]);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      const error = result.error as ErrorOf<"SCHEMA_INVALID">;
+      expect(error.code).toBe("SCHEMA_INVALID");
+      expect(error.schemaPath).toBe(invalidPath);
+    }
+  });
+});
+
+describe("loadSingleSchema", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = join(tmpdir(), `codegen-single-schema-test-${Date.now()}`);
+    mkdirSync(tempDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test("loads a single schema file", () => {
+    const schemaContent = "type Query { hello: String! }";
+    const schemaPath = join(tempDir, "schema.graphql");
+    writeFileSync(schemaPath, schemaContent);
+
+    const result = loadSingleSchema(schemaPath);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.definitions.length).toBe(1);
     }
   });
 });

@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { type DocumentNode, parse, print } from "graphql";
+import { concatAST, type DocumentNode, parse, print } from "graphql";
 import { err, ok } from "neverthrow";
 
 import type { CodegenError } from "./types";
 
-export const loadSchema = (schemaPath: string) => {
+/**
+ * Load a single schema file.
+ * @internal Use loadSchema for public API.
+ */
+export const loadSingleSchema = (schemaPath: string) => {
   const resolvedPath = resolve(schemaPath);
 
   if (!existsSync(resolvedPath)) {
@@ -29,6 +33,26 @@ export const loadSchema = (schemaPath: string) => {
       schemaPath: resolvedPath,
     });
   }
+};
+
+/**
+ * Load and merge multiple schema files into a single DocumentNode.
+ * Uses GraphQL's concatAST to combine definitions from all files.
+ */
+export const loadSchema = (schemaPaths: readonly string[]) => {
+  const documents: DocumentNode[] = [];
+
+  for (const schemaPath of schemaPaths) {
+    const result = loadSingleSchema(schemaPath);
+    if (result.isErr()) {
+      return err<DocumentNode, CodegenError>(result.error);
+    }
+    documents.push(result.value);
+  }
+
+  // Merge all documents into one
+  const merged = concatAST(documents);
+  return ok<DocumentNode, CodegenError>(merged);
 };
 
 export const hashSchema = (document: DocumentNode): string => createHash("sha256").update(print(document)).digest("hex");

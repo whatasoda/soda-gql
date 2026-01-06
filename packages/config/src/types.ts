@@ -15,9 +15,19 @@ export type InjectConfig =
       readonly adapter?: string;
     };
 
+/**
+ * Schema input configuration.
+ * Can be a single path, array of paths, or a function returning paths.
+ *
+ * @example Single file: "./schema.graphql"
+ * @example Multiple files: ["./schema.graphql", "./local-directives.graphql"]
+ * @example Dynamic: () => globSync("./schemas/*.graphql")
+ */
+export type SchemaInput = string | readonly string[] | (() => readonly string[]);
+
 // Schema configuration for codegen
 export type SchemaConfig = {
-  readonly schema: string;
+  readonly schema: SchemaInput;
   /**
    * Injection configuration for scalars and adapter.
    * Can be a single file path or an object with separate paths.
@@ -153,7 +163,7 @@ export type ResolvedInjectConfig = {
 
 // Resolved schema config with absolute paths
 export type ResolvedSchemaConfig = {
-  readonly schema: string;
+  readonly schema: readonly string[];
   readonly inject: ResolvedInjectConfig;
   readonly defaultInputDepth: number;
   readonly inputDepthOverrides: Readonly<Record<string, number>>;

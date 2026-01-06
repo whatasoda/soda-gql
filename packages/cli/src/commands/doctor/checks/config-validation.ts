@@ -39,8 +39,10 @@ export const checkConfigValidation = (): CheckResult<ConfigValidationData> => {
 
   // Check schema files exist
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
-    if (!existsSync(schemaConfig.schema)) {
-      missingFiles.push(`Schema '${name}': ${schemaConfig.schema}`);
+    for (const schemaPath of schemaConfig.schema) {
+      if (!existsSync(schemaPath)) {
+        missingFiles.push(`Schema '${name}': ${schemaPath}`);
+      }
     }
     if (!existsSync(schemaConfig.inject.scalars)) {
       missingFiles.push(`Scalars '${name}': ${schemaConfig.inject.scalars}`);

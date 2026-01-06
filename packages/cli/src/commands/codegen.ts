@@ -125,7 +125,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<CodegenCo
   const resolvedSchemas: Record<string, CodegenSchemaConfig> = {};
   for (const [name, schemaConfig] of Object.entries(command.schemas)) {
     resolvedSchemas[name] = {
-      schema: resolve(schemaConfig.schema),
+      schema: schemaConfig.schema.map((s) => resolve(s)),
       inject: {
         scalars: resolve(schemaConfig.inject.scalars),
         ...(schemaConfig.inject.adapter ? { adapter: resolve(schemaConfig.inject.adapter) } : {}),

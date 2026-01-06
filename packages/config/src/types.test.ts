@@ -80,7 +80,7 @@ describe("types.ts", () => {
       exclude: [],
       schemas: {
         default: {
-          schema: "/abs/path/to/schema.graphql",
+          schema: ["/abs/path/to/schema.graphql"],
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
@@ -106,7 +106,7 @@ describe("types.ts", () => {
       exclude: [],
       schemas: {
         default: {
-          schema: "/abs/path/to/schema.graphql",
+          schema: ["/abs/path/to/schema.graphql"],
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
           inputDepthOverrides: {},

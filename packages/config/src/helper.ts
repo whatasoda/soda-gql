@@ -2,7 +2,7 @@ import { defineSchemaFor } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import z from "zod";
 import { type ConfigError, configError } from "./errors";
-import type { ArtifactConfig, InjectConfig, SchemaConfig, SodaGqlConfig, StylesConfig } from "./types";
+import type { ArtifactConfig, InjectConfig, SchemaConfig, SchemaInput, SodaGqlConfig, StylesConfig } from "./types";
 
 /**
  * Thin wrapper class to simplify the validation of exported value from config file.
@@ -71,8 +71,16 @@ const InjectConfigSchema: z.ZodType<InjectConfig> = z.union([
   }),
 ]);
 
+// SchemaInput supports string, array of strings, or function returning array of strings
+// Function return value validation is deferred to normalize time
+const SchemaInputSchema: z.ZodType<SchemaInput> = z.union([
+  z.string().min(1),
+  z.array(z.string().min(1)).min(1),
+  z.custom<() => readonly string[]>((val) => typeof val === "function"),
+]);
+
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
-  schema: z.string().min(1),
+  schema: SchemaInputSchema,
   inject: InjectConfigSchema,
   defaultInputDepth: z.number().int().positive().max(10).optional(),
   inputDepthOverrides: z.record(z.string(), z.number().int().positive()).optional(),
