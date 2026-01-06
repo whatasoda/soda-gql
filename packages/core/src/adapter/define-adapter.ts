@@ -1,10 +1,10 @@
 import type { Adapter } from "../types/metadata";
 
 /**
- * Helper function for defining a unified adapter with helpers and metadata.
- * Provides type inference for helpers, aggregateFragmentMetadata and schemaLevel.
+ * Helper function for defining a unified adapter with helpers, metadata, and document transformation.
+ * Provides type inference for helpers, aggregateFragmentMetadata, schemaLevel, and transformDocument.
  *
- * @example
+ * @example Basic adapter with helpers and metadata
  * ```typescript
  * import { defineAdapter } from "@soda-gql/core/adapter";
  * import type { FragmentMetaInfo, OperationMetadata } from "@soda-gql/core";
@@ -22,6 +22,30 @@ import type { Adapter } from "../types/metadata";
  *     schemaLevel: {
  *       apiVersion: "v2",
  *     },
+ *   },
+ * });
+ * ```
+ *
+ * @example Adapter with document transformation
+ * ```typescript
+ * import { defineAdapter } from "@soda-gql/core/adapter";
+ * import { Kind, visit } from "graphql";
+ *
+ * export const adapter = defineAdapter({
+ *   transformDocument: ({ document, operationType }) => {
+ *     // Add @auth directive to all queries
+ *     if (operationType === "query") {
+ *       return visit(document, {
+ *         OperationDefinition: (node) => ({
+ *           ...node,
+ *           directives: [
+ *             ...(node.directives ?? []),
+ *             { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "auth" } },
+ *           ],
+ *         }),
+ *       });
+ *     }
+ *     return document;
  *   },
  * });
  * ```
