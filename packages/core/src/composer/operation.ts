@@ -12,6 +12,7 @@ import type {
   ExtractAdapterTypes,
   FragmentMetaInfo,
   MetadataBuilder,
+  OperationDocumentTransformer,
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
@@ -77,6 +78,7 @@ export const createOperationComposerFactory = <
         TSchemaLevel
       >;
       fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
+      transformDocument?: OperationDocumentTransformer<TOperationMetadata>;
     }) => {
       return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>(() => {
         const { name: operationName } = options;
@@ -99,7 +101,7 @@ export const createOperationComposerFactory = <
         // Check if any fragment has a metadata builder
         const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);
 
-        if (!hasFragmentMetadata && !options.metadata && !transformDocument) {
+        if (!hasFragmentMetadata && !options.metadata && !transformDocument && !options.transformDocument) {
           // No metadata to evaluate and no transform - return directly
           return {
             operationType,
@@ -141,16 +143,25 @@ export const createOperationComposerFactory = <
         // Factory that captures aggregated via closure
         const makeCreateDefinition = (aggregated: TAggregatedFragmentMetadata) => {
           return ({ metadata }: { metadata: TOperationMetadata | undefined }) => {
-            const finalDocument = transformDocument
-              ? (transformDocument({
+            // Step 1: Operation transform (typed metadata) - FIRST
+            let finalDocument = options.transformDocument
+              ? (options.transformDocument({
                   document,
-                  operationName,
-                  operationType,
-                  variableNames,
-                  schemaLevel: resolvedAdapter.schemaLevel as TSchemaLevel | undefined,
-                  fragmentMetadata: aggregated,
+                  metadata,
                 }) as typeof document)
               : document;
+
+            // Step 2: Adapter transform (schemaLevel + fragmentMetadata) - SECOND
+            if (transformDocument) {
+              finalDocument = transformDocument({
+                document: finalDocument,
+                operationName,
+                operationType,
+                variableNames,
+                schemaLevel: resolvedAdapter.schemaLevel as TSchemaLevel | undefined,
+                fragmentMetadata: aggregated,
+              }) as typeof document;
+            }
 
             return {
               operationType,

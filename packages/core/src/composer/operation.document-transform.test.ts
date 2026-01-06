@@ -3,7 +3,7 @@ import { Kind, print, visit, type DocumentNode } from "graphql";
 import { defineAdapter } from "../adapter/define-adapter";
 import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
-import type { DocumentTransformArgs } from "../types/metadata";
+import type { DocumentTransformArgs, OperationDocumentTransformArgs } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
@@ -391,5 +391,203 @@ describe("document transformation via adapter", () => {
 
     const printed = print(operation.document);
     expect(printed).toContain("@production");
+  });
+});
+
+describe("operation-level transformDocument", () => {
+  it("receives typed operation metadata", () => {
+    type OperationMeta = { cacheHint: number; requiresAuth: boolean };
+    let capturedArgs: OperationDocumentTransformArgs<OperationMeta> | undefined;
+
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+      inputTypeMethods,
+    });
+
+    const operation = gql(({ query, $var }) =>
+      query.operation({
+        name: "GetUser",
+        variables: { ...$var("id").ID("!") },
+        metadata: () => ({ cacheHint: 120, requiresAuth: true }),
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.id })(({ f }) => ({
+            ...f.id(),
+          })),
+        }),
+        transformDocument: (args) => {
+          capturedArgs = args;
+          return args.document;
+        },
+      }),
+    );
+
+    void operation.document;
+
+    expect(capturedArgs).toBeDefined();
+    expect(capturedArgs?.metadata).toEqual({ cacheHint: 120, requiresAuth: true });
+  });
+
+  it("can modify document based on typed metadata", () => {
+    type OperationMeta = { addCacheDirective: boolean; ttl: number };
+
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+      inputTypeMethods,
+    });
+
+    const operation = gql(({ query, $var }) =>
+      query.operation({
+        name: "GetUser",
+        variables: { ...$var("id").ID("!") },
+        metadata: () => ({ addCacheDirective: true, ttl: 300 }),
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.id })(({ f }) => ({
+            ...f.id(),
+          })),
+        }),
+        transformDocument: ({ document, metadata }) => {
+          if (metadata?.addCacheDirective) {
+            return visit(document, {
+              OperationDefinition: (node) => ({
+                ...node,
+                directives: [
+                  ...(node.directives ?? []),
+                  {
+                    kind: Kind.DIRECTIVE,
+                    name: { kind: Kind.NAME, value: "cache" },
+                    arguments: [
+                      {
+                        kind: Kind.ARGUMENT,
+                        name: { kind: Kind.NAME, value: "ttl" },
+                        value: { kind: Kind.INT, value: String(metadata.ttl) },
+                      },
+                    ],
+                  },
+                ],
+              }),
+            });
+          }
+          return document;
+        },
+      }),
+    );
+
+    const printed = print(operation.document);
+    expect(printed).toContain("@cache(ttl: 300)");
+  });
+
+  it("applies operation transform before adapter transform", () => {
+    const transformOrder: string[] = [];
+
+    const adapter = defineAdapter({
+      transformDocument: ({ document }) => {
+        transformOrder.push("adapter");
+        return visit(document, {
+          OperationDefinition: (node) => ({
+            ...node,
+            directives: [
+              ...(node.directives ?? []),
+              { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "fromAdapter" } },
+            ],
+          }),
+        });
+      },
+    });
+
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
+      schema,
+      { adapter, inputTypeMethods },
+    );
+
+    const operation = gql(({ query, $var }) =>
+      query.operation({
+        name: "GetUser",
+        variables: { ...$var("id").ID("!") },
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.id })(({ f }) => ({
+            ...f.id(),
+          })),
+        }),
+        transformDocument: ({ document }) => {
+          transformOrder.push("operation");
+          return visit(document, {
+            OperationDefinition: (node) => ({
+              ...node,
+              directives: [
+                ...(node.directives ?? []),
+                { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "fromOperation" } },
+              ],
+            }),
+          });
+        },
+      }),
+    );
+
+    void operation.document;
+
+    // Operation transform runs first, then adapter transform
+    expect(transformOrder).toEqual(["operation", "adapter"]);
+
+    const printed = print(operation.document);
+    expect(printed).toContain("@fromOperation");
+    expect(printed).toContain("@fromAdapter");
+  });
+
+  it("works with only operation transform (no adapter transform)", () => {
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+      inputTypeMethods,
+    });
+
+    const operation = gql(({ query, $var }) =>
+      query.operation({
+        name: "GetUser",
+        variables: { ...$var("id").ID("!") },
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.id })(({ f }) => ({
+            ...f.id(),
+          })),
+        }),
+        transformDocument: ({ document }) => {
+          return visit(document, {
+            Field: (node) => ({
+              ...node,
+              directives: [
+                ...(node.directives ?? []),
+                { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "tracked" } },
+              ],
+            }),
+          });
+        },
+      }),
+    );
+
+    const printed = print(operation.document);
+    expect(printed).toContain("@tracked");
+  });
+
+  it("receives undefined metadata when no metadata builder", () => {
+    let receivedMetadata: unknown = "not-called";
+
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+      inputTypeMethods,
+    });
+
+    const operation = gql(({ query, $var }) =>
+      query.operation({
+        name: "GetUser",
+        variables: { ...$var("id").ID("!") },
+        fields: ({ f, $ }) => ({
+          ...f.user({ id: $.id })(({ f }) => ({
+            ...f.id(),
+          })),
+        }),
+        transformDocument: ({ document, metadata }) => {
+          receivedMetadata = metadata;
+          return document;
+        },
+      }),
+    );
+
+    void operation.document;
+
+    expect(receivedMetadata).toBeUndefined();
   });
 });

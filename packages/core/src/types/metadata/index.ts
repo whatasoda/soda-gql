@@ -10,6 +10,8 @@ export type {
   ExtractUnifiedAdapterTypes,
   FragmentMetaInfo,
   MetadataAdapter,
+  OperationDocumentTransformArgs,
+  OperationDocumentTransformer,
 } from "./adapter";
 export { createDefaultAdapter, defaultMetadataAdapter } from "./adapter";
 export type {

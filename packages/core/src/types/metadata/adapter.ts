@@ -92,6 +92,29 @@ export type DocumentTransformer<TSchemaLevel = unknown, TAggregatedFragmentMetad
 ) => DocumentNode;
 
 /**
+ * Arguments passed to operation-level document transformer.
+ * Receives typed operation metadata.
+ *
+ * @template TOperationMetadata - The operation's metadata type
+ */
+export type OperationDocumentTransformArgs<TOperationMetadata = unknown> = {
+  /** The GraphQL document to transform */
+  readonly document: DocumentNode;
+  /** The operation metadata (typed per-operation) */
+  readonly metadata: TOperationMetadata | undefined;
+};
+
+/**
+ * Operation-level document transformer function.
+ * Applied before the adapter-level transform.
+ *
+ * @template TOperationMetadata - The operation's metadata type
+ */
+export type OperationDocumentTransformer<TOperationMetadata = unknown> = (
+  args: OperationDocumentTransformArgs<TOperationMetadata>,
+) => DocumentNode;
+
+/**
  * Unified adapter that combines helpers and metadata configuration.
  *
  * @template THelpers - Custom helper functions accessible in gql composer callbacks
