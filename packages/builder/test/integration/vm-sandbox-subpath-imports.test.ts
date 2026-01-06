@@ -86,7 +86,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
     const codegenResult = await runCodegen({
       schemas: {
         default: {
-          schema: path.join(workspaceRoot, "schema.graphql"),
+          schema: [path.join(workspaceRoot, "schema.graphql")],
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
@@ -109,7 +109,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
       exclude: [],
       schemas: {
         default: {
-          schema: path.join(workspaceRoot, "schema.graphql"),
+          schema: [path.join(workspaceRoot, "schema.graphql")],
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
@@ -186,7 +186,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
     const codegenResult = await runCodegen({
       schemas: {
         default: {
-          schema: path.join(workspaceRoot, "schema.graphql"),
+          schema: [path.join(workspaceRoot, "schema.graphql")],
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
@@ -209,7 +209,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
       exclude: [],
       schemas: {
         default: {
-          schema: path.join(workspaceRoot, "schema.graphql"),
+          schema: [path.join(workspaceRoot, "schema.graphql")],
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},

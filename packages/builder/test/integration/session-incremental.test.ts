@@ -34,7 +34,7 @@ const createTestConfig = (
   exclude: [],
   schemas: {
     default: {
-      schema: path.join(workspaceRoot, "schema.graphql"),
+      schema: [path.join(workspaceRoot, "schema.graphql")],
       inject: { scalars: path.join(workspaceRoot, "inject/scalars.ts") },
       defaultInputDepth: 3,
       inputDepthOverrides: {},
@@ -81,7 +81,7 @@ describe("BuilderSession incremental end-to-end", () => {
     const codegenResult = await runCodegen({
       schemas: {
         default: {
-          schema: schemaPath,
+          schema: [schemaPath],
           inject: { scalars: injectPath },
         },
       },

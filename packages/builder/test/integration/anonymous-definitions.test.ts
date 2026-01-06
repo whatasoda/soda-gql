@@ -23,7 +23,7 @@ const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
   exclude: [],
   schemas: {
     default: {
-      schema: path.join(workspaceRoot, "schema.graphql"),
+      schema: [path.join(workspaceRoot, "schema.graphql")],
       inject: { scalars: path.join(workspaceRoot, "inject/scalars.ts") },
       defaultInputDepth: 3,
       inputDepthOverrides: {},
@@ -80,7 +80,7 @@ type User {
     const codegenResult = await runCodegen({
       schemas: {
         default: {
-          schema: path.join(workspaceRoot, "schema.graphql"),
+          schema: [path.join(workspaceRoot, "schema.graphql")],
           inject: { scalars: path.join(injectDir, "scalars.ts") },
         },
       },
