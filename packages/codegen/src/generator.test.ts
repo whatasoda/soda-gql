@@ -197,6 +197,47 @@ describe("createSchemaIndex", () => {
     expect(userRecord?.directives?.length).toBe(1);
     expect(userRecord?.directives?.[0]?.name.value).toBe("deprecated");
   });
+
+  test("indexes custom directive definitions", () => {
+    const document = parse(`
+      directive @auth(role: String!) on FIELD_DEFINITION | OBJECT
+      directive @cached(ttl: Int!) repeatable on FIELD
+      type Query { hello: String! }
+    `);
+
+    const index = createSchemaIndex(document);
+
+    // Should extract custom directives
+    expect(index.directives.size).toBe(2);
+
+    const authDirective = index.directives.get("auth");
+    expect(authDirective).toBeDefined();
+    expect(authDirective?.name).toBe("auth");
+    expect(authDirective?.locations).toEqual(["FIELD_DEFINITION", "OBJECT"]);
+    expect(authDirective?.args.size).toBe(1);
+    expect(authDirective?.args.get("role")).toBeDefined();
+    expect(authDirective?.isRepeatable).toBe(false);
+
+    const cachedDirective = index.directives.get("cached");
+    expect(cachedDirective).toBeDefined();
+    expect(cachedDirective?.name).toBe("cached");
+    expect(cachedDirective?.locations).toEqual(["FIELD"]);
+    expect(cachedDirective?.isRepeatable).toBe(true);
+  });
+
+  test("skips built-in directives", () => {
+    const document = parse(`
+      directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+      directive @custom on FIELD
+      type Query { hello: String! }
+    `);
+
+    const index = createSchemaIndex(document);
+
+    // Should skip built-in directives (skip, include, deprecated, specifiedBy)
+    expect(index.directives.has("skip")).toBe(false);
+    expect(index.directives.has("custom")).toBe(true);
+  });
 });
 
 describe("generateMultiSchemaModule", () => {
@@ -444,7 +485,9 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).toContain('FragmentBuilderFor<Schema_default, "User">');
 
     // Should use FragmentBuilders type in createGqlElementComposer
-    expect(result.code).toContain("createGqlElementComposer<Schema_default, FragmentBuilders_default>");
+    expect(result.code).toContain(
+      "createGqlElementComposer<Schema_default, FragmentBuilders_default, typeof customDirectives_default>",
+    );
   });
 
   test("generates fragment builder types for multiple schemas", () => {
@@ -576,5 +619,37 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).toContain("__defaultInputDepth: 5");
     expect(result.code).toContain("__inputDepthOverrides:");
     expect(result.code).toContain('"special_type":10');
+  });
+
+  test("generates custom directive methods from schema", () => {
+    const document = parse(`
+      directive @auth(role: String!) on FIELD
+      directive @cached(ttl: Int!) on FIELD | OBJECT
+      type Query { hello: String! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Should generate custom directive methods
+    expect(result.code).toContain("customDirectives_default");
+    expect(result.code).toContain("createStandardDirectives()");
+    expect(result.code).toContain('auth: createDirectiveMethod("auth", ["FIELD"] as const)');
+    expect(result.code).toContain('cached: createDirectiveMethod("cached", ["FIELD","OBJECT"] as const)');
+
+    // Should pass directiveMethods to createGqlElementComposer
+    expect(result.code).toContain("directiveMethods: customDirectives_default");
+  });
+
+  test("generates empty custom directives when no custom directives in schema", () => {
+    const document = parse(`
+      type Query { hello: String! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Should still generate customDirectives with standard directives
+    expect(result.code).toContain("customDirectives_default = { ...createStandardDirectives(), ...{} }");
   });
 });

@@ -55,12 +55,20 @@ type ScalarRecord = {
   directives: ConstDirectiveNode[];
 };
 
+type DirectiveRecord = {
+  readonly name: string;
+  readonly locations: readonly string[];
+  readonly args: Map<string, InputValueDefinitionNode>;
+  readonly isRepeatable: boolean;
+};
+
 type SchemaIndex = {
   readonly objects: Map<string, ObjectRecord>;
   readonly inputs: Map<string, InputRecord>;
   readonly enums: Map<string, EnumRecord>;
   readonly unions: Map<string, UnionRecord>;
   readonly scalars: Map<string, ScalarRecord>;
+  readonly directives: Map<string, DirectiveRecord>;
   readonly operationTypes: OperationTypeNames;
 };
 
@@ -153,12 +161,25 @@ const updateOperationTypes = (
   }
 };
 
+const addDirectiveArgs = (
+  target: Map<string, InputValueDefinitionNode>,
+  args: readonly InputValueDefinitionNode[] | undefined,
+): void => {
+  if (!args) {
+    return;
+  }
+  for (const arg of args) {
+    target.set(arg.name.value, arg);
+  }
+};
+
 export const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
   const objects = new Map<string, ObjectRecord>();
   const inputs = new Map<string, InputRecord>();
   const enums = new Map<string, EnumRecord>();
   const unions = new Map<string, UnionRecord>();
   const scalars = new Map<string, ScalarRecord>();
+  const directives = new Map<string, DirectiveRecord>();
   const operationTypes: OperationTypeNames = {};
 
   for (const definition of document.definitions) {
@@ -221,6 +242,22 @@ export const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
         record.directives = mergeDirectives(record.directives, definition.directives, precedence);
         break;
       }
+      case Kind.DIRECTIVE_DEFINITION: {
+        // Skip built-in directives that are already provided by createStandardDirectives
+        const name = definition.name.value;
+        if (name === "skip" || name === "include" || name === "deprecated" || name === "specifiedBy") {
+          break;
+        }
+        const args = new Map<string, InputValueDefinitionNode>();
+        addDirectiveArgs(args, definition.arguments);
+        directives.set(name, {
+          name,
+          locations: definition.locations.map((loc) => loc.value),
+          args,
+          isRepeatable: definition.repeatable,
+        });
+        break;
+      }
       case Kind.SCHEMA_DEFINITION:
       case Kind.SCHEMA_EXTENSION:
         updateOperationTypes(operationTypes, definition);
@@ -246,6 +283,7 @@ export const createSchemaIndex = (document: DocumentNode): SchemaIndex => {
     enums,
     unions,
     scalars,
+    directives,
     operationTypes,
   } satisfies SchemaIndex;
 };
@@ -484,6 +522,9 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
+const collectDirectiveNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.directives.keys()).sort((left, right) => left.localeCompare(right));
+
 const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
   `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
 
@@ -503,6 +544,27 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string
   });
 
   return renderPropertyLines({ entries: allMethods, indentSize: 2 });
+};
+
+const renderDirectiveMethod = (record: DirectiveRecord): string => {
+  const locationsJson = JSON.stringify(record.locations);
+  return `${record.name}: createDirectiveMethod("${record.name}", ${locationsJson} as const)`;
+};
+
+const renderDirectiveMethods = (schema: SchemaIndex): string => {
+  const directiveNames = collectDirectiveNames(schema);
+  if (directiveNames.length === 0) {
+    return "{}";
+  }
+
+  const methods = directiveNames
+    .map((name) => {
+      const record = schema.directives.get(name);
+      return record ? renderDirectiveMethod(record) : null;
+    })
+    .filter((method): method is string => method !== null);
+
+  return renderPropertyLines({ entries: methods, indentSize: 2 });
 };
 
 export type GeneratedModule = {
@@ -553,6 +615,7 @@ type MultiRuntimeTemplateOptions = {
       readonly objectNames: string[];
       readonly unionNames: string[];
       readonly inputTypeMethodsBlock: string;
+      readonly directiveMethodsBlock: string;
       readonly fragmentBuildersTypeBlock: string;
       readonly defaultInputDepth?: number;
       readonly inputDepthOverrides?: Readonly<Record<string, number>>;
@@ -625,6 +688,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
     const inputTypeMethodsVar = `inputTypeMethods_${name}`;
     const factoryVar = `createMethod_${name}`;
+    const customDirectivesVar = `customDirectives_${name}`;
 
     // Generate __defaultInputDepth block if non-default value
     const defaultDepthBlock =
@@ -708,20 +772,21 @@ const ${schemaVar} = {
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
 const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
+const ${customDirectivesVar} = { ...createStandardDirectives(), ...${config.directiveMethodsBlock} };
 
 ${typeExports.join("\n")}`);
 
     // Build gql entry with options - inputTypeMethods is always required
     // Include FragmentBuilders type for codegen optimization
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, Adapter_${name}>`;
+      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
       gqlEntries.push(
-        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar} })`,
+        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} })`,
       );
     } else {
-      const typeParams = `<Schema_${name}, FragmentBuilders_${name}>`;
+      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}>`;
       gqlEntries.push(
-        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar} })`,
+        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} })`,
       );
     }
   }
@@ -730,7 +795,9 @@ ${typeExports.join("\n")}`);
 import {
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
+  createDirectiveMethod,
   createGqlElementComposer,
+  createStandardDirectives,
   createVarMethodFactory,
 } from "@soda-gql/core";
 ${extraImports}
@@ -823,6 +890,7 @@ export const generateMultiSchemaModule = (
 
     const factoryVar = `createMethod_${name}`;
     const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
+    const directiveMethodsBlock = renderDirectiveMethods(schema);
     // Pass adapter type name if injection has adapter for this schema
     const adapterTypeName = options?.injection?.get(name)?.adapterImportPath ? `Adapter_${name}` : undefined;
     const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name, adapterTypeName);
@@ -848,6 +916,7 @@ export const generateMultiSchemaModule = (
       objectNames: objectTypeNames,
       unionNames: unionTypeNames,
       inputTypeMethodsBlock,
+      directiveMethodsBlock,
       fragmentBuildersTypeBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),

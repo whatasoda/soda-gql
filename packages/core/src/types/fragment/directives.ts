@@ -1,5 +1,7 @@
-import type { AnyAssignableInput } from "./assignable-input";
+import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
 
-export type AnyDirectiveAttachments = {
-  readonly [key: string]: AnyAssignableInput;
-};
+/**
+ * Field-level directive attachments as an array of DirectiveRef.
+ * Directives are applied in order and validated at build time.
+ */
+export type AnyDirectiveAttachments = readonly AnyDirectiveRef[];

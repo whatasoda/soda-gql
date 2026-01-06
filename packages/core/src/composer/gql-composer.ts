@@ -7,6 +7,7 @@ import type { AnyFragment, AnyOperation } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
+import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder, type InputTypeMethods } from "./var-builder";
@@ -54,11 +55,17 @@ export type FragmentBuildersAll<
 /**
  * Configuration options for `createGqlElementComposer`.
  */
-export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter extends AnyAdapter = DefaultAdapter> = {
+export type GqlElementComposerOptions<
+  TSchema extends AnyGraphqlSchema,
+  TDirectiveMethods extends StandardDirectives,
+  TAdapter extends AnyAdapter = DefaultAdapter,
+> = {
   /** Optional adapter for custom helpers and metadata handling. */
   adapter?: TAdapter;
   /** Methods for building variable type specifiers. */
   inputTypeMethods: InputTypeMethods<TSchema>;
+  /** Optional custom directive methods (including schema-defined directives). */
+  directiveMethods?: TDirectiveMethods;
 };
 
 /**
@@ -69,6 +76,7 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
  * - `fragment`: Builders for each object type
  * - `query/mutation/subscription`: Operation builders
  * - `$var`: Variable definition helpers
+ * - `$dir`: Field directive helpers (@skip, @include)
  * - `$colocate`: Fragment colocation utilities
  *
  * @param schema - The GraphQL schema definition
@@ -79,11 +87,16 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
  * ```typescript
  * const gql = createGqlElementComposer(schema, { inputTypeMethods });
  *
- * const GetUser = gql(({ query, $var }) =>
+ * const GetUser = gql(({ query, $var, $dir }) =>
  *   query.operation({
  *     name: "GetUser",
- *     variables: { id: $var.ID("!") },
- *     fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(...) }),
+ *     variables: { showEmail: $var("showEmail").Boolean("!") },
+ *     fields: ({ f, $ }) => ({
+ *       ...f.user({ id: "1" })(({ f }) => ({
+ *         ...f.name(),
+ *         ...f.email({}, { directives: [$dir.skip({ if: $.showEmail })] }),
+ *       })),
+ *     }),
  *   })
  * );
  * ```
@@ -91,14 +104,15 @@ export type GqlElementComposerOptions<TSchema extends AnyGraphqlSchema, TAdapter
 export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
   TFragmentBuilders,
+  TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
 >(
   schema: NoInfer<TSchema>,
-  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TAdapter>>,
+  options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TDirectiveMethods>, NoInfer<TAdapter>>,
 ) => {
   type THelpers = ExtractHelpers<TAdapter>;
   type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;
-  const { adapter, inputTypeMethods } = options;
+  const { adapter, inputTypeMethods, directiveMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
@@ -112,6 +126,7 @@ export const createGqlElementComposer = <
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
     $var: createVarBuilder<TSchema>(inputTypeMethods),
+    $dir: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
   };

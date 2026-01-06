@@ -1,5 +1,6 @@
 export * from "./const-value";
 export * from "./depth-counter";
+export * from "./directive-ref";
 export * from "./modified-type-name";
 export * from "./type-modifier-core.generated";
 export * from "./type-modifier-extension.generated";

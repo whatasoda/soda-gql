@@ -7,7 +7,6 @@ import type { IfOmittable } from "../../utils/empty-object";
 import type {
   AbstractFieldSelection,
   AnyAssignableInput,
-  AnyDirectiveAttachments,
   AnyFieldSelection,
   AnyFields,
   AnyNestedObject,
@@ -24,6 +23,7 @@ import type {
   OutputTypenameSpecifier,
   OutputUnionSpecifier,
 } from "../type-foundation";
+import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
 
 /**
  * Builder signature exposed to userland `model` and `slice` helpers. The
@@ -100,7 +100,7 @@ export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName 
  */
 export type AnyFieldSelectionFactory = <TAlias extends string | null = null>(
   fieldArgs: AnyAssignableInput | void,
-  extras?: { alias?: TAlias; directives?: AnyDirectiveAttachments },
+  extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
 ) => AnyFieldSelectionFactoryReturn<TAlias>;
 
 /**
@@ -111,7 +111,7 @@ export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection e
   TAlias extends string | null = null,
 >(
   fieldArgs: TSelection["args"] | IfOmittable<TSelection["args"], void | null>,
-  extras?: { alias?: TAlias; directives?: TSelection["directives"] },
+  extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
 ) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
 export type AnyFieldSelectionFactoryReturn<TAlias extends string | null> =

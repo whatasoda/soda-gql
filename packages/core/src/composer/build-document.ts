@@ -12,6 +12,7 @@ import {
   type ArgumentNode,
   type ConstObjectFieldNode,
   type ConstValueNode,
+  type DirectiveNode,
   type DocumentNode,
   type FieldNode,
   type InlineFragmentNode,
@@ -26,6 +27,7 @@ import {
 import {
   type AnyAssignableInput,
   type AnyAssignableInputValue,
+  type AnyDirectiveAttachments,
   type AnyFields,
   type AnyNestedUnion,
   type InferFields,
@@ -33,6 +35,7 @@ import {
 } from "../types/fragment";
 import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
 import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
 
 /**
  * Converts an assignable input value to a GraphQL AST ValueNode.
@@ -134,6 +137,46 @@ const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
     })
     .filter((item) => item !== null);
 
+/**
+ * Validates that a directive can be used at the specified location.
+ *
+ * @param directive - The directive reference to validate
+ * @param expectedLocation - The location where the directive is being used
+ * @throws Error if the directive is not valid at the specified location
+ */
+const validateDirectiveLocation = (directive: AnyDirectiveRef, expectedLocation: DirectiveLocation): void => {
+  const inner = DirectiveRef.getInner(directive);
+  if (!inner.locations.includes(expectedLocation)) {
+    throw new Error(
+      `Directive @${inner.name} cannot be used on ${expectedLocation}. ` + `Valid locations: ${inner.locations.join(", ")}`,
+    );
+  }
+};
+
+/**
+ * Builds DirectiveNode array from field directives.
+ *
+ * Filters for DirectiveRef instances, validates their locations,
+ * and converts them to GraphQL AST DirectiveNode objects.
+ *
+ * @param directives - Array of directive references (or unknown values)
+ * @param location - The location context for validation
+ * @returns Array of DirectiveNode for the GraphQL AST
+ */
+const buildDirectives = (directives: AnyDirectiveAttachments, location: DirectiveLocation): DirectiveNode[] => {
+  return directives
+    .filter((d): d is AnyDirectiveRef => d instanceof DirectiveRef)
+    .map((directive) => {
+      validateDirectiveLocation(directive, location);
+      const inner = DirectiveRef.getInner(directive);
+      return {
+        kind: Kind.DIRECTIVE as const,
+        name: { kind: Kind.NAME as const, value: inner.name },
+        arguments: buildArguments(inner.arguments as AnyAssignableInput),
+      };
+    });
+};
+
 const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
   Object.entries(union)
     .map(([typeName, object]): InlineFragmentNode | null => {
@@ -154,12 +197,14 @@ const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
     .filter((item) => item !== null);
 
 const buildField = (field: AnyFields): FieldNode[] =>
-  Object.entries(field).map(
-    ([alias, { args, field, object, union }]): FieldNode => ({
+  Object.entries(field).map(([alias, { args, field, object, union, directives }]): FieldNode => {
+    const builtDirectives = buildDirectives(directives, "FIELD");
+    return {
       kind: Kind.FIELD,
       name: { kind: Kind.NAME, value: field },
       alias: alias !== field ? { kind: Kind.NAME, value: alias } : undefined,
       arguments: buildArguments(args),
+      directives: builtDirectives.length > 0 ? builtDirectives : undefined,
       selectionSet: object
         ? {
             kind: Kind.SELECTION_SET,
@@ -171,8 +216,8 @@ const buildField = (field: AnyFields): FieldNode[] =>
               selections: buildUnionSelection(union),
             }
           : undefined,
-    }),
-  );
+    };
+  });
 
 /**
  * Converts a constant value to a GraphQL AST ConstValueNode.
