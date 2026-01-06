@@ -115,8 +115,13 @@ export const createGqlElementComposer = <
   const { adapter, inputTypeMethods, directiveMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
+  const transformDocument = adapter?.transformDocument;
   const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
-  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(schema, metadataAdapter);
+  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
+    schema,
+    metadataAdapter,
+    transformDocument,
+  );
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
