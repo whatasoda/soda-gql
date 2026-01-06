@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/config",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Centralized configuration loader and helpers for soda-gql tooling.",
   "type": "module",
   "private": false,
