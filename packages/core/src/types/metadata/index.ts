@@ -4,6 +4,8 @@ export type {
   AnyMetadataAdapter,
   DefaultAdapter,
   DefaultMetadataAdapter,
+  DocumentTransformArgs,
+  DocumentTransformer,
   ExtractAdapterTypes,
   ExtractUnifiedAdapterTypes,
   FragmentMetaInfo,

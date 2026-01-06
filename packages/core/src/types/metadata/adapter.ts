@@ -1,4 +1,6 @@
+import type { DocumentNode } from "graphql";
 import type { FieldPath } from "../../composer/field-path-context";
+import type { OperationType } from "../schema";
 import type { OperationMetadata } from "./metadata";
 
 /**
@@ -57,6 +59,39 @@ export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TFragment, 
 export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
+ * Arguments passed to document transformer function.
+ * Destructurable for convenient access.
+ *
+ * @template TSchemaLevel - Schema-level configuration type
+ * @template TAggregatedFragmentMetadata - Aggregated fragment metadata type
+ */
+export type DocumentTransformArgs<TSchemaLevel = unknown, TAggregatedFragmentMetadata = unknown> = {
+  /** The GraphQL document to transform */
+  readonly document: DocumentNode;
+  /** The operation name */
+  readonly operationName: string;
+  /** The operation type (query, mutation, subscription) */
+  readonly operationType: OperationType;
+  /** Variable names defined for this operation */
+  readonly variableNames: readonly string[];
+  /** Schema-level configuration from adapter */
+  readonly schemaLevel: TSchemaLevel | undefined;
+  /** Aggregated fragment metadata */
+  readonly fragmentMetadata: TAggregatedFragmentMetadata | undefined;
+};
+
+/**
+ * Document transformer function.
+ * Receives the built DocumentNode and returns a transformed DocumentNode.
+ *
+ * @template TSchemaLevel - Schema-level configuration type
+ * @template TAggregatedFragmentMetadata - Aggregated fragment metadata type
+ */
+export type DocumentTransformer<TSchemaLevel = unknown, TAggregatedFragmentMetadata = unknown> = (
+  args: DocumentTransformArgs<TSchemaLevel, TAggregatedFragmentMetadata>,
+) => DocumentNode;
+
+/**
  * Unified adapter that combines helpers and metadata configuration.
  *
  * @template THelpers - Custom helper functions accessible in gql composer callbacks
@@ -89,6 +124,8 @@ export type Adapter<
   readonly helpers?: THelpers;
   /** Metadata configuration for fragments and operations */
   readonly metadata?: MetadataAdapter<TFragmentMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+  /** Optional document transformer called after document building */
+  readonly transformDocument?: DocumentTransformer<TSchemaLevel, TAggregatedFragmentMetadata>;
 };
 
 /**
