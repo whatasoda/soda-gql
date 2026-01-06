@@ -96,36 +96,20 @@ export const createOperationComposerFactory = <
 
         const variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
 
-        const createDefinition = ({
-          metadata,
-          aggregatedFragmentMetadata,
-        }: {
-          metadata: TOperationMetadata | undefined;
-          aggregatedFragmentMetadata: TAggregatedFragmentMetadata | undefined;
-        }) => {
-          const finalDocument = transformDocument
-            ? (transformDocument({
-                document,
-                operationName,
-                operationType,
-                variableNames,
-                schemaLevel: resolvedAdapter.schemaLevel as TSchemaLevel | undefined,
-                fragmentMetadata: aggregatedFragmentMetadata,
-              }) as typeof document)
-            : document;
+        // Check if any fragment has a metadata builder
+        const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);
 
+        if (!hasFragmentMetadata && !options.metadata && !transformDocument) {
+          // No metadata to evaluate and no transform - return directly
           return {
             operationType,
             operationName,
             variableNames,
             documentSource: () => fields,
-            document: finalDocument,
-            metadata,
+            document,
+            metadata: undefined,
           };
-        };
-
-        // Check if any fragment has a metadata builder
-        const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);
+        }
 
         // Helper to aggregate fragment metadata
         const aggregateFragmentMetadata = (
@@ -137,11 +121,6 @@ export const createOperationComposerFactory = <
           }));
           return resolvedAdapter.aggregateFragmentMetadata(fragmentMetaInfos) as TAggregatedFragmentMetadata;
         };
-
-        if (!hasFragmentMetadata && !options.metadata && !transformDocument) {
-          // No metadata to evaluate and no transform
-          return createDefinition({ metadata: undefined, aggregatedFragmentMetadata: undefined });
-        }
 
         // Evaluate fragment metadata first (sync or async)
         const fragmentMetadataResults: (TFragmentMetadata | undefined | Promise<TFragmentMetadata>)[] = fragmentUsages.map(
@@ -159,27 +138,52 @@ export const createOperationComposerFactory = <
           return options.metadata?.({ $, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
         };
 
+        // Factory that captures aggregated via closure
+        const makeCreateDefinition = (aggregated: TAggregatedFragmentMetadata) => {
+          return ({ metadata }: { metadata: TOperationMetadata | undefined }) => {
+            const finalDocument = transformDocument
+              ? (transformDocument({
+                  document,
+                  operationName,
+                  operationType,
+                  variableNames,
+                  schemaLevel: resolvedAdapter.schemaLevel as TSchemaLevel | undefined,
+                  fragmentMetadata: aggregated,
+                }) as typeof document)
+              : document;
+
+            return {
+              operationType,
+              operationName,
+              variableNames,
+              documentSource: () => fields,
+              document: finalDocument,
+              metadata,
+            };
+          };
+        };
+
         if (hasAsyncFragmentMetadata) {
           // Handle async fragment metadata
           return Promise.all(fragmentMetadataResults).then(async (resolvedFragmentMetadata) => {
             const aggregated = aggregateFragmentMetadata(resolvedFragmentMetadata);
             const operationMetadata = await buildOperationMetadata(aggregated);
-            return createDefinition({ metadata: operationMetadata, aggregatedFragmentMetadata: aggregated });
+            return makeCreateDefinition(aggregated)({ metadata: operationMetadata });
           });
         }
 
         // All fragment metadata is sync
         const syncFragmentMetadata = fragmentMetadataResults as (TFragmentMetadata | undefined)[];
         const aggregated = aggregateFragmentMetadata(syncFragmentMetadata);
+        const createDefinition = makeCreateDefinition(aggregated);
+
         const operationMetadataResult = buildOperationMetadata(aggregated);
 
         if (operationMetadataResult instanceof Promise) {
-          return operationMetadataResult.then((metadata) =>
-            createDefinition({ metadata, aggregatedFragmentMetadata: aggregated }),
-          );
+          return operationMetadataResult.then((metadata) => createDefinition({ metadata }));
         }
 
-        return createDefinition({ metadata: operationMetadataResult, aggregatedFragmentMetadata: aggregated });
+        return createDefinition({ metadata: operationMetadataResult });
       });
     };
   };
