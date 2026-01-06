@@ -49,6 +49,29 @@ import type { Adapter } from "../types/metadata";
  *   },
  * });
  * ```
+ *
+ * @example Using helpers for operation-level transform functions (recommended)
+ * ```typescript
+ * // Define transform functions as helpers for reusability
+ * const adapter = defineAdapter({
+ *   helpers: {
+ *     transform: {
+ *       addCacheDirective: (ttl: number) => ({ document }) => {
+ *         return visit(document, { ... });
+ *       },
+ *     },
+ *   },
+ * });
+ *
+ * // Use helper in operation - clean and declarative
+ * gql(({ query, transform }) =>
+ *   query.operation({
+ *     name: "GetUser",
+ *     transformDocument: transform.addCacheDirective(300),
+ *     fields: ({ f }) => ({ ... }),
+ *   }),
+ * );
+ * ```
  */
 export const defineAdapter = <
   THelpers extends object = object,

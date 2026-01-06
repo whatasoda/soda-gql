@@ -108,6 +108,27 @@ export type OperationDocumentTransformArgs<TOperationMetadata = unknown> = {
  * Operation-level document transformer function.
  * Applied before the adapter-level transform.
  *
+ * **Best Practice:** Define transform logic in adapter helpers for reusability,
+ * then reference the helper in the operation's `transformDocument` option.
+ *
+ * @example
+ * ```typescript
+ * // Define in adapter helpers
+ * const adapter = defineAdapter({
+ *   helpers: {
+ *     transform: {
+ *       addCache: (ttl: number) => ({ document }) => visit(document, { ... }),
+ *     },
+ *   },
+ * });
+ *
+ * // Use in operation
+ * query.operation({
+ *   transformDocument: transform.addCache(300),
+ *   ...
+ * });
+ * ```
+ *
  * @template TOperationMetadata - The operation's metadata type
  */
 export type OperationDocumentTransformer<TOperationMetadata = unknown> = (

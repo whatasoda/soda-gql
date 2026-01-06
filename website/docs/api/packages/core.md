@@ -310,8 +310,88 @@ const operation = gqlRuntime.getOperation("canonicalId");
 - TypeScript 5.x or later for full type inference
 - Strict mode recommended for best type safety
 
+## defineAdapter
+
+Create a typed adapter with helpers, metadata configuration, and document transformation:
+
+```typescript
+import { defineAdapter } from "@soda-gql/core/adapter";
+
+const adapter = defineAdapter({
+  helpers: {
+    auth: {
+      requiresLogin: () => ({ requiresAuth: true }),
+    },
+  },
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => ({
+      count: fragments.length,
+    }),
+    schemaLevel: { apiVersion: "v2" },
+  },
+  transformDocument: ({ document, operationType }) => {
+    // Modify document AST
+    return document;
+  },
+});
+```
+
+### Adapter Type
+
+```typescript
+type Adapter<THelpers, TFragmentMetadata, TAggregatedFragmentMetadata, TSchemaLevel> = {
+  helpers?: THelpers;
+  metadata?: MetadataAdapter<TFragmentMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+  transformDocument?: DocumentTransformer<TSchemaLevel, TAggregatedFragmentMetadata>;
+};
+```
+
+### DocumentTransformArgs
+
+Arguments passed to adapter-level `transformDocument`:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `document` | `DocumentNode` | The GraphQL document to transform |
+| `operationName` | `string` | The operation name |
+| `operationType` | `OperationType` | `"query"`, `"mutation"`, or `"subscription"` |
+| `variableNames` | `readonly string[]` | Variable names defined for this operation |
+| `schemaLevel` | `TSchemaLevel \| undefined` | Schema-level configuration |
+| `fragmentMetadata` | `TAggregatedFragmentMetadata \| undefined` | Aggregated fragment metadata |
+
+### OperationDocumentTransformArgs
+
+Arguments passed to operation-level `transformDocument`:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `document` | `DocumentNode` | The GraphQL document to transform |
+| `metadata` | `TOperationMetadata \| undefined` | Typed operation metadata |
+
+## Operation transformDocument Option
+
+Operations can define their own document transform with typed metadata:
+
+```typescript
+gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") },
+    metadata: () => ({ cacheHint: 300 }),
+    transformDocument: ({ document, metadata }) => {
+      // metadata is typed as { cacheHint: number }
+      return document;
+    },
+    fields: ({ f, $ }) => ({ ... }),
+  }),
+);
+```
+
+**Transform Order:** Operation transform runs first, then adapter transform.
+
 ## See Also
 
+- [Adapter Guide](/guide/adapter) - Helpers and document transformation
 - [Fragments Guide](/guide/fragments) - Fragment usage patterns
 - [Operations Guide](/guide/operations) - Operation usage patterns
 - [Variables Guide](/guide/variables) - Variable syntax details
