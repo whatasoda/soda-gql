@@ -24,10 +24,11 @@ export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOpe
 
 /**
  * Extracts the helpers type from an adapter.
+ * Uses `any` for non-target type parameters to avoid contravariance issues
+ * with the `aggregateFragmentMetadata` function parameter type.
  */
-type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infer THelpers, unknown, unknown, unknown>
-  ? THelpers
-  : object;
+// biome-ignore lint/suspicious/noExplicitAny: Required to avoid contravariance issues in conditional type matching
+type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infer THelpers, any, any, any> ? THelpers : object;
 
 /**
  * Extracts the metadata adapter type from an adapter.

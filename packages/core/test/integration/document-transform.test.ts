@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Kind, print, visit } from "graphql";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer, type ExtractMetadataAdapter, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
@@ -61,8 +61,11 @@ describe("document transformation integration", () => {
   describe("defineAdapter with transformDocument", () => {
     it("combines helpers, metadata, and transformDocument in a single adapter", () => {
       type FragmentMeta = { cacheHint?: number };
+      type CacheHelpers = { cache: { hint: (seconds: number) => FragmentMeta } };
+      type AggregatedMeta = { maxCacheHint: number };
+      type SchemaLevelConfig = { defaultCacheHint: number };
 
-      const adapter = defineAdapter({
+      const adapter = defineAdapter<CacheHelpers, FragmentMeta, AggregatedMeta, SchemaLevelConfig>({
         helpers: {
           cache: {
             hint: (seconds: number): FragmentMeta => ({ cacheHint: seconds }),
@@ -70,10 +73,7 @@ describe("document transformation integration", () => {
         },
         metadata: {
           aggregateFragmentMetadata: (fragments) => ({
-            maxCacheHint: Math.max(
-              0,
-              ...fragments.map((f) => f.metadata?.cacheHint ?? 0),
-            ),
+            maxCacheHint: Math.max(0, ...fragments.map((f) => f.metadata?.cacheHint ?? 0)),
           }),
           schemaLevel: { defaultCacheHint: 60 },
         },
@@ -104,10 +104,12 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-        schema,
-        { adapter, inputTypeMethods },
-      );
+      const gql = createGqlElementComposer<
+        Schema,
+        FragmentBuildersAll<Schema, ExtractMetadataAdapter<typeof adapter>>,
+        StandardDirectives,
+        typeof adapter
+      >(schema, { adapter, inputTypeMethods });
 
       // Create fragment with cache hint using helper
       const userFragment = gql(({ fragment, cache }) =>
@@ -167,10 +169,10 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-        schema,
-        { adapter, inputTypeMethods },
-      );
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+        adapter,
+        inputTypeMethods,
+      });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -196,10 +198,7 @@ describe("document transformation integration", () => {
             return visit(document, {
               OperationDefinition: (node) => ({
                 ...node,
-                directives: [
-                  ...(node.directives ?? []),
-                  { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "queryOnly" } },
-                ],
+                directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "queryOnly" } }],
               }),
             });
           }
@@ -207,10 +206,10 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-        schema,
-        { adapter, inputTypeMethods },
-      );
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+        adapter,
+        inputTypeMethods,
+      });
 
       const queryOp = gql(({ query, $var }) =>
         query.operation({
@@ -235,10 +234,7 @@ describe("document transformation integration", () => {
             return visit(document, {
               OperationDefinition: (node) => ({
                 ...node,
-                directives: [
-                  ...(node.directives ?? []),
-                  { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "sensitive" } },
-                ],
+                directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "sensitive" } }],
               }),
             });
           }
@@ -246,10 +242,10 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-        schema,
-        { adapter, inputTypeMethods },
-      );
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+        adapter,
+        inputTypeMethods,
+      });
 
       const adminOp = gql(({ query, $var }) =>
         query.operation({
@@ -288,19 +284,16 @@ describe("document transformation integration", () => {
           return visit(document, {
             Field: (node) => ({
               ...node,
-              directives: [
-                ...(node.directives ?? []),
-                { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "tracked" } },
-              ],
+              directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "tracked" } }],
             }),
           });
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-        schema,
-        { adapter, inputTypeMethods },
-      );
+      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+        adapter,
+        inputTypeMethods,
+      });
 
       const operation = gql(({ query, $var }) =>
         query.operation({

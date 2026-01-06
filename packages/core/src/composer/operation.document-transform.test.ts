@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Kind, print, visit, type DocumentNode } from "graphql";
+import { type DocumentNode, Kind, print, visit } from "graphql";
 import { defineAdapter } from "../adapter/define-adapter";
 import { define, defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
@@ -37,7 +37,7 @@ const schema = {
     User: define("User").object({
       id: unsafeOutputType.scalar("ID:!", {}),
       name: unsafeOutputType.scalar("String:!", {}),
-      email: unsafeOutputType.scalar("String", {}),
+      email: unsafeOutputType.scalar("String:", {}),
     }),
   },
   union: {},
@@ -72,10 +72,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -110,10 +110,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -143,10 +143,10 @@ describe("document transformation via adapter", () => {
       helpers: { test: () => "test" },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -192,10 +192,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -238,10 +238,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -286,12 +286,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<
-      MutationSchema,
-      FragmentBuildersAll<MutationSchema>,
-      StandardDirectives,
-      typeof adapter
-    >(mutationSchema, { adapter, inputTypeMethods });
+    const gql = createGqlElementComposer<MutationSchema, FragmentBuildersAll<MutationSchema>, StandardDirectives, typeof adapter>(
+      mutationSchema,
+      { adapter, inputTypeMethods },
+    );
 
     const operation = gql(({ mutation, $var }) =>
       mutation.operation({
@@ -322,10 +320,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -361,10 +359,7 @@ describe("document transformation via adapter", () => {
           return visit(document, {
             OperationDefinition: (node) => ({
               ...node,
-              directives: [
-                ...(node.directives ?? []),
-                { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "production" } },
-              ],
+              directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "production" } }],
             }),
           });
         }
@@ -372,10 +367,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -427,8 +422,6 @@ describe("operation-level transformDocument", () => {
   });
 
   it("can modify document based on typed metadata", () => {
-    type OperationMeta = { addCacheDirective: boolean; ttl: number };
-
     const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
       inputTypeMethods,
     });
@@ -483,19 +476,16 @@ describe("operation-level transformDocument", () => {
         return visit(document, {
           OperationDefinition: (node) => ({
             ...node,
-            directives: [
-              ...(node.directives ?? []),
-              { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "fromAdapter" } },
-            ],
+            directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "fromAdapter" } }],
           }),
         });
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(
-      schema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ query, $var }) =>
       query.operation({
@@ -549,10 +539,7 @@ describe("operation-level transformDocument", () => {
           return visit(document, {
             Field: (node) => ({
               ...node,
-              directives: [
-                ...(node.directives ?? []),
-                { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "tracked" } },
-              ],
+              directives: [...(node.directives ?? []), { kind: Kind.DIRECTIVE, name: { kind: Kind.NAME, value: "tracked" } }],
             }),
           });
         },
