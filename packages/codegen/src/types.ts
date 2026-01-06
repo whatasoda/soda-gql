@@ -10,7 +10,7 @@ export type CodegenInjectConfig = {
 
 // Schema configuration for codegen (mirrors config structure)
 export type CodegenSchemaConfig = {
-  readonly schema: string;
+  readonly schema: readonly string[];
   readonly inject: CodegenInjectConfig;
   readonly defaultInputDepth?: number;
   readonly inputDepthOverrides?: Readonly<Record<string, number>>;

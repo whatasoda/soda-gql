@@ -54,21 +54,32 @@ export const checkCodegenFreshness = (): CheckResult<CodegenFreshnessData> => {
   let hasStale = false;
 
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
-    if (!existsSync(schemaConfig.schema)) {
-      continue; // Handled by config validation check
+    // Get the latest mtime from all schema files
+    let maxSchemaMtime = 0;
+    const existingPaths: string[] = [];
+
+    for (const schemaPath of schemaConfig.schema) {
+      if (!existsSync(schemaPath)) {
+        continue; // Handled by config validation check
+      }
+      existingPaths.push(schemaPath);
+      const schemaStat = statSync(schemaPath);
+      maxSchemaMtime = Math.max(maxSchemaMtime, schemaStat.mtimeMs);
     }
 
-    const schemaStat = statSync(schemaConfig.schema);
-    const schemaMtime = schemaStat.mtimeMs;
-    const isStale = schemaMtime > generatedMtime;
+    // Skip if no schema files exist
+    if (existingPaths.length === 0) {
+      continue;
+    }
 
+    const isStale = maxSchemaMtime > generatedMtime;
     if (isStale) hasStale = true;
 
     schemaResults.push({
       name,
-      schemaPath: schemaConfig.schema,
+      schemaPath: existingPaths.join(", "),
       generatedPath,
-      schemaMtime,
+      schemaMtime: maxSchemaMtime,
       generatedMtime,
       isStale,
     });
