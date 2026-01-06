@@ -1,4 +1,6 @@
+import type { DocumentNode } from "graphql";
 import type { FieldPath } from "../../composer/field-path-context";
+import type { OperationType } from "../schema";
 import type { OperationMetadata } from "./metadata";
 
 /**
@@ -57,6 +59,83 @@ export type ExtractAdapterTypes<T> = T extends MetadataAdapter<infer TFragment, 
 export type AnyMetadataAdapter = MetadataAdapter<any, any, any>;
 
 /**
+ * Arguments passed to document transformer function.
+ * Destructurable for convenient access.
+ *
+ * @template TSchemaLevel - Schema-level configuration type
+ * @template TAggregatedFragmentMetadata - Aggregated fragment metadata type
+ */
+export type DocumentTransformArgs<TSchemaLevel = unknown, TAggregatedFragmentMetadata = unknown> = {
+  /** The GraphQL document to transform */
+  readonly document: DocumentNode;
+  /** The operation name */
+  readonly operationName: string;
+  /** The operation type (query, mutation, subscription) */
+  readonly operationType: OperationType;
+  /** Variable names defined for this operation */
+  readonly variableNames: readonly string[];
+  /** Schema-level configuration from adapter */
+  readonly schemaLevel: TSchemaLevel | undefined;
+  /** Aggregated fragment metadata */
+  readonly fragmentMetadata: TAggregatedFragmentMetadata | undefined;
+};
+
+/**
+ * Document transformer function.
+ * Receives the built DocumentNode and returns a transformed DocumentNode.
+ *
+ * @template TSchemaLevel - Schema-level configuration type
+ * @template TAggregatedFragmentMetadata - Aggregated fragment metadata type
+ */
+export type DocumentTransformer<TSchemaLevel = unknown, TAggregatedFragmentMetadata = unknown> = (
+  args: DocumentTransformArgs<TSchemaLevel, TAggregatedFragmentMetadata>,
+) => DocumentNode;
+
+/**
+ * Arguments passed to operation-level document transformer.
+ * Receives typed operation metadata.
+ *
+ * @template TOperationMetadata - The operation's metadata type
+ */
+export type OperationDocumentTransformArgs<TOperationMetadata = unknown> = {
+  /** The GraphQL document to transform */
+  readonly document: DocumentNode;
+  /** The operation metadata (typed per-operation) */
+  readonly metadata: TOperationMetadata | undefined;
+};
+
+/**
+ * Operation-level document transformer function.
+ * Applied before the adapter-level transform.
+ *
+ * **Best Practice:** Define transform logic in adapter helpers for reusability,
+ * then reference the helper in the operation's `transformDocument` option.
+ *
+ * @example
+ * ```typescript
+ * // Define in adapter helpers
+ * const adapter = defineAdapter({
+ *   helpers: {
+ *     transform: {
+ *       addCache: (ttl: number) => ({ document }) => visit(document, { ... }),
+ *     },
+ *   },
+ * });
+ *
+ * // Use in operation
+ * query.operation({
+ *   transformDocument: transform.addCache(300),
+ *   ...
+ * });
+ * ```
+ *
+ * @template TOperationMetadata - The operation's metadata type
+ */
+export type OperationDocumentTransformer<TOperationMetadata = unknown> = (
+  args: OperationDocumentTransformArgs<TOperationMetadata>,
+) => DocumentNode;
+
+/**
  * Unified adapter that combines helpers and metadata configuration.
  *
  * @template THelpers - Custom helper functions accessible in gql composer callbacks
@@ -89,6 +168,8 @@ export type Adapter<
   readonly helpers?: THelpers;
   /** Metadata configuration for fragments and operations */
   readonly metadata?: MetadataAdapter<TFragmentMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+  /** Optional document transformer called after document building */
+  readonly transformDocument?: DocumentTransformer<TSchemaLevel, TAggregatedFragmentMetadata>;
 };
 
 /**

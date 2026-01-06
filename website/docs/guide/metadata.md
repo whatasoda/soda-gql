@@ -237,7 +237,16 @@ type QueryMeta = typeof getUserQuery.$infer.metadata;
 // }
 ```
 
+## Document Transformation
+
+For build-time AST transformation based on metadata, see the [Adapter Guide](/guide/adapter#document-transform). Document transforms can:
+
+- Add directives based on metadata (e.g., `@cached`, `@auth`)
+- Modify field selections
+- Inject tracing or debugging information
+
 ## Next Steps
 
+- Learn about [Adapters](/guide/adapter) for helpers and document transformation
 - Explore [Fragment Colocation](/guide/colocation) for component-based patterns
 - See the [API Reference](/api/packages/core) for complete type documentation

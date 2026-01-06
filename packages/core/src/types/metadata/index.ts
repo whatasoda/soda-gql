@@ -4,10 +4,14 @@ export type {
   AnyMetadataAdapter,
   DefaultAdapter,
   DefaultMetadataAdapter,
+  DocumentTransformArgs,
+  DocumentTransformer,
   ExtractAdapterTypes,
   ExtractUnifiedAdapterTypes,
   FragmentMetaInfo,
   MetadataAdapter,
+  OperationDocumentTransformArgs,
+  OperationDocumentTransformer,
 } from "./adapter";
 export { createDefaultAdapter, defaultMetadataAdapter } from "./adapter";
 export type {

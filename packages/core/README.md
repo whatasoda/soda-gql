@@ -251,6 +251,73 @@ $var.getVariablePath(varRef, (p) => p.profile.name);
 // Returns: ["$user", "name"] (variable name + path after variable reference point)
 ```
 
+## Adapter
+
+Adapters customize the behavior of your GraphQL system with helpers, metadata configuration, and document transformation.
+
+### Basic Usage
+
+```typescript
+import { defineAdapter } from "@soda-gql/core/adapter";
+
+const adapter = defineAdapter({
+  helpers: {
+    auth: {
+      requiresLogin: () => ({ requiresAuth: true }),
+    },
+  },
+  metadata: {
+    aggregateFragmentMetadata: (fragments) => ({
+      count: fragments.length,
+    }),
+    schemaLevel: { apiVersion: "v2" },
+  },
+  transformDocument: ({ document, operationType }) => {
+    // Schema-wide document transformation
+    return document;
+  },
+});
+```
+
+### Document Transform
+
+Operations can also define their own transform with typed metadata:
+
+```typescript
+gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    metadata: () => ({ cacheHint: 300 }),
+    transformDocument: ({ document, metadata }) => {
+      // metadata is typed as { cacheHint: number }
+      return document;
+    },
+    fields: ({ f, $ }) => ({ ... }),
+  }),
+);
+```
+
+**Best Practice:** Define transform logic in helpers for reusability:
+
+```typescript
+const adapter = defineAdapter({
+  helpers: {
+    transform: {
+      addCache: (ttl: number) => ({ document }) => {
+        // Transform logic here
+        return document;
+      },
+    },
+  },
+});
+
+// Use helper in operation
+query.operation({
+  transformDocument: transform.addCache(300),
+  ...
+});
+```
+
 ## Runtime Exports
 
 The `/runtime` subpath provides utilities for operation registration and retrieval:

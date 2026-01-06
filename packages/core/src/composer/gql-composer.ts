@@ -24,10 +24,11 @@ export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOpe
 
 /**
  * Extracts the helpers type from an adapter.
+ * Uses `any` for non-target type parameters to avoid contravariance issues
+ * with the `aggregateFragmentMetadata` function parameter type.
  */
-type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infer THelpers, unknown, unknown, unknown>
-  ? THelpers
-  : object;
+// biome-ignore lint/suspicious/noExplicitAny: Required to avoid contravariance issues in conditional type matching
+type ExtractHelpers<TAdapter extends AnyAdapter> = TAdapter extends Adapter<infer THelpers, any, any, any> ? THelpers : object;
 
 /**
  * Extracts the metadata adapter type from an adapter.
@@ -115,8 +116,13 @@ export const createGqlElementComposer = <
   const { adapter, inputTypeMethods, directiveMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
+  const transformDocument = adapter?.transformDocument;
   const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
-  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(schema, metadataAdapter);
+  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
+    schema,
+    metadataAdapter,
+    transformDocument,
+  );
 
   // Wrap operation composers in objects with an `operation` method for extensibility
   // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
