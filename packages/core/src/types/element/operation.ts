@@ -51,6 +51,7 @@ type OperationArtifact<
 > = {
   readonly operationType: TOperationType;
   readonly operationName: TOperationName;
+  readonly schemaLabel: string;
   readonly variableNames: TVariableNames;
   readonly documentSource: () => TFields;
   readonly document: TypedDocumentNode<TData, TVariables>;
@@ -106,6 +107,11 @@ export class Operation<
     return GqlElement.get(this).operationName;
   }
 
+  /** The schema label this operation belongs to. */
+  public get schemaLabel() {
+    return GqlElement.get(this).schemaLabel;
+  }
+
   /** List of variable names defined for this operation. */
   public get variableNames() {
     return GqlElement.get(this).variableNames;
@@ -145,6 +151,7 @@ export class Operation<
       | {
           operationType: TOperationType;
           operationName: TOperationName;
+          schemaLabel: TSchema["label"];
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
           document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
@@ -153,6 +160,7 @@ export class Operation<
       | Promise<{
           operationType: TOperationType;
           operationName: TOperationName;
+          schemaLabel: TSchema["label"];
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
           document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
