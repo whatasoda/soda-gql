@@ -87,8 +87,10 @@ const groupBySchema = (
           inputType: "void", // Fragments input is variables, simplified to void for now
           outputType,
         });
-      } catch {
-        // Skip on error
+      } catch (error) {
+        console.warn(
+          `[prebuilt] Failed to calculate type for fragment "${selection.key}": ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     } else if (selection.type === "operation") {
       try {
@@ -98,8 +100,10 @@ const groupBySchema = (
           inputType: "Record<string, unknown>", // Simplified for now
           outputType,
         });
-      } catch {
-        // Skip on error
+      } catch (error) {
+        console.warn(
+          `[prebuilt] Failed to calculate type for operation "${selection.operationName}": ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
   }

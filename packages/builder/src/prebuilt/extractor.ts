@@ -72,7 +72,11 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
           fields,
         });
       }
-    } catch {}
+    } catch (error) {
+      console.warn(
+        `[prebuilt] Failed to extract field selections for ${canonicalId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   return selections;
