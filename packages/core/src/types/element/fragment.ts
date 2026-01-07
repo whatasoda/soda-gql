@@ -12,7 +12,7 @@ import { GqlElement } from "./gql-element";
 /**
  * Type alias for any Fragment instance.
  */
-export type AnyFragment = Fragment<string, any, AnyFields, any>;
+export type AnyFragment = Fragment<string, any, AnyFields, any, string | undefined>;
 
 /**
  * Type inference metadata for fragments.
@@ -31,9 +31,10 @@ interface FragmentArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
+  TKey extends string | undefined = undefined,
 > {
   readonly typename: TTypeName;
-  readonly key?: string;
+  readonly key: TKey;
   readonly spread: (variables: TVariables) => TFields;
 }
 
@@ -49,19 +50,21 @@ declare const __FRAGMENT_BRAND__: unique symbol;
  * @template TVariables - Variables required when spreading
  * @template TFields - The selected fields structure
  * @template TOutput - Inferred output type from selected fields
+ * @template TKey - Optional unique key for prebuilt type lookup
  */
 export class Fragment<
     TTypeName extends string,
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
+    TKey extends string | undefined = undefined,
   >
-  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields>, FragmentInferMeta<TVariables, TOutput>>
-  implements FragmentArtifact<TTypeName, TVariables, TFields>
+  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields, TKey>, FragmentInferMeta<TVariables, TOutput>>
+  implements FragmentArtifact<TTypeName, TVariables, TFields, TKey>
 {
   private declare readonly [__FRAGMENT_BRAND__]: void;
 
-  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields>) {
+  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields, TKey>) {
     super(define);
   }
 
@@ -93,9 +96,11 @@ export class Fragment<
     TTypeName extends keyof TSchema["object"] & string,
     TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
+    TKey extends string | undefined = undefined,
   >(
     define: () => {
       typename: TTypeName;
+      key: TKey;
       spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
@@ -103,6 +108,8 @@ export class Fragment<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
+    return new Fragment<TTypeName, Variables, Fields, Output, TKey>(
+      define as () => FragmentArtifact<TTypeName, Variables, Fields, TKey>,
+    );
   }
 }

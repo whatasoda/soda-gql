@@ -394,8 +394,8 @@ describe("createIntermediateRegistry", () => {
       const element = registry.addElement("test:element", () =>
         Fragment.create(() => ({
           typename: "TestType",
+          key: undefined,
           spread: () => ({}),
-          metadata: null,
         })),
       );
 
@@ -508,8 +508,8 @@ describe("createIntermediateRegistry", () => {
       const syncElement = registry.addElement("test:sync", () =>
         Fragment.create(() => ({
           typename: "SyncType",
+          key: undefined,
           spread: () => ({}),
-          metadata: null,
         })),
       );
 
