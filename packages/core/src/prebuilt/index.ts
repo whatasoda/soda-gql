@@ -20,7 +20,6 @@ export {
   getEnumType,
   getScalarInputType,
   getScalarOutputType,
-  getScalarType,
   graphqlTypeToTypeScript,
   type TypeFormatters,
 } from "./type-calculator";

@@ -119,11 +119,6 @@ export const getScalarInputType = (schema: AnyGraphqlSchema, scalarName: string)
 };
 
 /**
- * @deprecated Use getScalarOutputType instead
- */
-export const getScalarType = getScalarOutputType;
-
-/**
  * Get the TypeScript type string for an enum type from the schema.
  */
 export const getEnumType = (schema: AnyGraphqlSchema, enumName: string): string => {

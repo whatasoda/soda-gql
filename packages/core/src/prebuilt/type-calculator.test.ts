@@ -12,7 +12,6 @@ import {
   generateInputTypeFromSpecifiers,
   getScalarInputType,
   getScalarOutputType,
-  getScalarType,
   graphqlTypeToTypeScript,
 } from "./type-calculator";
 
@@ -117,12 +116,6 @@ describe("getScalarInputType", () => {
 
   test("returns unknown for scalar not in schema", () => {
     expect(getScalarInputType(mockSchema, "UnknownScalar")).toBe("unknown");
-  });
-});
-
-describe("getScalarType (deprecated alias)", () => {
-  test("is an alias for getScalarOutputType", () => {
-    expect(getScalarType(mockSchema, "String")).toBe(getScalarOutputType(mockSchema, "String"));
   });
 });
 
