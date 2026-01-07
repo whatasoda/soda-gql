@@ -571,7 +571,9 @@ describe("generateInputTypeFromSpecifiers", () => {
     const specifiers: InputTypeSpecifiers = {
       status: { kind: "enum", name: "Status", modifier: "!" },
     };
-    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly status: "ACTIVE" | "INACTIVE" | "PENDING" }');
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
+      '{ readonly status: "ACTIVE" | "INACTIVE" | "PENDING" }',
+    );
   });
 
   test("handles array variable", () => {
