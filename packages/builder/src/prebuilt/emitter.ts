@@ -63,6 +63,21 @@ const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
   schemas: Record<string, AnyGraphqlSchema>,
 ): Result<Map<string, SchemaGroup>, BuilderError> => {
+  // Check for duplicate schemaLabels
+  const labelToSchemaNames = new Map<string, string[]>();
+  for (const [schemaName, schema] of Object.entries(schemas)) {
+    const label = schema.label;
+    const existing = labelToSchemaNames.get(label) ?? [];
+    existing.push(schemaName);
+    labelToSchemaNames.set(label, existing);
+  }
+
+  for (const [label, schemaNames] of labelToSchemaNames) {
+    if (schemaNames.length > 1) {
+      return err(builderErrors.schemaLabelDuplicate(label, schemaNames));
+    }
+  }
+
   const grouped = new Map<string, SchemaGroup>();
 
   // Initialize groups for each schema
