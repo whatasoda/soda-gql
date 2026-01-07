@@ -149,6 +149,86 @@ export const userQuery = gql.default(({ query, $var }) =>
 
 See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure and advanced usage.
 
+### Prebuilt Types (Bundler Compatibility)
+
+When bundling with tools like tsdown, rollup-plugin-dts, or other bundlers that merge declaration files, complex type inference (like `InferFields`) may be lost at module boundaries. The prebuilt types feature solves this by pre-calculating types at build time.
+
+#### Enabling Prebuilt Types
+
+Generate prebuilt module alongside the regular output:
+
+```bash
+bun run soda-gql codegen --prebuilt
+```
+
+This creates additional files in your output directory:
+
+```
+{config.outdir}/
+├── index.ts           # Regular module with full type inference
+└── prebuilt/
+    ├── index.ts       # Prebuilt module using type registry
+    └── types.ts       # Type definitions for fragments/operations
+```
+
+#### Using Fragment Keys
+
+For fragments to be resolved in prebuilt mode, add a `key` property:
+
+```typescript
+// Fragment with key for prebuilt type lookup
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({
+    key: "UserFields",  // Unique key for prebuilt type resolution
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+  }),
+);
+```
+
+Operations are automatically keyed by their `name` property.
+
+#### Bundler Configuration
+
+Configure your bundler to use the prebuilt module via path aliases:
+
+**tsdown / tsconfig.json:**
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "./src/graphql-system": ["./src/graphql-system/prebuilt"]
+    }
+  }
+}
+```
+
+**Vite:**
+```typescript
+export default {
+  resolve: {
+    alias: {
+      "./src/graphql-system": "./src/graphql-system/prebuilt"
+    }
+  }
+}
+```
+
+**Webpack:**
+```typescript
+module.exports = {
+  resolve: {
+    alias: {
+      "./src/graphql-system": "./src/graphql-system/prebuilt"
+    }
+  }
+}
+```
+
+The same source code works in both modes - type inference happens at development time (regular mode), while bundled output uses prebuilt types.
+
 ### For Contributors
 
 ```bash
