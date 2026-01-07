@@ -450,7 +450,7 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
     .map((value) => value.name.value);
   const valuesObj = valueNames.length === 0 ? "{}" : `{ ${valueNames.map((v) => `${v}: true`).join(", ")} }`;
   const valueUnion = valueNames.length === 0 ? "never" : valueNames.map((v) => `"${v}"`).join(" | ");
-  return `const enum_${schemaName}_${record.name} = enumType<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
+  return `const enum_${schemaName}_${record.name} = defineEnum<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
 };
 
 const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
@@ -779,7 +779,7 @@ ${typeExports.join("\n")}`);
 
   return `\
 import {
-  enumType,
+  defineEnum,
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,
