@@ -18,6 +18,7 @@ import type { IntermediateArtifactElement } from "../intermediate-module";
 export type FieldSelectionData =
   | {
       readonly type: "fragment";
+      readonly schemaLabel: string;
       readonly key: string | undefined;
       readonly typename: string;
       readonly fields: AnyFields;
@@ -25,6 +26,7 @@ export type FieldSelectionData =
     }
   | {
       readonly type: "operation";
+      readonly schemaLabel: string;
       readonly operationName: string;
       readonly operationType: string;
       readonly fields: AnyFields;
@@ -66,6 +68,7 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
 
         selections.set(canonicalId, {
           type: "fragment",
+          schemaLabel: element.element.schemaLabel,
           key: element.element.key,
           typename: element.element.typename,
           fields,
@@ -84,6 +87,7 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
 
         selections.set(canonicalId, {
           type: "operation",
+          schemaLabel: element.element.schemaLabel,
           operationName: element.element.operationName,
           operationType: element.element.operationType,
           fields,
