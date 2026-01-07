@@ -19,8 +19,7 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly kind: TKind;
   readonly name: string;
   readonly modifier: TypeModifier;
-  // readonly directives: AnyConstDirectiveAttachments;
-  readonly defaultValue: AnyDefaultValue | null;
+  readonly defaultValue?: AnyDefaultValue | null;
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
 export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier;

@@ -310,10 +310,11 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Factory function format: inputType("CreateUserInput", ...)
-    expect(result.code).toContain('const input_default_CreateUserInput = inputType("CreateUserInput"');
-    // Field specifier factory format: inputScalar("String", "!")
-    expect(result.code).toContain('name: inputScalar("String", "!")');
+    // Inline object format with as const
+    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput", fields:');
+    expect(result.code).toContain("} as const");
+    // Inline specifier format with explicit kind
+    expect(result.code).toContain('name: { kind: "scalar", name: "String", modifier: "!"');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -328,8 +329,9 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Factory function format: unionType("SearchResult", ...)
-    expect(result.code).toContain('const union_default_SearchResult = unionType("SearchResult"');
+    // Inline object format with as const
+    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult", types:');
+    expect(result.code).toContain("} as const");
     expect(result.code).toContain("User: true");
     expect(result.code).toContain("Post: true");
     expect(result.stats.unions).toBe(1);
@@ -437,13 +439,13 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Code should contain type modifiers in factory function calls
-    expect(result.code).toContain('outputScalar("String", "!")');
-    expect(result.code).toContain('outputScalar("String", "?")');
-    expect(result.code).toContain('outputScalar("String", "![]!")');
-    expect(result.code).toContain('outputScalar("String", "![]?")');
-    expect(result.code).toContain('outputScalar("String", "?[]!")');
-    expect(result.code).toContain('outputScalar("String", "![]![]!")');
+    // Code should contain type modifiers in inline specifiers
+    expect(result.code).toContain('modifier: "!"');
+    expect(result.code).toContain('modifier: "?"');
+    expect(result.code).toContain('modifier: "![]!"');
+    expect(result.code).toContain('modifier: "![]?"');
+    expect(result.code).toContain('modifier: "?[]!"');
+    expect(result.code).toContain('modifier: "![]![]!"');
   });
 
   test("generates sorted field definitions", () => {

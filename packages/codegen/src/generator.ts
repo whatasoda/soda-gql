@@ -368,21 +368,20 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
   const { name, modifier } = parseTypeReference(definition.type);
   const defaultValue = definition.defaultValue;
 
-  let factoryName: string;
+  let kind: "scalar" | "enum" | "input";
   if (isScalarName(schema, name)) {
-    factoryName = defaultValue ? "inputScalarDefault" : "inputScalar";
+    kind = "scalar";
   } else if (isEnumName(schema, name)) {
-    factoryName = defaultValue ? "inputEnumDefault" : "inputEnum";
+    kind = "enum";
   } else {
-    factoryName = defaultValue ? "inputObjectDefault" : "inputObject";
+    kind = "input";
   }
 
+  // Only include defaultValue when it has a value (reduces file size significantly)
   if (defaultValue) {
-    const defaultValueArg = renderConstValue(defaultValue);
-    return `${factoryName}("${name}", "${modifier}", ${defaultValueArg})`;
+    return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
   }
-
-  return `${factoryName}("${name}", "${modifier}")`;
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -395,27 +394,22 @@ const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinit
 
 const renderOutputRef = (schema: SchemaIndex, type: TypeNode, args: readonly InputValueDefinitionNode[] | undefined): string => {
   const { name, modifier } = parseTypeReference(type);
-  const hasArgs = args && args.length > 0;
+  const argumentMap = renderArgumentMap(schema, args);
 
-  let factoryName: string;
+  let kind: "scalar" | "enum" | "union" | "object";
   if (isScalarName(schema, name)) {
-    factoryName = hasArgs ? "outputScalarArgs" : "outputScalar";
+    kind = "scalar";
   } else if (isEnumName(schema, name)) {
-    factoryName = hasArgs ? "outputEnumArgs" : "outputEnum";
+    kind = "enum";
   } else if (isUnionName(schema, name)) {
-    factoryName = hasArgs ? "outputUnionArgs" : "outputUnion";
+    kind = "union";
   } else if (isObjectName(schema, name)) {
-    factoryName = hasArgs ? "outputObjectArgs" : "outputObject";
+    kind = "object";
   } else {
-    factoryName = hasArgs ? "outputScalarArgs" : "outputScalar"; // fallback for unknown types
+    kind = "scalar"; // fallback for unknown types
   }
 
-  if (hasArgs) {
-    const argumentMap = renderArgumentMap(schema, args);
-    return `${factoryName}("${name}", "${modifier}", ${argumentMap})`;
-  }
-
-  return `${factoryName}("${name}", "${modifier}")`;
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -461,12 +455,12 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
 
 const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
   const fields = renderInputFields(schema, record.fields);
-  return `const input_${schemaName}_${record.name} = inputType("${record.name}", ${fields});`;
+  return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
 const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord): string => {
   const fields = renderObjectFields(schema, record.fields);
-  return `const object_${schemaName}_${record.name} = objectType("${record.name}", ${fields});`;
+  return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
 const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
@@ -474,7 +468,7 @@ const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((member) => member.name.value);
   const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
-  return `const union_${schemaName}_${record.name} = unionType("${record.name}", ${typesObj});`;
+  return `const union_${schemaName}_${record.name} = { name: "${record.name}", types: ${typesObj} } as const;`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
@@ -786,23 +780,6 @@ ${typeExports.join("\n")}`);
   return `\
 import {
   enumType,
-  inputEnum,
-  inputEnumDefault,
-  inputObject,
-  inputObjectDefault,
-  inputScalar,
-  inputScalarDefault,
-  inputType,
-  objectType,
-  outputEnum,
-  outputEnumArgs,
-  outputObject,
-  outputObjectArgs,
-  outputScalar,
-  outputScalarArgs,
-  outputUnion,
-  outputUnionArgs,
-  unionType,
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,
