@@ -41,6 +41,36 @@ export const defineScalar = <const TName extends string, TInput, TOutput>(name: 
   );
 
 /**
+ * Creates an enum type definition for codegen.
+ * Uses function overload to declare return type explicitly,
+ * reducing structural type comparison cost.
+ *
+ * @template TName - The enum name
+ * @template TValues - Union type of enum values
+ * @param name - The enum name (runtime value)
+ * @param values - Object with enum values as keys
+ * @returns EnumDefinition with proper type metadata
+ *
+ * @example
+ * ```typescript
+ * const status = enumType<"Status", "ACTIVE" | "INACTIVE">(
+ *   "Status",
+ *   { ACTIVE: true, INACTIVE: true }
+ * );
+ * ```
+ */
+export function enumType<TName extends string, TValues extends string>(
+  name: TName,
+  values: { readonly [_ in TValues]: true },
+): EnumDefinition<{ name: TName; values: TValues }>;
+export function enumType<TName extends string, TValues extends string>(
+  name: TName,
+  values: { readonly [_ in TValues]: true },
+): EnumDefinition<{ name: TName; values: TValues }> {
+  return withTypeMeta({ name, values }) as EnumDefinition<{ name: TName; values: TValues }>;
+}
+
+/**
  * Creates a type definition builder for enums, inputs, objects, or unions.
  *
  * @param name - The GraphQL type name
