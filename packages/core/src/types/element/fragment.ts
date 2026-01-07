@@ -35,6 +35,7 @@ interface FragmentArtifact<
 > {
   readonly typename: TTypeName;
   readonly key: TKey;
+  readonly schemaLabel: string;
   readonly variableDefinitions: InputTypeSpecifiers;
   readonly spread: (variables: TVariables) => TFields;
 }
@@ -79,6 +80,11 @@ export class Fragment<
     return GqlElement.get(this).key;
   }
 
+  /** The schema label this fragment belongs to. */
+  public get schemaLabel() {
+    return GqlElement.get(this).schemaLabel;
+  }
+
   /** Variable definitions for this fragment. */
   public get variableDefinitions() {
     return GqlElement.get(this).variableDefinitions;
@@ -107,6 +113,7 @@ export class Fragment<
     define: () => {
       typename: TTypeName;
       key: TKey;
+      schemaLabel: TSchema["label"];
       variableDefinitions: TVariableDefinitions;
       spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },

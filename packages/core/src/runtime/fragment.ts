@@ -9,6 +9,7 @@ import type { StripSymbols } from "../utils/type-utils";
 export type RuntimeFragmentPrebuild = {
   readonly typename: string;
   readonly key?: string;
+  readonly schemaLabel: string;
 };
 
 export type RuntimeFragmentInput = {
@@ -19,6 +20,7 @@ export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment 
   const fragment = {
     typename: input.prebuild.typename,
     key: input.prebuild.key,
+    schemaLabel: input.prebuild.schemaLabel,
     variableDefinitions: {},
     spread: hidden(),
     attach(
