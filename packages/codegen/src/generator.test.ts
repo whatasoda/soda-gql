@@ -289,9 +289,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const enum_default_Status = { name: "Status", ...
-    expect(result.code).toContain('const enum_default_Status = { name: "Status"');
-    expect(result.code).toContain("values:");
+    // Factory function format: enumType<"Status", ...>
+    expect(result.code).toContain('const enum_default_Status = enumType<"Status"');
     expect(result.code).toContain("ACTIVE: true");
     expect(result.code).toContain("INACTIVE: true");
     expect(result.stats.enums).toBe(1);
