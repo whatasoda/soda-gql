@@ -289,9 +289,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const enum_default_Status = { name: "Status", ...
-    expect(result.code).toContain('const enum_default_Status = { name: "Status"');
-    expect(result.code).toContain("values:");
+    // Factory function format: defineEnum<"Status", ...>
+    expect(result.code).toContain('const enum_default_Status = defineEnum<"Status"');
     expect(result.code).toContain("ACTIVE: true");
     expect(result.code).toContain("INACTIVE: true");
     expect(result.stats.enums).toBe(1);
@@ -311,9 +310,11 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const input_default_CreateUserInput = { name: "CreateUserInput", ...
-    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput"');
-    expect(result.code).toContain("fields:");
+    // Inline object format with as const
+    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput", fields:');
+    expect(result.code).toContain("} as const");
+    // Inline specifier format with explicit kind
+    expect(result.code).toContain('name: { kind: "scalar", name: "String", modifier: "!"');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -328,9 +329,9 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const union_default_SearchResult = { name: "SearchResult", ...
-    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult"');
-    expect(result.code).toContain("types:");
+    // Inline object format with as const
+    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult", types:');
+    expect(result.code).toContain("} as const");
     expect(result.code).toContain("User: true");
     expect(result.code).toContain("Post: true");
     expect(result.stats.unions).toBe(1);
@@ -438,11 +439,13 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Code should contain type modifiers in the new format
+    // Code should contain type modifiers in inline specifiers
     expect(result.code).toContain('modifier: "!"');
     expect(result.code).toContain('modifier: "?"');
     expect(result.code).toContain('modifier: "![]!"');
     expect(result.code).toContain('modifier: "![]?"');
+    expect(result.code).toContain('modifier: "?[]!"');
+    expect(result.code).toContain('modifier: "![]![]!"');
   });
 
   test("generates sorted field definitions", () => {

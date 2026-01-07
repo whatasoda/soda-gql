@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { createFieldFactories } from "../../src/composer";
-import { define, defineScalar, unsafeOutputType } from "../../src/schema";
+import { defineScalar } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
+import { define, unsafeOutputType } from "../utils/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Missing object types", () => {

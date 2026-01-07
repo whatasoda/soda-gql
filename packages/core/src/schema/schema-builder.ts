@@ -3,17 +3,9 @@
  * @module
  */
 
-import type {
-  EnumDefinition,
-  InputDefinition,
-  ObjectDefinition,
-  OperationRoots,
-  ScalarDefinition,
-  UnionDefinition,
-} from "../types/schema";
+import type { EnumDefinition, OperationRoots, ScalarDefinition } from "../types/schema";
 import { withTypeMeta } from "../utils/type-meta";
 import { wrapByKey } from "../utils/wrap-by-key";
-import { unsafeOutputType } from "./type-specifier-builder";
 
 /**
  * Defines a custom scalar type with input/output type mappings.
@@ -41,62 +33,34 @@ export const defineScalar = <const TName extends string, TInput, TOutput>(name: 
   );
 
 /**
- * Creates a type definition builder for enums, inputs, objects, or unions.
+ * Creates an enum type definition for codegen.
+ * Uses function overload to declare return type explicitly,
+ * reducing structural type comparison cost.
  *
- * @param name - The GraphQL type name
- * @returns Builder with `.enum()`, `.input()`, `.object()`, `.union()` methods
+ * @template TName - The enum name
+ * @template TValues - Union type of enum values
+ * @param name - The enum name (runtime value)
+ * @param values - Object with enum values as keys
+ * @returns EnumDefinition with proper type metadata
  *
  * @example
  * ```typescript
- * const object = {
- *   User: define("User").object({
- *     id: unsafeOutputType.scalar("ID:!", {}),
- *     name: unsafeOutputType.scalar("String:!", {}),
- *   }),
- * };
+ * const status = defineEnum<"Status", "ACTIVE" | "INACTIVE">(
+ *   "Status",
+ *   { ACTIVE: true, INACTIVE: true }
+ * );
  * ```
  */
-export const define = <const TName extends string>(name: TName) => ({
-  /**
-   * Defines an enum type with specified values.
-   */
-  enum: <const TValues extends EnumDefinition<{ name: TName; values: string }>["values"]>(values: TValues) =>
-    withTypeMeta({ name, values }) satisfies EnumDefinition<{
-      name: TName;
-      values: Extract<keyof TValues, string>;
-    }>,
-
-  /**
-   * Defines an input type with specified fields.
-   */
-  input: <TFields extends InputDefinition["fields"]>(fields: TFields) =>
-    ({
-      name,
-      fields,
-    }) satisfies InputDefinition,
-
-  /**
-   * Defines an object type with specified fields.
-   * Automatically adds `__typename` field.
-   */
-  object: <TFields extends ObjectDefinition["fields"]>(fields: TFields) =>
-    ({
-      name,
-      fields: {
-        __typename: unsafeOutputType.typename(`${name}:!`, {}),
-        ...fields,
-      },
-    }) satisfies ObjectDefinition,
-
-  /**
-   * Defines a union type with specified member types.
-   */
-  union: <TTypes extends UnionDefinition["types"]>(types: TTypes) =>
-    ({
-      name,
-      types,
-    }) satisfies UnionDefinition,
-});
+export function defineEnum<TName extends string, TValues extends string>(
+  name: TName,
+  values: { readonly [_ in TValues]: true },
+): EnumDefinition<{ name: TName; values: TValues }>;
+export function defineEnum<TName extends string, TValues extends string>(
+  name: TName,
+  values: { readonly [_ in TValues]: true },
+): EnumDefinition<{ name: TName; values: TValues }> {
+  return withTypeMeta({ name, values }) as EnumDefinition<{ name: TName; values: TValues }>;
+}
 
 /**
  * Defines the root operation types for the schema.

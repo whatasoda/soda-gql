@@ -2,11 +2,11 @@ import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
-import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
+import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
+import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 const schema = {
   label: "test" as const,

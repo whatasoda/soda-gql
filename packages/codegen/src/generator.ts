@@ -364,27 +364,9 @@ const renderConstValue = (value: ConstValueNode): string => {
   }
 };
 
-const renderConstArgumentMap = (
-  args: readonly { readonly name: { readonly value: string }; readonly value: ConstValueNode }[] | undefined,
-): string => {
-  const entries = (args ?? []).map((arg) => `${arg.name.value}: ${renderConstValue(arg.value)}`);
-  return renderPropertyLines({ entries, indentSize: 8 });
-};
-
-const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined): string => {
-  const entries = (directives ?? []).map(
-    (directive) => `${directive.name.value}: ${renderConstArgumentMap(directive.arguments)}`,
-  );
-  return renderPropertyLines({ entries, indentSize: 8 });
-};
-
-const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
-  value ? `{ default: ${renderConstValue(value)} }` : "null";
-
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);
-  const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
-  const directives = renderDirectives(definition.directives);
+  const defaultValue = definition.defaultValue;
 
   let kind: "scalar" | "enum" | "input";
   if (isScalarName(schema, name)) {
@@ -395,7 +377,11 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
     kind = "input";
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: ${defaultValue}, directives: ${directives} }`;
+  // Only include defaultValue when it has a value (reduces file size significantly)
+  if (defaultValue) {
+    return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
+  }
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -464,7 +450,7 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
     .map((value) => value.name.value);
   const valuesObj = valueNames.length === 0 ? "{}" : `{ ${valueNames.map((v) => `${v}: true`).join(", ")} }`;
   const valueUnion = valueNames.length === 0 ? "never" : valueNames.map((v) => `"${v}"`).join(" | ");
-  return `const enum_${schemaName}_${record.name} = { name: "${record.name}", values: ${valuesObj}, $type: {} as { name: "${record.name}"; inputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} }; outputProfile: { kind: "enum"; name: "${record.name}"; value: ${valueUnion} } } } as const;`;
+  return `const enum_${schemaName}_${record.name} = defineEnum<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
 };
 
 const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
@@ -793,6 +779,7 @@ ${typeExports.join("\n")}`);
 
   return `\
 import {
+  defineEnum,
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,
