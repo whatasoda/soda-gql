@@ -3,6 +3,7 @@ export * from "./prebuilt";
 export * from "./schema";
 export * from "./types/element";
 export type * from "./types/fragment";
+export { createVarRefFromVariable, VarRef } from "./types/fragment";
 export * from "./types/metadata";
 export type * from "./types/schema";
 export type * from "./types/type-foundation";
