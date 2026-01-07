@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation } from "@soda-gql/core";
-import { Kind, OperationTypeNode, type DocumentNode, type VariableDefinitionNode } from "graphql";
+import { type DocumentNode, Kind, type OperationTypeNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
 

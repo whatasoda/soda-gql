@@ -67,43 +67,18 @@ export const applyTypeModifier = (baseType: string, modifier: TypeModifier): str
 
 /**
  * Get the TypeScript type string for a scalar type from the schema.
+ *
+ * Returns a `ScalarOutput<"Name">` reference for all scalars in the schema.
+ * The actual type is resolved at compile time from the inject file's scalar definitions.
+ * This allows users to customize even built-in scalars (ID, String, etc.).
  */
 export const getScalarType = (schema: AnyGraphqlSchema, scalarName: string): string => {
-  const scalarDef = schema.scalar[scalarName];
-  if (!scalarDef) {
-    // Fallback for unknown scalars
-    return "unknown";
+  // ALL scalars use ScalarOutput reference - inject file is the source of truth
+  if (schema.scalar[scalarName]) {
+    return `ScalarOutput<"${scalarName}">`;
   }
-
-  // Extract the output type from the scalar definition
-  // The $type.output contains the TypeScript type
-  const outputType = scalarDef.$type?.output;
-
-  if (typeof outputType === "string") {
-    return "string";
-  }
-  if (typeof outputType === "number") {
-    return "number";
-  }
-  if (typeof outputType === "boolean") {
-    return "boolean";
-  }
-
-  // For complex types, we need to derive from the scalar name
-  // Common scalars:
-  switch (scalarName) {
-    case "ID":
-    case "String":
-      return "string";
-    case "Int":
-    case "Float":
-      return "number";
-    case "Boolean":
-      return "boolean";
-    default:
-      // Custom scalars - check if we have type info
-      return "unknown";
-  }
+  // Unknown scalar not in schema
+  return "unknown";
 };
 
 /**
@@ -238,10 +213,7 @@ export const graphqlTypeToTypeScript = (schema: AnyGraphqlSchema, typeNode: Type
  *
  * Extracts variable types from GraphQL VariableDefinitionNode AST.
  */
-export const generateInputType = (
-  schema: AnyGraphqlSchema,
-  variableDefinitions: readonly VariableDefinitionNode[],
-): string => {
+export const generateInputType = (schema: AnyGraphqlSchema, variableDefinitions: readonly VariableDefinitionNode[]): string => {
   if (variableDefinitions.length === 0) {
     return "{}";
   }

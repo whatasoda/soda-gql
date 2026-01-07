@@ -7,6 +7,7 @@ import {
   calculateFieldsType,
   calculateFieldType,
   generateInputType,
+  getScalarType,
   graphqlTypeToTypeScript,
 } from "./type-calculator";
 
@@ -73,6 +74,34 @@ describe("applyTypeModifier", () => {
   });
 });
 
+describe("getScalarType", () => {
+  test("returns ScalarOutput reference for built-in scalars", () => {
+    // All scalars in schema use ScalarOutput reference
+    expect(getScalarType(mockSchema, "String")).toBe('ScalarOutput<"String">');
+    expect(getScalarType(mockSchema, "Int")).toBe('ScalarOutput<"Int">');
+    expect(getScalarType(mockSchema, "Boolean")).toBe('ScalarOutput<"Boolean">');
+    expect(getScalarType(mockSchema, "ID")).toBe('ScalarOutput<"ID">');
+  });
+
+  test("returns ScalarOutput reference for custom scalar", () => {
+    const schemaWithCustomScalar: AnyGraphqlSchema = {
+      ...mockSchema,
+      scalar: {
+        ...mockSchema.scalar,
+        DateTime: {
+          name: "DateTime",
+          $type: { input: "", output: new Date(), inputProfile: {} as never, outputProfile: {} as never },
+        },
+      },
+    };
+    expect(getScalarType(schemaWithCustomScalar, "DateTime")).toBe('ScalarOutput<"DateTime">');
+  });
+
+  test("returns unknown for scalar not in schema", () => {
+    expect(getScalarType(mockSchema, "UnknownScalar")).toBe("unknown");
+  });
+});
+
 describe("calculateFieldType", () => {
   test("handles scalar field", () => {
     const selection: AnyFieldSelection = {
@@ -85,7 +114,7 @@ describe("calculateFieldType", () => {
       union: null,
     };
 
-    expect(calculateFieldType(mockSchema, selection)).toBe("string");
+    expect(calculateFieldType(mockSchema, selection)).toBe('ScalarOutput<"String">');
   });
 
   test("handles nullable scalar field", () => {
@@ -99,7 +128,7 @@ describe("calculateFieldType", () => {
       union: null,
     };
 
-    expect(calculateFieldType(mockSchema, selection)).toBe("(string | null | undefined)");
+    expect(calculateFieldType(mockSchema, selection)).toBe('(ScalarOutput<"String"> | null | undefined)');
   });
 
   test("handles enum field", () => {
@@ -160,7 +189,9 @@ describe("calculateFieldType", () => {
       union: null,
     };
 
-    expect(calculateFieldType(mockSchema, selection)).toBe("{ readonly id: string; readonly name: string }");
+    expect(calculateFieldType(mockSchema, selection)).toBe(
+      '{ readonly id: ScalarOutput<"ID">; readonly name: ScalarOutput<"String"> }',
+    );
   });
 
   test("handles array of objects", () => {
@@ -184,7 +215,7 @@ describe("calculateFieldType", () => {
       union: null,
     };
 
-    expect(calculateFieldType(mockSchema, selection)).toBe("({ readonly id: string })[]");
+    expect(calculateFieldType(mockSchema, selection)).toBe('({ readonly id: ScalarOutput<"ID"> })[]');
   });
 });
 
@@ -215,7 +246,9 @@ describe("calculateFieldsType", () => {
       } as AnyFieldSelection,
     };
 
-    expect(calculateFieldsType(mockSchema, fields)).toBe("{ readonly id: string; readonly name: (string | null | undefined) }");
+    expect(calculateFieldsType(mockSchema, fields)).toBe(
+      '{ readonly id: ScalarOutput<"ID">; readonly name: (ScalarOutput<"String"> | null | undefined) }',
+    );
   });
 });
 
@@ -225,7 +258,7 @@ describe("graphqlTypeToTypeScript", () => {
       kind: Kind.NAMED_TYPE,
       name: { kind: Kind.NAME, value: "String" },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("string");
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarOutput<"String">');
   });
 
   test("handles NamedType for enum", () => {
@@ -252,7 +285,7 @@ describe("graphqlTypeToTypeScript", () => {
         name: { kind: Kind.NAME, value: "ID" },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("string");
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarOutput<"ID">');
   });
 
   test("handles ListType", () => {
@@ -263,7 +296,7 @@ describe("graphqlTypeToTypeScript", () => {
         name: { kind: Kind.NAME, value: "String" },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("(string)[]");
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarOutput<"String">)[]');
   });
 
   test("handles nested NonNullType with ListType", () => {
@@ -280,7 +313,7 @@ describe("graphqlTypeToTypeScript", () => {
         },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("(number)[]");
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarOutput<"Int">)[]');
   });
 });
 
@@ -297,7 +330,7 @@ describe("generateInputType", () => {
         type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
       },
     ];
-    expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly userId: string }");
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly userId: ScalarOutput<"ID"> }');
   });
 
   test("handles single optional variable", () => {
@@ -309,7 +342,7 @@ describe("generateInputType", () => {
       },
     ];
     expect(generateInputType(mockSchema, variableDefinitions)).toBe(
-      "{ readonly filter?: (string | null | undefined) }",
+      '{ readonly filter?: (ScalarOutput<"String"> | null | undefined) }',
     );
   });
 
@@ -327,7 +360,7 @@ describe("generateInputType", () => {
       },
     ];
     expect(generateInputType(mockSchema, variableDefinitions)).toBe(
-      '{ readonly id: string; readonly status?: ("ACTIVE" | "INACTIVE" | "PENDING" | null | undefined) }',
+      '{ readonly id: ScalarOutput<"ID">; readonly status?: ("ACTIVE" | "INACTIVE" | "PENDING" | null | undefined) }',
     );
   });
 
@@ -345,7 +378,7 @@ describe("generateInputType", () => {
         },
       },
     ];
-    expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly ids: (string)[] }");
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly ids: (ScalarOutput<"ID">)[] }');
   });
 
   test("handles input object variable", () => {
