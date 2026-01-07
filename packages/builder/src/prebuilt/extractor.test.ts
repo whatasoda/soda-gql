@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation } from "@soda-gql/core";
-import { Kind, type DocumentNode, type VariableDefinitionNode } from "graphql";
+import { Kind, OperationTypeNode, type DocumentNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
 
@@ -35,7 +35,7 @@ const createMockOperation = (
     definitions: [
       {
         kind: Kind.OPERATION_DEFINITION,
-        operation: operationType as "query" | "mutation" | "subscription",
+        operation: operationType as OperationTypeNode,
         name: { kind: Kind.NAME, value: operationName },
         variableDefinitions: [...variableDefinitions],
         selectionSet: { kind: Kind.SELECTION_SET, selections: [] },
