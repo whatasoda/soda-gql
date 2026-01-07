@@ -10,7 +10,7 @@
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection, AnyFields, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { InputDepthOverrides, TypeModifier } from "../types/type-foundation";
+import type { InputDepthOverrides, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
 /**
  * Apply a type modifier to a base type string.
@@ -363,6 +363,74 @@ export const generateInputType = (schema: AnyGraphqlSchema, variableDefinitions:
     // Apply nullability wrapper for optional fields
     const finalType = isRequired ? tsType : `(${tsType} | null | undefined)`;
     return `readonly ${name}${isRequired ? "" : "?"}: ${finalType}`;
+  });
+
+  return `{ ${fields.join("; ")} }`;
+};
+
+/**
+ * Generate TypeScript type for a single input field from its specifier.
+ * Used by generateInputTypeFromSpecifiers.
+ */
+const generateInputFieldTypeFromSpecifier = (
+  schema: AnyGraphqlSchema,
+  specifier: InputTypeSpecifier,
+  options: GenerateInputObjectTypeOptions,
+): string => {
+  let baseType: string;
+
+  switch (specifier.kind) {
+    case "scalar":
+      baseType = getScalarInputType(schema, specifier.name);
+      break;
+    case "enum":
+      baseType = getEnumType(schema, specifier.name);
+      break;
+    case "input":
+      baseType = generateInputObjectType(schema, specifier.name, options);
+      break;
+    default:
+      baseType = "unknown";
+  }
+
+  return applyTypeModifier(baseType, specifier.modifier);
+};
+
+/**
+ * Generate a TypeScript type string for input variables from InputTypeSpecifiers.
+ *
+ * Unlike generateInputType which works with GraphQL AST VariableDefinitionNode[],
+ * this function works with soda-gql's internal InputTypeSpecifiers format.
+ * Used for generating Fragment input types in prebuilt mode.
+ *
+ * @param schema - The GraphQL schema
+ * @param specifiers - Input type specifiers (variable definitions)
+ * @param options - Generation options including depth limits
+ */
+export const generateInputTypeFromSpecifiers = (
+  schema: AnyGraphqlSchema,
+  specifiers: InputTypeSpecifiers,
+  options: GenerateInputObjectTypeOptions = {},
+): string => {
+  const entries = Object.entries(specifiers);
+
+  if (entries.length === 0) {
+    return "void";
+  }
+
+  const fields = entries.map(([name, specifier]) => {
+    // Check if the outermost type is required
+    // "!" = required, "?" = optional
+    // "![]!" = required (outer), "![]?" = optional (outer)
+    // For arrays, check if the last character is "!" (required outer) or "?" (optional outer)
+    const isOuterRequired = specifier.modifier.endsWith("!");
+    const hasDefault = specifier.defaultValue != null;
+    const baseType = generateInputFieldTypeFromSpecifier(schema, specifier, options);
+
+    // Field is optional if outer type is nullable or has default value
+    const isOptional = !isOuterRequired || hasDefault;
+
+    return `readonly ${name}${isOptional ? "?" : ""}: ${baseType}`;
   });
 
   return `{ ${fields.join("; ")} }`;

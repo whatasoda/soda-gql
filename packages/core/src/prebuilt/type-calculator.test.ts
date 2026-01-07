@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
+import type { InputTypeSpecifiers } from "../types/type-foundation";
 import {
   applyTypeModifier,
   calculateFieldsType,
   calculateFieldType,
   generateInputObjectType,
   generateInputType,
+  generateInputTypeFromSpecifiers,
   getScalarInputType,
   getScalarOutputType,
   getScalarType,
@@ -540,5 +542,83 @@ describe("generateInputObjectType", () => {
     // Field with default should be optional (have ?)
     expect(result).toContain("readonly requiredField: ScalarInput");
     expect(result).toContain("readonly fieldWithDefault?: ScalarInput");
+  });
+});
+
+describe("generateInputTypeFromSpecifiers", () => {
+  test("handles empty specifiers", () => {
+    expect(generateInputTypeFromSpecifiers(mockSchema, {})).toBe("void");
+  });
+
+  test("handles single required scalar variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      userId: { kind: "scalar", name: "ID", modifier: "!" },
+    };
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly userId: ScalarInput<"ID"> }');
+  });
+
+  test("handles single optional scalar variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      filter: { kind: "scalar", name: "String", modifier: "?" },
+    };
+    // applyTypeModifier already wraps with nullability, so no double wrapping
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
+      '{ readonly filter?: (ScalarInput<"String"> | null | undefined) }',
+    );
+  });
+
+  test("handles enum variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      status: { kind: "enum", name: "Status", modifier: "!" },
+    };
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly status: "ACTIVE" | "INACTIVE" | "PENDING" }');
+  });
+
+  test("handles array variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      ids: { kind: "scalar", name: "ID", modifier: "![]!" },
+    };
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly ids: (ScalarInput<"ID">)[] }');
+  });
+
+  test("handles input object variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      input: { kind: "input", name: "CreateUserInput", modifier: "!" },
+    };
+    // Should use schema's input definition
+    const result = generateInputTypeFromSpecifiers(schemaWithInputs, specifiers);
+    expect(result).toContain("readonly input:");
+    expect(result).toContain('ScalarInput<"String">');
+  });
+
+  test("handles variable with default value as optional", () => {
+    const specifiers: InputTypeSpecifiers = {
+      limit: {
+        kind: "scalar",
+        name: "Int",
+        modifier: "!",
+        defaultValue: { default: 10 },
+      },
+    };
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly limit?: ScalarInput<"Int"> }');
+  });
+
+  test("handles multiple variables", () => {
+    const specifiers: InputTypeSpecifiers = {
+      id: { kind: "scalar", name: "ID", modifier: "!" },
+      status: { kind: "enum", name: "Status", modifier: "?" },
+    };
+    const result = generateInputTypeFromSpecifiers(mockSchema, specifiers);
+    expect(result).toContain('readonly id: ScalarInput<"ID">');
+    expect(result).toContain("readonly status?:");
+  });
+
+  test("handles optional array variable", () => {
+    const specifiers: InputTypeSpecifiers = {
+      tags: { kind: "scalar", name: "String", modifier: "![]?" },
+    };
+    expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
+      '{ readonly tags?: ((ScalarInput<"String">)[] | null | undefined) }',
+    );
   });
 });
