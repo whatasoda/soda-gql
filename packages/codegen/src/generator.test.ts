@@ -312,7 +312,8 @@ describe("generateMultiSchemaModule", () => {
 
     // Factory function format: inputType("CreateUserInput", ...)
     expect(result.code).toContain('const input_default_CreateUserInput = inputType("CreateUserInput"');
-    expect(result.code).toContain('name: { kind: "scalar"');
+    // Field specifier factory format: inputScalar("String", "!")
+    expect(result.code).toContain('name: inputScalar("String", "!")');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -436,11 +437,13 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Code should contain type modifiers in the new format
-    expect(result.code).toContain('modifier: "!"');
-    expect(result.code).toContain('modifier: "?"');
-    expect(result.code).toContain('modifier: "![]!"');
-    expect(result.code).toContain('modifier: "![]?"');
+    // Code should contain type modifiers in factory function calls
+    expect(result.code).toContain('outputScalar("String", "!")');
+    expect(result.code).toContain('outputScalar("String", "?")');
+    expect(result.code).toContain('outputScalar("String", "![]!")');
+    expect(result.code).toContain('outputScalar("String", "![]?")');
+    expect(result.code).toContain('outputScalar("String", "?[]!")');
+    expect(result.code).toContain('outputScalar("String", "![]![]!")');
   });
 
   test("generates sorted field definitions", () => {

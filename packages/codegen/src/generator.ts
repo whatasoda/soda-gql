@@ -364,38 +364,25 @@ const renderConstValue = (value: ConstValueNode): string => {
   }
 };
 
-const renderConstArgumentMap = (
-  args: readonly { readonly name: { readonly value: string }; readonly value: ConstValueNode }[] | undefined,
-): string => {
-  const entries = (args ?? []).map((arg) => `${arg.name.value}: ${renderConstValue(arg.value)}`);
-  return renderPropertyLines({ entries, indentSize: 8 });
-};
-
-const renderDirectives = (directives: readonly ConstDirectiveNode[] | undefined): string => {
-  const entries = (directives ?? []).map(
-    (directive) => `${directive.name.value}: ${renderConstArgumentMap(directive.arguments)}`,
-  );
-  return renderPropertyLines({ entries, indentSize: 8 });
-};
-
-const renderDefaultValue = (value: ConstValueNode | null | undefined): string =>
-  value ? `{ default: ${renderConstValue(value)} }` : "null";
-
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
   const { name, modifier } = parseTypeReference(definition.type);
-  const defaultValue = renderDefaultValue(definition.defaultValue ?? null);
-  const directives = renderDirectives(definition.directives);
+  const defaultValue = definition.defaultValue;
 
-  let kind: "scalar" | "enum" | "input";
+  let factoryName: string;
   if (isScalarName(schema, name)) {
-    kind = "scalar";
+    factoryName = defaultValue ? "inputScalarDefault" : "inputScalar";
   } else if (isEnumName(schema, name)) {
-    kind = "enum";
+    factoryName = defaultValue ? "inputEnumDefault" : "inputEnum";
   } else {
-    kind = "input";
+    factoryName = defaultValue ? "inputObjectDefault" : "inputObject";
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: ${defaultValue}, directives: ${directives} }`;
+  if (defaultValue) {
+    const defaultValueArg = renderConstValue(defaultValue);
+    return `${factoryName}("${name}", "${modifier}", ${defaultValueArg})`;
+  }
+
+  return `${factoryName}("${name}", "${modifier}")`;
 };
 
 const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
@@ -408,22 +395,27 @@ const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinit
 
 const renderOutputRef = (schema: SchemaIndex, type: TypeNode, args: readonly InputValueDefinitionNode[] | undefined): string => {
   const { name, modifier } = parseTypeReference(type);
-  const argumentMap = renderArgumentMap(schema, args);
+  const hasArgs = args && args.length > 0;
 
-  let kind: "scalar" | "enum" | "union" | "object";
+  let factoryName: string;
   if (isScalarName(schema, name)) {
-    kind = "scalar";
+    factoryName = hasArgs ? "outputScalarArgs" : "outputScalar";
   } else if (isEnumName(schema, name)) {
-    kind = "enum";
+    factoryName = hasArgs ? "outputEnumArgs" : "outputEnum";
   } else if (isUnionName(schema, name)) {
-    kind = "union";
+    factoryName = hasArgs ? "outputUnionArgs" : "outputUnion";
   } else if (isObjectName(schema, name)) {
-    kind = "object";
+    factoryName = hasArgs ? "outputObjectArgs" : "outputObject";
   } else {
-    kind = "scalar"; // fallback for unknown types
+    factoryName = hasArgs ? "outputScalarArgs" : "outputScalar"; // fallback for unknown types
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
+  if (hasArgs) {
+    const argumentMap = renderArgumentMap(schema, args);
+    return `${factoryName}("${name}", "${modifier}", ${argumentMap})`;
+  }
+
+  return `${factoryName}("${name}", "${modifier}")`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -794,8 +786,22 @@ ${typeExports.join("\n")}`);
   return `\
 import {
   enumType,
+  inputEnum,
+  inputEnumDefault,
+  inputObject,
+  inputObjectDefault,
+  inputScalar,
+  inputScalarDefault,
   inputType,
   objectType,
+  outputEnum,
+  outputEnumArgs,
+  outputObject,
+  outputObjectArgs,
+  outputScalar,
+  outputScalarArgs,
+  outputUnion,
+  outputUnionArgs,
   unionType,
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,

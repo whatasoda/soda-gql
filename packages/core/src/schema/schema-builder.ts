@@ -76,14 +76,6 @@ export function enumType<TName extends string, TValues extends string>(
  * @param name - The input type name
  * @param fields - The input fields
  * @returns InputDefinition
- *
- * @example
- * ```typescript
- * const userInput = inputType("UserInput", {
- *   name: unsafeInputType.scalar("String:!", {}),
- *   age: unsafeInputType.scalar("Int:?", {}),
- * });
- * ```
  */
 export const inputType = <TFields extends InputDefinition["fields"]>(name: string, fields: TFields): InputDefinition => ({
   name,
@@ -96,15 +88,6 @@ export const inputType = <TFields extends InputDefinition["fields"]>(name: strin
  * @param name - The object type name
  * @param fields - The object fields (including __typename)
  * @returns ObjectDefinition
- *
- * @example
- * ```typescript
- * const user = objectType("User", {
- *   __typename: unsafeOutputType.typename("User:!", {}),
- *   id: unsafeOutputType.scalar("ID:!", {}),
- *   name: unsafeOutputType.scalar("String:!", {}),
- * });
- * ```
  */
 export const objectType = <TFields extends ObjectDefinition["fields"]>(name: string, fields: TFields): ObjectDefinition => ({
   name,
@@ -117,11 +100,6 @@ export const objectType = <TFields extends ObjectDefinition["fields"]>(name: str
  * @param name - The union type name
  * @param types - Object with member type names as keys
  * @returns UnionDefinition
- *
- * @example
- * ```typescript
- * const searchResult = unionType("SearchResult", { User: true, Post: true });
- * ```
  */
 export const unionType = <TTypes extends UnionDefinition["types"]>(name: string, types: TTypes): UnionDefinition => ({
   name,
