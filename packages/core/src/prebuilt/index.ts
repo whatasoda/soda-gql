@@ -9,7 +9,15 @@
  */
 
 // Type calculator utilities
-export { applyTypeModifier, calculateFieldsType, calculateFieldType, calculateInputType } from "./type-calculator";
+export {
+  applyTypeModifier,
+  calculateFieldsType,
+  calculateFieldType,
+  generateInputType,
+  getEnumType,
+  getScalarType,
+  graphqlTypeToTypeScript,
+} from "./type-calculator";
 // Type definitions
 export type {
   EmptyPrebuiltTypeRegistry,

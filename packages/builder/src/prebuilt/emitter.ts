@@ -10,7 +10,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { AnyGraphqlSchema } from "@soda-gql/core";
-import { calculateFieldsType } from "@soda-gql/core";
+import { calculateFieldsType, generateInputType } from "@soda-gql/core";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderError, builderErrors } from "../errors";
 import type { FieldSelectionsMap } from "./extractor";
@@ -95,9 +95,10 @@ const groupBySchema = (
     } else if (selection.type === "operation") {
       try {
         const outputType = calculateFieldsType(schema, selection.fields);
+        const inputType = generateInputType(schema, selection.variableDefinitions);
         group.operations.push({
           key: selection.operationName,
-          inputType: "Record<string, unknown>", // Simplified for now
+          inputType,
           outputType,
         });
       } catch (error) {

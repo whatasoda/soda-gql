@@ -9,6 +9,7 @@
 
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyFields } from "@soda-gql/core";
+import { Kind, type OperationDefinitionNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
 /**
@@ -26,6 +27,7 @@ export type FieldSelectionData =
       readonly operationName: string;
       readonly operationType: string;
       readonly fields: AnyFields;
+      readonly variableDefinitions: readonly VariableDefinitionNode[];
     };
 
 /**
@@ -65,11 +67,19 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
         // For operations, invoke documentSource to get fields
         const fields = element.element.documentSource();
 
+        // Extract variable definitions from the GraphQL document AST
+        const document = element.element.document;
+        const operationDef = document.definitions.find(
+          (def): def is OperationDefinitionNode => def.kind === Kind.OPERATION_DEFINITION,
+        );
+        const variableDefinitions = operationDef?.variableDefinitions ?? [];
+
         selections.set(canonicalId, {
           type: "operation",
           operationName: element.element.operationName,
           operationType: element.element.operationType,
           fields,
+          variableDefinitions,
         });
       }
     } catch (error) {

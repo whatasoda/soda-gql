@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation } from "@soda-gql/core";
+import { Kind, type DocumentNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
 
@@ -23,10 +24,29 @@ const createMockFragment = (typename: string, key: string | undefined, fields: A
 };
 
 // Mock operation that returns field selections
-const createMockOperation = (operationName: string, operationType: string, fields: AnyFields): AnyOperation => {
+const createMockOperation = (
+  operationName: string,
+  operationType: string,
+  fields: AnyFields,
+  variableDefinitions: readonly VariableDefinitionNode[] = [],
+): AnyOperation => {
+  const document: DocumentNode = {
+    kind: Kind.DOCUMENT,
+    definitions: [
+      {
+        kind: Kind.OPERATION_DEFINITION,
+        operation: operationType as "query" | "mutation" | "subscription",
+        name: { kind: Kind.NAME, value: operationName },
+        variableDefinitions: [...variableDefinitions],
+        selectionSet: { kind: Kind.SELECTION_SET, selections: [] },
+      },
+    ],
+  };
+
   return {
     operationName,
     operationType,
+    document,
     documentSource: () => fields,
     getOperationSource: () => ({
       operationName,
@@ -117,6 +137,46 @@ describe("extractFieldSelections", () => {
       expect(selection.operationName).toBe("GetUser");
       expect(selection.operationType).toBe("query");
       expect(selection.fields).toEqual(mockFields);
+      expect(selection.variableDefinitions).toEqual([]);
+    }
+  });
+
+  test("extracts variable definitions from operations", () => {
+    const mockFields: AnyFields = {
+      user: createMockField("Query", "user", "object", "User", "!"),
+    };
+
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "userId" } },
+        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
+      },
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "filter" } },
+        type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "UserFilter" } },
+      },
+    ];
+
+    const elements: Record<CanonicalId, IntermediateArtifactElement> = {
+      ["/src/queries.ts::GetUser" as CanonicalId]: {
+        type: "operation",
+        element: createMockOperation("GetUser", "query", mockFields, variableDefinitions),
+      },
+    };
+
+    const selections = extractFieldSelections(elements);
+
+    expect(selections.size).toBe(1);
+
+    const selection = selections.get("/src/queries.ts::GetUser" as CanonicalId);
+    expect(selection?.type).toBe("operation");
+
+    if (selection?.type === "operation") {
+      expect(selection.variableDefinitions).toHaveLength(2);
+      expect(selection.variableDefinitions[0]?.variable.name.value).toBe("userId");
+      expect(selection.variableDefinitions[1]?.variable.name.value).toBe("filter");
     }
   });
 

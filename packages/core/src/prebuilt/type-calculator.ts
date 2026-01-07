@@ -7,6 +7,7 @@
  * @module
  */
 
+import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection, AnyFields, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { TypeModifier } from "../types/type-foundation";
@@ -67,7 +68,7 @@ export const applyTypeModifier = (baseType: string, modifier: TypeModifier): str
 /**
  * Get the TypeScript type string for a scalar type from the schema.
  */
-const getScalarType = (schema: AnyGraphqlSchema, scalarName: string): string => {
+export const getScalarType = (schema: AnyGraphqlSchema, scalarName: string): string => {
   const scalarDef = schema.scalar[scalarName];
   if (!scalarDef) {
     // Fallback for unknown scalars
@@ -108,7 +109,7 @@ const getScalarType = (schema: AnyGraphqlSchema, scalarName: string): string => 
 /**
  * Get the TypeScript type string for an enum type from the schema.
  */
-const getEnumType = (schema: AnyGraphqlSchema, enumName: string): string => {
+export const getEnumType = (schema: AnyGraphqlSchema, enumName: string): string => {
   const enumDef = schema.enum[enumName];
   if (!enumDef) {
     return "string";
@@ -204,19 +205,56 @@ export const calculateFieldsType = (schema: AnyGraphqlSchema, fields: AnyFields 
 };
 
 /**
- * Calculate the TypeScript type string for operation input (variables).
+ * Convert a GraphQL TypeNode to a TypeScript type string.
+ *
+ * Handles NonNullType, ListType, and NamedType recursively.
  */
-export const calculateInputType = (
-  _schema: AnyGraphqlSchema,
-  variableNames: readonly string[],
-  // We don't have full variable type info at runtime, so this is a simplified version
-  // In practice, the document contains the actual variable types
+export const graphqlTypeToTypeScript = (schema: AnyGraphqlSchema, typeNode: TypeNode): string => {
+  switch (typeNode.kind) {
+    case Kind.NON_NULL_TYPE:
+      return graphqlTypeToTypeScript(schema, typeNode.type);
+    case Kind.LIST_TYPE: {
+      const inner = graphqlTypeToTypeScript(schema, typeNode.type);
+      return `(${inner})[]`;
+    }
+    case Kind.NAMED_TYPE: {
+      const name = typeNode.name.value;
+      // Check if scalar
+      if (schema.scalar[name]) {
+        return getScalarType(schema, name);
+      }
+      // Check if enum
+      if (schema.enum[name]) {
+        return getEnumType(schema, name);
+      }
+      // Input object - use type name directly to avoid circular references
+      return name;
+    }
+  }
+};
+
+/**
+ * Generate a TypeScript type string for operation input variables.
+ *
+ * Extracts variable types from GraphQL VariableDefinitionNode AST.
+ */
+export const generateInputType = (
+  schema: AnyGraphqlSchema,
+  variableDefinitions: readonly VariableDefinitionNode[],
 ): string => {
-  if (variableNames.length === 0) {
+  if (variableDefinitions.length === 0) {
     return "{}";
   }
 
-  // For input types, we would need the actual variable definitions
-  // This is a placeholder - the real implementation would need access to variable type specs
-  return "Record<string, unknown>";
+  const fields = variableDefinitions.map((varDef) => {
+    const name = varDef.variable.name.value;
+    const isRequired = varDef.type.kind === Kind.NON_NULL_TYPE;
+    const tsType = graphqlTypeToTypeScript(schema, varDef.type);
+
+    // Apply nullability wrapper for optional fields
+    const finalType = isRequired ? tsType : `(${tsType} | null | undefined)`;
+    return `readonly ${name}${isRequired ? "" : "?"}: ${finalType}`;
+  });
+
+  return `{ ${fields.join("; ")} }`;
 };
