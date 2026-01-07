@@ -9,7 +9,7 @@
 
 import { writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import type { AnyGraphqlSchema, InputTypeSpecifiers } from "@soda-gql/core";
+import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
@@ -85,6 +85,15 @@ const groupBySchema = (
     return grouped;
   }
 
+  // Create formatters for schema-specific type names
+  const outputFormatters: TypeFormatters = {
+    scalarOutput: (name) => `ScalarOutput_${defaultSchemaName}<"${name}">`,
+  };
+  const inputFormatters: TypeFormatters = {
+    scalarInput: (name) => `ScalarInput_${defaultSchemaName}<"${name}">`,
+    inputObject: (name) => `Input_${defaultSchemaName}_${name}`,
+  };
+
   for (const [_canonicalId, selection] of fieldSelections) {
     if (selection.type === "fragment") {
       // Skip fragments without keys (they can't be looked up)
@@ -99,29 +108,19 @@ const groupBySchema = (
           group.inputObjects.add(inputName);
         }
 
-        const outputType = calculateFieldsType(schema, selection.fields);
-        // Replace generic ScalarOutput with schema-specific version
-        const finalOutputType = outputType.replace(/ScalarOutput<"([^"]+)">/g, `ScalarOutput_${defaultSchemaName}<"$1">`);
+        // Generate output type with schema-specific scalar names
+        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters);
 
-        // Generate input type from variableDefinitions
+        // Generate input type from variableDefinitions with schema-specific names
         const hasVariables = Object.keys(selection.variableDefinitions).length > 0;
-        let inputType = hasVariables ? generateInputTypeFromSpecifiers(schema, selection.variableDefinitions) : "void";
-
-        if (hasVariables) {
-          // Replace generic ScalarInput with schema-specific version
-          inputType = inputType.replace(/ScalarInput<"([^"]+)">/g, `ScalarInput_${defaultSchemaName}<"$1">`);
-
-          // Replace input object names with generated type names
-          for (const inputName of usedInputObjects) {
-            const pattern = new RegExp(`(?<!Input_${defaultSchemaName}_)\\b${inputName}\\b`, "g");
-            inputType = inputType.replace(pattern, `Input_${defaultSchemaName}_${inputName}`);
-          }
-        }
+        const inputType = hasVariables
+          ? generateInputTypeFromSpecifiers(schema, selection.variableDefinitions, { formatters: inputFormatters })
+          : "void";
 
         group.fragments.push({
           key: selection.key,
           inputType,
-          outputType: finalOutputType,
+          outputType,
         });
       } catch (error) {
         console.warn(
@@ -136,25 +135,16 @@ const groupBySchema = (
           group.inputObjects.add(inputName);
         }
 
-        const outputType = calculateFieldsType(schema, selection.fields);
-        const inputType = generateInputType(schema, selection.variableDefinitions);
+        // Generate output type with schema-specific scalar names
+        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters);
 
-        // Replace generic ScalarOutput with schema-specific version for output
-        const finalOutputType = outputType.replace(/ScalarOutput<"([^"]+)">/g, `ScalarOutput_${defaultSchemaName}<"$1">`);
-
-        // Replace generic ScalarInput with schema-specific version for input
-        let finalInputType = inputType.replace(/ScalarInput<"([^"]+)">/g, `ScalarInput_${defaultSchemaName}<"$1">`);
-
-        // Replace input object names with generated type names
-        for (const inputName of usedInputObjects) {
-          const pattern = new RegExp(`(?<!Input_${defaultSchemaName}_)\\b${inputName}\\b`, "g");
-          finalInputType = finalInputType.replace(pattern, `Input_${defaultSchemaName}_${inputName}`);
-        }
+        // Generate input type with schema-specific scalar and input object names
+        const inputType = generateInputType(schema, selection.variableDefinitions, inputFormatters);
 
         group.operations.push({
           key: selection.operationName,
-          inputType: finalInputType,
-          outputType: finalOutputType,
+          inputType,
+          outputType,
         });
       } catch (error) {
         console.warn(
@@ -300,6 +290,12 @@ const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName
   const defaultDepth = (schema as { __defaultInputDepth?: number }).__defaultInputDepth ?? 3;
   const depthOverrides = (schema as { __inputDepthOverrides?: Record<string, number> }).__inputDepthOverrides ?? {};
 
+  // Create formatters for schema-specific type names
+  const formatters: TypeFormatters = {
+    scalarInput: (name) => `ScalarInput_${schemaName}<"${name}">`,
+    inputObject: (name) => `Input_${schemaName}_${name}`,
+  };
+
   // Sort for deterministic output
   const sortedNames = Array.from(inputNames).sort();
 
@@ -307,20 +303,10 @@ const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName
     const typeString = generateInputObjectType(schema, inputName, {
       defaultDepth,
       depthOverrides,
+      formatters,
     });
 
-    // Replace generic ScalarInput with schema-specific version
-    const finalType = typeString.replace(/ScalarInput<"([^"]+)">/g, `ScalarInput_${schemaName}<"$1">`);
-
-    // Replace nested input object references with generated type names
-    let processedType = finalType;
-    for (const nestedInputName of sortedNames) {
-      // Replace standalone input object names (not already prefixed)
-      const pattern = new RegExp(`(?<!Input_${schemaName}_)\\b${nestedInputName}\\b`, "g");
-      processedType = processedType.replace(pattern, `Input_${schemaName}_${nestedInputName}`);
-    }
-
-    lines.push(`type Input_${schemaName}_${inputName} = ${processedType};`);
+    lines.push(`type Input_${schemaName}_${inputName} = ${typeString};`);
   }
 
   return lines;
