@@ -55,7 +55,7 @@ type SchemaGroup = {
 
 /**
  * Group field selections by schema.
- * Uses the schema label to group selections.
+ * Uses the schemaLabel from each selection to group them correctly.
  */
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
@@ -68,33 +68,26 @@ const groupBySchema = (
     grouped.set(schemaName, { fragments: [], operations: [], inputObjects: new Set() });
   }
 
-  // For now, assume single schema named "default"
-  // In the future, this could be extended to support multi-schema setups
-  const defaultSchemaName = Object.keys(schemas)[0];
-  if (!defaultSchemaName) {
-    return grouped;
-  }
-
-  const schema = schemas[defaultSchemaName];
-  if (!schema) {
-    return grouped;
-  }
-
-  const group = grouped.get(defaultSchemaName);
-  if (!group) {
-    return grouped;
-  }
-
-  // Create formatters for schema-specific type names
-  const outputFormatters: TypeFormatters = {
-    scalarOutput: (name) => `ScalarOutput_${defaultSchemaName}<"${name}">`,
-  };
-  const inputFormatters: TypeFormatters = {
-    scalarInput: (name) => `ScalarInput_${defaultSchemaName}<"${name}">`,
-    inputObject: (name) => `Input_${defaultSchemaName}_${name}`,
-  };
-
   for (const [_canonicalId, selection] of fieldSelections) {
+    // Use schemaLabel to determine which schema this selection belongs to
+    const schemaName = selection.schemaLabel;
+    const schema = schemas[schemaName];
+    const group = grouped.get(schemaName);
+
+    if (!schema || !group) {
+      console.warn(`[prebuilt] Unknown schema "${schemaName}" for selection, skipping`);
+      continue;
+    }
+
+    // Create formatters for schema-specific type names
+    const outputFormatters: TypeFormatters = {
+      scalarOutput: (name) => `ScalarOutput_${schemaName}<"${name}">`,
+    };
+    const inputFormatters: TypeFormatters = {
+      scalarInput: (name) => `ScalarInput_${schemaName}<"${name}">`,
+      inputObject: (name) => `Input_${schemaName}_${name}`,
+    };
+
     if (selection.type === "fragment") {
       // Skip fragments without keys (they can't be looked up)
       if (!selection.key) {
