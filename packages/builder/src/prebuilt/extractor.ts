@@ -8,7 +8,7 @@
  */
 
 import type { CanonicalId } from "@soda-gql/common";
-import type { AnyFields } from "@soda-gql/core";
+import type { AnyFields, InputTypeSpecifiers } from "@soda-gql/core";
 import { Kind, type OperationDefinitionNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
@@ -21,6 +21,7 @@ export type FieldSelectionData =
       readonly key: string | undefined;
       readonly typename: string;
       readonly fields: AnyFields;
+      readonly variableDefinitions: InputTypeSpecifiers;
     }
   | {
       readonly type: "operation";
@@ -53,15 +54,20 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
 
     try {
       if (element.type === "fragment") {
-        // For fragments, invoke spread with void/undefined to get fields
-        // This assumes fragments with required variables will get empty/default values
-        const fields = element.element.spread(undefined as never);
+        // Access variableDefinitions directly from the fragment
+        const variableDefinitions = element.element.variableDefinitions;
+
+        // Create default variables (all undefined) to call spread without errors
+        // This works because field selection structure doesn't depend on variable values
+        const defaultVariables = Object.fromEntries(Object.keys(variableDefinitions).map((k) => [k, undefined]));
+        const fields = element.element.spread(defaultVariables as never);
 
         selections.set(canonicalId, {
           type: "fragment",
           key: element.element.key,
           typename: element.element.typename,
           fields,
+          variableDefinitions,
         });
       } else if (element.type === "operation") {
         // For operations, invoke documentSource to get fields

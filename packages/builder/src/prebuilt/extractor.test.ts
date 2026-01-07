@@ -1,15 +1,21 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
-import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation } from "@soda-gql/core";
+import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation, InputTypeSpecifiers } from "@soda-gql/core";
 import { type DocumentNode, Kind, type OperationTypeNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
 
 // Mock fragment that returns field selections
-const createMockFragment = (typename: string, key: string | undefined, fields: AnyFields): AnyFragment => {
+const createMockFragment = (
+  typename: string,
+  key: string | undefined,
+  fields: AnyFields,
+  variableDefinitions: InputTypeSpecifiers = {},
+): AnyFragment => {
   return {
     typename,
     key,
+    variableDefinitions,
     directives: [],
     spread: () => fields,
     spreadDocument: () => ({
@@ -104,6 +110,33 @@ describe("extractFieldSelections", () => {
       expect(selection.key).toBe("UserFields");
       expect(selection.typename).toBe("User");
       expect(selection.fields).toEqual(mockFields);
+      expect(selection.variableDefinitions).toEqual({});
+    }
+  });
+
+  test("extracts variableDefinitions from fragments", () => {
+    const mockFields: AnyFields = {
+      id: createMockField("User", "id", "scalar", "ID", "!"),
+    };
+
+    const variableDefinitions: InputTypeSpecifiers = {
+      userId: { kind: "scalar", name: "ID", modifier: "!" },
+      includeEmail: { kind: "scalar", name: "Boolean", modifier: "?" },
+    };
+
+    const elements: Record<CanonicalId, IntermediateArtifactElement> = {
+      ["/src/user.ts::UserFragment" as CanonicalId]: {
+        type: "fragment",
+        element: createMockFragment("User", "UserFields", mockFields, variableDefinitions),
+      },
+    };
+
+    const selections = extractFieldSelections(elements);
+    const selection = selections.get("/src/user.ts::UserFragment" as CanonicalId);
+
+    expect(selection?.type).toBe("fragment");
+    if (selection?.type === "fragment") {
+      expect(selection.variableDefinitions).toEqual(variableDefinitions);
     }
   });
 
@@ -239,6 +272,7 @@ describe("extractFieldSelections", () => {
     const throwingFragment = {
       typename: "User",
       key: "UserFields",
+      variableDefinitions: {},
       directives: [],
       spread: () => {
         throw new Error("Required variable not provided");
