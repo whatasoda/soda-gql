@@ -22,6 +22,7 @@ export {
   getScalarOutputType,
   getScalarType,
   graphqlTypeToTypeScript,
+  type TypeFormatters,
 } from "./type-calculator";
 // Type definitions
 export type {

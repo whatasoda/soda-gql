@@ -624,3 +624,154 @@ describe("generateInputTypeFromSpecifiers", () => {
     );
   });
 });
+
+describe("TypeFormatters", () => {
+  describe("with calculateFieldsType", () => {
+    test("uses scalarOutput formatter for scalar fields", () => {
+      const fields = {
+        id: {
+          parent: "User",
+          field: "id",
+          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        } as AnyFieldSelection,
+      };
+
+      const formatters = {
+        scalarOutput: (name: string) => `Custom_${name}`,
+      };
+
+      expect(calculateFieldsType(mockSchema, fields, formatters)).toBe("{ readonly id: Custom_ID }");
+    });
+
+    test("uses default when scalarOutput formatter not provided", () => {
+      const fields = {
+        name: {
+          parent: "User",
+          field: "name",
+          type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        } as AnyFieldSelection,
+      };
+
+      expect(calculateFieldsType(mockSchema, fields, {})).toBe('{ readonly name: ScalarOutput<"String"> }');
+    });
+  });
+
+  describe("with generateInputType", () => {
+    test("uses scalarInput formatter for scalar variables", () => {
+      const variableDefinitions: VariableDefinitionNode[] = [
+        {
+          kind: Kind.VARIABLE_DEFINITION,
+          variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "userId" } },
+          type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
+        },
+      ];
+
+      const formatters = {
+        scalarInput: (name: string) => `Input_${name}`,
+      };
+
+      expect(generateInputType(mockSchema, variableDefinitions, formatters)).toBe("{ readonly userId: Input_ID }");
+    });
+
+    test("uses inputObject formatter for input object variables", () => {
+      const variableDefinitions: VariableDefinitionNode[] = [
+        {
+          kind: Kind.VARIABLE_DEFINITION,
+          variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "input" } },
+          type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "UserInput" } } },
+        },
+      ];
+
+      const formatters = {
+        inputObject: (name: string) => `Generated_${name}`,
+      };
+
+      expect(generateInputType(mockSchema, variableDefinitions, formatters)).toBe("{ readonly input: Generated_UserInput }");
+    });
+  });
+
+  describe("with generateInputTypeFromSpecifiers", () => {
+    test("uses scalarInput formatter", () => {
+      const specifiers: InputTypeSpecifiers = {
+        id: { kind: "scalar", name: "ID", modifier: "!" },
+      };
+
+      const formatters = {
+        scalarInput: (name: string) => `ScalarInput_custom<"${name}">`,
+      };
+
+      expect(generateInputTypeFromSpecifiers(mockSchema, specifiers, { formatters })).toBe(
+        '{ readonly id: ScalarInput_custom<"ID"> }',
+      );
+    });
+
+    test("uses inputObject formatter", () => {
+      const specifiers: InputTypeSpecifiers = {
+        data: { kind: "input", name: "CreateUserInput", modifier: "!" },
+      };
+
+      const formatters = {
+        inputObject: (name: string) => `Input_schema_${name}`,
+      };
+
+      expect(generateInputTypeFromSpecifiers(schemaWithInputs, specifiers, { formatters })).toBe(
+        "{ readonly data: Input_schema_CreateUserInput }",
+      );
+    });
+  });
+
+  describe("with graphqlTypeToTypeScript", () => {
+    test("uses scalarInput formatter", () => {
+      const typeNode: TypeNode = {
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: "String" },
+      };
+
+      const formatters = {
+        scalarInput: (name: string) => `Scalar_${name}`,
+      };
+
+      expect(graphqlTypeToTypeScript(mockSchema, typeNode, formatters)).toBe("Scalar_String");
+    });
+
+    test("uses inputObject formatter for input types", () => {
+      const typeNode: TypeNode = {
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: "UserInput" },
+      };
+
+      const formatters = {
+        inputObject: (name: string) => `Input_${name}`,
+      };
+
+      expect(graphqlTypeToTypeScript(mockSchema, typeNode, formatters)).toBe("Input_UserInput");
+    });
+
+    test("propagates formatters through nested types", () => {
+      const typeNode: TypeNode = {
+        kind: Kind.NON_NULL_TYPE,
+        type: {
+          kind: Kind.LIST_TYPE,
+          type: {
+            kind: Kind.NAMED_TYPE,
+            name: { kind: Kind.NAME, value: "ID" },
+          },
+        },
+      };
+
+      const formatters = {
+        scalarInput: (name: string) => `Custom_${name}`,
+      };
+
+      expect(graphqlTypeToTypeScript(mockSchema, typeNode, formatters)).toBe("(Custom_ID)[]");
+    });
+  });
+});

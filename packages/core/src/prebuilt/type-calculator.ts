@@ -13,6 +13,30 @@ import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputDepthOverrides, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
 /**
+ * Formatters for customizing type name output.
+ *
+ * Used by type generation functions to format scalar and input object type names
+ * with custom prefixes or patterns (e.g., schema-specific prefixes).
+ */
+export type TypeFormatters = {
+  /**
+   * Format a scalar input type name.
+   * Default: `ScalarInput<"Name">`
+   */
+  readonly scalarInput?: (name: string) => string;
+  /**
+   * Format a scalar output type name.
+   * Default: `ScalarOutput<"Name">`
+   */
+  readonly scalarOutput?: (name: string) => string;
+  /**
+   * Format an input object type name.
+   * Default: returns the name unchanged
+   */
+  readonly inputObject?: (name: string) => string;
+};
+
+/**
  * Apply a type modifier to a base type string.
  *
  * Modifier format:
@@ -135,6 +159,10 @@ export type GenerateInputObjectTypeOptions = {
    * Per-type depth overrides.
    */
   readonly depthOverrides?: InputDepthOverrides;
+  /**
+   * Custom formatters for type names.
+   */
+  readonly formatters?: TypeFormatters;
 };
 
 /**
@@ -216,16 +244,17 @@ const generateInputFieldType = (
   depth: number,
 ): string => {
   let baseType: string;
+  const { formatters } = options;
 
   switch (specifier.kind) {
     case "scalar":
-      baseType = getScalarInputType(schema, specifier.name);
+      baseType = formatters?.scalarInput?.(specifier.name) ?? getScalarInputType(schema, specifier.name);
       break;
     case "enum":
       baseType = getEnumType(schema, specifier.name);
       break;
     case "input":
-      baseType = generateInputObjectType(schema, specifier.name, options, seen, depth);
+      baseType = formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options, seen, depth);
       break;
     default:
       baseType = "unknown";
@@ -236,19 +265,27 @@ const generateInputFieldType = (
 
 /**
  * Calculate the TypeScript type string for a single field selection.
+ *
+ * @param schema - The GraphQL schema
+ * @param selection - The field selection to calculate type for
+ * @param formatters - Optional formatters for customizing type names
  */
-export const calculateFieldType = (schema: AnyGraphqlSchema, selection: AnyFieldSelection): string => {
+export const calculateFieldType = (
+  schema: AnyGraphqlSchema,
+  selection: AnyFieldSelection,
+  formatters?: TypeFormatters,
+): string => {
   const { type } = selection;
 
   // Handle object types (nested selection)
   if (type.kind === "object" && selection.object) {
-    const nestedType = calculateFieldsType(schema, selection.object);
+    const nestedType = calculateFieldsType(schema, selection.object, formatters);
     return applyTypeModifier(nestedType, type.modifier);
   }
 
   // Handle union types
   if (type.kind === "union" && selection.union) {
-    const unionType = calculateUnionType(schema, selection.union);
+    const unionType = calculateUnionType(schema, selection.union, formatters);
     return applyTypeModifier(unionType, type.modifier);
   }
 
@@ -260,7 +297,7 @@ export const calculateFieldType = (schema: AnyGraphqlSchema, selection: AnyField
 
   // Handle scalar types
   if (type.kind === "scalar") {
-    const scalarType = getScalarType(schema, type.name);
+    const scalarType = formatters?.scalarOutput?.(type.name) ?? getScalarOutputType(schema, type.name);
     return applyTypeModifier(scalarType, type.modifier);
   }
 
@@ -277,12 +314,16 @@ export const calculateFieldType = (schema: AnyGraphqlSchema, selection: AnyField
 /**
  * Calculate the TypeScript type string for a union type selection.
  */
-const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion): string => {
+const calculateUnionType = (
+  schema: AnyGraphqlSchema,
+  union: AnyNestedUnion,
+  formatters?: TypeFormatters,
+): string => {
   const memberTypes: string[] = [];
 
   for (const [_typeName, fields] of Object.entries(union)) {
     if (fields) {
-      const memberType = calculateFieldsType(schema, fields);
+      const memberType = calculateFieldsType(schema, fields, formatters);
       memberTypes.push(memberType);
     }
   }
@@ -297,8 +338,16 @@ const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion): st
 /**
  * Calculate the TypeScript type string for a set of field selections.
  * This is the main entry point for type calculation.
+ *
+ * @param schema - The GraphQL schema
+ * @param fields - The field selections to calculate types for
+ * @param formatters - Optional formatters for customizing type names
  */
-export const calculateFieldsType = (schema: AnyGraphqlSchema, fields: AnyFields | AnyNestedObject): string => {
+export const calculateFieldsType = (
+  schema: AnyGraphqlSchema,
+  fields: AnyFields | AnyNestedObject,
+  formatters?: TypeFormatters,
+): string => {
   const entries = Object.entries(fields);
 
   if (entries.length === 0) {
@@ -306,7 +355,7 @@ export const calculateFieldsType = (schema: AnyGraphqlSchema, fields: AnyFields 
   }
 
   const fieldTypes = entries.map(([alias, selection]) => {
-    const fieldType = calculateFieldType(schema, selection);
+    const fieldType = calculateFieldType(schema, selection, formatters);
     // Use readonly for all fields to match InferFields behavior
     return `readonly ${alias}: ${fieldType}`;
   });
@@ -319,28 +368,35 @@ export const calculateFieldsType = (schema: AnyGraphqlSchema, fields: AnyFields 
  *
  * Handles NonNullType, ListType, and NamedType recursively.
  * Uses ScalarInput for scalar types since this is used for input/variable types.
- * Input object names are returned as-is; the emitter will replace them with generated type names.
+ *
+ * @param schema - The GraphQL schema
+ * @param typeNode - The GraphQL type node to convert
+ * @param formatters - Optional formatters for customizing type names
  */
-export const graphqlTypeToTypeScript = (schema: AnyGraphqlSchema, typeNode: TypeNode): string => {
+export const graphqlTypeToTypeScript = (
+  schema: AnyGraphqlSchema,
+  typeNode: TypeNode,
+  formatters?: TypeFormatters,
+): string => {
   switch (typeNode.kind) {
     case Kind.NON_NULL_TYPE:
-      return graphqlTypeToTypeScript(schema, typeNode.type);
+      return graphqlTypeToTypeScript(schema, typeNode.type, formatters);
     case Kind.LIST_TYPE: {
-      const inner = graphqlTypeToTypeScript(schema, typeNode.type);
+      const inner = graphqlTypeToTypeScript(schema, typeNode.type, formatters);
       return `(${inner})[]`;
     }
     case Kind.NAMED_TYPE: {
       const name = typeNode.name.value;
       // Check if scalar - use ScalarInput for input types
       if (schema.scalar[name]) {
-        return getScalarInputType(schema, name);
+        return formatters?.scalarInput?.(name) ?? getScalarInputType(schema, name);
       }
       // Check if enum
       if (schema.enum[name]) {
         return getEnumType(schema, name);
       }
-      // Input object - use type name directly, emitter will replace with generated type
-      return name;
+      // Input object - use formatter or return name directly
+      return formatters?.inputObject?.(name) ?? name;
     }
   }
 };
@@ -349,8 +405,16 @@ export const graphqlTypeToTypeScript = (schema: AnyGraphqlSchema, typeNode: Type
  * Generate a TypeScript type string for operation input variables.
  *
  * Extracts variable types from GraphQL VariableDefinitionNode AST.
+ *
+ * @param schema - The GraphQL schema
+ * @param variableDefinitions - Variable definition nodes from the operation
+ * @param formatters - Optional formatters for customizing type names
  */
-export const generateInputType = (schema: AnyGraphqlSchema, variableDefinitions: readonly VariableDefinitionNode[]): string => {
+export const generateInputType = (
+  schema: AnyGraphqlSchema,
+  variableDefinitions: readonly VariableDefinitionNode[],
+  formatters?: TypeFormatters,
+): string => {
   if (variableDefinitions.length === 0) {
     return "{}";
   }
@@ -358,7 +422,7 @@ export const generateInputType = (schema: AnyGraphqlSchema, variableDefinitions:
   const fields = variableDefinitions.map((varDef) => {
     const name = varDef.variable.name.value;
     const isRequired = varDef.type.kind === Kind.NON_NULL_TYPE;
-    const tsType = graphqlTypeToTypeScript(schema, varDef.type);
+    const tsType = graphqlTypeToTypeScript(schema, varDef.type, formatters);
 
     // Apply nullability wrapper for optional fields
     const finalType = isRequired ? tsType : `(${tsType} | null | undefined)`;
@@ -378,16 +442,17 @@ const generateInputFieldTypeFromSpecifier = (
   options: GenerateInputObjectTypeOptions,
 ): string => {
   let baseType: string;
+  const { formatters } = options;
 
   switch (specifier.kind) {
     case "scalar":
-      baseType = getScalarInputType(schema, specifier.name);
+      baseType = formatters?.scalarInput?.(specifier.name) ?? getScalarInputType(schema, specifier.name);
       break;
     case "enum":
       baseType = getEnumType(schema, specifier.name);
       break;
     case "input":
-      baseType = generateInputObjectType(schema, specifier.name, options);
+      baseType = formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options);
       break;
     default:
       baseType = "unknown";
