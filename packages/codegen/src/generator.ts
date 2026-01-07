@@ -469,12 +469,12 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
 
 const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
   const fields = renderInputFields(schema, record.fields);
-  return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+  return `const input_${schemaName}_${record.name} = inputType("${record.name}", ${fields});`;
 };
 
 const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord): string => {
   const fields = renderObjectFields(schema, record.fields);
-  return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+  return `const object_${schemaName}_${record.name} = objectType("${record.name}", ${fields});`;
 };
 
 const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
@@ -482,7 +482,7 @@ const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((member) => member.name.value);
   const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
-  return `const union_${schemaName}_${record.name} = { name: "${record.name}", types: ${typesObj} } as const;`;
+  return `const union_${schemaName}_${record.name} = unionType("${record.name}", ${typesObj});`;
 };
 
 const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
@@ -794,6 +794,9 @@ ${typeExports.join("\n")}`);
   return `\
 import {
   enumType,
+  inputType,
+  objectType,
+  unionType,
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,

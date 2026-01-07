@@ -310,9 +310,9 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const input_default_CreateUserInput = { name: "CreateUserInput", ...
-    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput"');
-    expect(result.code).toContain("fields:");
+    // Factory function format: inputType("CreateUserInput", ...)
+    expect(result.code).toContain('const input_default_CreateUserInput = inputType("CreateUserInput"');
+    expect(result.code).toContain('name: { kind: "scalar"');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -327,9 +327,8 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Granular format: const union_default_SearchResult = { name: "SearchResult", ...
-    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult"');
-    expect(result.code).toContain("types:");
+    // Factory function format: unionType("SearchResult", ...)
+    expect(result.code).toContain('const union_default_SearchResult = unionType("SearchResult"');
     expect(result.code).toContain("User: true");
     expect(result.code).toContain("Post: true");
     expect(result.stats.unions).toBe(1);
