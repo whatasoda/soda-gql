@@ -19,6 +19,13 @@ export { formatBuilderErrorForCLI, formatBuilderErrorStructured } from "./errors
 export { __clearGqlCache } from "./intermediate-module";
 export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
+// Prebuilt type generation
+export {
+  emitPrebuiltTypes,
+  extractFieldSelections,
+  type FieldSelectionsMap,
+  type PrebuiltTypesEmitterOptions,
+} from "./prebuilt";
 // Scheduler
 export type { FileStats } from "./scheduler";
 export { BuilderEffects, FileReadEffect, FileStatEffect } from "./scheduler";

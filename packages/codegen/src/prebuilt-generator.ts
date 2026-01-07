@@ -8,7 +8,6 @@
  */
 
 import type { DocumentNode } from "graphql";
-import { createSchemaIndex } from "./generator";
 
 type PrebuiltGeneratorOptions = {
   /**
@@ -57,11 +56,7 @@ export const generatePrebuiltModule = (
     typeImports.push(`Schema_${name}`, `FragmentBuilders_${name}`);
 
     // Runtime imports
-    runtimeImports.push(
-      `__schema_${name}`,
-      `__inputTypeMethods_${name}`,
-      `__directiveMethods_${name}`,
-    );
+    runtimeImports.push(`__schema_${name}`, `__inputTypeMethods_${name}`, `__directiveMethods_${name}`);
 
     // Check if adapter is used for this schema
     const hasAdapter = options.injection?.get(name)?.adapterImportPath !== undefined;
@@ -79,7 +74,6 @@ export const generatePrebuiltModule = (
     const document = schemas.get(name);
     if (!document) continue;
 
-    const schemaIndex = createSchemaIndex(document);
     const hasAdapter = options.injection?.get(name)?.adapterImportPath !== undefined;
 
     // Generate context type for this schema

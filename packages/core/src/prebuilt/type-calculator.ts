@@ -7,7 +7,7 @@
  * @module
  */
 
-import type { AnyFields, AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
+import type { AnyFieldSelection, AnyFields, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { TypeModifier } from "../types/type-foundation";
 
@@ -207,7 +207,7 @@ export const calculateFieldsType = (schema: AnyGraphqlSchema, fields: AnyFields 
  * Calculate the TypeScript type string for operation input (variables).
  */
 export const calculateInputType = (
-  schema: AnyGraphqlSchema,
+  _schema: AnyGraphqlSchema,
   variableNames: readonly string[],
   // We don't have full variable type info at runtime, so this is a simplified version
   // In practice, the document contains the actual variable types

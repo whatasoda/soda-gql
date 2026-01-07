@@ -177,11 +177,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     await mkdir(prebuiltDir, { recursive: true });
 
     // Calculate relative import path from prebuilt/index.ts to index.ts
-    const mainModulePath = toImportSpecifier(
-      join(prebuiltDir, "index.ts"),
-      outPath,
-      importSpecifierOptions,
-    );
+    const mainModulePath = toImportSpecifier(join(prebuiltDir, "index.ts"), outPath, importSpecifierOptions);
 
     const prebuilt = generatePrebuiltModule(schemas, {
       mainModulePath,

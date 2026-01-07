@@ -1,5 +1,4 @@
 import { types as t } from "@babel/core";
-import type { RuntimeFragmentInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
 import type { BabelGqlCallFragment, BabelGqlCallOperation } from "./analysis";

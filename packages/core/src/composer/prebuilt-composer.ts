@@ -8,13 +8,13 @@
  * @module
  */
 
+import type { PrebuiltTypeRegistry } from "../prebuilt/types";
 import type { AnyFragment, Fragment, Operation } from "../types/element";
 import type { AnyAssignableInput, AnyFields } from "../types/fragment";
 import type { AnyAdapter, DefaultAdapter } from "../types/metadata";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { PrebuiltTypeRegistry } from "../prebuilt/types";
-import { createGqlElementComposer, type GqlElementComposerOptions } from "./gql-composer";
 import type { StandardDirectives } from "./directive-builder";
+import { createGqlElementComposer, type GqlElementComposerOptions } from "./gql-composer";
 
 /**
  * Resolves the output type for a prebuilt element.
@@ -23,52 +23,51 @@ import type { StandardDirectives } from "./directive-builder";
  * For Fragments: Looks up by fragment key in the registry
  * Falls back to the element's original type if not found in registry
  */
-export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegistry> =
+export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegistry> = TElement extends Operation<
   // Handle Operation types
-  TElement extends Operation<
-    infer TOperationType extends OperationType,
-    infer TOperationName extends string,
-    infer TVariableNames extends string[],
-    // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
-    any,
-    infer TFields extends Partial<AnyFields>,
-    // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
-    any
-  >
-    ? TOperationName extends keyof TPrebuilt["operations"]
-      ? Operation<
-          TOperationType,
-          TOperationName,
-          TVariableNames,
-          TPrebuilt["operations"][TOperationName]["input"] & AnyConstAssignableInput,
+  infer TOperationType extends OperationType,
+  infer TOperationName extends string,
+  infer TVariableNames extends string[],
+  // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
+  any,
+  infer TFields extends Partial<AnyFields>,
+  // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
+  any
+>
+  ? TOperationName extends keyof TPrebuilt["operations"]
+    ? Operation<
+        TOperationType,
+        TOperationName,
+        TVariableNames,
+        TPrebuilt["operations"][TOperationName]["input"] & AnyConstAssignableInput,
+        TFields,
+        TPrebuilt["operations"][TOperationName]["output"] & object
+      >
+    : TElement
+  : // Handle Fragment types
+    TElement extends Fragment<
+        infer TTypeName extends string,
+        // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
+        any,
+        infer TFields extends Partial<AnyFields>,
+        // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
+        any,
+        infer TKey extends string | undefined
+      >
+    ? TKey extends keyof TPrebuilt["fragments"]
+      ? Fragment<
+          TTypeName,
+          TPrebuilt["fragments"][TKey]["input"] extends infer TInput
+            ? TInput extends AnyAssignableInput
+              ? Partial<TInput>
+              : void
+            : void,
           TFields,
-          TPrebuilt["operations"][TOperationName]["output"] & object
+          TPrebuilt["fragments"][TKey]["output"] & object,
+          TKey
         >
       : TElement
-    : // Handle Fragment types
-      TElement extends Fragment<
-          infer TTypeName extends string,
-          // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
-          any,
-          infer TFields extends Partial<AnyFields>,
-          // biome-ignore lint/suspicious/noExplicitAny: Required for conditional type matching
-          any,
-          infer TKey extends string | undefined
-        >
-      ? TKey extends keyof TPrebuilt["fragments"]
-        ? Fragment<
-            TTypeName,
-            TPrebuilt["fragments"][TKey]["input"] extends infer TInput
-              ? TInput extends AnyAssignableInput
-                ? Partial<TInput>
-                : void
-              : void,
-            TFields,
-            TPrebuilt["fragments"][TKey]["output"] & object,
-            TKey
-          >
-        : TElement
-      : TElement;
+    : TElement;
 
 /**
  * Prebuilt element composer that resolves types from a registry.
@@ -127,10 +126,7 @@ export const createPrebuiltGqlElementComposer = <
   options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TDirectiveMethods>, NoInfer<TAdapter>>,
 ): PrebuiltGqlElementComposer<TContext, TPrebuilt> => {
   // Use the standard composer internally - same runtime behavior
-  const baseComposer = createGqlElementComposer<TSchema, TFragmentBuilders, TDirectiveMethods, TAdapter>(
-    schema,
-    options,
-  );
+  const baseComposer = createGqlElementComposer<TSchema, TFragmentBuilders, TDirectiveMethods, TAdapter>(schema, options);
 
   // Cast to prebuilt composer type - types are resolved from registry
   return baseComposer as unknown as PrebuiltGqlElementComposer<TContext, TPrebuilt>;

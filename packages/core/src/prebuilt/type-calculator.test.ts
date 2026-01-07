@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { applyTypeModifier, calculateFieldType, calculateFieldsType } from "./type-calculator";
 import type { AnyFieldSelection } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
+import { applyTypeModifier, calculateFieldsType, calculateFieldType } from "./type-calculator";
 
 // Mock schema for testing
 const mockSchema: AnyGraphqlSchema = {
@@ -208,8 +208,6 @@ describe("calculateFieldsType", () => {
       } as AnyFieldSelection,
     };
 
-    expect(calculateFieldsType(mockSchema, fields)).toBe(
-      "{ readonly id: string; readonly name: (string | null | undefined) }",
-    );
+    expect(calculateFieldsType(mockSchema, fields)).toBe("{ readonly id: string; readonly name: (string | null | undefined) }");
   });
 });

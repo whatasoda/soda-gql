@@ -70,11 +70,15 @@ export type PrebuiltOperationOutput<
 /**
  * Check if a key exists in the fragment registry.
  */
-export type HasPrebuiltFragment<TRegistry extends PrebuiltTypeRegistry, TKey extends string> =
-  TKey extends keyof TRegistry["fragments"] ? true : false;
+export type HasPrebuiltFragment<
+  TRegistry extends PrebuiltTypeRegistry,
+  TKey extends string,
+> = TKey extends keyof TRegistry["fragments"] ? true : false;
 
 /**
  * Check if a key exists in the operation registry.
  */
-export type HasPrebuiltOperation<TRegistry extends PrebuiltTypeRegistry, TKey extends string> =
-  TKey extends keyof TRegistry["operations"] ? true : false;
+export type HasPrebuiltOperation<
+  TRegistry extends PrebuiltTypeRegistry,
+  TKey extends string,
+> = TKey extends keyof TRegistry["operations"] ? true : false;

@@ -797,7 +797,8 @@ ${typeExports.join("\n")}`);
       }
     }
   }
-  const prebuiltExportsBlock = prebuiltExports.length > 0 ? `\n\n// Exports for prebuilt module\n${prebuiltExports.join("\n")}` : "";
+  const prebuiltExportsBlock =
+    prebuiltExports.length > 0 ? `\n\n// Exports for prebuilt module\n${prebuiltExports.join("\n")}` : "";
 
   return `\
 import {

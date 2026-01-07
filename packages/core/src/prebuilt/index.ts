@@ -8,6 +8,8 @@
  * @module
  */
 
+// Type calculator utilities
+export { applyTypeModifier, calculateFieldsType, calculateFieldType, calculateInputType } from "./type-calculator";
 // Type definitions
 export type {
   EmptyPrebuiltTypeRegistry,
@@ -19,6 +21,3 @@ export type {
   PrebuiltOperationOutput,
   PrebuiltTypeRegistry,
 } from "./types";
-
-// Type calculator utilities
-export { applyTypeModifier, calculateFieldsType, calculateFieldType, calculateInputType } from "./type-calculator";
