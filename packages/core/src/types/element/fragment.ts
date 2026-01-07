@@ -35,6 +35,7 @@ interface FragmentArtifact<
 > {
   readonly typename: TTypeName;
   readonly key: TKey;
+  readonly variableDefinitions: InputTypeSpecifiers;
   readonly spread: (variables: TVariables) => TFields;
 }
 
@@ -78,6 +79,11 @@ export class Fragment<
     return GqlElement.get(this).key;
   }
 
+  /** Variable definitions for this fragment. */
+  public get variableDefinitions() {
+    return GqlElement.get(this).variableDefinitions;
+  }
+
   /**
    * Spreads this fragment's fields into a parent selection.
    * Pass variables if the fragment defines any.
@@ -101,6 +107,7 @@ export class Fragment<
     define: () => {
       typename: TTypeName;
       key: TKey;
+      variableDefinitions: TVariableDefinitions;
       spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
