@@ -192,14 +192,14 @@ Operations are automatically keyed by their `name` property.
 
 #### Bundler Configuration
 
-Configure your bundler to use the prebuilt module via path aliases:
+Configure your bundler to use the prebuilt module via path aliases. Replace `<outdir>` with your codegen output directory (e.g., `./src/graphql-system`):
 
 **tsdown / tsconfig.json:**
 ```json
 {
   "compilerOptions": {
     "paths": {
-      "./src/graphql-system": ["./src/graphql-system/prebuilt"]
+      "<outdir>": ["<outdir>/prebuilt"]
     }
   }
 }
@@ -210,7 +210,7 @@ Configure your bundler to use the prebuilt module via path aliases:
 export default {
   resolve: {
     alias: {
-      "./src/graphql-system": "./src/graphql-system/prebuilt"
+      "<outdir>": "<outdir>/prebuilt"
     }
   }
 }
@@ -221,7 +221,7 @@ export default {
 module.exports = {
   resolve: {
     alias: {
-      "./src/graphql-system": "./src/graphql-system/prebuilt"
+      "<outdir>": "<outdir>/prebuilt"
     }
   }
 }

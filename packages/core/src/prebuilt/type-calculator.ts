@@ -249,7 +249,8 @@ const generateInputFieldType = (
       baseType = getEnumType(schema, specifier.name);
       break;
     case "input":
-      baseType = formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options, seen, depth);
+      baseType =
+        formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options, seen, depth);
       break;
     default:
       baseType = "unknown";
@@ -309,11 +310,7 @@ export const calculateFieldType = (
 /**
  * Calculate the TypeScript type string for a union type selection.
  */
-const calculateUnionType = (
-  schema: AnyGraphqlSchema,
-  union: AnyNestedUnion,
-  formatters?: TypeFormatters,
-): string => {
+const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, formatters?: TypeFormatters): string => {
   const memberTypes: string[] = [];
 
   for (const [_typeName, fields] of Object.entries(union)) {
@@ -368,11 +365,7 @@ export const calculateFieldsType = (
  * @param typeNode - The GraphQL type node to convert
  * @param formatters - Optional formatters for customizing type names
  */
-export const graphqlTypeToTypeScript = (
-  schema: AnyGraphqlSchema,
-  typeNode: TypeNode,
-  formatters?: TypeFormatters,
-): string => {
+export const graphqlTypeToTypeScript = (schema: AnyGraphqlSchema, typeNode: TypeNode, formatters?: TypeFormatters): string => {
   switch (typeNode.kind) {
     case Kind.NON_NULL_TYPE:
       return graphqlTypeToTypeScript(schema, typeNode.type, formatters);
