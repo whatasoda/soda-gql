@@ -8,7 +8,7 @@
  */
 
 import type { CanonicalId } from "@soda-gql/common";
-import type { AnyFields, InputTypeSpecifiers } from "@soda-gql/core";
+import { type AnyFields, type AnyVarRef, createVarRefFromVariable, type InputTypeSpecifiers } from "@soda-gql/core";
 import { Kind, type OperationDefinitionNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
@@ -57,10 +57,12 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
         // Access variableDefinitions directly from the fragment
         const variableDefinitions = element.element.variableDefinitions;
 
-        // Create default variables (all undefined) to call spread without errors
-        // This works because field selection structure doesn't depend on variable values
-        const defaultVariables = Object.fromEntries(Object.keys(variableDefinitions).map((k) => [k, undefined]));
-        const fields = element.element.spread(defaultVariables as never);
+        // Create VarRef objects for each variable to call spread
+        // Field selection structure doesn't depend on variable values, only on variable references
+        const varRefs: Record<string, AnyVarRef> = Object.fromEntries(
+          Object.keys(variableDefinitions).map((k) => [k, createVarRefFromVariable(k)]),
+        );
+        const fields = element.element.spread(varRefs);
 
         selections.set(canonicalId, {
           type: "fragment",
