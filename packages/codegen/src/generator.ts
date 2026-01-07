@@ -765,19 +765,26 @@ const ${customDirectivesVar} = { ...createStandardDirectives(), ...${config.dire
 
 ${typeExports.join("\n")}`);
 
-    // Build gql entry with options - inputTypeMethods is always required
-    // Include FragmentBuilders type for codegen optimization
+    // Build gql composer as a named variable for Context type extraction
+    const gqlVarName = `gql_${name}`;
     if (adapterVar) {
       const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
-      gqlEntries.push(
-        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} })`,
+      schemaBlocks.push(
+        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     } else {
       const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}>`;
-      gqlEntries.push(
-        `  ${name}: createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} })`,
+      schemaBlocks.push(
+        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     }
+
+    // Export Context type extracted from the gql composer
+    schemaBlocks.push(
+      `export type Context_${name} = Parameters<typeof ${gqlVarName}>[0] extends (ctx: infer C) => unknown ? C : never;`,
+    );
+
+    gqlEntries.push(`  ${name}: ${gqlVarName}`);
   }
 
   // Generate prebuilt exports if requested
