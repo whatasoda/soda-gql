@@ -56,11 +56,13 @@ type SchemaGroup = {
 /**
  * Group field selections by schema.
  * Uses the schemaLabel from each selection to group them correctly.
+ *
+ * @returns Result containing grouped selections or error if schema not found
  */
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
   schemas: Record<string, AnyGraphqlSchema>,
-): Map<string, SchemaGroup> => {
+): Result<Map<string, SchemaGroup>, BuilderError> => {
   const grouped = new Map<string, SchemaGroup>();
 
   // Initialize groups for each schema
@@ -68,15 +70,14 @@ const groupBySchema = (
     grouped.set(schemaName, { fragments: [], operations: [], inputObjects: new Set() });
   }
 
-  for (const [_canonicalId, selection] of fieldSelections) {
+  for (const [canonicalId, selection] of fieldSelections) {
     // Use schemaLabel to determine which schema this selection belongs to
     const schemaName = selection.schemaLabel;
     const schema = schemas[schemaName];
     const group = grouped.get(schemaName);
 
     if (!schema || !group) {
-      console.warn(`[prebuilt] Unknown schema "${schemaName}" for selection, skipping`);
-      continue;
+      return err(builderErrors.schemaNotFound(schemaName, canonicalId));
     }
 
     // Create formatters for schema-specific type names
@@ -147,7 +148,7 @@ const groupBySchema = (
     }
   }
 
-  return grouped;
+  return ok(grouped);
 };
 
 /**
@@ -403,7 +404,11 @@ export const emitPrebuiltTypes = async (
   const { schemas, fieldSelections, outdir, injects } = options;
 
   // Group selections by schema
-  const grouped = groupBySchema(fieldSelections, schemas);
+  const groupResult = groupBySchema(fieldSelections, schemas);
+  if (groupResult.isErr()) {
+    return err(groupResult.error);
+  }
+  const grouped = groupResult.value;
 
   // Generate the types code
   const code = generateTypesCode(grouped, schemas, injects, outdir);
