@@ -1,4 +1,5 @@
 export * from "./composer";
+export * from "./prebuilt";
 export * from "./schema";
 export * from "./types/element";
 export type * from "./types/fragment";

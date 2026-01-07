@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { applyTypeModifier, calculateFieldType, calculateFieldsType } from "./type-calculator";
-import type { AnyFieldSelection, AnyGraphqlSchema } from "../types";
+import type { AnyFieldSelection } from "../types/fragment";
+import type { AnyGraphqlSchema } from "../types/schema";
 
 // Mock schema for testing
 const mockSchema: AnyGraphqlSchema = {
@@ -72,7 +73,7 @@ describe("calculateFieldType", () => {
       field: "name",
       type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: null,
       union: null,
     };
@@ -86,7 +87,7 @@ describe("calculateFieldType", () => {
       field: "email",
       type: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: null,
       union: null,
     };
@@ -100,7 +101,7 @@ describe("calculateFieldType", () => {
       field: "status",
       type: { kind: "enum", name: "Status", modifier: "!", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: null,
       union: null,
     };
@@ -114,7 +115,7 @@ describe("calculateFieldType", () => {
       field: "__typename",
       type: { kind: "typename", name: "User", modifier: "!", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: null,
       union: null,
     };
@@ -128,14 +129,14 @@ describe("calculateFieldType", () => {
       field: "user",
       type: { kind: "object", name: "User", modifier: "!", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
           type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
           args: {},
-          directives: {},
+          directives: [],
           object: null,
           union: null,
         },
@@ -144,7 +145,7 @@ describe("calculateFieldType", () => {
           field: "name",
           type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
           args: {},
-          directives: {},
+          directives: [],
           object: null,
           union: null,
         },
@@ -161,14 +162,14 @@ describe("calculateFieldType", () => {
       field: "users",
       type: { kind: "object", name: "User", modifier: "![]!", arguments: {} },
       args: {},
-      directives: {},
+      directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
           type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
           args: {},
-          directives: {},
+          directives: [],
           object: null,
           union: null,
         },
@@ -192,7 +193,7 @@ describe("calculateFieldsType", () => {
         field: "id",
         type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
         args: {},
-        directives: {},
+        directives: [],
         object: null,
         union: null,
       } as AnyFieldSelection,
@@ -201,7 +202,7 @@ describe("calculateFieldsType", () => {
         field: "name",
         type: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
         args: {},
-        directives: {},
+        directives: [],
         object: null,
         union: null,
       } as AnyFieldSelection,
