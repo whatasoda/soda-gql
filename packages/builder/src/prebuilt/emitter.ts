@@ -10,7 +10,8 @@
 import { writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import type { AnyGraphqlSchema } from "@soda-gql/core";
-import { calculateFieldsType, generateInputType } from "@soda-gql/core";
+import { calculateFieldsType, generateInputObjectType, generateInputType } from "@soda-gql/core";
+import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderError, builderErrors } from "../errors";
 import type { FieldSelectionsMap } from "./extractor";
@@ -46,6 +47,12 @@ type PrebuiltTypeEntry = {
   readonly outputType: string;
 };
 
+type SchemaGroup = {
+  fragments: PrebuiltTypeEntry[];
+  operations: PrebuiltTypeEntry[];
+  inputObjects: Set<string>;
+};
+
 /**
  * Group field selections by schema.
  * Uses the schema label to group selections.
@@ -53,12 +60,12 @@ type PrebuiltTypeEntry = {
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
   schemas: Record<string, AnyGraphqlSchema>,
-): Map<string, { fragments: PrebuiltTypeEntry[]; operations: PrebuiltTypeEntry[] }> => {
-  const grouped = new Map<string, { fragments: PrebuiltTypeEntry[]; operations: PrebuiltTypeEntry[] }>();
+): Map<string, SchemaGroup> => {
+  const grouped = new Map<string, SchemaGroup>();
 
   // Initialize groups for each schema
   for (const schemaName of Object.keys(schemas)) {
-    grouped.set(schemaName, { fragments: [], operations: [] });
+    grouped.set(schemaName, { fragments: [], operations: [], inputObjects: new Set() });
   }
 
   // For now, assume single schema named "default"
@@ -101,11 +108,27 @@ const groupBySchema = (
       }
     } else if (selection.type === "operation") {
       try {
+        // Collect input objects used in this operation
+        const usedInputObjects = collectUsedInputObjects(schema, selection.variableDefinitions);
+        for (const inputName of usedInputObjects) {
+          group.inputObjects.add(inputName);
+        }
+
         const outputType = calculateFieldsType(schema, selection.fields);
         const inputType = generateInputType(schema, selection.variableDefinitions);
-        // Replace generic ScalarOutput with schema-specific version
+
+        // Replace generic ScalarOutput with schema-specific version for output
         const finalOutputType = outputType.replace(/ScalarOutput<"([^"]+)">/g, `ScalarOutput_${defaultSchemaName}<"$1">`);
-        const finalInputType = inputType.replace(/ScalarOutput<"([^"]+)">/g, `ScalarOutput_${defaultSchemaName}<"$1">`);
+
+        // Replace generic ScalarInput with schema-specific version for input
+        let finalInputType = inputType.replace(/ScalarInput<"([^"]+)">/g, `ScalarInput_${defaultSchemaName}<"$1">`);
+
+        // Replace input object names with generated type names
+        for (const inputName of usedInputObjects) {
+          const pattern = new RegExp(`(?<!Input_${defaultSchemaName}_)\\b${inputName}\\b`, "g");
+          finalInputType = finalInputType.replace(pattern, `Input_${defaultSchemaName}_${inputName}`);
+        }
+
         group.operations.push({
           key: selection.operationName,
           inputType: finalInputType,
@@ -137,10 +160,121 @@ const toImportSpecifier = (from: string, to: string): string => {
 };
 
 /**
+ * Extract input object names from a GraphQL TypeNode.
+ */
+const extractInputObjectsFromType = (
+  schema: AnyGraphqlSchema,
+  typeNode: TypeNode,
+  inputObjects: Set<string>,
+): void => {
+  switch (typeNode.kind) {
+    case Kind.NON_NULL_TYPE:
+      extractInputObjectsFromType(schema, typeNode.type, inputObjects);
+      break;
+    case Kind.LIST_TYPE:
+      extractInputObjectsFromType(schema, typeNode.type, inputObjects);
+      break;
+    case Kind.NAMED_TYPE: {
+      const name = typeNode.name.value;
+      // Check if it's an input object (not a scalar or enum)
+      if (!schema.scalar[name] && !schema.enum[name] && schema.input[name]) {
+        inputObjects.add(name);
+      }
+      break;
+    }
+  }
+};
+
+/**
+ * Collect all input object types used in variable definitions.
+ * Recursively collects nested input objects from the schema.
+ */
+const collectUsedInputObjects = (
+  schema: AnyGraphqlSchema,
+  variableDefinitions: readonly VariableDefinitionNode[],
+): Set<string> => {
+  const inputObjects = new Set<string>();
+
+  // First pass: collect direct references from variable definitions
+  for (const varDef of variableDefinitions) {
+    extractInputObjectsFromType(schema, varDef.type, inputObjects);
+  }
+
+  // Second pass: recursively collect nested input objects
+  const collectNested = (inputName: string, seen: Set<string>): void => {
+    if (seen.has(inputName)) {
+      return;
+    }
+    seen.add(inputName);
+
+    const inputDef = schema.input[inputName];
+    if (!inputDef) {
+      return;
+    }
+
+    for (const field of Object.values(inputDef.fields)) {
+      if (field.kind === "input" && !inputObjects.has(field.name)) {
+        inputObjects.add(field.name);
+        collectNested(field.name, seen);
+      }
+    }
+  };
+
+  // Recursively collect from each initially found input
+  const initialInputs = Array.from(inputObjects);
+  for (const inputName of initialInputs) {
+    collectNested(inputName, new Set());
+  }
+
+  return inputObjects;
+};
+
+/**
+ * Generate type definitions for input objects.
+ */
+const generateInputObjectTypeDefinitions = (
+  schema: AnyGraphqlSchema,
+  schemaName: string,
+  inputNames: Set<string>,
+): string[] => {
+  const lines: string[] = [];
+
+  // Get depth config from schema
+  const defaultDepth = (schema as { __defaultInputDepth?: number }).__defaultInputDepth ?? 3;
+  const depthOverrides = (schema as { __inputDepthOverrides?: Record<string, number> }).__inputDepthOverrides ?? {};
+
+  // Sort for deterministic output
+  const sortedNames = Array.from(inputNames).sort();
+
+  for (const inputName of sortedNames) {
+    const typeString = generateInputObjectType(schema, inputName, {
+      defaultDepth,
+      depthOverrides,
+    });
+
+    // Replace generic ScalarInput with schema-specific version
+    const finalType = typeString.replace(/ScalarInput<"([^"]+)">/g, `ScalarInput_${schemaName}<"$1">`);
+
+    // Replace nested input object references with generated type names
+    let processedType = finalType;
+    for (const nestedInputName of sortedNames) {
+      // Replace standalone input object names (not already prefixed)
+      const pattern = new RegExp(`(?<!Input_${schemaName}_)\\b${nestedInputName}\\b`, "g");
+      processedType = processedType.replace(pattern, `Input_${schemaName}_${nestedInputName}`);
+    }
+
+    lines.push(`type Input_${schemaName}_${inputName} = ${processedType};`);
+  }
+
+  return lines;
+};
+
+/**
  * Generate the TypeScript code for prebuilt types.
  */
 const generateTypesCode = (
-  grouped: Map<string, { fragments: PrebuiltTypeEntry[]; operations: PrebuiltTypeEntry[] }>,
+  grouped: Map<string, SchemaGroup>,
+  schemas: Record<string, AnyGraphqlSchema>,
   injects: Record<string, { readonly scalars: string }>,
   outdir: string,
 ): string => {
@@ -168,8 +302,12 @@ const generateTypesCode = (
 
   lines.push("");
 
-  // Generate ScalarOutput helper types
+  // Generate ScalarInput and ScalarOutput helper types
   for (const schemaName of Object.keys(injects)) {
+    lines.push(
+      `type ScalarInput_${schemaName}<T extends keyof typeof scalar_${schemaName}> = ` +
+        `typeof scalar_${schemaName}[T]["$type"]["input"];`,
+    );
     lines.push(
       `type ScalarOutput_${schemaName}<T extends keyof typeof scalar_${schemaName}> = ` +
         `typeof scalar_${schemaName}[T]["$type"]["output"];`,
@@ -178,7 +316,17 @@ const generateTypesCode = (
 
   lines.push("");
 
-  for (const [schemaName, { fragments, operations }] of grouped) {
+  for (const [schemaName, { fragments, operations, inputObjects }] of grouped) {
+    const schema = schemas[schemaName];
+
+    // Generate input object type definitions if there are any
+    if (inputObjects.size > 0 && schema) {
+      lines.push("// Input object types");
+      const inputTypeLines = generateInputObjectTypeDefinitions(schema, schemaName, inputObjects);
+      lines.push(...inputTypeLines);
+      lines.push("");
+    }
+
     // Generate fragments type
     const fragmentEntries = fragments
       .sort((a, b) => a.key.localeCompare(b.key))
@@ -222,7 +370,7 @@ export const emitPrebuiltTypes = async (
   const grouped = groupBySchema(fieldSelections, schemas);
 
   // Generate the types code
-  const code = generateTypesCode(grouped, injects, outdir);
+  const code = generateTypesCode(grouped, schemas, injects, outdir);
 
   // Write to prebuilt/types.ts
   const typesPath = join(outdir, "prebuilt", "types.ts");

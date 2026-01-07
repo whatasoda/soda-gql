@@ -13,8 +13,12 @@ export {
   applyTypeModifier,
   calculateFieldsType,
   calculateFieldType,
+  generateInputObjectType,
+  type GenerateInputObjectTypeOptions,
   generateInputType,
   getEnumType,
+  getScalarInputType,
+  getScalarOutputType,
   getScalarType,
   graphqlTypeToTypeScript,
 } from "./type-calculator";
