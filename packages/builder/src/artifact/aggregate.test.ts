@@ -46,6 +46,7 @@ describe("artifact aggregate", () => {
         element: Fragment.create(() => ({
           typename: "User",
           key: undefined,
+          variableDefinitions: {},
           spread: () => ({}),
         })),
       },
@@ -137,6 +138,7 @@ describe("artifact aggregate", () => {
         element: Fragment.create(() => ({
           typename: "User",
           key: undefined,
+          variableDefinitions: {},
           spread: () => ({}),
         })),
       },

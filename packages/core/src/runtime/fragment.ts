@@ -19,6 +19,7 @@ export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment 
   const fragment = {
     typename: input.prebuild.typename,
     key: input.prebuild.key,
+    variableDefinitions: {},
     spread: hidden(),
     attach(
       attachmentOrAttachments:
