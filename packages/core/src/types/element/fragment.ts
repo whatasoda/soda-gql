@@ -33,6 +33,7 @@ interface FragmentArtifact<
   TFields extends Partial<AnyFields>,
 > {
   readonly typename: TTypeName;
+  readonly key?: string;
   readonly spread: (variables: TVariables) => TFields;
 }
 
@@ -67,6 +68,11 @@ export class Fragment<
   /** The GraphQL type name this fragment selects from. */
   public get typename() {
     return GqlElement.get(this).typename;
+  }
+
+  /** Optional unique key for prebuilt type lookup. */
+  public get key() {
+    return GqlElement.get(this).key;
   }
 
   /**

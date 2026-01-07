@@ -29,6 +29,7 @@ const BuilderArtifactFragmentSchema = z.object({
   metadata: BuilderArtifactElementMetadataSchema,
   prebuild: z.object({
     typename: z.string(),
+    key: z.string().optional(),
   }),
 });
 

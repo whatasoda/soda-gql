@@ -1,14 +1,24 @@
 import type { AnyFragment, GqlElementAttachment } from "../types/element";
 import { hidden } from "../utils/hidden";
-import type { StripFunctions, StripSymbols } from "../utils/type-utils";
+import type { StripSymbols } from "../utils/type-utils";
+
+/**
+ * Prebuild data for runtime fragment creation.
+ * Explicitly defined to ensure key remains optional.
+ */
+export type RuntimeFragmentPrebuild = {
+  readonly typename: string;
+  readonly key?: string;
+};
 
 export type RuntimeFragmentInput = {
-  prebuild: StripFunctions<AnyFragment>;
+  prebuild: RuntimeFragmentPrebuild;
 };
 
 export const createRuntimeFragment = (input: RuntimeFragmentInput): AnyFragment => {
   const fragment = {
     typename: input.prebuild.typename,
+    key: input.prebuild.key,
     spread: hidden(),
     attach(
       attachmentOrAttachments:

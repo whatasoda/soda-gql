@@ -23,15 +23,20 @@ export const buildFragmentRuntimeCall = ({
   isCJS: boolean;
   filename: string;
 }): Result<ts.Expression, PluginError> => {
+  const prebuildProps: Record<string, ts.Expression> = {
+    typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
+  };
+  if (gqlCall.artifact.prebuild.key !== undefined) {
+    prebuildProps.key = factory.createStringLiteral(gqlCall.artifact.prebuild.key);
+  }
+
   return ok(
     factory.createCallExpression(
       factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("fragment")),
       undefined,
       [
         buildObjectExpression(factory, {
-          prebuild: buildObjectExpression<keyof RuntimeFragmentInput["prebuild"]>(factory, {
-            typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
-          }),
+          prebuild: buildObjectExpression(factory, prebuildProps),
         }),
       ],
     ),
