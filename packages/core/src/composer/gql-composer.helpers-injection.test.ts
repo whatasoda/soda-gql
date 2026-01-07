@@ -1,8 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { define } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";

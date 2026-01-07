@@ -1,9 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { type DocumentNode, Kind, print, visit } from "graphql";
-import { define } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../schema/type-specifier-builder";
 import type { DocumentTransformArgs, OperationDocumentTransformArgs } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";

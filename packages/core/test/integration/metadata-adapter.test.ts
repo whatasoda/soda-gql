@@ -4,11 +4,10 @@ import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
-import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { FragmentMetaInfo, MetadataAdapter, OperationMetadata } from "../../src/types/metadata";
 import { defaultMetadataAdapter } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
-import { define } from "../utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 const schema = {
   label: "test" as const,
