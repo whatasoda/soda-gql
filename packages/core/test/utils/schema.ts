@@ -7,9 +7,9 @@
  * @module
  */
 
+import { unsafeOutputType } from "../../src/schema/type-specifier-builder";
 import type { EnumDefinition, InputDefinition, ObjectDefinition, UnionDefinition } from "../../src/types/schema";
 import { withTypeMeta } from "../../src/utils/type-meta";
-import { unsafeOutputType } from "../../src/schema/type-specifier-builder";
 
 /**
  * Creates a type definition builder for enums, inputs, objects, or unions.

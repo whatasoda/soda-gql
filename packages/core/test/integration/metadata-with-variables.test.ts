@@ -6,10 +6,10 @@ import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/co
 import { createVarMethod } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
-import { define } from "../utils/schema";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { VarRef } from "../../src/types/type-foundation";
+import { define } from "../utils/schema";
 
 const schema = {
   label: "test" as const,
