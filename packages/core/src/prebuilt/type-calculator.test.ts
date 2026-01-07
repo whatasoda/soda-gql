@@ -6,7 +6,10 @@ import {
   applyTypeModifier,
   calculateFieldsType,
   calculateFieldType,
+  generateInputObjectType,
   generateInputType,
+  getScalarInputType,
+  getScalarOutputType,
   getScalarType,
   graphqlTypeToTypeScript,
 } from "./type-calculator";
@@ -74,13 +77,13 @@ describe("applyTypeModifier", () => {
   });
 });
 
-describe("getScalarType", () => {
+describe("getScalarOutputType", () => {
   test("returns ScalarOutput reference for built-in scalars", () => {
     // All scalars in schema use ScalarOutput reference
-    expect(getScalarType(mockSchema, "String")).toBe('ScalarOutput<"String">');
-    expect(getScalarType(mockSchema, "Int")).toBe('ScalarOutput<"Int">');
-    expect(getScalarType(mockSchema, "Boolean")).toBe('ScalarOutput<"Boolean">');
-    expect(getScalarType(mockSchema, "ID")).toBe('ScalarOutput<"ID">');
+    expect(getScalarOutputType(mockSchema, "String")).toBe('ScalarOutput<"String">');
+    expect(getScalarOutputType(mockSchema, "Int")).toBe('ScalarOutput<"Int">');
+    expect(getScalarOutputType(mockSchema, "Boolean")).toBe('ScalarOutput<"Boolean">');
+    expect(getScalarOutputType(mockSchema, "ID")).toBe('ScalarOutput<"ID">');
   });
 
   test("returns ScalarOutput reference for custom scalar", () => {
@@ -94,11 +97,30 @@ describe("getScalarType", () => {
         },
       },
     };
-    expect(getScalarType(schemaWithCustomScalar, "DateTime")).toBe('ScalarOutput<"DateTime">');
+    expect(getScalarOutputType(schemaWithCustomScalar, "DateTime")).toBe('ScalarOutput<"DateTime">');
   });
 
   test("returns unknown for scalar not in schema", () => {
-    expect(getScalarType(mockSchema, "UnknownScalar")).toBe("unknown");
+    expect(getScalarOutputType(mockSchema, "UnknownScalar")).toBe("unknown");
+  });
+});
+
+describe("getScalarInputType", () => {
+  test("returns ScalarInput reference for built-in scalars", () => {
+    expect(getScalarInputType(mockSchema, "String")).toBe('ScalarInput<"String">');
+    expect(getScalarInputType(mockSchema, "Int")).toBe('ScalarInput<"Int">');
+    expect(getScalarInputType(mockSchema, "Boolean")).toBe('ScalarInput<"Boolean">');
+    expect(getScalarInputType(mockSchema, "ID")).toBe('ScalarInput<"ID">');
+  });
+
+  test("returns unknown for scalar not in schema", () => {
+    expect(getScalarInputType(mockSchema, "UnknownScalar")).toBe("unknown");
+  });
+});
+
+describe("getScalarType (deprecated alias)", () => {
+  test("is an alias for getScalarOutputType", () => {
+    expect(getScalarType(mockSchema, "String")).toBe(getScalarOutputType(mockSchema, "String"));
   });
 });
 
@@ -253,12 +275,13 @@ describe("calculateFieldsType", () => {
 });
 
 describe("graphqlTypeToTypeScript", () => {
-  test("handles NamedType for scalar", () => {
+  test("handles NamedType for scalar (uses ScalarInput)", () => {
     const typeNode: TypeNode = {
       kind: Kind.NAMED_TYPE,
       name: { kind: Kind.NAME, value: "String" },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarOutput<"String">');
+    // graphqlTypeToTypeScript is used for input types, so it uses ScalarInput
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarInput<"String">');
   });
 
   test("handles NamedType for enum", () => {
@@ -285,7 +308,7 @@ describe("graphqlTypeToTypeScript", () => {
         name: { kind: Kind.NAME, value: "ID" },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarOutput<"ID">');
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('ScalarInput<"ID">');
   });
 
   test("handles ListType", () => {
@@ -296,7 +319,7 @@ describe("graphqlTypeToTypeScript", () => {
         name: { kind: Kind.NAME, value: "String" },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarOutput<"String">)[]');
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarInput<"String">)[]');
   });
 
   test("handles nested NonNullType with ListType", () => {
@@ -313,7 +336,7 @@ describe("graphqlTypeToTypeScript", () => {
         },
       },
     };
-    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarOutput<"Int">)[]');
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('(ScalarInput<"Int">)[]');
   });
 });
 
@@ -330,7 +353,7 @@ describe("generateInputType", () => {
         type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
       },
     ];
-    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly userId: ScalarOutput<"ID"> }');
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly userId: ScalarInput<"ID"> }');
   });
 
   test("handles single optional variable", () => {
@@ -342,7 +365,7 @@ describe("generateInputType", () => {
       },
     ];
     expect(generateInputType(mockSchema, variableDefinitions)).toBe(
-      '{ readonly filter?: (ScalarOutput<"String"> | null | undefined) }',
+      '{ readonly filter?: (ScalarInput<"String"> | null | undefined) }',
     );
   });
 
@@ -360,7 +383,7 @@ describe("generateInputType", () => {
       },
     ];
     expect(generateInputType(mockSchema, variableDefinitions)).toBe(
-      '{ readonly id: ScalarOutput<"ID">; readonly status?: ("ACTIVE" | "INACTIVE" | "PENDING" | null | undefined) }',
+      '{ readonly id: ScalarInput<"ID">; readonly status?: ("ACTIVE" | "INACTIVE" | "PENDING" | null | undefined) }',
     );
   });
 
@@ -378,7 +401,7 @@ describe("generateInputType", () => {
         },
       },
     ];
-    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly ids: (ScalarOutput<"ID">)[] }');
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe('{ readonly ids: (ScalarInput<"ID">)[] }');
   });
 
   test("handles input object variable", () => {
@@ -393,5 +416,129 @@ describe("generateInputType", () => {
       },
     ];
     expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly input: CreateUserInput }");
+  });
+});
+
+// Mock schema with input objects for generateInputObjectType tests
+const schemaWithInputs: AnyGraphqlSchema = {
+  ...mockSchema,
+  input: {
+    CreateUserInput: {
+      name: "CreateUserInput",
+      fields: {
+        name: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
+        email: { kind: "scalar", name: "String", modifier: "?", defaultValue: null },
+        age: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null },
+      },
+    },
+    UpdateUserInput: {
+      name: "UpdateUserInput",
+      fields: {
+        id: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null },
+        data: { kind: "input", name: "CreateUserInput", modifier: "!", defaultValue: null },
+      },
+    },
+    FilterInput: {
+      name: "FilterInput",
+      fields: {
+        status: { kind: "enum", name: "Status", modifier: "?", defaultValue: null },
+        ids: { kind: "scalar", name: "ID", modifier: "![]!", defaultValue: null },
+      },
+    },
+    RecursiveInput: {
+      name: "RecursiveInput",
+      fields: {
+        value: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
+        children: { kind: "input", name: "RecursiveInput", modifier: "?[]?", defaultValue: null },
+      },
+    },
+  },
+};
+
+describe("generateInputObjectType", () => {
+  test("generates simple input object type", () => {
+    const result = generateInputObjectType(schemaWithInputs, "CreateUserInput");
+    expect(result).toBe(
+      '{ readonly name: ScalarInput<"String">; readonly email?: (ScalarInput<"String"> | null | undefined); readonly age?: (ScalarInput<"Int"> | null | undefined) }',
+    );
+  });
+
+  test("generates nested input object type", () => {
+    const result = generateInputObjectType(schemaWithInputs, "UpdateUserInput");
+    expect(result).toContain('readonly id: ScalarInput<"ID">');
+    expect(result).toContain("readonly data:");
+    // The nested CreateUserInput should be expanded
+    expect(result).toContain('readonly name: ScalarInput<"String">');
+  });
+
+  test("handles enum fields", () => {
+    const result = generateInputObjectType(schemaWithInputs, "FilterInput");
+    expect(result).toContain('"ACTIVE" | "INACTIVE" | "PENDING"');
+  });
+
+  test("handles array fields", () => {
+    const result = generateInputObjectType(schemaWithInputs, "FilterInput");
+    expect(result).toContain('(ScalarInput<"ID">)[]');
+  });
+
+  test("returns unknown for non-existent input", () => {
+    const result = generateInputObjectType(schemaWithInputs, "NonExistentInput");
+    expect(result).toBe("unknown");
+  });
+
+  test("handles circular references", () => {
+    const result = generateInputObjectType(schemaWithInputs, "RecursiveInput");
+    // Should not infinite loop, should return unknown for circular reference
+    expect(result).toContain('readonly value: ScalarInput<"String">');
+    expect(result).toContain("readonly children?:");
+  });
+
+  test("respects depth limit", () => {
+    const result = generateInputObjectType(schemaWithInputs, "RecursiveInput", { defaultDepth: 1 });
+    // At depth 1, nested RecursiveInput should become unknown
+    expect(result).toContain("unknown");
+  });
+
+  test("respects depth overrides", () => {
+    const result = generateInputObjectType(schemaWithInputs, "RecursiveInput", {
+      defaultDepth: 1,
+      depthOverrides: { RecursiveInput: 3 },
+    });
+    // With depth override, should expand more levels
+    expect(result).not.toBe("unknown");
+    expect(result).toContain('readonly value: ScalarInput<"String">');
+  });
+
+  test("handles empty input object", () => {
+    const schemaWithEmptyInput: AnyGraphqlSchema = {
+      ...mockSchema,
+      input: {
+        EmptyInput: {
+          name: "EmptyInput",
+          fields: {},
+        },
+      },
+    };
+    const result = generateInputObjectType(schemaWithEmptyInput, "EmptyInput");
+    expect(result).toBe("{}");
+  });
+
+  test("handles fields with default values as optional", () => {
+    const schemaWithDefaults: AnyGraphqlSchema = {
+      ...mockSchema,
+      input: {
+        InputWithDefaults: {
+          name: "InputWithDefaults",
+          fields: {
+            requiredField: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
+            fieldWithDefault: { kind: "scalar", name: "Int", modifier: "!", defaultValue: { default: 42 } },
+          },
+        },
+      },
+    };
+    const result = generateInputObjectType(schemaWithDefaults, "InputWithDefaults");
+    // Field with default should be optional (have ?)
+    expect(result).toContain("readonly requiredField: ScalarInput");
+    expect(result).toContain("readonly fieldWithDefault?: ScalarInput");
   });
 });
