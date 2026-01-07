@@ -162,11 +162,7 @@ const toImportSpecifier = (from: string, to: string): string => {
 /**
  * Extract input object names from a GraphQL TypeNode.
  */
-const extractInputObjectsFromType = (
-  schema: AnyGraphqlSchema,
-  typeNode: TypeNode,
-  inputObjects: Set<string>,
-): void => {
+const extractInputObjectsFromType = (schema: AnyGraphqlSchema, typeNode: TypeNode, inputObjects: Set<string>): void => {
   switch (typeNode.kind) {
     case Kind.NON_NULL_TYPE:
       extractInputObjectsFromType(schema, typeNode.type, inputObjects);
@@ -232,11 +228,7 @@ const collectUsedInputObjects = (
 /**
  * Generate type definitions for input objects.
  */
-const generateInputObjectTypeDefinitions = (
-  schema: AnyGraphqlSchema,
-  schemaName: string,
-  inputNames: Set<string>,
-): string[] => {
+const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName: string, inputNames: Set<string>): string[] => {
   const lines: string[] = [];
 
   // Get depth config from schema
