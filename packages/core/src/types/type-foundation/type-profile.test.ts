@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeInputType } from "../../schema";
+import { defineScalar, unsafeInputType } from "../../schema";
+import { define } from "../../../test/utils/schema";
 import type { AssignableInput } from "../fragment/assignable-input";
 import type { AnyGraphqlSchema } from "../schema";
 import type { ConstAssignableInput } from "../schema/const-assignable-input";

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
+import { defineScalar, unsafeInputType, unsafeOutputType } from "../schema";
+import { define } from "../../test/utils/schema";
 import type { AssignableInput, DeclaredVariables } from "./fragment/assignable-input";
 import type { AnyGraphqlSchema } from "./schema";
 import { createVarRefFromVariable } from "./type-foundation/var-ref";

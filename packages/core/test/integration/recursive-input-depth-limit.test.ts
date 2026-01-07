@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { define, defineScalar } from "../../src/schema/schema-builder";
+import { defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType } from "../../src/schema/type-specifier-builder";
+import { define } from "../utils/schema";
 import type { AnyGraphqlSchema, InferInputProfile } from "../../src/types/schema";
 import type { ConstAssignableInput } from "../../src/types/schema/const-assignable-input";
 import type { InputDepthOverrides } from "../../src/types/type-foundation";

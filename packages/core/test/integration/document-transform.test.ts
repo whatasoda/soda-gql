@@ -4,8 +4,9 @@ import { defineAdapter } from "../../src/adapter/define-adapter";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type ExtractMetadataAdapter, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
-import { define, defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
+import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import { unsafeInputType, unsafeOutputType } from "../../src/schema/type-specifier-builder";
+import { define } from "../utils/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
 const schema = {

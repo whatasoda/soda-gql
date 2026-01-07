@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createFieldFactories } from "../../src/composer";
-import { define, defineScalar, unsafeOutputType } from "../../src/schema";
+import { defineScalar, unsafeOutputType } from "../../src/schema";
+import { define } from "../utils/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 
 describe("Schema Edge Cases", () => {
