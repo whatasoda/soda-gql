@@ -579,6 +579,8 @@ export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
   readonly defaultInputDepth?: Map<string, number>;
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
+  /** Export schema internals for prebuilt module consumption. */
+  readonly exportForPrebuilt?: boolean;
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -608,6 +610,7 @@ type MultiRuntimeTemplateOptions = {
     }
   >;
   readonly injection: RuntimeTemplateInjection;
+  readonly exportForPrebuilt?: boolean;
 };
 
 const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
@@ -777,6 +780,25 @@ ${typeExports.join("\n")}`);
     }
   }
 
+  // Generate prebuilt exports if requested
+  const prebuiltExports: string[] = [];
+  if ($$.exportForPrebuilt) {
+    for (const name of Object.keys($$.schemas)) {
+      const schemaVar = `${name}Schema`;
+      const inputTypeMethodsVar = `inputTypeMethods_${name}`;
+      const customDirectivesVar = `customDirectives_${name}`;
+      const adapterVar = adapterAliases.get(name);
+
+      prebuiltExports.push(`export { ${schemaVar} as __schema_${name} };`);
+      prebuiltExports.push(`export { ${inputTypeMethodsVar} as __inputTypeMethods_${name} };`);
+      prebuiltExports.push(`export { ${customDirectivesVar} as __directiveMethods_${name} };`);
+      if (adapterVar) {
+        prebuiltExports.push(`export { ${adapterVar} as __adapter_${name} };`);
+      }
+    }
+  }
+  const prebuiltExportsBlock = prebuiltExports.length > 0 ? `\n\n// Exports for prebuilt module\n${prebuiltExports.join("\n")}` : "";
+
   return `\
 import {
   defineEnum,
@@ -792,7 +814,7 @@ ${schemaBlocks.join("\n")}
 
 export const gql = {
 ${gqlEntries.join(",\n")}
-};
+};${prebuiltExportsBlock}
 `;
 };
 
@@ -923,6 +945,7 @@ export const generateMultiSchemaModule = (
   const code = multiRuntimeTemplate({
     schemas: schemaConfigs,
     injection,
+    exportForPrebuilt: options?.exportForPrebuilt,
   });
 
   return {

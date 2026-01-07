@@ -1,9 +1,11 @@
 import { existsSync } from "node:fs";
-import { basename, dirname, extname, relative, resolve } from "node:path";
+import { mkdir } from "node:fs/promises";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
+import { generatePrebuiltModule } from "./prebuilt-generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
@@ -139,6 +141,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
+    exportForPrebuilt: options.prebuilt,
   });
 
   // Calculate individual schema stats and hashes
@@ -166,6 +169,56 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
 
   if (writeResult.isErr()) {
     return err(writeResult.error);
+  }
+
+  // Generate and write prebuilt module if requested
+  if (options.prebuilt) {
+    const prebuiltDir = join(dirname(outPath), "prebuilt");
+    await mkdir(prebuiltDir, { recursive: true });
+
+    // Calculate relative import path from prebuilt/index.ts to index.ts
+    const mainModulePath = toImportSpecifier(
+      join(prebuiltDir, "index.ts"),
+      outPath,
+      importSpecifierOptions,
+    );
+
+    const prebuilt = generatePrebuiltModule(schemas, {
+      mainModulePath,
+      injection: injectionConfig,
+    });
+
+    // Write prebuilt/index.ts
+    const prebuiltIndexPath = join(prebuiltDir, "index.ts");
+    const prebuiltIndexResult = await writeModule(prebuiltIndexPath, prebuilt.indexCode).match(
+      () => Promise.resolve(ok(undefined)),
+      (error) => Promise.resolve(err(error)),
+    );
+
+    if (prebuiltIndexResult.isErr()) {
+      return err(prebuiltIndexResult.error);
+    }
+
+    // Write prebuilt/types.ts
+    const prebuiltTypesPath = join(prebuiltDir, "types.ts");
+    const prebuiltTypesResult = await writeModule(prebuiltTypesPath, prebuilt.typesCode).match(
+      () => Promise.resolve(ok(undefined)),
+      (error) => Promise.resolve(err(error)),
+    );
+
+    if (prebuiltTypesResult.isErr()) {
+      return err(prebuiltTypesResult.error);
+    }
+
+    // Bundle prebuilt module
+    const prebuiltBundleOutcome = await defaultBundler.bundle({
+      sourcePath: prebuiltIndexPath,
+      external: ["@soda-gql/core", "@soda-gql/runtime"],
+    });
+
+    if (prebuiltBundleOutcome.isErr()) {
+      return err(prebuiltBundleOutcome.error);
+    }
   }
 
   // Bundle the generated module
