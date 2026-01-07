@@ -395,6 +395,7 @@ describe("createIntermediateRegistry", () => {
         Fragment.create(() => ({
           typename: "TestType",
           key: undefined,
+          schemaLabel: "default",
           variableDefinitions: {},
           spread: () => ({}),
         })),
@@ -510,6 +511,7 @@ describe("createIntermediateRegistry", () => {
         Fragment.create(() => ({
           typename: "SyncType",
           key: undefined,
+          schemaLabel: "default",
           variableDefinitions: {},
           spread: () => ({}),
         })),

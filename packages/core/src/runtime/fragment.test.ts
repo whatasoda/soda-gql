@@ -5,6 +5,7 @@ describe("createRuntimeFragment", () => {
   const createMockInput = (overrides?: Partial<RuntimeFragmentInput["prebuild"]>): RuntimeFragmentInput => ({
     prebuild: {
       typename: "User",
+      schemaLabel: "default",
       ...overrides,
     },
   });
@@ -51,6 +52,24 @@ describe("createRuntimeFragment", () => {
 
     expect(Object.keys(fragment)).toContain("typename");
     expect(Object.keys(fragment)).toContain("spread");
+  });
+
+  describe("schemaLabel property", () => {
+    test("creates fragment with schemaLabel", () => {
+      const input = createMockInput({ schemaLabel: "admin" });
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.schemaLabel).toBe("admin");
+    });
+
+    test("uses default schemaLabel from createMockInput", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.schemaLabel).toBe("default");
+    });
   });
 
   describe("key property", () => {
