@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import { applyTypeModifier, calculateFieldsType, calculateFieldType } from "./type-calculator";
+import {
+  applyTypeModifier,
+  calculateFieldsType,
+  calculateFieldType,
+  generateInputType,
+  graphqlTypeToTypeScript,
+} from "./type-calculator";
 
 // Mock schema for testing
 const mockSchema: AnyGraphqlSchema = {
@@ -209,5 +216,149 @@ describe("calculateFieldsType", () => {
     };
 
     expect(calculateFieldsType(mockSchema, fields)).toBe("{ readonly id: string; readonly name: (string | null | undefined) }");
+  });
+});
+
+describe("graphqlTypeToTypeScript", () => {
+  test("handles NamedType for scalar", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.NAMED_TYPE,
+      name: { kind: Kind.NAME, value: "String" },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("string");
+  });
+
+  test("handles NamedType for enum", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.NAMED_TYPE,
+      name: { kind: Kind.NAME, value: "Status" },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe('"ACTIVE" | "INACTIVE" | "PENDING"');
+  });
+
+  test("handles NamedType for input object (uses name directly)", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.NAMED_TYPE,
+      name: { kind: Kind.NAME, value: "UserInput" },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("UserInput");
+  });
+
+  test("handles NonNullType", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.NON_NULL_TYPE,
+      type: {
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: "ID" },
+      },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("string");
+  });
+
+  test("handles ListType", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.LIST_TYPE,
+      type: {
+        kind: Kind.NAMED_TYPE,
+        name: { kind: Kind.NAME, value: "String" },
+      },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("(string)[]");
+  });
+
+  test("handles nested NonNullType with ListType", () => {
+    const typeNode: TypeNode = {
+      kind: Kind.NON_NULL_TYPE,
+      type: {
+        kind: Kind.LIST_TYPE,
+        type: {
+          kind: Kind.NON_NULL_TYPE,
+          type: {
+            kind: Kind.NAMED_TYPE,
+            name: { kind: Kind.NAME, value: "Int" },
+          },
+        },
+      },
+    };
+    expect(graphqlTypeToTypeScript(mockSchema, typeNode)).toBe("(number)[]");
+  });
+});
+
+describe("generateInputType", () => {
+  test("handles empty variable definitions", () => {
+    expect(generateInputType(mockSchema, [])).toBe("{}");
+  });
+
+  test("handles single required variable", () => {
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "userId" } },
+        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
+      },
+    ];
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly userId: string }");
+  });
+
+  test("handles single optional variable", () => {
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "filter" } },
+        type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "String" } },
+      },
+    ];
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe(
+      "{ readonly filter?: (string | null | undefined) }",
+    );
+  });
+
+  test("handles multiple variables", () => {
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "id" } },
+        type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
+      },
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "status" } },
+        type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "Status" } },
+      },
+    ];
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe(
+      '{ readonly id: string; readonly status?: ("ACTIVE" | "INACTIVE" | "PENDING" | null | undefined) }',
+    );
+  });
+
+  test("handles array variable", () => {
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "ids" } },
+        type: {
+          kind: Kind.NON_NULL_TYPE,
+          type: {
+            kind: Kind.LIST_TYPE,
+            type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
+          },
+        },
+      },
+    ];
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly ids: (string)[] }");
+  });
+
+  test("handles input object variable", () => {
+    const variableDefinitions: VariableDefinitionNode[] = [
+      {
+        kind: Kind.VARIABLE_DEFINITION,
+        variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: "input" } },
+        type: {
+          kind: Kind.NON_NULL_TYPE,
+          type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "CreateUserInput" } },
+        },
+      },
+    ];
+    expect(generateInputType(mockSchema, variableDefinitions)).toBe("{ readonly input: CreateUserInput }");
   });
 });
