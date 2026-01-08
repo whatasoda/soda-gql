@@ -28,6 +28,7 @@ export type {
   EmptyPrebuiltTypeRegistry,
   HasPrebuiltFragment,
   HasPrebuiltOperation,
+  PrebuiltEntryNotFound,
   PrebuiltFragmentInput,
   PrebuiltFragmentOutput,
   PrebuiltOperationInput,
