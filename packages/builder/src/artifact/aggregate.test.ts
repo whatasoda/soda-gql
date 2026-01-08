@@ -45,8 +45,10 @@ describe("artifact aggregate", () => {
         type: "fragment",
         element: Fragment.create(() => ({
           typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
           spread: () => ({}),
-          metadata: null,
         })),
       },
       [operationId]: {
@@ -54,6 +56,7 @@ describe("artifact aggregate", () => {
         element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
+          schemaLabel: "default",
           document: parse("query ProfilePageQuery { users { id } }"),
           variableNames: [],
           documentSource: () => ({}),
@@ -136,8 +139,10 @@ describe("artifact aggregate", () => {
         type: "fragment",
         element: Fragment.create(() => ({
           typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
           spread: () => ({}),
-          metadata: null,
         })),
       },
     });
@@ -207,6 +212,7 @@ describe("artifact aggregate", () => {
         element: Operation.create(() => ({
           operationType: "query",
           operationName: "ProfilePageQuery",
+          schemaLabel: "default",
           document: document,
           variableNames: ["userId"],
           documentSource: () => ({}),

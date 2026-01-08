@@ -153,6 +153,15 @@ describe("builderErrors factory functions", () => {
     expect(error.astPath).toBe("userFragment");
     expect(error.cause).toBe(cause);
   });
+
+  test("schemaNotFound creates correct error", () => {
+    const error = builderErrors.schemaNotFound("unknownSchema", "/src/user.ts::UserFragment") as ErrorOf<"SCHEMA_NOT_FOUND">;
+    expect(error.code).toBe("SCHEMA_NOT_FOUND");
+    expect(error.schemaLabel).toBe("unknownSchema");
+    expect(error.canonicalId).toBe("/src/user.ts::UserFragment");
+    expect(error.message).toContain("unknownSchema");
+    expect(error.message).toContain("/src/user.ts::UserFragment");
+  });
 });
 
 describe("builderErr", () => {
@@ -192,6 +201,7 @@ describe("isBuilderError", () => {
       builderErrors.artifactRegistrationFailed("id", "reason"),
       builderErrors.elementEvaluationFailed("/path", "astPath", "msg"),
       builderErrors.internalInvariant("msg"),
+      builderErrors.schemaNotFound("label", "id"),
     ];
 
     for (const error of errors) {
@@ -381,5 +391,14 @@ describe("formatBuilderError", () => {
     const formatted = formatBuilderError(error);
 
     expect(formatted).toContain("Caused by: cause");
+  });
+
+  test("formats SCHEMA_NOT_FOUND error", () => {
+    const error = builderErrors.schemaNotFound("unknownLabel", "/src/user.ts::Fragment");
+    const formatted = formatBuilderError(error);
+
+    expect(formatted).toContain("[SCHEMA_NOT_FOUND]");
+    expect(formatted).toContain("Schema label: unknownLabel");
+    expect(formatted).toContain("Element: /src/user.ts::Fragment");
   });
 });

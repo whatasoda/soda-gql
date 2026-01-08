@@ -46,6 +46,7 @@ export default defineConfig({
             { text: "Metadata", link: "/guide/metadata" },
             { text: "Adapter", link: "/guide/adapter" },
             { text: "Fragment Colocation", link: "/guide/colocation" },
+            { text: "Prebuilt Types", link: "/guide/prebuilt-types" },
           ],
         },
       ],

@@ -21,6 +21,8 @@ export type CodegenOptions = {
   readonly outPath: string;
   readonly format: CodegenFormat;
   readonly importExtension?: boolean;
+  /** Generate prebuilt module for bundler-compatible type resolution. */
+  readonly prebuilt?: boolean;
 };
 
 export type CodegenCliCommand =

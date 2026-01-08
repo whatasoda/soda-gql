@@ -14,6 +14,7 @@ const BuilderArtifactOperationSchema = z.object({
   prebuild: z.object({
     operationType: z.enum(["query", "mutation", "subscription"]),
     operationName: z.string(),
+    schemaLabel: z.string(),
     document: z.unknown(), // DocumentNode object
     variableNames: z.array(z.string()),
   }),
@@ -29,6 +30,8 @@ const BuilderArtifactFragmentSchema = z.object({
   metadata: BuilderArtifactElementMetadataSchema,
   prebuild: z.object({
     typename: z.string(),
+    key: z.string().optional(),
+    schemaLabel: z.string(),
   }),
 });
 

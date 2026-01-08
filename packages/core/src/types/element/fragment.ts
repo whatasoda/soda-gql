@@ -12,7 +12,7 @@ import { GqlElement } from "./gql-element";
 /**
  * Type alias for any Fragment instance.
  */
-export type AnyFragment = Fragment<string, any, AnyFields, any>;
+export type AnyFragment = Fragment<string, any, AnyFields, any, string | undefined>;
 
 /**
  * Type inference metadata for fragments.
@@ -31,8 +31,12 @@ interface FragmentArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
+  TKey extends string | undefined = undefined,
 > {
   readonly typename: TTypeName;
+  readonly key: TKey;
+  readonly schemaLabel: string;
+  readonly variableDefinitions: InputTypeSpecifiers;
   readonly spread: (variables: TVariables) => TFields;
 }
 
@@ -48,25 +52,42 @@ declare const __FRAGMENT_BRAND__: unique symbol;
  * @template TVariables - Variables required when spreading
  * @template TFields - The selected fields structure
  * @template TOutput - Inferred output type from selected fields
+ * @template TKey - Optional unique key for prebuilt type lookup
  */
 export class Fragment<
     TTypeName extends string,
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
+    TKey extends string | undefined = undefined,
   >
-  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields>, FragmentInferMeta<TVariables, TOutput>>
-  implements FragmentArtifact<TTypeName, TVariables, TFields>
+  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields, TKey>, FragmentInferMeta<TVariables, TOutput>>
+  implements FragmentArtifact<TTypeName, TVariables, TFields, TKey>
 {
   private declare readonly [__FRAGMENT_BRAND__]: void;
 
-  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields>) {
+  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields, TKey>) {
     super(define);
   }
 
   /** The GraphQL type name this fragment selects from. */
   public get typename() {
     return GqlElement.get(this).typename;
+  }
+
+  /** Optional unique key for prebuilt type lookup. */
+  public get key() {
+    return GqlElement.get(this).key;
+  }
+
+  /** The schema label this fragment belongs to. */
+  public get schemaLabel() {
+    return GqlElement.get(this).schemaLabel;
+  }
+
+  /** Variable definitions for this fragment. */
+  public get variableDefinitions() {
+    return GqlElement.get(this).variableDefinitions;
   }
 
   /**
@@ -87,9 +108,13 @@ export class Fragment<
     TTypeName extends keyof TSchema["object"] & string,
     TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
+    TKey extends string | undefined = undefined,
   >(
     define: () => {
       typename: TTypeName;
+      key: TKey;
+      schemaLabel: TSchema["label"];
+      variableDefinitions: TVariableDefinitions;
       spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
@@ -97,6 +122,8 @@ export class Fragment<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
+    return new Fragment<TTypeName, Variables, Fields, Output, TKey>(
+      define as () => FragmentArtifact<TTypeName, Variables, Fields, TKey>,
+    );
   }
 }

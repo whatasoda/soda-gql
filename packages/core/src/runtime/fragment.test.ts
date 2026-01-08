@@ -5,6 +5,7 @@ describe("createRuntimeFragment", () => {
   const createMockInput = (overrides?: Partial<RuntimeFragmentInput["prebuild"]>): RuntimeFragmentInput => ({
     prebuild: {
       typename: "User",
+      schemaLabel: "default",
       ...overrides,
     },
   });
@@ -51,6 +52,52 @@ describe("createRuntimeFragment", () => {
 
     expect(Object.keys(fragment)).toContain("typename");
     expect(Object.keys(fragment)).toContain("spread");
+  });
+
+  describe("schemaLabel property", () => {
+    test("creates fragment with schemaLabel", () => {
+      const input = createMockInput({ schemaLabel: "admin" });
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.schemaLabel).toBe("admin");
+    });
+
+    test("uses default schemaLabel from createMockInput", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.schemaLabel).toBe("default");
+    });
+  });
+
+  describe("key property", () => {
+    test("creates fragment with key when provided", () => {
+      const input = createMockInput({ key: "UserBasic" });
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.key).toBe("UserBasic");
+    });
+
+    test("creates fragment with undefined key when not provided", () => {
+      const input = createMockInput();
+
+      const fragment = createRuntimeFragment(input);
+
+      expect(fragment.key).toBeUndefined();
+    });
+
+    test("preserves key across multiple fragments", () => {
+      const fragment1 = createRuntimeFragment(createMockInput({ typename: "User", key: "UserBasic" }));
+      const fragment2 = createRuntimeFragment(createMockInput({ typename: "User", key: "UserDetailed" }));
+      const fragment3 = createRuntimeFragment(createMockInput({ typename: "Post" }));
+
+      expect(fragment1.key).toBe("UserBasic");
+      expect(fragment2.key).toBe("UserDetailed");
+      expect(fragment3.key).toBeUndefined();
+    });
   });
 
   describe("attach", () => {

@@ -18,6 +18,7 @@ type ParsedCommand =
       schemas: Record<string, CodegenSchemaConfig>;
       outPath: string;
       importExtension: boolean;
+      prebuilt: boolean;
     };
 
 const parseCodegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
@@ -70,6 +71,7 @@ const parseCodegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => 
     schemas,
     outPath,
     importExtension: config.styles.importExtension,
+    prebuilt: args.prebuilt ?? false,
   });
 };
 
@@ -90,10 +92,12 @@ Generate graphql-system runtime module from GraphQL schema.
 Options:
   --config <path>                Path to soda-gql.config.ts
   --emit-inject-template <path>  Create inject template file
+  --prebuilt                     Generate prebuilt module for bundler-compatible type resolution
   --help, -h                     Show this help message
 
 Examples:
   soda-gql codegen --config ./soda-gql.config.ts
+  soda-gql codegen --prebuilt                        # With prebuilt types output
   soda-gql codegen --emit-inject-template ./src/graphql/scalars.ts
 `;
 
@@ -140,6 +144,7 @@ export const codegenCommand = async (argv: readonly string[]): Promise<CodegenCo
     outPath: resolve(command.outPath),
     format: "human",
     importExtension: command.importExtension,
+    prebuilt: command.prebuilt,
   });
 
   if (result.isErr()) {

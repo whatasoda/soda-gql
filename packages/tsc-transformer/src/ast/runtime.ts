@@ -1,4 +1,4 @@
-import type { RuntimeFragmentInput, RuntimeOperationInput } from "@soda-gql/core/runtime";
+import type { RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/plugin-common";
 import { ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
@@ -23,15 +23,20 @@ export const buildFragmentRuntimeCall = ({
   isCJS: boolean;
   filename: string;
 }): Result<ts.Expression, PluginError> => {
+  const prebuildProps: Record<string, ts.Expression> = {
+    typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
+  };
+  if (gqlCall.artifact.prebuild.key !== undefined) {
+    prebuildProps.key = factory.createStringLiteral(gqlCall.artifact.prebuild.key);
+  }
+
   return ok(
     factory.createCallExpression(
       factory.createPropertyAccessExpression(createRuntimeAccessor({ isCJS, factory }), factory.createIdentifier("fragment")),
       undefined,
       [
         buildObjectExpression(factory, {
-          prebuild: buildObjectExpression<keyof RuntimeFragmentInput["prebuild"]>(factory, {
-            typename: factory.createStringLiteral(gqlCall.artifact.prebuild.typename),
-          }),
+          prebuild: buildObjectExpression(factory, prebuildProps),
         }),
       ],
     ),

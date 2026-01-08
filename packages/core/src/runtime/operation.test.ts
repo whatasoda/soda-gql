@@ -21,6 +21,7 @@ describe("createRuntimeOperation", () => {
     prebuild: {
       operationType: "query",
       operationName: "TestQuery",
+      schemaLabel: "default",
       variableNames: [],
       document: createMockDocument(),
       metadata: null,

@@ -6,7 +6,7 @@ import type { InferPathsOutput } from "./types/output-path";
 import type { Tuple } from "./utils/type-utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: Type alias for any Fragment regardless of type parameters
-type AnyFragment = Fragment<string, any, any, any>;
+type AnyFragment = Fragment<string, any, any, any, string | undefined>;
 
 /** Get TFields from Fragment via spread's return type. */
 type FragmentFields<TFragment extends AnyFragment> = ReturnType<TFragment["spread"]>;

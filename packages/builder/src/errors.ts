@@ -27,7 +27,9 @@ export type BuilderErrorCode =
   | "ARTIFACT_REGISTRATION_FAILED"
   | "ELEMENT_EVALUATION_FAILED"
   // Internal invariant violations
-  | "INTERNAL_INVARIANT";
+  | "INTERNAL_INVARIANT"
+  // Schema validation errors
+  | "SCHEMA_NOT_FOUND";
 
 /**
  * Structured error type for all Builder operations.
@@ -140,6 +142,13 @@ export type BuilderError =
       readonly message: string;
       readonly context?: string;
       readonly cause?: unknown;
+    }
+  // Schema validation
+  | {
+      readonly code: "SCHEMA_NOT_FOUND";
+      readonly message: string;
+      readonly schemaLabel: string;
+      readonly canonicalId: string;
     };
 
 /**
@@ -268,6 +277,13 @@ export const builderErrors = {
     context,
     cause,
   }),
+
+  schemaNotFound: (schemaLabel: string, canonicalId: string): BuilderError => ({
+    code: "SCHEMA_NOT_FOUND",
+    message: `Schema not found for label "${schemaLabel}" (element: ${canonicalId})`,
+    schemaLabel,
+    canonicalId,
+  }),
 } as const;
 
 /**
@@ -365,6 +381,10 @@ export const formatBuilderError = (error: BuilderError): string => {
       if (error.context) {
         lines.push(`  Context: ${error.context}`);
       }
+      break;
+    case "SCHEMA_NOT_FOUND":
+      lines.push(`  Schema label: ${error.schemaLabel}`);
+      lines.push(`  Element: ${error.canonicalId}`);
       break;
   }
 

@@ -24,14 +24,20 @@ export type FragmentBuilderFor<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
-> = <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
+> = <
+  TFields extends AnyFields,
+  TVarDefinitions extends InputTypeSpecifiers = {},
+  TKey extends string | undefined = undefined,
+>(options: {
+  /** Optional unique key for prebuilt type lookup. */
+  key?: TKey;
   variables?: TVarDefinitions;
   metadata?: FragmentMetadataBuilder<
     ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>,
     ExtractAdapterTypes<TAdapter>["fragmentMetadata"]
   >;
   fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
-}) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
+}) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields, TKey>>;
 
 /**
  * Creates fragment builder functions for all object types in the schema.
@@ -57,25 +63,35 @@ export const createGqlFragmentComposers = <
   type FragmentBuilder<TTypeName extends keyof TSchema["object"] & string> = <
     TFields extends AnyFields,
     TVarDefinitions extends InputTypeSpecifiers = {},
+    TKey extends string | undefined = undefined,
   >(options: {
+    key?: TKey;
     variables?: TVarDefinitions;
     metadata?: FragmentMetadataBuilder<ReturnType<typeof createVarRefs<TSchema, TVarDefinitions>>, TFragmentMetadata>;
     fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
-  }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>>;
+  }) => ReturnType<typeof Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields, TKey>>;
 
   const createFragmentComposer = <TTypeName extends keyof TSchema["object"] & string>(
     typename: TTypeName,
   ): FragmentBuilder<TTypeName> => {
-    return <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
+    return <
+      TFields extends AnyFields,
+      TVarDefinitions extends InputTypeSpecifiers = {},
+      TKey extends string | undefined = undefined,
+    >(options: {
+      key?: TKey;
       variables?: TVarDefinitions;
       metadata?: FragmentMetadataBuilder<DeclaredVariables<TSchema, TVarDefinitions>, TFragmentMetadata>;
       fields: FieldsBuilder<TSchema, TTypeName, TVarDefinitions, TFields>;
     }) => {
       const varDefinitions = (options.variables ?? {}) as TVarDefinitions;
-      const { metadata, fields } = options;
+      const { key, metadata, fields } = options;
 
-      return Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields>(() => ({
+      return Fragment.create<TSchema, TTypeName, TVarDefinitions, TFields, TKey>(() => ({
         typename,
+        key: key as TKey,
+        schemaLabel: schema.label,
+        variableDefinitions: varDefinitions,
         spread: (variables) => {
           const f = createFieldFactories(schema, typename);
           const $ = createVarAssignments<TSchema, TVarDefinitions>(varDefinitions, variables);

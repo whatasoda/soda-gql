@@ -206,6 +206,40 @@ const formatted = userFragment.displayName(userData);
 
 For colocation patterns, see the [Fragment Colocation](/guide/colocation) guide.
 
+## Fragment Keys
+
+The optional `key` property gives a fragment a unique identifier:
+
+```typescript
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({
+    key: "UserFields",
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+  }),
+);
+```
+
+### When Keys Are Required
+
+Fragments work correctly without keys at runtime. However, keys become important when using **prebuilt types**:
+
+| Scenario | Key Required? |
+|----------|---------------|
+| Runtime fragment execution | No |
+| Type inference with `$infer` | No |
+| Prebuilt type generation | **Yes** |
+
+:::warning Prebuilt Types Requirement
+When generating prebuilt types with `bun run soda-gql codegen --prebuilt`, **fragments without keys are silently skipped**. If you need a fragment's types in the prebuilt registry, add a `key` property.
+:::
+
+Operations do not need a separate key property - they use their `name` automatically.
+
+For more details on prebuilt types, see the [Prebuilt Types Guide](/guide/prebuilt-types).
+
 ## Next Steps
 
 - Learn about [Operations](/guide/operations) to create complete GraphQL queries

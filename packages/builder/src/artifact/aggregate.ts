@@ -48,7 +48,11 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
       };
 
       if (element.type === "fragment") {
-        const prebuild = { typename: element.element.typename };
+        const prebuild = {
+          typename: element.element.typename,
+          key: element.element.key,
+          schemaLabel: element.element.schemaLabel,
+        };
         registry.set(definition.canonicalId, {
           id: definition.canonicalId,
           type: "fragment",
@@ -62,6 +66,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         const prebuild = {
           operationType: element.element.operationType,
           operationName: element.element.operationName,
+          schemaLabel: element.element.schemaLabel,
           document: element.element.document,
           variableNames: element.element.variableNames,
           metadata: element.element.metadata,

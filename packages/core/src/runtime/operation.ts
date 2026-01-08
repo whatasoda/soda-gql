@@ -18,6 +18,7 @@ export const createRuntimeOperation = (input: RuntimeOperationInput): AnyOperati
   const operation = {
     operationType: input.prebuild.operationType,
     operationName: input.prebuild.operationName,
+    schemaLabel: input.prebuild.schemaLabel,
     variableNames: input.prebuild.variableNames,
     documentSource: hidden(),
     document: input.prebuild.document,

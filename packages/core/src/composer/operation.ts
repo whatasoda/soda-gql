@@ -106,6 +106,7 @@ export const createOperationComposerFactory = <
           return {
             operationType,
             operationName,
+            schemaLabel: schema.label,
             variableNames,
             documentSource: () => fields,
             document,
@@ -166,6 +167,7 @@ export const createOperationComposerFactory = <
             return {
               operationType,
               operationName,
+              schemaLabel: schema.label,
               variableNames,
               documentSource: () => fields,
               document: finalDocument,
