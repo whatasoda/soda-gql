@@ -16,9 +16,9 @@ export type {
 export { builderErrors } from "./errors";
 export type { FormattedError } from "./errors/formatter";
 export { formatBuilderErrorForCLI, formatBuilderErrorStructured } from "./errors/formatter";
+export type { IntermediateArtifactElement } from "./intermediate-module";
 // Internal utility for testing - clears gql module cache between test runs
 export { __clearGqlCache } from "./intermediate-module";
-export type { IntermediateArtifactElement } from "./intermediate-module";
 export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 // Prebuilt type generation (field selection extraction)
@@ -27,11 +27,11 @@ export {
   type FieldSelectionData,
   type FieldSelectionsMap,
 } from "./prebuilt";
-// Schema loading
-export { loadSchemasFromBundle, type LoadSchemasResult } from "./schema-loader";
 // Scheduler
 export type { FileStats } from "./scheduler";
 export { BuilderEffects, FileReadEffect, FileStatEffect } from "./scheduler";
+// Schema loading
+export { type LoadSchemasResult, loadSchemasFromBundle } from "./schema-loader";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";

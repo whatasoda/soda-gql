@@ -44,10 +44,7 @@ export type LoadSchemasResult = Result<Record<string, AnyGraphqlSchema>, Builder
  * }
  * ```
  */
-export const loadSchemasFromBundle = (
-  cjsPath: string,
-  schemaNames: readonly string[],
-): LoadSchemasResult => {
+export const loadSchemasFromBundle = (cjsPath: string, schemaNames: readonly string[]): LoadSchemasResult => {
   const resolvedPath = resolve(cjsPath);
 
   // Check if file exists

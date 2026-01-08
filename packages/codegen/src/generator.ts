@@ -790,7 +790,7 @@ ${typeExports.join("\n")}`);
     if (adapterVar) {
       prebuiltExports.push(`export { ${adapterVar} as __adapter_${name} }`);
     }
-    schemaBlocks.push(prebuiltExports.join(";\n") + ";");
+    schemaBlocks.push(`${prebuiltExports.join(";\n")};`);
 
     gqlEntries.push(`  ${name}: ${gqlVarName}`);
   }

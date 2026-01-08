@@ -15,11 +15,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
+import {
+  createBuilderService,
+  extractFieldSelections,
+  type IntermediateArtifactElement,
+  loadSchemasFromBundle,
+} from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
-import { createBuilderService, extractFieldSelections, type IntermediateArtifactElement, loadSchemasFromBundle } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { build } from "esbuild";
-import { parse, type DocumentNode } from "graphql";
+import { type DocumentNode, parse } from "graphql";
 import { err, ok } from "neverthrow";
 import { emitPrebuiltTypes } from "./emitter";
 import { typegenErrors } from "./errors";
@@ -121,20 +126,16 @@ const writeModule = async (path: string, content: string): Promise<void> => {
  * Load GraphQL schema documents from schema paths.
  * This is needed for generatePrebuiltModule which expects DocumentNode.
  */
-const loadSchemaDocuments = (
-  schemasConfig: ResolvedSodaGqlConfig["schemas"],
-): Map<string, DocumentNode> => {
+const loadSchemaDocuments = (schemasConfig: ResolvedSodaGqlConfig["schemas"]): Map<string, DocumentNode> => {
   const documents = new Map<string, DocumentNode>();
 
   for (const [name, schemaConfig] of Object.entries(schemasConfig)) {
-    const schemaPaths = Array.isArray(schemaConfig.schema)
-      ? schemaConfig.schema
-      : [schemaConfig.schema];
+    const schemaPaths = Array.isArray(schemaConfig.schema) ? schemaConfig.schema : [schemaConfig.schema];
 
     // Concatenate all schema files
     let combinedSource = "";
     for (const schemaPath of schemaPaths) {
-      combinedSource += readFileSync(schemaPath, "utf-8") + "\n";
+      combinedSource += `${readFileSync(schemaPath, "utf-8")}\n`;
     }
 
     documents.set(name, parse(combinedSource));
@@ -206,7 +207,13 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   try {
     await writeModule(prebuiltIndexPath, prebuilt.indexCode);
   } catch (error) {
-    return err(typegenErrors.emitFailed(prebuiltIndexPath, `Failed to write prebuilt index: ${error instanceof Error ? error.message : String(error)}`, error));
+    return err(
+      typegenErrors.emitFailed(
+        prebuiltIndexPath,
+        `Failed to write prebuilt index: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      ),
+    );
   }
 
   // Step 5: Build artifact using BuilderService
@@ -252,7 +259,13 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   try {
     await bundlePrebuiltModule(prebuiltIndexPath);
   } catch (error) {
-    return err(typegenErrors.bundleFailed(prebuiltIndexPath, `Failed to bundle prebuilt module: ${error instanceof Error ? error.message : String(error)}`, error));
+    return err(
+      typegenErrors.bundleFailed(
+        prebuiltIndexPath,
+        `Failed to bundle prebuilt module: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      ),
+    );
   }
 
   // Count fragments and operations

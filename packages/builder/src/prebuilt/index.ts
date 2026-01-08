@@ -9,4 +9,9 @@
  * @module
  */
 
-export { extractFieldSelections, type FieldSelectionData, type FieldSelectionsMap, type FieldSelectionsResult } from "./extractor";
+export {
+  extractFieldSelections,
+  type FieldSelectionData,
+  type FieldSelectionsMap,
+  type FieldSelectionsResult,
+} from "./extractor";

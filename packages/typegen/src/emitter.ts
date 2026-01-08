@@ -25,7 +25,7 @@
 
 import { writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import { type BuilderError, type FieldSelectionsMap, builderErrors } from "@soda-gql/builder";
+import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";

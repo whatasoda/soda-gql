@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { loadConfig } from "@soda-gql/config";
 import { runTypegen } from "@soda-gql/typegen";
 import { err, ok } from "neverthrow";

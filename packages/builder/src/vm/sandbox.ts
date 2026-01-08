@@ -32,13 +32,15 @@ export type CjsSandbox = {
  * Create a require function for the sandbox.
  * Maps @soda-gql package imports to their actual modules.
  */
-const createSandboxRequire = () => (path: string): unknown => {
-  if (path === "@soda-gql/core") return sandboxCore;
-  if (path === "@soda-gql/core/adapter") return sandboxCoreAdapter;
-  if (path === "@soda-gql/core/runtime") return sandboxCoreRuntime;
-  if (path === "@soda-gql/runtime") return sandboxRuntime;
-  throw new Error(`Unknown module: ${path}`);
-};
+const createSandboxRequire =
+  () =>
+  (path: string): unknown => {
+    if (path === "@soda-gql/core") return sandboxCore;
+    if (path === "@soda-gql/core/adapter") return sandboxCoreAdapter;
+    if (path === "@soda-gql/core/runtime") return sandboxCoreRuntime;
+    if (path === "@soda-gql/runtime") return sandboxRuntime;
+    throw new Error(`Unknown module: ${path}`);
+  };
 
 /**
  * Create a VM sandbox for executing CJS bundles.
@@ -53,10 +55,7 @@ const createSandboxRequire = () => (path: string): unknown => {
  * @param additionalContext - Optional additional context properties
  * @returns Configured sandbox object
  */
-export const createSandbox = (
-  modulePath: string,
-  additionalContext?: Record<string, unknown>,
-): CjsSandbox => {
+export const createSandbox = (modulePath: string, additionalContext?: Record<string, unknown>): CjsSandbox => {
   const moduleExports: Record<string, unknown> = {};
 
   const sandbox: CjsSandbox = {

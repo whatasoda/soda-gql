@@ -35,6 +35,7 @@
     { "path": "./packages/swc-transformer/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/tsc-transformer/tsconfig.editor.json" },
+    { "path": "./packages/typegen/tsconfig.editor.json" },
     { "path": "./packages/vite-plugin/tsconfig.editor.json" },
     { "path": "./packages/webpack-plugin/tsconfig.editor.json" },
     { "path": "./playgrounds/expo-metro/tsconfig.editor.json" },
