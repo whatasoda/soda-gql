@@ -13,6 +13,7 @@ export type {
   DiscoveryCache,
   DiscoverySnapshot,
 } from "./discovery/types";
+export { builderErrors } from "./errors";
 export type { FormattedError } from "./errors/formatter";
 export { formatBuilderErrorForCLI, formatBuilderErrorStructured } from "./errors/formatter";
 // Internal utility for testing - clears gql module cache between test runs
