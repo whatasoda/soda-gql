@@ -104,6 +104,8 @@
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@soda-gql/typegen": "workspace:*",
         "fast-glob": "^3.3.3",
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
@@ -256,6 +258,18 @@
       },
       "peerDependencies": {
         "typescript": "5.*",
+      },
+    },
+    "packages/typegen": {
+      "name": "@soda-gql/typegen",
+      "version": "0.10.0",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@soda-gql/core": "workspace:*",
+        "esbuild": "^0.24.0",
+        "graphql": "^16.8.1",
+        "neverthrow": "^8.1.1",
       },
     },
     "packages/vite-plugin": {
@@ -1159,6 +1173,8 @@
     "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
 
     "@soda-gql/tsc-transformer": ["@soda-gql/tsc-transformer@workspace:packages/tsc-transformer"],
+
+    "@soda-gql/typegen": ["@soda-gql/typegen@workspace:packages/typegen"],
 
     "@soda-gql/vite-plugin": ["@soda-gql/vite-plugin@workspace:packages/vite-plugin"],
 

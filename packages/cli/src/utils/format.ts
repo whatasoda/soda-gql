@@ -55,6 +55,17 @@ const artifactErrorHints: Record<string, string> = {
 };
 
 /**
+ * Typegen-specific error hints.
+ */
+const typegenErrorHints: Record<string, string> = {
+  TYPEGEN_CODEGEN_REQUIRED: "Run 'soda-gql codegen' before running typegen",
+  TYPEGEN_SCHEMA_LOAD_FAILED: "Verify the generated CJS bundle is valid",
+  TYPEGEN_BUILD_FAILED: "Check for errors in your source files",
+  TYPEGEN_EMIT_FAILED: "Check write permissions for the output directory",
+  TYPEGEN_BUNDLE_FAILED: "Check write permissions for the prebuilt directory",
+};
+
+/**
  * Get hint for any error type.
  */
 const getErrorHint = (error: CliError): string | undefined => {
@@ -69,6 +80,9 @@ const getErrorHint = (error: CliError): string | undefined => {
   }
   if (error.category === "artifact") {
     return artifactErrorHints[error.error.code];
+  }
+  if (error.category === "typegen") {
+    return typegenErrorHints[error.error.code];
   }
   // Builder errors use their own hints via formatBuilderErrorForCLI
   return undefined;
@@ -111,6 +125,9 @@ export const formatCliErrorHuman = (error: CliError): string => {
     if (artifactError.filePath) {
       lines.push(`  Artifact: ${artifactError.filePath}`);
     }
+  } else if (error.category === "typegen") {
+    const typegenError = error.error;
+    lines.push(`Error [${typegenError.code}]: ${typegenError.message}`);
   } else {
     // CLI errors
     lines.push(`Error [${error.code}]: ${error.message}`);

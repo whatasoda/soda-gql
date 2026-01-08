@@ -40,6 +40,8 @@ type SessionState = {
   intermediateModules: Map<string, IntermediateModule>;
   /** Last successful artifact */
   lastArtifact: BuilderArtifact | null;
+  /** Last successful intermediate elements (for prebuilt type generation) */
+  lastIntermediateElements: Record<string, IntermediateArtifactElement> | null;
 };
 
 /**
@@ -93,6 +95,12 @@ export interface BuilderSession {
    * Get the current artifact.
    */
   getCurrentArtifact(): BuilderArtifact | null;
+  /**
+   * Get the intermediate elements from the most recent build.
+   * Returns null if no build has been performed yet.
+   * Used by typegen to extract field selections for prebuilt type generation.
+   */
+  getIntermediateElements(): Record<string, IntermediateArtifactElement> | null;
   /**
    * Dispose the session and save cache to disk.
    */
@@ -163,6 +171,7 @@ export const createBuilderSession = (options: {
     moduleAdjacency: new Map(),
     intermediateModules: new Map(),
     lastArtifact: null,
+    lastIntermediateElements: null,
   };
 
   // Reusable infrastructure
@@ -284,6 +293,7 @@ export const createBuilderSession = (options: {
     state.moduleAdjacency = currentModuleAdjacency;
     state.lastArtifact = artifactResult.value;
     state.intermediateModules = intermediateModules;
+    state.lastIntermediateElements = elements;
 
     // Persist tracker state (soft failure - don't block on cache write)
     ensureFileTracker().update(currentScan);
@@ -364,6 +374,7 @@ export const createBuilderSession = (options: {
     buildAsync,
     getGeneration: () => state.gen,
     getCurrentArtifact: () => state.lastArtifact,
+    getIntermediateElements: () => state.lastIntermediateElements,
     dispose: () => {
       cacheFactory.save();
       // Unregister from exit handler to prevent duplicate saves

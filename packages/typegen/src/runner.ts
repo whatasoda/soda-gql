@@ -15,7 +15,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
-import { createBuilderService, extractFieldSelections, loadSchemasFromBundle } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
+import { createBuilderService, extractFieldSelections, type IntermediateArtifactElement, loadSchemasFromBundle } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { build } from "esbuild";
 import { parse, type DocumentNode } from "graphql";
@@ -210,24 +211,22 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   // Step 5: Build artifact using BuilderService
   const builderService = createBuilderService({
-    analyzer: config.analyzer,
-    graphqlSystemPath: join(outdir, "index.ts"),
-    graphqlSystemAliases: config.graphqlSystemAliases,
+    config,
   });
 
-  const artifactResult = await builderService.build({
-    include: config.include,
-    exclude: config.exclude,
-  });
+  const artifactResult = await builderService.buildAsync();
 
   if (artifactResult.isErr()) {
     return err(typegenErrors.buildFailed(`Builder failed: ${artifactResult.error.message}`, artifactResult.error));
   }
 
-  const artifact = artifactResult.value;
+  // Step 6: Extract field selections from intermediate elements
+  const intermediateElements = builderService.getIntermediateElements();
+  if (!intermediateElements) {
+    return err(typegenErrors.buildFailed("No intermediate elements available after build", undefined));
+  }
 
-  // Step 6: Extract field selections
-  const fieldSelectionsResult = extractFieldSelections(artifact.elements);
+  const fieldSelectionsResult = extractFieldSelections(intermediateElements as Record<CanonicalId, IntermediateArtifactElement>);
   const { selections: fieldSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
   // Step 7: Emit prebuilt/types.ts

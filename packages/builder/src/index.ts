@@ -18,6 +18,7 @@ export type { FormattedError } from "./errors/formatter";
 export { formatBuilderErrorForCLI, formatBuilderErrorStructured } from "./errors/formatter";
 // Internal utility for testing - clears gql module cache between test runs
 export { __clearGqlCache } from "./intermediate-module";
+export type { IntermediateArtifactElement } from "./intermediate-module";
 export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 // Prebuilt type generation

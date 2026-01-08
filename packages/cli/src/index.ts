@@ -4,6 +4,7 @@ import { codegenCommand } from "./commands/codegen";
 import { doctorCommand } from "./commands/doctor";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
+import { typegenCommand } from "./commands/typegen";
 import { cliErrors } from "./errors";
 import type { CommandResult, CommandSuccess, OutputFormat } from "./types";
 import { formatCliError } from "./utils/format";
@@ -13,6 +14,7 @@ const MAIN_HELP = `Usage: soda-gql <command> [options]
 Commands:
   init       Initialize a new soda-gql project
   codegen    Generate graphql-system runtime module
+  typegen    Generate prebuilt types from source code
   format     Format soda-gql field selections
   artifact   Manage soda-gql artifacts
   doctor     Run diagnostic checks
@@ -51,6 +53,10 @@ const dispatch = async (argv: readonly string[]): Promise<DispatchResult> => {
 
   if (command === "codegen") {
     return codegenCommand(rest);
+  }
+
+  if (command === "typegen") {
+    return typegenCommand(rest);
   }
 
   if (command === "format") {
