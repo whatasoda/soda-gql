@@ -7,5 +7,5 @@
  * @module
  */
 
-export { emitPrebuiltTypes, type PrebuiltTypesEmitterOptions } from "./emitter";
+export { emitPrebuiltTypes, type PrebuiltTypesEmitResult, type PrebuiltTypesEmitterOptions } from "./emitter";
 export { extractFieldSelections, type FieldSelectionsMap, type FieldSelectionsResult } from "./extractor";

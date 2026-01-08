@@ -155,10 +155,7 @@ describe("builderErrors factory functions", () => {
   });
 
   test("schemaNotFound creates correct error", () => {
-    const error = builderErrors.schemaNotFound(
-      "unknownSchema",
-      "/src/user.ts::UserFragment",
-    ) as ErrorOf<"SCHEMA_NOT_FOUND">;
+    const error = builderErrors.schemaNotFound("unknownSchema", "/src/user.ts::UserFragment") as ErrorOf<"SCHEMA_NOT_FOUND">;
     expect(error.code).toBe("SCHEMA_NOT_FOUND");
     expect(error.schemaLabel).toBe("unknownSchema");
     expect(error.canonicalId).toBe("/src/user.ts::UserFragment");

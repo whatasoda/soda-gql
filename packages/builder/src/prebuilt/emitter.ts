@@ -53,16 +53,21 @@ type SchemaGroup = {
   inputObjects: Set<string>;
 };
 
+type GroupBySchemaResult = {
+  readonly grouped: Map<string, SchemaGroup>;
+  readonly warnings: string[];
+};
+
 /**
  * Group field selections by schema.
  * Uses the schemaLabel from each selection to group them correctly.
  *
- * @returns Result containing grouped selections or error if schema not found
+ * @returns Result containing grouped selections and warnings, or error if schema not found
  */
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
   schemas: Record<string, AnyGraphqlSchema>,
-): Result<Map<string, SchemaGroup>, BuilderError> => {
+): Result<GroupBySchemaResult, BuilderError> => {
   // Check for duplicate schemaLabels
   const labelToSchemaNames = new Map<string, string[]>();
   for (const [schemaName, schema] of Object.entries(schemas)) {
@@ -82,6 +87,7 @@ const groupBySchema = (
   }
 
   const grouped = new Map<string, SchemaGroup>();
+  const warnings: string[] = [];
 
   // Initialize groups for each schema
   for (const schemaName of Object.keys(schemas)) {
@@ -135,7 +141,7 @@ const groupBySchema = (
           outputType,
         });
       } catch (error) {
-        console.warn(
+        warnings.push(
           `[prebuilt] Failed to calculate type for fragment "${selection.key}": ${error instanceof Error ? error.message : String(error)}`,
         );
       }
@@ -159,14 +165,14 @@ const groupBySchema = (
           outputType,
         });
       } catch (error) {
-        console.warn(
+        warnings.push(
           `[prebuilt] Failed to calculate type for operation "${selection.operationName}": ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
   }
 
-  return ok(grouped);
+  return ok({ grouped, warnings });
 };
 
 /**
@@ -386,14 +392,22 @@ const generateTypesCode = (
 };
 
 /**
+ * Result of emitting prebuilt types.
+ */
+export type PrebuiltTypesEmitResult = {
+  readonly path: string;
+  readonly warnings: readonly string[];
+};
+
+/**
  * Emit prebuilt types to the prebuilt/types.ts file.
  *
  * @param options - Emitter options including schemas, field selections, and output directory
- * @returns Result indicating success or failure
+ * @returns Result containing output path and warnings, or error
  */
 export const emitPrebuiltTypes = async (
   options: PrebuiltTypesEmitterOptions,
-): Promise<Result<{ path: string }, BuilderError>> => {
+): Promise<Result<PrebuiltTypesEmitResult, BuilderError>> => {
   const { schemas, fieldSelections, outdir, injects } = options;
 
   // Group selections by schema
@@ -401,7 +415,7 @@ export const emitPrebuiltTypes = async (
   if (groupResult.isErr()) {
     return err(groupResult.error);
   }
-  const grouped = groupResult.value;
+  const { grouped, warnings } = groupResult.value;
 
   // Generate the types code
   const code = generateTypesCode(grouped, schemas, injects, outdir);
@@ -411,7 +425,7 @@ export const emitPrebuiltTypes = async (
 
   try {
     await writeFile(typesPath, code, "utf-8");
-    return ok({ path: typesPath });
+    return ok({ path: typesPath, warnings });
   } catch (error) {
     return err(
       builderErrors.writeFailed(
