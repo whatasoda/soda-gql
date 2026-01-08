@@ -39,16 +39,25 @@ export type FieldSelectionData =
 export type FieldSelectionsMap = ReadonlyMap<CanonicalId, FieldSelectionData>;
 
 /**
+ * Result of field selection extraction including any warnings.
+ */
+export type FieldSelectionsResult = {
+  readonly selections: FieldSelectionsMap;
+  readonly warnings: readonly string[];
+};
+
+/**
  * Extract field selections from evaluated intermediate elements.
  *
  * For fragments, calls `spread()` with empty/default variables to get field selections.
  * For operations, calls `documentSource()` to get field selections.
  *
  * @param elements - Record of canonical ID to intermediate artifact element
- * @returns Map of canonical ID to field selection data
+ * @returns Object containing selections map and any warnings encountered
  */
-export const extractFieldSelections = (elements: Record<CanonicalId, IntermediateArtifactElement>): FieldSelectionsMap => {
+export const extractFieldSelections = (elements: Record<CanonicalId, IntermediateArtifactElement>): FieldSelectionsResult => {
   const selections = new Map<CanonicalId, FieldSelectionData>();
+  const warnings: string[] = [];
 
   for (const [id, element] of Object.entries(elements)) {
     // Object.entries returns string keys, cast back to CanonicalId
@@ -95,11 +104,11 @@ export const extractFieldSelections = (elements: Record<CanonicalId, Intermediat
         });
       }
     } catch (error) {
-      console.warn(
+      warnings.push(
         `[prebuilt] Failed to extract field selections for ${canonicalId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
 
-  return selections;
+  return { selections, warnings };
 };

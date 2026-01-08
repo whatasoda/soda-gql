@@ -8,4 +8,4 @@
  */
 
 export { emitPrebuiltTypes, type PrebuiltTypesEmitterOptions } from "./emitter";
-export { extractFieldSelections, type FieldSelectionsMap } from "./extractor";
+export { extractFieldSelections, type FieldSelectionsMap, type FieldSelectionsResult } from "./extractor";

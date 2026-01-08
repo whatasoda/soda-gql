@@ -98,11 +98,12 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
-    expect(selections.size).toBe(1);
+    expect(result.selections.size).toBe(1);
+    expect(result.warnings).toHaveLength(0);
 
-    const selection = selections.get("/src/user.ts::UserFragment" as CanonicalId);
+    const selection = result.selections.get("/src/user.ts::UserFragment" as CanonicalId);
     expect(selection).toBeDefined();
     expect(selection?.type).toBe("fragment");
 
@@ -131,8 +132,8 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
-    const selection = selections.get("/src/user.ts::UserFragment" as CanonicalId);
+    const result = extractFieldSelections(elements);
+    const selection = result.selections.get("/src/user.ts::UserFragment" as CanonicalId);
 
     expect(selection?.type).toBe("fragment");
     if (selection?.type === "fragment") {
@@ -158,11 +159,12 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
-    expect(selections.size).toBe(1);
+    expect(result.selections.size).toBe(1);
+    expect(result.warnings).toHaveLength(0);
 
-    const selection = selections.get("/src/queries.ts::GetUser" as CanonicalId);
+    const selection = result.selections.get("/src/queries.ts::GetUser" as CanonicalId);
     expect(selection).toBeDefined();
     expect(selection?.type).toBe("operation");
 
@@ -199,11 +201,11 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
-    expect(selections.size).toBe(1);
+    expect(result.selections.size).toBe(1);
 
-    const selection = selections.get("/src/queries.ts::GetUser" as CanonicalId);
+    const selection = result.selections.get("/src/queries.ts::GetUser" as CanonicalId);
     expect(selection?.type).toBe("operation");
 
     if (selection?.type === "operation") {
@@ -225,12 +227,12 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
     // Fragment without key should still be extracted
-    expect(selections.size).toBe(1);
+    expect(result.selections.size).toBe(1);
 
-    const selection = selections.get("/src/anonymous.ts::Fragment" as CanonicalId);
+    const selection = result.selections.get("/src/anonymous.ts::Fragment" as CanonicalId);
     expect(selection?.type).toBe("fragment");
     if (selection?.type === "fragment") {
       expect(selection.key).toBeUndefined();
@@ -255,20 +257,22 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
-    expect(selections.size).toBe(3);
+    expect(result.selections.size).toBe(3);
+    expect(result.warnings).toHaveLength(0);
   });
 
   test("handles empty elements", () => {
     const elements: Record<CanonicalId, IntermediateArtifactElement> = {};
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
-    expect(selections.size).toBe(0);
+    expect(result.selections.size).toBe(0);
+    expect(result.warnings).toHaveLength(0);
   });
 
-  test("skips elements that throw errors", () => {
+  test("collects warnings for elements that throw errors", () => {
     const throwingFragment = {
       typename: "User",
       key: "UserFields",
@@ -290,11 +294,16 @@ describe("extractFieldSelections", () => {
       },
     };
 
-    const selections = extractFieldSelections(elements);
+    const result = extractFieldSelections(elements);
 
     // Should skip the throwing fragment but include the operation
-    expect(selections.size).toBe(1);
-    expect(selections.has("/src/queries.ts::GetUser" as CanonicalId)).toBe(true);
-    expect(selections.has("/src/user.ts::UserFragment" as CanonicalId)).toBe(false);
+    expect(result.selections.size).toBe(1);
+    expect(result.selections.has("/src/queries.ts::GetUser" as CanonicalId)).toBe(true);
+    expect(result.selections.has("/src/user.ts::UserFragment" as CanonicalId)).toBe(false);
+
+    // Should collect warning for the failed element
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain("/src/user.ts::UserFragment");
+    expect(result.warnings[0]).toContain("Required variable not provided");
   });
 });
