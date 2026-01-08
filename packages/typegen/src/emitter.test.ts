@@ -297,9 +297,11 @@ describe("emitPrebuiltTypes", () => {
         expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
         if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
           expect(result.error.fragments).toHaveLength(1);
-          expect(result.error.fragments[0].canonicalId).toBe("/src/anon.ts::Fragment");
-          expect(result.error.fragments[0].typename).toBe("User");
-          expect(result.error.fragments[0].schemaLabel).toBe("testSchema");
+          const fragment = result.error.fragments[0];
+          expect(fragment).toBeDefined();
+          expect(fragment?.canonicalId).toBe("/src/anon.ts::Fragment");
+          expect(fragment?.typename).toBe("User");
+          expect(fragment?.schemaLabel).toBe("testSchema");
         }
       }
     });
