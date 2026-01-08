@@ -265,6 +265,7 @@
       "version": "0.10.0",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
+        "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "esbuild": "^0.24.0",
