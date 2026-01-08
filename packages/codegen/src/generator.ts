@@ -781,6 +781,17 @@ ${typeExports.join("\n")}`);
       `export type Context_${name} = Parameters<typeof ${gqlVarName}>[0] extends (ctx: infer C) => unknown ? C : never;`,
     );
 
+    // Prebuilt module exports (for typegen)
+    const prebuiltExports: string[] = [
+      `export { ${schemaVar} as __schema_${name} }`,
+      `export { ${inputTypeMethodsVar} as __inputTypeMethods_${name} }`,
+      `export { ${customDirectivesVar} as __directiveMethods_${name} }`,
+    ];
+    if (adapterVar) {
+      prebuiltExports.push(`export { ${adapterVar} as __adapter_${name} }`);
+    }
+    schemaBlocks.push(prebuiltExports.join(";\n") + ";");
+
     gqlEntries.push(`  ${name}: ${gqlVarName}`);
   }
 
