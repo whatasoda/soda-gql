@@ -13,3 +13,7 @@ export type { TypegenError, TypegenErrorCode, TypegenSpecificError } from "./err
 
 // Types
 export type { TypegenOptions, TypegenResult, TypegenSuccess } from "./types";
+
+// Prebuilt module generator
+export { generatePrebuiltModule } from "./prebuilt-generator";
+export type { PrebuiltGeneratedModule, PrebuiltGeneratorOptions } from "./prebuilt-generator";
