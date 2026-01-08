@@ -26,6 +26,8 @@ export {
   type FieldSelectionsMap,
   type PrebuiltTypesEmitterOptions,
 } from "./prebuilt";
+// Schema loading
+export { loadSchemasFromBundle, type LoadSchemasResult } from "./schema-loader";
 // Scheduler
 export type { FileStats } from "./scheduler";
 export { BuilderEffects, FileReadEffect, FileStatEffect } from "./scheduler";
