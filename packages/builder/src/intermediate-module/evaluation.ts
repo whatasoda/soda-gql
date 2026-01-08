@@ -3,15 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
-import * as sandboxCore from "@soda-gql/core";
-import * as sandboxCoreAdapter from "@soda-gql/core/adapter";
-import * as sandboxCoreRuntime from "@soda-gql/core/runtime";
-import * as sandboxRuntime from "@soda-gql/runtime";
 import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
 import { ElementEvaluationEffect } from "../scheduler";
+import { createSandbox } from "../vm/sandbox";
 import { renderRegistryBlock } from "./codegen";
 import { createIntermediateRegistry } from "./registry";
 import type { IntermediateArtifactElement, IntermediateModule } from "./types";
@@ -111,45 +108,12 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
   // Bundle the GraphQL system module
   const bundledCode = readFileSync(modulePath, "utf-8");
 
-  // Create a shared CommonJS module exports object
-  const moduleExports: Record<string, unknown> = {};
-
-  // Create sandbox with proper CommonJS emulation
-  const sandbox = {
-    // Provide @soda-gql packages through require()
-    require: (path: string) => {
-      if (path === "@soda-gql/core") {
-        return sandboxCore;
-      }
-      if (path === "@soda-gql/core/adapter") {
-        return sandboxCoreAdapter;
-      }
-      if (path === "@soda-gql/core/runtime") {
-        return sandboxCoreRuntime;
-      }
-      if (path === "@soda-gql/runtime") {
-        return sandboxRuntime;
-      }
-      throw new Error(`Unknown module: ${path}`);
-    },
-    // Both module.exports and exports point to the same object
-    module: { exports: moduleExports },
-    exports: moduleExports,
-    __dirname: resolve(modulePath, ".."),
-    __filename: modulePath,
-    global: undefined as unknown,
-    globalThis: undefined as unknown,
-  };
-  // Wire global and globalThis to the sandbox itself
-  sandbox.global = sandbox;
-  sandbox.globalThis = sandbox;
-
+  // Create sandbox and execute
+  const sandbox = createSandbox(modulePath);
   new Script(bundledCode, { filename: modulePath }).runInNewContext(sandbox);
 
   // Read exported gql (handle both direct export and default export)
-  // Note: We read from sandbox.module.exports because esbuild CJS output
-  // reassigns module.exports = __toCommonJS(...), replacing the original object
-  const finalExports = sandbox.module.exports as Record<string, unknown>;
+  const finalExports = sandbox.module.exports;
   const exportedGql = finalExports.gql ?? finalExports.default;
 
   if (exportedGql === undefined) {

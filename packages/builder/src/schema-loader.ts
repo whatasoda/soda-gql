@@ -2,21 +2,17 @@
  * Schema loader for CJS bundle evaluation.
  *
  * Loads AnyGraphqlSchema exports from the generated CJS bundle.
- * Uses VM execution pattern similar to intermediate-module/evaluation.ts.
+ * Uses shared VM sandbox utility for execution.
  *
  * @module
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createContext, Script } from "node:vm";
 import type { AnyGraphqlSchema } from "@soda-gql/core";
-import * as sandboxCore from "@soda-gql/core";
-import * as sandboxCoreAdapter from "@soda-gql/core/adapter";
-import * as sandboxCoreRuntime from "@soda-gql/core/runtime";
-import * as sandboxRuntime from "@soda-gql/runtime";
 import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "./errors";
+import { executeSandbox } from "./vm/sandbox";
 
 /**
  * Result of loading schemas from a CJS bundle.
@@ -75,42 +71,10 @@ export const loadSchemasFromBundle = (
     });
   }
 
-  // Create a shared CommonJS module exports object
-  const moduleExports: Record<string, unknown> = {};
-
-  // Create sandbox with proper CommonJS emulation
-  const sandbox = {
-    // Provide @soda-gql packages through require()
-    require: (path: string) => {
-      if (path === "@soda-gql/core") {
-        return sandboxCore;
-      }
-      if (path === "@soda-gql/core/adapter") {
-        return sandboxCoreAdapter;
-      }
-      if (path === "@soda-gql/core/runtime") {
-        return sandboxCoreRuntime;
-      }
-      if (path === "@soda-gql/runtime") {
-        return sandboxRuntime;
-      }
-      throw new Error(`Unknown module: ${path}`);
-    },
-    // Both module.exports and exports point to the same object
-    module: { exports: moduleExports },
-    exports: moduleExports,
-    __dirname: resolve(resolvedPath, ".."),
-    __filename: resolvedPath,
-    global: undefined as unknown,
-    globalThis: undefined as unknown,
-  };
-  // Wire global and globalThis to the sandbox itself
-  sandbox.global = sandbox;
-  sandbox.globalThis = sandbox;
-
-  // Execute the bundle
+  // Execute the bundle in sandbox
+  let finalExports: Record<string, unknown>;
   try {
-    new Script(bundledCode, { filename: resolvedPath }).runInContext(createContext(sandbox));
+    finalExports = executeSandbox(bundledCode, resolvedPath);
   } catch (error) {
     return err({
       code: "RUNTIME_MODULE_LOAD_FAILED",
@@ -120,10 +84,6 @@ export const loadSchemasFromBundle = (
       cause: error,
     });
   }
-
-  // Extract schema exports
-  // Note: esbuild CJS output reassigns module.exports, so read from sandbox.module.exports
-  const finalExports = sandbox.module.exports as Record<string, unknown>;
   const schemas: Record<string, AnyGraphqlSchema> = {};
 
   for (const name of schemaNames) {
