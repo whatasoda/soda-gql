@@ -3,10 +3,10 @@
  *
  * Orchestrates the prebuilt type generation process:
  * 1. Load schemas from generated CJS bundle
- * 2. Generate prebuilt/index.ts
+ * 2. Generate index.prebuilt.ts
  * 3. Build artifact to evaluate elements
  * 4. Extract field selections
- * 5. Emit prebuilt/types.ts
+ * 5. Emit types.prebuilt.ts
  * 6. Bundle prebuilt module
  *
  * @module
@@ -149,10 +149,10 @@ const loadSchemaDocuments = (schemasConfig: ResolvedSodaGqlConfig["schemas"]): M
  *
  * This function:
  * 1. Loads schemas from the generated CJS bundle
- * 2. Generates prebuilt/index.ts using generatePrebuiltModule
+ * 2. Generates index.prebuilt.ts using generatePrebuiltModule
  * 3. Creates a BuilderService and builds the artifact
  * 4. Extracts field selections from the artifact
- * 5. Emits prebuilt/types.ts using emitPrebuiltTypes
+ * 5. Emits types.prebuilt.ts using emitPrebuiltTypes
  * 6. Bundles the prebuilt module
  *
  * @param options - Typegen options including config
@@ -177,20 +177,20 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   }
   const schemas = schemasResult.value;
 
-  // Step 3: Create prebuilt directory
-  const prebuiltDir = join(outdir, "prebuilt");
-  await mkdir(prebuiltDir, { recursive: true });
-
-  // Step 4: Load schema documents and generate prebuilt/index.ts
+  // Step 3: Load schema documents and generate index.prebuilt.ts
   const schemaDocuments = loadSchemaDocuments(config.schemas);
-  const mainModulePath = toImportSpecifier(join(prebuiltDir, "index.ts"), join(outdir, "index.ts"), importSpecifierOptions);
+  const internalModulePath = toImportSpecifier(
+    join(outdir, "index.prebuilt.ts"),
+    join(outdir, "_internal.ts"),
+    importSpecifierOptions,
+  );
 
   // Build injection config for generatePrebuiltModule
   const injection = new Map<string, { adapterImportPath?: string }>();
   for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
     if (schemaConfig.inject.adapter) {
       injection.set(schemaName, {
-        adapterImportPath: toImportSpecifier(join(outdir, "index.ts"), schemaConfig.inject.adapter, importSpecifierOptions),
+        adapterImportPath: toImportSpecifier(join(outdir, "_internal.ts"), schemaConfig.inject.adapter, importSpecifierOptions),
       });
     } else {
       injection.set(schemaName, {});
@@ -198,12 +198,12 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   }
 
   const prebuilt = generatePrebuiltModule(schemaDocuments, {
-    mainModulePath,
+    internalModulePath,
     injection,
   });
 
-  // Write prebuilt/index.ts
-  const prebuiltIndexPath = join(prebuiltDir, "index.ts");
+  // Write index.prebuilt.ts
+  const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
   try {
     await writeModule(prebuiltIndexPath, prebuilt.indexCode);
   } catch (error) {
@@ -216,7 +216,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     );
   }
 
-  // Step 5: Build artifact using BuilderService
+  // Step 4: Build artifact using BuilderService
   const builderService = createBuilderService({
     config,
   });
@@ -227,7 +227,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return err(typegenErrors.buildFailed(`Builder failed: ${artifactResult.error.message}`, artifactResult.error));
   }
 
-  // Step 6: Extract field selections from intermediate elements
+  // Step 5: Extract field selections from intermediate elements
   const intermediateElements = builderService.getIntermediateElements();
   if (!intermediateElements) {
     return err(typegenErrors.buildFailed("No intermediate elements available after build", undefined));
@@ -236,7 +236,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const fieldSelectionsResult = extractFieldSelections(intermediateElements as Record<CanonicalId, IntermediateArtifactElement>);
   const { selections: fieldSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
-  // Step 7: Emit prebuilt/types.ts
+  // Step 6: Emit types.prebuilt.ts
   const injects: Record<string, { readonly scalars: string }> = {};
   for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
     injects[schemaName] = { scalars: schemaConfig.inject.scalars };
@@ -255,7 +255,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   const { path: prebuiltTypesPath, warnings: emitWarnings } = emitResult.value;
 
-  // Step 8: Bundle prebuilt module
+  // Step 7: Bundle prebuilt module
   try {
     await bundlePrebuiltModule(prebuiltIndexPath);
   } catch (error) {
