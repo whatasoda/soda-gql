@@ -167,3 +167,23 @@ export const createGqlElementComposer = <
 
   return composerWithSchema;
 };
+
+/**
+ * Abstract Context type for prebuilt composers.
+ *
+ * Provides minimal structure while allowing PrebuiltTypeRegistry to resolve
+ * actual types. Used by prebuilt module to avoid heavy schema type inference.
+ *
+ * Type safety in prebuilt comes from `ResolvePrebuiltElement`, not from
+ * the Context type.
+ */
+export type AnyGqlContext = {
+  readonly fragment: Record<string, unknown>;
+  readonly query: { operation: (...args: unknown[]) => AnyOperation };
+  readonly mutation: { operation: (...args: unknown[]) => AnyOperation };
+  readonly subscription: { operation: (...args: unknown[]) => AnyOperation };
+  readonly $var: unknown;
+  readonly $dir: StandardDirectives;
+  readonly $colocate: unknown;
+  readonly [key: string]: unknown;
+};

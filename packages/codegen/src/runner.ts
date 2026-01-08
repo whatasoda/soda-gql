@@ -135,7 +135,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
   }
 
   // Generate multi-schema module (this becomes _internal.ts content)
-  const { code: internalCode } = generateMultiSchemaModule(schemas, {
+  const { code: internalCode, injectsCode } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
@@ -165,6 +165,19 @@ export * from "./_internal";
       inputs,
       unions,
     };
+  }
+
+  // Write _internal-injects.ts (adapter imports only, referenced by both _internal.ts and prebuilt)
+  const injectsPath = join(dirname(outPath), "_internal-injects.ts");
+  if (injectsCode) {
+    const injectsWriteResult = await writeModule(injectsPath, injectsCode).match(
+      () => Promise.resolve(ok(undefined)),
+      (error) => Promise.resolve(err(error)),
+    );
+
+    if (injectsWriteResult.isErr()) {
+      return err(injectsWriteResult.error);
+    }
   }
 
   // Write _internal.ts (implementation)
@@ -206,6 +219,7 @@ export * from "./_internal";
     schemas: schemaHashes,
     outPath,
     internalPath,
+    injectsPath,
     cjsPath: bundleResult.value.cjsPath,
   } satisfies CodegenSuccess);
 };

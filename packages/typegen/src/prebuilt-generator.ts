@@ -5,8 +5,10 @@
  * PrebuiltTypes for type lookup instead of complex inference.
  *
  * This generator minimizes imports from _internal.ts to enable
- * type serialization. Only the `gql` object is imported at runtime,
- * and all types are inferred or imported from types.prebuilt.ts.
+ * type serialization:
+ * - Adapters (scalar, adapter) are imported from _internal-injects.ts
+ * - Runtime values (__schema_*, etc.) are imported from _internal.ts
+ * - Uses AnyGqlContext instead of heavy Context type inference
  *
  * @module
  */
@@ -16,17 +18,22 @@ import type { DocumentNode } from "graphql";
 export type PrebuiltGeneratorOptions = {
   /**
    * Relative import path to the internal module.
-   * Example: "./_internal" (from index.prebuilt.ts to _internal.ts)
+   * Example: "../_internal" (from prebuilt/index.ts to _internal.ts)
    */
   readonly internalModulePath: string;
   /**
-   * Per-schema injection config (adapter import paths).
-   * Note: This is kept for API compatibility but no longer affects generation.
+   * Relative import path to the injects module.
+   * Example: "../_internal-injects" (from prebuilt/index.ts to _internal-injects.ts)
+   */
+  readonly injectsModulePath: string;
+  /**
+   * Per-schema injection config.
+   * Maps schema name to whether it has an adapter.
    */
   readonly injection?: Map<
     string,
     {
-      readonly adapterImportPath?: string;
+      readonly hasAdapter?: boolean;
     }
   >;
 };
@@ -42,55 +49,90 @@ export type PrebuiltGeneratedModule = {
  * Generate the prebuilt module code.
  *
  * This generates:
- * - index.prebuilt.ts: Minimal wrapper that re-exports gql with prebuilt types
+ * - index.prebuilt.ts: Prebuilt composers using createPrebuiltGqlElementComposer
  * - types.prebuilt.ts: Placeholder types that typegen will populate
  *
- * The generated index.prebuilt.ts minimizes imports from _internal.ts:
- * - Only imports `gql` object (runtime dependency)
- * - Types are inferred from the base composer or imported from types.prebuilt.ts
- * - No individual schema/adapter/inputTypeMethods imports
+ * The generated index.prebuilt.ts uses lightweight imports:
+ * - Adapters from _internal-injects.ts (scalar, adapter)
+ * - Runtime values from _internal.ts (__schema_*, __inputTypeMethods_*, __directiveMethods_*)
+ * - Uses AnyGqlContext instead of heavy Context type inference
  */
 export const generatePrebuiltModule = (
   schemas: Map<string, DocumentNode>,
   options: PrebuiltGeneratorOptions,
 ): PrebuiltGeneratedModule => {
   const schemaNames = Array.from(schemas.keys());
+  const injection = options.injection ?? new Map();
 
-  // Generate gql entries with type assertions
-  // Context type is inferred from the base composer's function signature
-  const gqlEntries = schemaNames.map(
-    (name) =>
-      `  ${name}: baseGql.${name} as unknown as PrebuiltGqlElementComposer<
-    InferContext<typeof baseGql.${name}>,
-    PrebuiltTypes_${name}
-  > & { readonly $schema: typeof baseGql.${name}["$schema"] }`,
-  );
+  // Generate adapter imports from _internal-injects.ts
+  const adapterImports: string[] = [];
+  for (const name of schemaNames) {
+    const config = injection.get(name);
+    if (config?.hasAdapter) {
+      adapterImports.push(`adapter_${name}`);
+    }
+  }
 
-  // Generate the prebuilt/index.ts code with minimal imports
+  // Generate internal imports (runtime values needed for composer creation)
+  const internalImports = schemaNames.flatMap((name) => [
+    `__schema_${name}`,
+    `__inputTypeMethods_${name}`,
+    `__directiveMethods_${name}`,
+  ]);
+
+  // Generate gql entries using createPrebuiltGqlElementComposer
+  const gqlEntries = schemaNames.map((name) => {
+    const config = injection.get(name);
+    const adapterArg = config?.hasAdapter ? `adapter: adapter_${name},` : "";
+
+    return `  ${name}: createPrebuiltGqlElementComposer<
+    AnyGraphqlSchema,
+    PrebuiltTypes_${name},
+    Record<string, unknown>,
+    StandardDirectives,
+    AnyGqlContext
+  >(
+    __schema_${name} as AnyGraphqlSchema,
+    {
+      inputTypeMethods: __inputTypeMethods_${name},
+      directiveMethods: __directiveMethods_${name},
+      ${adapterArg}
+    }
+  )`;
+  });
+
+  // Build injects import line
+  const injectsImportSpecifiers = adapterImports.length > 0 ? adapterImports.join(", ") : "";
+  const injectsImportLine = injectsImportSpecifiers
+    ? `import { ${injectsImportSpecifiers} } from "${options.injectsModulePath}";`
+    : "";
+
+  // Generate the prebuilt/index.ts code with lightweight imports
   const indexCode = `\
 /**
  * Prebuilt GQL module for bundler-compatible type resolution.
  *
- * This module wraps the base gql composers with PrebuiltGqlElementComposer
- * types that look up types from PrebuiltTypes instead of complex inference.
+ * This module creates prebuilt composers using createPrebuiltGqlElementComposer
+ * that look up types from PrebuiltTypes instead of complex inference.
  *
- * Imports from _internal.ts are minimized to enable type serialization:
- * - Only the gql object is imported at runtime
- * - Context types are inferred from the base composer
- * - Prebuilt types are imported from types.prebuilt.ts
+ * Uses lightweight imports:
+ * - Adapters from _internal-injects.ts
+ * - Runtime values from _internal.ts
+ * - AnyGqlContext instead of heavy Context type inference
  *
  * @module
  * @generated by @soda-gql/typegen
  */
 
-import type { PrebuiltGqlElementComposer } from "@soda-gql/core";
-import { gql as baseGql } from "${options.internalModulePath}";
+import {
+  createPrebuiltGqlElementComposer,
+  type AnyGqlContext,
+  type AnyGraphqlSchema,
+  type StandardDirectives,
+} from "@soda-gql/core";
+${injectsImportLine}
+import { ${internalImports.join(", ")} } from "${options.internalModulePath}";
 import type { ${schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ")} } from "./types.prebuilt";
-
-/**
- * Infer the context type from a GQL element composer function.
- */
-type InferContext<T> = T extends (fn: (ctx: infer C) => unknown) => unknown ? C : never;
 
 /**
  * Prebuilt GQL composers with strict type resolution from PrebuiltTypeRegistry.

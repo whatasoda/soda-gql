@@ -418,10 +418,16 @@ describe("generateMultiSchemaModule", () => {
       ]),
     });
 
-    expect(result.code).toContain('from "./scalars"');
-    expect(result.code).toContain('from "./adapter"');
+    // _internal.ts imports from _internal-injects.ts
+    expect(result.code).toContain('from "./_internal-injects"');
     expect(result.code).toContain("scalar_default");
     expect(result.code).toContain("adapter_default");
+
+    // _internal-injects.ts contains the actual import paths
+    expect(result.injectsCode).toContain('from "./scalars"');
+    expect(result.injectsCode).toContain('from "./adapter"');
+    expect(result.injectsCode).toContain("export { scalar_default }");
+    expect(result.injectsCode).toContain("export { adapter_default }");
   });
 
   test("handles complex field types with modifiers", () => {
