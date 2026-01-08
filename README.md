@@ -173,13 +173,13 @@ This creates additional files in your output directory:
 
 #### Using Fragment Keys
 
-For fragments to be resolved in prebuilt mode, add a `key` property:
+Fragments require a `key` property to be included in prebuilt types. Fragments without keys work at runtime but are **silently skipped** during prebuilt type generation:
 
 ```typescript
 // Fragment with key for prebuilt type lookup
 export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
-    key: "UserFields",  // Unique key for prebuilt type resolution
+    key: "UserFields",  // Required for prebuilt type resolution
     fields: ({ f }) => ({
       ...f.id(),
       ...f.name(),
