@@ -79,6 +79,23 @@ export type PrebuiltGqlElementComposer<TContext, TPrebuilt extends PrebuiltTypeR
 ) => ResolvePrebuiltElement<TResult, TPrebuilt>;
 
 /**
+ * Prebuilt element composer with schema access.
+ *
+ * Extends the prebuilt composer function with a `$schema` property that provides
+ * runtime access to the schema definition.
+ */
+export type PrebuiltGqlElementComposerWithSchema<
+  TContext,
+  TPrebuilt extends PrebuiltTypeRegistry,
+  TSchema extends AnyGraphqlSchema,
+> = PrebuiltGqlElementComposer<TContext, TPrebuilt> & {
+  /**
+   * The GraphQL schema definition used by this composer.
+   */
+  readonly $schema: TSchema;
+};
+
+/**
  * Creates a prebuilt GQL element composer for a given schema.
  *
  * This composer has the same runtime behavior as `createGqlElementComposer`,
@@ -124,8 +141,9 @@ export const createPrebuiltGqlElementComposer = <
 >(
   schema: NoInfer<TSchema>,
   options: GqlElementComposerOptions<NoInfer<TSchema>, NoInfer<TDirectiveMethods>, NoInfer<TAdapter>>,
-): PrebuiltGqlElementComposer<TContext, TPrebuilt> => {
+): PrebuiltGqlElementComposerWithSchema<TContext, TPrebuilt, TSchema> => {
   // Use the standard composer internally - same runtime behavior
+  // Note: baseComposer already has $schema attached by createGqlElementComposer
   const baseComposer = createGqlElementComposer<TSchema, TFragmentBuilders, TDirectiveMethods, TAdapter>(schema, options);
 
   // Type-only cast: The prebuilt composer has identical runtime behavior to the standard
@@ -134,5 +152,6 @@ export const createPrebuiltGqlElementComposer = <
   // inference that may be lost during bundling. This cast is safe because:
   // 1. Runtime behavior is unchanged (same underlying createGqlElementComposer call)
   // 2. Only the return type's type parameters differ (TPrebuilt vs inferred types)
-  return baseComposer as unknown as PrebuiltGqlElementComposer<TContext, TPrebuilt>;
+  // 3. $schema property is already attached by the base composer
+  return baseComposer as unknown as PrebuiltGqlElementComposerWithSchema<TContext, TPrebuilt, TSchema>;
 };

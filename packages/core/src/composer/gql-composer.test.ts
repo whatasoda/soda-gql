@@ -108,4 +108,23 @@ describe("createGqlInvoker", () => {
     expect(profileQuery.operationName).toBe("ProfilePageQuery");
     expect(profileQuery.operationType).toBe("query");
   });
+
+  describe("$schema property", () => {
+    it("exposes the schema via $schema property", () => {
+      expect(gql.$schema).toBe(schema);
+    });
+
+    it("$schema is readonly and enumerable", () => {
+      const descriptor = Object.getOwnPropertyDescriptor(gql, "$schema");
+      expect(descriptor?.writable).toBe(false);
+      expect(descriptor?.enumerable).toBe(true);
+      expect(descriptor?.configurable).toBe(false);
+    });
+
+    it("$schema contains schema structure", () => {
+      expect(gql.$schema.label).toBe("test");
+      expect(gql.$schema.operations.query).toBe("Query");
+      expect(gql.$schema.object.User).toBeDefined();
+    });
+  });
 });
