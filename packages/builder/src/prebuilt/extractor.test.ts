@@ -11,10 +11,12 @@ const createMockFragment = (
   key: string | undefined,
   fields: AnyFields,
   variableDefinitions: InputTypeSpecifiers = {},
+  schemaLabel = "testSchema",
 ): AnyFragment => {
   return {
     typename,
     key,
+    schemaLabel,
     variableDefinitions,
     directives: [],
     spread: () => fields,
@@ -35,6 +37,7 @@ const createMockOperation = (
   operationType: string,
   fields: AnyFields,
   variableDefinitions: readonly VariableDefinitionNode[] = [],
+  schemaLabel = "testSchema",
 ): AnyOperation => {
   const document: DocumentNode = {
     kind: Kind.DOCUMENT,
@@ -52,6 +55,7 @@ const createMockOperation = (
   return {
     operationName,
     operationType,
+    schemaLabel,
     document,
     documentSource: () => fields,
     getOperationSource: () => ({
@@ -236,6 +240,48 @@ describe("extractFieldSelections", () => {
     expect(selection?.type).toBe("fragment");
     if (selection?.type === "fragment") {
       expect(selection.key).toBeUndefined();
+    }
+  });
+
+  test("extracts schemaLabel from fragments", () => {
+    const mockFields: AnyFields = {
+      id: createMockField("User", "id", "scalar", "ID", "!"),
+    };
+
+    const elements: Record<CanonicalId, IntermediateArtifactElement> = {
+      ["/src/user.ts::UserFragment" as CanonicalId]: {
+        type: "fragment",
+        element: createMockFragment("User", "UserFields", mockFields, {}, "mySchema"),
+      },
+    };
+
+    const result = extractFieldSelections(elements);
+    const selection = result.selections.get("/src/user.ts::UserFragment" as CanonicalId);
+
+    expect(selection?.type).toBe("fragment");
+    if (selection?.type === "fragment") {
+      expect(selection.schemaLabel).toBe("mySchema");
+    }
+  });
+
+  test("extracts schemaLabel from operations", () => {
+    const mockFields: AnyFields = {
+      user: createMockField("Query", "user", "object", "User", "!"),
+    };
+
+    const elements: Record<CanonicalId, IntermediateArtifactElement> = {
+      ["/src/queries.ts::GetUser" as CanonicalId]: {
+        type: "operation",
+        element: createMockOperation("GetUser", "query", mockFields, [], "apiSchema"),
+      },
+    };
+
+    const result = extractFieldSelections(elements);
+    const selection = result.selections.get("/src/queries.ts::GetUser" as CanonicalId);
+
+    expect(selection?.type).toBe("operation");
+    if (selection?.type === "operation") {
+      expect(selection.schemaLabel).toBe("apiSchema");
     }
   });
 

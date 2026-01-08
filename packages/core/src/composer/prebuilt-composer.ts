@@ -128,6 +128,11 @@ export const createPrebuiltGqlElementComposer = <
   // Use the standard composer internally - same runtime behavior
   const baseComposer = createGqlElementComposer<TSchema, TFragmentBuilders, TDirectiveMethods, TAdapter>(schema, options);
 
-  // Cast to prebuilt composer type - types are resolved from registry
+  // Type-only cast: The prebuilt composer has identical runtime behavior to the standard
+  // composer. The difference is purely in the type signature - PrebuiltGqlElementComposer
+  // resolves element types from the PrebuiltTypeRegistry instead of using complex type
+  // inference that may be lost during bundling. This cast is safe because:
+  // 1. Runtime behavior is unchanged (same underlying createGqlElementComposer call)
+  // 2. Only the return type's type parameters differ (TPrebuilt vs inferred types)
   return baseComposer as unknown as PrebuiltGqlElementComposer<TContext, TPrebuilt>;
 };

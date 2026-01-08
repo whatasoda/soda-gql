@@ -4,6 +4,22 @@
  * Generates TypeScript type definitions for PrebuiltTypes registry
  * from field selection data and schema.
  *
+ * ## Error Handling Strategy
+ *
+ * The emitter uses a partial failure approach for type calculation errors:
+ *
+ * **Recoverable errors** (result in warnings, element skipped):
+ * - Type calculation failures (e.g., `calculateFieldsType` throws)
+ * - Input type generation failures (e.g., `generateInputType` throws)
+ * - These are caught per-element, logged as warnings, and the element is omitted
+ *
+ * **Fatal errors** (result in error result):
+ * - `SCHEMA_NOT_FOUND`: Selection references non-existent schema
+ * - `WRITE_FAILED`: Cannot write output file to disk
+ *
+ * This allows builds to succeed with partial type coverage when some elements
+ * have issues, while providing visibility into problems via warnings.
+ *
  * @module
  */
 
@@ -384,8 +400,31 @@ export type PrebuiltTypesEmitResult = {
 /**
  * Emit prebuilt types to the prebuilt/types.ts file.
  *
+ * This function uses a partial failure strategy: if type calculation fails for
+ * individual elements (e.g., due to invalid field selections or missing schema
+ * types), those elements are skipped and warnings are collected rather than
+ * failing the entire emission. This allows builds to succeed even when some
+ * elements have issues, while still reporting problems via warnings.
+ *
  * @param options - Emitter options including schemas, field selections, and output directory
- * @returns Result containing output path and warnings, or error
+ * @returns Result containing output path and warnings, or error if a hard failure occurs
+ *
+ * @example
+ * ```typescript
+ * const result = await emitPrebuiltTypes({
+ *   schemas: { mySchema: schema },
+ *   fieldSelections,
+ *   outdir: "./generated",
+ *   injects: { mySchema: { scalars: "./scalars.ts" } },
+ * });
+ *
+ * if (result.isOk()) {
+ *   console.log(`Generated: ${result.value.path}`);
+ *   if (result.value.warnings.length > 0) {
+ *     console.warn("Warnings:", result.value.warnings);
+ *   }
+ * }
+ * ```
  */
 export const emitPrebuiltTypes = async (
   options: PrebuiltTypesEmitterOptions,
