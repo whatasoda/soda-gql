@@ -29,8 +29,7 @@ export type BuilderErrorCode =
   // Internal invariant violations
   | "INTERNAL_INVARIANT"
   // Schema validation errors
-  | "SCHEMA_NOT_FOUND"
-  | "SCHEMA_LABEL_DUPLICATE";
+  | "SCHEMA_NOT_FOUND";
 
 /**
  * Structured error type for all Builder operations.
@@ -150,12 +149,6 @@ export type BuilderError =
       readonly message: string;
       readonly schemaLabel: string;
       readonly canonicalId: string;
-    }
-  | {
-      readonly code: "SCHEMA_LABEL_DUPLICATE";
-      readonly message: string;
-      readonly schemaLabel: string;
-      readonly schemaNames: readonly string[];
     };
 
 /**
@@ -291,13 +284,6 @@ export const builderErrors = {
     schemaLabel,
     canonicalId,
   }),
-
-  schemaLabelDuplicate: (schemaLabel: string, schemaNames: readonly string[]): BuilderError => ({
-    code: "SCHEMA_LABEL_DUPLICATE",
-    message: `Duplicate schema label "${schemaLabel}" found in: ${schemaNames.join(", ")}`,
-    schemaLabel,
-    schemaNames,
-  }),
 } as const;
 
 /**
@@ -399,10 +385,6 @@ export const formatBuilderError = (error: BuilderError): string => {
     case "SCHEMA_NOT_FOUND":
       lines.push(`  Schema label: ${error.schemaLabel}`);
       lines.push(`  Element: ${error.canonicalId}`);
-      break;
-    case "SCHEMA_LABEL_DUPLICATE":
-      lines.push(`  Schema label: ${error.schemaLabel}`);
-      lines.push(`  Schemas: ${error.schemaNames.join(", ")}`);
       break;
   }
 

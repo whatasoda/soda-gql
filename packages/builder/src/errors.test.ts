@@ -162,17 +162,6 @@ describe("builderErrors factory functions", () => {
     expect(error.message).toContain("unknownSchema");
     expect(error.message).toContain("/src/user.ts::UserFragment");
   });
-
-  test("schemaLabelDuplicate creates correct error", () => {
-    const schemaNames = ["schemaA", "schemaB"];
-    const error = builderErrors.schemaLabelDuplicate("duplicateLabel", schemaNames) as ErrorOf<"SCHEMA_LABEL_DUPLICATE">;
-    expect(error.code).toBe("SCHEMA_LABEL_DUPLICATE");
-    expect(error.schemaLabel).toBe("duplicateLabel");
-    expect(error.schemaNames).toEqual(schemaNames);
-    expect(error.message).toContain("duplicateLabel");
-    expect(error.message).toContain("schemaA");
-    expect(error.message).toContain("schemaB");
-  });
 });
 
 describe("builderErr", () => {
@@ -213,7 +202,6 @@ describe("isBuilderError", () => {
       builderErrors.elementEvaluationFailed("/path", "astPath", "msg"),
       builderErrors.internalInvariant("msg"),
       builderErrors.schemaNotFound("label", "id"),
-      builderErrors.schemaLabelDuplicate("label", ["a", "b"]),
     ];
 
     for (const error of errors) {
@@ -412,14 +400,5 @@ describe("formatBuilderError", () => {
     expect(formatted).toContain("[SCHEMA_NOT_FOUND]");
     expect(formatted).toContain("Schema label: unknownLabel");
     expect(formatted).toContain("Element: /src/user.ts::Fragment");
-  });
-
-  test("formats SCHEMA_LABEL_DUPLICATE error", () => {
-    const error = builderErrors.schemaLabelDuplicate("duplicateLabel", ["schemaA", "schemaB"]);
-    const formatted = formatBuilderError(error);
-
-    expect(formatted).toContain("[SCHEMA_LABEL_DUPLICATE]");
-    expect(formatted).toContain("Schema label: duplicateLabel");
-    expect(formatted).toContain("Schemas: schemaA, schemaB");
   });
 });
