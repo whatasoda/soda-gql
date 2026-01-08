@@ -1,4 +1,6 @@
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
@@ -110,14 +112,15 @@ describe("emitPrebuiltTypes", () => {
   });
 
   describe("output format", () => {
-    const testOutdir = "/tmp/soda-gql-emitter-test";
+    let testOutdir: string;
 
-    beforeEach(async () => {
-      await mkdir(join(testOutdir, "prebuilt"), { recursive: true });
+    beforeEach(() => {
+      testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
+      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
-    afterEach(async () => {
-      await rm(testOutdir, { recursive: true, force: true });
+    afterEach(() => {
+      rmSync(testOutdir, { recursive: true, force: true });
     });
 
     test("generates valid TypeScript with module header", async () => {
@@ -192,14 +195,15 @@ describe("emitPrebuiltTypes", () => {
   });
 
   describe("fragment type generation", () => {
-    const testOutdir = "/tmp/soda-gql-emitter-test-fragment";
+    let testOutdir: string;
 
-    beforeEach(async () => {
-      await mkdir(join(testOutdir, "prebuilt"), { recursive: true });
+    beforeEach(() => {
+      testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
+      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
-    afterEach(async () => {
-      await rm(testOutdir, { recursive: true, force: true });
+    afterEach(() => {
+      rmSync(testOutdir, { recursive: true, force: true });
     });
 
     test("generates fragment entry with input and output types", async () => {
@@ -349,14 +353,15 @@ describe("emitPrebuiltTypes", () => {
   });
 
   describe("operation type generation", () => {
-    const testOutdir = "/tmp/soda-gql-emitter-test-operation";
+    let testOutdir: string;
 
-    beforeEach(async () => {
-      await mkdir(join(testOutdir, "prebuilt"), { recursive: true });
+    beforeEach(() => {
+      testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
+      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
-    afterEach(async () => {
-      await rm(testOutdir, { recursive: true, force: true });
+    afterEach(() => {
+      rmSync(testOutdir, { recursive: true, force: true });
     });
 
     test("generates operation entry with input and output types", async () => {
@@ -472,14 +477,15 @@ describe("emitPrebuiltTypes", () => {
   });
 
   describe("multiple schema grouping", () => {
-    const testOutdir = "/tmp/soda-gql-emitter-test-multi";
+    let testOutdir: string;
 
-    beforeEach(async () => {
-      await mkdir(join(testOutdir, "prebuilt"), { recursive: true });
+    beforeEach(() => {
+      testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
+      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
-    afterEach(async () => {
-      await rm(testOutdir, { recursive: true, force: true });
+    afterEach(() => {
+      rmSync(testOutdir, { recursive: true, force: true });
     });
 
     test("generates separate PrebuiltTypes for each schema", async () => {
@@ -563,14 +569,15 @@ describe("emitPrebuiltTypes", () => {
   });
 
   describe("input object type generation", () => {
-    const testOutdir = "/tmp/soda-gql-emitter-test-input";
+    let testOutdir: string;
 
-    beforeEach(async () => {
-      await mkdir(join(testOutdir, "prebuilt"), { recursive: true });
+    beforeEach(() => {
+      testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
+      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
-    afterEach(async () => {
-      await rm(testOutdir, { recursive: true, force: true });
+    afterEach(() => {
+      rmSync(testOutdir, { recursive: true, force: true });
     });
 
     test("generates Input_ prefixed types for input objects used in variables", async () => {
