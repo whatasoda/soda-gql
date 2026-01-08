@@ -82,6 +82,7 @@ export type CodegenSuccess = {
     }
   >;
   readonly outPath: string;
+  readonly internalPath: string;
   readonly cjsPath: string;
 };
 
