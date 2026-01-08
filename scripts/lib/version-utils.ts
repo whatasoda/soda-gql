@@ -1,4 +1,3 @@
-import { $ } from "bun";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { err, ok, type Result } from "neverthrow";
@@ -28,39 +27,6 @@ type PackageJson = {
   peerDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
   [key: string]: unknown;
-};
-
-/**
- * Get the last release tag from git
- */
-export const getLastReleaseTag = async (): Promise<Result<string | null, string>> => {
-  try {
-    const result = await $`git describe --tags --abbrev=0`.quiet();
-    const tag = result.stdout.toString().trim();
-    if (!tag) {
-      return ok(null);
-    }
-    return ok(tag);
-  } catch {
-    // No tags exist yet
-    return ok(null);
-  }
-};
-
-/**
- * Check if a package directory has changes since the last tag
- */
-export const hasChanges = async (
-  packageDir: string,
-  lastTag: string,
-): Promise<Result<boolean, string>> => {
-  try {
-    const result = await $`git diff ${lastTag}..HEAD --quiet -- ${packageDir}`.quiet().nothrow();
-    // Exit code 0 = no changes, 1 = has changes
-    return ok(result.exitCode !== 0);
-  } catch (error) {
-    return err(`Failed to check changes for ${packageDir}: ${String(error)}`);
-  }
 };
 
 /**
@@ -193,43 +159,6 @@ export const buildDependencyGraph = async (): Promise<Result<DependencyGraph, st
   }
 
   return ok({ packages, dependsOn, dependedBy });
-};
-
-/**
- * Detect packages with direct changes since the last tag
- */
-export const detectDirectChanges = async (
-  graph: DependencyGraph,
-  lastTag: string | null,
-): Promise<Result<Set<string>, string>> => {
-  const changed = new Set<string>();
-
-  // If no tag exists, all packages are considered changed
-  if (lastTag === null) {
-    for (const name of graph.packages.keys()) {
-      changed.add(name);
-    }
-    return ok(changed);
-  }
-
-  for (const [name, info] of graph.packages) {
-    // Skip root package (always bumped)
-    if (info.packageDir === ".") {
-      changed.add(name);
-      continue;
-    }
-
-    const hasChangesResult = await hasChanges(info.packageDir, lastTag);
-    if (hasChangesResult.isErr()) {
-      return err(hasChangesResult.error);
-    }
-
-    if (hasChangesResult.value) {
-      changed.add(name);
-    }
-  }
-
-  return ok(changed);
 };
 
 export type BumpType = "major" | "minor" | "patch";

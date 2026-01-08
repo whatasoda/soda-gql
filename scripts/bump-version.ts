@@ -4,11 +4,8 @@ import { err, ok, type Result } from "neverthrow";
 import {
   buildDependencyGraph,
   computePackagesToBump,
-  detectDirectChanges,
-  getLastReleaseTag,
   getPackagePaths,
   type DependencyGraph,
-  type PackageInfo,
 } from "./lib/version-utils";
 
 type BumpType = "major" | "minor" | "patch";
@@ -23,8 +20,6 @@ type BumpPlan = {
   toBump: Set<string>;
   toSkip: Set<string>;
   newVersion: string;
-  directChanges: Set<string>;
-  cascadeChanges: Set<string>;
   graph: DependencyGraph;
 };
 
@@ -114,7 +109,7 @@ const verifyLocalBuild = async (): Promise<Result<void, string>> => {
 };
 
 /**
- * Create a bump plan based on changes and dependencies
+ * Create a bump plan based on dependencies
  */
 const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, string>> => {
   // Build dependency graph
@@ -124,34 +119,10 @@ const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, stri
   }
   const graph = graphResult.value;
 
-  // Get last release tag
-  const tagResult = await getLastReleaseTag();
-  if (tagResult.isErr()) {
-    return err(tagResult.error);
-  }
-  const lastTag = tagResult.value;
-
-  console.log(`Last release tag: ${lastTag ?? "(none)"}`);
-
-  // Detect direct changes
-  const directChangesResult = await detectDirectChanges(graph, lastTag);
-  if (directChangesResult.isErr()) {
-    return err(directChangesResult.error);
-  }
-  const directChanges = directChangesResult.value;
-
   // Compute all packages to bump
   const toBump = computePackagesToBump(graph);
 
-  // Cascade changes = toBump - directChanges
-  const cascadeChanges = new Set<string>();
-  for (const pkg of toBump) {
-    if (!directChanges.has(pkg)) {
-      cascadeChanges.add(pkg);
-    }
-  }
-
-  // Compute packages to skip
+  // Compute packages to skip (none in unified version mode)
   const toSkip = new Set<string>();
   for (const name of graph.packages.keys()) {
     if (!toBump.has(name)) {
@@ -174,8 +145,6 @@ const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, stri
     toBump,
     toSkip,
     newVersion: newVersionResult.value,
-    directChanges,
-    cascadeChanges,
     graph,
   });
 };
@@ -184,39 +153,16 @@ const createBumpPlan = async (bumpType: BumpType): Promise<Result<BumpPlan, stri
  * Report the bump plan to console
  */
 const reportBumpPlan = (plan: BumpPlan): void => {
-  const { directChanges, cascadeChanges, toSkip, newVersion, graph } = plan;
+  const { toBump, newVersion, graph } = plan;
 
   console.log(`New version: ${newVersion}\n`);
 
-  // Direct changes
-  console.log(`Direct changes (${directChanges.size}):`);
-  for (const name of directChanges) {
+  // Packages to bump
+  console.log(`Packages to bump (${toBump.size}):`);
+  for (const name of toBump) {
     const info = graph.packages.get(name);
     if (info) {
       console.log(`  - ${name} (${info.packageDir})`);
-    }
-  }
-
-  // Cascade changes
-  if (cascadeChanges.size > 0) {
-    console.log(`\nCascade bump (${cascadeChanges.size}):`);
-    for (const name of cascadeChanges) {
-      const info = graph.packages.get(name);
-      if (info) {
-        const deps = [...info.workspaceDeps].filter((d) => plan.toBump.has(d));
-        console.log(`  - ${name} (depends on: ${deps.map((d) => d.replace("@soda-gql/", "")).join(", ")})`);
-      }
-    }
-  }
-
-  // Skipped packages
-  if (toSkip.size > 0) {
-    console.log(`\nSkipped (${toSkip.size}):`);
-    for (const name of toSkip) {
-      const info = graph.packages.get(name);
-      if (info) {
-        console.log(`  - ${name} (no changes)`);
-      }
     }
   }
 };

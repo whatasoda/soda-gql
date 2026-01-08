@@ -1,10 +1,7 @@
 import {
   buildDependencyGraph,
   computePackagesToBump,
-  detectDirectChanges,
-  getLastReleaseTag,
   getRootVersion,
-  type BumpType,
   type DependencyGraph,
 } from "./lib/version-utils";
 
@@ -70,20 +67,14 @@ const validateVersions = async (
 const main = async (): Promise<void> => {
   const args = process.argv.slice(2);
   const mode = args[0] as CheckMode | undefined;
-  const bumpType = (args[1] as BumpType | undefined) ?? "minor";
 
   if (!mode || !["validate", "list-bump", "list-skip"].includes(mode)) {
-    console.error("Usage: bun scripts/version-check.ts <validate|list-bump|list-skip> [bump-type]");
+    console.error("Usage: bun scripts/version-check.ts <validate|list-bump|list-skip>");
     console.error("");
     console.error("Modes:");
-    console.error("  validate   - Validate that all package versions match expected bump plan");
-    console.error("  list-bump  - List packages that should be bumped");
-    console.error("  list-skip  - List packages that should be skipped");
-    console.error("");
-    console.error("Bump types (optional, default: minor):");
-    console.error("  patch - Only directly changed packages (no cascade)");
-    console.error("  minor - Include cascade to dependents");
-    console.error("  major - Include cascade to dependents");
+    console.error("  validate   - Validate that all package versions match root version");
+    console.error("  list-bump  - List packages that will be bumped");
+    console.error("  list-skip  - List packages that will be skipped");
     process.exit(1);
   }
 
@@ -95,26 +86,10 @@ const main = async (): Promise<void> => {
   }
   const graph = graphResult.value;
 
-  // Get last release tag
-  const tagResult = await getLastReleaseTag();
-  if (tagResult.isErr()) {
-    console.error(`Error getting last tag: ${tagResult.error}`);
-    process.exit(1);
-  }
-  const lastTag = tagResult.value;
-
-  // Detect direct changes
-  const directChangesResult = await detectDirectChanges(graph, lastTag);
-  if (directChangesResult.isErr()) {
-    console.error(`Error detecting changes: ${directChangesResult.error}`);
-    process.exit(1);
-  }
-  const directChanges = directChangesResult.value;
-
-  // Compute all packages to bump
+  // Compute all packages to bump (always all packages)
   const toBump = computePackagesToBump(graph);
 
-  // Compute packages to skip
+  // Compute packages to skip (none in unified version mode)
   const toSkip = new Set<string>();
   for (const name of graph.packages.keys()) {
     if (!toBump.has(name)) {
@@ -124,7 +99,6 @@ const main = async (): Promise<void> => {
 
   switch (mode) {
     case "validate": {
-      console.log(`Last release tag: ${lastTag ?? "(none)"}`);
       console.log(`Packages to bump: ${toBump.size}`);
       console.log(`Packages to skip: ${toSkip.size}`);
       console.log("");
