@@ -8,7 +8,7 @@
  * @module
  */
 
-import type { PrebuiltEntryNotFound, PrebuiltTypeRegistry } from "../prebuilt/types";
+import type { PrebuiltEntryNotFound, PrebuiltTypeRegistry, PrebuiltUnknownElement } from "../prebuilt/types";
 import type { AnyFragment, Fragment, Operation } from "../types/element";
 import type { AnyAssignableInput, AnyFields } from "../types/fragment";
 import type { AnyAdapter, DefaultAdapter } from "../types/metadata";
@@ -91,7 +91,7 @@ export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegis
           PrebuiltEntryNotFound<"(undefined)", "fragment">,
           TKey
         >
-    : TElement;
+    : PrebuiltUnknownElement<TElement>;
 
 /**
  * Prebuilt element composer that resolves types from a registry.

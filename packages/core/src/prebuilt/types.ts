@@ -97,3 +97,16 @@ export type PrebuiltEntryNotFound<TKey extends string, TKind extends "fragment" 
   readonly __key: TKey;
   readonly __kind: TKind;
 };
+
+/**
+ * Branded error type for unrecognized element types in prebuilt resolution.
+ *
+ * This type is returned when ResolvePrebuiltElement receives a type that
+ * is neither Operation nor Fragment. This should not happen in normal usage,
+ * but provides a clear error message for debugging if it does.
+ */
+export type PrebuiltUnknownElement<TElement> = {
+  readonly __error: "PREBUILT_UNKNOWN_ELEMENT";
+  readonly __message: "Element type not recognized. Expected Operation or Fragment.";
+  readonly __element: TElement;
+};

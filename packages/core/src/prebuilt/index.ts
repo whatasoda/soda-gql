@@ -34,4 +34,5 @@ export type {
   PrebuiltOperationInput,
   PrebuiltOperationOutput,
   PrebuiltTypeRegistry,
+  PrebuiltUnknownElement,
 } from "./types";
