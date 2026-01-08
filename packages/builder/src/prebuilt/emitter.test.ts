@@ -19,60 +19,6 @@ const createMockSchema = (label: string): AnyGraphqlSchema =>
   }) as unknown as AnyGraphqlSchema;
 
 describe("emitPrebuiltTypes", () => {
-  describe("schemaLabel duplicate validation", () => {
-    test("returns SCHEMA_LABEL_DUPLICATE error when multiple schemas have same label", async () => {
-      // Two schemas with the same label
-      const schemas: Record<string, AnyGraphqlSchema> = {
-        schemaA: createMockSchema("duplicate"),
-        schemaB: createMockSchema("duplicate"),
-      };
-
-      const fieldSelections: FieldSelectionsMap = new Map();
-
-      const result = await emitPrebuiltTypes({
-        schemas,
-        fieldSelections,
-        outdir: "/tmp/test-output",
-        injects: {},
-      });
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.code).toBe("SCHEMA_LABEL_DUPLICATE");
-        if (result.error.code === "SCHEMA_LABEL_DUPLICATE") {
-          expect(result.error.schemaLabel).toBe("duplicate");
-          expect(result.error.schemaNames).toContain("schemaA");
-          expect(result.error.schemaNames).toContain("schemaB");
-        }
-      }
-    });
-
-    test("does not return SCHEMA_LABEL_DUPLICATE when schemas have unique labels", async () => {
-      const schemas: Record<string, AnyGraphqlSchema> = {
-        schemaA: createMockSchema("labelA"),
-        schemaB: createMockSchema("labelB"),
-      };
-
-      const fieldSelections: FieldSelectionsMap = new Map();
-
-      const result = await emitPrebuiltTypes({
-        schemas,
-        fieldSelections,
-        outdir: "/tmp/test-output",
-        injects: {
-          labelA: { scalars: "/tmp/scalars-a.ts" },
-          labelB: { scalars: "/tmp/scalars-b.ts" },
-        },
-      });
-
-      // This will fail on file write since /tmp/test-output/prebuilt doesn't exist,
-      // but we're testing that duplicate validation passed
-      if (result.isErr()) {
-        expect(result.error.code).not.toBe("SCHEMA_LABEL_DUPLICATE");
-      }
-    });
-  });
-
   describe("schemaLabel not found validation", () => {
     test("returns SCHEMA_NOT_FOUND error when selection references unknown schema", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
@@ -133,9 +79,8 @@ describe("emitPrebuiltTypes", () => {
       if (result.isOk()) {
         expect(result.value.warnings).toHaveLength(0);
       }
-      // If it fails, just check it's not a duplicate/not-found error
+      // If it fails, just check it's not a schema-not-found error
       if (result.isErr()) {
-        expect(result.error.code).not.toBe("SCHEMA_LABEL_DUPLICATE");
         expect(result.error.code).not.toBe("SCHEMA_NOT_FOUND");
       }
     });
