@@ -5,6 +5,25 @@ import { loadSchemasFromBundle } from "./schema-loader";
 
 const TEST_DIR = join(import.meta.dir, "../test/fixtures/.schema-loader-test");
 
+/**
+ * Helper to create a mock CJS bundle with gql.<name>.$schema pattern.
+ */
+const createMockBundle = (schemas: Record<string, object>): string => {
+  const gqlEntries = Object.entries(schemas)
+    .map(([name, schema]) => {
+      return `    ${name}: { $schema: ${JSON.stringify(schema)} }`;
+    })
+    .join(",\n");
+
+  return `
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.gql = {
+${gqlEntries}
+    };
+  `;
+};
+
 describe("loadSchemasFromBundle", () => {
   beforeEach(() => {
     mkdirSync(TEST_DIR, { recursive: true });
@@ -24,20 +43,17 @@ describe("loadSchemasFromBundle", () => {
     }
   });
 
-  test("should load schema from valid CJS bundle", () => {
-    // Create a minimal CJS bundle that exports __schema_default
-    const cjsContent = `
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.__schema_default = {
+  test("should load schema from valid CJS bundle via gql.$schema", () => {
+    const cjsContent = createMockBundle({
+      default: {
+        label: "default",
         object: { Query: { fields: {} } },
         scalar: {},
         enum: {},
         input: {},
         union: {},
-        interface: {}
-      };
-    `;
+      },
+    });
     const cjsPath = join(TEST_DIR, "index.cjs");
     writeFileSync(cjsPath, cjsContent);
 
@@ -47,30 +63,29 @@ describe("loadSchemasFromBundle", () => {
     if (result.isOk()) {
       expect(result.value.default).toBeDefined();
       expect(result.value.default?.object).toBeDefined();
+      expect(result.value.default?.label).toBe("default");
     }
   });
 
   test("should load multiple schemas", () => {
-    const cjsContent = `
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.__schema_main = {
+    const cjsContent = createMockBundle({
+      main: {
+        label: "main",
         object: { Query: { fields: {} } },
         scalar: {},
         enum: {},
         input: {},
         union: {},
-        interface: {}
-      };
-      exports.__schema_admin = {
+      },
+      admin: {
+        label: "admin",
         object: { AdminQuery: { fields: {} } },
         scalar: {},
         enum: {},
         input: {},
         union: {},
-        interface: {}
-      };
-    `;
+      },
+    });
     const cjsPath = join(TEST_DIR, "multi.cjs");
     writeFileSync(cjsPath, cjsContent);
 
@@ -85,19 +100,16 @@ describe("loadSchemasFromBundle", () => {
     }
   });
 
-  test("should return error for missing schema export", () => {
-    const cjsContent = `
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.__schema_default = {
+  test("should return error for missing schema in gql exports", () => {
+    const cjsContent = createMockBundle({
+      default: {
         object: {},
         scalar: {},
         enum: {},
         input: {},
         union: {},
-        interface: {}
-      };
-    `;
+      },
+    });
     const cjsPath = join(TEST_DIR, "missing.cjs");
     writeFileSync(cjsPath, cjsContent);
 
@@ -106,7 +118,8 @@ describe("loadSchemasFromBundle", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error.code).toBe("SCHEMA_NOT_FOUND");
-      expect(result.error.message).toContain("__schema_missing");
+      expect(result.error.message).toContain("missing");
+      expect(result.error.message).toContain("Available: default");
     }
   });
 
@@ -123,13 +136,13 @@ describe("loadSchemasFromBundle", () => {
     }
   });
 
-  test("should return error for non-object schema export", () => {
+  test("should return error when gql export is missing", () => {
     const cjsContent = `
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.__schema_default = "not an object";
+      exports.something = "not gql";
     `;
-    const cjsPath = join(TEST_DIR, "non-object.cjs");
+    const cjsPath = join(TEST_DIR, "no-gql.cjs");
     writeFileSync(cjsPath, cjsContent);
 
     const result = loadSchemasFromBundle(cjsPath, ["default"]);
@@ -137,7 +150,47 @@ describe("loadSchemasFromBundle", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error.code).toBe("CONFIG_INVALID");
-      expect(result.error.message).toContain("not a valid schema object");
+      expect(result.error.message).toContain("does not export 'gql' object");
+    }
+  });
+
+  test("should return error for composer without $schema property", () => {
+    const cjsContent = `
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.gql = {
+        default: function() {} // composer without $schema
+      };
+    `;
+    const cjsPath = join(TEST_DIR, "no-schema.cjs");
+    writeFileSync(cjsPath, cjsContent);
+
+    const result = loadSchemasFromBundle(cjsPath, ["default"]);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("CONFIG_INVALID");
+      expect(result.error.message).toContain("$schema is not a valid schema object");
+    }
+  });
+
+  test("should return error for non-object $schema", () => {
+    const cjsContent = `
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.gql = {
+        default: { $schema: "not an object" }
+      };
+    `;
+    const cjsPath = join(TEST_DIR, "invalid-schema.cjs");
+    writeFileSync(cjsPath, cjsContent);
+
+    const result = loadSchemasFromBundle(cjsPath, ["default"]);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("CONFIG_INVALID");
+      expect(result.error.message).toContain("$schema is not a valid schema object");
     }
   });
 });

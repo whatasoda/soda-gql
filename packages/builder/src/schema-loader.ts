@@ -1,8 +1,8 @@
 /**
  * Schema loader for CJS bundle evaluation.
  *
- * Loads AnyGraphqlSchema exports from the generated CJS bundle.
- * Uses shared VM sandbox utility for execution.
+ * Loads AnyGraphqlSchema from the generated CJS bundle by accessing
+ * the `$schema` property on each gql composer.
  *
  * @module
  */
@@ -20,11 +20,12 @@ import { executeSandbox } from "./vm/sandbox";
 export type LoadSchemasResult = Result<Record<string, AnyGraphqlSchema>, BuilderError>;
 
 /**
- * Load AnyGraphqlSchema exports from a generated CJS bundle.
+ * Load AnyGraphqlSchema from a generated CJS bundle.
  *
- * The generated CJS bundle exports `__schema_<name>` for each schema
- * when prebuilt mode is enabled. This function executes the bundle
- * in a VM context and extracts those exports.
+ * The generated CJS bundle exports a `gql` object where each property
+ * is a GQL element composer with a `$schema` property containing the
+ * schema definition. This function executes the bundle in a VM context
+ * and extracts those schemas.
  *
  * @param cjsPath - Absolute path to the CJS bundle file
  * @param schemaNames - Names of schemas to load (e.g., ["default", "admin"])
@@ -32,7 +33,7 @@ export type LoadSchemasResult = Result<Record<string, AnyGraphqlSchema>, Builder
  *
  * @example
  * ```typescript
- * const result = await loadSchemasFromBundle(
+ * const result = loadSchemasFromBundle(
  *   "/path/to/generated/index.cjs",
  *   ["default"]
  * );
@@ -84,26 +85,40 @@ export const loadSchemasFromBundle = (
       cause: error,
     });
   }
+
+  // Extract gql object from exports
+  const gql = finalExports.gql as Record<string, { $schema?: unknown }> | undefined;
+
+  if (!gql || typeof gql !== "object") {
+    return err({
+      code: "CONFIG_INVALID",
+      message: "CJS bundle does not export 'gql' object. Ensure codegen was run successfully.",
+      path: resolvedPath,
+    });
+  }
+
   const schemas: Record<string, AnyGraphqlSchema> = {};
 
   for (const name of schemaNames) {
-    const exportName = `__schema_${name}`;
-    const schema = finalExports[exportName];
+    const composer = gql[name];
 
-    if (schema === undefined) {
+    if (!composer) {
+      const availableSchemas = Object.keys(gql).join(", ");
       return err({
         code: "SCHEMA_NOT_FOUND",
-        message: `Schema export '${exportName}' not found in CJS bundle. Ensure codegen was run with schema '${name}'.`,
+        message: `Schema '${name}' not found in gql exports. Available: ${availableSchemas || "(none)"}`,
         schemaLabel: name,
-        canonicalId: exportName,
+        canonicalId: `gql.${name}`,
       });
     }
 
-    // Validate that the export looks like an AnyGraphqlSchema
-    if (typeof schema !== "object" || schema === null) {
+    const schema = composer.$schema;
+
+    // Validate that the $schema property exists and is an object
+    if (!schema || typeof schema !== "object") {
       return err({
         code: "CONFIG_INVALID",
-        message: `Schema export '${exportName}' is not a valid schema object`,
+        message: `gql.${name}.$schema is not a valid schema object. Ensure codegen version is up to date.`,
         path: resolvedPath,
       });
     }
