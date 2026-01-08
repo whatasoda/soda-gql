@@ -1,8 +1,8 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyGraphqlSchema } from "@soda-gql/core";
 import { Kind } from "graphql";
@@ -636,5 +636,4 @@ describe("emitPrebuiltTypes", () => {
       }
     });
   });
-
 });
