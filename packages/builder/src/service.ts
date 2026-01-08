@@ -1,6 +1,7 @@
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 import type { BuilderArtifact } from "./artifact/types";
+import type { IntermediateArtifactElement } from "./intermediate-module";
 import { createBuilderSession } from "./session";
 import type { BuilderError } from "./types";
 
@@ -61,6 +62,13 @@ export interface BuilderService {
   getCurrentArtifact(): BuilderArtifact | null;
 
   /**
+   * Get the intermediate elements from the most recent build.
+   * Returns null if no build has been performed yet.
+   * Used by typegen to extract field selections for prebuilt type generation.
+   */
+  getIntermediateElements(): Record<string, IntermediateArtifactElement> | null;
+
+  /**
    * Dispose the service and save cache to disk.
    * Should be called when the service is no longer needed.
    */
@@ -88,6 +96,7 @@ export const createBuilderService = ({ config, entrypointsOverride }: BuilderSer
     buildAsync: (options) => session.buildAsync(options),
     getGeneration: () => session.getGeneration(),
     getCurrentArtifact: () => session.getCurrentArtifact(),
+    getIntermediateElements: () => session.getIntermediateElements(),
     dispose: () => session.dispose(),
   };
 };

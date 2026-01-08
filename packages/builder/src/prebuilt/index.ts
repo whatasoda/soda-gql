@@ -1,11 +1,17 @@
 /**
  * Prebuilt type generation module.
  *
- * This module provides utilities for generating PrebuiltTypes from
- * builder artifacts and field selection data.
+ * This module provides utilities for extracting field selections from
+ * builder artifacts for use in prebuilt type generation.
+ *
+ * Note: emitPrebuiltTypes has been moved to @soda-gql/typegen.
  *
  * @module
  */
 
-export { emitPrebuiltTypes, type PrebuiltTypesEmitResult, type PrebuiltTypesEmitterOptions } from "./emitter";
-export { extractFieldSelections, type FieldSelectionsMap, type FieldSelectionsResult } from "./extractor";
+export {
+  extractFieldSelections,
+  type FieldSelectionData,
+  type FieldSelectionsMap,
+  type FieldSelectionsResult,
+} from "./extractor";

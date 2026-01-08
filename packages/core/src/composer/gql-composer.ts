@@ -23,6 +23,23 @@ export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOpe
 ) => TResult;
 
 /**
+ * GQL element composer with schema access.
+ *
+ * Extends the base composer function with a `$schema` property that provides
+ * runtime access to the schema definition. This is useful for:
+ * - Type generation tools (typegen)
+ * - Runtime schema introspection
+ * - Debugging and tooling
+ */
+export type GqlElementComposerWithSchema<TContext, TSchema extends AnyGraphqlSchema> = GqlElementComposer<TContext> & {
+  /**
+   * The GraphQL schema definition used by this composer.
+   * Provides runtime access to schema types, operations, and metadata.
+   */
+  readonly $schema: TSchema;
+};
+
+/**
  * Extracts the helpers type from an adapter.
  * Uses `any` for non-target type parameters to avoid contravariance issues
  * with the `aggregateFragmentMetadata` function parameter type.
@@ -139,5 +156,14 @@ export const createGqlElementComposer = <
 
   const elementComposer: GqlElementComposer<typeof context> = (composeElement) => composeElement(context);
 
-  return elementComposer;
+  // Attach schema as readonly property for runtime access
+  const composerWithSchema = elementComposer as GqlElementComposerWithSchema<typeof context, TSchema>;
+  Object.defineProperty(composerWithSchema, "$schema", {
+    value: schema,
+    writable: false,
+    enumerable: true,
+    configurable: false,
+  });
+
+  return composerWithSchema;
 };

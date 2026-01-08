@@ -1,7 +1,7 @@
 {
-  "name": "@soda-gql/cli",
+  "name": "@soda-gql/typegen",
   "version": "0.10.0",
-  "description": "Command-line interface for soda-gql",
+  "description": "Prebuilt type generation for soda-gql",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -18,12 +18,13 @@
     "codegen",
     "zero-runtime",
     "typescript",
-    "cli"
+    "prebuilt",
+    "types"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/whatasoda/soda-gql.git",
-    "directory": "packages/cli"
+    "directory": "packages/typegen"
   },
   "homepage": "https://github.com/whatasoda/soda-gql#readme",
   "bugs": {
@@ -32,31 +33,26 @@
   "engines": {
     "node": ">=18"
   },
-  "bin": {
-    "soda-gql": "./dist/index.cjs"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.cjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "@soda-gql": "./@x-index.ts",
-      "types": "./dist/index.d.cts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
-      "default": "./dist/index.cjs"
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@soda-gql/codegen": "workspace:*",
     "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
-    "@soda-gql/typegen": "workspace:*",
-    "fast-glob": "^3.3.3",
-    "neverthrow": "^8.1.1",
-    "zod": "^4.1.11"
-  },
-  "optionalDependencies": {
-    "@soda-gql/formatter": "workspace:*"
+    "@soda-gql/core": "workspace:*",
+    "esbuild": "^0.24.0",
+    "graphql": "^16.8.1",
+    "neverthrow": "^8.1.1"
   }
 }

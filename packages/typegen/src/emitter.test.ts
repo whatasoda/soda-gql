@@ -3,11 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { FieldSelectionsMap } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { AnyGraphqlSchema } from "@soda-gql/core";
 import { Kind } from "graphql";
 import { emitPrebuiltTypes } from "./emitter";
-import type { FieldSelectionData, FieldSelectionsMap } from "./extractor";
+
+// Field selection data type for tests
+type FieldSelectionData = FieldSelectionsMap extends Map<CanonicalId, infer T> ? T : never;
 
 // Minimal mock schema for testing
 const createMockSchema = (label: string): AnyGraphqlSchema =>
@@ -61,7 +64,7 @@ describe("emitPrebuiltTypes", () => {
             typename: "User",
             fields: {},
             variableDefinitions: {},
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -231,7 +234,7 @@ describe("emitPrebuiltTypes", () => {
               },
             },
             variableDefinitions: {},
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -278,7 +281,7 @@ describe("emitPrebuiltTypes", () => {
               },
             },
             variableDefinitions: {},
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -328,7 +331,7 @@ describe("emitPrebuiltTypes", () => {
             variableDefinitions: {
               userId: { kind: "scalar", name: "ID", modifier: "!" },
             },
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -399,7 +402,7 @@ describe("emitPrebuiltTypes", () => {
               },
             },
             variableDefinitions: [],
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -453,7 +456,7 @@ describe("emitPrebuiltTypes", () => {
                 type: { kind: Kind.NON_NULL_TYPE, type: { kind: Kind.NAMED_TYPE, name: { kind: Kind.NAME, value: "ID" } } },
               },
             ],
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -532,7 +535,7 @@ describe("emitPrebuiltTypes", () => {
             typename: "User",
             fields: {},
             variableDefinitions: {},
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
         [
           "/src/b.ts::FragmentB" as CanonicalId,
@@ -543,7 +546,7 @@ describe("emitPrebuiltTypes", () => {
             typename: "Post",
             fields: {},
             variableDefinitions: {},
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 
@@ -615,7 +618,7 @@ describe("emitPrebuiltTypes", () => {
                 },
               },
             ],
-          } satisfies FieldSelectionData,
+          } as FieldSelectionData,
         ],
       ]);
 

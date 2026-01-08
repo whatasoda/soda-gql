@@ -6,6 +6,7 @@
 import type { ArtifactLoadError, BuilderError } from "@soda-gql/builder";
 import type { CodegenError } from "@soda-gql/codegen";
 import type { ConfigError } from "@soda-gql/config";
+import type { TypegenError } from "@soda-gql/typegen";
 import { err, type Result } from "neverthrow";
 
 /**
@@ -31,7 +32,7 @@ export type CliErrorCode =
 
 /**
  * Unified CLI error discriminated union.
- * Wraps external errors (codegen, builder, config) and defines CLI-specific errors.
+ * Wraps external errors (codegen, builder, config, typegen) and defines CLI-specific errors.
  */
 export type CliError =
   // Wrapped external errors (preserve original structure)
@@ -39,6 +40,7 @@ export type CliError =
   | { readonly category: "builder"; readonly error: BuilderError }
   | { readonly category: "artifact"; readonly error: ArtifactLoadError }
   | { readonly category: "config"; readonly error: ConfigError }
+  | { readonly category: "typegen"; readonly error: TypegenError }
   // CLI-specific errors
   | {
       readonly category: "cli";
@@ -136,6 +138,7 @@ type CliCodegenError = Extract<CliError, { category: "codegen" }>;
 type CliBuilderError = Extract<CliError, { category: "builder" }>;
 type CliArtifactError = Extract<CliError, { category: "artifact" }>;
 type CliConfigError = Extract<CliError, { category: "config" }>;
+type CliTypegenError = Extract<CliError, { category: "typegen" }>;
 
 /**
  * Error constructor helpers for concise error creation.
@@ -245,6 +248,11 @@ export const cliErrors = {
 
   fromConfig: (error: ConfigError): CliConfigError => ({
     category: "config",
+    error,
+  }),
+
+  fromTypegen: (error: TypegenError): CliTypegenError => ({
+    category: "typegen",
     error,
   }),
 } as const;
