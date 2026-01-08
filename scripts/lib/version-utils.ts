@@ -237,20 +237,9 @@ export type BumpType = "major" | "minor" | "patch";
 /**
  * Compute all packages that need to be bumped
  *
- * For patch bumps: Only bump directly changed packages
- * For minor/major bumps: Bump all packages in the workspace
+ * Always bumps all packages in the workspace to keep versions in sync.
  */
-export const computePackagesToBump = (
-  directlyChanged: Set<string>,
-  graph: DependencyGraph,
-  bumpType: BumpType,
-): Set<string> => {
-  // For patch bumps, only bump directly changed packages
-  if (bumpType === "patch") {
-    return new Set(directlyChanged);
-  }
-
-  // For minor/major bumps, bump all packages
+export const computePackagesToBump = (graph: DependencyGraph): Set<string> => {
   return new Set(graph.packages.keys());
 };
 

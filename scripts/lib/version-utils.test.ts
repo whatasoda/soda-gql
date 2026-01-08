@@ -37,81 +37,26 @@ const createMockGraph = (
 };
 
 describe("computePackagesToBump", () => {
-  describe("patch bump", () => {
-    test("returns only directly changed packages", () => {
-      const graph = createMockGraph([
-        { name: "@soda-gql/common", workspaceDeps: [] },
-        { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
-        { name: "@soda-gql/builder", workspaceDeps: ["@soda-gql/common", "@soda-gql/config"] },
-      ]);
+  test("returns all packages in the graph", () => {
+    const graph = createMockGraph([
+      { name: "@soda-gql/common", workspaceDeps: [] },
+      { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
+      { name: "@soda-gql/builder", workspaceDeps: ["@soda-gql/common", "@soda-gql/config"] },
+    ]);
 
-      const directlyChanged = new Set(["@soda-gql/common"]);
-      const result = computePackagesToBump(directlyChanged, graph, "patch");
+    const result = computePackagesToBump(graph);
 
-      expect(result).toEqual(new Set(["@soda-gql/common"]));
-    });
-
-    test("returns multiple directly changed packages", () => {
-      const graph = createMockGraph([
-        { name: "@soda-gql/common", workspaceDeps: [] },
-        { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
-        { name: "@soda-gql/builder", workspaceDeps: ["@soda-gql/common", "@soda-gql/config"] },
-      ]);
-
-      const directlyChanged = new Set(["@soda-gql/common", "@soda-gql/builder"]);
-      const result = computePackagesToBump(directlyChanged, graph, "patch");
-
-      expect(result).toEqual(new Set(["@soda-gql/common", "@soda-gql/builder"]));
-    });
+    expect(result.size).toBe(3);
+    expect(result).toContain("@soda-gql/common");
+    expect(result).toContain("@soda-gql/config");
+    expect(result).toContain("@soda-gql/builder");
   });
 
-  describe("minor bump", () => {
-    test("returns all packages regardless of changes", () => {
-      const graph = createMockGraph([
-        { name: "@soda-gql/common", workspaceDeps: [] },
-        { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
-        { name: "@soda-gql/builder", workspaceDeps: ["@soda-gql/common", "@soda-gql/config"] },
-      ]);
+  test("returns empty set for empty graph", () => {
+    const graph = createMockGraph([]);
 
-      const directlyChanged = new Set(["@soda-gql/common"]);
-      const result = computePackagesToBump(directlyChanged, graph, "minor");
+    const result = computePackagesToBump(graph);
 
-      expect(result.size).toBe(3);
-      expect(result).toContain("@soda-gql/common");
-      expect(result).toContain("@soda-gql/config");
-      expect(result).toContain("@soda-gql/builder");
-    });
-
-    test("returns all packages even when only leaf package changed", () => {
-      const graph = createMockGraph([
-        { name: "@soda-gql/common", workspaceDeps: [] },
-        { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
-        { name: "@soda-gql/cli", workspaceDeps: ["@soda-gql/config"] },
-      ]);
-
-      const directlyChanged = new Set(["@soda-gql/cli"]);
-      const result = computePackagesToBump(directlyChanged, graph, "minor");
-
-      expect(result.size).toBe(3);
-      expect(result).toContain("@soda-gql/common");
-      expect(result).toContain("@soda-gql/config");
-      expect(result).toContain("@soda-gql/cli");
-    });
-  });
-
-  describe("major bump", () => {
-    test("behaves same as minor - returns all packages", () => {
-      const graph = createMockGraph([
-        { name: "@soda-gql/common", workspaceDeps: [] },
-        { name: "@soda-gql/config", workspaceDeps: ["@soda-gql/common"] },
-      ]);
-
-      const directlyChanged = new Set(["@soda-gql/config"]);
-      const minorResult = computePackagesToBump(directlyChanged, graph, "minor");
-      const majorResult = computePackagesToBump(directlyChanged, graph, "major");
-
-      expect(minorResult).toEqual(majorResult);
-      expect(majorResult.size).toBe(2);
-    });
+    expect(result.size).toBe(0);
   });
 });
