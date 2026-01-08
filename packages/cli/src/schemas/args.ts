@@ -3,7 +3,6 @@ import { z } from "zod";
 export const CodegenArgsSchema = z.object({
   config: z.string().optional(),
   "emit-inject-template": z.string().optional(),
-  prebuilt: z.boolean().optional(),
 });
 
 export const BuilderArgsSchema = z.object({

@@ -21,12 +21,11 @@ export { __clearGqlCache } from "./intermediate-module";
 export type { IntermediateArtifactElement } from "./intermediate-module";
 export type { GraphqlSystemIdentifyHelper } from "./internal/graphql-system";
 export { createGraphqlSystemIdentifyHelper } from "./internal/graphql-system";
-// Prebuilt type generation
+// Prebuilt type generation (field selection extraction)
 export {
-  emitPrebuiltTypes,
   extractFieldSelections,
+  type FieldSelectionData,
   type FieldSelectionsMap,
-  type PrebuiltTypesEmitterOptions,
 } from "./prebuilt";
 // Schema loading
 export { loadSchemasFromBundle, type LoadSchemasResult } from "./schema-loader";
