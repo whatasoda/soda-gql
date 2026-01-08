@@ -165,7 +165,9 @@ describe("createPrebuiltGqlElementComposer", () => {
     expect(Object.keys(prebuiltFields).sort()).toEqual(Object.keys(regularFields).sort());
   });
 
-  it("supports fragments without key (falls back to regular inference)", () => {
+  it("creates fragment without key (runtime still works, but types are error types)", () => {
+    // Runtime behavior still works - fragments without keys can be created
+    // However, in strict mode the type system will produce PrebuiltEntryNotFound
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anonymousFragment = gql(({ fragment }: any) =>
       fragment.User({
@@ -176,7 +178,12 @@ describe("createPrebuiltGqlElementComposer", () => {
       }),
     ) as AnyFragment;
 
+    // Runtime still works
     expect(anonymousFragment.typename).toBe("User");
     expect(anonymousFragment.key).toBeUndefined();
+
+    // Note: Type-level verification that PrebuiltEntryNotFound is returned
+    // cannot be tested at runtime. The strict type resolution is enforced
+    // at compile time through the ResolvePrebuiltElement type.
   });
 });

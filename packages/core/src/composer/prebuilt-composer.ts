@@ -8,7 +8,7 @@
  * @module
  */
 
-import type { PrebuiltTypeRegistry } from "../prebuilt/types";
+import type { PrebuiltEntryNotFound, PrebuiltTypeRegistry } from "../prebuilt/types";
 import type { AnyFragment, Fragment, Operation } from "../types/element";
 import type { AnyAssignableInput, AnyFields } from "../types/fragment";
 import type { AnyAdapter, DefaultAdapter } from "../types/metadata";
@@ -17,11 +17,14 @@ import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer, type GqlElementComposerOptions } from "./gql-composer";
 
 /**
- * Resolves the output type for a prebuilt element.
+ * Resolves the output type for a prebuilt element (strict mode).
  *
  * For Operations: Looks up by operation name in the registry
  * For Fragments: Looks up by fragment key in the registry
- * Falls back to the element's original type if not found in registry
+ *
+ * Returns `PrebuiltEntryNotFound` error type if the element is not found
+ * in the registry, forcing users to ensure all elements are properly
+ * registered via typegen.
  */
 export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegistry> = TElement extends Operation<
   // Handle Operation types
@@ -43,7 +46,14 @@ export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegis
         TFields,
         TPrebuilt["operations"][TOperationName]["output"] & object
       >
-    : TElement
+    : Operation<
+        TOperationType,
+        TOperationName,
+        TVariableNames,
+        PrebuiltEntryNotFound<TOperationName, "operation">,
+        TFields,
+        PrebuiltEntryNotFound<TOperationName, "operation">
+      >
   : // Handle Fragment types
     TElement extends Fragment<
         infer TTypeName extends string,
@@ -54,19 +64,33 @@ export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegis
         any,
         infer TKey extends string | undefined
       >
-    ? TKey extends keyof TPrebuilt["fragments"]
-      ? Fragment<
+    ? TKey extends string
+      ? TKey extends keyof TPrebuilt["fragments"]
+        ? Fragment<
+            TTypeName,
+            TPrebuilt["fragments"][TKey]["input"] extends infer TInput
+              ? TInput extends AnyAssignableInput
+                ? Partial<TInput>
+                : void
+              : void,
+            TFields,
+            TPrebuilt["fragments"][TKey]["output"] & object,
+            TKey
+          >
+        : Fragment<
+            TTypeName,
+            PrebuiltEntryNotFound<TKey, "fragment">,
+            TFields,
+            PrebuiltEntryNotFound<TKey, "fragment">,
+            TKey
+          >
+      : Fragment<
           TTypeName,
-          TPrebuilt["fragments"][TKey]["input"] extends infer TInput
-            ? TInput extends AnyAssignableInput
-              ? Partial<TInput>
-              : void
-            : void,
+          PrebuiltEntryNotFound<"(undefined)", "fragment">,
           TFields,
-          TPrebuilt["fragments"][TKey]["output"] & object,
+          PrebuiltEntryNotFound<"(undefined)", "fragment">,
           TKey
         >
-      : TElement
     : TElement;
 
 /**
