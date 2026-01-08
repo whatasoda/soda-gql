@@ -254,7 +254,7 @@ describe("emitPrebuiltTypes", () => {
       }
     });
 
-    test("skips fragments without keys", async () => {
+    test("returns FRAGMENT_MISSING_KEY error for fragments without keys", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
         testSchema: createMockSchemaWithScalars("testSchema"),
       };
@@ -265,7 +265,7 @@ describe("emitPrebuiltTypes", () => {
           {
             type: "fragment",
             schemaLabel: "testSchema",
-            key: undefined, // No key - should be skipped
+            key: undefined, // No key - should cause error
             typename: "User",
             fields: {
               id: {
@@ -292,13 +292,64 @@ describe("emitPrebuiltTypes", () => {
         },
       });
 
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        const content = await readFile(result.value.path, "utf-8");
-        // Should not contain any fragment entries since key is undefined
-        expect(content).not.toContain('"Fragment"');
-        // Fragments section should be empty
-        expect(content).toMatch(/readonly fragments: \{\s*\};/);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
+        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
+          expect(result.error.fragments).toHaveLength(1);
+          expect(result.error.fragments[0].canonicalId).toBe("/src/anon.ts::Fragment");
+          expect(result.error.fragments[0].typename).toBe("User");
+          expect(result.error.fragments[0].schemaLabel).toBe("testSchema");
+        }
+      }
+    });
+
+    test("collects all fragments missing keys in single error", async () => {
+      const schemas: Record<string, AnyGraphqlSchema> = {
+        testSchema: createMockSchemaWithScalars("testSchema"),
+      };
+
+      const fieldSelections: FieldSelectionsMap = new Map([
+        [
+          "/src/anon1.ts::Fragment1" as CanonicalId,
+          {
+            type: "fragment",
+            schemaLabel: "testSchema",
+            key: undefined, // No key
+            typename: "User",
+            fields: {},
+            variableDefinitions: {},
+          } as FieldSelectionData,
+        ],
+        [
+          "/src/anon2.ts::Fragment2" as CanonicalId,
+          {
+            type: "fragment",
+            schemaLabel: "testSchema",
+            key: undefined, // No key
+            typename: "Post",
+            fields: {},
+            variableDefinitions: {},
+          } as FieldSelectionData,
+        ],
+      ]);
+
+      const result = await emitPrebuiltTypes({
+        schemas,
+        fieldSelections,
+        outdir: testOutdir,
+        injects: {
+          testSchema: { scalars: "/path/to/scalars.ts" },
+        },
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
+        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
+          // Should collect both missing key fragments
+          expect(result.error.fragments).toHaveLength(2);
+        }
       }
     });
 

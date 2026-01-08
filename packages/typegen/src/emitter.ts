@@ -30,6 +30,7 @@ import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@sod
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
+import { type TypegenError, typegenErrors } from "./errors";
 
 /**
  * Options for emitting prebuilt types.
@@ -77,14 +78,19 @@ type GroupBySchemaResult = {
  * Group field selections by schema.
  * Uses the schemaLabel from each selection to group them correctly.
  *
+ * In strict mode, all fragments must have a 'key' property. Fragments
+ * without keys will cause an error.
+ *
  * @returns Result containing grouped selections and warnings, or error if schema not found
+ *          or fragments are missing keys
  */
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
   schemas: Record<string, AnyGraphqlSchema>,
-): Result<GroupBySchemaResult, BuilderError> => {
+): Result<GroupBySchemaResult, BuilderError | TypegenError> => {
   const grouped = new Map<string, SchemaGroup>();
   const warnings: string[] = [];
+  const missingKeyFragments: { canonicalId: string; typename: string; schemaLabel: string }[] = [];
 
   // Initialize groups for each schema
   for (const schemaName of Object.keys(schemas)) {
@@ -111,9 +117,14 @@ const groupBySchema = (
     };
 
     if (selection.type === "fragment") {
-      // Skip fragments without keys (they can't be looked up)
+      // Strict mode: fragments must have keys
       if (!selection.key) {
-        continue;
+        missingKeyFragments.push({
+          canonicalId,
+          typename: selection.typename,
+          schemaLabel: selection.schemaLabel,
+        });
+        continue; // Continue collecting all errors before reporting
       }
 
       try {
@@ -167,6 +178,11 @@ const groupBySchema = (
         );
       }
     }
+  }
+
+  // Strict mode: error if any fragments are missing keys
+  if (missingKeyFragments.length > 0) {
+    return err(typegenErrors.fragmentMissingKey(missingKeyFragments));
   }
 
   return ok({ grouped, warnings });
@@ -427,7 +443,7 @@ export type PrebuiltTypesEmitResult = {
  */
 export const emitPrebuiltTypes = async (
   options: PrebuiltTypesEmitterOptions,
-): Promise<Result<PrebuiltTypesEmitResult, BuilderError>> => {
+): Promise<Result<PrebuiltTypesEmitResult, BuilderError | TypegenError>> => {
   const { schemas, fieldSelections, outdir, injects } = options;
 
   // Group selections by schema
