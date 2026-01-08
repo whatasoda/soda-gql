@@ -206,21 +206,12 @@ const extractInputObjectsFromType = (schema: AnyGraphqlSchema, typeNode: TypeNod
 };
 
 /**
- * Collect all input object types used in variable definitions.
- * Recursively collects nested input objects from the schema.
+ * Recursively collect nested input objects from schema definitions.
+ * Takes a set of initial input names and expands to include all nested inputs.
  */
-const collectUsedInputObjects = (
-  schema: AnyGraphqlSchema,
-  variableDefinitions: readonly VariableDefinitionNode[],
-): Set<string> => {
-  const inputObjects = new Set<string>();
+const collectNestedInputObjects = (schema: AnyGraphqlSchema, initialInputNames: Set<string>): Set<string> => {
+  const inputObjects = new Set(initialInputNames);
 
-  // First pass: collect direct references from variable definitions
-  for (const varDef of variableDefinitions) {
-    extractInputObjectsFromType(schema, varDef.type, inputObjects);
-  }
-
-  // Second pass: recursively collect nested input objects
   const collectNested = (inputName: string, seen: Set<string>): void => {
     if (seen.has(inputName)) {
       return;
@@ -240,9 +231,7 @@ const collectUsedInputObjects = (
     }
   };
 
-  // Recursively collect from each initially found input
-  const initialInputs = Array.from(inputObjects);
-  for (const inputName of initialInputs) {
+  for (const inputName of Array.from(initialInputNames)) {
     collectNested(inputName, new Set());
   }
 
@@ -250,46 +239,32 @@ const collectUsedInputObjects = (
 };
 
 /**
+ * Collect all input object types used in variable definitions.
+ * Recursively collects nested input objects from the schema.
+ */
+const collectUsedInputObjects = (
+  schema: AnyGraphqlSchema,
+  variableDefinitions: readonly VariableDefinitionNode[],
+): Set<string> => {
+  const directInputs = new Set<string>();
+  for (const varDef of variableDefinitions) {
+    extractInputObjectsFromType(schema, varDef.type, directInputs);
+  }
+  return collectNestedInputObjects(schema, directInputs);
+};
+
+/**
  * Collect all input object types used in InputTypeSpecifiers.
  * Recursively collects nested input objects from the schema.
  */
 const collectUsedInputObjectsFromSpecifiers = (schema: AnyGraphqlSchema, specifiers: InputTypeSpecifiers): Set<string> => {
-  const inputObjects = new Set<string>();
-
-  // First pass: collect direct references from specifiers
+  const directInputs = new Set<string>();
   for (const specifier of Object.values(specifiers)) {
     if (specifier.kind === "input" && schema.input[specifier.name]) {
-      inputObjects.add(specifier.name);
+      directInputs.add(specifier.name);
     }
   }
-
-  // Second pass: recursively collect nested input objects
-  const collectNested = (inputName: string, seen: Set<string>): void => {
-    if (seen.has(inputName)) {
-      return;
-    }
-    seen.add(inputName);
-
-    const inputDef = schema.input[inputName];
-    if (!inputDef) {
-      return;
-    }
-
-    for (const field of Object.values(inputDef.fields)) {
-      if (field.kind === "input" && !inputObjects.has(field.name)) {
-        inputObjects.add(field.name);
-        collectNested(field.name, seen);
-      }
-    }
-  };
-
-  // Recursively collect from each initially found input
-  const initialInputs = Array.from(inputObjects);
-  for (const inputName of initialInputs) {
-    collectNested(inputName, new Set());
-  }
-
-  return inputObjects;
+  return collectNestedInputObjects(schema, directInputs);
 };
 
 /**
