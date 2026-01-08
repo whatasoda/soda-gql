@@ -45,7 +45,7 @@ describe("emitPrebuiltTypes", () => {
       }
     });
 
-    test("does not error when schemas have unique labels", async () => {
+    test("does not return SCHEMA_LABEL_DUPLICATE when schemas have unique labels", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
         schemaA: createMockSchema("labelA"),
         schemaB: createMockSchema("labelB"),

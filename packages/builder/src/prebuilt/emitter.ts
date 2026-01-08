@@ -67,9 +67,12 @@ const groupBySchema = (
   const labelToSchemaNames = new Map<string, string[]>();
   for (const [schemaName, schema] of Object.entries(schemas)) {
     const label = schema.label;
-    const existing = labelToSchemaNames.get(label) ?? [];
-    existing.push(schemaName);
-    labelToSchemaNames.set(label, existing);
+    const existing = labelToSchemaNames.get(label);
+    if (existing) {
+      existing.push(schemaName);
+    } else {
+      labelToSchemaNames.set(label, [schemaName]);
+    }
   }
 
   for (const [label, schemaNames] of labelToSchemaNames) {
