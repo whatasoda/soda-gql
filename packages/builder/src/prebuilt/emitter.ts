@@ -298,9 +298,9 @@ const collectUsedInputObjectsFromSpecifiers = (schema: AnyGraphqlSchema, specifi
 const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName: string, inputNames: Set<string>): string[] => {
   const lines: string[] = [];
 
-  // Get depth config from schema
-  const defaultDepth = (schema as { __defaultInputDepth?: number }).__defaultInputDepth ?? 3;
-  const depthOverrides = (schema as { __inputDepthOverrides?: Record<string, number> }).__inputDepthOverrides ?? {};
+  // Get depth config from schema (optional properties defined in AnyGraphqlSchema)
+  const defaultDepth = schema.__defaultInputDepth ?? 3;
+  const depthOverrides = schema.__inputDepthOverrides ?? {};
 
   // Create formatters for schema-specific type names
   const formatters: TypeFormatters = {
