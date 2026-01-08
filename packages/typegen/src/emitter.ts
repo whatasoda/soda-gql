@@ -311,7 +311,7 @@ const generateTypesCode = (
   injects: Record<string, { readonly scalars: string }>,
   outdir: string,
 ): string => {
-  const typesFilePath = join(outdir, "prebuilt", "types.ts");
+  const typesFilePath = join(outdir, "types.prebuilt.ts");
 
   const lines: string[] = [
     "/**",
@@ -440,8 +440,8 @@ export const emitPrebuiltTypes = async (
   // Generate the types code
   const code = generateTypesCode(grouped, schemas, injects, outdir);
 
-  // Write to prebuilt/types.ts
-  const typesPath = join(outdir, "prebuilt", "types.ts");
+  // Write to types.prebuilt.ts
+  const typesPath = join(outdir, "types.prebuilt.ts");
 
   try {
     await writeFile(typesPath, code, "utf-8");

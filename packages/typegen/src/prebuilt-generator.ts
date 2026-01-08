@@ -11,10 +11,10 @@ import type { DocumentNode } from "graphql";
 
 export type PrebuiltGeneratorOptions = {
   /**
-   * Relative import path to the main gql module.
-   * Example: "../index" (from prebuilt/index.ts to index.ts)
+   * Relative import path to the internal module.
+   * Example: "./_internal" (from index.prebuilt.ts to _internal.ts)
    */
-  readonly mainModulePath: string;
+  readonly internalModulePath: string;
   /**
    * Per-schema injection config (adapter import paths).
    */
@@ -27,9 +27,9 @@ export type PrebuiltGeneratorOptions = {
 };
 
 export type PrebuiltGeneratedModule = {
-  /** The generated code for prebuilt/index.ts */
+  /** The generated code for index.prebuilt.ts */
   readonly indexCode: string;
-  /** The generated code for prebuilt/types.ts (placeholder) */
+  /** The generated code for types.prebuilt.ts (placeholder) */
   readonly typesCode: string;
 };
 
@@ -37,8 +37,8 @@ export type PrebuiltGeneratedModule = {
  * Generate the prebuilt module code.
  *
  * This generates:
- * - prebuilt/index.ts: Uses createPrebuiltGqlElementComposer with types from PrebuiltTypes
- * - prebuilt/types.ts: Placeholder types that typegen will populate
+ * - index.prebuilt.ts: Uses createPrebuiltGqlElementComposer with types from PrebuiltTypes
+ * - types.prebuilt.ts: Placeholder types that typegen will populate
  */
 export const generatePrebuiltModule = (
   schemas: Map<string, DocumentNode>,
@@ -104,8 +104,8 @@ import { createPrebuiltGqlElementComposer } from "@soda-gql/core";
 import {
   ${runtimeImports.join(",\n  ")},
   type ${typeImports.join(",\n  type ")},
-} from "${options.mainModulePath}";
-import type { ${schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ")} } from "./types";
+} from "${options.internalModulePath}";
+import type { ${schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ")} } from "./types.prebuilt";
 
 export const gql = {
 ${gqlEntries.join(",\n")}

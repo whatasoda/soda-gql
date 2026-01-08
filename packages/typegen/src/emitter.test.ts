@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -119,7 +119,6 @@ describe("emitPrebuiltTypes", () => {
 
     beforeEach(() => {
       testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
-      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
     afterEach(() => {
@@ -202,7 +201,6 @@ describe("emitPrebuiltTypes", () => {
 
     beforeEach(() => {
       testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
-      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
     afterEach(() => {
@@ -360,7 +358,6 @@ describe("emitPrebuiltTypes", () => {
 
     beforeEach(() => {
       testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
-      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
     afterEach(() => {
@@ -484,7 +481,6 @@ describe("emitPrebuiltTypes", () => {
 
     beforeEach(() => {
       testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
-      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
     afterEach(() => {
@@ -576,7 +572,6 @@ describe("emitPrebuiltTypes", () => {
 
     beforeEach(() => {
       testOutdir = mkdtempSync(join(tmpdir(), "soda-gql-emitter-test-"));
-      mkdirSync(join(testOutdir, "prebuilt"), { recursive: true });
     });
 
     afterEach(() => {

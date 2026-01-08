@@ -120,10 +120,18 @@ describe("soda-gql codegen CLI", () => {
       expect(result.exitCode).toBe(0);
       const generatedExists = await Bun.file(outFile).exists();
       expect(generatedExists).toBe(true);
-      const moduleContents = await Bun.file(outFile).text();
-      expect(moduleContents).toContain("export const gql");
+      const indexContents = await Bun.file(outFile).text();
+      // index.ts should re-export from _internal
+      expect(indexContents).toContain('export * from "./_internal"');
+
+      // _internal.ts should contain the actual implementation
+      const internalFile = join(outDir, "_internal.ts");
+      const internalExists = await Bun.file(internalFile).exists();
+      expect(internalExists).toBe(true);
+      const internalContents = await Bun.file(internalFile).text();
+      expect(internalContents).toContain("export const gql");
       // Scalar import should be present
-      expect(moduleContents).toContain("scalar as scalar_default");
+      expect(internalContents).toContain("scalar as scalar_default");
 
       // Verify .cjs bundle was generated
       const cjsPath = outFile.replace(/\.ts$/, ".cjs");
