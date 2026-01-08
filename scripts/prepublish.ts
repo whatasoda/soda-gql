@@ -14,16 +14,6 @@ export const mapValues = <TObject extends object, TMappedValue>(
     [K in keyof TObject]: TMappedValue;
   };
 
-/**
- * Convert a version string to a tilde range
- * e.g., "0.5.3" -> "~0.5.0"
- */
-const toTildeRange = (version: string): string => {
-  const match = version.match(/^(\d+)\.(\d+)\./);
-  if (!match) return version;
-  return `~${match[1]}.${match[2]}.0`;
-};
-
 // Schema for public packages (strict validation for npm registry)
 type PackageJson = z.output<typeof packageJsonSchema>;
 const packageJsonSchema = z.object({
@@ -157,7 +147,7 @@ const prepare = async () => {
             ].filter((key) => key !== name && key.startsWith("@soda-gql/")),
           );
 
-          const tildeRange = toTildeRange(packageJsonSource.version);
+          const exactVersion = packageJsonSource.version;
 
           const packageJsonDist: PackageJson = {
             name,
@@ -178,11 +168,11 @@ const prepare = async () => {
             module,
             types,
             exports,
-            dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
-            devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
-            peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? tildeRange : value)),
+            dependencies: mapValues(dependencies ?? {}, (value) => (value === "workspace:*" ? exactVersion : value)),
+            devDependencies: mapValues(devDependencies ?? {}, (value) => (value === "workspace:*" ? exactVersion : value)),
+            peerDependencies: mapValues(peerDependencies ?? {}, (value) => (value === "workspace:*" ? exactVersion : value)),
             optionalDependencies: mapValues(optionalDependencies ?? {}, (value) =>
-              value === "workspace:*" ? tildeRange : value,
+              value === "workspace:*" ? exactVersion : value,
             ),
             ...rest,
           };
@@ -307,9 +297,9 @@ const addOptionalDependenciesToSwcTransformer = async () => {
   const platformPackagesDir = "packages/swc-transformer/npm";
   const swcTransformerDistPath = "dist/swc-transformer/package.json";
 
-  // Read swc-transformer's version and convert to tilde range
+  // Read swc-transformer's version for platform package dependencies
   const swcTransformerSourceJson = JSON.parse(await readFile("packages/swc-transformer/package.json", "utf-8"));
-  const tildeRange = toTildeRange(swcTransformerSourceJson.version as string);
+  const exactVersion = swcTransformerSourceJson.version as string;
 
   try {
     const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
@@ -318,7 +308,7 @@ const addOptionalDependenciesToSwcTransformer = async () => {
     for (const entry of platformDirEntries) {
       if (entry.isDirectory()) {
         const packageName = `@soda-gql/swc-transformer-${entry.name}`;
-        optionalDependencies[packageName] = tildeRange;
+        optionalDependencies[packageName] = exactVersion;
       }
     }
 
