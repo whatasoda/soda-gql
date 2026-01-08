@@ -21,3 +21,7 @@ export type { PrebuiltGeneratedModule, PrebuiltGeneratorOptions } from "./prebui
 // Prebuilt types emitter
 export { emitPrebuiltTypes } from "./emitter";
 export type { PrebuiltTypesEmitResult, PrebuiltTypesEmitterOptions } from "./emitter";
+
+// Main runner
+export { runTypegen } from "./runner";
+export type { RunTypegenOptions } from "./runner";
