@@ -14,7 +14,8 @@ export type TypegenErrorCode =
   | "TYPEGEN_SCHEMA_LOAD_FAILED"
   | "TYPEGEN_BUILD_FAILED"
   | "TYPEGEN_EMIT_FAILED"
-  | "TYPEGEN_BUNDLE_FAILED";
+  | "TYPEGEN_BUNDLE_FAILED"
+  | "TYPEGEN_FRAGMENT_MISSING_KEY";
 
 /**
  * Typegen-specific error type.
@@ -47,6 +48,15 @@ export type TypegenSpecificError =
       readonly message: string;
       readonly path: string;
       readonly cause?: unknown;
+    }
+  | {
+      readonly code: "TYPEGEN_FRAGMENT_MISSING_KEY";
+      readonly message: string;
+      readonly fragments: readonly {
+        readonly canonicalId: string;
+        readonly typename: string;
+        readonly schemaLabel: string;
+      }[];
     };
 
 /**
@@ -90,6 +100,14 @@ export const typegenErrors = {
     path,
     cause,
   }),
+
+  fragmentMissingKey: (
+    fragments: readonly { canonicalId: string; typename: string; schemaLabel: string }[],
+  ): TypegenSpecificError => ({
+    code: "TYPEGEN_FRAGMENT_MISSING_KEY",
+    message: `${fragments.length} fragment(s) missing required 'key' property for prebuilt types`,
+    fragments,
+  }),
 } as const;
 
 /**
@@ -111,6 +129,13 @@ export const formatTypegenError = (error: TypegenError): string => {
     case "TYPEGEN_EMIT_FAILED":
     case "TYPEGEN_BUNDLE_FAILED":
       lines.push(`  Path: ${error.path}`);
+      break;
+    case "TYPEGEN_FRAGMENT_MISSING_KEY":
+      lines.push("  Fragments missing 'key' property:");
+      for (const fragment of error.fragments) {
+        lines.push(`    - ${fragment.canonicalId} (${fragment.typename} on ${fragment.schemaLabel})`);
+      }
+      lines.push("  Hint: Add a 'key' property to each fragment for prebuilt type resolution.");
       break;
   }
 

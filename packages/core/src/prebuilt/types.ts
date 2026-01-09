@@ -82,3 +82,31 @@ export type HasPrebuiltOperation<
   TRegistry extends PrebuiltTypeRegistry,
   TKey extends string,
 > = TKey extends keyof TRegistry["operations"] ? true : false;
+
+/**
+ * Branded error type for missing prebuilt registry entries.
+ *
+ * This type intentionally produces a clear error message at compile time
+ * when an operation or fragment is not found in the PrebuiltTypeRegistry.
+ * Instead of silently falling back to inferred types, this forces users
+ * to ensure all elements are properly registered via typegen.
+ */
+export type PrebuiltEntryNotFound<TKey extends string, TKind extends "fragment" | "operation"> = {
+  readonly __error: "PREBUILT_ENTRY_NOT_FOUND";
+  readonly __message: `${TKind} "${TKey}" not found in PrebuiltTypeRegistry. Run 'soda-gql typegen' to generate prebuilt types.`;
+  readonly __key: TKey;
+  readonly __kind: TKind;
+};
+
+/**
+ * Branded error type for unrecognized element types in prebuilt resolution.
+ *
+ * This type is returned when ResolvePrebuiltElement receives a type that
+ * is neither Operation nor Fragment. This should not happen in normal usage,
+ * but provides a clear error message for debugging if it does.
+ */
+export type PrebuiltUnknownElement<TElement> = {
+  readonly __error: "PREBUILT_UNKNOWN_ELEMENT";
+  readonly __message: "Element type not recognized. Expected Operation or Fragment.";
+  readonly __element: TElement;
+};

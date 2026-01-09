@@ -179,31 +179,35 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   // Step 3: Load schema documents and generate index.prebuilt.ts
   const schemaDocuments = loadSchemaDocuments(config.schemas);
+  const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
+
+  // Calculate import paths from index.prebuilt.ts to internal modules
   const internalModulePath = toImportSpecifier(
-    join(outdir, "index.prebuilt.ts"),
+    prebuiltIndexPath,
     join(outdir, "_internal.ts"),
+    importSpecifierOptions,
+  );
+  const injectsModulePath = toImportSpecifier(
+    prebuiltIndexPath,
+    join(outdir, "_internal-injects.ts"),
     importSpecifierOptions,
   );
 
   // Build injection config for generatePrebuiltModule
-  const injection = new Map<string, { adapterImportPath?: string }>();
+  const injection = new Map<string, { hasAdapter?: boolean }>();
   for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
-    if (schemaConfig.inject.adapter) {
-      injection.set(schemaName, {
-        adapterImportPath: toImportSpecifier(join(outdir, "_internal.ts"), schemaConfig.inject.adapter, importSpecifierOptions),
-      });
-    } else {
-      injection.set(schemaName, {});
-    }
+    injection.set(schemaName, {
+      hasAdapter: !!schemaConfig.inject.adapter,
+    });
   }
 
   const prebuilt = generatePrebuiltModule(schemaDocuments, {
     internalModulePath,
+    injectsModulePath,
     injection,
   });
 
   // Write index.prebuilt.ts
-  const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
   try {
     await writeModule(prebuiltIndexPath, prebuilt.indexCode);
   } catch (error) {
@@ -237,16 +241,12 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const { selections: fieldSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
   // Step 6: Emit types.prebuilt.ts
-  const injects: Record<string, { readonly scalars: string }> = {};
-  for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
-    injects[schemaName] = { scalars: schemaConfig.inject.scalars };
-  }
-
+  // Reuse injectsModulePath from step 3 (same directory, same relative path)
   const emitResult = await emitPrebuiltTypes({
     schemas,
     fieldSelections,
     outdir,
-    injects,
+    injectsModulePath,
   });
 
   if (emitResult.isErr()) {

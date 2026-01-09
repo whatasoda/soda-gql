@@ -72,7 +72,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: "/tmp/test-output",
-        injects: {},
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isErr()).toBe(true);
@@ -98,9 +98,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: "/tmp/test-output",
-        injects: {
-          testSchema: { scalars: "/tmp/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       // Will fail on file write, but we verify warnings are included in result type
@@ -134,9 +132,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -158,9 +154,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          mySchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -180,9 +174,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -240,9 +232,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -254,7 +244,7 @@ describe("emitPrebuiltTypes", () => {
       }
     });
 
-    test("skips fragments without keys", async () => {
+    test("returns FRAGMENT_MISSING_KEY error for fragments without keys", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
         testSchema: createMockSchemaWithScalars("testSchema"),
       };
@@ -265,7 +255,7 @@ describe("emitPrebuiltTypes", () => {
           {
             type: "fragment",
             schemaLabel: "testSchema",
-            key: undefined, // No key - should be skipped
+            key: undefined, // No key - should cause error
             typename: "User",
             fields: {
               id: {
@@ -287,18 +277,67 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        const content = await readFile(result.value.path, "utf-8");
-        // Should not contain any fragment entries since key is undefined
-        expect(content).not.toContain('"Fragment"');
-        // Fragments section should be empty
-        expect(content).toMatch(/readonly fragments: \{\s*\};/);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
+        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
+          expect(result.error.fragments).toHaveLength(1);
+          const fragment = result.error.fragments[0];
+          expect(fragment).toBeDefined();
+          expect(fragment?.canonicalId).toBe("/src/anon.ts::Fragment");
+          expect(fragment?.typename).toBe("User");
+          expect(fragment?.schemaLabel).toBe("testSchema");
+        }
+      }
+    });
+
+    test("collects all fragments missing keys in single error", async () => {
+      const schemas: Record<string, AnyGraphqlSchema> = {
+        testSchema: createMockSchemaWithScalars("testSchema"),
+      };
+
+      const fieldSelections: FieldSelectionsMap = new Map([
+        [
+          "/src/anon1.ts::Fragment1" as CanonicalId,
+          {
+            type: "fragment",
+            schemaLabel: "testSchema",
+            key: undefined, // No key
+            typename: "User",
+            fields: {},
+            variableDefinitions: {},
+          } as FieldSelectionData,
+        ],
+        [
+          "/src/anon2.ts::Fragment2" as CanonicalId,
+          {
+            type: "fragment",
+            schemaLabel: "testSchema",
+            key: undefined, // No key
+            typename: "Post",
+            fields: {},
+            variableDefinitions: {},
+          } as FieldSelectionData,
+        ],
+      ]);
+
+      const result = await emitPrebuiltTypes({
+        schemas,
+        fieldSelections,
+        outdir: testOutdir,
+        injectsModulePath: "./_internal-injects",
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
+        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
+          // Should collect both missing key fragments
+          expect(result.error.fragments).toHaveLength(2);
+        }
       }
     });
 
@@ -337,9 +376,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -407,9 +444,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -461,9 +496,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -497,10 +530,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          schemaA: { scalars: "/path/to/scalarsA.ts" },
-          schemaB: { scalars: "/path/to/scalarsB.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -550,10 +580,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          schemaA: { scalars: "/path/to/scalarsA.ts" },
-          schemaB: { scalars: "/path/to/scalarsB.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -621,9 +648,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
