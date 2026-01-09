@@ -3,4 +3,11 @@
  * @module
  */
 
-export { prebuild, prebuildAsync, type PrebuildOptions, type PrebuildResult, type ContextTransformer } from "./prebuild";
+export {
+	prebuild,
+	prebuildAsync,
+	type ContextTransformer,
+	type PrebuildError,
+	type PrebuildOptions,
+	type PrebuildResult,
+} from "./prebuild";

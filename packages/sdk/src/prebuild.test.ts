@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { prebuild, prebuildAsync, type ContextTransformer, type PrebuildOptions, type PrebuildResult } from "./prebuild";
+import { prebuild, prebuildAsync, type ContextTransformer, type PrebuildError, type PrebuildOptions, type PrebuildResult } from "./prebuild";
 
 describe("prebuild", () => {
 	describe("type exports", () => {
@@ -50,6 +50,20 @@ describe("prebuild", () => {
 
 			expect(result.isErr()).toBe(true);
 		});
+
+		it("should return ConfigError with code property", () => {
+			const result = prebuild({
+				configPath: "/non/existent/config.ts",
+			});
+
+			expect(result.isErr()).toBe(true);
+			if (result.isErr()) {
+				const error: PrebuildError = result.error;
+				// ConfigError has a code property
+				expect(error.code).toBeDefined();
+				expect(typeof error.code).toBe("string");
+			}
+		});
 	});
 
 	describe("prebuildAsync with invalid config", () => {
@@ -59,6 +73,20 @@ describe("prebuild", () => {
 			});
 
 			expect(result.isErr()).toBe(true);
+		});
+
+		it("should return ConfigError with code property", async () => {
+			const result = await prebuildAsync({
+				configPath: "/non/existent/config.ts",
+			});
+
+			expect(result.isErr()).toBe(true);
+			if (result.isErr()) {
+				const error: PrebuildError = result.error;
+				// ConfigError has a code property
+				expect(error.code).toBeDefined();
+				expect(typeof error.code).toBe("string");
+			}
 		});
 	});
 });

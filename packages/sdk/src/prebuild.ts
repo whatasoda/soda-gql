@@ -4,11 +4,17 @@
  */
 
 import type { Result } from "neverthrow";
-import { loadConfig } from "@soda-gql/config";
+import { loadConfig, type ConfigError } from "@soda-gql/config";
 import { setContextTransformer, clearContextTransformer, type ContextTransformer } from "@soda-gql/core/_internal";
 import { createBuilderSession, type BuilderArtifact, type BuilderError } from "@soda-gql/builder";
 
 export type { ContextTransformer };
+
+/**
+ * Error type for prebuild operations.
+ * Can be either a config loading error or a builder error.
+ */
+export type PrebuildError = ConfigError | BuilderError;
 
 /**
  * Options for prebuild functions.
@@ -30,6 +36,11 @@ export interface PrebuildResult {
 /**
  * Build artifact synchronously from a config file.
  *
+ * @remarks
+ * **Concurrent Execution Warning**: This function uses global state for context transformation.
+ * Do not run multiple `prebuild` or `prebuildAsync` calls concurrently with different
+ * `contextTransformer` options. Sequential execution is safe.
+ *
  * @param options - Prebuild options including config path and optional transformer
  * @returns Result containing the built artifact or an error
  *
@@ -41,32 +52,37 @@ export interface PrebuildResult {
  * }
  * ```
  */
-export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, BuilderError> => {
+export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, PrebuildError> => {
 	const { configPath, contextTransformer } = options;
 
 	// Load config from file path
 	const configResult = loadConfig(configPath);
 	if (configResult.isErr()) {
-		// Convert ConfigError to BuilderError format
-		return configResult as unknown as Result<PrebuildResult, BuilderError>;
+		return configResult;
 	}
 	const config = configResult.value;
 
-	if (contextTransformer) {
-		setContextTransformer(contextTransformer);
-	}
+	const session = createBuilderSession({ config });
 
 	try {
-		const session = createBuilderSession({ config });
+		if (contextTransformer) {
+			setContextTransformer(contextTransformer);
+		}
 		const result = session.build();
 		return result.map((artifact) => ({ artifact }));
 	} finally {
 		clearContextTransformer();
+		session.dispose();
 	}
 };
 
 /**
  * Build artifact asynchronously from a config file.
+ *
+ * @remarks
+ * **Concurrent Execution Warning**: This function uses global state for context transformation.
+ * Do not run multiple `prebuild` or `prebuildAsync` calls concurrently with different
+ * `contextTransformer` options. Sequential execution is safe.
  *
  * @param options - Prebuild options including config path and optional transformer
  * @returns Promise resolving to Result containing the built artifact or an error
@@ -79,26 +95,26 @@ export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, Build
  * }
  * ```
  */
-export const prebuildAsync = async (options: PrebuildOptions): Promise<Result<PrebuildResult, BuilderError>> => {
+export const prebuildAsync = async (options: PrebuildOptions): Promise<Result<PrebuildResult, PrebuildError>> => {
 	const { configPath, contextTransformer } = options;
 
 	// Load config from file path (sync - no async version available)
 	const configResult = loadConfig(configPath);
 	if (configResult.isErr()) {
-		// Convert ConfigError to BuilderError format
-		return configResult as unknown as Result<PrebuildResult, BuilderError>;
+		return configResult;
 	}
 	const config = configResult.value;
 
-	if (contextTransformer) {
-		setContextTransformer(contextTransformer);
-	}
+	const session = createBuilderSession({ config });
 
 	try {
-		const session = createBuilderSession({ config });
+		if (contextTransformer) {
+			setContextTransformer(contextTransformer);
+		}
 		const result = await session.buildAsync();
 		return result.map((artifact) => ({ artifact }));
 	} finally {
 		clearContextTransformer();
+		session.dispose();
 	}
 };
