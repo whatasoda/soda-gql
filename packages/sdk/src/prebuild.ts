@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { Result } from "neverthrow";
+import { err, type Result } from "neverthrow";
 import { loadConfig, type ConfigError } from "@soda-gql/config";
 import { setContextTransformer, clearContextTransformer, type ContextTransformer } from "@soda-gql/core/_internal";
 import { createBuilderSession, type BuilderArtifact, type BuilderError } from "@soda-gql/builder";
@@ -24,6 +24,12 @@ export interface PrebuildOptions {
 	configPath: string;
 	/** Optional context transformer to modify composer context */
 	contextTransformer?: ContextTransformer;
+	/** Unique identifier for this evaluator instance (default: "default") */
+	evaluatorId?: string;
+	/** Override entrypoints from config.include */
+	entrypointsOverride?: readonly string[] | ReadonlySet<string>;
+	/** Force rebuild even if no changes detected */
+	force?: boolean;
 }
 
 /**
@@ -41,6 +47,13 @@ export interface PrebuildResult {
  * Do not run multiple `prebuild` or `prebuildAsync` calls concurrently with different
  * `contextTransformer` options. Sequential execution is safe.
  *
+ * **Session Lifecycle**: This function automatically handles session lifecycle:
+ * - Creates a BuilderSession with the resolved config
+ * - Calls `session.dispose()` in a finally block to:
+ *   - Save incremental build cache to disk
+ *   - Unregister from process exit handler
+ * - Clears context transformer state after build
+ *
  * @param options - Prebuild options including config path and optional transformer
  * @returns Result containing the built artifact or an error
  *
@@ -53,22 +66,22 @@ export interface PrebuildResult {
  * ```
  */
 export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, PrebuildError> => {
-	const { configPath, contextTransformer } = options;
+	const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
 
 	// Load config from file path
 	const configResult = loadConfig(configPath);
 	if (configResult.isErr()) {
-		return configResult;
+		return err(configResult.error);
 	}
 	const config = configResult.value;
 
-	const session = createBuilderSession({ config });
+	const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
 
 	try {
 		if (contextTransformer) {
 			setContextTransformer(contextTransformer);
 		}
-		const result = session.build();
+		const result = session.build({ force });
 		return result.map((artifact) => ({ artifact }));
 	} finally {
 		clearContextTransformer();
@@ -84,6 +97,13 @@ export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, Prebu
  * Do not run multiple `prebuild` or `prebuildAsync` calls concurrently with different
  * `contextTransformer` options. Sequential execution is safe.
  *
+ * **Session Lifecycle**: This function automatically handles session lifecycle:
+ * - Creates a BuilderSession with the resolved config
+ * - Calls `session.dispose()` in a finally block to:
+ *   - Save incremental build cache to disk
+ *   - Unregister from process exit handler
+ * - Clears context transformer state after build
+ *
  * @param options - Prebuild options including config path and optional transformer
  * @returns Promise resolving to Result containing the built artifact or an error
  *
@@ -96,22 +116,22 @@ export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, Prebu
  * ```
  */
 export const prebuildAsync = async (options: PrebuildOptions): Promise<Result<PrebuildResult, PrebuildError>> => {
-	const { configPath, contextTransformer } = options;
+	const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
 
 	// Load config from file path (sync - no async version available)
 	const configResult = loadConfig(configPath);
 	if (configResult.isErr()) {
-		return configResult;
+		return err(configResult.error);
 	}
 	const config = configResult.value;
 
-	const session = createBuilderSession({ config });
+	const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
 
 	try {
 		if (contextTransformer) {
 			setContextTransformer(contextTransformer);
 		}
-		const result = await session.buildAsync();
+		const result = await session.buildAsync({ force });
 		return result.map((artifact) => ({ artifact }));
 	} finally {
 		clearContextTransformer();
