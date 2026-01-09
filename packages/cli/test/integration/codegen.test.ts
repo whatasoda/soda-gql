@@ -130,8 +130,16 @@ describe("soda-gql codegen CLI", () => {
       expect(internalExists).toBe(true);
       const internalContents = await Bun.file(internalFile).text();
       expect(internalContents).toContain("export const gql");
-      // Scalar import should be present
-      expect(internalContents).toContain("scalar as scalar_default");
+      // Scalar import should come from _internal-injects.ts
+      expect(internalContents).toContain('import { scalar_default } from "./_internal-injects"');
+
+      // _internal-injects.ts should contain scalar re-exports
+      const injectsFile = join(outDir, "_internal-injects.ts");
+      const injectsExists = await Bun.file(injectsFile).exists();
+      expect(injectsExists).toBe(true);
+      const injectsContents = await Bun.file(injectsFile).text();
+      expect(injectsContents).toContain("scalar as scalar_default");
+      expect(injectsContents).toContain("export { scalar_default }");
 
       // Verify .cjs bundle was generated
       const cjsPath = outFile.replace(/\.ts$/, ".cjs");
