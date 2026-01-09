@@ -7,6 +7,7 @@ import type { AnyFragment, AnyOperation } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
+import { applyContextTransformer } from "./context-transformer";
 import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
@@ -154,7 +155,10 @@ export const createGqlElementComposer = <
     ...(helpers ?? ({} as THelpers)),
   };
 
-  const elementComposer: GqlElementComposer<typeof context> = (composeElement) => composeElement(context);
+  // Apply context transformer if set (for programmatic API like @soda-gql/sdk)
+  const transformedContext = applyContextTransformer(context);
+
+  const elementComposer: GqlElementComposer<typeof context> = (composeElement) => composeElement(transformedContext);
 
   // Attach schema as readonly property for runtime access
   const composerWithSchema = elementComposer as GqlElementComposerWithSchema<typeof context, TSchema>;

@@ -22,6 +22,7 @@
     { "path": "./packages/metro-plugin/tsconfig.editor.json" },
     { "path": "./packages/plugin-common/tsconfig.editor.json" },
     { "path": "./packages/runtime/tsconfig.editor.json" },
+    { "path": "./packages/sdk/tsconfig.editor.json" },
     { "path": "./packages/swc-transformer/tsconfig.editor.json" },
     { "path": "./packages/tsc-plugin/tsconfig.editor.json" },
     { "path": "./packages/tsc-transformer/tsconfig.editor.json" },

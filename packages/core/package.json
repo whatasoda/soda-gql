@@ -57,6 +57,13 @@
       "require": "./dist/adapter.cjs",
       "default": "./dist/adapter.js"
     },
+    "./_internal": {
+      "@soda-gql": "./@x-_internal.ts",
+      "types": "./dist/_internal.d.ts",
+      "import": "./dist/_internal.js",
+      "require": "./dist/_internal.cjs",
+      "default": "./dist/_internal.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

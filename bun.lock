@@ -208,6 +208,16 @@
         "@soda-gql/core": "workspace:*",
       },
     },
+    "packages/sdk": {
+      "name": "@soda-gql/sdk",
+      "version": "0.10.1",
+      "dependencies": {
+        "@soda-gql/builder": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "@soda-gql/core": "workspace:*",
+        "neverthrow": "^8.1.1",
+      },
+    },
     "packages/swc-transformer": {
       "name": "@soda-gql/swc-transformer",
       "version": "0.10.1",
@@ -1168,6 +1178,8 @@
     "@soda-gql/plugin-common": ["@soda-gql/plugin-common@workspace:packages/plugin-common"],
 
     "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
+
+    "@soda-gql/sdk": ["@soda-gql/sdk@workspace:packages/sdk"],
 
     "@soda-gql/swc-transformer": ["@soda-gql/swc-transformer@workspace:packages/swc-transformer"],
 
