@@ -24,7 +24,7 @@
  */
 
 import { writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { join } from "node:path";
 import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
@@ -51,10 +51,10 @@ export type PrebuiltTypesEmitterOptions = {
    */
   readonly outdir: string;
   /**
-   * Inject configuration per schema.
-   * Maps schema name to inject file paths (absolute paths).
+   * Relative import path to _internal-injects.ts from types.prebuilt.ts.
+   * Example: "./_internal-injects"
    */
-  readonly injects: Record<string, { readonly scalars: string }>;
+  readonly injectsModulePath: string;
 };
 
 type PrebuiltTypeEntry = {
@@ -189,20 +189,6 @@ const groupBySchema = (
 };
 
 /**
- * Calculate relative import path from one file to another.
- */
-const toImportSpecifier = (from: string, to: string): string => {
-  const fromDir = dirname(from);
-  let relativePath = relative(fromDir, to);
-  // Ensure starts with ./
-  if (!relativePath.startsWith(".")) {
-    relativePath = `./${relativePath}`;
-  }
-  // Remove .ts extension
-  return relativePath.replace(/\.ts$/, "");
-};
-
-/**
  * Extract input object names from a GraphQL TypeNode.
  */
 const extractInputObjectsFromType = (schema: AnyGraphqlSchema, typeNode: TypeNode, inputObjects: Set<string>): void => {
@@ -324,10 +310,9 @@ const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName
 const generateTypesCode = (
   grouped: Map<string, SchemaGroup>,
   schemas: Record<string, AnyGraphqlSchema>,
-  injects: Record<string, { readonly scalars: string }>,
-  outdir: string,
+  injectsModulePath: string,
 ): string => {
-  const typesFilePath = join(outdir, "types.prebuilt.ts");
+  const schemaNames = Object.keys(schemas);
 
   const lines: string[] = [
     "/**",
@@ -343,16 +328,14 @@ const generateTypesCode = (
     'import type { PrebuiltTypeRegistry } from "@soda-gql/core";',
   ];
 
-  // Generate imports from inject files
-  for (const [schemaName, inject] of Object.entries(injects)) {
-    const relativePath = toImportSpecifier(typesFilePath, inject.scalars);
-    lines.push(`import type { scalar as scalar_${schemaName} } from "${relativePath}";`);
-  }
+  // Generate import from _internal-injects.ts
+  const scalarImports = schemaNames.map((name) => `scalar_${name}`).join(", ");
+  lines.push(`import type { ${scalarImports} } from "${injectsModulePath}";`);
 
   lines.push("");
 
   // Generate ScalarInput and ScalarOutput helper types
-  for (const schemaName of Object.keys(injects)) {
+  for (const schemaName of schemaNames) {
     lines.push(
       `type ScalarInput_${schemaName}<T extends keyof typeof scalar_${schemaName}> = ` +
         `typeof scalar_${schemaName}[T]["$type"]["input"];`,
@@ -444,7 +427,7 @@ export type PrebuiltTypesEmitResult = {
 export const emitPrebuiltTypes = async (
   options: PrebuiltTypesEmitterOptions,
 ): Promise<Result<PrebuiltTypesEmitResult, BuilderError | TypegenError>> => {
-  const { schemas, fieldSelections, outdir, injects } = options;
+  const { schemas, fieldSelections, outdir, injectsModulePath } = options;
 
   // Group selections by schema
   const groupResult = groupBySchema(fieldSelections, schemas);
@@ -454,7 +437,7 @@ export const emitPrebuiltTypes = async (
   const { grouped, warnings } = groupResult.value;
 
   // Generate the types code
-  const code = generateTypesCode(grouped, schemas, injects, outdir);
+  const code = generateTypesCode(grouped, schemas, injectsModulePath);
 
   // Write to types.prebuilt.ts
   const typesPath = join(outdir, "types.prebuilt.ts");

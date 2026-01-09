@@ -241,16 +241,12 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const { selections: fieldSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
   // Step 6: Emit types.prebuilt.ts
-  const injects: Record<string, { readonly scalars: string }> = {};
-  for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
-    injects[schemaName] = { scalars: schemaConfig.inject.scalars };
-  }
-
+  // Reuse injectsModulePath from step 3 (same directory, same relative path)
   const emitResult = await emitPrebuiltTypes({
     schemas,
     fieldSelections,
     outdir,
-    injects,
+    injectsModulePath,
   });
 
   if (emitResult.isErr()) {

@@ -72,7 +72,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: "/tmp/test-output",
-        injects: {},
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isErr()).toBe(true);
@@ -98,9 +98,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: "/tmp/test-output",
-        injects: {
-          testSchema: { scalars: "/tmp/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       // Will fail on file write, but we verify warnings are included in result type
@@ -134,9 +132,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -158,9 +154,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          mySchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -180,9 +174,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -240,9 +232,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -287,9 +277,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isErr()).toBe(true);
@@ -340,9 +328,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isErr()).toBe(true);
@@ -390,9 +376,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -460,9 +444,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -514,9 +496,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -550,10 +530,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections: new Map(),
         outdir: testOutdir,
-        injects: {
-          schemaA: { scalars: "/path/to/scalarsA.ts" },
-          schemaB: { scalars: "/path/to/scalarsB.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -603,10 +580,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          schemaA: { scalars: "/path/to/scalarsA.ts" },
-          schemaB: { scalars: "/path/to/scalarsB.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
@@ -674,9 +648,7 @@ describe("emitPrebuiltTypes", () => {
         schemas,
         fieldSelections,
         outdir: testOutdir,
-        injects: {
-          testSchema: { scalars: "/path/to/scalars.ts" },
-        },
+        injectsModulePath: "./_internal-injects",
       });
 
       expect(result.isOk()).toBe(true);
