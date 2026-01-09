@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/babel-plugin",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Babel plugin for soda-gql transformations",
   "type": "module",
   "private": false,
