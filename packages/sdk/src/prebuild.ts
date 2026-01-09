@@ -3,10 +3,10 @@
  * @module
  */
 
+import { type BuilderArtifact, type BuilderError, createBuilderSession } from "@soda-gql/builder";
+import { type ConfigError, loadConfig } from "@soda-gql/config";
+import { type ContextTransformer, clearContextTransformer, setContextTransformer } from "@soda-gql/core/_internal";
 import { err, type Result } from "neverthrow";
-import { loadConfig, type ConfigError } from "@soda-gql/config";
-import { setContextTransformer, clearContextTransformer, type ContextTransformer } from "@soda-gql/core/_internal";
-import { createBuilderSession, type BuilderArtifact, type BuilderError } from "@soda-gql/builder";
 
 export type { ContextTransformer };
 
@@ -20,23 +20,23 @@ export type PrebuildError = ConfigError | BuilderError;
  * Options for prebuild functions.
  */
 export interface PrebuildOptions {
-	/** Path to soda-gql config file */
-	configPath: string;
-	/** Optional context transformer to modify composer context */
-	contextTransformer?: ContextTransformer;
-	/** Unique identifier for this evaluator instance (default: "default") */
-	evaluatorId?: string;
-	/** Override entrypoints from config.include */
-	entrypointsOverride?: readonly string[] | ReadonlySet<string>;
-	/** Force rebuild even if no changes detected */
-	force?: boolean;
+  /** Path to soda-gql config file */
+  configPath: string;
+  /** Optional context transformer to modify composer context */
+  contextTransformer?: ContextTransformer;
+  /** Unique identifier for this evaluator instance (default: "default") */
+  evaluatorId?: string;
+  /** Override entrypoints from config.include */
+  entrypointsOverride?: readonly string[] | ReadonlySet<string>;
+  /** Force rebuild even if no changes detected */
+  force?: boolean;
 }
 
 /**
  * Result of prebuild operations.
  */
 export interface PrebuildResult {
-	artifact: BuilderArtifact;
+  artifact: BuilderArtifact;
 }
 
 /**
@@ -66,27 +66,27 @@ export interface PrebuildResult {
  * ```
  */
 export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, PrebuildError> => {
-	const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
+  const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
 
-	// Load config from file path
-	const configResult = loadConfig(configPath);
-	if (configResult.isErr()) {
-		return err(configResult.error);
-	}
-	const config = configResult.value;
+  // Load config from file path
+  const configResult = loadConfig(configPath);
+  if (configResult.isErr()) {
+    return err(configResult.error);
+  }
+  const config = configResult.value;
 
-	const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
+  const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
 
-	try {
-		if (contextTransformer) {
-			setContextTransformer(contextTransformer);
-		}
-		const result = session.build({ force });
-		return result.map((artifact) => ({ artifact }));
-	} finally {
-		clearContextTransformer();
-		session.dispose();
-	}
+  try {
+    if (contextTransformer) {
+      setContextTransformer(contextTransformer);
+    }
+    const result = session.build({ force });
+    return result.map((artifact) => ({ artifact }));
+  } finally {
+    clearContextTransformer();
+    session.dispose();
+  }
 };
 
 /**
@@ -116,25 +116,25 @@ export const prebuild = (options: PrebuildOptions): Result<PrebuildResult, Prebu
  * ```
  */
 export const prebuildAsync = async (options: PrebuildOptions): Promise<Result<PrebuildResult, PrebuildError>> => {
-	const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
+  const { configPath, contextTransformer, evaluatorId, entrypointsOverride, force } = options;
 
-	// Load config from file path (sync - no async version available)
-	const configResult = loadConfig(configPath);
-	if (configResult.isErr()) {
-		return err(configResult.error);
-	}
-	const config = configResult.value;
+  // Load config from file path (sync - no async version available)
+  const configResult = loadConfig(configPath);
+  if (configResult.isErr()) {
+    return err(configResult.error);
+  }
+  const config = configResult.value;
 
-	const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
+  const session = createBuilderSession({ config, evaluatorId, entrypointsOverride });
 
-	try {
-		if (contextTransformer) {
-			setContextTransformer(contextTransformer);
-		}
-		const result = await session.buildAsync({ force });
-		return result.map((artifact) => ({ artifact }));
-	} finally {
-		clearContextTransformer();
-		session.dispose();
-	}
+  try {
+    if (contextTransformer) {
+      setContextTransformer(contextTransformer);
+    }
+    const result = await session.buildAsync({ force });
+    return result.map((artifact) => ({ artifact }));
+  } finally {
+    clearContextTransformer();
+    session.dispose();
+  }
 };

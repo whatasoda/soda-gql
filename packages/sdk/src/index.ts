@@ -4,10 +4,10 @@
  */
 
 export {
-	prebuild,
-	prebuildAsync,
-	type ContextTransformer,
-	type PrebuildError,
-	type PrebuildOptions,
-	type PrebuildResult,
+  type ContextTransformer,
+  type PrebuildError,
+  type PrebuildOptions,
+  type PrebuildResult,
+  prebuild,
+  prebuildAsync,
 } from "./prebuild";

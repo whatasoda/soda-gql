@@ -17,14 +17,14 @@ let currentTransformer: ContextTransformer | null = null;
  * This is intended for use by @soda-gql/sdk and similar programmatic APIs.
  */
 export const setContextTransformer = (transformer: ContextTransformer): void => {
-	currentTransformer = transformer;
+  currentTransformer = transformer;
 };
 
 /**
  * Gets the currently set context transformer, if any.
  */
 export const getContextTransformer = (): ContextTransformer | null => {
-	return currentTransformer;
+  return currentTransformer;
 };
 
 /**
@@ -32,7 +32,7 @@ export const getContextTransformer = (): ContextTransformer | null => {
  * Should be called after build operations complete to avoid leaking state.
  */
 export const clearContextTransformer = (): void => {
-	currentTransformer = null;
+  currentTransformer = null;
 };
 
 /**
@@ -40,8 +40,8 @@ export const clearContextTransformer = (): void => {
  * Returns the original context if no transformer is set.
  */
 export const applyContextTransformer = <T extends Record<string, unknown>>(context: T): T => {
-	if (currentTransformer === null) {
-		return context;
-	}
-	return currentTransformer(context) as T;
+  if (currentTransformer === null) {
+    return context;
+  }
+  return currentTransformer(context) as T;
 };

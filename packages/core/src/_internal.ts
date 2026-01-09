@@ -5,8 +5,8 @@
  */
 
 export {
-	setContextTransformer,
-	getContextTransformer,
-	clearContextTransformer,
-	type ContextTransformer,
+  type ContextTransformer,
+  clearContextTransformer,
+  getContextTransformer,
+  setContextTransformer,
 } from "./composer/context-transformer";
