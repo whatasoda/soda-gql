@@ -190,6 +190,14 @@ export default defineConfig([
     treeshake: false,
     clean: true,
   },
+  {
+    ...configure("@soda-gql/sdk"),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: true,
+  },
 
   // CLI package (CJS for maximum compatibility)
   {

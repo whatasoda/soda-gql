@@ -64,7 +64,7 @@ describe("context-transformer", () => {
 			});
 			setContextTransformer(transformer);
 
-			const context = { existing: "data" };
+			const context: Record<string, unknown> = { existing: "data" };
 			const result = applyContextTransformer(context);
 
 			expect(result).toEqual({
@@ -80,7 +80,7 @@ describe("context-transformer", () => {
 			});
 			setContextTransformer(transformer);
 
-			const context = { overridden: "old-value", unchanged: "same" };
+			const context: Record<string, unknown> = { overridden: "old-value", unchanged: "same" };
 			const result = applyContextTransformer(context);
 
 			expect(result).toEqual({
