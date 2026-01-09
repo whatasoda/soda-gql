@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/vite-plugin",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Vite plugin for soda-gql",
   "type": "module",
   "private": false,

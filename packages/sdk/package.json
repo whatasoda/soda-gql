@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/sdk",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Programmatic SDK for soda-gql CLI features",
   "type": "module",
   "private": false,
