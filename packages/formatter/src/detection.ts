@@ -114,10 +114,7 @@ export const collectGqlIdentifiers = (module: Module): Set<string> => {
  * Check if a call expression is a fragment definition call.
  * Pattern: fragment.TypeName({ ... }) where `fragment` comes from gql factory destructuring.
  */
-export const isFragmentDefinitionCall = (
-  node: CallExpression,
-  fragmentIdentifiers: ReadonlySet<string>,
-): boolean => {
+export const isFragmentDefinitionCall = (node: CallExpression, fragmentIdentifiers: ReadonlySet<string>): boolean => {
   if (node.callee.type !== "MemberExpression") return false;
 
   const { object } = node.callee;

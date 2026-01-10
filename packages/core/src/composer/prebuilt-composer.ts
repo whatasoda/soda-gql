@@ -77,13 +77,7 @@ export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegis
             TPrebuilt["fragments"][TKey]["output"] & object,
             TKey
           >
-        : Fragment<
-            TTypeName,
-            PrebuiltEntryNotFound<TKey, "fragment">,
-            TFields,
-            PrebuiltEntryNotFound<TKey, "fragment">,
-            TKey
-          >
+        : Fragment<TTypeName, PrebuiltEntryNotFound<TKey, "fragment">, TFields, PrebuiltEntryNotFound<TKey, "fragment">, TKey>
       : Fragment<
           TTypeName,
           PrebuiltEntryNotFound<"(undefined)", "fragment">,

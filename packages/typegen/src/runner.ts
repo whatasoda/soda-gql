@@ -182,16 +182,8 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
 
   // Calculate import paths from index.prebuilt.ts to internal modules
-  const internalModulePath = toImportSpecifier(
-    prebuiltIndexPath,
-    join(outdir, "_internal.ts"),
-    importSpecifierOptions,
-  );
-  const injectsModulePath = toImportSpecifier(
-    prebuiltIndexPath,
-    join(outdir, "_internal-injects.ts"),
-    importSpecifierOptions,
-  );
+  const internalModulePath = toImportSpecifier(prebuiltIndexPath, join(outdir, "_internal.ts"), importSpecifierOptions);
+  const injectsModulePath = toImportSpecifier(prebuiltIndexPath, join(outdir, "_internal-injects.ts"), importSpecifierOptions);
 
   // Build injection config for generatePrebuiltModule
   const injection = new Map<string, { hasAdapter?: boolean }>();
