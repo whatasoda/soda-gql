@@ -38,6 +38,9 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "exports": {
+    "./test": {
+      "@soda-gql": "./@devx-test.ts"
+    },
     ".": {
       "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
@@ -51,9 +54,6 @@
       "import": "./dist/plugin.mjs",
       "require": "./dist/plugin.cjs",
       "default": "./dist/plugin.mjs"
-    },
-    "./test": {
-      "@soda-gql": "./@devx-test.ts"
     },
     "./package.json": "./package.json"
   },

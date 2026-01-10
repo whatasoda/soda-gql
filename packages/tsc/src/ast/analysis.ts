@@ -1,5 +1,4 @@
 import type { BuilderArtifactElement } from "@soda-gql/builder";
-import type { CanonicalId } from "@soda-gql/common";
 import type {
   GqlCallFragment,
   GqlCallOperation,
@@ -9,6 +8,7 @@ import type {
   PluginError,
 } from "@soda-gql/builder/plugin";
 import { resolveCanonicalId } from "@soda-gql/builder/plugin";
+import type { CanonicalId } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
 import type { GqlDefinitionMetadataMap } from "./metadata";

@@ -3,8 +3,6 @@ import remapping, { type SourceMapInput } from "@ampproject/remapping";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel/plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
-import { normalizePath } from "@soda-gql/common";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import {
   createPluginSession,
   getSharedArtifact,
@@ -19,6 +17,8 @@ import {
   setSharedPluginSession,
   setSharedSwcTransformer,
 } from "@soda-gql/builder/plugin";
+import { normalizePath } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
 /**

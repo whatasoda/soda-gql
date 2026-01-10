@@ -3,8 +3,8 @@
  * Simplified from plugin-shared to include only types actually used by the Babel transformer.
  */
 
-import type { BuilderError } from "../types";
 import type { CanonicalId } from "@soda-gql/common";
+import type { BuilderError } from "../types";
 
 type OptionsInvalidBuilderConfig = { readonly code: "INVALID_BUILDER_CONFIG"; readonly message: string };
 type OptionsMissingBuilderConfig = { readonly code: "MISSING_BUILDER_CONFIG"; readonly message: string };

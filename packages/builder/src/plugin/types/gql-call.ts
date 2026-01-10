@@ -2,8 +2,8 @@
  * Unified GqlCall types used across all plugins.
  */
 
-import type { BuilderArtifactFragment, BuilderArtifactOperation } from "../../artifact/types";
 import type { CanonicalId } from "@soda-gql/common";
+import type { BuilderArtifactFragment, BuilderArtifactOperation } from "../../artifact/types";
 
 /**
  * Base interface for all GraphQL call types.

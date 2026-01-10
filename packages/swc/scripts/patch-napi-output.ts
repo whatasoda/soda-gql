@@ -25,10 +25,7 @@ const main = () => {
 
   // Patch package requires: require('@soda-gql/swc-xxx')
   // → require('@soda-gql/swc-'.slice(0) + 'xxx')
-  content = content.replace(
-    /require\('@soda-gql\/swc-([^']+)'\)/g,
-    "require('@soda-gql/swc-'.slice(0) + '$1')",
-  );
+  content = content.replace(/require\('@soda-gql\/swc-([^']+)'\)/g, "require('@soda-gql/swc-'.slice(0) + '$1')");
 
   // Patch local requires: require('./swc.xxx.node')
   // → require('./swc.'.slice(0) + 'xxx.node')

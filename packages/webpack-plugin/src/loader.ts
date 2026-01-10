@@ -1,5 +1,4 @@
 import { createBabelTransformer } from "@soda-gql/babel";
-import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,
   getSharedArtifact,
@@ -9,6 +8,7 @@ import {
   getStateKey,
   type PluginSession,
 } from "@soda-gql/builder/plugin";
+import { normalizePath } from "@soda-gql/common";
 import type { LoaderDefinitionFunction } from "webpack";
 import type { WebpackLoaderOptions } from "./types";
 

@@ -1,5 +1,5 @@
-import type { RuntimeOperationInput } from "@soda-gql/core/runtime";
 import type { PluginError } from "@soda-gql/builder/plugin";
+import type { RuntimeOperationInput } from "@soda-gql/core/runtime";
 import { ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
 import type { TsGqlCallFragment, TsGqlCallOperation } from "./analysis";

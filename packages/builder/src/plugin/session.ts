@@ -3,12 +3,12 @@
  * Unified from plugin-babel and plugin-swc implementations.
  */
 
+import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { loadArtifactSync } from "../artifact/loader";
 import type { BuilderArtifact } from "../artifact/types";
+import { formatBuilderErrorForCLI } from "../errors/formatter";
 import type { BuilderService } from "../service";
 import { createBuilderService } from "../service";
-import { formatBuilderErrorForCLI } from "../errors/formatter";
-import { loadArtifactSync } from "../artifact/loader";
-import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { getSharedBuilderService, getStateKey, setSharedBuilderService } from "./shared-state";
 
 /**

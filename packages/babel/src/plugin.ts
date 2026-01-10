@@ -9,9 +9,9 @@ import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { BuilderArtifact } from "@soda-gql/builder";
+import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/builder/plugin";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/builder/plugin";
 import { createTransformer } from "./transformer";
 
 type PluginPassState = PluginPass & {
