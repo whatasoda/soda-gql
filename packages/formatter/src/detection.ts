@@ -5,6 +5,7 @@ import type {
   Module,
   ObjectExpression,
   ObjectPatternProperty,
+  Pattern,
 } from "@swc/types";
 
 /**
@@ -107,4 +108,67 @@ export const collectGqlIdentifiers = (module: Module): Set<string> => {
   }
 
   return gqlIdentifiers;
+};
+
+/**
+ * Check if a call expression is a fragment definition call.
+ * Pattern: fragment.TypeName({ ... }) where `fragment` comes from gql factory destructuring.
+ */
+export const isFragmentDefinitionCall = (node: CallExpression, fragmentIdentifiers: ReadonlySet<string>): boolean => {
+  if (node.callee.type !== "MemberExpression") return false;
+
+  const { object } = node.callee;
+
+  if (object.type !== "Identifier") return false;
+  if (!fragmentIdentifiers.has(object.value)) return false;
+
+  const firstArg = node.arguments[0];
+  if (!firstArg || firstArg.expression.type !== "ObjectExpression") return false;
+
+  return true;
+};
+
+/**
+ * Check if an object expression already has a `key` property.
+ */
+export const hasKeyProperty = (obj: ObjectExpression): boolean => {
+  return obj.properties.some((prop) => {
+    if (prop.type === "KeyValueProperty" && prop.key.type === "Identifier") {
+      return prop.key.value === "key";
+    }
+    return false;
+  });
+};
+
+/**
+ * Collect fragment identifiers from gql factory arrow function parameter.
+ * Looks for patterns like: ({ fragment }) => ... or ({ fragment: f }) => ...
+ */
+export const collectFragmentIdentifiers = (arrowFunction: ArrowFunctionExpression): Set<string> => {
+  const fragmentIdentifiers = new Set<string>();
+
+  const param = arrowFunction.params[0];
+  if (param?.type !== "ObjectPattern") return fragmentIdentifiers;
+
+  for (const p of param.properties as ObjectPatternProperty[]) {
+    if (p.type === "KeyValuePatternProperty" && p.key.type === "Identifier" && p.key.value === "fragment") {
+      const localName = extractIdentifierName(p.value);
+      if (localName) fragmentIdentifiers.add(localName);
+    }
+    if (p.type === "AssignmentPatternProperty" && p.key.type === "Identifier" && p.key.value === "fragment") {
+      fragmentIdentifiers.add(p.key.value);
+    }
+  }
+
+  return fragmentIdentifiers;
+};
+
+/**
+ * Extract identifier name from a pattern node.
+ */
+const extractIdentifierName = (pattern: Pattern): string | null => {
+  if (pattern.type === "Identifier") return pattern.value;
+  // biome-ignore lint/suspicious/noExplicitAny: SWC types
+  if ((pattern as any).type === "BindingIdentifier") return (pattern as any).value;
+  return null;
 };

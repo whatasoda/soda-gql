@@ -254,6 +254,47 @@ export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => 
     });
   });
 
+  describe("--inject-fragment-keys option", () => {
+    it("injects fragment keys when option is enabled", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      const testFile = join(caseDir, "test.ts");
+      const source = `import { gql } from "@/graphql-system";
+export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
+`;
+      await Bun.write(testFile, source);
+
+      const result = await runFormatCli([testFile, "--inject-fragment-keys"]);
+
+      assertCliSuccess(result);
+      expect(result.stdout).toContain("1 formatted");
+
+      const formatted = await Bun.file(testFile).text();
+      expect(formatted).toMatch(/key: "[a-f0-9]{8}"/);
+    });
+
+    it("does not inject keys without the option", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      const testFile = join(caseDir, "test.ts");
+      const source = `import { gql } from "@/graphql-system";
+export const frag = gql.default(({ fragment }) => fragment.User({
+  fields: ({ f }) => ({ ...f.id() })
+}));
+`;
+      await Bun.write(testFile, source);
+
+      const result = await runFormatCli([testFile]);
+
+      assertCliSuccess(result);
+
+      const formatted = await Bun.file(testFile).text();
+      expect(formatted).not.toContain("key:");
+    });
+  });
+
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });

@@ -1,14 +1,43 @@
 import { parseSync } from "@swc/core";
 import type { ArrowFunctionExpression, CallExpression, Module, Node, ObjectExpression } from "@swc/types";
 import { err, ok, type Result } from "neverthrow";
-import { collectGqlIdentifiers, isFieldSelectionObject, isGqlDefinitionCall } from "./detection";
-import { hasExistingNewline, NEWLINE_INSERTION } from "./insertion";
+import {
+  collectFragmentIdentifiers,
+  collectGqlIdentifiers,
+  hasKeyProperty,
+  isFieldSelectionObject,
+  isFragmentDefinitionCall,
+  isGqlDefinitionCall,
+} from "./detection";
+import {
+  createKeyInsertion,
+  detectIndentationAfterBrace,
+  generateFragmentKey,
+  hasExistingNewline,
+  NEWLINE_INSERTION,
+} from "./insertion";
 import type { FormatError, FormatOptions, FormatResult } from "./types";
+
+type InsertionPoint = {
+  readonly position: number;
+  readonly content: string;
+};
 
 type TraversalContext = {
   insideGqlDefinition: boolean;
   currentArrowFunction: ArrowFunctionExpression | null;
+  fragmentIdentifiers: ReadonlySet<string>;
 };
+
+type TraversalCallbackContext = {
+  readonly isFragmentConfig: boolean;
+};
+
+type TraversalCallback = (
+  object: ObjectExpression,
+  parent: ArrowFunctionExpression,
+  callbackContext: TraversalCallbackContext,
+) => void;
 
 /**
  * Simple recursive AST traversal
@@ -17,11 +46,38 @@ const traverseNode = (
   node: Node,
   context: TraversalContext,
   gqlIdentifiers: ReadonlySet<string>,
-  onObjectExpression: (object: ObjectExpression, parent: ArrowFunctionExpression) => void,
+  onObjectExpression: TraversalCallback,
 ): void => {
-  // Check for gql definition call entry
+  // Check for gql definition call entry and collect fragment identifiers
   if (node.type === "CallExpression" && isGqlDefinitionCall(node as CallExpression, gqlIdentifiers)) {
-    context = { ...context, insideGqlDefinition: true };
+    const call = node as CallExpression;
+    const firstArg = call.arguments[0];
+    if (firstArg?.expression.type === "ArrowFunctionExpression") {
+      const arrow = firstArg.expression as ArrowFunctionExpression;
+      const fragmentIds = collectFragmentIdentifiers(arrow);
+      context = {
+        ...context,
+        insideGqlDefinition: true,
+        fragmentIdentifiers: new Set([...context.fragmentIdentifiers, ...fragmentIds]),
+      };
+    } else {
+      context = { ...context, insideGqlDefinition: true };
+    }
+  }
+
+  // Check for fragment definition call: fragment.TypeName({ ... })
+  if (
+    node.type === "CallExpression" &&
+    context.insideGqlDefinition &&
+    isFragmentDefinitionCall(node as CallExpression, context.fragmentIdentifiers)
+  ) {
+    const call = node as CallExpression;
+    const firstArg = call.arguments[0];
+    if (firstArg?.expression.type === "ObjectExpression" && context.currentArrowFunction) {
+      onObjectExpression(firstArg.expression as ObjectExpression, context.currentArrowFunction, {
+        isFragmentConfig: true,
+      });
+    }
   }
 
   // Handle object expressions - check if it's the body of the current arrow function
@@ -31,7 +87,7 @@ const traverseNode = (
     context.currentArrowFunction &&
     isFieldSelectionObject(node as ObjectExpression, context.currentArrowFunction)
   ) {
-    onObjectExpression(node as ObjectExpression, context.currentArrowFunction);
+    onObjectExpression(node as ObjectExpression, context.currentArrowFunction, { isFragmentConfig: false });
   }
 
   // Recursively visit children
@@ -84,22 +140,23 @@ const traverseNode = (
   }
 };
 
-const traverse = (
-  module: Module,
-  gqlIdentifiers: ReadonlySet<string>,
-  onObjectExpression: (object: ObjectExpression, parent: ArrowFunctionExpression) => void,
-): void => {
+const traverse = (module: Module, gqlIdentifiers: ReadonlySet<string>, onObjectExpression: TraversalCallback): void => {
+  const initialContext: TraversalContext = {
+    insideGqlDefinition: false,
+    currentArrowFunction: null,
+    fragmentIdentifiers: new Set(),
+  };
   for (const statement of module.body) {
-    traverseNode(statement, { insideGqlDefinition: false, currentArrowFunction: null }, gqlIdentifiers, onObjectExpression);
+    traverseNode(statement, initialContext, gqlIdentifiers, onObjectExpression);
   }
 };
 
 /**
  * Format soda-gql field selection objects by inserting newlines.
- * This preserves multi-line formatting when using Biome/Prettier.
+ * Optionally injects fragment keys for anonymous fragments.
  */
 export const format = (options: FormatOptions): Result<FormatResult, FormatError> => {
-  const { sourceCode, filePath } = options;
+  const { sourceCode, filePath, injectFragmentKeys = false } = options;
 
   // Parse source code with SWC
   let module: Module;
@@ -131,7 +188,8 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   // Calculate span offset for position normalization
   // SWC's BytePos counter accumulates across parseSync calls within the same process
-  const spanOffset = module.span.end - sourceCode.length + 1;
+  // Using module.span.start ensures correct position calculation regardless of accumulation
+  const spanOffset = module.span.start;
 
   // Collect gql identifiers from imports
   const gqlIdentifiers = collectGqlIdentifiers(module);
@@ -140,17 +198,42 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   }
 
   // Collect insertion points
-  const insertionPoints: number[] = [];
+  const insertionPoints: InsertionPoint[] = [];
 
-  traverse(module, gqlIdentifiers, (object, _parent) => {
+  traverse(module, gqlIdentifiers, (object, _parent, callbackContext) => {
     // Calculate actual position in source
     const objectStart = object.span.start - spanOffset;
 
-    // Check if already has newline
-    if (hasExistingNewline(sourceCode, objectStart)) return;
+    // For fragment config objects, inject key if enabled and not present
+    if (callbackContext.isFragmentConfig && injectFragmentKeys && !hasKeyProperty(object)) {
+      const key = generateFragmentKey();
 
-    // Record insertion point (position after `{`)
-    insertionPoints.push(objectStart + 1);
+      if (hasExistingNewline(sourceCode, objectStart)) {
+        // Multi-line: insert after newline, preserving indentation
+        const indentation = detectIndentationAfterBrace(sourceCode, objectStart) ?? "";
+        let insertPos = objectStart + 2; // Skip { and \n
+        if (sourceCode[objectStart + 1] === "\r") insertPos++;
+
+        insertionPoints.push({
+          position: insertPos,
+          content: createKeyInsertion(key, indentation),
+        });
+      } else {
+        // Single-line: insert right after {
+        insertionPoints.push({
+          position: objectStart + 1,
+          content: createKeyInsertion(key),
+        });
+      }
+    }
+
+    // For field selection objects, insert newline if not present
+    if (!callbackContext.isFragmentConfig && !hasExistingNewline(sourceCode, objectStart)) {
+      insertionPoints.push({
+        position: objectStart + 1,
+        content: NEWLINE_INSERTION,
+      });
+    }
   });
 
   // Apply insertions
@@ -160,11 +243,11 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   // Sort in descending order to insert from end to beginning
   // This preserves earlier positions while modifying later parts
-  const sortedPoints = [...insertionPoints].sort((a, b) => b - a);
+  const sortedPoints = [...insertionPoints].sort((a, b) => b.position - a.position);
 
   let result = sourceCode;
-  for (const pos of sortedPoints) {
-    result = result.slice(0, pos) + NEWLINE_INSERTION + result.slice(pos);
+  for (const point of sortedPoints) {
+    result = result.slice(0, point.position) + point.content + result.slice(point.position);
   }
 
   return ok({ modified: true, sourceCode: result });
@@ -205,7 +288,7 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
     });
   }
 
-  const spanOffset = module.span.end - sourceCode.length + 1;
+  const spanOffset = module.span.start;
   const gqlIdentifiers = collectGqlIdentifiers(module);
 
   if (gqlIdentifiers.size === 0) {
@@ -214,8 +297,11 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
 
   let needsFormatting = false;
 
-  traverse(module, gqlIdentifiers, (object, _parent) => {
+  traverse(module, gqlIdentifiers, (object, _parent, callbackContext) => {
     if (needsFormatting) return; // Early exit
+
+    // Skip fragment config objects for needsFormat check (key injection is optional)
+    if (callbackContext.isFragmentConfig) return;
 
     const objectStart = object.span.start - spanOffset;
     if (!hasExistingNewline(sourceCode, objectStart)) {
