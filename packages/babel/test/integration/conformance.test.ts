@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { transformAsync } from "@babel/core";
-import { createPlugin } from "@soda-gql/babel-plugin";
+import { createPlugin } from "@soda-gql/babel/plugin";
 import { type AnalyzerType, loadTestCases, normalizeCode } from "@soda-gql/tsc-transformer/test";
 
 /**

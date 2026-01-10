@@ -11,7 +11,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformAsync } from "@babel/core";
-import { createPlugin } from "@soda-gql/babel-plugin";
+import { createPlugin } from "@soda-gql/babel/plugin";
 import { __resetRuntimeRegistry, gqlRuntime } from "@soda-gql/core/runtime";
 import {
   clearTransformCache,

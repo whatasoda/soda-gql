@@ -9,8 +9,7 @@
   "files": [],
   "references": [
     { "path": "./tsconfig.editor.json" },
-    { "path": "./packages/babel-plugin/tsconfig.editor.json" },
-    { "path": "./packages/babel-transformer/tsconfig.editor.json" },
+    { "path": "./packages/babel/tsconfig.editor.json" },
     { "path": "./packages/builder/tsconfig.editor.json" },
     { "path": "./packages/cli/tsconfig.editor.json" },
     { "path": "./packages/codegen/tsconfig.editor.json" },

@@ -1,4 +1,4 @@
-import { createBabelTransformer } from "@soda-gql/babel-transformer";
+import { createBabelTransformer } from "@soda-gql/babel";
 import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,

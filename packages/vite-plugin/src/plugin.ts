@@ -1,5 +1,5 @@
 import { type TransformOptions, transformSync } from "@babel/core";
-import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
+import { createPluginWithArtifact } from "@soda-gql/babel/plugin";
 import { type BuilderArtifact, type BuilderArtifactElement, collectAffectedFiles } from "@soda-gql/builder";
 import { normalizePath } from "@soda-gql/common";
 import {

@@ -1,18 +1,25 @@
+/**
+ * Babel plugin entrypoint for soda-gql.
+ *
+ * This module provides Babel transformer integration for soda-gql
+ * zero-runtime transformations.
+ */
+
 import type { PluginObj, PluginPass } from "@babel/core";
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import { createTransformer } from "@soda-gql/babel-transformer";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createPluginSession, type PluginOptions, type PluginSession } from "@soda-gql/plugin-common";
+import { createTransformer } from "./transformer";
 
 type PluginPassState = PluginPass & {
   _artifact?: BuilderArtifact | null;
 };
 
 const fallbackPlugin = (): PluginObj => ({
-  name: "@soda-gql/babel-plugin",
+  name: "@soda-gql/babel",
   visitor: {
     Program() {
       // No-op fallback
@@ -21,7 +28,7 @@ const fallbackPlugin = (): PluginObj => ({
 });
 
 export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }): PluginObj<PluginPassState> => ({
-  name: "@soda-gql/babel-plugin",
+  name: "@soda-gql/babel",
 
   async pre() {
     this._artifact = await pluginSession.getArtifactAsync();
@@ -57,7 +64,7 @@ export const createPlugin = ({ pluginSession }: { pluginSession: PluginSession }
 
 export const createSodaGqlPlugin = (_babel: unknown, options: PluginOptions = {}): PluginObj => {
   // Create plugin session synchronously (no async pre())
-  const pluginSession = createPluginSession(options, "@soda-gql/babel-plugin");
+  const pluginSession = createPluginSession(options, "@soda-gql/babel");
 
   return pluginSession ? createPlugin({ pluginSession }) : fallbackPlugin();
 };
@@ -73,7 +80,7 @@ export const createPluginWithArtifact = ({
   artifact: BuilderArtifact;
   config: ResolvedSodaGqlConfig;
 }): PluginObj => ({
-  name: "@soda-gql/babel-plugin",
+  name: "@soda-gql/babel",
 
   visitor: {
     Program(programPath: NodePath<t.Program>, state) {
@@ -97,3 +104,5 @@ export const createPluginWithArtifact = ({
     },
   },
 });
+
+export default createSodaGqlPlugin;

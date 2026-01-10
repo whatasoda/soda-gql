@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "customConditions": ["@soda-gql"],
-    "outDir": "../../node_modules/.soda-gql/.typecheck/babel-transformer",
-    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/babel-transformer/tsconfig.tsbuildinfo",
+    "outDir": "../../node_modules/.soda-gql/.typecheck/babel",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/babel/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "paths": {}
   },
@@ -25,6 +25,9 @@
     },
     {
       "path": "../plugin-common/tsconfig.editor.json"
+    },
+    {
+      "path": "../tsc-transformer/tsconfig.editor.json"
     }
   ]
 }
