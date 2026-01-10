@@ -1,4 +1,4 @@
-import { gql } from "../../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 function createModels() {
   const nested = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));

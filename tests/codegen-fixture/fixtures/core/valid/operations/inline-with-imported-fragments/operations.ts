@@ -1,4 +1,4 @@
-import { gql } from "../../../codegen-fixture/graphql-system";
+import { gql } from "../../../../graphql-system";
 import { userFragment } from "./fragments";
 
 export const getUserById = gql.default(({ query, $var }) =>

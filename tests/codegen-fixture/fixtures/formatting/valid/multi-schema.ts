@@ -1,4 +1,4 @@
-import { gql } from "../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Multi-schema: admin schema (should be formatted)
 export const adminFragment = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));

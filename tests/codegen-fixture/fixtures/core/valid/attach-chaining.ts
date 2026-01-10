@@ -1,5 +1,5 @@
 import type { GqlElementAttachment } from "@soda-gql/core";
-import { gql } from "../../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Helper type for attachment fixtures
 type TestAttachment<T extends object> = GqlElementAttachment<T, "test", { value: number }>;

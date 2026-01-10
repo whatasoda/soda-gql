@@ -1,4 +1,4 @@
-import { gql } from "../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Should be formatted - no newline after opening brace
 export const fragment1 = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));

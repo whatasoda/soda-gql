@@ -1,4 +1,4 @@
-import { gql } from "../../../codegen-fixture/graphql-system";
+import { gql } from "../../../../graphql-system";
 
 // Test nested scopes (3 levels: function -> object -> property)
 function outer() {

@@ -1,4 +1,4 @@
-import { gql } from "../../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Pattern from actual failing code: gql.xxx(...).attach(...) with destructuring
 // @ts-expect-error - Test fixture for AST parsing, destructuring pattern type doesn't match actual return type

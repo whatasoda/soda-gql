@@ -1,4 +1,4 @@
-import { gql } from "../../../codegen-fixture/graphql-system";
+import { gql } from "../../../../graphql-system";
 
 // Test case: File with gql code but no existing runtime import
 // Expected: gqlRuntime import/require should be added

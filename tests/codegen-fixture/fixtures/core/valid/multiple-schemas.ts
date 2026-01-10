@@ -1,4 +1,4 @@
-import { gql } from "../../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 export const adminFragment = gql.admin(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
 

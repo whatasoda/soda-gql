@@ -1,4 +1,4 @@
-import { gql } from "../../../codegen-fixture/graphql-system";
+import { gql } from "../../../../graphql-system";
 
 // Test case: File with multiple gql definitions
 // Expected: Single runtime import added, all definitions transformed

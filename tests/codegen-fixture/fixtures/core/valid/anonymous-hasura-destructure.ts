@@ -1,4 +1,4 @@
-import { gql } from "../../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Pattern simulating user's failing code with operation and destructuring
 // Using gql.default instead of gql.hasura (hasura is schema-specific)

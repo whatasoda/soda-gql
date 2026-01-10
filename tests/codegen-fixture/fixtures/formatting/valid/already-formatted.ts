@@ -1,4 +1,4 @@
-import { gql } from "../codegen-fixture/graphql-system";
+import { gql } from "../../graphql-system";
 
 // Already has newline - should be skipped
 export const fragment1 = gql.default(({ fragment }) =>

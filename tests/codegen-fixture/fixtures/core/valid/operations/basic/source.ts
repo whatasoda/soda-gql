@@ -1,4 +1,4 @@
-import { gql } from "../../../codegen-fixture/graphql-system";
+import { gql } from "../../../../graphql-system";
 
 export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
