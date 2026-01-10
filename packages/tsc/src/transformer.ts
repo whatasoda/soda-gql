@@ -78,7 +78,7 @@ export const createTransformer = ({
 
         if (result.isErr()) {
           // Log error and continue - don't fail the entire build for a single error
-          console.error(`[@soda-gql/tsc-plugin] ${formatPluginError(result.error)}`);
+          console.error(`[@soda-gql/tsc] ${formatPluginError(result.error)}`);
           return node;
         }
 
@@ -99,7 +99,7 @@ export const createTransformer = ({
 
     const visitedNode = ts.visitNode(sourceFile, visitor);
     if (!visitedNode || !ts.isSourceFile(visitedNode)) {
-      console.error(`[@soda-gql/tsc-plugin] Failed to transform source file: ${sourceFile.fileName}`);
+      console.error(`[@soda-gql/tsc] Failed to transform source file: ${sourceFile.fileName}`);
       return sourceFile;
     }
 

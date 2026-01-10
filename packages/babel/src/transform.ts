@@ -1,7 +1,7 @@
 /**
  * Source-code based transform function for babel-transformer.
  *
- * This provides a similar interface to swc-transformer, taking source code
+ * This provides a similar interface to swc, taking source code
  * as input and returning transformed source code.
  */
 
@@ -55,7 +55,7 @@ export type TransformOutput = {
 };
 
 /**
- * Transformer interface (matches swc-transformer).
+ * Transformer interface (matches swc).
  */
 export interface Transformer {
   transform(input: TransformInput): TransformOutput;

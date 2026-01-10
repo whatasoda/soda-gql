@@ -144,7 +144,7 @@ const initializeSwcTransformer = async (
   }
 
   try {
-    const { createTransformer } = await import("@soda-gql/swc-transformer");
+    const { createTransformer } = await import("@soda-gql/swc");
     const transformer = await createTransformer({
       config,
       artifact,
@@ -155,7 +155,7 @@ const initializeSwcTransformer = async (
   } catch (error) {
     console.warn(
       `[@soda-gql/metro-plugin] Failed to initialize SWC transformer: ${error}. ` +
-        "Make sure @soda-gql/swc-transformer is installed. Falling back to Babel.",
+        "Make sure @soda-gql/swc is installed. Falling back to Babel.",
     );
     return null;
   }

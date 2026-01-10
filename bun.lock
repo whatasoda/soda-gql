@@ -21,7 +21,7 @@
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
         "@soda-gql/tsc": "workspace:*",
         "@soda-gql/webpack-plugin": "workspace:*",
         "@swc/core": "^1.0.0",
@@ -166,11 +166,11 @@
         "@soda-gql/plugin-common": "workspace:*",
       },
       "peerDependencies": {
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
         "metro": ">=0.70.0",
       },
       "optionalPeers": [
-        "@soda-gql/swc-transformer",
+        "@soda-gql/swc",
         "metro",
       ],
     },
@@ -201,8 +201,8 @@
         "neverthrow": "^8.1.1",
       },
     },
-    "packages/swc-transformer": {
-      "name": "@soda-gql/swc-transformer",
+    "packages/swc": {
+      "name": "@soda-gql/swc",
       "version": "0.10.2",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
@@ -265,11 +265,11 @@
         "@soda-gql/plugin-common": "workspace:*",
       },
       "peerDependencies": {
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
         "vite": "^5.0.0 || ^6.0.0",
       },
       "optionalPeers": [
-        "@soda-gql/swc-transformer",
+        "@soda-gql/swc",
       ],
     },
     "packages/webpack-plugin": {
@@ -284,14 +284,14 @@
         "@soda-gql/plugin-common": "workspace:*",
       },
       "devDependencies": {
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
       },
       "peerDependencies": {
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
         "webpack": "^5.0.0",
       },
       "optionalPeers": [
-        "@soda-gql/swc-transformer",
+        "@soda-gql/swc",
       ],
     },
     "playgrounds/expo-metro": {
@@ -366,7 +366,7 @@
       },
       "devDependencies": {
         "@soda-gql/cli": "workspace:*",
-        "@soda-gql/swc-transformer": "workspace:*",
+        "@soda-gql/swc": "workspace:*",
         "@soda-gql/webpack-plugin": "workspace:*",
         "@types/node": "^22.0.0",
         "@types/react": "^19.0.0",
@@ -1149,7 +1149,7 @@
 
     "@soda-gql/sdk": ["@soda-gql/sdk@workspace:packages/sdk"],
 
-    "@soda-gql/swc-transformer": ["@soda-gql/swc-transformer@workspace:packages/swc-transformer"],
+    "@soda-gql/swc": ["@soda-gql/swc@workspace:packages/swc"],
 
     "@soda-gql/tsc": ["@soda-gql/tsc@workspace:packages/tsc"],
 

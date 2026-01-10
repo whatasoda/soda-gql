@@ -6,11 +6,11 @@ name: Build Native Modules
 #   push:
 #     branches: [main]
 #     paths:
-#       - "packages/swc-transformer/**"
+#       - "packages/swc/**"
 #       - ".github/workflows/build-native.yaml"
 #   pull_request:
 #     paths:
-#       - "packages/swc-transformer/**"
+#       - "packages/swc/**"
 #       - ".github/workflows/build-native.yaml"
 
 on:
@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        working-directory: packages/swc-transformer
+        working-directory: packages/swc
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -59,7 +59,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
-          workspaces: packages/swc-transformer -> target
+          workspaces: packages/swc -> target
 
       - name: Setup musl
         if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -81,5 +81,5 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: bindings-${{ matrix.name }}
-          path: packages/swc-transformer/src/native/*.node
+          path: packages/swc/src/native/*.node
           if-no-files-found: error

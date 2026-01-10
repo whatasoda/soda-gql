@@ -64,7 +64,7 @@
   },
   "peerDependencies": {
     "metro": ">=0.70.0",
-    "@soda-gql/swc-transformer": "workspace:*"
+    "@soda-gql/swc": "workspace:*"
   },
   "peerDependenciesMeta": {
     "metro": {
@@ -79,7 +79,7 @@
     "@react-native/metro-babel-transformer": {
       "optional": true
     },
-    "@soda-gql/swc-transformer": {
+    "@soda-gql/swc": {
       "optional": true
     }
   }

@@ -1,0 +1,28 @@
+{
+  "name": "@soda-gql/swc-linux-x64-musl",
+  "version": "0.10.2",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "swc.linux-x64-musl.node",
+  "files": [
+    "swc.linux-x64-musl.node"
+  ],
+  "license": "MIT",
+  "libc": [
+    "musl"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/swc"
+  }
+}

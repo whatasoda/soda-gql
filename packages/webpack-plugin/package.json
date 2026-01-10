@@ -63,14 +63,14 @@
     "@soda-gql/babel": "workspace:*"
   },
   "devDependencies": {
-    "@soda-gql/swc-transformer": "workspace:*"
+    "@soda-gql/swc": "workspace:*"
   },
   "peerDependencies": {
     "webpack": "^5.0.0",
-    "@soda-gql/swc-transformer": "workspace:*"
+    "@soda-gql/swc": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@soda-gql/swc-transformer": {
+    "@soda-gql/swc": {
       "optional": true
     }
   }

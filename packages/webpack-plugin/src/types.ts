@@ -3,7 +3,7 @@ import type { PluginOptions } from "@soda-gql/plugin-common";
 /**
  * Transformer type for code transformation.
  * - 'babel': Use Babel plugin (default, wider compatibility)
- * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc-transformer)
+ * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc)
  */
 export type TransformerType = "babel" | "swc";
 

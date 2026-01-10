@@ -4,13 +4,13 @@ import type { PluginSession } from "./plugin-session";
 /**
  * Transformer type for code transformation.
  * - 'babel': Use Babel plugin (default, wider compatibility)
- * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc-transformer)
+ * - 'swc': Use SWC transformer (faster, requires @soda-gql/swc)
  */
 export type TransformerType = "babel" | "swc";
 
 /**
  * Minimal interface for SWC transformer.
- * Matches the Transformer interface from @soda-gql/swc-transformer.
+ * Matches the Transformer interface from @soda-gql/swc.
  */
 export interface SwcTransformerInterface {
   transform(input: { sourceCode: string; sourcePath: string; inputSourceMap?: string }): {

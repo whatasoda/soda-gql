@@ -172,15 +172,15 @@ benchmarks/runtime-builder/*/graphql-system/
 
 # Package test fixture generated files
 packages/builder/test/graphql-system/
-packages/tsc-transformer/test/codegen-fixture/graphql-system/
+packages/tsc/test/codegen-fixture/graphql-system/
 
 # Rust/napi-rs build artifacts
-packages/swc-transformer/target/
-packages/swc-transformer/src/native/*.node
+packages/swc/target/
+packages/swc/src/native/*.node
 
 # napi-rs CI artifacts (downloaded during publish)
-packages/swc-transformer/artifacts/
-packages/swc-transformer/npm/*/*.node
+packages/swc/artifacts/
+packages/swc/npm/*/*.node
 
 # Rspress build output
 website/doc_build/
