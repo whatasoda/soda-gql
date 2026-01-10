@@ -183,7 +183,7 @@ describe("emitPrebuiltTypes", () => {
         expect(content).toContain("export type PrebuiltTypes_testSchema = {");
         expect(content).toContain("readonly fragments: {");
         expect(content).toContain("readonly operations: {");
-        expect(content).toContain("} satisfies PrebuiltTypeRegistry;");
+        expect(content).toContain("};");
       }
     });
   });

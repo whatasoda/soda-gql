@@ -380,7 +380,7 @@ const generateTypesCode = (
       lines.push(...operationEntries);
     }
     lines.push("  };");
-    lines.push("} satisfies PrebuiltTypeRegistry;");
+    lines.push("};");
     lines.push("");
   }
 

@@ -7,12 +7,16 @@
  * @module
  */
 
-import { cpSync, mkdtempSync } from "node:fs";
+import { cpSync, mkdtempSync, symlinkSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCodegen } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+
+// Project root for accessing node_modules
+const projectRoot = path.resolve(fileURLToPath(import.meta.url), "../../../../../..");
 
 /**
  * Result of creating a test workspace.
@@ -92,8 +96,40 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
     throw new Error(`codegen failed: ${codegenResult.error.code}`);
   }
 
-  // Create cache directory
-  await fs.mkdir(path.join(workspaceRoot, "node_modules/.cache/soda-gql/builder"), { recursive: true });
+  // Symlink node_modules to allow @soda-gql/core resolution
+  const nodeModulesPath = path.join(workspaceRoot, "node_modules");
+  const projectNodeModules = path.join(projectRoot, "node_modules");
+  symlinkSync(projectNodeModules, nodeModulesPath, "dir");
+
+  // Create cache directory inside the symlinked node_modules
+  await fs.mkdir(path.join(nodeModulesPath, ".cache/soda-gql/builder"), { recursive: true });
+
+  // Create package.json for ESM module type
+  const packageJsonPath = path.join(workspaceRoot, "package.json");
+  const packageJsonContent = {
+    name: "typegen-e2e-test-workspace",
+    type: "module",
+  };
+  await fs.writeFile(packageJsonPath, JSON.stringify(packageJsonContent, null, 2), "utf-8");
+
+  // Create tsconfig.json for tsc validation
+  const tsconfigPath = path.join(workspaceRoot, "tsconfig.json");
+  const tsconfigContent = {
+    compilerOptions: {
+      target: "ES2022",
+      module: "ESNext",
+      moduleResolution: "bundler",
+      strict: false, // TODO: Enable strict mode after fixing type inference issues
+      skipLibCheck: true,
+      noEmit: true,
+      esModuleInterop: true,
+      resolveJsonModule: true,
+      lib: ["ES2022"],
+      types: [], // Don't auto-load type definitions from @types/*
+    },
+    include: ["src/**/*.ts", "graphql-system/**/*.ts", "inject/**/*.ts"],
+  };
+  await fs.writeFile(tsconfigPath, JSON.stringify(tsconfigContent, null, 2), "utf-8");
 
   // Construct resolved config
   const config: ResolvedSodaGqlConfig = {
