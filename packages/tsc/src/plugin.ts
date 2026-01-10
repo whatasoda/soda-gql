@@ -1,8 +1,15 @@
+/**
+ * TypeScript compiler plugin entrypoint for soda-gql.
+ *
+ * This module provides TypeScript transformer integration for soda-gql
+ * when using Nest CLI with `builder: "tsc"`.
+ */
+
 import { createBuilderService } from "@soda-gql/builder";
 import { cachedFn } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
-import { createTransformer } from "@soda-gql/tsc-transformer";
 import type * as ts from "typescript";
+import { createTransformer } from "./transformer";
 
 export type PluginOptions = {
   readonly configPath?: string;
@@ -25,7 +32,7 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
 
   const configResult = loadConfig(options.configPath);
   if (configResult.isErr()) {
-    console.error(`[@soda-gql/tsc-plugin] Failed to load config: ${configResult.error.message}`);
+    console.error(`[@soda-gql/tsc] Failed to load config: ${configResult.error.message}`);
     return fallbackPlugin;
   }
 
@@ -43,14 +50,14 @@ export const createTscPlugin = (options: PluginOptions = {}) => {
       const builderService = ensureBuilderService();
       const buildResult = builderService.build();
       if (buildResult.isErr()) {
-        console.error(`[@soda-gql/tsc-plugin] Failed to build initial artifact: ${buildResult.error.message}`);
+        console.error(`[@soda-gql/tsc] Failed to build initial artifact: ${buildResult.error.message}`);
         return fallbackPlugin.before(_options, program);
       }
 
       const artifact = buildResult.value;
       const compilerOptions = program.getCompilerOptions();
       const transformer = createTransformer({ compilerOptions, config, artifact });
-      console.log("[@soda-gql/tsc-plugin] Transforming program");
+      console.log("[@soda-gql/tsc] Transforming program");
 
       return (context: ts.TransformationContext) => {
         return (sourceFile: ts.SourceFile) => {

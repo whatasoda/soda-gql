@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.4",
-    "@soda-gql/tsc-transformer": "workspace:*",
+    "@soda-gql/tsc": "workspace:*",
     "prettier": "^3.4.2"
   },
   "peerDependencies": {

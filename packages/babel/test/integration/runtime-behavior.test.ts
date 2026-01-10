@@ -19,7 +19,7 @@ import {
   type LoadedPluginFixtureMulti,
   loadPluginFixtureMulti,
   withOperationSpy,
-} from "@soda-gql/tsc-transformer/test";
+} from "@soda-gql/tsc/test";
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
 const baseOutputDir = join(packageRoot, ".cache", "runtime-test");

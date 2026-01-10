@@ -69,7 +69,7 @@
     "neverthrow": "^8.1.1"
   },
   "devDependencies": {
-    "@soda-gql/tsc-transformer": "workspace:*",
+    "@soda-gql/tsc": "workspace:*",
     "@types/babel__generator": "^7.27.0"
   }
 }

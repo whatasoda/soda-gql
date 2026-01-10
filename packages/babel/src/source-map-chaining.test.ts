@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { loadTestCases } from "@soda-gql/tsc-transformer/test";
+import { loadTestCases } from "@soda-gql/tsc/test";
 import { createBabelTransformer, type TransformOptions } from "./transform";
 
 /**

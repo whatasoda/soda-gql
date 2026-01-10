@@ -26,7 +26,7 @@
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@soda-gql/cli": "workspace:*",
-    "@soda-gql/tsc-plugin": "workspace:*",
+    "@soda-gql/tsc": "workspace:*",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   }

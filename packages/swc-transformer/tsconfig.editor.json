@@ -27,7 +27,7 @@
       "path": "../plugin-common/tsconfig.editor.json"
     },
     {
-      "path": "../tsc-transformer/tsconfig.editor.json"
+      "path": "../tsc/tsconfig.editor.json"
     }
   ]
 }

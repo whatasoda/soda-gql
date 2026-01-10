@@ -22,8 +22,7 @@
         "@soda-gql/core": "workspace:*",
         "@soda-gql/runtime": "workspace:*",
         "@soda-gql/swc-transformer": "workspace:*",
-        "@soda-gql/tsc-plugin": "workspace:*",
-        "@soda-gql/tsc-transformer": "workspace:*",
+        "@soda-gql/tsc": "workspace:*",
         "@soda-gql/webpack-plugin": "workspace:*",
         "@swc/core": "^1.0.0",
         "@swc/types": "^0.1.0",
@@ -57,7 +56,7 @@
         "neverthrow": "^8.1.1",
       },
       "devDependencies": {
-        "@soda-gql/tsc-transformer": "workspace:*",
+        "@soda-gql/tsc": "workspace:*",
         "@types/babel__generator": "^7.27.0",
       },
     },
@@ -215,28 +214,15 @@
       },
       "devDependencies": {
         "@napi-rs/cli": "^2.18.4",
-        "@soda-gql/tsc-transformer": "workspace:*",
+        "@soda-gql/tsc": "workspace:*",
         "prettier": "^3.4.2",
       },
       "peerDependencies": {
         "@swc/core": "^1.0.0",
       },
     },
-    "packages/tsc-plugin": {
-      "name": "@soda-gql/tsc-plugin",
-      "version": "0.10.2",
-      "dependencies": {
-        "@soda-gql/builder": "workspace:*",
-        "@soda-gql/common": "workspace:*",
-        "@soda-gql/config": "workspace:*",
-        "@soda-gql/tsc-transformer": "workspace:*",
-      },
-      "peerDependencies": {
-        "typescript": "5.*",
-      },
-    },
-    "packages/tsc-transformer": {
-      "name": "@soda-gql/tsc-transformer",
+    "packages/tsc": {
+      "name": "@soda-gql/tsc",
       "version": "0.10.2",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
@@ -364,7 +350,7 @@
         "@nestjs/cli": "^10.0.0",
         "@nestjs/schematics": "^10.0.0",
         "@soda-gql/cli": "workspace:*",
-        "@soda-gql/tsc-plugin": "workspace:*",
+        "@soda-gql/tsc": "workspace:*",
         "@types/node": "^20.0.0",
         "typescript": "^5.0.0",
       },
@@ -1165,9 +1151,7 @@
 
     "@soda-gql/swc-transformer": ["@soda-gql/swc-transformer@workspace:packages/swc-transformer"],
 
-    "@soda-gql/tsc-plugin": ["@soda-gql/tsc-plugin@workspace:packages/tsc-plugin"],
-
-    "@soda-gql/tsc-transformer": ["@soda-gql/tsc-transformer@workspace:packages/tsc-transformer"],
+    "@soda-gql/tsc": ["@soda-gql/tsc@workspace:packages/tsc"],
 
     "@soda-gql/typegen": ["@soda-gql/typegen@workspace:packages/typegen"],
 

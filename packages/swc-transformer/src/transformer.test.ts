@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc-transformer/test";
+import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc/test";
 
 // Check if native module is available before running tests
 // This needs to be evaluated synchronously at module load time
