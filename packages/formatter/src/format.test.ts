@@ -111,6 +111,107 @@ describe("format", () => {
   });
 });
 
+describe("fragment key injection", () => {
+  it("should inject key for anonymous fragments when enabled", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    // Key should be injected as first property with newline
+    expect(result.value.sourceCode).toMatch(/fragment\.User\(\{ key: "[a-f0-9]{8}",\n/);
+  });
+
+  it("should not inject key when option is disabled (default)", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // No key property should be added
+    expect(result.value.sourceCode).not.toMatch(/key: "/);
+  });
+
+  it("should not inject key for fragments that already have one", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({ key: "existing", fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // Should only have the existing key, not a new one
+    const keyMatches = result.value.sourceCode.match(/key:/g);
+    expect(keyMatches?.length).toBe(1);
+    expect(result.value.sourceCode).toContain('key: "existing"');
+  });
+
+  it("should not inject key for query/mutation operations", () => {
+    const source = `import { gql } from "./graphql";
+export const op = gql.default(({ query }) => query.operation({ name: "GetUsers", fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // Operations use name, not key - should not have key injected
+    expect(result.value.sourceCode).not.toMatch(/key: "[a-f0-9]{8}"/);
+  });
+
+  it("should inject unique keys for multiple fragments", () => {
+    const source = `import { gql } from "./graphql";
+export const frag1 = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
+export const frag2 = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.title() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    const keyMatches = result.value.sourceCode.match(/key: "([a-f0-9]{8})"/g);
+    expect(keyMatches?.length).toBe(2);
+
+    // Keys should be unique
+    const keys = keyMatches?.map((m) => m.match(/"([a-f0-9]{8})"/)?.[1]);
+    expect(keys?.[0]).not.toBe(keys?.[1]);
+  });
+
+  it("should work with renamed fragment destructuring", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment: f }) => f.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toMatch(/f\.User\(\{ key: "[a-f0-9]{8}",\n/);
+  });
+
+  it("should work with multi-schema patterns", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id() }) }));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toMatch(/fragment\.Post\(\{ key: "[a-f0-9]{8}",\n/);
+  });
+});
+
 describe("needsFormat", () => {
   it("should return true for files needing formatting", () => {
     const source = loadFixture("needs-format");

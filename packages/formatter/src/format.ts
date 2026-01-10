@@ -182,7 +182,8 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   // Calculate span offset for position normalization
   // SWC's BytePos counter accumulates across parseSync calls within the same process
-  const spanOffset = module.span.end - sourceCode.length + 1;
+  // Using module.span.start ensures correct position calculation regardless of accumulation
+  const spanOffset = module.span.start;
 
   // Collect gql identifiers from imports
   const gqlIdentifiers = collectGqlIdentifiers(module);
@@ -267,7 +268,7 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
     });
   }
 
-  const spanOffset = module.span.end - sourceCode.length + 1;
+  const spanOffset = module.span.start;
   const gqlIdentifiers = collectGqlIdentifiers(module);
 
   if (gqlIdentifiers.size === 0) {

@@ -15,10 +15,11 @@ export const generateFragmentKey = (): string => {
 
 /**
  * Create the key property insertion string.
- * Format: `key: "xxxxxxxx",\n` where x is a hex character
+ * Format: ` key: "xxxxxxxx",\n` where x is a hex character
+ * Leading space ensures clean formatting after `{`
  */
 export const createKeyInsertion = (key: string): string => {
-  return `key: "${key}",\n`;
+  return ` key: "${key}",\n`;
 };
 
 /**
