@@ -1,4 +1,4 @@
-// Re-export shared state utilities from plugin-common for convenience
+// Re-export shared state utilities from builder/plugin for convenience
 export {
   getSharedArtifact,
   getSharedBuilderService,
