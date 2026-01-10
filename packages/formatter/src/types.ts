@@ -1,6 +1,7 @@
 export type FormatOptions = {
   readonly sourceCode: string;
   readonly filePath?: string;
+  readonly injectFragmentKeys?: boolean;
 };
 
 export type FormatResult = {
