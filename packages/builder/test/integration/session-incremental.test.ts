@@ -58,7 +58,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
   beforeEach(async () => {
     originalCwd = process.cwd();
-    fixtureRoot = path.join(process.cwd(), "packages/builder/test/fixtures/incremental-session");
+    fixtureRoot = path.join(process.cwd(), "tests/codegen-fixture/fixtures/incremental");
 
     // Create temporary workspace in system temp
     tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
@@ -66,8 +66,12 @@ describe("BuilderSession incremental end-to-end", () => {
     workspaceRoot = path.join(tmpRoot, `session-${timestamp}`);
     await fs.mkdir(workspaceRoot, { recursive: true });
 
-    // Copy fixture to workspace (exclude graphql-system and variants)
-    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system") && !src.includes("variants"));
+    // Copy fixture base files to workspace (exclude graphql-system and variants)
+    const baseDir = path.join(fixtureRoot, "base");
+    await copyDir(baseDir, workspaceRoot, (src) => !src.includes("graphql-system"));
+
+    // Copy schema.graphql from incremental fixtures
+    cpSync(path.join(fixtureRoot, "schema.graphql"), path.join(workspaceRoot, "schema.graphql"));
 
     // Change to workspace
     process.chdir(workspaceRoot);

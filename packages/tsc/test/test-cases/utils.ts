@@ -31,8 +31,8 @@ const getPackageRoot = (): string => {
   return fileURLToPath(new URL("../../", import.meta.url));
 };
 
-const FIXTURE_ROOT = join(getPackageRoot(), "test/fixtures");
 const CODEGEN_FIXTURE_ROOT = join(getPackageRoot(), "test/codegen-fixture");
+const FIXTURE_ROOT = join(CODEGEN_FIXTURE_ROOT, "fixtures/core/valid");
 
 export type AnalyzerType = "ts" | "swc";
 
