@@ -9,7 +9,13 @@ import {
   isFragmentDefinitionCall,
   isGqlDefinitionCall,
 } from "./detection";
-import { createKeyInsertion, generateFragmentKey, hasExistingNewline, NEWLINE_INSERTION } from "./insertion";
+import {
+  createKeyInsertion,
+  detectIndentationAfterBrace,
+  generateFragmentKey,
+  hasExistingNewline,
+  NEWLINE_INSERTION,
+} from "./insertion";
 import type { FormatError, FormatOptions, FormatResult } from "./types";
 
 type InsertionPoint = {
@@ -201,10 +207,24 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
     // For fragment config objects, inject key if enabled and not present
     if (callbackContext.isFragmentConfig && injectFragmentKeys && !hasKeyProperty(object)) {
       const key = generateFragmentKey();
-      insertionPoints.push({
-        position: objectStart + 1,
-        content: createKeyInsertion(key),
-      });
+
+      if (hasExistingNewline(sourceCode, objectStart)) {
+        // Multi-line: insert after newline, preserving indentation
+        const indentation = detectIndentationAfterBrace(sourceCode, objectStart) ?? "";
+        let insertPos = objectStart + 2; // Skip { and \n
+        if (sourceCode[objectStart + 1] === "\r") insertPos++;
+
+        insertionPoints.push({
+          position: insertPos,
+          content: createKeyInsertion(key, indentation),
+        });
+      } else {
+        // Single-line: insert right after {
+        insertionPoints.push({
+          position: objectStart + 1,
+          content: createKeyInsertion(key),
+        });
+      }
     }
 
     // For field selection objects, insert newline if not present

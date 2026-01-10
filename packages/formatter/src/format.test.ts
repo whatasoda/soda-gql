@@ -210,6 +210,75 @@ export const frag = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) 
     expect(result.value.modified).toBe(true);
     expect(result.value.sourceCode).toMatch(/fragment\.Post\(\{ key: "[a-f0-9]{8}",\n/);
   });
+
+  it("should preserve indentation for multi-line fragment objects", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({
+  fields: ({ f }) => ({ ...f.id() })
+}));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    // Key should be on its own line with proper indentation
+    expect(result.value.sourceCode).toContain(`fragment.User({
+  key: "`);
+    // Verify fields is still properly indented
+    expect(result.value.sourceCode).toMatch(/key: "[a-f0-9]{8}",\n {2}fields:/);
+  });
+
+  it("should handle tabs as indentation", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({
+\tfields: ({ f }) => ({ ...f.id() })
+}));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toContain(`fragment.User({
+\tkey: "`);
+  });
+
+  it("should handle deeply nested indentation", () => {
+    const source = `import { gql } from "./graphql";
+const x = {
+  y: {
+    frag: gql.default(({ fragment }) => fragment.User({
+      fields: ({ f }) => ({ ...f.id() })
+    }))
+  }
+};`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // Should detect 6-space indentation (inside the nested objects)
+    expect(result.value.sourceCode).toMatch(/fragment\.User\(\{\n {6}key: "[a-f0-9]{8}",\n {6}fields:/);
+  });
+
+  it("should not add extra blank lines for multi-line fragments", () => {
+    const source = `import { gql } from "./graphql";
+export const frag = gql.default(({ fragment }) => fragment.User({
+  fields: ({ f }) => ({ ...f.id() })
+}));`;
+
+    const result = format({ sourceCode: source, injectFragmentKeys: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    // Should not have double newlines after key injection
+    expect(result.value.sourceCode).not.toContain(",\n\n");
+  });
 });
 
 describe("needsFormat", () => {
