@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 const buildOperation = () => {
   const invalid = gql.default(({ query }) =>

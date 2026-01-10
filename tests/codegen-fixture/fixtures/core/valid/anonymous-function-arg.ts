@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 declare function someFunction(fragment: unknown): void;
 

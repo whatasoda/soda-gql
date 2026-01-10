@@ -1,1 +1,126 @@
-../../../../../tests/codegen-fixture/schemas/default/schema.graphql
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  users(id: [ID!], categoryId: ID, limit: Int): [User!]!
+  user(id: ID!): User
+  posts(id: ID, categoryId: ID, limit: Int): [Post!]!
+  products(limit: Int): [Product!]!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String
+  posts(categoryId: ID, limit: Int): [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  body: String
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float
+}
+
+type Mutation {
+  createPost(title: String!, body: String): Post!
+  updateUser(id: ID!, name: String!): User!
+  deletePost(id: ID!): Boolean!
+}
+
+type Subscription {
+  postCreated: Post!
+  userUpdated(userId: ID!): User!
+}
+
+# Hasura-style boolean expression types for reproducing nested input object type inference issues
+
+input String_comparison_exp {
+  _eq: String
+  _gt: String
+  _gte: String
+  _in: [String!]
+  _is_null: Boolean
+  _lt: String
+  _lte: String
+  _neq: String
+  _nin: [String!]
+  _like: String
+  _ilike: String
+  _similar: String
+}
+
+input Int_comparison_exp {
+  _eq: Int
+  _gt: Int
+  _gte: Int
+  _in: [Int!]
+  _is_null: Boolean
+  _lt: Int
+  _lte: Int
+  _neq: Int
+  _nin: [Int!]
+}
+
+input Boolean_comparison_exp {
+  _eq: Boolean
+  _gt: Boolean
+  _gte: Boolean
+  _is_null: Boolean
+  _lt: Boolean
+  _lte: Boolean
+  _neq: Boolean
+}
+
+input user_bool_exp {
+  _and: [user_bool_exp!]
+  _or: [user_bool_exp!]
+  _not: user_bool_exp
+  id: Int_comparison_exp
+  name: String_comparison_exp
+  email: String_comparison_exp
+  is_active: Boolean_comparison_exp
+  posts: post_bool_exp
+}
+
+input post_bool_exp {
+  _and: [post_bool_exp!]
+  _or: [post_bool_exp!]
+  _not: post_bool_exp
+  id: Int_comparison_exp
+  title: String_comparison_exp
+  body: String_comparison_exp
+  user_id: Int_comparison_exp
+  user: user_bool_exp
+}
+
+input user_order_by {
+  id: order_by
+  name: order_by
+  email: order_by
+  is_active: order_by
+}
+
+input post_order_by {
+  id: order_by
+  title: order_by
+  body: order_by
+  user_id: order_by
+}
+
+enum order_by {
+  asc
+  asc_nulls_first
+  asc_nulls_last
+  desc
+  desc_nulls_first
+  desc_nulls_last
+}

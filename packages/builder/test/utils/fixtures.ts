@@ -68,6 +68,6 @@ export const loadCoreInvalidFixture = (name: string): { filePath: string; source
 export const getModuleAnalysisFixturePath = getCoreFixturePath;
 export const loadModuleAnalysisFixture = loadCoreFixture;
 
-export type { ValidFixtureName, InvalidFixtureName } from "../codegen-fixture/fixtures/core/_manifest";
+export type { InvalidFixtureName, ValidFixtureName } from "../codegen-fixture/fixtures/core/_manifest";
 // Re-export manifest for test files
-export { validFixtures as fixtures, invalidFixtures } from "../codegen-fixture/fixtures/core/_manifest";
+export { invalidFixtures, validFixtures as fixtures } from "../codegen-fixture/fixtures/core/_manifest";

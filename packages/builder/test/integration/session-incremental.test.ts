@@ -422,12 +422,12 @@ async function copyDir(src: string, dest: string, filter?: (src: string) => bool
 
 /**
  * Rewrite graphql-system imports to use the local graphql-system in the workspace.
- * Converts imports like "../../../../codegen-fixture/graphql-system" to relative paths
+ * Converts imports like "../../../graphql-system" to relative paths
  * that work within the temp workspace.
  */
 function rewriteGraphqlSystemImports(content: string, filePath: string, workspaceRoot: string): string {
-  // Match imports from codegen-fixture/graphql-system
-  const importPattern = /from\s+["']([^"']*codegen-fixture\/graphql-system)["']/g;
+  // Match imports that end with graphql-system (relative paths like ../../../graphql-system)
+  const importPattern = /from\s+["']([^"']*graphql-system)["']/g;
 
   return content.replace(importPattern, (_match, _importPath) => {
     // Calculate relative path from file to workspace's graphql-system

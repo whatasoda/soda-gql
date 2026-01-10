@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 export const userUpdatedSubscription = gql.default(({ subscription, $var }) =>
   subscription.operation({

@@ -130,8 +130,8 @@ async function transformAndWriteFixture(fixture: LoadedPluginFixtureMulti): Prom
   }
 
   // Create stub for graphql-system (SWC doesn't remove unused imports)
-  // The fixtures import from ../../../codegen-fixture/graphql-system
-  const stubDir = join(outputDir, "codegen-fixture", "graphql-system");
+  // The fixtures import from ../../../../../graphql-system (5 levels up from fixtures/core/valid/category/name/)
+  const stubDir = join(outputDir, "graphql-system");
   mkdirSync(stubDir, { recursive: true });
   writeFileSync(join(stubDir, "index.mjs"), graphqlSystemStub);
 

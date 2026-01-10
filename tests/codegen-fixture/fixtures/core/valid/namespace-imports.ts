@@ -1,5 +1,5 @@
-import { gql } from "../../graphql-system";
-import * as topLevel from "../common/top-level";
+import { gql } from "../../../graphql-system";
+import * as topLevel from "./common/top-level";
 
 export const pageQuery = gql.default(({ query, $var }) =>
   query.operation({

@@ -4,7 +4,7 @@
 // builder errors (the builder uses the same detection logic).
 //
 // In a real codebase, code like this would NOT be transformed:
-//   import { gql as g } from "@/graphql-system";
+//   import { gql as g } from "../../../../../graphql-system";
 //   export const model = g.default(({ fragment }) => ...);
 
 export const placeholder = "renamed-import-test";

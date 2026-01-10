@@ -1,4 +1,4 @@
-import { gql } from "../../../../graphql-system";
+import { gql } from "../../../../../graphql-system";
 
 // Test duplicate variable names in different scopes
 // Each "model" variable should have a unique canonical path

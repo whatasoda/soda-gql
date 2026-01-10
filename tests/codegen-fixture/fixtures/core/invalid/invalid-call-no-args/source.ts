@@ -3,7 +3,7 @@
 // Calls without arguments are NOT recognized as gql definition calls.
 //
 // In a real codebase, code like this would NOT be transformed:
-//   import { gql } from "@/graphql-system";
+//   import { gql } from "../../../../../graphql-system";
 //   export const noArgCall = gql.default();
 
 export const placeholder = "invalid-call-no-args-test";

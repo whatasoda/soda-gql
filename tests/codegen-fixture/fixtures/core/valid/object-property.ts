@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 const config = {
   models: {

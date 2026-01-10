@@ -1,5 +1,5 @@
-import { gql } from "../../graphql-system";
-import { topLevelModel } from "../common/top-level";
+import { gql } from "../../../graphql-system";
+import { topLevelModel } from "./common/top-level";
 
 export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id() }) }));
 

@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 export const pageAction = gql.default(({ mutation, $var }) =>
   mutation.operation({

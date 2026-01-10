@@ -1,4 +1,4 @@
-import { gql } from "../../graphql-system";
+import { gql } from "../../../graphql-system";
 
 // Config objects should NOT be touched (variables object)
 export const userQuery = gql.default(({ query, $var }) =>

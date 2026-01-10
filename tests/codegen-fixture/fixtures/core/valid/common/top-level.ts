@@ -1,4 +1,4 @@
-import { gql } from "../../../graphql-system";
+import { gql } from "../../../../graphql-system";
 
 export const topLevelModel = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
 

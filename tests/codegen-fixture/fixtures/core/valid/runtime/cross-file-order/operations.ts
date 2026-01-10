@@ -1,4 +1,4 @@
-import { gql } from "../../../../graphql-system";
+import { gql } from "../../../../../graphql-system";
 import { userFragment } from "./slices";
 
 // Test case: Operation that imports fragment from another file

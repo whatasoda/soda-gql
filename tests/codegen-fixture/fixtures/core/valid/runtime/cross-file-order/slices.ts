@@ -1,4 +1,4 @@
-import { gql } from "../../../../graphql-system";
+import { gql } from "../../../../../graphql-system";
 
 // Test case: Fragment definitions in separate file
 // Used by operations.ts to test cross-file transformation order
