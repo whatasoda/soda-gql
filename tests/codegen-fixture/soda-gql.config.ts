@@ -2,7 +2,7 @@ import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
   outdir: "./graphql-system",
-  include: ["../fixtures/**/*.ts"],
+  include: ["./fixtures/**/valid/**/*.ts"],
   analyzer: "ts",
   schemas: {
     default: {
