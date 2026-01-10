@@ -7,7 +7,7 @@ import {
   getSharedSwcTransformer,
   getStateKey,
   type PluginSession,
-} from "@soda-gql/builder/plugin";
+} from "@soda-gql/builder/plugin-support";
 import { normalizePath } from "@soda-gql/common";
 import type { LoaderDefinitionFunction } from "webpack";
 import type { WebpackLoaderOptions } from "./types";

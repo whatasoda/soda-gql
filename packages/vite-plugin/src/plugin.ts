@@ -10,7 +10,7 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-} from "@soda-gql/builder/plugin";
+} from "@soda-gql/builder/plugin-support";
 import { normalizePath } from "@soda-gql/common";
 import type { HmrContext, ModuleNode, Plugin, ViteDevServer } from "vite";
 import type { VitePluginOptions } from "./types";

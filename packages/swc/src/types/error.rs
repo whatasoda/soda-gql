@@ -1,6 +1,6 @@
 //! Structured error types for the transformer.
 //!
-//! This module defines error types that match @soda-gql/builder/plugin errors.ts
+//! This module defines error types that match @soda-gql/builder/plugin-support errors.ts
 //! for consistent error reporting across TypeScript and Rust implementations.
 
 use serde::{Deserialize, Serialize};

@@ -1,4 +1,4 @@
-import type { PluginError } from "@soda-gql/builder/plugin";
+import type { PluginError } from "@soda-gql/builder/plugin-support";
 import type { RuntimeOperationInput } from "@soda-gql/core/runtime";
 import { ok, type Result } from "neverthrow";
 import type * as ts from "typescript";

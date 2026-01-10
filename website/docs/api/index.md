@@ -40,7 +40,7 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 | Package | Description |
 |---------|-------------|
 | @soda-gql/codegen | Schema code generation |
-| @soda-gql/builder | Static analysis, artifact generation, and plugin utilities (`/plugin` export) |
+| @soda-gql/builder | Static analysis, artifact generation, and plugin support utilities (`/plugin-support` export) |
 | @soda-gql/common | Shared utilities |
 
 ## Version Compatibility

@@ -1,5 +1,5 @@
 // Re-export shared state utilities for advanced usage
-export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/builder/plugin";
+export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/builder/plugin-support";
 export { sodaGqlPlugin } from "./plugin";
 export type { TransformerType, VitePluginOptions } from "./types";
 

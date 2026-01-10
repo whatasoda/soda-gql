@@ -44,12 +44,12 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./plugin": {
-      "@soda-gql": "./@x-plugin.ts",
-      "types": "./dist/plugin.d.mts",
-      "import": "./dist/plugin.mjs",
-      "require": "./dist/plugin.cjs",
-      "default": "./dist/plugin.mjs"
+    "./plugin-support": {
+      "@soda-gql": "./@x-plugin-support.ts",
+      "types": "./dist/plugin-support.d.mts",
+      "import": "./dist/plugin-support.mjs",
+      "require": "./dist/plugin-support.cjs",
+      "default": "./dist/plugin-support.mjs"
     },
     "./package.json": "./package.json"
   },

@@ -16,7 +16,7 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-} from "@soda-gql/builder/plugin";
+} from "@soda-gql/builder/plugin-support";
 import { normalizePath } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";

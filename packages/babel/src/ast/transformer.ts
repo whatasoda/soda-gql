@@ -1,6 +1,6 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { PluginError } from "@soda-gql/builder/plugin";
+import type { PluginError } from "@soda-gql/builder/plugin-support";
 import { err, ok, type Result } from "neverthrow";
 import type { ArtifactLookup, BabelGqlCall } from "./analysis";
 import { extractGqlCall } from "./analysis";

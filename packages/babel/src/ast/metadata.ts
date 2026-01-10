@@ -1,6 +1,6 @@
 import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
-import type { GqlDefinitionMetadata } from "@soda-gql/builder/plugin";
+import type { GqlDefinitionMetadata } from "@soda-gql/builder/plugin-support";
 import { type CanonicalPathTracker, createCanonicalTracker } from "@soda-gql/common";
 
 export type GqlDefinitionMetadataMap = WeakMap<t.CallExpression, GqlDefinitionMetadata>;

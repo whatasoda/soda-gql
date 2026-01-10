@@ -1,4 +1,4 @@
-import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/builder/plugin";
+import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/builder/plugin-support";
 import { err, ok, type Result } from "neverthrow";
 import * as ts from "typescript";
 

@@ -1,4 +1,4 @@
-import type { PluginOptions } from "@soda-gql/builder/plugin";
+import type { PluginOptions } from "@soda-gql/builder/plugin-support";
 
 /**
  * Transformer type for code transformation.

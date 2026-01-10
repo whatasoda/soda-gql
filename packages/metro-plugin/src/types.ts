@@ -1,6 +1,6 @@
-import type { PluginOptions, TransformerType } from "@soda-gql/builder/plugin";
+import type { PluginOptions, TransformerType } from "@soda-gql/builder/plugin-support";
 
-export type { TransformerType } from "@soda-gql/builder/plugin";
+export type { TransformerType } from "@soda-gql/builder/plugin-support";
 
 /**
  * Options for the Metro plugin configuration wrapper.

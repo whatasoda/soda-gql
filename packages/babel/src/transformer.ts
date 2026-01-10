@@ -8,7 +8,7 @@
 import type { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { formatPluginError } from "@soda-gql/builder/plugin";
+import { formatPluginError } from "@soda-gql/builder/plugin-support";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { ensureGqlRuntimeImport, removeGraphqlSystemImports } from "./ast/imports";
 import { collectGqlDefinitionMetadata } from "./ast/metadata";

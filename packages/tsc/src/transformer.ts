@@ -4,7 +4,7 @@
 
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { formatPluginError } from "@soda-gql/builder/plugin";
+import { formatPluginError } from "@soda-gql/builder/plugin-support";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import * as ts from "typescript";
