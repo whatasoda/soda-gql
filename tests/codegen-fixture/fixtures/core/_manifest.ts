@@ -56,7 +56,6 @@ export const validFixtures = [
   "imports/merge-runtime-import/source",
   "imports/multiple-definitions/source",
   "imports/preserve-other-imports/source",
-  "imports/star-import/source",
 
   // Operations
   "mutation-simple",
@@ -82,6 +81,7 @@ export const invalidFixtures = [
   "invalid-call-wrong-type/source",
   "no-gql-code/source",
   "renamed-import/source",
+  "star-import/source",
 ] as const;
 
 export type ValidFixtureName = (typeof validFixtures)[number];
