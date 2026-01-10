@@ -272,7 +272,7 @@ export class SodaGqlWebpackPlugin {
       this.log("SWC transformer initialized");
     } catch (error) {
       console.warn(
-        `[@soda-gql/webpack-plugin] Failed to initialize SWC transformer: ${error}. ` + "Make sure @soda-gql/swc is installed.",
+        `[@soda-gql/webpack-plugin] Failed to initialize SWC transformer: ${error}. Make sure @soda-gql/swc is installed.`,
       );
       this.swcTransformer = null;
       setSharedSwcTransformer(this.stateKey, null);
