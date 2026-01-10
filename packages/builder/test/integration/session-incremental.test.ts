@@ -58,7 +58,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
   beforeEach(async () => {
     originalCwd = process.cwd();
-    fixtureRoot = path.join(process.cwd(), "tests/codegen-fixture/fixtures/incremental");
+    fixtureRoot = path.join(projectRoot, "tests/codegen-fixture/fixtures/incremental");
 
     // Create temporary workspace in system temp
     tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
