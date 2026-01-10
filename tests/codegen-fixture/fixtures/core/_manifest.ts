@@ -71,12 +71,12 @@ export const validFixtures = [
   "runtime/cross-file-order/slices",
 
   // Scopes
-  "scopes/class-properties/source",
   "scopes/deeply-nested/source",
   "scopes/duplicate-names/source",
 ] as const;
 
 export const invalidFixtures = [
+  "class-properties/source",
   "invalid-call-no-args/source",
   "invalid-call-wrong-type/source",
   "no-gql-code/source",

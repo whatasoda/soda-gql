@@ -178,9 +178,9 @@ const singleFileTestCases: TestCaseDefinition[] = [
     },
   },
   {
-    id: "scopes/class-properties",
+    id: "errors/class-properties",
     description: "Skip class properties - scope tracking differs across transformers",
-    fixtureName: "scopes/class-properties",
+    fixtureName: "errors/class-properties",
     isMultiFile: false,
     expectations: {
       runtimeCalls: [],
