@@ -44,10 +44,18 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
+    "./plugin": {
+      "@soda-gql": "./@x-plugin.ts",
+      "types": "./dist/plugin.d.mts",
+      "import": "./dist/plugin.mjs",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.mjs"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
     "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
     "@swc/core": "^1.6.3",
     "@swc/types": "^0.1.6",
@@ -56,8 +64,5 @@
     "typescript": "^5.0.0",
     "xxhash-wasm": "^1.1.0",
     "zod": "^4.1.11"
-  },
-  "devDependencies": {
-    "@soda-gql/config": "workspace:*"
   }
 }

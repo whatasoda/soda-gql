@@ -6,7 +6,7 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { formatPluginError } from "@soda-gql/plugin-common";
+import { formatPluginError } from "@soda-gql/builder/plugin";
 import * as ts from "typescript";
 import { ensureGqlRuntimeImport, ensureGqlRuntimeRequire, removeGraphqlSystemImports } from "./ast/imports";
 import { collectGqlDefinitionMetadata } from "./ast/metadata";

@@ -59,7 +59,6 @@
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "@soda-gql/plugin-common": "workspace:*",
     "@soda-gql/babel": "workspace:*"
   },
   "devDependencies": {

@@ -20,10 +20,7 @@
       "path": "../config/tsconfig.editor.json"
     },
     {
-      "path": "../plugin-common/tsconfig.editor.json"
-    },
-    {
-      "path": "../babel-plugin/tsconfig.editor.json"
+      "path": "../babel/tsconfig.editor.json"
     }
   ]
 }

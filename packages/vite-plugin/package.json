@@ -51,8 +51,7 @@
     "@soda-gql/babel": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
-    "@soda-gql/config": "workspace:*",
-    "@soda-gql/plugin-common": "workspace:*"
+    "@soda-gql/config": "workspace:*"
   },
   "peerDependencies": {
     "vite": "^5.0.0 || ^6.0.0",

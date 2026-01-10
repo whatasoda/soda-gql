@@ -11,7 +11,7 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-} from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin";
 import type { Compiler } from "webpack";
 import type { WebpackPluginOptions } from "./types";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { getSharedState, getStateKey } from "@soda-gql/plugin-common";
+import { getSharedState, getStateKey } from "@soda-gql/builder/plugin";
 
 /**
  * Tests for HMR dependency optimization using module adjacency.

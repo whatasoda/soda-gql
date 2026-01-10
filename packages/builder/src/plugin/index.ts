@@ -3,7 +3,7 @@
  */
 
 export * from "./errors";
-export * from "./plugin-session";
+export * from "./session";
 export * from "./shared-state";
 export * from "./types";
 export * from "./utils/canonical-id";

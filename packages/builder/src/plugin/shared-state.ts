@@ -1,5 +1,6 @@
-import type { BuilderArtifact, BuilderService } from "@soda-gql/builder";
-import type { PluginSession } from "./plugin-session";
+import type { BuilderArtifact } from "../artifact/types";
+import type { BuilderService } from "../service";
+import type { PluginSession } from "./session";
 
 /**
  * Transformer type for code transformation.

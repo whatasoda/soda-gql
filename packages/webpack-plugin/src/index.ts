@@ -7,6 +7,6 @@ export {
   getStateKey,
   setSharedBuilderService,
   setSharedPluginSession,
-} from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin";
 export { SodaGqlWebpackPlugin } from "./plugin";
 export type { TransformerType, WebpackLoaderOptions, WebpackPluginOptions } from "./types";

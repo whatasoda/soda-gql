@@ -1,4 +1,4 @@
-import type { PluginError } from "@soda-gql/plugin-common";
+import type { PluginError } from "@soda-gql/builder/plugin";
 import { err, ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
 import type { ArtifactLookup, TsGqlCall } from "./analysis";

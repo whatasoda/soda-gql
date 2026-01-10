@@ -59,8 +59,7 @@
     "@soda-gql/babel": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
-    "@soda-gql/config": "workspace:*",
-    "@soda-gql/plugin-common": "workspace:*"
+    "@soda-gql/config": "workspace:*"
   },
   "peerDependencies": {
     "metro": ">=0.70.0",

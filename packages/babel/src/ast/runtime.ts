@@ -1,5 +1,5 @@
 import { types as t } from "@babel/core";
-import type { PluginError } from "@soda-gql/plugin-common";
+import type { PluginError } from "@soda-gql/builder/plugin";
 import { ok, type Result } from "neverthrow";
 import type { BabelGqlCallFragment, BabelGqlCallOperation } from "./analysis";
 import { buildObjectExpression } from "./ast";

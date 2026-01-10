@@ -24,9 +24,6 @@
       "path": "../core/tsconfig.editor.json"
     },
     {
-      "path": "../plugin-common/tsconfig.editor.json"
-    },
-    {
       "path": "../tsc/tsconfig.editor.json"
     }
   ]

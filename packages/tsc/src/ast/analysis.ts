@@ -7,8 +7,8 @@ import type {
   PluginAnalysisMetadataMissingError,
   PluginAnalysisUnsupportedArtifactTypeError,
   PluginError,
-} from "@soda-gql/plugin-common";
-import { resolveCanonicalId } from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin";
+import { resolveCanonicalId } from "@soda-gql/builder/plugin";
 import { err, ok, type Result } from "neverthrow";
 import type * as ts from "typescript";
 import type { GqlDefinitionMetadataMap } from "./metadata";

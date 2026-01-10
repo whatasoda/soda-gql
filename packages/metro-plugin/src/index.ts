@@ -1,8 +1,8 @@
-import { getStateKey, setSharedTransformerType } from "@soda-gql/plugin-common";
+import { getStateKey, setSharedTransformerType } from "@soda-gql/builder/plugin";
 import type { MetroConfig, MetroPluginOptions } from "./types";
 
 // Re-export shared state utilities for advanced usage
-export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/plugin-common";
+export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/builder/plugin";
 export type {
   MetroConfig,
   MetroPluginOptions,

@@ -1,6 +1,6 @@
 import type { Expression } from "@babel/types";
 import * as t from "@babel/types";
-import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/plugin-common";
+import type { PluginError, PluginTransformUnsupportedValueTypeError } from "@soda-gql/builder/plugin";
 import { err, ok, type Result } from "neverthrow";
 
 const createUnsupportedValueTypeError = (valueType: string): PluginTransformUnsupportedValueTypeError => ({

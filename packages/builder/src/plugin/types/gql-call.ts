@@ -2,7 +2,7 @@
  * Unified GqlCall types used across all plugins.
  */
 
-import type { BuilderArtifactFragment, BuilderArtifactOperation } from "@soda-gql/builder";
+import type { BuilderArtifactFragment, BuilderArtifactOperation } from "../../artifact/types";
 import type { CanonicalId } from "@soda-gql/common";
 
 /**

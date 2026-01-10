@@ -1,6 +1,6 @@
 import type { CanonicalPathTracker } from "@soda-gql/common";
 import { createCanonicalTracker } from "@soda-gql/common";
-import type { GqlDefinitionMetadata } from "@soda-gql/plugin-common";
+import type { GqlDefinitionMetadata } from "@soda-gql/builder/plugin";
 import * as ts from "typescript";
 
 export type GqlDefinitionMetadataMap = WeakMap<ts.CallExpression, GqlDefinitionMetadata>;

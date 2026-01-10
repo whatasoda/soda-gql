@@ -1,6 +1,6 @@
-import type { PluginOptions, TransformerType } from "@soda-gql/plugin-common";
+import type { PluginOptions, TransformerType } from "@soda-gql/builder/plugin";
 
-export type { TransformerType } from "@soda-gql/plugin-common";
+export type { TransformerType } from "@soda-gql/builder/plugin";
 
 /**
  * Options for the Vite plugin.
