@@ -84,14 +84,16 @@ const FORMAT_HELP = `Usage: soda-gql format [patterns...] [options]
 Format soda-gql field selections by inserting empty comments.
 
 Options:
-  --config <path>  Path to soda-gql.config.ts (auto-detected if omitted)
-  --check          Check if files need formatting (exit 1 if unformatted)
-  --help, -h       Show this help message
+  --config <path>         Path to soda-gql.config.ts (auto-detected if omitted)
+  --check                 Check if files need formatting (exit 1 if unformatted)
+  --inject-fragment-keys  Inject unique keys into anonymous fragments
+  --help, -h              Show this help message
 
 Examples:
-  soda-gql format                     # Use config include/exclude
-  soda-gql format "src/**/*.ts"       # Override with explicit patterns
-  soda-gql format --check             # Check mode with config
+  soda-gql format                           # Use config include/exclude
+  soda-gql format "src/**/*.ts"             # Override with explicit patterns
+  soda-gql format --check                   # Check mode with config
+  soda-gql format --inject-fragment-keys    # Inject fragment keys
 `;
 
 type FormatCommandResult = CommandResult<CommandSuccess & { data?: FormatData }>;
@@ -109,6 +111,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
 
   const args = parsed.value;
   const isCheckMode = args.check === true;
+  const injectFragmentKeys = args["inject-fragment-keys"] === true;
   const explicitPatterns = args._ ?? [];
 
   // Determine patterns: use explicit patterns or load from config
@@ -169,7 +172,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
         unchanged++;
       }
     } else {
-      const result = formatter.format({ sourceCode, filePath });
+      const result = formatter.format({ sourceCode, filePath, injectFragmentKeys });
       if (result.isErr()) {
         errors++;
         continue;
