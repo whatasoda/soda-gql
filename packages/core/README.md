@@ -338,7 +338,7 @@ This package requires TypeScript 5.x or later for full type inference support.
 - [@soda-gql/cli](../cli) - Command-line interface for code generation
 - [@soda-gql/config](../config) - Configuration management
 - [@soda-gql/runtime](../runtime) - Runtime utilities for operation execution
-- [@soda-gql/tsc-plugin](../tsc-plugin) - TypeScript compiler plugin
+- [@soda-gql/tsc](../tsc) - TypeScript transformer and plugin
 
 ## License
 

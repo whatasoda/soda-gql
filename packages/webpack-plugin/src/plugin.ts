@@ -1,6 +1,5 @@
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
 import { collectAffectedFiles } from "@soda-gql/builder";
-import { normalizePath } from "@soda-gql/common";
 import {
   createPluginSession,
   getSharedPluginSession,
@@ -11,7 +10,8 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-} from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin-support";
+import { normalizePath } from "@soda-gql/common";
 import type { Compiler } from "webpack";
 import type { WebpackPluginOptions } from "./types";
 
@@ -262,7 +262,7 @@ export class SodaGqlWebpackPlugin {
     }
 
     try {
-      const { createTransformer } = await import("@soda-gql/swc-transformer");
+      const { createTransformer } = await import("@soda-gql/swc");
       this.swcTransformer = await createTransformer({
         config: this.pluginSession.config,
         artifact: this.currentArtifact,
@@ -272,8 +272,7 @@ export class SodaGqlWebpackPlugin {
       this.log("SWC transformer initialized");
     } catch (error) {
       console.warn(
-        `[@soda-gql/webpack-plugin] Failed to initialize SWC transformer: ${error}. ` +
-          "Make sure @soda-gql/swc-transformer is installed.",
+        `[@soda-gql/webpack-plugin] Failed to initialize SWC transformer: ${error}. Make sure @soda-gql/swc is installed.`,
       );
       this.swcTransformer = null;
       setSharedSwcTransformer(this.stateKey, null);

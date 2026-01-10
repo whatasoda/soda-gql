@@ -19,12 +19,18 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 | [@soda-gql/cli](/api/packages/cli) | Command-line interface for codegen |
 | [@soda-gql/config](/api/packages/config) | Configuration utilities |
 
+### Transformer Packages
+
+| Package | Description |
+|---------|-------------|
+| @soda-gql/babel | Babel transformer and plugin (`/plugin` export) |
+| @soda-gql/tsc | TypeScript transformer and plugin (`/plugin` export) |
+| @soda-gql/swc | SWC-based native transformer |
+
 ### Build Plugins
 
 | Package | Description |
 |---------|-------------|
-| @soda-gql/babel-plugin | Babel transformation plugin |
-| @soda-gql/tsc-plugin | TypeScript compiler plugin |
 | @soda-gql/webpack-plugin | Webpack integration with HMR |
 | @soda-gql/vite-plugin | Vite bundler plugin |
 | @soda-gql/metro-plugin | React Native / Expo Metro plugin |
@@ -34,9 +40,8 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 | Package | Description |
 |---------|-------------|
 | @soda-gql/codegen | Schema code generation |
-| @soda-gql/builder | Static analysis and artifact generation |
+| @soda-gql/builder | Static analysis, artifact generation, and plugin support utilities (`/plugin-support` export) |
 | @soda-gql/common | Shared utilities |
-| @soda-gql/plugin-common | Shared plugin utilities |
 
 ## Version Compatibility
 

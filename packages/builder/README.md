@@ -115,9 +115,9 @@ The async API is recommended for:
 ## Related Packages
 
 - [@soda-gql/cli](../cli) - Command-line interface
-- [@soda-gql/babel-plugin](../babel-plugin) - Babel transformation plugin
-- [@soda-gql/tsc-plugin](../tsc-plugin) - TypeScript transformation plugin
-- [@soda-gql/plugin-common](../plugin-common) - Shared plugin utilities
+- [@soda-gql/babel](../babel) - Babel transformer and plugin
+- [@soda-gql/tsc](../tsc) - TypeScript transformer and plugin
+- [@soda-gql/swc](../swc) - SWC-based native transformer
 
 ## License
 

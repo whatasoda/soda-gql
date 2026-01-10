@@ -82,19 +82,19 @@ const writePackageJson = async (
 
 /**
  * Verify local build before version bump
- * Ensures swc-transformer builds and prepublish succeeds
+ * Ensures swc builds and prepublish succeeds
  */
 const verifyLocalBuild = async (): Promise<Result<void, string>> => {
   console.log("Verifying local build...\n");
 
-  // 1. Build swc-transformer native module
-  console.log("  Building swc-transformer...");
-  const buildResult = await $`bun run build`.cwd("packages/swc-transformer").quiet().nothrow();
+  // 1. Build swc native module
+  console.log("  Building swc...");
+  const buildResult = await $`bun run build`.cwd("packages/swc").quiet().nothrow();
   if (buildResult.exitCode !== 0) {
     console.error(buildResult.stderr.toString());
-    return err("swc-transformer build failed. Run 'bun run build' in packages/swc-transformer to debug.");
+    return err("swc build failed. Run 'bun run build' in packages/swc to debug.");
   }
-  console.log("  ✓ swc-transformer build succeeded");
+  console.log("  ✓ swc build succeeded");
 
   // 2. Run prepublish
   console.log("  Running prepublish...");
@@ -238,7 +238,7 @@ const createCommitAndPR = async (
   if (dryRun) {
     console.log("\n[DRY RUN] Would execute the following git commands:");
     console.log(`  git checkout -b ${branchName}`);
-    console.log(`  git add package.json packages/*/package.json packages/swc-transformer/npm/*/package.json bun.lock`);
+    console.log(`  git add package.json packages/*/package.json packages/swc/npm/*/package.json bun.lock`);
     console.log(`  git commit -m "${commitMessage}"`);
     console.log(`  git push -u origin ${branchName}`);
     console.log(`  gh pr create --title "${commitMessage}" --base main`);
@@ -251,7 +251,7 @@ const createCommitAndPR = async (
   // Stage all package.json changes (including platform packages) and lockfile
   await $`git add package.json packages/*/package.json bun.lock`;
   try {
-    await $`git add packages/swc-transformer/npm/*/package.json`;
+    await $`git add packages/swc/npm/*/package.json`;
   } catch {
     // Platform packages may not exist yet
   }

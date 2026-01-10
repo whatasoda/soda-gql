@@ -9,8 +9,8 @@ This guide helps you choose the right soda-gql build plugin for your project.
 | Next.js (App Router / Pages) | webpack-plugin | `@soda-gql/webpack-plugin` |
 | Vite / Remix / Astro | vite-plugin | `@soda-gql/vite-plugin` |
 | Expo / React Native | metro-plugin | `@soda-gql/metro-plugin` |
-| NestJS | tsc-plugin | `@soda-gql/tsc-plugin` |
-| Custom Babel setup | babel-plugin | `@soda-gql/babel-plugin` |
+| NestJS | tsc/plugin | `@soda-gql/tsc` |
+| Custom Babel setup | babel/plugin | `@soda-gql/babel` |
 
 ## Plugin Comparison
 
@@ -89,7 +89,7 @@ module.exports = withSodaGql(config);
 
 ### NestJS
 
-Use `@soda-gql/tsc-plugin` for NestJS or ts-patch projects.
+Use `@soda-gql/tsc` (with `/plugin` export) for NestJS or ts-patch projects.
 
 ```json
 // nest-cli.json
@@ -98,7 +98,7 @@ Use `@soda-gql/tsc-plugin` for NestJS or ts-patch projects.
     "builder": "tsc",
     "plugins": [
       {
-        "name": "@soda-gql/tsc-plugin",
+        "name": "@soda-gql/tsc/plugin",
         "options": {
           "configPath": "./soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"
@@ -109,15 +109,15 @@ Use `@soda-gql/tsc-plugin` for NestJS or ts-patch projects.
 }
 ```
 
-## When to Use babel-plugin Directly
+## When to Use babel/plugin Directly
 
-Use `@soda-gql/babel-plugin` when:
+Use `@soda-gql/babel/plugin` when:
 
 - You have a custom build setup not covered by other plugins
 - You need fine-grained control over Babel transformations
 - You're integrating with an unsupported bundler
 
-All higher-level plugins (webpack, vite, metro, tsc) use babel-plugin internally.
+All higher-level plugins (webpack, vite, metro) use @soda-gql/babel internally.
 
 ## Common Issues
 

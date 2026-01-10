@@ -1,4 +1,4 @@
-// Re-export shared state utilities from plugin-common for convenience
+// Re-export shared state utilities from builder/plugin for convenience
 export {
   getSharedArtifact,
   getSharedBuilderService,
@@ -7,6 +7,6 @@ export {
   getStateKey,
   setSharedBuilderService,
   setSharedPluginSession,
-} from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin-support";
 export { SodaGqlWebpackPlugin } from "./plugin";
 export type { TransformerType, WebpackLoaderOptions, WebpackPluginOptions } from "./types";

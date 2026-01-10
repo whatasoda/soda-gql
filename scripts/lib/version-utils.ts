@@ -42,12 +42,12 @@ export const getPackagePaths = async (): Promise<Result<string[], string>> => {
     // Add root package.json
     paths.unshift("package.json");
 
-    // Add platform-specific packages for swc-transformer
+    // Add platform-specific packages for swc
     try {
-      const platformDirs = await readdir("packages/swc-transformer/npm", { withFileTypes: true });
+      const platformDirs = await readdir("packages/swc/npm", { withFileTypes: true });
       for (const entry of platformDirs) {
         if (entry.isDirectory()) {
-          paths.push(path.join("packages/swc-transformer/npm", entry.name, "package.json"));
+          paths.push(path.join("packages/swc/npm", entry.name, "package.json"));
         }
       }
     } catch {
@@ -102,13 +102,13 @@ const extractDirName = (packagePath: string): string => {
     return ".";
   }
   // For packages/xxx/package.json -> xxx
-  // For packages/swc-transformer/npm/xxx/package.json -> swc-transformer-xxx
+  // For packages/swc/npm/xxx/package.json -> swc-xxx
   const parts = packagePath.split("/");
   if (parts.length === 3 && parts[1]) {
     return parts[1];
   }
   if (parts.length === 5 && parts[2] === "npm" && parts[3]) {
-    return `swc-transformer-${parts[3]}`;
+    return `swc-${parts[3]}`;
   }
   return parts[parts.length - 2] ?? packagePath;
 };

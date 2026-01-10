@@ -61,9 +61,9 @@ jobs:
         with:
           path: coverage-summary.md
 
-  # NOTE: swc-transformer-tests disabled to reduce GitHub Actions usage.
+  # NOTE: swc-tests disabled to reduce GitHub Actions usage.
   # Rust compilation is expensive. Run locally before release.
-  # swc-transformer-tests:
+  # swc-tests:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Checkout code
@@ -80,7 +80,7 @@ jobs:
   #     - name: Setup Rust cache
   #       uses: Swatinem/rust-cache@v2
   #       with:
-  #         workspaces: "packages/swc-transformer -> target"
+  #         workspaces: "packages/swc -> target"
   #         cache-targets: "true"
   #
   #     - name: Install dependencies
@@ -89,9 +89,9 @@ jobs:
   #     - name: Prepare for tests
   #       run: bun quality:prepare
   #
-  #     - name: Build swc-transformer native module
-  #       working-directory: packages/swc-transformer
+  #     - name: Build swc native module
+  #       working-directory: packages/swc
   #       run: bun run build
   #
-  #     - name: Run swc-transformer tests
-  #       run: bun run test --filter swc-transformer
+  #     - name: Run swc tests
+  #       run: bun run test --filter swc

@@ -1,0 +1,74 @@
+{
+  "name": "@soda-gql/babel",
+  "version": "0.10.2",
+  "description": "Babel transformer and plugin for soda-gql",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "codegen",
+    "zero-runtime",
+    "typescript",
+    "babel",
+    "transformer",
+    "babel-plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/babel"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@soda-gql": "./@x-index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./plugin": {
+      "@soda-gql": "./@x-plugin.ts",
+      "types": "./dist/plugin.d.mts",
+      "import": "./dist/plugin.mjs",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@ampproject/remapping": "^2.3.0",
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "@babel/core": "^7.24.0",
+    "@babel/generator": "^7.24.0",
+    "@babel/parser": "^7.24.0",
+    "@babel/traverse": "^7.24.0",
+    "@babel/types": "^7.24.0",
+    "neverthrow": "^8.1.1"
+  },
+  "devDependencies": {
+    "@soda-gql/tsc": "workspace:*",
+    "@types/babel__generator": "^7.27.0"
+  }
+}

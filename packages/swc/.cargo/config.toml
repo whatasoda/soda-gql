@@ -1,0 +1,6 @@
+# Cargo configuration for swc
+# Optimizes build times for development
+
+[build]
+# Enable incremental compilation for faster rebuilds
+incremental = true

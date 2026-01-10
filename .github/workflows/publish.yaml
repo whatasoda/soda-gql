@@ -44,11 +44,11 @@ jobs:
 
           # Platform-specific packages (checked separately)
           PLATFORM_PACKAGES=(
-            "swc-transformer-darwin-arm64"
-            "swc-transformer-darwin-x64"
-            "swc-transformer-linux-x64-gnu"
-            "swc-transformer-linux-x64-musl"
-            "swc-transformer-win32-x64-msvc"
+            "swc-darwin-arm64"
+            "swc-darwin-x64"
+            "swc-linux-x64-gnu"
+            "swc-linux-x64-musl"
+            "swc-win32-x64-msvc"
           )
 
           ALL_PUBLISHED=true

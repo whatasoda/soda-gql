@@ -1,0 +1,74 @@
+{
+  "name": "@soda-gql/tsc",
+  "version": "0.10.2",
+  "description": "TypeScript transformer and compiler plugin for soda-gql",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "codegen",
+    "zero-runtime",
+    "typescript",
+    "tsc",
+    "transformer",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/tsc"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    "./test": {
+      "@soda-gql": "./@devx-test.ts"
+    },
+    ".": {
+      "@soda-gql": "./@x-index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./plugin": {
+      "@soda-gql": "./@x-plugin.ts",
+      "types": "./dist/plugin.d.mts",
+      "import": "./dist/plugin.mjs",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "neverthrow": "^8.1.1"
+  },
+  "devDependencies": {
+    "@soda-gql/codegen": "workspace:*",
+    "prettier": "^3.4.2"
+  },
+  "peerDependencies": {
+    "typescript": "5.*"
+  }
+}

@@ -17,9 +17,12 @@ packages/
 ├── core/           # Core GraphQL types and utilities
 ├── codegen/        # Schema code generation
 ├── builder/        # Static analysis & artifact generation
-├── babel-plugin/   # Babel transformation plugin
-├── tsc-plugin/     # TypeScript compiler plugin
+├── babel/          # Babel transformer and plugin
+├── tsc/            # TypeScript transformer and plugin
+├── swc/            # SWC-based native transformer
 ├── webpack-plugin/ # Webpack plugin with HMR support
+├── vite-plugin/    # Vite plugin
+├── metro-plugin/   # Metro plugin (React Native)
 ├── runtime/        # Runtime execution helpers
 └── cli/            # Command-line interface
 ```

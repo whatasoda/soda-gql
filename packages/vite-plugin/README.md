@@ -50,7 +50,7 @@ sodaGqlPlugin({
 ## How It Works
 
 1. **Build phase** - The plugin uses `@soda-gql/builder` to analyze source files and generate artifacts
-2. **Transform phase** - Uses `@soda-gql/babel-transformer` to replace `gql.default()` calls with `gqlRuntime.getOperation()` calls
+2. **Transform phase** - Uses `@soda-gql/babel` to replace `gql.default()` calls with `gqlRuntime.getOperation()` calls
 3. **Watch mode** - Automatically rebuilds artifacts when GraphQL files change
 
 ## Requirements
@@ -62,7 +62,7 @@ sodaGqlPlugin({
 
 - [@soda-gql/webpack-plugin](../webpack-plugin) - Webpack integration
 - [@soda-gql/metro-plugin](../metro-plugin) - React Native/Expo integration
-- [@soda-gql/babel-plugin](../babel-plugin) - Standalone Babel plugin
+- [@soda-gql/babel](../babel) - Babel transformer and plugin
 
 ## License
 

@@ -137,8 +137,8 @@ soda-gql requires a build plugin to transform your code. Choose the one that mat
 
 | Plugin | Use Case |
 |--------|----------|
-| `@soda-gql/babel-plugin` | Babel-based builds |
-| `@soda-gql/tsc-plugin` | TypeScript compiler |
+| `@soda-gql/babel` | Babel-based builds (use `/plugin` export) |
+| `@soda-gql/tsc` | TypeScript compiler (use `/plugin` export) |
 | `@soda-gql/webpack-plugin` | Webpack projects |
 | `@soda-gql/vite-plugin` | Vite projects |
 | `@soda-gql/metro-plugin` | React Native / Expo |

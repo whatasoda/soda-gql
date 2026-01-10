@@ -120,7 +120,7 @@ jobs:
 
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          path: packages/swc-transformer/artifacts
+          path: packages/swc/artifacts
 
       - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2
         with:
@@ -129,7 +129,7 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - name: Collect NAPI artifacts
-        working-directory: packages/swc-transformer
+        working-directory: packages/swc
         run: bunx @napi-rs/cli artifacts
 
       - run: bun quality:prepare

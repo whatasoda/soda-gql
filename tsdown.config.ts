@@ -222,21 +222,21 @@ export default defineConfig([
 
   // Transformer packages
   {
-    ...configure("@soda-gql/babel-transformer"),
+    ...configure("@soda-gql/babel"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     clean: true,
   },
   {
-    ...configure("@soda-gql/tsc-transformer"),
+    ...configure("@soda-gql/tsc"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     clean: true,
   },
   {
-    ...configure("@soda-gql/swc-transformer"),
+    ...configure("@soda-gql/swc"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
@@ -244,40 +244,19 @@ export default defineConfig([
     onSuccess: async () => {
       // Copy native module from src/native to dist/native after build
       const { cpSync, existsSync, mkdirSync } = await import("node:fs");
-      const srcNative = join(packagesDir, "swc-transformer/src/native");
-      const distNative = join(packagesDir, "swc-transformer/dist/native");
+      const srcNative = join(packagesDir, "swc/src/native");
+      const distNative = join(packagesDir, "swc/dist/native");
       if (existsSync(srcNative)) {
         if (!existsSync(distNative)) {
           mkdirSync(distNative, { recursive: true });
         }
         cpSync(srcNative, distNative, { recursive: true });
-        console.log("[swc-transformer] Copied native module to dist/native");
+        console.log("[swc] Copied native module to dist/native");
       }
     },
   },
 
   // Plugin packages (externalize host bundler deps)
-  {
-    ...configure("@soda-gql/babel-plugin"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/plugin-common"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/tsc-plugin"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    clean: true,
-  },
   {
     ...configure("@soda-gql/webpack-plugin"),
     format: ["esm", "cjs"],

@@ -1,10 +1,8 @@
 import crypto from "node:crypto";
 import remapping, { type SourceMapInput } from "@ampproject/remapping";
 import { type TransformOptions, transformSync } from "@babel/core";
-import { createPluginWithArtifact } from "@soda-gql/babel-plugin";
+import { createPluginWithArtifact } from "@soda-gql/babel/plugin";
 import type { BuilderArtifact } from "@soda-gql/builder";
-import { normalizePath } from "@soda-gql/common";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import {
   createPluginSession,
   getSharedArtifact,
@@ -18,7 +16,9 @@ import {
   setSharedArtifact,
   setSharedPluginSession,
   setSharedSwcTransformer,
-} from "@soda-gql/plugin-common";
+} from "@soda-gql/builder/plugin-support";
+import { normalizePath } from "@soda-gql/common";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
 /**
@@ -144,7 +144,7 @@ const initializeSwcTransformer = async (
   }
 
   try {
-    const { createTransformer } = await import("@soda-gql/swc-transformer");
+    const { createTransformer } = await import("@soda-gql/swc");
     const transformer = await createTransformer({
       config,
       artifact,
@@ -155,7 +155,7 @@ const initializeSwcTransformer = async (
   } catch (error) {
     console.warn(
       `[@soda-gql/metro-plugin] Failed to initialize SWC transformer: ${error}. ` +
-        "Make sure @soda-gql/swc-transformer is installed. Falling back to Babel.",
+        "Make sure @soda-gql/swc is installed. Falling back to Babel.",
     );
     return null;
   }

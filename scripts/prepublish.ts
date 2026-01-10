@@ -224,7 +224,7 @@ const validate = async (packageEntries: Map<string, PackageEntry>) => {
 
 // Platform package schema (simpler than main packages)
 const platformPackageJsonSchema = z.object({
-  name: z.string().regex(/^@soda-gql\/swc-transformer-/),
+  name: z.string().regex(/^@soda-gql\/swc-/),
   version: z.string(),
   os: z.array(z.string()),
   cpu: z.array(z.string()),
@@ -247,11 +247,11 @@ const platformPackageJsonSchema = z.object({
 });
 
 const preparePlatformPackages = async () => {
-  const platformPackagesDir = "packages/swc-transformer/npm";
+  const platformPackagesDir = "packages/swc/npm";
   const platformDistDir = "dist";
 
-  // Read swc-transformer's version to use for platform packages
-  const swcTransformerPackageJson = JSON.parse(await readFile("packages/swc-transformer/package.json", "utf-8"));
+  // Read swc's version to use for platform packages
+  const swcTransformerPackageJson = JSON.parse(await readFile("packages/swc/package.json", "utf-8"));
   const swcTransformerVersion = swcTransformerPackageJson.version as string;
 
   try {
@@ -261,12 +261,12 @@ const preparePlatformPackages = async () => {
       if (!entry.isDirectory()) continue;
 
       const sourceDir = path.join(platformPackagesDir, entry.name);
-      const distDir = path.join(platformDistDir, `swc-transformer-${entry.name}`);
+      const distDir = path.join(platformDistDir, `swc-${entry.name}`);
 
       // Copy the platform package directory
       await $`cp -rf ${sourceDir} ${distDir}`;
 
-      // Read and update package.json with swc-transformer's version
+      // Read and update package.json with swc's version
       const packageJsonPath = path.join(distDir, "package.json");
       const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
 
@@ -277,7 +277,7 @@ const preparePlatformPackages = async () => {
         continue;
       }
 
-      // Update version to match swc-transformer's version
+      // Update version to match swc's version
       packageJson.version = swcTransformerVersion;
       await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
@@ -290,15 +290,15 @@ const preparePlatformPackages = async () => {
 };
 
 /**
- * Add optionalDependencies to swc-transformer dist package.json
+ * Add optionalDependencies to swc dist package.json
  * This dynamically generates optionalDependencies based on platform packages found
  */
 const addOptionalDependenciesToSwcTransformer = async () => {
-  const platformPackagesDir = "packages/swc-transformer/npm";
-  const swcTransformerDistPath = "dist/swc-transformer/package.json";
+  const platformPackagesDir = "packages/swc/npm";
+  const swcTransformerDistPath = "dist/swc/package.json";
 
-  // Read swc-transformer's version for platform package dependencies
-  const swcTransformerSourceJson = JSON.parse(await readFile("packages/swc-transformer/package.json", "utf-8"));
+  // Read swc's version for platform package dependencies
+  const swcTransformerSourceJson = JSON.parse(await readFile("packages/swc/package.json", "utf-8"));
   const exactVersion = swcTransformerSourceJson.version as string;
 
   try {
@@ -307,7 +307,7 @@ const addOptionalDependenciesToSwcTransformer = async () => {
 
     for (const entry of platformDirEntries) {
       if (entry.isDirectory()) {
-        const packageName = `@soda-gql/swc-transformer-${entry.name}`;
+        const packageName = `@soda-gql/swc-${entry.name}`;
         optionalDependencies[packageName] = exactVersion;
       }
     }
@@ -321,10 +321,10 @@ const addOptionalDependenciesToSwcTransformer = async () => {
     packageJson.optionalDependencies = optionalDependencies;
     await writeFile(swcTransformerDistPath, JSON.stringify(packageJson, null, 2));
 
-    console.log(`Added optionalDependencies to swc-transformer: ${Object.keys(optionalDependencies).join(", ")}`);
+    console.log(`Added optionalDependencies to swc: ${Object.keys(optionalDependencies).join(", ")}`);
   } catch (error) {
     // Platform packages may not exist yet (e.g., first build)
-    console.log("Could not add optionalDependencies to swc-transformer (this is expected for local builds)", error);
+    console.log("Could not add optionalDependencies to swc (this is expected for local builds)", error);
   }
 };
 
