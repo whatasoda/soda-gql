@@ -18,7 +18,7 @@ Practical examples demonstrating different integration methods for soda-gql.
 **Best for:** Most projects, especially those preferring standard TypeScript tooling.
 
 ```bash
-bun add -D @soda-gql/tsc-plugin
+bun add -D @soda-gql/tsc
 ```
 
 ```json
@@ -26,7 +26,7 @@ bun add -D @soda-gql/tsc-plugin
 {
   "compilerOptions": {
     "builder": "tsc",
-    "plugins": ["@soda-gql/tsc-plugin"]
+    "plugins": ["@soda-gql/tsc/plugin"]
   }
 }
 ```
@@ -38,7 +38,7 @@ bun add -D @soda-gql/tsc-plugin
 **Best for:** Projects needing working zero-runtime-like transformation today with fast builds.
 
 ```bash
-bun add -D @soda-gql/webpack-plugin @soda-gql/swc-transformer
+bun add -D @soda-gql/webpack-plugin @soda-gql/swc
 ```
 
 ```javascript
