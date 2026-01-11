@@ -1,9 +1,24 @@
 import { describe, expect, it } from "bun:test";
 import { Kind, print } from "graphql";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "./build-document";
+
+/**
+ * Minimal schema for testing buildDocument.
+ * Contains empty type definitions to satisfy the schema interface.
+ */
+const emptySchema: AnyGraphqlSchema = {
+  label: "test",
+  operations: { query: null, mutation: null, subscription: null },
+  scalar: {},
+  enum: {},
+  input: {},
+  object: {},
+  union: {},
+};
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -164,6 +179,7 @@ describe("Document Integrity Tests", () => {
           operationName: "TestOperation",
           variables: {} as InputTypeSpecifiers,
           fields: {},
+          schema: emptySchema,
         });
       }).toThrow();
     });
@@ -174,6 +190,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestQuery",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(queryDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -187,6 +204,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestMutation",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(mutationDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -200,6 +218,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestSubscription",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(subscriptionDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -458,6 +477,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -519,6 +539,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables,
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -562,6 +583,7 @@ describe("DirectiveRef in buildDocument", () => {
         operationType: "query",
         variables: {},
         fields: fields as any,
+        schema: emptySchema,
       });
     }).toThrow("Directive @queryOnly cannot be used on FIELD");
   });
@@ -606,6 +628,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -648,11 +671,281 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
     expect(printed).toContain("@skip(if: true)");
     // Should only have one directive
     expect(printed.match(/@/g)?.length).toBe(1);
+  });
+});
+
+describe("Enum value handling", () => {
+  /**
+   * Schema with enum for testing enum value output.
+   * Uses type assertion to bypass full EnumDefinition structure requirements.
+   */
+  const schemaWithEnum = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {},
+    enum: {
+      Status: { name: "Status", values: { ACTIVE: true, INACTIVE: true } },
+      Priority: { name: "Priority", values: { HIGH: true, MEDIUM: true, LOW: true } },
+    },
+    input: {
+      UserFilter: {
+        name: "UserFilter",
+        fields: {
+          status: { kind: "enum", name: "Status", modifier: "?" },
+          name: { kind: "scalar", name: "String", modifier: "?" },
+        },
+      },
+      NestedInput: {
+        name: "NestedInput",
+        fields: {
+          filter: { kind: "input", name: "UserFilter", modifier: "?" },
+          priority: { kind: "enum", name: "Priority", modifier: "!" },
+        },
+      },
+    },
+    object: {},
+    union: {},
+  } as unknown as AnyGraphqlSchema;
+
+  describe("buildArgumentValue with enumLookup", () => {
+    it("outputs Kind.ENUM for enum type specifier", () => {
+      const result = buildArgumentValue("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.ENUM,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.STRING for scalar type specifier", () => {
+      const result = buildArgumentValue("some-string", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "scalar", name: "String", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.STRING,
+        value: "some-string",
+      });
+    });
+
+    it("outputs Kind.STRING when no enumLookup provided", () => {
+      const result = buildArgumentValue("ACTIVE");
+
+      expect(result).toEqual({
+        kind: Kind.STRING,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.ENUM for enums in array", () => {
+      const result = buildArgumentValue(["ACTIVE", "INACTIVE"], {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "![]!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.LIST,
+        values: [
+          { kind: Kind.ENUM, value: "ACTIVE" },
+          { kind: Kind.ENUM, value: "INACTIVE" },
+        ],
+      });
+    });
+
+    it("outputs Kind.ENUM for enums nested in InputObject", () => {
+      const result = buildArgumentValue(
+        { status: "ACTIVE", name: "John" },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "status" },
+            value: { kind: Kind.ENUM, value: "ACTIVE" },
+          },
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "name" },
+            value: { kind: Kind.STRING, value: "John" },
+          },
+        ],
+      });
+    });
+
+    it("outputs Kind.ENUM for deeply nested enums", () => {
+      const result = buildArgumentValue(
+        {
+          filter: { status: "INACTIVE" },
+          priority: "HIGH",
+        },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "NestedInput", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "filter" },
+            value: {
+              kind: Kind.OBJECT,
+              fields: [
+                {
+                  kind: Kind.OBJECT_FIELD,
+                  name: { kind: Kind.NAME, value: "status" },
+                  value: { kind: Kind.ENUM, value: "INACTIVE" },
+                },
+              ],
+            },
+          },
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "priority" },
+            value: { kind: Kind.ENUM, value: "HIGH" },
+          },
+        ],
+      });
+    });
+
+    it("outputs Kind.VARIABLE for VarRef regardless of enum type", () => {
+      const varRef = createVarRefFromVariable("statusVar");
+      const result = buildArgumentValue(varRef, {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.VARIABLE,
+        name: { kind: Kind.NAME, value: "statusVar" },
+      });
+    });
+  });
+
+  describe("buildConstValueNode with enumLookup", () => {
+    it("outputs Kind.ENUM for enum default values", () => {
+      const result = buildConstValueNode("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.ENUM,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.ENUM for enums nested in InputObject defaults", () => {
+      const result = buildConstValueNode(
+        { status: "ACTIVE" },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "status" },
+            value: { kind: Kind.ENUM, value: "ACTIVE" },
+          },
+        ],
+      });
+    });
+  });
+
+  describe("buildDocument with enum arguments", () => {
+    const schemaWithQuery = {
+      ...schemaWithEnum,
+      object: {
+        Query: {
+          name: "Query",
+          fields: {
+            user: {
+              kind: "object",
+              name: "User",
+              modifier: "?",
+              arguments: {
+                status: { kind: "enum", name: "Status", modifier: "!" },
+              },
+            },
+          },
+        },
+        User: {
+          name: "User",
+          fields: {
+            id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+            name: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+          },
+        },
+      },
+    } as unknown as AnyGraphqlSchema;
+
+    it("outputs Kind.ENUM for field arguments", () => {
+      const fields = {
+        user: {
+          parent: "Query",
+          field: "user",
+          type: {
+            kind: "object" as const,
+            name: "User",
+            modifier: "?" as const,
+            arguments: {
+              status: { kind: "enum" as const, name: "Status", modifier: "!" as const },
+            },
+          },
+          args: { status: "ACTIVE" },
+          directives: [],
+          object: {
+            id: {
+              parent: "User",
+              field: "id",
+              type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+          },
+          union: null,
+        },
+      };
+
+      const doc = buildDocument({
+        operationName: "GetUser",
+        operationType: "query",
+        variables: {},
+        fields: fields as any,
+        schema: schemaWithQuery,
+      });
+
+      const printed = print(doc);
+      // Enum should be printed without quotes
+      expect(printed).toContain("user(status: ACTIVE)");
+      // Verify it's not a string (which would have quotes)
+      expect(printed).not.toContain('user(status: "ACTIVE")');
+    });
   });
 });
