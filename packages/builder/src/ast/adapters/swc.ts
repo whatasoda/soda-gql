@@ -19,7 +19,8 @@ type SwcModule = Module & {
   __spanOffset: number;
 };
 
-import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport } from "../types";
+import type { AnalyzeModuleInput, DiagnosticLocation, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "../types";
+import { createStandardDiagnostic } from "../common/detection";
 
 const collectImports = (module: Module): ModuleImport[] => {
   const imports: ModuleImport[] = [];
@@ -561,6 +562,306 @@ const collectAllDefinitions = ({
   return { definitions, handledCalls };
 };
 
+// ============================================================================
+// Diagnostic Collection
+// ============================================================================
+
+/**
+ * Get location from an SWC node span
+ */
+const getLocation = (module: SwcModule, span: { start: number; end: number }): DiagnosticLocation => {
+  const start = span.start - module.__spanOffset;
+  const end = span.end - module.__spanOffset;
+  return { start, end };
+};
+
+/**
+ * Collect diagnostics for invalid import patterns from graphql-system
+ */
+const collectImportDiagnostics = (
+  module: SwcModule,
+  helper: GraphqlSystemIdentifyHelper,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  module.body.forEach((item) => {
+    const declaration =
+      item.type === "ImportDeclaration"
+        ? item
+        : "declaration" in item &&
+            item.declaration &&
+            "type" in item.declaration &&
+            // biome-ignore lint/suspicious/noExplicitAny: SWC type cast
+            (item.declaration as any).type === "ImportDeclaration"
+          ? // biome-ignore lint/suspicious/noExplicitAny: SWC type cast
+            (item.declaration as any as ImportDeclaration)
+          : null;
+
+    if (!declaration) {
+      return;
+    }
+
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: module.__filePath, specifier: declaration.source.value })) {
+      return;
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: SWC types are not fully compatible
+    declaration.specifiers?.forEach((specifier: any) => {
+      // Check for default import
+      if (specifier.type === "ImportDefaultSpecifier") {
+        diagnostics.push(
+          createStandardDiagnostic("DEFAULT_IMPORT", getLocation(module, specifier.span), undefined),
+        );
+        return;
+      }
+
+      // Check for namespace import: import * as gqlSystem from "..."
+      if (specifier.type === "ImportNamespaceSpecifier") {
+        diagnostics.push(
+          createStandardDiagnostic("STAR_IMPORT", getLocation(module, specifier.span), {
+            namespaceAlias: specifier.local.value,
+          }),
+        );
+        return;
+      }
+
+      // Check for renamed gql import: import { gql as g } from "..."
+      if (specifier.type === "ImportSpecifier") {
+        const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
+        // Only report if gql is renamed (imported exists and is "gql")
+        if (imported === "gql" && specifier.imported) {
+          diagnostics.push(
+            createStandardDiagnostic("RENAMED_IMPORT", getLocation(module, specifier.span), {
+              importedAs: specifier.local.value,
+            }),
+          );
+        }
+      }
+    });
+  });
+
+  return diagnostics;
+};
+
+/**
+ * Check if a node contains a reference to any gql identifier
+ */
+// biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+const containsGqlIdentifier = (node: any, identifiers: ReadonlySet<string>): boolean => {
+  if (!node || typeof node !== "object") {
+    return false;
+  }
+  if (node.type === "Identifier" && identifiers.has(node.value)) {
+    return true;
+  }
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) {
+      for (const child of value) {
+        if (containsGqlIdentifier(child, identifiers)) {
+          return true;
+        }
+      }
+    } else if (value && typeof value === "object") {
+      if (containsGqlIdentifier(value, identifiers)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Get the type name of an argument for error messages
+ */
+// biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+const getArgumentType = (node: any): string => {
+  if (!node) return "undefined";
+  switch (node.type) {
+    case "StringLiteral":
+      return "string";
+    case "NumericLiteral":
+      return "number";
+    case "ObjectExpression":
+      return "object";
+    case "ArrayExpression":
+      return "array";
+    case "FunctionExpression":
+      return "function";
+    case "NullLiteral":
+      return "null";
+    case "BooleanLiteral":
+      return "boolean";
+    default:
+      return "unknown";
+  }
+};
+
+/**
+ * Collect diagnostics for invalid gql call patterns
+ */
+const collectCallDiagnostics = (
+  module: SwcModule,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const visit = (node: any) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (node.type === "CallExpression") {
+      const diagnostic = checkCallExpression(module, node, gqlIdentifiers);
+      if (diagnostic) {
+        diagnostics.push(diagnostic);
+      }
+    }
+
+    // Recursively visit children
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          visit(child);
+        }
+      } else if (value && typeof value === "object") {
+        visit(value);
+      }
+    }
+  };
+
+  module.body.forEach(visit);
+  return diagnostics;
+};
+
+/**
+ * Check a call expression for invalid gql patterns
+ */
+const checkCallExpression = (
+  module: SwcModule,
+  call: CallExpression,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic | null => {
+  const callee = call.callee;
+
+  // Check for direct gql() call (non-member): gql(...)
+  if (callee.type === "Identifier" && gqlIdentifiers.has(callee.value)) {
+    return createStandardDiagnostic("NON_MEMBER_CALLEE", getLocation(module, call.span), undefined);
+  }
+
+  // Must be member expression for valid gql call
+  if (callee.type !== "MemberExpression") {
+    return null;
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const object = (callee as any).object;
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const property = (callee as any).property;
+
+  // Check for computed access: gql["default"](...) or gql[variable](...)
+  // SWC represents computed property access with property.type === "Computed"
+  if (property?.type === "Computed" && object?.type === "Identifier" && gqlIdentifiers.has(object.value)) {
+    return createStandardDiagnostic("COMPUTED_PROPERTY", getLocation(module, call.span), undefined);
+  }
+
+  // Check for dynamic callee: (x || gql).default(...)
+  if (object?.type !== "Identifier") {
+    if (containsGqlIdentifier(object, gqlIdentifiers)) {
+      return createStandardDiagnostic("DYNAMIC_CALLEE", getLocation(module, call.span), undefined);
+    }
+    return null;
+  }
+
+  // Not a gql identifier - skip
+  if (!gqlIdentifiers.has(object.value)) {
+    return null;
+  }
+
+  // Check arguments for gql.schema(...) calls
+  if (!call.arguments || call.arguments.length === 0) {
+    return createStandardDiagnostic("MISSING_ARGUMENT", getLocation(module, call.span), undefined);
+  }
+
+  const firstArg = call.arguments[0];
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const expression = (firstArg as any)?.expression;
+  if (expression && expression.type !== "ArrowFunctionExpression") {
+    const actualType = getArgumentType(expression);
+    return createStandardDiagnostic("INVALID_ARGUMENT_TYPE", getLocation(module, call.span), { actualType });
+  }
+
+  return null;
+};
+
+/**
+ * Collect diagnostics for gql calls in class properties
+ */
+const collectClassPropertyDiagnostics = (
+  module: SwcModule,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const containsGqlCall = (node: any): boolean => {
+    if (!node || typeof node !== "object") {
+      return false;
+    }
+    if (node.type === "CallExpression" && isGqlCall(gqlIdentifiers, node)) {
+      return true;
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          if (containsGqlCall(child)) {
+            return true;
+          }
+        }
+      } else if (value && typeof value === "object") {
+        if (containsGqlCall(value)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+  const visit = (node: any) => {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (node.type === "ClassDeclaration") {
+      // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+      node.body?.forEach((member: any) => {
+        if (member.type === "ClassProperty" && member.value) {
+          if (containsGqlCall(member.value)) {
+            diagnostics.push(
+              createStandardDiagnostic("CLASS_PROPERTY", getLocation(module, member.span), undefined),
+            );
+          }
+        }
+      });
+    }
+
+    // Recursively visit children
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          visit(child);
+        }
+      } else if (value && typeof value === "object") {
+        visit(value);
+      }
+    }
+  };
+
+  module.body.forEach(visit);
+  return diagnostics;
+};
+
 /**
  * SWC adapter implementation.
  * The analyze method parses and collects all data in one pass,
@@ -605,12 +906,19 @@ export const swcAdapter: AnalyzerAdapter = {
       source: input.source,
     });
 
+    // Collect diagnostics
+    const diagnostics = [
+      ...collectImportDiagnostics(swcModule, helper),
+      ...collectCallDiagnostics(swcModule, gqlIdentifiers),
+      ...collectClassPropertyDiagnostics(swcModule, gqlIdentifiers),
+    ];
+
     // Return results - swcModule goes out of scope and becomes eligible for GC
     return {
       imports,
       exports,
       definitions,
-      diagnostics: [], // TODO: Implement diagnostic collection
+      diagnostics,
     };
   },
 };
