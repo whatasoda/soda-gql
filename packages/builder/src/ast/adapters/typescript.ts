@@ -483,6 +483,7 @@ export const typescriptAdapter: AnalyzerAdapter = {
       imports,
       exports,
       definitions,
+      diagnostics: [], // TODO: Implement diagnostic collection
     };
   },
 };

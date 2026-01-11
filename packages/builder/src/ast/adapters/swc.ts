@@ -610,6 +610,7 @@ export const swcAdapter: AnalyzerAdapter = {
       imports,
       exports,
       definitions,
+      diagnostics: [], // TODO: Implement diagnostic collection
     };
   },
 };

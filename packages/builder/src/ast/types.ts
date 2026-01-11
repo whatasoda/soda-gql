@@ -4,6 +4,58 @@
 
 import type { CanonicalId } from "@soda-gql/common";
 
+// ============================================================================
+// Diagnostic Types
+// ============================================================================
+
+/**
+ * Diagnostic codes for invalid patterns detected during analysis.
+ */
+export type DiagnosticCode =
+  // Import-level issues
+  | "RENAMED_IMPORT" // gql as g
+  | "STAR_IMPORT" // import * as gqlSystem
+  | "DEFAULT_IMPORT" // import gql from "..."
+  // Call-level issues
+  | "MISSING_ARGUMENT" // gql.default()
+  | "INVALID_ARGUMENT_TYPE" // gql.default("string")
+  | "NON_MEMBER_CALLEE" // gql(...)
+  | "COMPUTED_PROPERTY" // gql["default"](...)
+  | "DYNAMIC_CALLEE" // (x || gql).default(...)
+  // Scope-level issues
+  | "CLASS_PROPERTY"; // class property definitions
+
+/**
+ * Severity level for diagnostics.
+ */
+export type DiagnosticSeverity = "error" | "warning";
+
+/**
+ * Location information for a diagnostic.
+ */
+export type DiagnosticLocation = {
+  readonly start: number;
+  readonly end: number;
+  readonly line?: number;
+  readonly column?: number;
+};
+
+/**
+ * A single diagnostic message from analysis.
+ */
+export type ModuleDiagnostic = {
+  readonly code: DiagnosticCode;
+  readonly severity: DiagnosticSeverity;
+  readonly message: string;
+  readonly location: DiagnosticLocation;
+  /** Additional context for some diagnostics */
+  readonly context?: Readonly<Record<string, string>>;
+};
+
+// ============================================================================
+// Module Analysis Types
+// ============================================================================
+
 export type ModuleDefinition = {
   readonly canonicalId: CanonicalId;
   /** AST-derived path uniquely identifying this definition's location (e.g., "MyComponent.useQuery.def") */
@@ -52,6 +104,7 @@ export type ModuleAnalysis = {
   readonly definitions: readonly ModuleDefinition[];
   readonly imports: readonly ModuleImport[];
   readonly exports: readonly ModuleExport[];
+  readonly diagnostics: readonly ModuleDiagnostic[];
 };
 
 export type AnalyzeModuleInput = {
