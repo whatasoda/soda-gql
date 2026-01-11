@@ -40,6 +40,8 @@ const diagnosticExpectations: Record<string, ExpectedDiagnostic[]> = {
 
   // Scope-level issues
   "class-properties/source": [{ code: "CLASS_PROPERTY", count: 2 }],
+  // Non-top-level scope: valid AST pattern but isTopLevel=false (no diagnostic, fails at runtime)
+  "nested-non-top-level/source": [],
 
   // Not an error - just no gql code
   "no-gql-code/source": [],

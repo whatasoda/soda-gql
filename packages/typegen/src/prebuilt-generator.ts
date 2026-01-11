@@ -239,10 +239,14 @@ ${contextTypes}
 ${schemaNames.map((name) => `export type { PrebuiltContext_${name} };`).join("\n")}
 
 // Composer type - TResult already has resolved types from builders, no ResolvePrebuiltElement needed
-${schemaNames.map((name) => `type GqlComposer_${name} = {
+${schemaNames
+  .map(
+    (name) => `type GqlComposer_${name} = {
   <TResult>(composeElement: (context: PrebuiltContext_${name}) => TResult): TResult;
   readonly $schema: AnyGraphqlSchema;
-};`).join("\n")}
+};`,
+  )
+  .join("\n")}
 
 /**
  * Prebuilt GQL composers with builder-level type resolution.

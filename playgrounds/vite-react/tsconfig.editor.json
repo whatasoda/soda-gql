@@ -14,6 +14,7 @@
     }
   },
   "include": ["src/**/*", "fixture-catalog/**/*"],
+  "exclude": ["**/graphql-system/*.prebuilt.ts", "**/graphql-system/*.cjs"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" }

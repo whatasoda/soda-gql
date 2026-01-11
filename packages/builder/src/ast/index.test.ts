@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "bun:test";
 import { getTestConfig } from "../../test/fixture-catalog/get-config";
-import { fixtures, loadModuleAnalysisFixture } from "../../test/utils/fixtures";
+import { fixtures, loadCoreInvalidFixture, loadModuleAnalysisFixture } from "../../test/utils/fixtures";
 import { createGraphqlSystemIdentifyHelper } from "../internal/graphql-system";
 import { createAstAnalyzer } from ".";
 
@@ -201,7 +201,7 @@ describe("AST Analyzer", () => {
     });
 
     it("collects gql definitions nested inside non-top-level scopes", () => {
-      const { filePath, source } = loadModuleAnalysisFixture("nested-non-top-level");
+      const { filePath, source } = loadCoreInvalidFixture("nested-non-top-level/source");
 
       const analysis = analyzeWithTS({ filePath, source });
 

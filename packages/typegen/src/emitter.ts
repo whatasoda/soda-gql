@@ -30,7 +30,7 @@ import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@sod
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
-import { type TypegenError, typegenErrors } from "./errors";
+import type { TypegenError } from "./errors";
 
 /**
  * Options for emitting prebuilt types.
@@ -360,7 +360,10 @@ const generateTypesCode = (
     // Generate fragments type
     const fragmentEntries = fragments
       .sort((a, b) => a.key.localeCompare(b.key))
-      .map((f) => `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`);
+      .map(
+        (f) =>
+          `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`,
+      );
 
     // Generate operations type
     const operationEntries = operations
