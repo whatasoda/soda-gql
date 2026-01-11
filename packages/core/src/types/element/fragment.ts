@@ -12,7 +12,7 @@ import { GqlElement } from "./gql-element";
 /**
  * Type alias for any Fragment instance.
  */
-export type AnyFragment = Fragment<string, any, AnyFields, any, string | undefined>;
+export type AnyFragment = Fragment<string, any, AnyFields, any>;
 
 /**
  * Type inference metadata for fragments.
@@ -31,10 +31,9 @@ interface FragmentArtifact<
   TTypeName extends string,
   TVariables extends Partial<AnyAssignableInput> | void,
   TFields extends Partial<AnyFields>,
-  TKey extends string | undefined = undefined,
 > {
   readonly typename: TTypeName;
-  readonly key: TKey;
+  readonly key: string | undefined;
   readonly schemaLabel: string;
   readonly variableDefinitions: InputTypeSpecifiers;
   readonly spread: (variables: TVariables) => TFields;
@@ -52,21 +51,19 @@ declare const __FRAGMENT_BRAND__: unique symbol;
  * @template TVariables - Variables required when spreading
  * @template TFields - The selected fields structure
  * @template TOutput - Inferred output type from selected fields
- * @template TKey - Optional unique key for prebuilt type lookup
  */
 export class Fragment<
     TTypeName extends string,
     TVariables extends Partial<AnyAssignableInput> | void,
     TFields extends Partial<AnyFields>,
     TOutput extends object,
-    TKey extends string | undefined = undefined,
   >
-  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields, TKey>, FragmentInferMeta<TVariables, TOutput>>
-  implements FragmentArtifact<TTypeName, TVariables, TFields, TKey>
+  extends GqlElement<FragmentArtifact<TTypeName, TVariables, TFields>, FragmentInferMeta<TVariables, TOutput>>
+  implements FragmentArtifact<TTypeName, TVariables, TFields>
 {
   private declare readonly [__FRAGMENT_BRAND__]: void;
 
-  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields, TKey>) {
+  private constructor(define: () => FragmentArtifact<TTypeName, TVariables, TFields>) {
     super(define);
   }
 
@@ -108,11 +105,10 @@ export class Fragment<
     TTypeName extends keyof TSchema["object"] & string,
     TVariableDefinitions extends InputTypeSpecifiers,
     TFields extends AnyFields,
-    TKey extends string | undefined = undefined,
   >(
     define: () => {
       typename: TTypeName;
-      key: TKey;
+      key: string | undefined;
       schemaLabel: TSchema["label"];
       variableDefinitions: TVariableDefinitions;
       spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
@@ -122,8 +118,8 @@ export class Fragment<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Fragment<TTypeName, Variables, Fields, Output, TKey>(
-      define as () => FragmentArtifact<TTypeName, Variables, Fields, TKey>,
+    return new Fragment<TTypeName, Variables, Fields, Output>(
+      define as () => FragmentArtifact<TTypeName, Variables, Fields>,
     );
   }
 }

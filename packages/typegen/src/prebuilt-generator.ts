@@ -99,12 +99,11 @@ type ResolveFragmentAtBuilder_${name}<
         ? TInput extends void ? void : Partial<TInput & object>
         : void,
       Partial<AnyFields>,
-      PrebuiltTypes_${name}["fragments"][TKey]["output"] & object,
-      TKey
+      PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
     >
   : TKey extends undefined
-    ? Fragment<TTypeName, PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">, TKey>
-    : Fragment<TTypeName, PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">, TKey>;
+    ? Fragment<TTypeName, PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">>
+    : Fragment<TTypeName, PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">>;
 
 /**
  * Resolve operation types at builder level using TName.
