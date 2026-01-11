@@ -45,6 +45,8 @@ export const getSeverity = (code: DiagnosticCode): DiagnosticSeverity => {
     case "MISSING_ARGUMENT":
     case "INVALID_ARGUMENT_TYPE":
     case "NON_MEMBER_CALLEE":
+    case "OPTIONAL_CHAINING":
+    case "SPREAD_ARGUMENT":
       return "error";
 
     // Warnings: code might work but is unsupported
@@ -54,6 +56,7 @@ export const getSeverity = (code: DiagnosticCode): DiagnosticSeverity => {
     case "COMPUTED_PROPERTY":
     case "DYNAMIC_CALLEE":
     case "CLASS_PROPERTY":
+    case "EXTRA_ARGUMENTS":
       return "warning";
   }
 };
@@ -79,6 +82,10 @@ export const diagnosticMessages: Record<DiagnosticCode, (ctx?: MessageContext) =
   NON_MEMBER_CALLEE: () => `Cannot call gql directly - use gql.schemaName(...)`,
   COMPUTED_PROPERTY: () => `Computed property access not supported - use gql.schemaName(...)`,
   DYNAMIC_CALLEE: () => `Dynamic callee expression not supported`,
+  OPTIONAL_CHAINING: () => `Optional chaining on gql not supported - use gql.schemaName(...) directly`,
+  EXTRA_ARGUMENTS: (ctx) =>
+    `gql definition only accepts one argument, ${ctx?.extraCount ?? "extra"} additional argument(s) ignored`,
+  SPREAD_ARGUMENT: () => `Spread arguments not supported - use arrow function directly`,
 
   // Scope-level
   CLASS_PROPERTY: () => `Class property definitions may have inconsistent scope tracking`,

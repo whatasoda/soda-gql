@@ -755,6 +755,20 @@ const checkCallExpression = (
     return createStandardDiagnostic("NON_MEMBER_CALLEE", getLocation(module, call.span), undefined);
   }
 
+  // Check for optional chaining: gql?.default(...)
+  // SWC wraps optional chaining in OptionalChainingExpression
+  if (callee.type === "OptionalChainingExpression") {
+    // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
+    const base = (callee as any).base;
+    if (base?.type === "MemberExpression") {
+      const object = base.object;
+      if (object?.type === "Identifier" && gqlIdentifiers.has(object.value)) {
+        return createStandardDiagnostic("OPTIONAL_CHAINING", getLocation(module, call.span), undefined);
+      }
+    }
+    return null;
+  }
+
   // Must be member expression for valid gql call
   if (callee.type !== "MemberExpression") {
     return null;
@@ -791,10 +805,25 @@ const checkCallExpression = (
 
   const firstArg = call.arguments[0];
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-  const expression = (firstArg as any)?.expression;
+  const firstArgAny = firstArg as any;
+
+  // Check for spread argument: gql.default(...args)
+  if (firstArgAny?.spread) {
+    return createStandardDiagnostic("SPREAD_ARGUMENT", getLocation(module, call.span), undefined);
+  }
+
+  const expression = firstArgAny?.expression;
   if (expression && expression.type !== "ArrowFunctionExpression") {
     const actualType = getArgumentType(expression);
     return createStandardDiagnostic("INVALID_ARGUMENT_TYPE", getLocation(module, call.span), { actualType });
+  }
+
+  // Check for extra arguments: gql.default(() => ..., extra)
+  if (call.arguments.length > 1) {
+    const extraCount = call.arguments.length - 1;
+    return createStandardDiagnostic("EXTRA_ARGUMENTS", getLocation(module, call.span), {
+      extraCount: String(extraCount),
+    });
   }
 
   return null;

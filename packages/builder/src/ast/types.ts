@@ -22,6 +22,9 @@ export type DiagnosticCode =
   | "NON_MEMBER_CALLEE" // gql(...)
   | "COMPUTED_PROPERTY" // gql["default"](...)
   | "DYNAMIC_CALLEE" // (x || gql).default(...)
+  | "OPTIONAL_CHAINING" // gql?.default(...)
+  | "EXTRA_ARGUMENTS" // gql.default(fn, extra)
+  | "SPREAD_ARGUMENT" // gql.default(...args)
   // Scope-level issues
   | "CLASS_PROPERTY"; // class property definitions
 

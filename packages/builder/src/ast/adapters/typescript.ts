@@ -182,13 +182,27 @@ const collectExports = (sourceFile: ts.SourceFile): ModuleExport[] => {
   return exports;
 };
 
+/**
+ * Unwrap NonNullExpression nodes to get the underlying expression.
+ * Handles cases like `gql!` or `gql!!` by recursively unwrapping.
+ */
+const unwrapNonNullExpression = (node: ts.Expression): ts.Expression => {
+  if (ts.isNonNullExpression(node)) {
+    return unwrapNonNullExpression(node.expression);
+  }
+  return node;
+};
+
 const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: ts.CallExpression): boolean => {
   const expression = callExpression.expression;
   if (!ts.isPropertyAccessExpression(expression)) {
     return false;
   }
 
-  if (!ts.isIdentifier(expression.expression) || !identifiers.has(expression.expression.text)) {
+  // Unwrap NonNullExpression: gql!.default(...) -> gql.default(...)
+  const baseExpr = unwrapNonNullExpression(expression.expression);
+
+  if (!ts.isIdentifier(baseExpr) || !identifiers.has(baseExpr.text)) {
     return false;
   }
 
@@ -611,9 +625,10 @@ const checkCallExpression = (
     return createStandardDiagnostic("NON_MEMBER_CALLEE", getLocation(sourceFile, call), undefined);
   }
 
-  // Check for element access: gql["default"](...)
+  // Check for element access: gql["default"](...) or gql!["default"](...)
   if (ts.isElementAccessExpression(expression)) {
-    if (ts.isIdentifier(expression.expression) && gqlIdentifiers.has(expression.expression.text)) {
+    const baseExpr = unwrapNonNullExpression(expression.expression);
+    if (ts.isIdentifier(baseExpr) && gqlIdentifiers.has(baseExpr.text)) {
       return createStandardDiagnostic("COMPUTED_PROPERTY", getLocation(sourceFile, call), undefined);
     }
     return null;
@@ -624,8 +639,19 @@ const checkCallExpression = (
     return null;
   }
 
+  // Unwrap NonNullExpression: gql!.default(...) -> gql.default(...)
+  const baseExpr = unwrapNonNullExpression(expression.expression);
+
+  // Check for optional chaining: gql?.default(...)
+  if (expression.questionDotToken) {
+    if (ts.isIdentifier(baseExpr) && gqlIdentifiers.has(baseExpr.text)) {
+      return createStandardDiagnostic("OPTIONAL_CHAINING", getLocation(sourceFile, call), undefined);
+    }
+    return null;
+  }
+
   // Check for dynamic callee: (x || gql).default(...)
-  if (!ts.isIdentifier(expression.expression)) {
+  if (!ts.isIdentifier(baseExpr)) {
     if (containsGqlIdentifier(expression.expression, gqlIdentifiers)) {
       return createStandardDiagnostic("DYNAMIC_CALLEE", getLocation(sourceFile, call), undefined);
     }
@@ -633,7 +659,7 @@ const checkCallExpression = (
   }
 
   // Not a gql identifier - skip
-  if (!gqlIdentifiers.has(expression.expression.text)) {
+  if (!gqlIdentifiers.has(baseExpr.text)) {
     return null;
   }
 
@@ -643,9 +669,23 @@ const checkCallExpression = (
   }
 
   const firstArg = call.arguments[0];
+
+  // Check for spread argument: gql.default(...args)
+  if (firstArg && ts.isSpreadElement(firstArg)) {
+    return createStandardDiagnostic("SPREAD_ARGUMENT", getLocation(sourceFile, call), undefined);
+  }
+
   if (firstArg && !ts.isArrowFunction(firstArg)) {
     const actualType = getArgumentType(firstArg);
     return createStandardDiagnostic("INVALID_ARGUMENT_TYPE", getLocation(sourceFile, call), { actualType });
+  }
+
+  // Check for extra arguments: gql.default(() => ..., extra)
+  if (call.arguments.length > 1) {
+    const extraCount = call.arguments.length - 1;
+    return createStandardDiagnostic("EXTRA_ARGUMENTS", getLocation(sourceFile, call), {
+      extraCount: String(extraCount),
+    });
   }
 
   return null;

@@ -43,6 +43,9 @@ const DiagnosticCodeSchema = z.enum([
   "NON_MEMBER_CALLEE",
   "COMPUTED_PROPERTY",
   "DYNAMIC_CALLEE",
+  "OPTIONAL_CHAINING",
+  "EXTRA_ARGUMENTS",
+  "SPREAD_ARGUMENT",
   "CLASS_PROPERTY",
 ]);
 

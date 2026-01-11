@@ -82,9 +82,12 @@ export const invalidFixtures = [
   // Call-level issues
   "computed-property/source",
   "dynamic-callee/source",
+  "extra-arguments/source",
   "invalid-call-no-args/source",
   "invalid-call-wrong-type/source",
   "non-member-callee/source",
+  "optional-chaining/source",
+  "spread-argument/source",
 
   // Import-level issues
   "default-import/source",

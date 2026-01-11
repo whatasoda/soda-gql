@@ -34,6 +34,9 @@ const diagnosticExpectations: Record<string, ExpectedDiagnostic[]> = {
   "non-member-callee/source": [{ code: "NON_MEMBER_CALLEE" }],
   "computed-property/source": [{ code: "COMPUTED_PROPERTY", count: 2 }],
   "dynamic-callee/source": [{ code: "DYNAMIC_CALLEE", count: 2 }],
+  "optional-chaining/source": [{ code: "OPTIONAL_CHAINING" }],
+  "extra-arguments/source": [{ code: "EXTRA_ARGUMENTS", count: 2 }],
+  "spread-argument/source": [{ code: "SPREAD_ARGUMENT" }],
 
   // Scope-level issues
   "class-properties/source": [{ code: "CLASS_PROPERTY", count: 2 }],
@@ -147,6 +150,38 @@ describe("Analyzer Diagnostics", () => {
       const [diagnostic] = analysis.diagnostics;
       expect(diagnostic?.location.start).toBeGreaterThanOrEqual(0);
       expect(diagnostic?.location.end).toBeGreaterThan(diagnostic?.location.start ?? 0);
+    });
+
+    test("OPTIONAL_CHAINING has error severity", () => {
+      const { filePath, source } = loadCoreInvalidFixture("optional-chaining/source");
+      const analysis = analyzeWithTS({ filePath, source });
+
+      expect(analysis.diagnostics).toHaveLength(1);
+      const [diagnostic] = analysis.diagnostics;
+      expect(diagnostic?.code).toBe("OPTIONAL_CHAINING");
+      expect(diagnostic?.severity).toBe("error");
+    });
+
+    test("EXTRA_ARGUMENTS includes context with extraCount", () => {
+      const { filePath, source } = loadCoreInvalidFixture("extra-arguments/source");
+      const analysis = analyzeWithTS({ filePath, source });
+
+      expect(analysis.diagnostics).toHaveLength(2);
+      const [first, second] = analysis.diagnostics;
+      expect(first?.code).toBe("EXTRA_ARGUMENTS");
+      expect(first?.context?.extraCount).toBe("1");
+      expect(first?.severity).toBe("warning");
+      expect(second?.context?.extraCount).toBe("2");
+    });
+
+    test("SPREAD_ARGUMENT has error severity", () => {
+      const { filePath, source } = loadCoreInvalidFixture("spread-argument/source");
+      const analysis = analyzeWithTS({ filePath, source });
+
+      expect(analysis.diagnostics).toHaveLength(1);
+      const [diagnostic] = analysis.diagnostics;
+      expect(diagnostic?.code).toBe("SPREAD_ARGUMENT");
+      expect(diagnostic?.severity).toBe("error");
     });
   });
 });
