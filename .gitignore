@@ -172,7 +172,7 @@ benchmarks/runtime-builder/*/graphql-system/
 
 # Package test fixture generated files
 packages/builder/test/graphql-system/
-packages/tsc/test/codegen-fixture/graphql-system/
+packages/tsc/test/fixture-catalog/graphql-system/
 
 # Rust/napi-rs build artifacts
 packages/swc/target/

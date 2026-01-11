@@ -8,7 +8,7 @@ import type { BuilderArtifact } from "@soda-gql/builder";
 import { createTempConfigFile } from "@soda-gql/config/test";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
-const codegenFixtureRoot = join(projectRoot, "tests", "codegen-fixture");
+const codegenFixtureRoot = join(projectRoot, "fixture-catalog");
 const graphqlSystemDir = join(codegenFixtureRoot, "graphql-system");
 const schemaPath = join(codegenFixtureRoot, "schemas", "default", "schema.graphql");
 

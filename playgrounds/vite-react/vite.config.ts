@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [sodaGqlPlugin({ debug: true }), react()],
   resolve: {
     alias: [
-      { find: "@/graphql-system", replacement: resolve(__dirname, "./codegen-fixture/graphql-system") },
+      { find: "@/graphql-system", replacement: resolve(__dirname, "./fixture-catalog/graphql-system") },
       { find: "@", replacement: resolve(__dirname, "./src") },
     ],
   },

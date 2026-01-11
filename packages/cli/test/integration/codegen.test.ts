@@ -7,7 +7,7 @@ import { type CliResult, getProjectRoot, runCodegenCli } from "../utils/cli";
 const projectRoot = getProjectRoot();
 
 const copyDefaultInject = (destinationPath: string): void => {
-  cpSync(join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts"), destinationPath);
+  cpSync(join(projectRoot, "fixture-catalog/schemas/default/scalars.ts"), destinationPath);
 };
 
 const runTypecheck = async (tsconfigPath: string): Promise<CliResult> => {
@@ -97,7 +97,7 @@ describe("soda-gql codegen CLI", () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}`);
       mkdirSync(caseDir, { recursive: true });
 
-      const schemaPath = join(projectRoot, "tests", "codegen-fixture", "schemas", "default", "schema.graphql");
+      const schemaPath = join(projectRoot, "fixture-catalog", "schemas", "default", "schema.graphql");
       const outDir = join(caseDir, "graphql-system");
       const outFile = join(outDir, "index.ts");
       const injectFile = join(caseDir, "inject.ts");

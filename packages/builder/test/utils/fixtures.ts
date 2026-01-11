@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FIXTURES_ROOT = fileURLToPath(new URL("../codegen-fixture/fixtures", import.meta.url));
+const FIXTURES_ROOT = fileURLToPath(new URL("../fixture-catalog/fixtures", import.meta.url));
 
 /**
  * Get the absolute path to a fixture file
@@ -68,6 +68,6 @@ export const loadCoreInvalidFixture = (name: string): { filePath: string; source
 export const getModuleAnalysisFixturePath = getCoreFixturePath;
 export const loadModuleAnalysisFixture = loadCoreFixture;
 
-export type { InvalidFixtureName, ValidFixtureName } from "../codegen-fixture/fixtures/core/_manifest";
+export type { InvalidFixtureName, ValidFixtureName } from "../fixture-catalog/fixtures/core/_manifest";
 // Re-export manifest for test files
-export { invalidFixtures, validFixtures as fixtures } from "../codegen-fixture/fixtures/core/_manifest";
+export { invalidFixtures, validFixtures as fixtures } from "../fixture-catalog/fixtures/core/_manifest";

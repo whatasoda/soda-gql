@@ -17,7 +17,7 @@
     "plugins": [{ "name": "next" }],
     "types": ["node", "react", "react-dom"],
     "paths": {
-      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

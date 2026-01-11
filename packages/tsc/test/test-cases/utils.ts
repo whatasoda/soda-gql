@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import { createBuilderService } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { getTestConfig } from "../codegen-fixture/get-config";
+import { getTestConfig } from "../fixture-catalog/get-config";
 
 export type LoadedPluginFixture = {
   sourcePath: string;
@@ -31,7 +31,7 @@ const getPackageRoot = (): string => {
   return fileURLToPath(new URL("../../", import.meta.url));
 };
 
-const CODEGEN_FIXTURE_ROOT = join(getPackageRoot(), "test/codegen-fixture");
+const CODEGEN_FIXTURE_ROOT = join(getPackageRoot(), "test/fixture-catalog");
 const FIXTURE_ROOT_VALID = join(CODEGEN_FIXTURE_ROOT, "fixtures/core/valid");
 const FIXTURE_ROOT_INVALID = join(CODEGEN_FIXTURE_ROOT, "fixtures/core/invalid");
 
@@ -46,7 +46,7 @@ const getFixtureRoot = (name: string): string => {
 export type AnalyzerType = "ts" | "swc";
 
 /**
- * Create a test config using the shared codegen-fixture.
+ * Create a test config using the shared fixture-catalog.
  * This uses the pre-generated graphql-system from fixture:setup.
  *
  * @param analyzer - Optional analyzer type override ("ts" or "swc")
@@ -58,7 +58,7 @@ export const createTestConfig = (analyzer?: AnalyzerType): ResolvedSodaGqlConfig
 
 /**
  * Load a single-file plugin fixture by running the builder to generate artifact.
- * Uses the shared graphql-system from codegen-fixture (requires `bun fixture:setup` to be run first).
+ * Uses the shared graphql-system from fixture-catalog (requires `bun fixture:setup` to be run first).
  *
  * @param name - Fixture name relative to test/fixtures (e.g., "models/basic")
  * @param analyzer - Optional analyzer type override ("ts" or "swc")
@@ -104,7 +104,7 @@ export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): 
 
 /**
  * Load a multi-file plugin fixture by running the builder to generate artifact.
- * Uses the shared graphql-system from codegen-fixture (requires `bun fixture:setup` to be run first).
+ * Uses the shared graphql-system from fixture-catalog (requires `bun fixture:setup` to be run first).
  *
  * @param name - Fixture name relative to test/fixtures (e.g., "operations/composed-with-imported-slices")
  * @param analyzer - Optional analyzer type override ("ts" or "swc")

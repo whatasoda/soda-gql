@@ -28,12 +28,12 @@ describe("prebuild integration", () => {
     await fs.mkdir(workspaceRoot, { recursive: true });
 
     // Copy schema (use actual file, not symlink)
-    const schemaSource = path.join(projectRoot, "tests/codegen-fixture/schemas/default/schema.graphql");
+    const schemaSource = path.join(projectRoot, "fixture-catalog/schemas/default/schema.graphql");
     const schemaDest = path.join(workspaceRoot, "schema.graphql");
     cpSync(schemaSource, schemaDest);
 
     // Copy inject/scalars
-    const injectSource = path.join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts");
+    const injectSource = path.join(projectRoot, "fixture-catalog/schemas/default/scalars.ts");
     const injectDir = path.join(workspaceRoot, "inject");
     await fs.mkdir(injectDir, { recursive: true });
     cpSync(injectSource, path.join(injectDir, "scalars.ts"));
