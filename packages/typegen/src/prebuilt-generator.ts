@@ -130,17 +130,45 @@ type ResolveOperationAtBuilder_${name}<
     >;
 
 /**
+ * Generic field factory for type-erased field access.
+ * Returns a callable for nested field builders. Primitive fields can be spread directly.
+ * Runtime behavior differs but spread works for both: ...f.id() and ...f.user()(...)
+ */
+type GenericFieldFactory = (
+  ...args: unknown[]
+) => (nest: (tools: GenericFieldsBuilderTools) => AnyFields) => AnyFields;
+
+/**
+ * Generic tools for fields builder callbacks.
+ * Uses type-erased factory to allow any field access while maintaining strict mode compatibility.
+ */
+type GenericFieldsBuilderTools = {
+  readonly f: Record<string, GenericFieldFactory>;
+  readonly $: Record<string, unknown>;
+};
+
+/**
  * Fragment builder that resolves types at builder level using TKey.
  */
 type PrebuiltFragmentBuilder_${name} = <TTypeName extends string, TKey extends string | undefined = undefined>(
-  options: { key?: TKey; [key: string]: unknown }
+  options: {
+    key?: TKey;
+    fields: (tools: GenericFieldsBuilderTools) => AnyFields;
+    variables?: Record<string, unknown>;
+    metadata?: unknown;
+  }
 ) => ResolveFragmentAtBuilder_${name}<TTypeName, TKey>;
 
 /**
  * Operation builder that resolves types at builder level using TName.
  */
 type PrebuiltOperationBuilder_${name}<TOperationType extends OperationType> = <TName extends string>(
-  options: { name: TName; [key: string]: unknown }
+  options: {
+    name: TName;
+    fields: (tools: GenericFieldsBuilderTools) => AnyFields;
+    variables?: Record<string, unknown>;
+    metadata?: unknown;
+  }
 ) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
 
 /**

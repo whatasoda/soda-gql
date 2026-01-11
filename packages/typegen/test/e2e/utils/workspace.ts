@@ -119,7 +119,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
       target: "ES2022",
       module: "ESNext",
       moduleResolution: "bundler",
-      strict: false, // TODO: Enable strict mode after fixing type inference issues
+      strict: true,
       skipLibCheck: true,
       noEmit: true,
       esModuleInterop: true,
