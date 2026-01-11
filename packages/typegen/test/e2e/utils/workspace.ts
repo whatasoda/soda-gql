@@ -113,6 +113,8 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJsonContent, null, 2), "utf-8");
 
   // Create tsconfig.json for tsc validation
+  // Use customConditions to resolve @soda-gql packages from source instead of dist
+  // This is required because dist/ may not be built in CI environments
   const tsconfigPath = path.join(workspaceRoot, "tsconfig.json");
   const tsconfigContent = {
     compilerOptions: {
@@ -125,7 +127,8 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
       esModuleInterop: true,
       resolveJsonModule: true,
       lib: ["ES2022"],
-      types: [], // Don't auto-load type definitions from @types/*
+      types: ["node"], // Include node types for @soda-gql source files
+      customConditions: ["@soda-gql"], // Resolve from source instead of dist
     },
     include: ["src/**/*.ts", "graphql-system/**/*.ts", "inject/**/*.ts"],
   };
