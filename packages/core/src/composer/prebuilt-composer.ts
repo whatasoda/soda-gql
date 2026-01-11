@@ -89,10 +89,13 @@ export type ResolvePrebuiltElement<TElement, TPrebuilt extends PrebuiltTypeRegis
 
 /**
  * Prebuilt element composer that resolves types from a registry.
+ *
+ * Note: The TResult type parameter is intentionally unconstrained to preserve
+ * literal types (TKey for fragments, TOperationName for operations) during
+ * inference. Adding a constraint like `TResult extends AnyFragment | AnyOperation`
+ * would cause TypeScript to widen these literal types to string.
  */
-export type PrebuiltGqlElementComposer<TContext, TPrebuilt extends PrebuiltTypeRegistry> = <
-  TResult extends AnyFragment | Operation<OperationType, string, string[], AnyConstAssignableInput, AnyFields, object>,
->(
+export type PrebuiltGqlElementComposer<TContext, TPrebuilt extends PrebuiltTypeRegistry> = <TResult>(
   composeElement: (context: TContext) => TResult,
 ) => ResolvePrebuiltElement<TResult, TPrebuilt>;
 

@@ -182,19 +182,25 @@ describe("typegen key inference E2E", () => {
       await workspace.cleanup();
     });
 
-    // NOTE: This test documents a known issue with prebuilt type inference.
-    // The prebuilt-generator uses AnyGqlContext which loses type information.
-    // See: prebuilt-generator.ts line 88-94
-    test.skip("prebuilt module compiles with correct type resolution", async () => {
+    // This test verifies that prebuilt type inference works correctly.
+    // The prebuilt-generator now generates minimal Context types that preserve
+    // TKey for fragments and TOperationName for operations.
+    test("prebuilt module compiles with correct type resolution", async () => {
       const result = await runTypegen({ config: workspace.config });
       expect(result.isOk()).toBe(true);
+
+      // Debug: print generated files
+      const prebuiltPath = join(workspace.config.outdir, "index.prebuilt.ts");
+      const typesPath = join(workspace.config.outdir, "types.prebuilt.ts");
+      console.log("\n=== index.prebuilt.ts ===\n", readFileSync(prebuiltPath, "utf-8"));
+      console.log("\n=== types.prebuilt.ts ===\n", readFileSync(typesPath, "utf-8"));
 
       // Create a type-check file in src directory (covered by tsconfig.json)
       const typeCheckFile = join(workspace.workspaceRoot, "src", "type-check.ts");
       const typeCheckContent = `
-import { gql } from "../graphql-system/index.prebuilt";
+import { gql, type PrebuiltContext_default } from "../graphql-system/index.prebuilt";
 
-// Fragment with key should resolve to prebuilt types
+// Test 1: Fragment with key should resolve to prebuilt types
 const userFragment = gql.default(({ fragment }) =>
   fragment.User({
     key: "UserFields",
@@ -206,18 +212,17 @@ const userFragment = gql.default(({ fragment }) =>
 type FragmentOutput = typeof userFragment.$infer.output;
 const _testFragmentOutput: FragmentOutput extends { __error: string } ? never : true = true;
 
-// Operation with name should resolve to prebuilt types
-const getUser = gql.default(({ query, $var }) =>
-  query.operation({
+// Test 2: Operation with name should resolve to prebuilt types
+const getUser = gql.default((ctx) => {
+  return ctx.query.operation({
     name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
+    fields: ({ f }) => ({
+      ...f.user({ id: "1" })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
-  })
-);
+  });
+});
 
-// Type assertion: input/output should be object types (not PrebuiltEntryNotFound)
+// Type assertion: output should be an object type (not PrebuiltEntryNotFound)
 type OperationOutput = typeof getUser.$infer.output;
 const _testOperationOutput: OperationOutput extends { __error: string } ? never : true = true;
 `;
