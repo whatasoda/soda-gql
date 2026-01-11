@@ -57,15 +57,22 @@ export type PrebuiltTypesEmitterOptions = {
   readonly injectsModulePath: string;
 };
 
-type PrebuiltTypeEntry = {
+type PrebuiltFragmentEntry = {
+  readonly key: string;
+  readonly typename: string;
+  readonly inputType: string;
+  readonly outputType: string;
+};
+
+type PrebuiltOperationEntry = {
   readonly key: string;
   readonly inputType: string;
   readonly outputType: string;
 };
 
 type SchemaGroup = {
-  fragments: PrebuiltTypeEntry[];
-  operations: PrebuiltTypeEntry[];
+  fragments: PrebuiltFragmentEntry[];
+  operations: PrebuiltOperationEntry[];
   inputObjects: Set<string>;
 };
 
@@ -145,6 +152,7 @@ const groupBySchema = (
 
         group.fragments.push({
           key: selection.key,
+          typename: selection.typename,
           inputType,
           outputType,
         });
@@ -362,7 +370,7 @@ const generateTypesCode = (
     // Generate fragments type
     const fragmentEntries = fragments
       .sort((a, b) => a.key.localeCompare(b.key))
-      .map((f) => `    readonly "${f.key}": { readonly input: ${f.inputType}; readonly output: ${f.outputType} };`);
+      .map((f) => `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`);
 
     // Generate operations type
     const operationEntries = operations
@@ -380,7 +388,7 @@ const generateTypesCode = (
       lines.push(...operationEntries);
     }
     lines.push("  };");
-    lines.push("} satisfies PrebuiltTypeRegistry;");
+    lines.push("};");
     lines.push("");
   }
 

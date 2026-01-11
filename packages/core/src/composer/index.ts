@@ -8,5 +8,4 @@ export * from "./fragment-usage-context";
 export * from "./gql-composer";
 export * from "./input";
 export * from "./operation";
-export * from "./prebuilt-composer";
 export * from "./var-builder";
