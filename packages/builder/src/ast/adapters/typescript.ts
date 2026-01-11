@@ -9,7 +9,8 @@ import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter, AnalyzerResult } from "../core";
-import type { AnalyzeModuleInput, ModuleDefinition, ModuleExport, ModuleImport } from "../types";
+import type { AnalyzeModuleInput, DiagnosticLocation, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "../types";
+import { createStandardDiagnostic } from "../common/detection";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -457,6 +458,234 @@ const collectAllDefinitions = ({
   return { definitions, handledCalls };
 };
 
+// ============================================================================
+// Diagnostic Collection
+// ============================================================================
+
+/**
+ * Get location from a TypeScript node
+ */
+const getLocation = (sourceFile: ts.SourceFile, node: ts.Node): DiagnosticLocation => {
+  const start = node.getStart(sourceFile);
+  const { line, character } = sourceFile.getLineAndCharacterOfPosition(start);
+  return {
+    start,
+    end: node.getEnd(),
+    line: line + 1, // 1-indexed
+    column: character + 1,
+  };
+};
+
+/**
+ * Collect diagnostics for invalid import patterns from graphql-system
+ */
+const collectImportDiagnostics = (
+  sourceFile: ts.SourceFile,
+  helper: GraphqlSystemIdentifyHelper,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) {
+      return;
+    }
+
+    const moduleText = (statement.moduleSpecifier as ts.StringLiteral).text;
+    if (!helper.isGraphqlSystemImportSpecifier({ filePath: sourceFile.fileName, specifier: moduleText })) {
+      return;
+    }
+
+    const { importClause } = statement;
+
+    // Check for default import: import gql from "..."
+    if (importClause.name) {
+      diagnostics.push(
+        createStandardDiagnostic("DEFAULT_IMPORT", getLocation(sourceFile, importClause.name), undefined),
+      );
+    }
+
+    const { namedBindings } = importClause;
+    if (!namedBindings) {
+      return;
+    }
+
+    // Check for namespace import: import * as gqlSystem from "..."
+    if (ts.isNamespaceImport(namedBindings)) {
+      diagnostics.push(
+        createStandardDiagnostic("STAR_IMPORT", getLocation(sourceFile, namedBindings), {
+          namespaceAlias: namedBindings.name.text,
+        }),
+      );
+      return;
+    }
+
+    // Check for renamed gql import: import { gql as g } from "..."
+    namedBindings.elements.forEach((element) => {
+      const imported = element.propertyName ? element.propertyName.text : element.name.text;
+      // Only report if gql is renamed (propertyName exists and is "gql")
+      if (imported === "gql" && element.propertyName) {
+        diagnostics.push(
+          createStandardDiagnostic("RENAMED_IMPORT", getLocation(sourceFile, element), {
+            importedAs: element.name.text,
+          }),
+        );
+      }
+    });
+  });
+
+  return diagnostics;
+};
+
+/**
+ * Check if a node contains a reference to any gql identifier
+ */
+const containsGqlIdentifier = (node: ts.Node, identifiers: ReadonlySet<string>): boolean => {
+  if (ts.isIdentifier(node) && identifiers.has(node.text)) {
+    return true;
+  }
+  let found = false;
+  ts.forEachChild(node, (child) => {
+    if (containsGqlIdentifier(child, identifiers)) {
+      found = true;
+    }
+  });
+  return found;
+};
+
+/**
+ * Get the type name of an argument for error messages
+ */
+const getArgumentType = (node: ts.Node): string => {
+  if (ts.isStringLiteral(node)) return "string";
+  if (ts.isNumericLiteral(node)) return "number";
+  if (ts.isObjectLiteralExpression(node)) return "object";
+  if (ts.isArrayLiteralExpression(node)) return "array";
+  if (ts.isFunctionExpression(node)) return "function";
+  if (ts.isNullLiteral(node)) return "null";
+  if (node.kind === ts.SyntaxKind.UndefinedKeyword) return "undefined";
+  if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) return "boolean";
+  return "unknown";
+};
+
+/**
+ * Collect diagnostics for invalid gql call patterns
+ */
+const collectCallDiagnostics = (
+  sourceFile: ts.SourceFile,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const diagnostic = checkCallExpression(sourceFile, node, gqlIdentifiers);
+      if (diagnostic) {
+        diagnostics.push(diagnostic);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  sourceFile.statements.forEach(visit);
+  return diagnostics;
+};
+
+/**
+ * Check a call expression for invalid gql patterns
+ */
+const checkCallExpression = (
+  sourceFile: ts.SourceFile,
+  call: ts.CallExpression,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic | null => {
+  const { expression } = call;
+
+  // Check for direct gql() call (non-member): gql(...)
+  if (ts.isIdentifier(expression) && gqlIdentifiers.has(expression.text)) {
+    return createStandardDiagnostic("NON_MEMBER_CALLEE", getLocation(sourceFile, call), undefined);
+  }
+
+  // Check for element access: gql["default"](...)
+  if (ts.isElementAccessExpression(expression)) {
+    if (ts.isIdentifier(expression.expression) && gqlIdentifiers.has(expression.expression.text)) {
+      return createStandardDiagnostic("COMPUTED_PROPERTY", getLocation(sourceFile, call), undefined);
+    }
+    return null;
+  }
+
+  // Must be property access for valid gql call
+  if (!ts.isPropertyAccessExpression(expression)) {
+    return null;
+  }
+
+  // Check for dynamic callee: (x || gql).default(...)
+  if (!ts.isIdentifier(expression.expression)) {
+    if (containsGqlIdentifier(expression.expression, gqlIdentifiers)) {
+      return createStandardDiagnostic("DYNAMIC_CALLEE", getLocation(sourceFile, call), undefined);
+    }
+    return null;
+  }
+
+  // Not a gql identifier - skip
+  if (!gqlIdentifiers.has(expression.expression.text)) {
+    return null;
+  }
+
+  // Check arguments for gql.schema(...) calls
+  if (call.arguments.length === 0) {
+    return createStandardDiagnostic("MISSING_ARGUMENT", getLocation(sourceFile, call), undefined);
+  }
+
+  const firstArg = call.arguments[0];
+  if (firstArg && !ts.isArrowFunction(firstArg)) {
+    const actualType = getArgumentType(firstArg);
+    return createStandardDiagnostic("INVALID_ARGUMENT_TYPE", getLocation(sourceFile, call), { actualType });
+  }
+
+  return null;
+};
+
+/**
+ * Collect diagnostics for gql calls in class properties
+ */
+const collectClassPropertyDiagnostics = (
+  sourceFile: ts.SourceFile,
+  gqlIdentifiers: ReadonlySet<string>,
+): ModuleDiagnostic[] => {
+  const diagnostics: ModuleDiagnostic[] = [];
+
+  const containsGqlCall = (node: ts.Node): boolean => {
+    if (ts.isCallExpression(node) && isGqlDefinitionCall(gqlIdentifiers, node)) {
+      return true;
+    }
+    let found = false;
+    ts.forEachChild(node, (child) => {
+      if (containsGqlCall(child)) {
+        found = true;
+      }
+    });
+    return found;
+  };
+
+  const visit = (node: ts.Node) => {
+    if (ts.isClassDeclaration(node)) {
+      node.members.forEach((member) => {
+        if (ts.isPropertyDeclaration(member) && member.initializer) {
+          if (containsGqlCall(member.initializer)) {
+            diagnostics.push(
+              createStandardDiagnostic("CLASS_PROPERTY", getLocation(sourceFile, member), undefined),
+            );
+          }
+        }
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  sourceFile.statements.forEach(visit);
+  return diagnostics;
+};
+
 /**
  * TypeScript adapter implementation.
  * The analyze method parses and collects all data in one pass,
@@ -478,12 +707,19 @@ export const typescriptAdapter: AnalyzerAdapter = {
       exports,
     });
 
+    // Collect diagnostics
+    const diagnostics = [
+      ...collectImportDiagnostics(sourceFile, helper),
+      ...collectCallDiagnostics(sourceFile, gqlIdentifiers),
+      ...collectClassPropertyDiagnostics(sourceFile, gqlIdentifiers),
+    ];
+
     // Return results - sourceFile goes out of scope and becomes eligible for GC
     return {
       imports,
       exports,
       definitions,
-      diagnostics: [], // TODO: Implement diagnostic collection
+      diagnostics,
     };
   },
 };
