@@ -77,9 +77,6 @@ export const generatePrebuiltModule = (
     `__directiveMethods_${name}`,
   ]);
 
-  // Generate type imports for schema types
-  const internalTypeImports = schemaNames.map((name) => `Schema_${name}`);
-
   // Generic types (schema-independent, generated once)
   const genericTypes = `
 /**
@@ -111,7 +108,6 @@ type GenericFieldsBuilderTools = {
  * Otherwise, return PrebuiltEntryNotFound.
  */
 type ResolveFragmentAtBuilder_${name}<
-  TTypeName extends string,
   TKey extends string | undefined
 > = TKey extends keyof PrebuiltTypes_${name}["fragments"]
   ? Fragment<
@@ -124,8 +120,8 @@ type ResolveFragmentAtBuilder_${name}<
       TKey
     >
   : TKey extends undefined
-    ? Fragment<TTypeName, PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">, TKey>
-    : Fragment<TTypeName, PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">, TKey>;
+    ? Fragment<"(unknown)", PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">, TKey>
+    : Fragment<"(unknown)", PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">, TKey>;
 
 /**
  * Resolve operation types at builder level using TName.
@@ -154,14 +150,14 @@ type ResolveOperationAtBuilder_${name}<
 /**
  * Fragment builder that resolves types at builder level using TKey.
  */
-type PrebuiltFragmentBuilder_${name} = <TTypeName extends string, TKey extends string | undefined = undefined>(
+type PrebuiltFragmentBuilder_${name} = <TKey extends string | undefined = undefined>(
   options: {
     key?: TKey;
     fields: (tools: GenericFieldsBuilderTools) => AnyFields;
     variables?: Record<string, unknown>;
     metadata?: unknown;
   }
-) => ResolveFragmentAtBuilder_${name}<TTypeName, TKey>;
+) => ResolveFragmentAtBuilder_${name}<TKey>;
 
 /**
  * Operation builder that resolves types at builder level using TName.
@@ -235,7 +231,7 @@ import {
   type StandardDirectives,
 } from "@soda-gql/core";
 ${injectsImportLine}
-import { ${internalImports.join(", ")}, type ${internalTypeImports.join(", type ")} } from "${options.internalModulePath}";
+import { ${internalImports.join(", ")} } from "${options.internalModulePath}";
 import type { ${schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ")} } from "./types.prebuilt";
 ${genericTypes}
 ${contextTypes}
