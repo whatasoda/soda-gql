@@ -19,8 +19,15 @@ type SwcModule = Module & {
   __spanOffset: number;
 };
 
-import type { AnalyzeModuleInput, DiagnosticLocation, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "../types";
 import { createStandardDiagnostic } from "../common/detection";
+import type {
+  AnalyzeModuleInput,
+  DiagnosticLocation,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+} from "../types";
 
 const collectImports = (module: Module): ModuleImport[] => {
   const imports: ModuleImport[] = [];
@@ -578,10 +585,7 @@ const getLocation = (module: SwcModule, span: { start: number; end: number }): D
 /**
  * Collect diagnostics for invalid import patterns from graphql-system
  */
-const collectImportDiagnostics = (
-  module: SwcModule,
-  helper: GraphqlSystemIdentifyHelper,
-): ModuleDiagnostic[] => {
+const collectImportDiagnostics = (module: SwcModule, helper: GraphqlSystemIdentifyHelper): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   module.body.forEach((item) => {
@@ -609,9 +613,7 @@ const collectImportDiagnostics = (
     declaration.specifiers?.forEach((specifier: any) => {
       // Check for default import
       if (specifier.type === "ImportDefaultSpecifier") {
-        diagnostics.push(
-          createStandardDiagnostic("DEFAULT_IMPORT", getLocation(module, specifier.span), undefined),
-        );
+        diagnostics.push(createStandardDiagnostic("DEFAULT_IMPORT", getLocation(module, specifier.span), undefined));
         return;
       }
 
@@ -699,10 +701,7 @@ const getArgumentType = (node: any): string => {
 /**
  * Collect diagnostics for invalid gql call patterns
  */
-const collectCallDiagnostics = (
-  module: SwcModule,
-  gqlIdentifiers: ReadonlySet<string>,
-): ModuleDiagnostic[] => {
+const collectCallDiagnostics = (module: SwcModule, gqlIdentifiers: ReadonlySet<string>): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
@@ -797,10 +796,7 @@ const checkCallExpression = (
 /**
  * Collect diagnostics for gql calls in class properties
  */
-const collectClassPropertyDiagnostics = (
-  module: SwcModule,
-  gqlIdentifiers: ReadonlySet<string>,
-): ModuleDiagnostic[] => {
+const collectClassPropertyDiagnostics = (module: SwcModule, gqlIdentifiers: ReadonlySet<string>): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
@@ -838,9 +834,7 @@ const collectClassPropertyDiagnostics = (
       node.body?.forEach((member: any) => {
         if (member.type === "ClassProperty" && member.value) {
           if (containsGqlCall(member.value)) {
-            diagnostics.push(
-              createStandardDiagnostic("CLASS_PROPERTY", getLocation(module, member.span), undefined),
-            );
+            diagnostics.push(createStandardDiagnostic("CLASS_PROPERTY", getLocation(module, member.span), undefined));
           }
         }
       });

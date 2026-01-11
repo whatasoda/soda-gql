@@ -1,17 +1,4 @@
 export type { ArtifactLoadError, ArtifactLoadErrorCode } from "./artifact/loader";
-// Diagnostic types and utilities (for formatter consumption)
-export type {
-  DiagnosticCode,
-  DiagnosticLocation,
-  DiagnosticSeverity,
-  ModuleDiagnostic,
-} from "./ast/types";
-export {
-  createDiagnostic,
-  createStandardDiagnostic,
-  diagnosticMessages,
-  getSeverity,
-} from "./ast/common/detection";
 export { loadArtifact, loadArtifactSync } from "./artifact/loader";
 export type {
   BuilderArtifact,
@@ -21,6 +8,19 @@ export type {
   BuilderArtifactMeta,
   BuilderArtifactOperation,
 } from "./artifact/types";
+export {
+  createDiagnostic,
+  createStandardDiagnostic,
+  diagnosticMessages,
+  getSeverity,
+} from "./ast/common/detection";
+// Diagnostic types and utilities (for formatter consumption)
+export type {
+  DiagnosticCode,
+  DiagnosticLocation,
+  DiagnosticSeverity,
+  ModuleDiagnostic,
+} from "./ast/types";
 export type {
   DiscoveredDependency,
   DiscoveryCache,

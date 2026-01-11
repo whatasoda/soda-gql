@@ -4,6 +4,7 @@
 import gql from "../../../../graphql-system";
 
 // This will NOT work because gql is not exported as default
-export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const userFragment = gql.default(({ fragment }: any) =>
+  fragment.User({ fields: ({ f }: any) => ({ ...f.id(), ...f.name() }) }),
 );

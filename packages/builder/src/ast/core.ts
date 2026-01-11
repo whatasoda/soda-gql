@@ -5,14 +5,7 @@
 
 import { getPortableHasher } from "@soda-gql/common";
 import type { GraphqlSystemIdentifyHelper } from "../internal/graphql-system";
-import type {
-  AnalyzeModuleInput,
-  ModuleAnalysis,
-  ModuleDefinition,
-  ModuleDiagnostic,
-  ModuleExport,
-  ModuleImport,
-} from "./types";
+import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 
 /**
  * Result of analyzing a module, containing all collected data.

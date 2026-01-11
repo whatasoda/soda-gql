@@ -7,10 +7,17 @@ import { extname } from "node:path";
 import { createCanonicalId, createCanonicalTracker, type ScopeHandle } from "@soda-gql/common";
 import ts from "typescript";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
+import { createStandardDiagnostic } from "../common/detection";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
 import type { AnalyzerAdapter, AnalyzerResult } from "../core";
-import type { AnalyzeModuleInput, DiagnosticLocation, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "../types";
-import { createStandardDiagnostic } from "../common/detection";
+import type {
+  AnalyzeModuleInput,
+  DiagnosticLocation,
+  ModuleDefinition,
+  ModuleDiagnostic,
+  ModuleExport,
+  ModuleImport,
+} from "../types";
 
 const createSourceFile = (filePath: string, source: string): ts.SourceFile => {
   const scriptKind = extname(filePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -479,10 +486,7 @@ const getLocation = (sourceFile: ts.SourceFile, node: ts.Node): DiagnosticLocati
 /**
  * Collect diagnostics for invalid import patterns from graphql-system
  */
-const collectImportDiagnostics = (
-  sourceFile: ts.SourceFile,
-  helper: GraphqlSystemIdentifyHelper,
-): ModuleDiagnostic[] => {
+const collectImportDiagnostics = (sourceFile: ts.SourceFile, helper: GraphqlSystemIdentifyHelper): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   sourceFile.statements.forEach((statement) => {
@@ -499,9 +503,7 @@ const collectImportDiagnostics = (
 
     // Check for default import: import gql from "..."
     if (importClause.name) {
-      diagnostics.push(
-        createStandardDiagnostic("DEFAULT_IMPORT", getLocation(sourceFile, importClause.name), undefined),
-      );
+      diagnostics.push(createStandardDiagnostic("DEFAULT_IMPORT", getLocation(sourceFile, importClause.name), undefined));
     }
 
     const { namedBindings } = importClause;
@@ -561,7 +563,7 @@ const getArgumentType = (node: ts.Node): string => {
   if (ts.isObjectLiteralExpression(node)) return "object";
   if (ts.isArrayLiteralExpression(node)) return "array";
   if (ts.isFunctionExpression(node)) return "function";
-  if (ts.isNullLiteral(node)) return "null";
+  if (node.kind === ts.SyntaxKind.NullKeyword) return "null";
   if (node.kind === ts.SyntaxKind.UndefinedKeyword) return "undefined";
   if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) return "boolean";
   return "unknown";
@@ -570,10 +572,7 @@ const getArgumentType = (node: ts.Node): string => {
 /**
  * Collect diagnostics for invalid gql call patterns
  */
-const collectCallDiagnostics = (
-  sourceFile: ts.SourceFile,
-  gqlIdentifiers: ReadonlySet<string>,
-): ModuleDiagnostic[] => {
+const collectCallDiagnostics = (sourceFile: ts.SourceFile, gqlIdentifiers: ReadonlySet<string>): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   const visit = (node: ts.Node) => {
@@ -648,10 +647,7 @@ const checkCallExpression = (
 /**
  * Collect diagnostics for gql calls in class properties
  */
-const collectClassPropertyDiagnostics = (
-  sourceFile: ts.SourceFile,
-  gqlIdentifiers: ReadonlySet<string>,
-): ModuleDiagnostic[] => {
+const collectClassPropertyDiagnostics = (sourceFile: ts.SourceFile, gqlIdentifiers: ReadonlySet<string>): ModuleDiagnostic[] => {
   const diagnostics: ModuleDiagnostic[] = [];
 
   const containsGqlCall = (node: ts.Node): boolean => {
@@ -672,9 +668,7 @@ const collectClassPropertyDiagnostics = (
       node.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) && member.initializer) {
           if (containsGqlCall(member.initializer)) {
-            diagnostics.push(
-              createStandardDiagnostic("CLASS_PROPERTY", getLocation(sourceFile, member), undefined),
-            );
+            diagnostics.push(createStandardDiagnostic("CLASS_PROPERTY", getLocation(sourceFile, member), undefined));
           }
         }
       });

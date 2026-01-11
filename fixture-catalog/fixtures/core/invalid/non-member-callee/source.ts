@@ -4,6 +4,7 @@ import { gql } from "../../../../graphql-system";
 
 // This call is invalid - gql must be accessed as gql.schemaName(...)
 // @ts-expect-error - intentionally invalid for testing
-export const userFragment = gql(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const userFragment = gql(({ fragment }: any) =>
+  fragment.User({ fields: ({ f }: any) => ({ ...f.id(), ...f.name() }) }),
 );
