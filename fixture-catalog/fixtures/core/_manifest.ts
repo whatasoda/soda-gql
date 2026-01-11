@@ -76,12 +76,23 @@ export const validFixtures = [
 ] as const;
 
 export const invalidFixtures = [
+  // Scope-level issues
   "class-properties/source",
+
+  // Call-level issues
+  "computed-property/source",
+  "dynamic-callee/source",
   "invalid-call-no-args/source",
   "invalid-call-wrong-type/source",
-  "no-gql-code/source",
+  "non-member-callee/source",
+
+  // Import-level issues
+  "default-import/source",
   "renamed-import/source",
   "star-import/source",
+
+  // Not an error (just no gql code)
+  "no-gql-code/source",
 ] as const;
 
 export type ValidFixtureName = (typeof validFixtures)[number];

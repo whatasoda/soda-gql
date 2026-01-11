@@ -1,9 +1,7 @@
-// Edge case: gql.default() called with non-function argument
-// The transformer requires an arrow function as the first argument.
-// Calls with string/object/other arguments are NOT recognized.
-//
-// In a real codebase, code like this would NOT be transformed:
-//   import { gql } from "../../../../../graphql-system";
-//   export const wrongTypeCall = gql.default("not a function");
+// Invalid pattern: gql.default() called with wrong argument type
+// The first argument must be an arrow function, not a string/object/etc
+import { gql } from "../../../../graphql-system";
 
-export const placeholder = "invalid-call-wrong-type-test";
+// This call is invalid - string instead of arrow function
+// @ts-expect-error - intentionally invalid for testing
+export const wrongTypeCall = gql.default("not a function");

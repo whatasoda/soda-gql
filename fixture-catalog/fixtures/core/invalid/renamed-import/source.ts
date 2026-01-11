@@ -1,10 +1,8 @@
-// Edge case: Renamed import (gql as g) is NOT recognized by the transformer.
-// The transformer looks for the identifier "gql", not the renamed alias.
-// This fixture represents that pattern but uses no actual gql code to avoid
-// builder errors (the builder uses the same detection logic).
-//
-// In a real codebase, code like this would NOT be transformed:
-//   import { gql as g } from "../../../../../graphql-system";
-//   export const model = g.default(({ fragment }) => ...);
+// Invalid pattern: gql imported with alias
+// The analyzer only recognizes the identifier "gql", not aliases like "g"
+import { gql as g } from "../../../../graphql-system";
 
-export const placeholder = "renamed-import-test";
+// This definition will NOT be detected because "g" is not recognized
+export const userFragment = g.default(({ fragment }) =>
+  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+);
