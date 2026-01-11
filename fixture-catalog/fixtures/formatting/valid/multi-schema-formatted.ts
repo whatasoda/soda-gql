@@ -2,7 +2,7 @@ import { gql } from "../../../graphql-system";
 
 // Multi-schema: admin schema (already formatted)
 export const adminFragment = gql.admin(({ fragment }) =>
-  fragment.Post({
+  fragment.Task({
     fields: ({ f }) => ({
       ...f.id(),
       ...f.title(),
@@ -15,7 +15,7 @@ export const defaultQuery = gql.default(({ query }) =>
   query.operation({
     name: "GetData",
     fields: ({ f }) => ({
-      ...f.users({})(({ f }) => ({
+      ...f.employees({})(({ f }) => ({
         ...f.id(),
       })),
     }),

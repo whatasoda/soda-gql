@@ -4,14 +4,14 @@ import { gql } from "../../../../../graphql-system";
  * User fragment
  */
 export const simpleUserFragment = gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
 );
 
 /**
  * Post fragment
  */
 export const simplePostFragment = gql.default(({ fragment }) =>
-  fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }),
+  fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }),
 );
 
 /**
@@ -22,8 +22,8 @@ export const getDashboardQuery = gql.default(({ query, $var }) =>
     name: "GetDashboard",
     variables: { ...$var("userId").ID("!"), ...$var("postLimit").Int("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(() => ({ ...simpleUserFragment.spread() })),
-      ...f.posts({ limit: $.postLimit })(() => ({ ...simplePostFragment.spread() })),
+      ...f.employee({ id: $.userId })(() => ({ ...simpleUserFragment.spread() })),
+      ...f.tasks({ limit: $.postLimit })(() => ({ ...simplePostFragment.spread() })),
     }),
   }),
 );

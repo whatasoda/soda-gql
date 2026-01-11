@@ -4,5 +4,5 @@ import { gql as g } from "../../../../graphql-system";
 
 // This definition will NOT be detected because "g" is not recognized
 export const userFragment = g.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
 );

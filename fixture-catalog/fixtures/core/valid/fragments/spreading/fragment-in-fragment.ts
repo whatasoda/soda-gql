@@ -1,20 +1,20 @@
 import { gql } from "../../../../../graphql-system";
 
 /**
- * Base post fragment
+ * Base task fragment
  */
-export const postFragment = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));
+export const taskFragment = gql.default(({ fragment }) => fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));
 
 /**
- * User fragment that spreads the post fragment in its nested field
+ * Employee fragment that spreads the task fragment in its nested field
  */
-export const userWithPostsFragment = gql.default(({ fragment, $var }) =>
-  fragment.User({
-    variables: { ...$var("categoryId").ID("?") },
+export const employeeWithTasksFragment = gql.default(({ fragment, $var }) =>
+  fragment.Employee({
+    variables: { ...$var("completed").Boolean("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.posts({ categoryId: $.categoryId })(() => ({ ...postFragment.spread() })),
+      ...f.tasks({ completed: $.completed })(() => ({ ...taskFragment.spread() })),
     }),
   }),
 );
@@ -22,12 +22,12 @@ export const userWithPostsFragment = gql.default(({ fragment, $var }) =>
 /**
  * Operation that spreads the composed fragment
  */
-export const getUserWithPostsQuery = gql.default(({ query, $var }) =>
+export const getEmployeeWithTasksQuery = gql.default(({ query, $var }) =>
   query.operation({
-    name: "GetUserWithPosts",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
+    name: "GetEmployeeWithTasks",
+    variables: { ...$var("employeeId").ID("!"), ...$var("completed").Boolean("?") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(() => ({ ...userWithPostsFragment.spread({ categoryId: $.categoryId }) })),
+      ...f.employee({ id: $.employeeId })(() => ({ ...employeeWithTasksFragment.spread({ completed: $.completed }) })),
     }),
   }),
 );

@@ -4,39 +4,188 @@ schema {
   subscription: Subscription
 }
 
-type Query {
-  users(id: [ID!], categoryId: ID, limit: Int): [User!]!
-  user(id: ID!): User
-  posts(id: ID, categoryId: ID, limit: Int): [Post!]!
-  products(limit: Int): [Product!]!
+# ============================================================================
+# Custom Scalars
+# ============================================================================
+
+scalar DateTime
+scalar JSON
+scalar BigInt
+
+# ============================================================================
+# Interfaces
+# ============================================================================
+
+interface Node {
+  id: ID!
 }
 
-type User {
+interface Timestamped {
+  createdAt: DateTime!
+  updatedAt: DateTime
+}
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum EmployeeRole {
+  ENGINEER
+  MANAGER
+  DIRECTOR
+  EXECUTIVE
+  INTERN
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+# ============================================================================
+# Object Types (simplified subset - no filters/inputs)
+# ============================================================================
+
+type Company implements Node & Timestamped {
   id: ID!
   name: String!
-  email: String
-  posts(categoryId: ID, limit: Int): [Post!]!
+  industry: String
+  createdAt: DateTime!
+  updatedAt: DateTime
+  departments: [Department!]!
+  employees(limit: Int): [Employee!]!
 }
 
-type Post {
+type Department implements Node & Timestamped {
+  id: ID!
+  name: String!
+  budget: BigInt
+  createdAt: DateTime!
+  updatedAt: DateTime
+  company: Company!
+  teams: [Team!]!
+  manager: Employee
+}
+
+type Team implements Node {
+  id: ID!
+  name: String!
+  department: Department!
+  members(limit: Int): [Employee!]!
+  lead: Employee
+  projects(limit: Int): [Project!]!
+}
+
+type Project implements Node & Timestamped {
   id: ID!
   title: String!
-  body: String
+  description: String
+  status: ProjectStatus!
+  priority: Int
+  metadata: JSON
+  createdAt: DateTime!
+  updatedAt: DateTime
+  team: Team!
+  tasks(limit: Int): [Task!]!
+  assignees: [Employee!]!
 }
 
-type Product {
+type Task implements Node & Timestamped {
+  id: ID!
+  title: String!
+  completed: Boolean!
+  priority: TaskPriority
+  dueDate: DateTime
+  estimatedHours: Float
+  createdAt: DateTime!
+  updatedAt: DateTime
+  project: Project!
+  assignee: Employee
+  comments(limit: Int): [Comment!]!
+}
+
+type Employee implements Node & Timestamped {
   id: ID!
   name: String!
-  price: Float
+  email: String!
+  role: EmployeeRole!
+  salary: BigInt
+  createdAt: DateTime!
+  updatedAt: DateTime
+  department: Department
+  team: Team
+  manager: Employee
+  reports(limit: Int): [Employee!]!
+  tasks(limit: Int): [Task!]!
+  comments: [Comment!]!
 }
+
+type Comment implements Node & Timestamped {
+  id: ID!
+  body: String!
+  createdAt: DateTime!
+  updatedAt: DateTime
+  author: Employee!
+  task: Task
+  parent: Comment
+  replies(limit: Int): [Comment!]!
+}
+
+# ============================================================================
+# Query Type (simplified - no filters)
+# ============================================================================
+
+type Query {
+  node(id: ID!): Node
+  company(id: ID!): Company
+  department(id: ID!): Department
+  team(id: ID!): Team
+  project(id: ID!): Project
+  task(id: ID!): Task
+  employee(id: ID!): Employee
+  comment(id: ID!): Comment
+
+  companies(limit: Int): [Company!]!
+  departments(companyId: ID, limit: Int): [Department!]!
+  teams(departmentId: ID, limit: Int): [Team!]!
+  projects(limit: Int): [Project!]!
+  tasks(projectId: ID, limit: Int): [Task!]!
+  employees(departmentId: ID, limit: Int): [Employee!]!
+}
+
+# ============================================================================
+# Mutation Type (simplified)
+# ============================================================================
 
 type Mutation {
-  createPost(title: String!, body: String): Post!
-  updateUser(id: ID!, name: String!): User!
-  deletePost(id: ID!): Boolean!
+  createProject(title: String!, teamId: ID!): Project!
+  updateProject(id: ID!, title: String): Project!
+  deleteProject(id: ID!): Boolean!
+
+  createTask(projectId: ID!, title: String!): Task!
+  updateTask(id: ID!, title: String, completed: Boolean): Task!
+  deleteTask(id: ID!): Boolean!
+
+  addComment(taskId: ID!, body: String!): Comment!
+  deleteComment(id: ID!): Boolean!
 }
 
+# ============================================================================
+# Subscription Type
+# ============================================================================
+
 type Subscription {
-  postCreated: Post!
-  userUpdated(userId: ID!): User!
+  projectUpdated(projectId: ID!): Project!
+  taskCreated(projectId: ID): Task!
+  commentAdded(taskId: ID!): Comment!
 }
