@@ -76,7 +76,7 @@ const prepare = async () => {
 
   await $`mkdir -p dist`;
 
-  await $`cp -rf packages/* dist/`;
+  await $`rsync -a --exclude='node_modules' --exclude='target' --exclude='.cache' --exclude='.cargo' packages/ dist/`;
 
   const packageDirEntries = await readdir("dist", { withFileTypes: true });
 
