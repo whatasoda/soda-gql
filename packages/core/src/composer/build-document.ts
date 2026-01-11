@@ -41,9 +41,10 @@ import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../t
  * Context for determining if a value should be output as an enum.
  * Contains the schema for looking up nested input types and the current type specifier.
  */
-type EnumLookup = {
+export type EnumLookup = {
   schema: AnyGraphqlSchema;
-  typeSpecifier: InputTypeSpecifier;
+  /** Type specifier for the current value. null means enum detection is skipped. */
+  typeSpecifier: InputTypeSpecifier | null;
 };
 
 /**
@@ -53,10 +54,10 @@ type EnumLookup = {
  * Returns null for undefined values (field is omitted).
  *
  * @param value - The value to convert
- * @param enumLookup - Optional context for enum detection. When provided,
- *                     string values will be output as Kind.ENUM if the type is an enum.
+ * @param enumLookup - Context for enum detection. String values will be output
+ *                     as Kind.ENUM if typeSpecifier indicates an enum type.
  */
-export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup?: EnumLookup): ValueNode | null => {
+export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: EnumLookup): ValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -99,19 +100,16 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup?: 
       fields: Object.entries(value)
         .map(([key, fieldValue]): ObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          let fieldEnumLookup: EnumLookup | undefined;
-          if (enumLookup?.typeSpecifier.kind === "input") {
+          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          if (enumLookup.typeSpecifier?.kind === "input") {
             const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
-            const fieldSpec = inputDef?.fields[key];
-            if (fieldSpec) {
-              fieldEnumLookup = {
-                schema: enumLookup.schema,
-                typeSpecifier: fieldSpec,
-              };
-            }
+            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
           }
 
-          const valueNode = buildArgumentValue(fieldValue, fieldEnumLookup);
+          const valueNode = buildArgumentValue(fieldValue, {
+            schema: enumLookup.schema,
+            typeSpecifier: fieldTypeSpecifier,
+          });
           return valueNode
             ? {
                 kind: Kind.OBJECT_FIELD,
@@ -126,7 +124,7 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup?: 
 
   if (typeof value === "string") {
     // Output as Kind.ENUM if the type specifier indicates this is an enum type
-    if (enumLookup?.typeSpecifier.kind === "enum") {
+    if (enumLookup.typeSpecifier?.kind === "enum") {
       return {
         kind: Kind.ENUM,
         value,
@@ -164,9 +162,8 @@ const buildArguments = (
 ): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
-      const typeSpecifier = argumentSpecifiers[name];
-      const enumLookup = typeSpecifier ? { schema, typeSpecifier } : undefined;
-      const valueNode = buildArgumentValue(value, enumLookup);
+      const typeSpecifier = argumentSpecifiers[name] ?? null;
+      const valueNode = buildArgumentValue(value, { schema, typeSpecifier });
       return valueNode
         ? {
             kind: Kind.ARGUMENT,
@@ -277,10 +274,10 @@ const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
  * (no variable references). Used for default values.
  *
  * @param value - The constant value to convert
- * @param enumLookup - Optional context for enum detection. When provided,
- *                     string values will be output as Kind.ENUM if the type is an enum.
+ * @param enumLookup - Context for enum detection. String values will be output
+ *                     as Kind.ENUM if typeSpecifier indicates an enum type.
  */
-export const buildConstValueNode = (value: ConstValue, enumLookup?: EnumLookup): ConstValueNode | null => {
+export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): ConstValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -303,19 +300,16 @@ export const buildConstValueNode = (value: ConstValue, enumLookup?: EnumLookup):
       fields: Object.entries(value)
         .map(([key, fieldValue]): ConstObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          let fieldEnumLookup: EnumLookup | undefined;
-          if (enumLookup?.typeSpecifier.kind === "input") {
+          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          if (enumLookup.typeSpecifier?.kind === "input") {
             const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
-            const fieldSpec = inputDef?.fields[key];
-            if (fieldSpec) {
-              fieldEnumLookup = {
-                schema: enumLookup.schema,
-                typeSpecifier: fieldSpec,
-              };
-            }
+            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
           }
 
-          const valueNode = buildConstValueNode(fieldValue, fieldEnumLookup);
+          const valueNode = buildConstValueNode(fieldValue, {
+            schema: enumLookup.schema,
+            typeSpecifier: fieldTypeSpecifier,
+          });
           return valueNode
             ? {
                 kind: Kind.OBJECT_FIELD,
@@ -330,7 +324,7 @@ export const buildConstValueNode = (value: ConstValue, enumLookup?: EnumLookup):
 
   if (typeof value === "string") {
     // Output as Kind.ENUM if the type specifier indicates this is an enum type
-    if (enumLookup?.typeSpecifier.kind === "enum") {
+    if (enumLookup.typeSpecifier?.kind === "enum") {
       return { kind: Kind.ENUM, value };
     }
     return { kind: Kind.STRING, value };

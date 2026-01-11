@@ -4,7 +4,13 @@ import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
-import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "./build-document";
+import {
+  buildArgumentValue,
+  buildConstValueNode,
+  buildDocument,
+  buildWithTypeModifier,
+  type EnumLookup,
+} from "./build-document";
 
 /**
  * Minimal schema for testing buildDocument.
@@ -20,13 +26,16 @@ const emptySchema: AnyGraphqlSchema = {
   union: {},
 };
 
+/** EnumLookup with no type specifier - enum detection is skipped */
+const noEnumLookup: EnumLookup = { schema: emptySchema, typeSpecifier: null };
+
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
     it("should throw on symbol argument values", () => {
       const symbolValue = Symbol("test");
 
       expect(() => {
-        buildArgumentValue(symbolValue as unknown as never);
+        buildArgumentValue(symbolValue as unknown as never, noEnumLookup);
       }).toThrow("Unknown value type");
     });
 
@@ -34,18 +43,18 @@ describe("Document Integrity Tests", () => {
       const functionValue = () => "test";
 
       expect(() => {
-        buildArgumentValue(functionValue as unknown as never);
+        buildArgumentValue(functionValue as unknown as never, noEnumLookup);
       }).toThrow("Unknown value type");
     });
 
     it("should handle null values", () => {
-      const result = buildArgumentValue(null);
+      const result = buildArgumentValue(null, noEnumLookup);
       expect(result).not.toBeNull();
       expect(result?.kind).toBe(Kind.NULL);
     });
 
     it("should handle boolean values", () => {
-      const result = buildArgumentValue(true);
+      const result = buildArgumentValue(true, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.BOOLEAN,
         value: true,
@@ -53,7 +62,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle string values", () => {
-      const result = buildArgumentValue("test");
+      const result = buildArgumentValue("test", noEnumLookup);
       expect(result).toEqual({
         kind: Kind.STRING,
         value: "test",
@@ -61,13 +70,13 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle number values", () => {
-      const result = buildArgumentValue(42);
+      const result = buildArgumentValue(42, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.INT,
         value: "42",
       });
 
-      const floatResult = buildArgumentValue(3.14);
+      const floatResult = buildArgumentValue(3.14, noEnumLookup);
       expect(floatResult).toEqual({
         kind: Kind.FLOAT,
         value: "3.14",
@@ -75,7 +84,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle array values", () => {
-      const result = buildArgumentValue([1, 2, 3]);
+      const result = buildArgumentValue([1, 2, 3], noEnumLookup);
       expect(result).toEqual({
         kind: Kind.LIST,
         values: Array.from({ length: 3 }, () => expect.anything()),
@@ -83,7 +92,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle object values", () => {
-      const result = buildArgumentValue({ field: "value" });
+      const result = buildArgumentValue({ field: "value" }, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.OBJECT,
         fields: Array.from({ length: 1 }, () => expect.anything()),
@@ -140,13 +149,13 @@ describe("Document Integrity Tests", () => {
       const bigIntValue = BigInt(9007199254740991);
 
       expect(() => {
-        buildConstValueNode(bigIntValue as any);
+        buildConstValueNode(bigIntValue as any, noEnumLookup);
       }).toThrow();
     });
 
     it("should return null for undefined values", () => {
       // undefined returns null, not throws
-      const result = buildConstValueNode(undefined as any);
+      const result = buildConstValueNode(undefined as any, noEnumLookup);
       expect(result).toBeNull();
     });
 
@@ -154,18 +163,18 @@ describe("Document Integrity Tests", () => {
       const symbolValue = Symbol("test");
 
       expect(() => {
-        buildConstValueNode(symbolValue as any);
+        buildConstValueNode(symbolValue as any, noEnumLookup);
       }).toThrow();
     });
 
     it("should handle valid const values", () => {
-      expect(buildConstValueNode(null)?.kind).toBe(Kind.NULL);
-      expect(buildConstValueNode(true)?.kind).toBe(Kind.BOOLEAN);
-      expect(buildConstValueNode("string")?.kind).toBe(Kind.STRING);
-      expect(buildConstValueNode(42)?.kind).toBe(Kind.INT);
-      expect(buildConstValueNode(3.14)?.kind).toBe(Kind.FLOAT);
-      expect(buildConstValueNode([1, 2])?.kind).toBe(Kind.LIST);
-      expect(buildConstValueNode({ key: "value" })?.kind).toBe(Kind.OBJECT);
+      expect(buildConstValueNode(null, noEnumLookup)?.kind).toBe(Kind.NULL);
+      expect(buildConstValueNode(true, noEnumLookup)?.kind).toBe(Kind.BOOLEAN);
+      expect(buildConstValueNode("string", noEnumLookup)?.kind).toBe(Kind.STRING);
+      expect(buildConstValueNode(42, noEnumLookup)?.kind).toBe(Kind.INT);
+      expect(buildConstValueNode(3.14, noEnumLookup)?.kind).toBe(Kind.FLOAT);
+      expect(buildConstValueNode([1, 2], noEnumLookup)?.kind).toBe(Kind.LIST);
+      expect(buildConstValueNode({ key: "value" }, noEnumLookup)?.kind).toBe(Kind.OBJECT);
     });
   });
 
@@ -231,17 +240,17 @@ describe("Document Integrity Tests", () => {
 
   describe("buildConstValueNode with default values", () => {
     it("should handle various default value types", () => {
-      const stringValue = buildConstValueNode("default");
+      const stringValue = buildConstValueNode("default", noEnumLookup);
       expect(stringValue).toEqual({
         kind: Kind.STRING,
         value: "default",
       });
 
-      const numberValue = buildConstValueNode(42);
+      const numberValue = buildConstValueNode(42, noEnumLookup);
       expect(numberValue).toBeDefined();
       expect(numberValue?.kind).toBe(Kind.INT);
 
-      const booleanValue = buildConstValueNode(true);
+      const booleanValue = buildConstValueNode(true, noEnumLookup);
       expect(booleanValue).toBeDefined();
       expect(booleanValue?.kind).toBe(Kind.BOOLEAN);
     });
@@ -253,7 +262,7 @@ describe("Document Integrity Tests", () => {
         field3: [1, 2, 3],
       };
 
-      const objectValue = buildConstValueNode(complexDefault);
+      const objectValue = buildConstValueNode(complexDefault, noEnumLookup);
       expect(objectValue).toBeDefined();
       expect(objectValue).toEqual({
         kind: Kind.OBJECT,
@@ -272,7 +281,7 @@ describe("buildArgumentValue", () => {
         id: userIdRef,
       });
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -298,7 +307,7 @@ describe("buildArgumentValue", () => {
       const userIdRef = createVarRefFromVariable("userId");
       const nestedRef = createVarRefFromNestedValue(["literal", userIdRef]);
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.LIST,
@@ -323,7 +332,7 @@ describe("buildArgumentValue", () => {
         },
       });
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -369,7 +378,7 @@ describe("buildArgumentValue", () => {
         outer: innerRef,
       });
 
-      const result = buildArgumentValue(outerRef);
+      const result = buildArgumentValue(outerRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -396,7 +405,7 @@ describe("buildArgumentValue", () => {
   describe("with variable VarRef", () => {
     it("builds GraphQL variable node", () => {
       const varRef = createVarRefFromVariable("userId");
-      const result = buildArgumentValue(varRef);
+      const result = buildArgumentValue(varRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.VARIABLE,
@@ -407,28 +416,28 @@ describe("buildArgumentValue", () => {
 
   describe("with primitive values", () => {
     it("returns null for undefined", () => {
-      expect(buildArgumentValue(undefined)).toBeNull();
+      expect(buildArgumentValue(undefined, noEnumLookup)).toBeNull();
     });
 
     it("builds NULL node for null", () => {
-      expect(buildArgumentValue(null)).toEqual({ kind: Kind.NULL });
+      expect(buildArgumentValue(null, noEnumLookup)).toEqual({ kind: Kind.NULL });
     });
 
     it("builds STRING node for strings", () => {
-      expect(buildArgumentValue("test")).toEqual({ kind: Kind.STRING, value: "test" });
+      expect(buildArgumentValue("test", noEnumLookup)).toEqual({ kind: Kind.STRING, value: "test" });
     });
 
     it("builds INT node for integers", () => {
-      expect(buildArgumentValue(42)).toEqual({ kind: Kind.INT, value: "42" });
+      expect(buildArgumentValue(42, noEnumLookup)).toEqual({ kind: Kind.INT, value: "42" });
     });
 
     it("builds FLOAT node for floats", () => {
-      expect(buildArgumentValue(3.14)).toEqual({ kind: Kind.FLOAT, value: "3.14" });
+      expect(buildArgumentValue(3.14, noEnumLookup)).toEqual({ kind: Kind.FLOAT, value: "3.14" });
     });
 
     it("builds BOOLEAN node for booleans", () => {
-      expect(buildArgumentValue(true)).toEqual({ kind: Kind.BOOLEAN, value: true });
-      expect(buildArgumentValue(false)).toEqual({ kind: Kind.BOOLEAN, value: false });
+      expect(buildArgumentValue(true, noEnumLookup)).toEqual({ kind: Kind.BOOLEAN, value: true });
+      expect(buildArgumentValue(false, noEnumLookup)).toEqual({ kind: Kind.BOOLEAN, value: false });
     });
   });
 });
@@ -739,8 +748,11 @@ describe("Enum value handling", () => {
       });
     });
 
-    it("outputs Kind.STRING when no enumLookup provided", () => {
-      const result = buildArgumentValue("ACTIVE");
+    it("outputs Kind.STRING when typeSpecifier is null", () => {
+      const result = buildArgumentValue("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: null,
+      });
 
       expect(result).toEqual({
         kind: Kind.STRING,
