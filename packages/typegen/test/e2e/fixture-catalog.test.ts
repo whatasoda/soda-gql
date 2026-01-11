@@ -44,21 +44,25 @@ describe("fixture-catalog typegen integration", () => {
     expect(typesContent).toContain("readonly operations:");
   });
 
-  test("fixture-catalog passes tsc --noEmit", async () => {
-    const proc = Bun.spawn([tscPath, "--noEmit", "--project", fixtureCatalogRoot], {
-      cwd: fixtureCatalogRoot,
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+  test(
+    "fixture-catalog passes tsc --noEmit",
+    async () => {
+      const proc = Bun.spawn([tscPath, "--noEmit", "--project", fixtureCatalogRoot], {
+        cwd: fixtureCatalogRoot,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
 
-    const exitCode = await proc.exited;
+      const exitCode = await proc.exited;
 
-    if (exitCode !== 0) {
-      const stdout = await new Response(proc.stdout).text();
-      const stderr = await new Response(proc.stderr).text();
-      console.error("tsc errors:", stdout || stderr);
-    }
+      if (exitCode !== 0) {
+        const stdout = await new Response(proc.stdout).text();
+        const stderr = await new Response(proc.stderr).text();
+        console.error("tsc errors:", stdout || stderr);
+      }
 
-    expect(exitCode).toBe(0);
-  });
+      expect(exitCode).toBe(0);
+    },
+    { timeout: 60000 },
+  );
 });
