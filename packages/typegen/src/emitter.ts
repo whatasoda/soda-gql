@@ -59,6 +59,7 @@ export type PrebuiltTypesEmitterOptions = {
 
 type PrebuiltTypeEntry = {
   readonly key: string;
+  readonly typename: string;
   readonly inputType: string;
   readonly outputType: string;
 };
@@ -145,6 +146,7 @@ const groupBySchema = (
 
         group.fragments.push({
           key: selection.key,
+          typename: selection.typename,
           inputType,
           outputType,
         });
@@ -362,7 +364,7 @@ const generateTypesCode = (
     // Generate fragments type
     const fragmentEntries = fragments
       .sort((a, b) => a.key.localeCompare(b.key))
-      .map((f) => `    readonly "${f.key}": { readonly input: ${f.inputType}; readonly output: ${f.outputType} };`);
+      .map((f) => `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`);
 
     // Generate operations type
     const operationEntries = operations

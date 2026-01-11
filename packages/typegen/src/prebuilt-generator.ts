@@ -80,6 +80,27 @@ export const generatePrebuiltModule = (
   // Generate type imports for schema types
   const internalTypeImports = schemaNames.map((name) => `Schema_${name}`);
 
+  // Generic types (schema-independent, generated once)
+  const genericTypes = `
+/**
+ * Generic field factory for type-erased field access.
+ * Returns a callable for nested field builders. Primitive fields can be spread directly.
+ * Runtime behavior differs but spread works for both: ...f.id() and ...f.user()(...)
+ */
+type GenericFieldFactory = (
+  ...args: unknown[]
+) => (nest: (tools: GenericFieldsBuilderTools) => AnyFields) => AnyFields;
+
+/**
+ * Generic tools for fields builder callbacks.
+ * Uses type-erased factory to allow any field access while maintaining strict mode compatibility.
+ */
+type GenericFieldsBuilderTools = {
+  readonly f: Record<string, GenericFieldFactory>;
+  readonly $: Record<string, unknown>;
+};
+`;
+
   // Generate resolver types and context types for each schema
   const contextTypes = schemaNames
     .map(
@@ -94,16 +115,17 @@ type ResolveFragmentAtBuilder_${name}<
   TKey extends string | undefined
 > = TKey extends keyof PrebuiltTypes_${name}["fragments"]
   ? Fragment<
-      TTypeName,
+      PrebuiltTypes_${name}["fragments"][TKey]["typename"],
       PrebuiltTypes_${name}["fragments"][TKey]["input"] extends infer TInput
         ? TInput extends void ? void : Partial<TInput & object>
         : void,
       Partial<AnyFields>,
-      PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
+      PrebuiltTypes_${name}["fragments"][TKey]["output"] & object,
+      TKey
     >
   : TKey extends undefined
-    ? Fragment<TTypeName, PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">>
-    : Fragment<TTypeName, PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">>;
+    ? Fragment<TTypeName, PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">, TKey>
+    : Fragment<TTypeName, PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">, TKey>;
 
 /**
  * Resolve operation types at builder level using TName.
@@ -128,24 +150,6 @@ type ResolveOperationAtBuilder_${name}<
       Partial<AnyFields>,
       PrebuiltEntryNotFound<TName, "operation">
     >;
-
-/**
- * Generic field factory for type-erased field access.
- * Returns a callable for nested field builders. Primitive fields can be spread directly.
- * Runtime behavior differs but spread works for both: ...f.id() and ...f.user()(...)
- */
-type GenericFieldFactory = (
-  ...args: unknown[]
-) => (nest: (tools: GenericFieldsBuilderTools) => AnyFields) => AnyFields;
-
-/**
- * Generic tools for fields builder callbacks.
- * Uses type-erased factory to allow any field access while maintaining strict mode compatibility.
- */
-type GenericFieldsBuilderTools = {
-  readonly f: Record<string, GenericFieldFactory>;
-  readonly $: Record<string, unknown>;
-};
 
 /**
  * Fragment builder that resolves types at builder level using TKey.
@@ -233,7 +237,7 @@ import {
 ${injectsImportLine}
 import { ${internalImports.join(", ")}, type ${internalTypeImports.join(", type ")} } from "${options.internalModulePath}";
 import type { ${schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ")} } from "./types.prebuilt";
-
+${genericTypes}
 ${contextTypes}
 
 // Export context types for explicit annotation
