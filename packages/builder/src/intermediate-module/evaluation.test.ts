@@ -30,6 +30,7 @@ const createTestAnalysis = (
     definitions: defs,
     imports: [],
     exports: [],
+    diagnostics: [],
   };
 };
 

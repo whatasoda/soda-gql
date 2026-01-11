@@ -13,6 +13,7 @@ class CacheManagerTestSuite extends TestSuite {
       definitions: [],
       imports: [],
       exports: [],
+      diagnostics: [],
       ...overrides,
     };
   }

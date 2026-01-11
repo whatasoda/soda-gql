@@ -5,7 +5,7 @@
 
 import { getPortableHasher } from "@soda-gql/common";
 import type { GraphqlSystemIdentifyHelper } from "../internal/graphql-system";
-import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleExport, ModuleImport } from "./types";
+import type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleDiagnostic, ModuleExport, ModuleImport } from "./types";
 
 /**
  * Result of analyzing a module, containing all collected data.
@@ -14,6 +14,7 @@ export type AnalyzerResult = {
   readonly imports: readonly ModuleImport[];
   readonly exports: readonly ModuleExport[];
   readonly definitions: readonly ModuleDefinition[];
+  readonly diagnostics: readonly ModuleDiagnostic[];
 };
 
 /**
@@ -52,6 +53,7 @@ export const analyzeModuleCore = (
       definitions: [],
       imports: [],
       exports: [],
+      diagnostics: [],
     };
   }
 
@@ -61,5 +63,6 @@ export const analyzeModuleCore = (
     definitions: result.definitions,
     imports: result.imports,
     exports: result.exports,
+    diagnostics: result.diagnostics,
   };
 };

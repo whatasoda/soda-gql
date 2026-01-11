@@ -8,6 +8,19 @@ export type {
   BuilderArtifactMeta,
   BuilderArtifactOperation,
 } from "./artifact/types";
+export {
+  createDiagnostic,
+  createStandardDiagnostic,
+  diagnosticMessages,
+  getSeverity,
+} from "./ast/common/detection";
+// Diagnostic types and utilities (for formatter consumption)
+export type {
+  DiagnosticCode,
+  DiagnosticLocation,
+  DiagnosticSeverity,
+  ModuleDiagnostic,
+} from "./ast/types";
 export type {
   DiscoveredDependency,
   DiscoveryCache,

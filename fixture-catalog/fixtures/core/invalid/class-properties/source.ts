@@ -1,12 +1,22 @@
-// Edge case: gql calls in class instance and static properties.
-// NOTE: Class property scope tracking differs between TSC and SWC,
-// causing canonical path mismatches. This pattern is not reliably
-// supported across all transformers.
-//
-// In a real codebase, this pattern may not transform correctly:
-//   class UserRepository {
-//     private userFragment = gql.default(({ fragment }) => ...);
-//     static sharedModel = gql.default(({ fragment }) => ...);
-//   }
+// Invalid pattern: gql calls in class properties
+// Class property scope tracking differs between TSC and SWC,
+// causing canonical path mismatches. This pattern is not reliably supported.
+import { gql } from "../../../../graphql-system";
 
-export const placeholder = "class-properties-test";
+class UserRepository {
+  // Instance property with gql - unreliable scope tracking
+  private userFragment = gql.default(({ fragment }) =>
+    fragment.User({ fields: ({ f }) => ({ ...f.id() }) }),
+  );
+
+  // Static property with gql - also unreliable
+  static sharedFragment = gql.default(({ fragment }) =>
+    fragment.User({ fields: ({ f }) => ({ ...f.name() }) }),
+  );
+
+  getFragment() {
+    return this.userFragment;
+  }
+}
+
+export { UserRepository };

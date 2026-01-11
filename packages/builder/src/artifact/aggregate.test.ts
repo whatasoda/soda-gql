@@ -13,6 +13,7 @@ const createTestAnalysis = (filePath: string, definitions: ModuleDefinition[]): 
   definitions,
   imports: [],
   exports: [],
+  diagnostics: [],
 });
 
 const createTestDefinition = (id: CanonicalId): ModuleDefinition => ({

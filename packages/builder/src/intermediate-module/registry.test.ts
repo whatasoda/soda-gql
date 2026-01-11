@@ -55,6 +55,7 @@ const createMockAnalysis = (filePath: string, hasGqlDefinitions: boolean): Modul
     definitions,
     imports: [],
     exports: [],
+    diagnostics: [],
   };
 };
 

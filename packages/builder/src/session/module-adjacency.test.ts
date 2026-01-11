@@ -38,6 +38,7 @@ const createMockSnapshot = (
       isTypeOnly: imp.isTypeOnly,
     })),
     exports: [],
+    diagnostics: [],
   };
 
   return {
