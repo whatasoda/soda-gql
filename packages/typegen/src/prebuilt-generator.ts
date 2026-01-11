@@ -162,14 +162,13 @@ type PrebuiltContext_${name} = {
   // Generate gql entries using createGqlElementComposer with type cast
   const gqlEntries = schemaNames.map((name) => {
     const config = injection.get(name);
-    const adapterArg = config?.hasAdapter ? `adapter: adapter_${name},` : "";
+    const adapterLine = config?.hasAdapter ? `,\n      adapter: adapter_${name}` : "";
 
     return `  ${name}: createGqlElementComposer(
     __schema_${name} as AnyGraphqlSchema,
     {
       inputTypeMethods: __inputTypeMethods_${name},
-      directiveMethods: __directiveMethods_${name},
-      ${adapterArg}
+      directiveMethods: __directiveMethods_${name}${adapterLine}
     }
   ) as unknown as GqlComposer_${name}`;
   });
