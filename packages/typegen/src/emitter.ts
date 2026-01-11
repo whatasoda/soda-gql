@@ -30,7 +30,7 @@ import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@sod
 import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
-import { type TypegenError, typegenErrors } from "./errors";
+import type { TypegenError } from "./errors";
 
 /**
  * Options for emitting prebuilt types.
@@ -85,11 +85,11 @@ type GroupBySchemaResult = {
  * Group field selections by schema.
  * Uses the schemaLabel from each selection to group them correctly.
  *
- * In strict mode, all fragments must have a 'key' property. Fragments
- * without keys will cause an error.
+ * Fragments without a 'key' property are skipped (not included in PrebuiltTypes)
+ * and a warning is added. This allows projects to use fragments without keys
+ * while still generating prebuilt types for those that have keys.
  *
  * @returns Result containing grouped selections and warnings, or error if schema not found
- *          or fragments are missing keys
  */
 const groupBySchema = (
   fieldSelections: FieldSelectionsMap,
@@ -97,7 +97,6 @@ const groupBySchema = (
 ): Result<GroupBySchemaResult, BuilderError | TypegenError> => {
   const grouped = new Map<string, SchemaGroup>();
   const warnings: string[] = [];
-  const missingKeyFragments: { canonicalId: string; typename: string; schemaLabel: string }[] = [];
 
   // Initialize groups for each schema
   for (const schemaName of Object.keys(schemas)) {
@@ -124,14 +123,10 @@ const groupBySchema = (
     };
 
     if (selection.type === "fragment") {
-      // Strict mode: fragments must have keys
+      // Skip fragments without keys (they won't be included in PrebuiltTypes)
       if (!selection.key) {
-        missingKeyFragments.push({
-          canonicalId,
-          typename: selection.typename,
-          schemaLabel: selection.schemaLabel,
-        });
-        continue; // Continue collecting all errors before reporting
+        warnings.push(`[prebuilt] Fragment "${canonicalId}" skipped: missing 'key' property`);
+        continue;
       }
 
       try {
@@ -186,11 +181,6 @@ const groupBySchema = (
         );
       }
     }
-  }
-
-  // Strict mode: error if any fragments are missing keys
-  if (missingKeyFragments.length > 0) {
-    return err(typegenErrors.fragmentMissingKey(missingKeyFragments));
   }
 
   return ok({ grouped, warnings });

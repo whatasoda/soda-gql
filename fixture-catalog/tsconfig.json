@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "customConditions": ["@soda-gql"]
+  },
+  "include": [
+    "fixtures/**/*.ts",
+    "graphql-system/index.ts",
+    "graphql-system/_internal.ts",
+    "graphql-system/_internal-injects.ts",
+    "schemas/**/*.ts"
+  ],
+  "exclude": [
+    "graphql-system/*.prebuilt.ts",
+    "graphql-system/*.cjs"
+  ]
+}

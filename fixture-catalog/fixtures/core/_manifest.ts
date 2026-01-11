@@ -24,7 +24,6 @@ export const validFixtures = [
   "multiple-schemas",
   "nested-in-function",
   "nested-in-functions",
-  "nested-non-top-level",
   "object-property",
   "object-property-exports",
   "sample",
@@ -50,6 +49,7 @@ export const validFixtures = [
   "fragments/spreading/basic-spread",
   "fragments/spreading/fragment-in-fragment",
   "fragments/spreading/multiple-fragments",
+  "fragments/with-key/source",
 
   // Imports (transformation tests)
   "imports/add-runtime/source",
@@ -78,6 +78,7 @@ export const validFixtures = [
 export const invalidFixtures = [
   // Scope-level issues
   "class-properties/source",
+  "nested-non-top-level/source",
 
   // Call-level issues
   "computed-property/source",

@@ -54,6 +54,18 @@ function normalizeInject(inject: InjectConfig, configDir: string): ResolvedInjec
 }
 
 /**
+ * Resolve a glob pattern relative to the config directory.
+ * Handles negation patterns (e.g., "!./path/to/exclude") by preserving the "!" prefix.
+ */
+function resolvePattern(pattern: string, configDir: string): string {
+  if (pattern.startsWith("!")) {
+    // Preserve the negation prefix, resolve the rest
+    return `!${resolve(configDir, pattern.slice(1))}`;
+  }
+  return resolve(configDir, pattern);
+}
+
+/**
  * Normalize artifact config to resolved form.
  * Returns undefined if no path is specified.
  */
@@ -110,8 +122,8 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
     analyzer,
     outdir: resolve(configDir, config.outdir),
     graphqlSystemAliases,
-    include: config.include.map((pattern) => resolve(configDir, pattern)),
-    exclude: exclude.map((pattern) => resolve(configDir, pattern)),
+    include: config.include.map((pattern) => resolvePattern(pattern, configDir)),
+    exclude: exclude.map((pattern) => resolvePattern(pattern, configDir)),
     schemas: normalizedSchemas,
     styles: {
       importExtension: config.styles?.importExtension ?? false,

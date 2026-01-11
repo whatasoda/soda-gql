@@ -91,17 +91,16 @@ describe("typegen key inference E2E", () => {
       await workspace.cleanup();
     });
 
-    test("returns TYPEGEN_FRAGMENT_MISSING_KEY error", async () => {
+    test("succeeds but skips fragment (not included in PrebuiltTypes)", async () => {
       const result = await runTypegen({ config: workspace.config });
 
-      expect(result.isErr()).toBe(true);
-      if (result.isOk()) return;
+      expect(result.isOk()).toBe(true);
+      if (result.isErr()) return;
 
-      expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
-      if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
-        expect(result.error.fragments).toHaveLength(1);
-        expect(result.error.fragments[0]?.typename).toBe("User");
-      }
+      const { fragmentCount, operationCount } = result.value;
+      // Fragment without key is skipped
+      expect(fragmentCount).toBe(0);
+      expect(operationCount).toBe(0);
     });
   });
 
