@@ -189,12 +189,6 @@ describe("typegen key inference E2E", () => {
       const result = await runTypegen({ config: workspace.config });
       expect(result.isOk()).toBe(true);
 
-      // Debug: print generated files
-      const prebuiltPath = join(workspace.config.outdir, "index.prebuilt.ts");
-      const typesPath = join(workspace.config.outdir, "types.prebuilt.ts");
-      console.log("\n=== index.prebuilt.ts ===\n", readFileSync(prebuiltPath, "utf-8"));
-      console.log("\n=== types.prebuilt.ts ===\n", readFileSync(typesPath, "utf-8"));
-
       // Create a type-check file in src directory (covered by tsconfig.json)
       const typeCheckFile = join(workspace.workspaceRoot, "src", "type-check.ts");
       const typeCheckContent = `
