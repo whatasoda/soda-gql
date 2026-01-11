@@ -280,7 +280,6 @@ input CreateProjectInput {
   description: String
   status: ProjectStatus
   priority: Int
-  metadata: JSON
   teamId: ID!
   tasks: [CreateTaskInput!]
   assigneeIds: [ID!]
@@ -291,7 +290,6 @@ input UpdateProjectInput {
   description: String
   status: ProjectStatus
   priority: Int
-  metadata: JSON
 }
 
 input CreateTaskInput {

@@ -197,7 +197,7 @@ describe("AST Analyzer", () => {
         astPath: definition.astPath,
       }));
 
-      expect(summary).toEqual([{ astPath: "userFragment" }, { astPath: "pageQuery" }]);
+      expect(summary).toEqual([{ astPath: "employeeFragment" }, { astPath: "pageQuery" }]);
     });
 
     it("collects gql definitions nested inside non-top-level scopes", () => {

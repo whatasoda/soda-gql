@@ -73,6 +73,17 @@ export const validFixtures = [
   // Scopes
   "scopes/deeply-nested/source",
   "scopes/duplicate-names/source",
+
+  // Deep nesting
+  "deep-nesting/company-to-task",
+  "deep-nesting/recursive-reports",
+
+  // Union types
+  "unions/search-result",
+
+  // Input types
+  "inputs/nested-create",
+  "inputs/filter-query",
 ] as const;
 
 export const invalidFixtures = [
