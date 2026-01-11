@@ -118,8 +118,6 @@ export class Fragment<
     type Output = InferFields<TSchema, TFields> & { [key: symbol]: never };
     type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
 
-    return new Fragment<TTypeName, Variables, Fields, Output>(
-      define as () => FragmentArtifact<TTypeName, Variables, Fields>,
-    );
+    return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
   }
 }

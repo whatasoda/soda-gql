@@ -1,9 +1,33 @@
 import { describe, expect, it } from "bun:test";
 import { Kind, print } from "graphql";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
-import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier } from "./build-document";
+import {
+  buildArgumentValue,
+  buildConstValueNode,
+  buildDocument,
+  buildWithTypeModifier,
+  type EnumLookup,
+} from "./build-document";
+
+/**
+ * Minimal schema for testing buildDocument.
+ * Contains empty type definitions to satisfy the schema interface.
+ */
+const emptySchema: AnyGraphqlSchema = {
+  label: "test",
+  operations: { query: null, mutation: null, subscription: null },
+  scalar: {},
+  enum: {},
+  input: {},
+  object: {},
+  union: {},
+};
+
+/** EnumLookup with no type specifier - enum detection is skipped */
+const noEnumLookup: EnumLookup = { schema: emptySchema, typeSpecifier: null };
 
 describe("Document Integrity Tests", () => {
   describe("buildArgumentValue edge cases", () => {
@@ -11,7 +35,7 @@ describe("Document Integrity Tests", () => {
       const symbolValue = Symbol("test");
 
       expect(() => {
-        buildArgumentValue(symbolValue as unknown as never);
+        buildArgumentValue(symbolValue as unknown as never, noEnumLookup);
       }).toThrow("Unknown value type");
     });
 
@@ -19,18 +43,18 @@ describe("Document Integrity Tests", () => {
       const functionValue = () => "test";
 
       expect(() => {
-        buildArgumentValue(functionValue as unknown as never);
+        buildArgumentValue(functionValue as unknown as never, noEnumLookup);
       }).toThrow("Unknown value type");
     });
 
     it("should handle null values", () => {
-      const result = buildArgumentValue(null);
+      const result = buildArgumentValue(null, noEnumLookup);
       expect(result).not.toBeNull();
       expect(result?.kind).toBe(Kind.NULL);
     });
 
     it("should handle boolean values", () => {
-      const result = buildArgumentValue(true);
+      const result = buildArgumentValue(true, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.BOOLEAN,
         value: true,
@@ -38,7 +62,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle string values", () => {
-      const result = buildArgumentValue("test");
+      const result = buildArgumentValue("test", noEnumLookup);
       expect(result).toEqual({
         kind: Kind.STRING,
         value: "test",
@@ -46,13 +70,13 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle number values", () => {
-      const result = buildArgumentValue(42);
+      const result = buildArgumentValue(42, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.INT,
         value: "42",
       });
 
-      const floatResult = buildArgumentValue(3.14);
+      const floatResult = buildArgumentValue(3.14, noEnumLookup);
       expect(floatResult).toEqual({
         kind: Kind.FLOAT,
         value: "3.14",
@@ -60,7 +84,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle array values", () => {
-      const result = buildArgumentValue([1, 2, 3]);
+      const result = buildArgumentValue([1, 2, 3], noEnumLookup);
       expect(result).toEqual({
         kind: Kind.LIST,
         values: Array.from({ length: 3 }, () => expect.anything()),
@@ -68,7 +92,7 @@ describe("Document Integrity Tests", () => {
     });
 
     it("should handle object values", () => {
-      const result = buildArgumentValue({ field: "value" });
+      const result = buildArgumentValue({ field: "value" }, noEnumLookup);
       expect(result).toEqual({
         kind: Kind.OBJECT,
         fields: Array.from({ length: 1 }, () => expect.anything()),
@@ -125,13 +149,13 @@ describe("Document Integrity Tests", () => {
       const bigIntValue = BigInt(9007199254740991);
 
       expect(() => {
-        buildConstValueNode(bigIntValue as any);
+        buildConstValueNode(bigIntValue as any, noEnumLookup);
       }).toThrow();
     });
 
     it("should return null for undefined values", () => {
       // undefined returns null, not throws
-      const result = buildConstValueNode(undefined as any);
+      const result = buildConstValueNode(undefined as any, noEnumLookup);
       expect(result).toBeNull();
     });
 
@@ -139,18 +163,18 @@ describe("Document Integrity Tests", () => {
       const symbolValue = Symbol("test");
 
       expect(() => {
-        buildConstValueNode(symbolValue as any);
+        buildConstValueNode(symbolValue as any, noEnumLookup);
       }).toThrow();
     });
 
     it("should handle valid const values", () => {
-      expect(buildConstValueNode(null)?.kind).toBe(Kind.NULL);
-      expect(buildConstValueNode(true)?.kind).toBe(Kind.BOOLEAN);
-      expect(buildConstValueNode("string")?.kind).toBe(Kind.STRING);
-      expect(buildConstValueNode(42)?.kind).toBe(Kind.INT);
-      expect(buildConstValueNode(3.14)?.kind).toBe(Kind.FLOAT);
-      expect(buildConstValueNode([1, 2])?.kind).toBe(Kind.LIST);
-      expect(buildConstValueNode({ key: "value" })?.kind).toBe(Kind.OBJECT);
+      expect(buildConstValueNode(null, noEnumLookup)?.kind).toBe(Kind.NULL);
+      expect(buildConstValueNode(true, noEnumLookup)?.kind).toBe(Kind.BOOLEAN);
+      expect(buildConstValueNode("string", noEnumLookup)?.kind).toBe(Kind.STRING);
+      expect(buildConstValueNode(42, noEnumLookup)?.kind).toBe(Kind.INT);
+      expect(buildConstValueNode(3.14, noEnumLookup)?.kind).toBe(Kind.FLOAT);
+      expect(buildConstValueNode([1, 2], noEnumLookup)?.kind).toBe(Kind.LIST);
+      expect(buildConstValueNode({ key: "value" }, noEnumLookup)?.kind).toBe(Kind.OBJECT);
     });
   });
 
@@ -164,6 +188,7 @@ describe("Document Integrity Tests", () => {
           operationName: "TestOperation",
           variables: {} as InputTypeSpecifiers,
           fields: {},
+          schema: emptySchema,
         });
       }).toThrow();
     });
@@ -174,6 +199,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestQuery",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(queryDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -187,6 +213,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestMutation",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(mutationDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -200,6 +227,7 @@ describe("Document Integrity Tests", () => {
         operationName: "TestSubscription",
         variables: {},
         fields: {},
+        schema: emptySchema,
       });
       expect(subscriptionDoc.definitions[0]).toEqual(
         expect.objectContaining({
@@ -212,17 +240,17 @@ describe("Document Integrity Tests", () => {
 
   describe("buildConstValueNode with default values", () => {
     it("should handle various default value types", () => {
-      const stringValue = buildConstValueNode("default");
+      const stringValue = buildConstValueNode("default", noEnumLookup);
       expect(stringValue).toEqual({
         kind: Kind.STRING,
         value: "default",
       });
 
-      const numberValue = buildConstValueNode(42);
+      const numberValue = buildConstValueNode(42, noEnumLookup);
       expect(numberValue).toBeDefined();
       expect(numberValue?.kind).toBe(Kind.INT);
 
-      const booleanValue = buildConstValueNode(true);
+      const booleanValue = buildConstValueNode(true, noEnumLookup);
       expect(booleanValue).toBeDefined();
       expect(booleanValue?.kind).toBe(Kind.BOOLEAN);
     });
@@ -234,7 +262,7 @@ describe("Document Integrity Tests", () => {
         field3: [1, 2, 3],
       };
 
-      const objectValue = buildConstValueNode(complexDefault);
+      const objectValue = buildConstValueNode(complexDefault, noEnumLookup);
       expect(objectValue).toBeDefined();
       expect(objectValue).toEqual({
         kind: Kind.OBJECT,
@@ -253,7 +281,7 @@ describe("buildArgumentValue", () => {
         id: userIdRef,
       });
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -279,7 +307,7 @@ describe("buildArgumentValue", () => {
       const userIdRef = createVarRefFromVariable("userId");
       const nestedRef = createVarRefFromNestedValue(["literal", userIdRef]);
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.LIST,
@@ -304,7 +332,7 @@ describe("buildArgumentValue", () => {
         },
       });
 
-      const result = buildArgumentValue(nestedRef);
+      const result = buildArgumentValue(nestedRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -350,7 +378,7 @@ describe("buildArgumentValue", () => {
         outer: innerRef,
       });
 
-      const result = buildArgumentValue(outerRef);
+      const result = buildArgumentValue(outerRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.OBJECT,
@@ -377,7 +405,7 @@ describe("buildArgumentValue", () => {
   describe("with variable VarRef", () => {
     it("builds GraphQL variable node", () => {
       const varRef = createVarRefFromVariable("userId");
-      const result = buildArgumentValue(varRef);
+      const result = buildArgumentValue(varRef, noEnumLookup);
 
       expect(result).toEqual({
         kind: Kind.VARIABLE,
@@ -388,28 +416,28 @@ describe("buildArgumentValue", () => {
 
   describe("with primitive values", () => {
     it("returns null for undefined", () => {
-      expect(buildArgumentValue(undefined)).toBeNull();
+      expect(buildArgumentValue(undefined, noEnumLookup)).toBeNull();
     });
 
     it("builds NULL node for null", () => {
-      expect(buildArgumentValue(null)).toEqual({ kind: Kind.NULL });
+      expect(buildArgumentValue(null, noEnumLookup)).toEqual({ kind: Kind.NULL });
     });
 
     it("builds STRING node for strings", () => {
-      expect(buildArgumentValue("test")).toEqual({ kind: Kind.STRING, value: "test" });
+      expect(buildArgumentValue("test", noEnumLookup)).toEqual({ kind: Kind.STRING, value: "test" });
     });
 
     it("builds INT node for integers", () => {
-      expect(buildArgumentValue(42)).toEqual({ kind: Kind.INT, value: "42" });
+      expect(buildArgumentValue(42, noEnumLookup)).toEqual({ kind: Kind.INT, value: "42" });
     });
 
     it("builds FLOAT node for floats", () => {
-      expect(buildArgumentValue(3.14)).toEqual({ kind: Kind.FLOAT, value: "3.14" });
+      expect(buildArgumentValue(3.14, noEnumLookup)).toEqual({ kind: Kind.FLOAT, value: "3.14" });
     });
 
     it("builds BOOLEAN node for booleans", () => {
-      expect(buildArgumentValue(true)).toEqual({ kind: Kind.BOOLEAN, value: true });
-      expect(buildArgumentValue(false)).toEqual({ kind: Kind.BOOLEAN, value: false });
+      expect(buildArgumentValue(true, noEnumLookup)).toEqual({ kind: Kind.BOOLEAN, value: true });
+      expect(buildArgumentValue(false, noEnumLookup)).toEqual({ kind: Kind.BOOLEAN, value: false });
     });
   });
 });
@@ -458,6 +486,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -519,6 +548,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables,
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -562,6 +592,7 @@ describe("DirectiveRef in buildDocument", () => {
         operationType: "query",
         variables: {},
         fields: fields as any,
+        schema: emptySchema,
       });
     }).toThrow("Directive @queryOnly cannot be used on FIELD");
   });
@@ -606,6 +637,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
@@ -648,11 +680,284 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       variables: {},
       fields: fields as any,
+      schema: emptySchema,
     });
 
     const printed = print(doc);
     expect(printed).toContain("@skip(if: true)");
     // Should only have one directive
     expect(printed.match(/@/g)?.length).toBe(1);
+  });
+});
+
+describe("Enum value handling", () => {
+  /**
+   * Schema with enum for testing enum value output.
+   * Uses type assertion to bypass full EnumDefinition structure requirements.
+   */
+  const schemaWithEnum = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {},
+    enum: {
+      Status: { name: "Status", values: { ACTIVE: true, INACTIVE: true } },
+      Priority: { name: "Priority", values: { HIGH: true, MEDIUM: true, LOW: true } },
+    },
+    input: {
+      UserFilter: {
+        name: "UserFilter",
+        fields: {
+          status: { kind: "enum", name: "Status", modifier: "?" },
+          name: { kind: "scalar", name: "String", modifier: "?" },
+        },
+      },
+      NestedInput: {
+        name: "NestedInput",
+        fields: {
+          filter: { kind: "input", name: "UserFilter", modifier: "?" },
+          priority: { kind: "enum", name: "Priority", modifier: "!" },
+        },
+      },
+    },
+    object: {},
+    union: {},
+  } as unknown as AnyGraphqlSchema;
+
+  describe("buildArgumentValue with enumLookup", () => {
+    it("outputs Kind.ENUM for enum type specifier", () => {
+      const result = buildArgumentValue("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.ENUM,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.STRING for scalar type specifier", () => {
+      const result = buildArgumentValue("some-string", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "scalar", name: "String", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.STRING,
+        value: "some-string",
+      });
+    });
+
+    it("outputs Kind.STRING when typeSpecifier is null", () => {
+      const result = buildArgumentValue("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: null,
+      });
+
+      expect(result).toEqual({
+        kind: Kind.STRING,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.ENUM for enums in array", () => {
+      const result = buildArgumentValue(["ACTIVE", "INACTIVE"], {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "![]!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.LIST,
+        values: [
+          { kind: Kind.ENUM, value: "ACTIVE" },
+          { kind: Kind.ENUM, value: "INACTIVE" },
+        ],
+      });
+    });
+
+    it("outputs Kind.ENUM for enums nested in InputObject", () => {
+      const result = buildArgumentValue(
+        { status: "ACTIVE", name: "John" },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "status" },
+            value: { kind: Kind.ENUM, value: "ACTIVE" },
+          },
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "name" },
+            value: { kind: Kind.STRING, value: "John" },
+          },
+        ],
+      });
+    });
+
+    it("outputs Kind.ENUM for deeply nested enums", () => {
+      const result = buildArgumentValue(
+        {
+          filter: { status: "INACTIVE" },
+          priority: "HIGH",
+        },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "NestedInput", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "filter" },
+            value: {
+              kind: Kind.OBJECT,
+              fields: [
+                {
+                  kind: Kind.OBJECT_FIELD,
+                  name: { kind: Kind.NAME, value: "status" },
+                  value: { kind: Kind.ENUM, value: "INACTIVE" },
+                },
+              ],
+            },
+          },
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "priority" },
+            value: { kind: Kind.ENUM, value: "HIGH" },
+          },
+        ],
+      });
+    });
+
+    it("outputs Kind.VARIABLE for VarRef regardless of enum type", () => {
+      const varRef = createVarRefFromVariable("statusVar");
+      const result = buildArgumentValue(varRef, {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.VARIABLE,
+        name: { kind: Kind.NAME, value: "statusVar" },
+      });
+    });
+  });
+
+  describe("buildConstValueNode with enumLookup", () => {
+    it("outputs Kind.ENUM for enum default values", () => {
+      const result = buildConstValueNode("ACTIVE", {
+        schema: schemaWithEnum,
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+      });
+
+      expect(result).toEqual({
+        kind: Kind.ENUM,
+        value: "ACTIVE",
+      });
+    });
+
+    it("outputs Kind.ENUM for enums nested in InputObject defaults", () => {
+      const result = buildConstValueNode(
+        { status: "ACTIVE" },
+        {
+          schema: schemaWithEnum,
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+        },
+      );
+
+      expect(result).toEqual({
+        kind: Kind.OBJECT,
+        fields: [
+          {
+            kind: Kind.OBJECT_FIELD,
+            name: { kind: Kind.NAME, value: "status" },
+            value: { kind: Kind.ENUM, value: "ACTIVE" },
+          },
+        ],
+      });
+    });
+  });
+
+  describe("buildDocument with enum arguments", () => {
+    const schemaWithQuery = {
+      ...schemaWithEnum,
+      object: {
+        Query: {
+          name: "Query",
+          fields: {
+            user: {
+              kind: "object",
+              name: "User",
+              modifier: "?",
+              arguments: {
+                status: { kind: "enum", name: "Status", modifier: "!" },
+              },
+            },
+          },
+        },
+        User: {
+          name: "User",
+          fields: {
+            id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+            name: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+          },
+        },
+      },
+    } as unknown as AnyGraphqlSchema;
+
+    it("outputs Kind.ENUM for field arguments", () => {
+      const fields = {
+        user: {
+          parent: "Query",
+          field: "user",
+          type: {
+            kind: "object" as const,
+            name: "User",
+            modifier: "?" as const,
+            arguments: {
+              status: { kind: "enum" as const, name: "Status", modifier: "!" as const },
+            },
+          },
+          args: { status: "ACTIVE" },
+          directives: [],
+          object: {
+            id: {
+              parent: "User",
+              field: "id",
+              type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+          },
+          union: null,
+        },
+      };
+
+      const doc = buildDocument({
+        operationName: "GetUser",
+        operationType: "query",
+        variables: {},
+        fields: fields as any,
+        schema: schemaWithQuery,
+      });
+
+      const printed = print(doc);
+      // Enum should be printed without quotes
+      expect(printed).toContain("user(status: ACTIVE)");
+      // Verify it's not a string (which would have quotes)
+      expect(printed).not.toContain('user(status: "ACTIVE")');
+    });
   });
 });

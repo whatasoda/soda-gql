@@ -34,16 +34,30 @@ import {
   VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
-import type { ConstValue, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import type { ConstValue, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
+
+/**
+ * Context for determining if a value should be output as an enum.
+ * Contains the schema for looking up nested input types and the current type specifier.
+ */
+export type EnumLookup = {
+  schema: AnyGraphqlSchema;
+  /** Type specifier for the current value. null means enum detection is skipped. */
+  typeSpecifier: InputTypeSpecifier | null;
+};
 
 /**
  * Converts an assignable input value to a GraphQL AST ValueNode.
  *
  * Handles primitives, arrays, objects, and variable references.
  * Returns null for undefined values (field is omitted).
+ *
+ * @param value - The value to convert
+ * @param enumLookup - Context for enum detection. String values will be output
+ *                     as Kind.ENUM if typeSpecifier indicates an enum type.
  */
-export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | null => {
+export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: EnumLookup): ValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -66,16 +80,17 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
     if (inner.type === "nested-value") {
       // Recursively process the nested value
       // This handles VarRefs inside the nested structure
-      return buildArgumentValue(inner.value as AnyAssignableInputValue);
+      return buildArgumentValue(inner.value as AnyAssignableInputValue, enumLookup);
     }
 
     throw new Error(`Unknown var ref type: ${inner satisfies never}`);
   }
 
   if (Array.isArray(value)) {
+    // For list types, the inner type specifier remains the same (e.g., [Status!]! uses Status for each item)
     return {
       kind: Kind.LIST,
-      values: value.map((item) => buildArgumentValue(item)).filter((item) => item !== null),
+      values: value.map((item) => buildArgumentValue(item, enumLookup)).filter((item) => item !== null),
     };
   }
 
@@ -83,8 +98,18 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
     return {
       kind: Kind.OBJECT,
       fields: Object.entries(value)
-        .map(([key, value]): ObjectFieldNode | null => {
-          const valueNode = buildArgumentValue(value);
+        .map(([key, fieldValue]): ObjectFieldNode | null => {
+          // Look up field type in nested InputObject for enum detection
+          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          if (enumLookup.typeSpecifier?.kind === "input") {
+            const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
+            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
+          }
+
+          const valueNode = buildArgumentValue(fieldValue, {
+            schema: enumLookup.schema,
+            typeSpecifier: fieldTypeSpecifier,
+          });
           return valueNode
             ? {
                 kind: Kind.OBJECT_FIELD,
@@ -98,6 +123,13 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
   }
 
   if (typeof value === "string") {
+    // Output as Kind.ENUM if the type specifier indicates this is an enum type
+    if (enumLookup.typeSpecifier?.kind === "enum") {
+      return {
+        kind: Kind.ENUM,
+        value,
+      };
+    }
     return {
       kind: Kind.STRING,
       value,
@@ -123,10 +155,15 @@ export const buildArgumentValue = (value: AnyAssignableInputValue): ValueNode | 
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
 };
 
-const buildArguments = (args: AnyAssignableInput): ArgumentNode[] =>
+const buildArguments = (
+  args: AnyAssignableInput,
+  argumentSpecifiers: InputTypeSpecifiers,
+  schema: AnyGraphqlSchema,
+): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
-      const valueNode = buildArgumentValue(value);
+      const typeSpecifier = argumentSpecifiers[name] ?? null;
+      const valueNode = buildArgumentValue(value, { schema, typeSpecifier });
       return valueNode
         ? {
             kind: Kind.ARGUMENT,
@@ -161,9 +198,19 @@ const validateDirectiveLocation = (directive: AnyDirectiveRef, expectedLocation:
  *
  * @param directives - Array of directive references (or unknown values)
  * @param location - The location context for validation
+ * @param schema - The schema for type lookups
  * @returns Array of DirectiveNode for the GraphQL AST
+ *
+ * NOTE: Directive argument enum support is not yet implemented.
+ * Schema does not currently include directive definitions, so enum arguments
+ * in directives will be output as strings. This can be enhanced when
+ * directive definitions are added to the schema.
  */
-const buildDirectives = (directives: AnyDirectiveAttachments, location: DirectiveLocation): DirectiveNode[] => {
+const buildDirectives = (
+  directives: AnyDirectiveAttachments,
+  location: DirectiveLocation,
+  schema: AnyGraphqlSchema,
+): DirectiveNode[] => {
   return directives
     .filter((d): d is AnyDirectiveRef => d instanceof DirectiveRef)
     .map((directive) => {
@@ -172,12 +219,13 @@ const buildDirectives = (directives: AnyDirectiveAttachments, location: Directiv
       return {
         kind: Kind.DIRECTIVE as const,
         name: { kind: Kind.NAME as const, value: inner.name },
-        arguments: buildArguments(inner.arguments as AnyAssignableInput),
+        // TODO: Pass directive argument type specifiers when available in schema
+        arguments: buildArguments(inner.arguments as AnyAssignableInput, {}, schema),
       };
     });
 };
 
-const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
+const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): InlineFragmentNode[] =>
   Object.entries(union)
     .map(([typeName, object]): InlineFragmentNode | null => {
       return object
@@ -189,31 +237,31 @@ const buildUnionSelection = (union: AnyNestedUnion): InlineFragmentNode[] =>
             },
             selectionSet: {
               kind: Kind.SELECTION_SET,
-              selections: buildField(object),
+              selections: buildField(object, schema),
             },
           }
         : null;
     })
     .filter((item) => item !== null);
 
-const buildField = (field: AnyFields): FieldNode[] =>
-  Object.entries(field).map(([alias, { args, field, object, union, directives }]): FieldNode => {
-    const builtDirectives = buildDirectives(directives, "FIELD");
+const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
+  Object.entries(field).map(([alias, { args, field, object, union, directives, type }]): FieldNode => {
+    const builtDirectives = buildDirectives(directives, "FIELD", schema);
     return {
       kind: Kind.FIELD,
       name: { kind: Kind.NAME, value: field },
       alias: alias !== field ? { kind: Kind.NAME, value: alias } : undefined,
-      arguments: buildArguments(args),
+      arguments: buildArguments(args, type.arguments, schema),
       directives: builtDirectives.length > 0 ? builtDirectives : undefined,
       selectionSet: object
         ? {
             kind: Kind.SELECTION_SET,
-            selections: buildField(object),
+            selections: buildField(object, schema),
           }
         : union
           ? {
               kind: Kind.SELECTION_SET,
-              selections: buildUnionSelection(union),
+              selections: buildUnionSelection(union, schema),
             }
           : undefined,
     };
@@ -224,8 +272,12 @@ const buildField = (field: AnyFields): FieldNode[] =>
  *
  * Unlike `buildArgumentValue`, this only handles literal values
  * (no variable references). Used for default values.
+ *
+ * @param value - The constant value to convert
+ * @param enumLookup - Context for enum detection. String values will be output
+ *                     as Kind.ENUM if typeSpecifier indicates an enum type.
  */
-export const buildConstValueNode = (value: ConstValue): ConstValueNode | null => {
+export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): ConstValueNode | null => {
   if (value === undefined) {
     return null;
   }
@@ -234,7 +286,47 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
     return { kind: Kind.NULL };
   }
 
+  if (Array.isArray(value)) {
+    // For list types, the inner type specifier remains the same
+    return {
+      kind: Kind.LIST,
+      values: value.map((item) => buildConstValueNode(item, enumLookup)).filter((item) => item !== null),
+    };
+  }
+
+  if (typeof value === "object") {
+    return {
+      kind: Kind.OBJECT,
+      fields: Object.entries(value)
+        .map(([key, fieldValue]): ConstObjectFieldNode | null => {
+          // Look up field type in nested InputObject for enum detection
+          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          if (enumLookup.typeSpecifier?.kind === "input") {
+            const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
+            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
+          }
+
+          const valueNode = buildConstValueNode(fieldValue, {
+            schema: enumLookup.schema,
+            typeSpecifier: fieldTypeSpecifier,
+          });
+          return valueNode
+            ? {
+                kind: Kind.OBJECT_FIELD,
+                name: { kind: Kind.NAME, value: key },
+                value: valueNode,
+              }
+            : null;
+        })
+        .filter((item) => item !== null),
+    };
+  }
+
   if (typeof value === "string") {
+    // Output as Kind.ENUM if the type specifier indicates this is an enum type
+    if (enumLookup.typeSpecifier?.kind === "enum") {
+      return { kind: Kind.ENUM, value };
+    }
     return { kind: Kind.STRING, value };
   }
 
@@ -246,31 +338,6 @@ export const buildConstValueNode = (value: ConstValue): ConstValueNode | null =>
     // Distinguish between INT and FLOAT
     const isFloat = !Number.isInteger(value) || value.toString().includes(".");
     return { kind: isFloat ? Kind.FLOAT : Kind.INT, value: value.toString() };
-  }
-
-  if (Array.isArray(value)) {
-    return {
-      kind: Kind.LIST,
-      values: value.map((item) => buildConstValueNode(item)).filter((item) => item !== null),
-    };
-  }
-
-  if (typeof value === "object") {
-    return {
-      kind: Kind.OBJECT,
-      fields: Object.entries(value)
-        .map(([key, value]): ConstObjectFieldNode | null => {
-          const valueNode = buildConstValueNode(value);
-          return valueNode
-            ? {
-                kind: Kind.OBJECT_FIELD,
-                name: { kind: Kind.NAME, value: key },
-                value: valueNode,
-              }
-            : null;
-        })
-        .filter((item) => item !== null),
-    };
   }
 
   throw new Error(`Unknown value type: ${typeof (value satisfies never)}`);
@@ -361,12 +428,13 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
   return curr.type;
 };
 
-const buildVariables = (variables: InputTypeSpecifiers): VariableDefinitionNode[] => {
+const buildVariables = (variables: InputTypeSpecifiers, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
   return Object.entries(variables).map(
     ([name, ref]): VariableDefinitionNode => ({
       kind: Kind.VARIABLE_DEFINITION,
       variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
-      defaultValue: (ref.defaultValue && buildConstValueNode(ref.defaultValue.default)) || undefined,
+      defaultValue:
+        (ref.defaultValue && buildConstValueNode(ref.defaultValue.default, { schema, typeSpecifier: ref })) || undefined,
       type: buildWithTypeModifier(ref.modifier, () => ({
         kind: Kind.NAMED_TYPE,
         name: { kind: Kind.NAME, value: ref.name },
@@ -398,7 +466,7 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
  * a GraphQL document AST. The result can be used with any GraphQL
  * client that supports TypedDocumentNode.
  *
- * @param options - Operation configuration (name, type, variables, fields)
+ * @param options - Operation configuration (name, type, variables, fields, schema)
  * @returns TypedDocumentNode with inferred input/output types
  */
 export const buildDocument = <
@@ -410,8 +478,9 @@ export const buildDocument = <
   operationType: OperationType;
   variables: TVarDefinitions;
   fields: TFields;
+  schema: TSchema;
 }): TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
-  const { operationName, operationType, variables, fields } = options;
+  const { operationName, operationType, variables, fields, schema } = options;
   return {
     kind: Kind.DOCUMENT,
     definitions: [
@@ -419,11 +488,11 @@ export const buildDocument = <
         kind: Kind.OPERATION_DEFINITION,
         operation: buildOperationTypeNode(operationType),
         name: { kind: Kind.NAME, value: operationName },
-        variableDefinitions: buildVariables(variables),
+        variableDefinitions: buildVariables(variables, schema),
         // directives: directives || [],
         selectionSet: {
           kind: Kind.SELECTION_SET,
-          selections: buildField(fields),
+          selections: buildField(fields, schema),
         },
       },
     ],

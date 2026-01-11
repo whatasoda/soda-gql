@@ -94,6 +94,7 @@ export const createOperationComposerFactory = <
           operationType,
           variables,
           fields,
+          schema,
         });
 
         const variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
