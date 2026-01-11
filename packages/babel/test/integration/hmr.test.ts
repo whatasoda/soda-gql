@@ -20,9 +20,10 @@ describe("Babel-Plugin HMR Integration", () => {
 
     try {
       // Create config file pointing to shared graphql-system
+      // Only include the temp test file to avoid picking up intentionally invalid fixture files
       const configPath = createTempConfigFile(tempDir, {
         outdir: graphqlSystemDir,
-        include: [join(codegenFixtureRoot, "**/*.ts")],
+        include: [join(tempDir, "*.ts")],
         analyzer: "ts",
         schemas: {
           default: {
@@ -92,9 +93,10 @@ describe("Babel-Plugin HMR Integration", () => {
 
     try {
       // Create config file pointing to shared graphql-system
+      // Only include the temp test file to avoid picking up intentionally invalid fixture files
       const configPath = createTempConfigFile(tempDir, {
         outdir: graphqlSystemDir,
-        include: [join(codegenFixtureRoot, "**/*.ts")],
+        include: [join(tempDir, "*.ts")],
         analyzer: "ts",
         schemas: {
           default: {

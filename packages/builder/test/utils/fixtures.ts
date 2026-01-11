@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FIXTURES_ROOT = fileURLToPath(new URL("../fixtures", import.meta.url));
+const FIXTURES_ROOT = fileURLToPath(new URL("../codegen-fixture/fixtures", import.meta.url));
 
 /**
  * Get the absolute path to a fixture file
- * @param category The fixture category (e.g., "module-analysis", "common")
+ * @param category The fixture category (e.g., "core/valid", "formatting/valid")
  * @param name The fixture name without extension
  * @returns Absolute path to the fixture file
  */
@@ -16,7 +16,7 @@ export const getFixturePath = (category: string, name: string): string => {
 
 /**
  * Load a fixture file
- * @param category The fixture category (e.g., "module-analysis", "common")
+ * @param category The fixture category (e.g., "core/valid", "formatting/valid")
  * @param name The fixture name without extension
  * @returns Object with filePath and source
  */
@@ -29,23 +29,45 @@ export const loadFixture = (category: string, name: string): { filePath: string;
 };
 
 /**
- * Get the absolute path to a module-analysis fixture
+ * Get the absolute path to a core valid fixture
  * @param name The fixture name without extension
  * @returns Absolute path to the fixture file
  */
-export const getModuleAnalysisFixturePath = (name: string): string => {
-  return getFixturePath("module-analysis", name);
+export const getCoreFixturePath = (name: string): string => {
+  return getFixturePath("core/valid", name);
 };
 
 /**
- * Load a module-analysis fixture from the unified directory
+ * Load a core valid fixture
  * @param name The fixture name without extension
  * @returns Object with filePath and source
  */
-export const loadModuleAnalysisFixture = (name: string): { filePath: string; source: string } => {
-  return loadFixture("module-analysis", name);
+export const loadCoreFixture = (name: string): { filePath: string; source: string } => {
+  return loadFixture("core/valid", name);
 };
 
-export type { FixtureName } from "../fixtures/module-analysis/_manifest";
+/**
+ * Get the absolute path to a core invalid fixture
+ * @param name The fixture name without extension
+ * @returns Absolute path to the fixture file
+ */
+export const getCoreInvalidFixturePath = (name: string): string => {
+  return getFixturePath("core/invalid", name);
+};
+
+/**
+ * Load a core invalid fixture
+ * @param name The fixture name without extension
+ * @returns Object with filePath and source
+ */
+export const loadCoreInvalidFixture = (name: string): { filePath: string; source: string } => {
+  return loadFixture("core/invalid", name);
+};
+
+// Legacy aliases for backward compatibility
+export const getModuleAnalysisFixturePath = getCoreFixturePath;
+export const loadModuleAnalysisFixture = loadCoreFixture;
+
+export type { InvalidFixtureName, ValidFixtureName } from "../codegen-fixture/fixtures/core/_manifest";
 // Re-export manifest for test files
-export { fixtures } from "../fixtures/module-analysis/_manifest";
+export { invalidFixtures, validFixtures as fixtures } from "../codegen-fixture/fixtures/core/_manifest";

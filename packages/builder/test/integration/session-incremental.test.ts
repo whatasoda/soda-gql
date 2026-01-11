@@ -35,7 +35,7 @@ const createTestConfig = (
   schemas: {
     default: {
       schema: [path.join(workspaceRoot, "schema.graphql")],
-      inject: { scalars: path.join(workspaceRoot, "inject/scalars.ts") },
+      inject: { scalars: path.join(workspaceRoot, "graphql-inject.ts") },
       defaultInputDepth: 3,
       inputDepthOverrides: {},
     },
@@ -58,7 +58,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
   beforeEach(async () => {
     originalCwd = process.cwd();
-    fixtureRoot = path.join(process.cwd(), "packages/builder/test/fixtures/incremental-session");
+    fixtureRoot = path.join(projectRoot, "tests/codegen-fixture/fixtures/incremental");
 
     // Create temporary workspace in system temp
     tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
@@ -66,8 +66,12 @@ describe("BuilderSession incremental end-to-end", () => {
     workspaceRoot = path.join(tmpRoot, `session-${timestamp}`);
     await fs.mkdir(workspaceRoot, { recursive: true });
 
-    // Copy fixture to workspace (exclude graphql-system and variants)
-    await copyDir(fixtureRoot, workspaceRoot, (src) => !src.includes("graphql-system") && !src.includes("variants"));
+    // Copy fixture base files to workspace (exclude graphql-system and variants)
+    const baseDir = path.join(fixtureRoot, "base");
+    await copyDir(baseDir, workspaceRoot, (src) => !src.includes("graphql-system"));
+
+    // Copy schema.graphql from incremental fixtures
+    cpSync(path.join(fixtureRoot, "schema.graphql"), path.join(workspaceRoot, "schema.graphql"));
 
     // Change to workspace
     process.chdir(workspaceRoot);
@@ -418,12 +422,12 @@ async function copyDir(src: string, dest: string, filter?: (src: string) => bool
 
 /**
  * Rewrite graphql-system imports to use the local graphql-system in the workspace.
- * Converts imports like "../../../../codegen-fixture/graphql-system" to relative paths
+ * Converts imports like "../../../graphql-system" to relative paths
  * that work within the temp workspace.
  */
 function rewriteGraphqlSystemImports(content: string, filePath: string, workspaceRoot: string): string {
-  // Match imports from codegen-fixture/graphql-system
-  const importPattern = /from\s+["']([^"']*codegen-fixture\/graphql-system)["']/g;
+  // Match imports that end with graphql-system (relative paths like ../../../graphql-system)
+  const importPattern = /from\s+["']([^"']*graphql-system)["']/g;
 
   return content.replace(importPattern, (_match, _importPath) => {
     // Calculate relative path from file to workspace's graphql-system

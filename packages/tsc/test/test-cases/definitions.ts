@@ -143,9 +143,9 @@ const singleFileTestCases: TestCaseDefinition[] = [
 
   // Import edge cases
   {
-    id: "imports/star-import",
+    id: "errors/star-import",
     description: "Skip star import (import * as) - not supported by builder",
-    fixtureName: "imports/star-import",
+    fixtureName: "errors/star-import",
     isMultiFile: false,
     expectations: {
       runtimeCalls: [],
@@ -178,9 +178,9 @@ const singleFileTestCases: TestCaseDefinition[] = [
     },
   },
   {
-    id: "scopes/class-properties",
+    id: "errors/class-properties",
     description: "Skip class properties - scope tracking differs across transformers",
-    fixtureName: "scopes/class-properties",
+    fixtureName: "errors/class-properties",
     isMultiFile: false,
     expectations: {
       runtimeCalls: [],

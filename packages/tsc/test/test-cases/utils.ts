@@ -31,8 +31,17 @@ const getPackageRoot = (): string => {
   return fileURLToPath(new URL("../../", import.meta.url));
 };
 
-const FIXTURE_ROOT = join(getPackageRoot(), "test/fixtures");
 const CODEGEN_FIXTURE_ROOT = join(getPackageRoot(), "test/codegen-fixture");
+const FIXTURE_ROOT_VALID = join(CODEGEN_FIXTURE_ROOT, "fixtures/core/valid");
+const FIXTURE_ROOT_INVALID = join(CODEGEN_FIXTURE_ROOT, "fixtures/core/invalid");
+
+const getFixtureRoot = (name: string): string => {
+  // errors/* fixtures are in invalid directory
+  if (name.startsWith("errors/")) {
+    return FIXTURE_ROOT_INVALID;
+  }
+  return FIXTURE_ROOT_VALID;
+};
 
 export type AnalyzerType = "ts" | "swc";
 
@@ -55,7 +64,10 @@ export const createTestConfig = (analyzer?: AnalyzerType): ResolvedSodaGqlConfig
  * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
 export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): Promise<LoadedPluginFixture> => {
-  const fixtureDir = join(FIXTURE_ROOT, name);
+  const fixtureRoot = getFixtureRoot(name);
+  // For errors/*, strip the "errors/" prefix since they're in a flat structure under invalid/
+  const fixtureName = name.startsWith("errors/") ? name.slice("errors/".length) : name;
+  const fixtureDir = join(fixtureRoot, fixtureName);
   const sourcePath = join(fixtureDir, "source.ts");
   const sourceFile = Bun.file(sourcePath);
 
@@ -98,7 +110,9 @@ export const loadPluginFixture = async (name: string, analyzer?: AnalyzerType): 
  * @param analyzer - Optional analyzer type override ("ts" or "swc")
  */
 export const loadPluginFixtureMulti = async (name: string, analyzer?: AnalyzerType): Promise<LoadedPluginFixtureMulti> => {
-  const fixtureDir = join(FIXTURE_ROOT, name);
+  const fixtureRoot = getFixtureRoot(name);
+  const fixtureName = name.startsWith("errors/") ? name.slice("errors/".length) : name;
+  const fixtureDir = join(fixtureRoot, fixtureName);
 
   const allFiles = readdirSync(fixtureDir);
   const tsFiles = allFiles.filter((file) => file.endsWith(".ts"));

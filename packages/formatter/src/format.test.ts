@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { format, needsFormat } from "./format";
 
-const loadFixture = (name: string): string => {
-  const path = resolve(import.meta.dirname, "../test/fixtures", `${name}.ts`);
+const loadFixture = (name: string, category: "valid" | "invalid" = "valid"): string => {
+  const path = resolve(import.meta.dirname, `../test/codegen-fixture/fixtures/formatting/${category}`, `${name}.ts`);
   return readFileSync(path, "utf-8");
 };
 
@@ -38,7 +38,7 @@ describe("format", () => {
     });
 
     it("should not modify files without gql.default", () => {
-      const source = loadFixture("no-gql");
+      const source = loadFixture("no-gql", "invalid");
       const result = format({ sourceCode: source });
 
       expect(result.isOk()).toBe(true);
@@ -303,7 +303,7 @@ describe("needsFormat", () => {
   });
 
   it("should return false for files without gql.default", () => {
-    const source = loadFixture("no-gql");
+    const source = loadFixture("no-gql", "invalid");
     const result = needsFormat({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
