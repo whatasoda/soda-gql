@@ -40,7 +40,8 @@ const collectGqlImports = (sourceFile: ts.SourceFile, helper: GraphqlSystemIdent
     if (statement.importClause.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)) {
       statement.importClause.namedBindings.elements.forEach((element) => {
         const imported = element.propertyName ? element.propertyName.text : element.name.text;
-        if (imported === "gql") {
+        // Only add non-renamed imports (propertyName exists when renamed: "gql as g")
+        if (imported === "gql" && !element.propertyName) {
           identifiers.add(element.name.text);
         }
       });
@@ -298,11 +299,17 @@ const collectAllDefinitions = ({
     }
   };
 
+  // Check if we're inside a class property (class property scope tracking is unreliable)
+  const isInClassProperty = (stack: ScopeFrame[]): boolean =>
+    stack.some((frame, i) => frame.kind === "property" && stack[i - 1]?.kind === "class");
+
   const visit = (node: ts.Node, stack: ScopeFrame[]) => {
     // Check if this is a gql definition call (possibly wrapped in method chains like .attach())
     if (ts.isCallExpression(node)) {
       const gqlCall = unwrapMethodChains(identifiers, node);
-      if (gqlCall) {
+      // Skip definition collection for gql calls inside class properties
+      // (CLASS_PROPERTY diagnostic is still emitted by collectClassPropertyDiagnostics)
+      if (gqlCall && !isInClassProperty(stack)) {
         // If scopeStack is empty (unbound gql call), enter an anonymous scope
         const needsAnonymousScope = tracker.currentDepth() === 0;
         let anonymousScopeHandle: ScopeHandle | undefined;

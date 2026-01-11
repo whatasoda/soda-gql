@@ -220,7 +220,8 @@ const collectGqlIdentifiers = (module: SwcModule, helper: GraphqlSystemIdentifyH
     declaration.specifiers?.forEach((specifier: any) => {
       if (specifier.type === "ImportSpecifier") {
         const imported = specifier.imported ? specifier.imported.value : specifier.local.value;
-        if (imported === "gql") {
+        // Only add non-renamed imports (imported exists when renamed: "gql as g")
+        if (imported === "gql" && !specifier.imported) {
           identifiers.add(specifier.local.value);
         }
       }
@@ -377,6 +378,10 @@ const collectAllDefinitions = ({
     return expression.replace(/\s*;\s*$/, "");
   };
 
+  // Check if we're inside a class property (class property scope tracking is unreliable)
+  const isInClassProperty = (stack: ScopeFrame[]): boolean =>
+    stack.some((frame, i) => frame.kind === "property" && stack[i - 1]?.kind === "class");
+
   // biome-ignore lint/suspicious/noExplicitAny: SWC AST type
   const visit = (node: any, stack: ScopeFrame[]) => {
     if (!node || typeof node !== "object") {
@@ -386,7 +391,9 @@ const collectAllDefinitions = ({
     // Check if this is a gql definition call (possibly wrapped in method chains like .attach())
     if (node.type === "CallExpression") {
       const gqlCall = unwrapMethodChains(gqlIdentifiers, node);
-      if (gqlCall) {
+      // Skip definition collection for gql calls inside class properties
+      // (CLASS_PROPERTY diagnostic is still emitted by collectClassPropertyDiagnostics)
+      if (gqlCall && !isInClassProperty(stack)) {
         // If scopeStack is empty (unbound gql call), enter an anonymous scope
         const needsAnonymousScope = tracker.currentDepth() === 0;
         let anonymousScopeHandle: ScopeHandle | undefined;
