@@ -244,7 +244,7 @@ describe("emitPrebuiltTypes", () => {
       }
     });
 
-    test("returns FRAGMENT_MISSING_KEY error for fragments without keys", async () => {
+    test("skips fragments without keys and adds warning", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
         testSchema: createMockSchemaWithScalars("testSchema"),
       };
@@ -255,7 +255,7 @@ describe("emitPrebuiltTypes", () => {
           {
             type: "fragment",
             schemaLabel: "testSchema",
-            key: undefined, // No key - should cause error
+            key: undefined, // No key - should be skipped
             typename: "User",
             fields: {
               id: {
@@ -280,21 +280,20 @@ describe("emitPrebuiltTypes", () => {
         injectsModulePath: "./_internal-injects",
       });
 
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
-        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
-          expect(result.error.fragments).toHaveLength(1);
-          const fragment = result.error.fragments[0];
-          expect(fragment).toBeDefined();
-          expect(fragment?.canonicalId).toBe("/src/anon.ts::Fragment");
-          expect(fragment?.typename).toBe("User");
-          expect(fragment?.schemaLabel).toBe("testSchema");
-        }
+      // Should succeed but with warnings
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.warnings).toHaveLength(1);
+        expect(result.value.warnings[0]).toContain("/src/anon.ts::Fragment");
+        expect(result.value.warnings[0]).toContain("missing 'key' property");
+
+        // Verify the fragment is not included in output
+        const content = await readFile(result.value.path, "utf-8");
+        expect(content).not.toContain('"User"'); // Fragment typename should not appear as a key
       }
     });
 
-    test("collects all fragments missing keys in single error", async () => {
+    test("skips multiple fragments without keys and collects warnings", async () => {
       const schemas: Record<string, AnyGraphqlSchema> = {
         testSchema: createMockSchemaWithScalars("testSchema"),
       };
@@ -331,13 +330,12 @@ describe("emitPrebuiltTypes", () => {
         injectsModulePath: "./_internal-injects",
       });
 
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.code).toBe("TYPEGEN_FRAGMENT_MISSING_KEY");
-        if (result.error.code === "TYPEGEN_FRAGMENT_MISSING_KEY") {
-          // Should collect both missing key fragments
-          expect(result.error.fragments).toHaveLength(2);
-        }
+      // Should succeed but with warnings for both fragments
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.warnings).toHaveLength(2);
+        expect(result.value.warnings[0]).toContain("missing 'key' property");
+        expect(result.value.warnings[1]).toContain("missing 'key' property");
       }
     });
 
