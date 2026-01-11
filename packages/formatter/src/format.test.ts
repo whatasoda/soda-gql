@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { format, needsFormat } from "./format";
 
 const loadFixture = (name: string, category: "valid" | "invalid" = "valid"): string => {
-  const path = resolve(import.meta.dirname, `../test/codegen-fixture/fixtures/formatting/${category}`, `${name}.ts`);
+  const path = resolve(import.meta.dirname, `../test/fixture-catalog/fixtures/formatting/${category}`, `${name}.ts`);
   return readFileSync(path, "utf-8");
 };
 

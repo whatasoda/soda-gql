@@ -177,7 +177,7 @@ export const generateTestCase = async ({
 };
 
 /**
- * Create a config for transformation using the shared codegen-fixture.
+ * Create a config for transformation using the shared fixture-catalog.
  * Uses the pre-generated graphql-system from fixture:setup.
  *
  * @param analyzer - Optional analyzer type override ("ts" or "swc")

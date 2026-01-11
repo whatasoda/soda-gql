@@ -312,13 +312,13 @@ Uses **dist-based resolution**:
 
 #### In Examples
 
-Each example defines its own path mapping via symlink to the shared codegen-fixture:
+Each example defines its own path mapping via symlink to the shared fixture-catalog:
 
 **`playgrounds/vite-react/tsconfig.editor.json`**:
 ```json
 {
   "paths": {
-    "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+    "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
   },
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
@@ -365,10 +365,10 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "codegen-fixture/**/*"],
+  "include": ["src/**/*", "fixture-catalog/**/*"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" }
@@ -376,7 +376,7 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 }
 ```
 
-**Note**: Examples use symlinks to `tests/codegen-fixture/` for the shared GraphQL system. See [Shared codegen-fixture](#shared-codegen-fixture) for details.
+**Note**: Examples use symlinks to `fixture-catalog/` for the shared GraphQL system. See [Shared fixture-catalog](#shared-fixture-catalog) for details.
 
 #### Key Configuration Options
 
@@ -405,7 +405,7 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
 {
   "compilerOptions": {
     "paths": {
-      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"],
+      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"],
       "@/graphql/*": ["./src/graphql/*"]
     }
   }
@@ -486,7 +486,7 @@ packages/{package}/
 **Root-level shared fixtures**:
 ```
 tests/
-├── codegen-fixture/         # Shared GraphQL schemas and generated code
+├── fixture-catalog/         # Shared GraphQL schemas and generated code
 │   ├── schemas/             # GraphQL schema definitions
 │   │   └── default/
 │   │       └── schema.graphql
@@ -497,14 +497,14 @@ tests/
 └── fixtures/                # Shared test fixtures
 ```
 
-### Shared codegen-fixture
+### Shared fixture-catalog
 
-The `tests/codegen-fixture/` directory contains a shared GraphQL schema and generated type-safe code used across packages and examples. This ensures consistent testing and avoids duplicating schema definitions.
+The `fixture-catalog/` directory contains a shared GraphQL schema and generated type-safe code used across packages and examples. This ensures consistent testing and avoids duplicating schema definitions.
 
 #### Structure
 
 ```
-tests/codegen-fixture/
+fixture-catalog/
 ├── schemas/
 │   └── default/
 │       └── schema.graphql    # Shared GraphQL schema
@@ -522,18 +522,18 @@ The shared schema includes common types:
 
 #### Symlink Pattern
 
-Packages and examples create symlinks to `tests/codegen-fixture` to share the generated code without duplication:
+Packages and examples create symlinks to `fixture-catalog` to share the generated code without duplication:
 
 **Package Example** (`packages/builder/test/`):
 ```
 packages/builder/test/
-└── codegen-fixture -> ../../../tests/codegen-fixture
+└── fixture-catalog -> ../../../fixture-catalog
 ```
 
 **Playground** (`playgrounds/vite-react/`):
 ```
 playgrounds/vite-react/
-└── codegen-fixture -> ../../tests/codegen-fixture
+└── fixture-catalog -> ../../fixture-catalog
 ```
 
 #### Creating Symlinks
@@ -541,33 +541,33 @@ playgrounds/vite-react/
 For packages:
 ```bash
 cd packages/<package-name>/test
-ln -s ../../../tests/codegen-fixture codegen-fixture
+ln -s ../../../fixture-catalog fixture-catalog
 ```
 
 For playgrounds:
 ```bash
 cd playgrounds/<playground-name>
-ln -s ../../tests/codegen-fixture codegen-fixture
+ln -s ../../fixture-catalog fixture-catalog
 ```
 
 #### TypeScript Configuration
 
-When using the shared codegen-fixture, update `tsconfig.editor.json`:
+When using the shared fixture-catalog, update `tsconfig.editor.json`:
 
 ```json
 {
   "compilerOptions": {
     "paths": {
-      "@/graphql-system": ["./codegen-fixture/graphql-system/index.ts"]
+      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "codegen-fixture/**/*"]
+  "include": ["src/**/*", "fixture-catalog/**/*"]
 }
 ```
 
 **Key Points**:
 - The `paths` mapping resolves `@/graphql-system` imports to the symlinked fixture
-- Including `codegen-fixture/**/*` ensures the schemas are part of the TypeScript project (required for relative imports within graphql-system)
+- Including `fixture-catalog/**/*` ensures the schemas are part of the TypeScript project (required for relative imports within graphql-system)
 
 #### Regenerating the Fixture
 
@@ -577,7 +577,7 @@ If you modify the shared schema:
 bun run fixture:setup
 ```
 
-This regenerates `tests/codegen-fixture/graphql-system/` from the schema files.
+This regenerates `fixture-catalog/graphql-system/` from the schema files.
 
 ### Test Configuration
 

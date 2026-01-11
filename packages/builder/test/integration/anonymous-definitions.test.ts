@@ -9,7 +9,7 @@ import { runCodegen } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
-const defaultInjectPath = path.join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts");
+const defaultInjectPath = path.join(projectRoot, "fixture-catalog/schemas/default/scalars.ts");
 
 const copyDefaultInject = (destinationPath: string): void => {
   cpSync(defaultInjectPath, destinationPath);

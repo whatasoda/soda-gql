@@ -10,7 +10,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing shared test fixtures
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
-const defaultInjectPath = path.join(projectRoot, "tests/codegen-fixture/schemas/default/scalars.ts");
+const defaultInjectPath = path.join(projectRoot, "fixture-catalog/schemas/default/scalars.ts");
 
 /**
  * Copies the default inject module fixture to the specified destination.
@@ -58,7 +58,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
   beforeEach(async () => {
     originalCwd = process.cwd();
-    fixtureRoot = path.join(projectRoot, "tests/codegen-fixture/fixtures/incremental");
+    fixtureRoot = path.join(projectRoot, "fixture-catalog/fixtures/incremental");
 
     // Create temporary workspace in system temp
     tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-integration-"));
@@ -384,7 +384,7 @@ describe("BuilderSession incremental end-to-end", () => {
 
 /**
  * Copy directory recursively and rewrite graphql-system imports.
- * Converts relative imports like "../../../../codegen-fixture/graphql-system"
+ * Converts relative imports like "../../../../fixture-catalog/graphql-system"
  * to the local graphql-system path in the temp workspace.
  */
 async function copyDir(src: string, dest: string, filter?: (src: string) => boolean, workspaceRoot?: string): Promise<void> {
