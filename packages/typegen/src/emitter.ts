@@ -57,16 +57,22 @@ export type PrebuiltTypesEmitterOptions = {
   readonly injectsModulePath: string;
 };
 
-type PrebuiltTypeEntry = {
+type PrebuiltFragmentEntry = {
   readonly key: string;
   readonly typename: string;
   readonly inputType: string;
   readonly outputType: string;
 };
 
+type PrebuiltOperationEntry = {
+  readonly key: string;
+  readonly inputType: string;
+  readonly outputType: string;
+};
+
 type SchemaGroup = {
-  fragments: PrebuiltTypeEntry[];
-  operations: PrebuiltTypeEntry[];
+  fragments: PrebuiltFragmentEntry[];
+  operations: PrebuiltOperationEntry[];
   inputObjects: Set<string>;
 };
 
