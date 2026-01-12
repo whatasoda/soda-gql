@@ -1,5 +1,4 @@
 import { ProjectPage, projectPageQuery } from "./pages/ProjectPage";
-import { SearchPage } from "./pages/SearchPage";
 
 function App() {
   return (
@@ -10,10 +9,6 @@ function App() {
       <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
 
       <ProjectPage />
-
-      <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
-
-      <SearchPage />
 
       <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
 

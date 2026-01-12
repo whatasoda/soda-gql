@@ -4,13 +4,7 @@ import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
-import {
-  buildArgumentValue,
-  buildConstValueNode,
-  buildDocument,
-  buildWithTypeModifier,
-  type EnumLookup,
-} from "./build-document";
+import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier, type EnumLookup } from "./build-document";
 
 /**
  * Minimal schema for testing buildDocument.

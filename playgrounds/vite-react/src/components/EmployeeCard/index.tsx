@@ -63,9 +63,7 @@ export const EmployeeCard = ({ result }: Props) => {
         >
           {employee.role}
         </span>
-        {employee.department && (
-          <span style={{ color: "#888", fontSize: "0.875rem" }}>{employee.department.name}</span>
-        )}
+        {employee.department && <span style={{ color: "#888", fontSize: "0.875rem" }}>{employee.department.name}</span>}
       </div>
     </div>
   );

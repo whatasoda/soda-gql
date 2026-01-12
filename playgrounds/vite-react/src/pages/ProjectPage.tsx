@@ -1,9 +1,9 @@
 import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { gql } from "@/graphql-system";
-import { TaskList } from "../components/TaskList";
-import { taskListFragment } from "../components/TaskList/fragment";
 import { EmployeeCard } from "../components/EmployeeCard";
 import { employeeCardFragment, employeeCardProjection } from "../components/EmployeeCard/fragment";
+import { TaskList } from "../components/TaskList";
+import { taskListFragment } from "../components/TaskList/fragment";
 
 /**
  * Operation that composes multiple fragments using $colocate.
