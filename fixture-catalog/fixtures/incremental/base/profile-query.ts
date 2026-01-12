@@ -3,19 +3,15 @@ import { usersQuery, usersQueryCatalog } from "./user";
 import * as userCatalog from "./user-catalog";
 
 type ProfileQueryVariables = {
-  readonly userId: string;
-  readonly categoryId?: string;
+  readonly employeeId: string;
 };
 
 export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfilePageQuery",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
+    variables: { ...$var("employeeId").ID("!") },
     fields: ({ f, $ }) => ({
-      ...f.users({
-        id: [$.userId],
-        categoryId: $.categoryId,
-      })(({ f }) => ({ ...f.id(), ...f.name() })),
+      ...f.employee({ id: $.employeeId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })),
     }),
   }),
 );

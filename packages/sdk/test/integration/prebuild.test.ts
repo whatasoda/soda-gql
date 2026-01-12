@@ -55,22 +55,22 @@ describe("prebuild integration", () => {
     }
 
     // Create source file
-    const sourceFile = path.join(workspaceRoot, "src", "user-fragment.ts");
+    const sourceFile = path.join(workspaceRoot, "src", "employee-fragment.ts");
     await fs.mkdir(path.join(workspaceRoot, "src"), { recursive: true });
     writeFileSync(
       sourceFile,
       `
 import { gql } from "../graphql-system";
 
-export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+export const employeeFragment = gql.default(({ fragment }) =>
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
 );
 
-export const userQuery = gql.default(({ query, $var }) =>
+export const employeeQuery = gql.default(({ query, $var }) =>
   query.operation({
-    name: "GetUser",
+    name: "GetEmployee",
     variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
+    fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id() })) }),
   })
 );
 `,

@@ -4,7 +4,7 @@ import { gql } from "../../../../../graphql-system";
  * Basic fragment definition
  */
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.email() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.email() }) }),
 );
 
 /**
@@ -14,6 +14,6 @@ export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
     variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(() => ({ ...userFragment.spread() })) }),
+    fields: ({ f, $ }) => ({ ...f.employee({ id: $.userId })(() => ({ ...userFragment.spread() })) }),
   }),
 );

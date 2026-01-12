@@ -6,12 +6,12 @@ import { gql } from "../../../../graphql-system";
 class UserRepository {
   // Instance property with gql - unreliable scope tracking
   private userFragment = gql.default(({ fragment }) =>
-    fragment.User({ fields: ({ f }) => ({ ...f.id() }) }),
+    fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) }),
   );
 
   // Static property with gql - also unreliable
   static sharedFragment = gql.default(({ fragment }) =>
-    fragment.User({ fields: ({ f }) => ({ ...f.name() }) }),
+    fragment.Employee({ fields: ({ f }) => ({ ...f.name() }) }),
   );
 
   getFragment() {

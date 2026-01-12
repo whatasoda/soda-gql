@@ -4,5 +4,5 @@ import * as gqlSystem from "../../../../graphql-system";
 
 // This definition will NOT be detected due to namespace import style
 export const userFragment = gqlSystem.gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
 );

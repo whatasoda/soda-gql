@@ -6,10 +6,10 @@ const schemaName = "default";
 
 // This call is invalid - computed property access not supported
 export const dynamicSchema = gql[schemaName](({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) }),
 );
 
 // Even string literal computed access is not supported
 export const literalComputed = gql["default"](({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.name() }) }),
+  fragment.Employee({ fields: ({ f }) => ({ ...f.name() }) }),
 );

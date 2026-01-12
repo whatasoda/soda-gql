@@ -1,18 +1,18 @@
 import { Controller, Get, Param } from "@nestjs/common";
-import { UserService } from "./services/user.service";
+import { EmployeeService } from "./services/employee.service";
 
 @Controller()
 export class AppController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly employeeService: EmployeeService) {}
 
-  @Get("users/:id")
-  async getUser(@Param("id") id: string) {
-    return this.userService.getUser(id);
+  @Get("employees/:id")
+  async getEmployee(@Param("id") id: string) {
+    return this.employeeService.getEmployee(id);
   }
 
-  @Get("users")
-  async getUsers() {
-    return this.userService.getUsers();
+  @Get("employees")
+  async getEmployees() {
+    return this.employeeService.getEmployees();
   }
 
   @Get()
@@ -20,8 +20,8 @@ export class AppController {
     return {
       message: "NestJS with soda-gql TypeScript Compiler Plugin",
       endpoints: {
-        user: "/users/:id",
-        users: "/users",
+        employee: "/employees/:id",
+        employees: "/employees",
       },
     };
   }

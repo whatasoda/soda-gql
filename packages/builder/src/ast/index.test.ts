@@ -197,7 +197,7 @@ describe("AST Analyzer", () => {
         astPath: definition.astPath,
       }));
 
-      expect(summary).toEqual([{ astPath: "userFragment" }, { astPath: "pageQuery" }]);
+      expect(summary).toEqual([{ astPath: "employeeFragment" }, { astPath: "pageQuery" }]);
     });
 
     it("collects gql definitions nested inside non-top-level scopes", () => {
@@ -301,7 +301,7 @@ describe("AST Analyzer", () => {
       // Expression should NOT contain any .attach()
       expect(multipleAttach?.expression).not.toContain(".attach");
       // Should contain the fragment definition
-      expect(multipleAttach?.expression).toContain("fragment.User");
+      expect(multipleAttach?.expression).toContain("fragment.Employee");
     });
 
     it("correctly identifies astPath for attach-chained definitions", () => {

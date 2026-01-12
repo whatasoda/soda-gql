@@ -1,37 +1,39 @@
 import { gql } from "@/graphql-system";
 
 /**
- * Query to get a single user by ID.
+ * Query to get a single employee by ID.
  *
  * This will be transformed to zero-runtime code by the TypeScript compiler plugin.
  */
-export const getUserQuery = gql.default(({ query, $var }) =>
+export const getEmployeeQuery = gql.default(({ query, $var }) =>
   query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
+    name: "GetEmployee",
+    variables: { ...$var("employeeId").ID("!") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
+      ...f.employee({ id: $.employeeId })(({ f }) => ({
         ...f.id(),
         ...f.name(),
         ...f.email(),
+        ...f.role(),
       })),
     }),
   }),
 );
 
 /**
- * Query to get all users.
+ * Query to get all employees.
  *
- * This demonstrates fetching a list of users with the same fields.
+ * This demonstrates fetching a list of employees with the same fields.
  */
-export const getUsersQuery = gql.default(({ query }) =>
+export const getEmployeesQuery = gql.default(({ query }) =>
   query.operation({
-    name: "GetUsers",
+    name: "GetEmployees",
     fields: ({ f }) => ({
-      ...f.users({})(({ f }) => ({
+      ...f.employees({})(({ f }) => ({
         ...f.id(),
         ...f.name(),
         ...f.email(),
+        ...f.role(),
       })),
     }),
   }),

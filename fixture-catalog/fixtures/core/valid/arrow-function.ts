@@ -1,6 +1,6 @@
 import { gql } from "../../../graphql-system";
 
 const factory = () => {
-  const fragment = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
+  const fragment = gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) }));
   return fragment;
 };

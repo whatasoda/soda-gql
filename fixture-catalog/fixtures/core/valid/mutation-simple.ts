@@ -1,9 +1,11 @@
 import { gql } from "../../../graphql-system";
 
-export const createPostMutation = gql.default(({ mutation, $var }) =>
+export const createTaskMutation = gql.default(({ mutation, $var }) =>
   mutation.operation({
-    name: "CreatePost",
-    variables: { ...$var("title").String("!"), ...$var("body").String("?") },
-    fields: ({ f, $ }) => ({ ...f.createPost({ title: $.title, body: $.body })(({ f }) => ({ ...f.id(), ...f.title() })) }),
+    name: "CreateTask",
+    variables: { ...$var("projectId").ID("!"), ...$var("title").String("!") },
+    fields: ({ f, $ }) => ({
+      ...f.createTask({ projectId: $.projectId, input: { title: $.title } })(({ f }) => ({ ...f.id(), ...f.title() })),
+    }),
   }),
 );
