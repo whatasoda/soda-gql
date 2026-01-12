@@ -955,3 +955,129 @@ describe("Enum value handling", () => {
     });
   });
 });
+
+describe("Directive enum argument handling", () => {
+  const schemaWithEnum = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {},
+    enum: {
+      Role: { name: "Role", values: { ADMIN: true, USER: true, GUEST: true } },
+      CacheScope: { name: "CacheScope", values: { PUBLIC: true, PRIVATE: true } },
+    },
+    input: {},
+    object: {},
+    union: {},
+  } as unknown as AnyGraphqlSchema;
+
+  it("outputs Kind.ENUM for directive arguments with enum type specifiers", () => {
+    // Create directive with argument specifiers (simulating codegen output)
+    const authDirective = new DirectiveRef({
+      name: "auth",
+      arguments: { role: "ADMIN" },
+      locations: ["FIELD"],
+      argumentSpecs: {
+        role: { kind: "enum", name: "Role", modifier: "!" },
+      },
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [authDirective],
+        object: null,
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithEnum,
+    });
+
+    const printed = print(doc);
+    // Enum should be printed without quotes
+    expect(printed).toContain("@auth(role: ADMIN)");
+    // Verify it's not a string (which would have quotes)
+    expect(printed).not.toContain('@auth(role: "ADMIN")');
+  });
+
+  it("outputs Kind.STRING for directive arguments without type specifiers (backward compat)", () => {
+    // Old-style directive without argument specifiers
+    const skipDirective = new DirectiveRef({
+      name: "skip",
+      arguments: { if: true },
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+      // No argumentSpecs - this is the standard directive case
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [skipDirective],
+        object: null,
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithEnum,
+    });
+
+    const printed = print(doc);
+    expect(printed).toContain("@skip(if: true)");
+  });
+
+  it("outputs Kind.ENUM for multiple enum arguments in directive", () => {
+    const cachedDirective = new DirectiveRef({
+      name: "cached",
+      arguments: { scope: "PRIVATE", ttl: 3600 },
+      locations: ["FIELD"],
+      argumentSpecs: {
+        scope: { kind: "enum", name: "CacheScope", modifier: "?" },
+        ttl: { kind: "scalar", name: "Int", modifier: "!" },
+      },
+    });
+
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        args: {},
+        directives: [cachedDirective],
+        object: null,
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithEnum,
+    });
+
+    const printed = print(doc);
+    // Enum should be printed without quotes
+    expect(printed).toContain("scope: PRIVATE");
+    // Scalar should be printed as-is
+    expect(printed).toContain("ttl: 3600");
+    // Verify enum is not a string
+    expect(printed).not.toContain('scope: "PRIVATE"');
+  });
+});

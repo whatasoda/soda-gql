@@ -201,10 +201,8 @@ const validateDirectiveLocation = (directive: AnyDirectiveRef, expectedLocation:
  * @param schema - The schema for type lookups
  * @returns Array of DirectiveNode for the GraphQL AST
  *
- * NOTE: Directive argument enum support is not yet implemented.
- * Schema does not currently include directive definitions, so enum arguments
- * in directives will be output as strings. This can be enhanced when
- * directive definitions are added to the schema.
+ * Uses argument specifiers from DirectiveRef (when available via createTypedDirectiveMethod)
+ * to properly output enum arguments as Kind.ENUM instead of Kind.STRING.
  */
 const buildDirectives = (
   directives: AnyDirectiveAttachments,
@@ -216,11 +214,15 @@ const buildDirectives = (
     .map((directive) => {
       validateDirectiveLocation(directive, location);
       const inner = DirectiveRef.getInner(directive);
+
+      // Use argument specifiers from DirectiveRef for enum detection
+      // Cast is safe because DirectiveArgumentSpecifier matches InputTypeSpecifier structure
+      const argumentSpecifiers = (inner.argumentSpecs ?? {}) as InputTypeSpecifiers;
+
       return {
         kind: Kind.DIRECTIVE as const,
         name: { kind: Kind.NAME as const, value: inner.name },
-        // TODO: Pass directive argument type specifiers when available in schema
-        arguments: buildArguments(inner.arguments as AnyAssignableInput, {}, schema),
+        arguments: buildArguments(inner.arguments as AnyAssignableInput, argumentSpecifiers, schema),
       };
     });
 };
