@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { DirectiveRef, type TypeSystemDirectiveLocation } from "../types/type-foundation/directive-ref";
-import { createDirectiveBuilder, createDirectiveMethod, createStandardDirectives, isDirectiveRef } from "./directive-builder";
+import {
+  createDirectiveBuilder,
+  createDirectiveMethod,
+  createStandardDirectives,
+  createTypedDirectiveMethod,
+  isDirectiveRef,
+} from "./directive-builder";
 
 describe("directive-builder", () => {
   describe("createDirectiveMethod", () => {
@@ -100,6 +106,39 @@ describe("directive-builder", () => {
       expect(isDirectiveRef({})).toBe(false);
       expect(isDirectiveRef("skip")).toBe(false);
       expect(isDirectiveRef({ name: "skip", arguments: {} })).toBe(false);
+    });
+  });
+
+  describe("createTypedDirectiveMethod", () => {
+    it("creates directive method with argument specifiers", () => {
+      const authMethod = createTypedDirectiveMethod("auth", ["FIELD"] as const, {
+        role: { kind: "enum", name: "Role", modifier: "!" },
+      });
+      const result = authMethod({ role: "ADMIN" });
+
+      expect(result).toBeInstanceOf(DirectiveRef);
+
+      const inner = DirectiveRef.getInner(result);
+      expect(inner.name).toBe("auth");
+      expect(inner.arguments).toEqual({ role: "ADMIN" });
+      expect(inner.locations).toEqual(["FIELD"]);
+      expect(inner.argumentSpecs).toEqual({
+        role: { kind: "enum", name: "Role", modifier: "!" },
+      });
+    });
+
+    it("preserves multiple argument specifiers", () => {
+      const cachedMethod = createTypedDirectiveMethod("cached", ["FIELD"] as const, {
+        ttl: { kind: "scalar", name: "Int", modifier: "!" },
+        scope: { kind: "enum", name: "CacheScope", modifier: "?" },
+      });
+      const result = cachedMethod({ ttl: 3600, scope: "PRIVATE" });
+
+      const inner = DirectiveRef.getInner(result);
+      expect(inner.argumentSpecs).toEqual({
+        ttl: { kind: "scalar", name: "Int", modifier: "!" },
+        scope: { kind: "enum", name: "CacheScope", modifier: "?" },
+      });
     });
   });
 
