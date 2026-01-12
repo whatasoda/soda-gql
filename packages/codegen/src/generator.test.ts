@@ -630,10 +630,11 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).toContain('"special_type":10');
   });
 
-  test("generates custom directive methods from schema", () => {
+  test("generates typed directive methods with argument specifiers", () => {
     const document = parse(`
       directive @auth(role: String!) on FIELD
-      directive @cached(ttl: Int!) on FIELD | OBJECT
+      directive @cached(ttl: Int!, scope: CacheScope = PUBLIC) on FIELD | OBJECT
+      enum CacheScope { PUBLIC PRIVATE }
       type Query { hello: String! }
     `);
 
@@ -643,11 +644,33 @@ describe("generateMultiSchemaModule", () => {
     // Should generate custom directive methods
     expect(result.code).toContain("customDirectives_default");
     expect(result.code).toContain("createStandardDirectives()");
-    expect(result.code).toContain('auth: createDirectiveMethod("auth", ["FIELD"] as const)');
-    expect(result.code).toContain('cached: createDirectiveMethod("cached", ["FIELD","OBJECT"] as const)');
+
+    // Should use createTypedDirectiveMethod for directives with arguments
+    expect(result.code).toContain('auth: createTypedDirectiveMethod("auth", ["FIELD"] as const,');
+    expect(result.code).toContain('role: { kind: "scalar", name: "String", modifier: "!" }');
+
+    // Should include enum type in argument specifiers
+    expect(result.code).toContain('cached: createTypedDirectiveMethod("cached", ["FIELD","OBJECT"] as const,');
+    expect(result.code).toContain('scope: { kind: "enum", name: "CacheScope", modifier: "?"');
+    expect(result.code).toContain('ttl: { kind: "scalar", name: "Int", modifier: "!" }');
 
     // Should pass directiveMethods to createGqlElementComposer
     expect(result.code).toContain("directiveMethods: customDirectives_default");
+  });
+
+  test("generates simple directive methods for directives without arguments", () => {
+    const document = parse(`
+      directive @internal on FIELD | OBJECT
+      type Query { hello: String! }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Should use simple createDirectiveMethod for directives without arguments
+    expect(result.code).toContain('internal: createDirectiveMethod("internal", ["FIELD","OBJECT"] as const)');
+    // Should NOT use createTypedDirectiveMethod
+    expect(result.code).not.toContain('createTypedDirectiveMethod("internal"');
   });
 
   test("generates empty custom directives when no custom directives in schema", () => {

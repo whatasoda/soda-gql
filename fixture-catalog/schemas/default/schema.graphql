@@ -13,6 +13,68 @@ scalar JSON
 scalar BigInt
 
 # ============================================================================
+# Custom Directives (for testing directive codegen)
+# ============================================================================
+
+# Field-level directive with required argument
+directive @auth(role: String!) on FIELD
+
+# Field-level directive with multiple arguments (optional and required)
+directive @cached(
+  ttl: Int!
+  scope: CacheScope = PUBLIC
+) on FIELD
+
+# Directive with enum argument
+enum CacheScope {
+  PUBLIC
+  PRIVATE
+  USER
+}
+
+# Multi-location directive
+directive @log(level: LogLevel = INFO) on FIELD | QUERY | MUTATION | SUBSCRIPTION
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+# Variable definition directive
+directive @constraint(
+  min: Int
+  max: Int
+  pattern: String
+) on VARIABLE_DEFINITION
+
+# Fragment-related directives
+directive @defer(
+  label: String
+  if: Boolean = true
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @stream(
+  label: String
+  initialCount: Int = 0
+  if: Boolean = true
+) on FIELD
+
+# Repeatable directive
+directive @tag(name: String!) repeatable on FIELD | OBJECT | INTERFACE
+
+# Complex directive with input object argument
+directive @rateLimit(
+  limit: Int!
+  duration: Int!
+  message: String
+) on FIELD | QUERY | MUTATION
+
+# Boolean-only directive (no arguments)
+directive @internal on FIELD | OBJECT
+
+# ============================================================================
 # Interfaces
 # ============================================================================
 

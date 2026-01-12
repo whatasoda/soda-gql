@@ -532,9 +532,31 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string
   return renderPropertyLines({ entries: allMethods, indentSize: 2 });
 };
 
-const renderDirectiveMethod = (record: DirectiveRecord): string => {
+/**
+ * Renders argument specifiers for a directive.
+ * Returns null if the directive has no arguments.
+ */
+const renderDirectiveArgsSpec = (schema: SchemaIndex, args: Map<string, InputValueDefinitionNode>): string | null => {
+  if (args.size === 0) return null;
+
+  const entries = Array.from(args.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg)}`);
+
+  return renderPropertyLines({ entries, indentSize: 4 });
+};
+
+const renderDirectiveMethod = (schema: SchemaIndex, record: DirectiveRecord): string => {
   const locationsJson = JSON.stringify(record.locations);
-  return `${record.name}: createDirectiveMethod("${record.name}", ${locationsJson} as const)`;
+  const argsSpec = renderDirectiveArgsSpec(schema, record.args);
+
+  if (argsSpec === null) {
+    // No arguments - use simple createDirectiveMethod
+    return `${record.name}: createDirectiveMethod("${record.name}", ${locationsJson} as const)`;
+  }
+
+  // With arguments - use createTypedDirectiveMethod
+  return `${record.name}: createTypedDirectiveMethod("${record.name}", ${locationsJson} as const, ${argsSpec})`;
 };
 
 const renderDirectiveMethods = (schema: SchemaIndex): string => {
@@ -546,7 +568,7 @@ const renderDirectiveMethods = (schema: SchemaIndex): string => {
   const methods = directiveNames
     .map((name) => {
       const record = schema.directives.get(name);
-      return record ? renderDirectiveMethod(record) : null;
+      return record ? renderDirectiveMethod(schema, record) : null;
     })
     .filter((method): method is string => method !== null);
 
@@ -851,6 +873,7 @@ import {
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,
+  createTypedDirectiveMethod,
   createGqlElementComposer,
   createStandardDirectives,
   createVarMethodFactory,

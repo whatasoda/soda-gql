@@ -8,7 +8,12 @@
  * @module
  */
 
-import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
+import {
+  type AnyDirectiveRef,
+  type DirectiveArgumentSpecifier,
+  type DirectiveLocation,
+  DirectiveRef,
+} from "../types/type-foundation/directive-ref";
 import type { AnyVarRef } from "../types/type-foundation/var-ref";
 
 /**
@@ -78,6 +83,59 @@ export const createDirectiveMethod = <TDirectiveName extends string, const TLoca
       name,
       arguments: args,
       locations,
+    }) as DirectiveRef<{
+      directiveName: TDirectiveName;
+      locations: TLocations;
+    }>;
+};
+
+/**
+ * Type for directive argument specifiers.
+ * Maps argument names to their type information.
+ */
+export type DirectiveArgumentSpecifiers = {
+  readonly [argName: string]: DirectiveArgumentSpecifier;
+};
+
+/**
+ * Creates a typed directive method with argument type specifiers.
+ * Enables enum value output in directive arguments.
+ *
+ * @param name - The directive name (without @)
+ * @param locations - Valid locations where the directive can be applied
+ * @param argSpecs - Type specifiers for directive arguments
+ * @returns A function that creates DirectiveRef instances with argument type info
+ *
+ * @example
+ * ```typescript
+ * const authMethod = createTypedDirectiveMethod(
+ *   "auth",
+ *   ["FIELD"] as const,
+ *   { role: { kind: "enum", name: "Role", modifier: "!" } }
+ * );
+ * const authDirective = authMethod({ role: "ADMIN" });
+ * ```
+ */
+export const createTypedDirectiveMethod = <
+  TDirectiveName extends string,
+  const TLocations extends readonly DirectiveLocation[],
+  const TArgSpecs extends DirectiveArgumentSpecifiers,
+>(
+  name: TDirectiveName,
+  locations: TLocations,
+  argSpecs: TArgSpecs,
+): (<TArgs extends Record<string, unknown>>(
+  args: TArgs,
+) => DirectiveRef<{
+  directiveName: TDirectiveName;
+  locations: TLocations;
+}>) => {
+  return (args) =>
+    new DirectiveRef({
+      name,
+      arguments: args,
+      locations,
+      argumentSpecs: argSpecs,
     }) as DirectiveRef<{
       directiveName: TDirectiveName;
       locations: TLocations;
