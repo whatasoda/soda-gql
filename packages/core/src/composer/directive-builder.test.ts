@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { DirectiveRef } from "../types/type-foundation/directive-ref";
+import { DirectiveRef, type TypeSystemDirectiveLocation } from "../types/type-foundation/directive-ref";
 import { createDirectiveBuilder, createDirectiveMethod, createStandardDirectives, isDirectiveRef } from "./directive-builder";
 
 describe("directive-builder", () => {
@@ -100,6 +100,47 @@ describe("directive-builder", () => {
       expect(isDirectiveRef({})).toBe(false);
       expect(isDirectiveRef("skip")).toBe(false);
       expect(isDirectiveRef({ name: "skip", arguments: {} })).toBe(false);
+    });
+  });
+
+  describe("TypeSystemDirectiveLocation support", () => {
+    it("supports OBJECT and INTERFACE locations", () => {
+      const authMethod = createDirectiveMethod("auth", ["FIELD", "OBJECT", "INTERFACE"] as const);
+      const result = authMethod({ role: "admin" });
+
+      const inner = DirectiveRef.getInner(result);
+      expect(inner.name).toBe("auth");
+      expect(inner.locations).toEqual(["FIELD", "OBJECT", "INTERFACE"]);
+    });
+
+    it("supports FIELD_DEFINITION location", () => {
+      const deprecatedMethod = createDirectiveMethod("deprecated", ["FIELD_DEFINITION"] as const);
+      const result = deprecatedMethod({ reason: "Use newField instead" });
+
+      const inner = DirectiveRef.getInner(result);
+      expect(inner.locations).toEqual(["FIELD_DEFINITION"]);
+    });
+
+    it("supports all TypeSystemDirectiveLocation values", () => {
+      const allTypeSystemLocations = [
+        "SCHEMA",
+        "SCALAR",
+        "OBJECT",
+        "FIELD_DEFINITION",
+        "ARGUMENT_DEFINITION",
+        "INTERFACE",
+        "UNION",
+        "ENUM",
+        "ENUM_VALUE",
+        "INPUT_OBJECT",
+        "INPUT_FIELD_DEFINITION",
+      ] as const;
+
+      const schemaDirectiveMethod = createDirectiveMethod("schemaDirective", allTypeSystemLocations);
+      const result = schemaDirectiveMethod({});
+
+      const inner = DirectiveRef.getInner(result);
+      expect(inner.locations).toEqual([...allTypeSystemLocations]);
     });
   });
 });

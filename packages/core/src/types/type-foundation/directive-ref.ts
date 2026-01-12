@@ -9,10 +9,9 @@
  */
 
 /**
- * Valid locations where a directive can be applied.
- * Subset of GraphQL DirectiveLocation enum relevant for soda-gql.
+ * Executable directive locations (used in operations/fragments).
  */
-export type DirectiveLocation =
+export type ExecutableDirectiveLocation =
   | "QUERY"
   | "MUTATION"
   | "SUBSCRIPTION"
@@ -21,6 +20,28 @@ export type DirectiveLocation =
   | "FRAGMENT_SPREAD"
   | "INLINE_FRAGMENT"
   | "VARIABLE_DEFINITION";
+
+/**
+ * Type system directive locations (used in schema definitions).
+ */
+export type TypeSystemDirectiveLocation =
+  | "SCHEMA"
+  | "SCALAR"
+  | "OBJECT"
+  | "FIELD_DEFINITION"
+  | "ARGUMENT_DEFINITION"
+  | "INTERFACE"
+  | "UNION"
+  | "ENUM"
+  | "ENUM_VALUE"
+  | "INPUT_OBJECT"
+  | "INPUT_FIELD_DEFINITION";
+
+/**
+ * All valid locations where a directive can be applied.
+ * Matches GraphQL specification DirectiveLocation enum.
+ */
+export type DirectiveLocation = ExecutableDirectiveLocation | TypeSystemDirectiveLocation;
 
 /**
  * Brand interface for DirectiveRef type information.

@@ -61,8 +61,8 @@ directive @stream(
   if: Boolean = true
 ) on FIELD
 
-# Repeatable directive (field-only for soda-gql compatibility)
-directive @tag(name: String!) repeatable on FIELD
+# Repeatable directive
+directive @tag(name: String!) repeatable on FIELD | OBJECT | INTERFACE
 
 # Complex directive with input object argument
 directive @rateLimit(
@@ -72,7 +72,7 @@ directive @rateLimit(
 ) on FIELD | QUERY | MUTATION
 
 # Boolean-only directive (no arguments)
-directive @internal on FIELD
+directive @internal on FIELD | OBJECT
 
 # ============================================================================
 # Interfaces
