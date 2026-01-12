@@ -1,27 +1,38 @@
 import { gql } from "@/graphql-system";
 
 /**
- * User fragment with nested posts
+ * Employee fragment with nested tasks
  * Demonstrates fragment definition with variables and nested field selections
  */
-export const userFragment = gql.default(({ fragment, $var }) =>
-  fragment.User({
-    variables: { ...$var("categoryId").ID("!") },
+export const employeeFragment = gql.default(({ fragment, $var }) =>
+  fragment.Employee({
+    variables: { ...$var("taskLimit").Int("?") },
     fields: ({ f, $ }) => ({
       ...f.id(),
       ...f.name(),
       ...f.email(),
-      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({
+      ...f.role(),
+      ...f.tasks({ limit: $.taskLimit })(({ f }) => ({
         ...f.id(),
         ...f.title(),
+        ...f.completed(),
+        ...f.priority(),
       })),
     }),
   }),
 );
 
 /**
- * Simple post fragment without variables
+ * Simple task fragment without variables
  */
-export const postFragment = gql.default(({ fragment }) =>
-  fragment.Post({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.body() }) }),
+export const taskFragment = gql.default(({ fragment }) =>
+  fragment.Task({
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.title(),
+      ...f.completed(),
+      ...f.priority(),
+      ...f.dueDate(),
+    }),
+  }),
 );
