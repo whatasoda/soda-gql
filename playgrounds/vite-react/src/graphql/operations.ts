@@ -1,37 +1,60 @@
 import { gql } from "@/graphql-system";
-import { userFragment } from "./fragments";
+import { employeeFragment } from "./fragments";
 
 /**
- * Query operation to fetch a single user
+ * Query operation to fetch a single employee
  */
-export const getUserQuery = gql.default(({ query, $var }) =>
+export const getEmployeeQuery = gql.default(({ query, $var }) =>
   query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(() => ({ ...userFragment.spread({ categoryId: $.categoryId }) })) }),
-  }),
-);
-
-/**
- * Query operation to fetch multiple users
- */
-export const listUsersQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ListUsers",
-    variables: { ...$var("categoryId").ID("?") },
-    fields: ({ f, $ }) => ({ ...f.users({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
-  }),
-);
-
-/**
- * Mutation operation to update user
- */
-export const updateUserMutation = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "UpdateUser",
-    variables: { ...$var("userId").ID("!"), ...$var("name").String("!") },
+    name: "GetEmployee",
+    variables: { ...$var("employeeId").ID("!"), ...$var("taskLimit").Int("?") },
     fields: ({ f, $ }) => ({
-      ...f.updateUser({ id: $.userId, name: $.name })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })),
+      ...f.employee({ id: $.employeeId })(() => ({
+        ...employeeFragment.spread({ taskLimit: $.taskLimit }),
+      })),
+    }),
+  }),
+);
+
+/**
+ * Query operation to fetch multiple employees with optional filters
+ */
+export const listEmployeesQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "ListEmployees",
+    variables: {
+      ...$var("departmentId").ID("?"),
+      ...$var("limit").Int("?"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.employees({ departmentId: $.departmentId, limit: $.limit })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.email(),
+        ...f.role(),
+      })),
+    }),
+  }),
+);
+
+/**
+ * Mutation operation to update a task
+ */
+export const updateTaskMutation = gql.default(({ mutation, $var }) =>
+  mutation.operation({
+    name: "UpdateTask",
+    variables: {
+      ...$var("taskId").ID("!"),
+      ...$var("title").String("?"),
+      ...$var("completed").Boolean("?"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.updateTask({ id: $.taskId, input: { title: $.title, completed: $.completed } })(({ f }) => ({
+        ...f.id(),
+        ...f.title(),
+        ...f.completed(),
+        ...f.priority(),
+      })),
     }),
   }),
 );
