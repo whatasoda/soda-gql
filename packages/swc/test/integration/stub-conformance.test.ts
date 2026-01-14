@@ -5,8 +5,10 @@
  * as tsc-transformer for internal modules (graphql-system, scalars, adapter).
  */
 
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import { loadStubTestCases } from "@soda-gql/tsc/test";
+
+const { testCases, cleanup } = loadStubTestCases();
 
 // Check if native module is available before running tests
 let nativeModuleAvailable = false;
@@ -40,11 +42,13 @@ try {
 }
 
 describe("SWC Internal Module Stub Conformance", () => {
+  afterAll(() => {
+    cleanup();
+  });
+
   it.skipIf(!nativeModuleAvailable)("native module should be available", () => {
     expect(nativeModuleAvailable).toBe(true);
   });
-
-  const testCases = loadStubTestCases();
 
   for (const testCase of testCases) {
     describe(testCase.id, () => {
