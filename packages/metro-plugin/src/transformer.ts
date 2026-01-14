@@ -166,10 +166,21 @@ const initializeSwcTransformer = async (
  * Wraps the upstream Metro Babel transformer.
  */
 export async function transform(params: MetroTransformParams): Promise<MetroTransformResult> {
+  return transformCore(params, getUpstreamTransformer);
+}
+
+/**
+ * Core transformation logic.
+ * @internal
+ */
+async function transformCore(
+  params: MetroTransformParams,
+  getUpstream: () => MetroTransformer,
+): Promise<MetroTransformResult> {
   const { src, filename, options } = params;
   const stateKey = getStateKey();
 
-  const upstream = getUpstreamTransformer();
+  const upstream = getUpstream();
 
   const session = ensurePluginSession();
   if (!session) {
@@ -286,13 +297,29 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
  * Includes artifact generation to ensure cache invalidation when models change.
  */
 export function getCacheKey(): string {
+  return getCacheKeyCore(getUpstreamTransformer);
+}
+
+/**
+ * Core cache key generation logic.
+ * @internal
+ */
+function getCacheKeyCore(
+  getUpstream: () => MetroTransformer,
+  upstreamPath?: string,
+): string {
   const stateKey = getStateKey();
   const state = getSharedState(stateKey);
   const artifact = state.currentArtifact;
-  const upstream = getUpstreamTransformer();
+  const upstream = getUpstream();
 
   const hash = crypto.createHash("md5");
-  hash.update("@soda-gql/metro-plugin:v2");
+  hash.update("@soda-gql/metro-plugin:v3");
+
+  // Include upstream path for wrapper-based transformers
+  if (upstreamPath) {
+    hash.update(upstreamPath);
+  }
 
   // Include upstream cache key if available
   if (upstream.getCacheKey) {
@@ -313,6 +340,37 @@ export function getCacheKey(): string {
   }
 
   return hash.digest("hex");
+}
+
+/**
+ * Create a transformer with a specific upstream transformer path.
+ * Used by generated wrapper files to inject the upstream path at build time.
+ *
+ * @param upstreamPath - Absolute path to the upstream transformer module
+ * @returns MetroTransformer instance configured with the specified upstream
+ */
+export function createTransformerWithUpstream(upstreamPath: string): MetroTransformer {
+  let cachedUpstream: MetroTransformer | null = null;
+
+  const getUpstream = (): MetroTransformer => {
+    if (cachedUpstream) {
+      return cachedUpstream;
+    }
+
+    const resolved = tryResolve(upstreamPath);
+    if (!resolved) {
+      throw new Error(`[@soda-gql/metro-plugin] Upstream transformer not found: ${upstreamPath}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedUpstream = require(resolved) as MetroTransformer;
+    return cachedUpstream;
+  };
+
+  return {
+    transform: (params: MetroTransformParams) => transformCore(params, getUpstream),
+    getCacheKey: () => getCacheKeyCore(getUpstream, upstreamPath),
+  };
 }
 
 // Export as module interface for Metro
