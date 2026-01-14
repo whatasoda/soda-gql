@@ -19,6 +19,9 @@ export type {
  * This function modifies the Metro configuration to use the soda-gql
  * transformer, which applies GraphQL code transformations at build time.
  *
+ * If the config already has a custom `babelTransformerPath` set (e.g., from
+ * react-native-svg-transformer), soda-gql will automatically chain with it.
+ *
  * @example
  * ```typescript
  * // Expo project (metro.config.js)
@@ -41,11 +44,22 @@ export type {
  *
  * @example
  * ```typescript
- * // With options
+ * // Chaining with another transformer (e.g., react-native-svg-transformer)
+ * // The existing babelTransformerPath is automatically detected and chained.
+ * const { getDefaultConfig } = require("expo/metro-config");
+ * const { withSodaGql } = require("@soda-gql/metro-plugin");
+ *
+ * const config = getDefaultConfig(__dirname);
+ * config.transformer.babelTransformerPath = require.resolve("react-native-svg-transformer");
+ * module.exports = withSodaGql(config);
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Explicitly specifying upstream transformer
  * const config = getDefaultConfig(__dirname);
  * module.exports = withSodaGql(config, {
- *   configPath: "./soda-gql.config.ts",
- *   debug: true,
+ *   upstreamTransformer: require.resolve("react-native-svg-transformer"),
  * });
  * ```
  *

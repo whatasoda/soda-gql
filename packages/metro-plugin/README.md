@@ -84,6 +84,7 @@ The plugin automatically detects and uses the appropriate upstream transformer:
 | `configPath` | `string` | `undefined` | Path to soda-gql config file |
 | `enabled` | `boolean` | `true` | Enable/disable the plugin |
 | `debug` | `boolean` | `false` | Enable verbose logging |
+| `upstreamTransformer` | `string` | `undefined` | Explicit path to upstream transformer to chain |
 
 ## Watch Mode Considerations
 
@@ -105,7 +106,11 @@ npx react-native start --reset-cache
 
 ## Chaining with Other Transformers
 
-If you need to chain with other transformers (e.g., react-native-svg-transformer), ensure soda-gql's transformer is applied first:
+When using other Metro transformers (e.g., react-native-svg-transformer), soda-gql automatically detects and chains with them.
+
+### Automatic Chaining (Recommended)
+
+If you set `babelTransformerPath` before calling `withSodaGql`, it will be automatically preserved and chained:
 
 ```javascript
 // metro.config.js
@@ -114,17 +119,26 @@ const { withSodaGql } = require("@soda-gql/metro-plugin");
 
 const config = getDefaultConfig(__dirname);
 
-// Apply soda-gql first
-const sodaGqlConfig = withSodaGql(config);
+// Set the other transformer first
+config.transformer.babelTransformerPath = require.resolve("react-native-svg-transformer");
 
-// Then chain other transformers
-module.exports = {
-  ...sodaGqlConfig,
-  transformer: {
-    ...sodaGqlConfig.transformer,
-    // Additional transformer customizations
-  },
-};
+// soda-gql will automatically chain with it
+module.exports = withSodaGql(config);
+```
+
+### Explicit Upstream Transformer
+
+You can also explicitly specify the upstream transformer via options:
+
+```javascript
+// metro.config.js
+const { getDefaultConfig } = require("expo/metro-config");
+const { withSodaGql } = require("@soda-gql/metro-plugin");
+
+const config = getDefaultConfig(__dirname);
+module.exports = withSodaGql(config, {
+  upstreamTransformer: require.resolve("react-native-svg-transformer"),
+});
 ```
 
 ## Troubleshooting
