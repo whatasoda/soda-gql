@@ -5,12 +5,16 @@
  * as tsc-transformer for internal modules (graphql-system, scalars, adapter).
  */
 
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import { createBabelTransformer } from "@soda-gql/babel";
 import { loadStubTestCases } from "@soda-gql/tsc/test";
 
 describe("Babel Internal Module Stub Conformance", () => {
-  const testCases = loadStubTestCases();
+  const { testCases, cleanup } = loadStubTestCases();
+
+  afterAll(() => {
+    cleanup();
+  });
 
   for (const testCase of testCases) {
     describe(testCase.id, () => {

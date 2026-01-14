@@ -5,7 +5,7 @@
  * during transformation. These test cases define the expected behavior.
  */
 
-import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
@@ -29,6 +29,15 @@ export type StubTestCase = {
   readonly artifact: BuilderArtifact;
   /** Whether this file should be stubbed */
   readonly shouldStub: boolean;
+};
+
+/**
+ * Result of loading stub test cases, including cleanup function.
+ */
+export type LoadStubTestCasesResult = {
+  readonly testCases: StubTestCase[];
+  /** Cleanup function to remove temporary files created for test cases. */
+  readonly cleanup: () => void;
 };
 
 /**
@@ -95,8 +104,10 @@ const createEmptyArtifact = (): BuilderArtifact => ({
  * - regular files → should NOT be stubbed
  *
  * All transformers (tsc, babel, swc) should produce `export {};` for internal modules.
+ *
+ * @returns Test cases and a cleanup function to remove temporary files.
  */
-export const loadStubTestCases = (): StubTestCase[] => {
+export const loadStubTestCases = (): LoadStubTestCasesResult => {
   const tmpDir = createCanonicalTempDir("stub-conformance-test-");
   const outdir = join(tmpDir, "graphql-system");
   const scalarsPath = join(tmpDir, "scalars.ts");
@@ -113,42 +124,47 @@ export const loadStubTestCases = (): StubTestCase[] => {
   const config = createStubTestConfig({ outdir, scalarsPath, adapterPath });
   const artifact = createEmptyArtifact();
 
-  return [
-    {
-      id: "stub/graphql-system",
-      description: "Stubs graphql-system/index.ts to export {}",
-      sourceCode: "export const gql = { default: () => {} };",
-      sourcePath: graphqlSystemPath,
-      config,
-      artifact,
-      shouldStub: true,
+  return {
+    testCases: [
+      {
+        id: "stub/graphql-system",
+        description: "Stubs graphql-system/index.ts to export {}",
+        sourceCode: "export const gql = { default: () => {} };",
+        sourcePath: graphqlSystemPath,
+        config,
+        artifact,
+        shouldStub: true,
+      },
+      {
+        id: "stub/scalars",
+        description: "Stubs scalars file to export {}",
+        sourceCode: "export const scalar = { ID: {}, String: {} };",
+        sourcePath: scalarsPath,
+        config,
+        artifact,
+        shouldStub: true,
+      },
+      {
+        id: "stub/adapter",
+        description: "Stubs adapter file to export {}",
+        sourceCode: "export const adapter = { fetch: () => {} };",
+        sourcePath: adapterPath,
+        config,
+        artifact,
+        shouldStub: true,
+      },
+      {
+        id: "stub/regular-file",
+        description: "Does not stub regular source files",
+        sourceCode: "export const foo = 'bar';",
+        sourcePath: regularPath,
+        config,
+        artifact,
+        shouldStub: false,
+      },
+    ],
+    cleanup: () => {
+      rmSync(tmpDir, { recursive: true, force: true });
     },
-    {
-      id: "stub/scalars",
-      description: "Stubs scalars file to export {}",
-      sourceCode: "export const scalar = { ID: {}, String: {} };",
-      sourcePath: scalarsPath,
-      config,
-      artifact,
-      shouldStub: true,
-    },
-    {
-      id: "stub/adapter",
-      description: "Stubs adapter file to export {}",
-      sourceCode: "export const adapter = { fetch: () => {} };",
-      sourcePath: adapterPath,
-      config,
-      artifact,
-      shouldStub: true,
-    },
-    {
-      id: "stub/regular-file",
-      description: "Does not stub regular source files",
-      sourceCode: "export const foo = 'bar';",
-      sourcePath: regularPath,
-      config,
-      artifact,
-      shouldStub: false,
-    },
-  ];
+  };
 };
