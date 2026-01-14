@@ -10,7 +10,7 @@ import { types as t } from "@babel/core";
 import _generate from "@babel/generator";
 import { parse } from "@babel/parser";
 import _traverse from "@babel/traverse";
-import { createGraphqlSystemIdentifyHelper, type BuilderArtifact } from "@soda-gql/builder";
+import { type BuilderArtifact, createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createTransformer as createAstTransformer } from "./transformer";
 
