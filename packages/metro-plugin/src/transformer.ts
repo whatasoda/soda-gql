@@ -367,6 +367,14 @@ export function createTransformerWithUpstream(upstreamPath: string): MetroTransf
   };
 }
 
+/**
+ * Reset upstream transformer cache for testing.
+ * @internal
+ */
+export function __resetUpstreamTransformer(): void {
+  upstreamTransformer = null;
+}
+
 // Export as module interface for Metro
 const transformer: MetroTransformer = {
   transform,
