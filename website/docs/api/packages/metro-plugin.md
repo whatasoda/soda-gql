@@ -60,6 +60,15 @@ The plugin wraps Metro's transformer to process soda-gql files:
 2. **Build-time Processing**: Analyzes and transforms soda-gql code
 3. **Upstream Passing**: Passes transformed code to the original transformer
 
+### Internal Module Stubbing
+
+At build time, soda-gql stubs out internal modules that are only needed during code generation:
+
+- **graphql-system/index.ts** - The generated type system
+- **Inject modules** - Scalars and adapter definitions
+
+These files are replaced with `export {};` in the final bundle, reducing bundle size since their type information is already embedded in the transformed code.
+
 ### Upstream Transformer Detection
 
 The plugin automatically detects the upstream transformer:

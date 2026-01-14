@@ -10,7 +10,7 @@ import { types as t } from "@babel/core";
 import _generate from "@babel/generator";
 import { parse } from "@babel/parser";
 import _traverse from "@babel/traverse";
-import type { BuilderArtifact } from "@soda-gql/builder";
+import { type BuilderArtifact, createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createTransformer as createAstTransformer } from "./transformer";
 
@@ -69,9 +69,20 @@ export interface Transformer {
  */
 export const createBabelTransformer = (options: TransformOptions): Transformer => {
   const { config, artifact, sourceMap = false } = options;
+  const internalModuleHelper = createGraphqlSystemIdentifyHelper(config);
 
   return {
     transform: ({ sourceCode, sourcePath, inputSourceMap }: TransformInput): TransformOutput => {
+      // Early return for internal modules (graphql-system, inject)
+      // These modules should be stubbed at runtime as they are only needed at build time
+      if (internalModuleHelper.isInternalModuleFile({ filePath: sourcePath })) {
+        return {
+          transformed: true,
+          sourceCode: "export {};",
+          sourceMap: undefined,
+        };
+      }
+
       // Parse source code to AST
       const ast = parse(sourceCode, {
         sourceType: "module",

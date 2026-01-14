@@ -91,6 +91,8 @@ module.exports = {
    - Transforms soda-gql code using the Babel plugin
    - Adds file dependencies for proper HMR propagation
 
+4. **Internal Module Stubbing**: graphql-system and inject modules (scalars, adapter) are stubbed with `export {};` in the final bundle, reducing bundle size.
+
 ## Options
 
 ### SodaGqlWebpackPlugin Options

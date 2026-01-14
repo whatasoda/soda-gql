@@ -8,7 +8,12 @@
  * Tests run with both TypeScript and SWC analyzers to ensure consistent behavior.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import type { BuilderArtifact } from "@soda-gql/builder";
+import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { type AnalyzerType, loadTestCases, normalizeCode, transformWithTsc } from "../test/test-cases";
 
 const analyzers: AnalyzerType[] = ["ts", "swc"];
@@ -131,4 +136,198 @@ describe("tsc-transformer", () => {
       }
     });
   }
+});
+
+/**
+ * Helper to write a file, creating parent directories if needed.
+ */
+const writeFile = (filePath: string, content: string): void => {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, content);
+};
+
+/**
+ * Create a test config with configurable paths.
+ */
+const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
+  analyzer: "ts",
+  outdir: options.outdir,
+  graphqlSystemAliases: ["@/graphql-system"],
+  include: [],
+  exclude: [],
+  schemas: {
+    default: {
+      schema: [],
+      inject: {
+        scalars: options.scalarsPath,
+        adapter: options.adapterPath,
+      },
+      defaultInputDepth: 3,
+      inputDepthOverrides: {},
+    },
+  },
+  styles: { importExtension: false },
+  plugins: {},
+});
+
+/**
+ * Create an empty artifact for testing.
+ */
+const createEmptyArtifact = (): BuilderArtifact => ({
+  elements: {},
+  report: {
+    durationMs: 0,
+    warnings: [],
+    stats: { hits: 0, misses: 0, skips: 0 },
+  },
+});
+
+describe("tsc-transformer internal module stubbing", () => {
+  test("stubs graphql-system/index.ts to empty export", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "tsc-stub-test-"));
+    const outdir = join(tmpDir, "graphql-system");
+    const scalarsPath = join(tmpDir, "scalars.ts");
+    const graphqlSystemPath = join(outdir, "index.ts");
+
+    writeFile(graphqlSystemPath, "export const gql = { default: () => {} };");
+    writeFile(scalarsPath, "export const scalar = {};");
+
+    const config = createStubTestConfig({ outdir, scalarsPath });
+    const result = await transformWithTsc({
+      sourceCode: "export const gql = { default: () => {} };",
+      sourcePath: graphqlSystemPath,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+
+    expect(result.trim()).toBe("export {};");
+  });
+
+  test("stubs scalars file to empty export", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "tsc-stub-test-"));
+    const outdir = join(tmpDir, "graphql-system");
+    const scalarsPath = join(tmpDir, "scalars.ts");
+
+    writeFile(scalarsPath, "export const scalar = { ID: {}, String: {} };");
+
+    const config = createStubTestConfig({ outdir, scalarsPath });
+    const result = await transformWithTsc({
+      sourceCode: "export const scalar = { ID: {}, String: {} };",
+      sourcePath: scalarsPath,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+
+    expect(result.trim()).toBe("export {};");
+  });
+
+  test("stubs adapter file to empty export", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "tsc-stub-test-"));
+    const outdir = join(tmpDir, "graphql-system");
+    const scalarsPath = join(tmpDir, "scalars.ts");
+    const adapterPath = join(tmpDir, "adapter.ts");
+
+    writeFile(scalarsPath, "export const scalar = {};");
+    writeFile(adapterPath, "export const adapter = { fetch: () => {} };");
+
+    const config = createStubTestConfig({ outdir, scalarsPath, adapterPath });
+    const result = await transformWithTsc({
+      sourceCode: "export const adapter = { fetch: () => {} };",
+      sourcePath: adapterPath,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+
+    expect(result.trim()).toBe("export {};");
+  });
+
+  test("does not stub regular source files", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "tsc-stub-test-"));
+    const outdir = join(tmpDir, "graphql-system");
+    const scalarsPath = join(tmpDir, "scalars.ts");
+    const regularPath = join(tmpDir, "regular.ts");
+
+    writeFile(scalarsPath, "export const scalar = {};");
+    writeFile(regularPath, "export const foo = 'bar';");
+
+    const config = createStubTestConfig({ outdir, scalarsPath });
+    const result = await transformWithTsc({
+      sourceCode: "export const foo = 'bar';",
+      sourcePath: regularPath,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+
+    // Regular files should not be stubbed
+    expect(result.trim()).not.toBe("export {};");
+    expect(result).toContain("foo");
+  });
+
+  test("handles multiple schemas with different inject paths", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "tsc-stub-test-"));
+    const outdir = join(tmpDir, "graphql-system");
+    const scalars1 = join(tmpDir, "schema1", "scalars.ts");
+    const scalars2 = join(tmpDir, "schema2", "scalars.ts");
+    const adapter2 = join(tmpDir, "schema2", "adapter.ts");
+
+    writeFile(scalars1, "export const scalar = {};");
+    writeFile(scalars2, "export const scalar = {};");
+    writeFile(adapter2, "export const adapter = {};");
+
+    const config: ResolvedSodaGqlConfig = {
+      analyzer: "ts",
+      outdir,
+      graphqlSystemAliases: ["@/graphql-system"],
+      include: [],
+      exclude: [],
+      schemas: {
+        schema1: {
+          schema: [],
+          inject: { scalars: scalars1 },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
+        },
+        schema2: {
+          schema: [],
+          inject: { scalars: scalars2, adapter: adapter2 },
+          defaultInputDepth: 3,
+          inputDepthOverrides: {},
+        },
+      },
+      styles: { importExtension: false },
+      plugins: {},
+    };
+
+    // All inject files should be stubbed
+    const result1 = await transformWithTsc({
+      sourceCode: "export const s = {};",
+      sourcePath: scalars1,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+    expect(result1.trim()).toBe("export {};");
+
+    const result2 = await transformWithTsc({
+      sourceCode: "export const s = {};",
+      sourcePath: scalars2,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+    expect(result2.trim()).toBe("export {};");
+
+    const result3 = await transformWithTsc({
+      sourceCode: "export const a = {};",
+      sourcePath: adapter2,
+      artifact: createEmptyArtifact(),
+      config,
+      moduleFormat: "esm",
+    });
+    expect(result3.trim()).toBe("export {};");
+  });
 });

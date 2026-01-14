@@ -21,6 +21,12 @@ pub struct TransformConfig {
     #[serde(default)]
     pub graphql_system_path: Option<String>,
 
+    /// Canonical paths to inject module files (scalars, adapter).
+    /// When the source file matches any of these paths, it will be stubbed out.
+    /// These are resolved by the TypeScript wrapper and passed to Rust.
+    #[serde(default)]
+    pub inject_paths: Vec<String>,
+
     /// Whether to generate source maps.
     /// If true, a source map will be included in the output.
     #[serde(default)]
@@ -33,6 +39,7 @@ impl Default for TransformConfig {
             graphql_system_aliases: vec!["@/graphql-system".to_string()],
             is_cjs: false,
             graphql_system_path: None,
+            inject_paths: Vec::new(),
             source_map: false,
         }
     }

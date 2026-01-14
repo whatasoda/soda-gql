@@ -49,6 +49,7 @@ export type TransformTestCase = {
 // Re-export types and utilities
 export type { TestCaseDefinition } from "./definitions";
 export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
+export { loadStubTestCases, type StubTestCase } from "./stub-cases";
 export {
   type AnalyzerType,
   createTestConfig,

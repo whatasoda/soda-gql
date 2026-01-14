@@ -122,7 +122,9 @@ export const createTransformer = ({
 
   return {
     transform: ({ sourceFile, context }: { sourceFile: ts.SourceFile; context: ts.TransformationContext }) => {
-      if (graphqlSystemIdentifyHelper.isGraphqlSystemFile({ filePath: sourceFile.fileName })) {
+      // Stub internal modules (graphql-system and inject files)
+      // These modules are only needed at build time and should be empty at runtime
+      if (graphqlSystemIdentifyHelper.isInternalModuleFile({ filePath: sourceFile.fileName })) {
         const transformedSourceFile = makeSourceFileEmpty({ factory: context.factory, sourceFile: sourceFile });
         return { transformed: true, sourceFile: transformedSourceFile };
       }

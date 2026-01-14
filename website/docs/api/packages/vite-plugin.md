@@ -70,6 +70,15 @@ Uses the high-performance SWC transformer for code transformation:
 - Full TypeScript support
 - Minimal runtime overhead
 
+### Internal Module Stubbing
+
+At build time, soda-gql stubs out internal modules that are only needed during code generation:
+
+- **graphql-system/index.ts** - The generated type system
+- **Inject modules** - Scalars and adapter definitions
+
+These files are replaced with `export {};` in the final bundle, reducing bundle size since their type information is already embedded in the transformed code.
+
 ## Configuration with React
 
 ```typescript

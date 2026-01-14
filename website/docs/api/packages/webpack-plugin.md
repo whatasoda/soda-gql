@@ -97,6 +97,15 @@ Changes to a fragment automatically invalidate dependent operations.
 
 Uses the SWC transformer for high-performance code transformation.
 
+### Internal Module Stubbing
+
+At build time, soda-gql stubs out internal modules that are only needed during code generation:
+
+- **graphql-system/index.ts** - The generated type system
+- **Inject modules** - Scalars and adapter definitions
+
+These files are replaced with `export {};` in the final bundle, reducing bundle size since their type information is already embedded in the transformed code.
+
 ## With Next.js
 
 Configure in `next.config.js`:
