@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/codegen",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "description": "GraphQL schema code generation for soda-gql",
   "type": "module",
   "private": false,
