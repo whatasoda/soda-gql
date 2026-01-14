@@ -55,8 +55,12 @@ pub struct TransformResult {
 /// # Returns
 /// Result containing the transformed code, or an error message
 pub fn transform_source(input: &TransformInput) -> Result<TransformResult, String> {
-    // Check if this is the graphql-system file - if so, stub it out
-    if is_graphql_system_file(&input.source_path, &input.config.graphql_system_path) {
+    // Check if this is an internal module (graphql-system or inject) - if so, stub it out
+    if is_internal_module_file(
+        &input.source_path,
+        &input.config.graphql_system_path,
+        &input.config.inject_paths,
+    ) {
         return Ok(TransformResult {
             output_code: "export {};".to_string(),
             transformed: true,
@@ -163,8 +167,12 @@ pub fn transform_source(input: &TransformInput) -> Result<TransformResult, Strin
 /// # Returns
 /// Result containing the transformed code, or an error message
 pub fn transform_source_ref(input: &TransformInputRef<'_>) -> Result<TransformResult, String> {
-    // Check if this is the graphql-system file - if so, stub it out
-    if is_graphql_system_file(&input.source_path, &input.config.graphql_system_path) {
+    // Check if this is an internal module (graphql-system or inject) - if so, stub it out
+    if is_internal_module_file(
+        &input.source_path,
+        &input.config.graphql_system_path,
+        &input.config.inject_paths,
+    ) {
         return Ok(TransformResult {
             output_code: "export {};".to_string(),
             transformed: true,
@@ -423,16 +431,31 @@ fn emit_module(
     Ok(EmitOutput { code, source_map })
 }
 
-/// Check if the source file is the graphql-system file.
+/// Check if the source file is an internal module that should be stubbed.
+/// Internal modules include graphql-system and inject modules (scalars, adapter).
 /// Both paths should be normalized (forward slashes) before comparison.
-fn is_graphql_system_file(source_path: &str, graphql_system_path: &Option<String>) -> bool {
-    match graphql_system_path {
-        Some(gql_path) => {
-            // Normalize both paths for comparison (remove trailing slashes, normalize separators)
-            let normalized_source = source_path.replace('\\', "/");
-            let normalized_gql = gql_path.replace('\\', "/");
-            normalized_source == normalized_gql
+fn is_internal_module_file(
+    source_path: &str,
+    graphql_system_path: &Option<String>,
+    inject_paths: &[String],
+) -> bool {
+    let normalized_source = source_path.replace('\\', "/");
+
+    // Check graphql-system path
+    if let Some(gql_path) = graphql_system_path {
+        let normalized_gql = gql_path.replace('\\', "/");
+        if normalized_source == normalized_gql {
+            return true;
         }
-        None => false,
     }
+
+    // Check inject paths (scalars, adapter)
+    for inject_path in inject_paths {
+        let normalized_inject = inject_path.replace('\\', "/");
+        if normalized_source == normalized_inject {
+            return true;
+        }
+    }
+
+    false
 }

@@ -133,17 +133,37 @@ const filterArtifactForFile = (artifact: BuilderArtifact, sourcePath: string): B
 };
 
 /**
- * Resolve the canonical path to the graphql-system file.
+ * Resolve a path with canonical normalization.
  * Uses realpath to resolve symlinks for accurate comparison.
  */
-const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
-  const graphqlSystemPath = resolve(config.outdir, "index.ts");
+const resolveCanonicalPath = (filePath: string): string => {
   try {
-    return normalizePath(realpathSync(graphqlSystemPath));
+    return normalizePath(realpathSync(filePath));
   } catch {
     // If realpath fails (file doesn't exist yet), fall back to resolved path
-    return normalizePath(resolve(graphqlSystemPath));
+    return normalizePath(resolve(filePath));
   }
+};
+
+/**
+ * Resolve the canonical path to the graphql-system file.
+ */
+const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
+  return resolveCanonicalPath(resolve(config.outdir, "index.ts"));
+};
+
+/**
+ * Collect canonical paths to inject modules (scalars, adapter) from all schemas.
+ */
+const collectInjectPaths = (config: ResolvedSodaGqlConfig): string[] => {
+  const paths: string[] = [];
+  for (const schemaConfig of Object.values(config.schemas)) {
+    paths.push(resolveCanonicalPath(schemaConfig.inject.scalars));
+    if (schemaConfig.inject.adapter) {
+      paths.push(resolveCanonicalPath(schemaConfig.inject.adapter));
+    }
+  }
+  return paths;
 };
 
 export type TransformOutput = {
@@ -175,13 +195,15 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   const isCJS = options.compilerOptions?.module === "CommonJS";
 
-  // Resolve the graphql-system file path for stubbing
+  // Resolve paths for internal module stubbing
   const graphqlSystemPath = resolveGraphqlSystemPath(options.config);
+  const injectPaths = collectInjectPaths(options.config);
 
   const configJson = JSON.stringify({
     graphqlSystemAliases: options.config.graphqlSystemAliases,
     isCjs: isCJS,
     graphqlSystemPath,
+    injectPaths,
     sourceMap: options.sourceMap ?? false,
   });
 
@@ -251,8 +273,9 @@ export const transform = async (
   // Filter artifact to only include elements for this file
   const filteredArtifact = filterArtifactForFile(input.artifact, normalizedPath);
 
-  // Resolve the graphql-system file path for stubbing
+  // Resolve paths for internal module stubbing
   const graphqlSystemPath = resolveGraphqlSystemPath(input.config);
+  const injectPaths = collectInjectPaths(input.config);
 
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
@@ -262,6 +285,7 @@ export const transform = async (
       graphqlSystemAliases: input.config.graphqlSystemAliases,
       isCjs: input.isCjs ?? false,
       graphqlSystemPath,
+      injectPaths,
       sourceMap: input.sourceMap ?? false,
     },
   });
