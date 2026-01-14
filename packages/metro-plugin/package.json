@@ -5,6 +5,9 @@
   "type": "module",
   "private": false,
   "license": "MIT",
+  "scripts": {
+    "test": "bun test"
+  },
   "files": [
     "dist"
   ],

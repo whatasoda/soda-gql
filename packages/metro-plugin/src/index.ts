@@ -1,5 +1,6 @@
 import { getStateKey, setSharedTransformerType } from "@soda-gql/builder/plugin-support";
-import type { MetroConfig, MetroPluginOptions, SodaGqlTransformerOptions } from "./types";
+import type { MetroConfig, MetroPluginOptions } from "./types";
+import { ensureWrapperTransformer } from "./wrapper-generator";
 
 // Re-export shared state utilities for advanced usage
 export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/builder/plugin-support";
@@ -9,7 +10,6 @@ export type {
   MetroTransformer,
   MetroTransformParams,
   MetroTransformResult,
-  SodaGqlTransformerOptions,
   TransformerType,
 } from "./types";
 
@@ -68,9 +68,6 @@ export type {
  * @returns Modified Metro configuration with soda-gql transformer
  */
 export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPluginOptions = {}): T {
-  // Use package export path to ensure correct resolution from any location
-  const transformerPath = require.resolve("@soda-gql/metro-plugin/transformer");
-
   // Store transformer type in shared state for the transformer module to read
   const stateKey = getStateKey(options.configPath);
   if (options.transformer) {
@@ -82,20 +79,35 @@ export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPlug
   // 2. Fall back to existing babelTransformerPath from config (auto-detect)
   const upstreamTransformer = options.upstreamTransformer ?? config.transformer?.babelTransformerPath;
 
-  // Build sodaGqlTransformerOptions to pass to the transformer
-  const sodaGqlTransformerOptions: SodaGqlTransformerOptions = {
-    ...(upstreamTransformer && { upstreamTransformer }),
-    ...(options.configPath && { configPath: options.configPath }),
-    ...(options.transformer && { transformerType: options.transformer }),
-  };
+  let transformerPath: string;
+
+  if (upstreamTransformer) {
+    // Resolve upstream to absolute path for reliable worker loading
+    let resolvedUpstream: string;
+    try {
+      resolvedUpstream = require.resolve(upstreamTransformer, {
+        paths: [process.cwd()],
+      });
+    } catch {
+      // If resolution fails, use the path as-is (might be an absolute path already)
+      resolvedUpstream = upstreamTransformer;
+    }
+
+    // Generate wrapper transformer with hardcoded upstream
+    transformerPath = ensureWrapperTransformer({
+      upstreamTransformerPath: resolvedUpstream,
+      projectRoot: process.cwd(),
+    });
+  } else {
+    // No upstream - use main transformer directly
+    transformerPath = require.resolve("@soda-gql/metro-plugin/transformer");
+  }
 
   return {
     ...config,
     transformer: {
       ...config.transformer,
       babelTransformerPath: transformerPath,
-      // Pass options to transformer via Metro config
-      ...(Object.keys(sodaGqlTransformerOptions).length > 0 && { sodaGqlTransformerOptions }),
     },
   } as T;
 }

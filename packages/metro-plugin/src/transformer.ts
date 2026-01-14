@@ -19,7 +19,7 @@ import {
 } from "@soda-gql/builder/plugin-support";
 import { normalizePath } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import type { MetroTransformer, MetroTransformParams, MetroTransformResult, SodaGqlTransformerOptions } from "./types";
+import type { MetroTransformer, MetroTransformParams, MetroTransformResult } from "./types";
 
 /**
  * Upstream transformer candidates in order of preference.
@@ -37,11 +37,6 @@ const UPSTREAM_TRANSFORMER_CANDIDATES = [
  * Cached upstream transformer module.
  */
 let upstreamTransformer: MetroTransformer | null = null;
-
-/**
- * Cached custom upstream transformer path (from sodaGqlTransformerOptions).
- */
-let customUpstreamPath: string | null = null;
 
 /**
  * Try to resolve a module from multiple locations.
@@ -66,43 +61,14 @@ const tryResolve = (moduleName: string): string | null => {
 };
 
 /**
- * Set custom upstream transformer path from options.
- * Called once during the first transform to capture the path from Metro options.
- */
-const setCustomUpstreamPath = (sodaGqlOptions: SodaGqlTransformerOptions | undefined): void => {
-  if (customUpstreamPath !== null) {
-    // Already set, don't override
-    return;
-  }
-  customUpstreamPath = sodaGqlOptions?.upstreamTransformer ?? null;
-};
-
-/**
  * Detect and load the upstream Metro Babel transformer.
- * Priority:
- * 1. Custom upstream path from sodaGqlTransformerOptions (set via setCustomUpstreamPath)
- * 2. Default candidates in order of preference
+ * Tries candidates in order of preference.
  */
 const getUpstreamTransformer = (): MetroTransformer => {
   if (upstreamTransformer) {
     return upstreamTransformer;
   }
 
-  // Try custom upstream path first (from sodaGqlTransformerOptions)
-  if (customUpstreamPath) {
-    const resolved = tryResolve(customUpstreamPath);
-    if (resolved) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      upstreamTransformer = require(resolved) as MetroTransformer;
-      return upstreamTransformer;
-    }
-    console.warn(
-      `[@soda-gql/metro-plugin] Custom upstream transformer not found: ${customUpstreamPath}. ` +
-        "Falling back to default transformers.",
-    );
-  }
-
-  // Fall back to default candidates
   for (const candidate of UPSTREAM_TRANSFORMER_CANDIDATES) {
     const resolved = tryResolve(candidate);
     if (resolved) {
@@ -200,13 +166,18 @@ const initializeSwcTransformer = async (
  * Wraps the upstream Metro Babel transformer.
  */
 export async function transform(params: MetroTransformParams): Promise<MetroTransformResult> {
+  return transformCore(params, getUpstreamTransformer);
+}
+
+/**
+ * Core transformation logic.
+ * @internal
+ */
+async function transformCore(params: MetroTransformParams, getUpstream: () => MetroTransformer): Promise<MetroTransformResult> {
   const { src, filename, options } = params;
   const stateKey = getStateKey();
 
-  // Capture custom upstream path from options on first call
-  setCustomUpstreamPath(options.sodaGqlTransformerOptions);
-
-  const upstream = getUpstreamTransformer();
+  const upstream = getUpstream();
 
   const session = ensurePluginSession();
   if (!session) {
@@ -323,13 +294,26 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
  * Includes artifact generation to ensure cache invalidation when models change.
  */
 export function getCacheKey(): string {
+  return getCacheKeyCore(getUpstreamTransformer);
+}
+
+/**
+ * Core cache key generation logic.
+ * @internal
+ */
+function getCacheKeyCore(getUpstream: () => MetroTransformer, upstreamPath?: string): string {
   const stateKey = getStateKey();
   const state = getSharedState(stateKey);
   const artifact = state.currentArtifact;
-  const upstream = getUpstreamTransformer();
+  const upstream = getUpstream();
 
   const hash = crypto.createHash("md5");
-  hash.update("@soda-gql/metro-plugin:v2");
+  hash.update("@soda-gql/metro-plugin:v3");
+
+  // Include upstream path for wrapper-based transformers
+  if (upstreamPath) {
+    hash.update(upstreamPath);
+  }
 
   // Include upstream cache key if available
   if (upstream.getCacheKey) {
@@ -350,6 +334,45 @@ export function getCacheKey(): string {
   }
 
   return hash.digest("hex");
+}
+
+/**
+ * Create a transformer with a specific upstream transformer path.
+ * Used by generated wrapper files to inject the upstream path at build time.
+ *
+ * @param upstreamPath - Absolute path to the upstream transformer module
+ * @returns MetroTransformer instance configured with the specified upstream
+ */
+export function createTransformerWithUpstream(upstreamPath: string): MetroTransformer {
+  let cachedUpstream: MetroTransformer | null = null;
+
+  const getUpstream = (): MetroTransformer => {
+    if (cachedUpstream) {
+      return cachedUpstream;
+    }
+
+    const resolved = tryResolve(upstreamPath);
+    if (!resolved) {
+      throw new Error(`[@soda-gql/metro-plugin] Upstream transformer not found: ${upstreamPath}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedUpstream = require(resolved) as MetroTransformer;
+    return cachedUpstream;
+  };
+
+  return {
+    transform: (params: MetroTransformParams) => transformCore(params, getUpstream),
+    getCacheKey: () => getCacheKeyCore(getUpstream, upstreamPath),
+  };
+}
+
+/**
+ * Reset upstream transformer cache for testing.
+ * @internal
+ */
+export function __resetUpstreamTransformer(): void {
+  upstreamTransformer = null;
 }
 
 // Export as module interface for Metro
