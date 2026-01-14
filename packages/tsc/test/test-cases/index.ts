@@ -58,6 +58,7 @@ export {
   loadPluginFixture,
   loadPluginFixtureMulti,
 } from "./utils";
+export { type StubTestCase, loadStubTestCases } from "./stub-cases";
 
 /**
  * Transform source code using tsc-transformer.
