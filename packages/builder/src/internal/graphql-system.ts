@@ -1,5 +1,5 @@
 /**
- * Helper for identifying graphql-system files and import specifiers.
+ * Helper for identifying graphql-system files, inject modules, and import specifiers.
  * Provides robust detection across symlinks, case-insensitive filesystems, and user-defined aliases.
  */
 
@@ -11,6 +11,11 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 export type GraphqlSystemIdentifyHelper = {
   readonly isGraphqlSystemFile: (input: { filePath: string }) => boolean;
   readonly isGraphqlSystemImportSpecifier: (input: { filePath: string; specifier: string }) => boolean;
+  /**
+   * Check if a file is an internal module that should be stubbed at runtime.
+   * This includes graphql-system and inject modules (scalars, adapter).
+   */
+  readonly isInternalModuleFile: (input: { filePath: string }) => boolean;
 };
 
 /**
@@ -55,6 +60,15 @@ export const createGraphqlSystemIdentifyHelper = (config: ResolvedSodaGqlConfig)
   // Build canonical alias map
   const canonicalAliases = new Set(config.graphqlSystemAliases.map((alias) => alias));
 
+  // Collect inject module paths (scalars, adapter) from all schemas
+  const canonicalInjectPaths = new Set<string>();
+  for (const schemaConfig of Object.values(config.schemas)) {
+    canonicalInjectPaths.add(toCanonical(schemaConfig.inject.scalars));
+    if (schemaConfig.inject.adapter) {
+      canonicalInjectPaths.add(toCanonical(schemaConfig.inject.adapter));
+    }
+  }
+
   return {
     isGraphqlSystemFile: ({ filePath }: { filePath: string }) => {
       return toCanonical(filePath) === canonicalGraphqlSystemPath;
@@ -78,6 +92,10 @@ export const createGraphqlSystemIdentifyHelper = (config: ResolvedSodaGqlConfig)
       }
 
       return toCanonical(resolved) === canonicalGraphqlSystemPath;
+    },
+    isInternalModuleFile: ({ filePath }: { filePath: string }) => {
+      const canonical = toCanonical(filePath);
+      return canonical === canonicalGraphqlSystemPath || canonicalInjectPaths.has(canonical);
     },
   };
 };
