@@ -24,11 +24,7 @@ const writeFile = (filePath: string, content: string): void => {
 /**
  * Create a test config with configurable paths.
  */
-const createTestConfig = (options: {
-  outdir: string;
-  scalarsPath: string;
-  adapterPath?: string;
-}): ResolvedSodaGqlConfig => ({
+const createTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
@@ -201,15 +197,9 @@ describe("createBabelTransformer", () => {
       });
 
       // All inject files should be stubbed
-      expect(
-        transformer.transform({ sourceCode: "export const s = {};", sourcePath: scalars1 }).sourceCode,
-      ).toBe("export {};");
-      expect(
-        transformer.transform({ sourceCode: "export const s = {};", sourcePath: scalars2 }).sourceCode,
-      ).toBe("export {};");
-      expect(
-        transformer.transform({ sourceCode: "export const a = {};", sourcePath: adapter2 }).sourceCode,
-      ).toBe("export {};");
+      expect(transformer.transform({ sourceCode: "export const s = {};", sourcePath: scalars1 }).sourceCode).toBe("export {};");
+      expect(transformer.transform({ sourceCode: "export const s = {};", sourcePath: scalars2 }).sourceCode).toBe("export {};");
+      expect(transformer.transform({ sourceCode: "export const a = {};", sourcePath: adapter2 }).sourceCode).toBe("export {};");
     });
   });
 });

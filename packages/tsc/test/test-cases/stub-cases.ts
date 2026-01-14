@@ -52,11 +52,7 @@ const createCanonicalTempDir = (prefix: string): string => {
 /**
  * Create a test config with configurable paths.
  */
-const createStubTestConfig = (options: {
-  outdir: string;
-  scalarsPath: string;
-  adapterPath?: string;
-}): ResolvedSodaGqlConfig => ({
+const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],

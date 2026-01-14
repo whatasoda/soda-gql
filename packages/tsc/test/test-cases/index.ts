@@ -49,6 +49,7 @@ export type TransformTestCase = {
 // Re-export types and utilities
 export type { TestCaseDefinition } from "./definitions";
 export { getMultiFileTestCases, getSingleFileTestCases, testCaseDefinitions } from "./definitions";
+export { loadStubTestCases, type StubTestCase } from "./stub-cases";
 export {
   type AnalyzerType,
   createTestConfig,
@@ -58,7 +59,6 @@ export {
   loadPluginFixture,
   loadPluginFixtureMulti,
 } from "./utils";
-export { type StubTestCase, loadStubTestCases } from "./stub-cases";
 
 /**
  * Transform source code using tsc-transformer.
