@@ -173,10 +173,7 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
  * Core transformation logic.
  * @internal
  */
-async function transformCore(
-  params: MetroTransformParams,
-  getUpstream: () => MetroTransformer,
-): Promise<MetroTransformResult> {
+async function transformCore(params: MetroTransformParams, getUpstream: () => MetroTransformer): Promise<MetroTransformResult> {
   const { src, filename, options } = params;
   const stateKey = getStateKey();
 
@@ -304,10 +301,7 @@ export function getCacheKey(): string {
  * Core cache key generation logic.
  * @internal
  */
-function getCacheKeyCore(
-  getUpstream: () => MetroTransformer,
-  upstreamPath?: string,
-): string {
+function getCacheKeyCore(getUpstream: () => MetroTransformer, upstreamPath?: string): string {
   const stateKey = getStateKey();
   const state = getSharedState(stateKey);
   const artifact = state.currentArtifact;

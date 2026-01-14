@@ -108,6 +108,14 @@ npx react-native start --reset-cache
 
 When using other Metro transformers (e.g., react-native-svg-transformer), soda-gql automatically detects and chains with them.
 
+### How Chaining Works
+
+When an upstream transformer is detected, soda-gql generates a wrapper transformer file in `node_modules/.cache/soda-gql/`. This wrapper:
+
+1. Hardcodes the upstream transformer path at build time
+2. Enables reliable chaining in Metro worker processes
+3. Is automatically regenerated when the upstream path changes
+
 ### Automatic Chaining (Recommended)
 
 If you set `babelTransformerPath` before calling `withSodaGql`, it will be automatically preserved and chained:
