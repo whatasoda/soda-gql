@@ -52,6 +52,7 @@ sodaGqlPlugin({
 1. **Build phase** - The plugin uses `@soda-gql/builder` to analyze source files and generate artifacts
 2. **Transform phase** - Uses `@soda-gql/babel` to replace `gql.default()` calls with `gqlRuntime.getOperation()` calls
 3. **Watch mode** - Automatically rebuilds artifacts when GraphQL files change
+4. **Internal module stubbing** - graphql-system and inject modules are stubbed with `export {};` in the bundle
 
 ## Requirements
 

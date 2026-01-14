@@ -60,7 +60,8 @@ export const createGraphqlSystemIdentifyHelper = (config: ResolvedSodaGqlConfig)
   // Build canonical alias map
   const canonicalAliases = new Set(config.graphqlSystemAliases.map((alias) => alias));
 
-  // Collect inject module paths (scalars, adapter) from all schemas
+  // Collect inject module paths (scalars, adapter) from all schemas.
+  // Paths are resolved via realpath to handle symlinks accurately.
   const canonicalInjectPaths = new Set<string>();
   for (const schemaConfig of Object.values(config.schemas)) {
     canonicalInjectPaths.add(toCanonical(schemaConfig.inject.scalars));
