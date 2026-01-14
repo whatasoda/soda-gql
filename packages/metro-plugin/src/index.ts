@@ -1,5 +1,5 @@
 import { getStateKey, setSharedTransformerType } from "@soda-gql/builder/plugin-support";
-import type { MetroConfig, MetroPluginOptions } from "./types";
+import type { MetroConfig, MetroPluginOptions, SodaGqlTransformerOptions } from "./types";
 
 // Re-export shared state utilities for advanced usage
 export { getSharedArtifact, getSharedState, getStateKey } from "@soda-gql/builder/plugin-support";
@@ -9,6 +9,7 @@ export type {
   MetroTransformer,
   MetroTransformParams,
   MetroTransformResult,
+  SodaGqlTransformerOptions,
   TransformerType,
 } from "./types";
 
@@ -17,6 +18,9 @@ export type {
  *
  * This function modifies the Metro configuration to use the soda-gql
  * transformer, which applies GraphQL code transformations at build time.
+ *
+ * If the config already has a custom `babelTransformerPath` set (e.g., from
+ * react-native-svg-transformer), soda-gql will automatically chain with it.
  *
  * @example
  * ```typescript
@@ -40,11 +44,22 @@ export type {
  *
  * @example
  * ```typescript
- * // With options
+ * // Chaining with another transformer (e.g., react-native-svg-transformer)
+ * // The existing babelTransformerPath is automatically detected and chained.
+ * const { getDefaultConfig } = require("expo/metro-config");
+ * const { withSodaGql } = require("@soda-gql/metro-plugin");
+ *
+ * const config = getDefaultConfig(__dirname);
+ * config.transformer.babelTransformerPath = require.resolve("react-native-svg-transformer");
+ * module.exports = withSodaGql(config);
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Explicitly specifying upstream transformer
  * const config = getDefaultConfig(__dirname);
  * module.exports = withSodaGql(config, {
- *   configPath: "./soda-gql.config.ts",
- *   debug: true,
+ *   upstreamTransformer: require.resolve("react-native-svg-transformer"),
  * });
  * ```
  *
@@ -62,11 +77,25 @@ export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPlug
     setSharedTransformerType(stateKey, options.transformer);
   }
 
+  // Determine upstream transformer path:
+  // 1. Explicit option takes precedence
+  // 2. Fall back to existing babelTransformerPath from config (auto-detect)
+  const upstreamTransformer = options.upstreamTransformer ?? config.transformer?.babelTransformerPath;
+
+  // Build sodaGqlTransformerOptions to pass to the transformer
+  const sodaGqlTransformerOptions: SodaGqlTransformerOptions = {
+    ...(upstreamTransformer && { upstreamTransformer }),
+    ...(options.configPath && { configPath: options.configPath }),
+    ...(options.transformer && { transformerType: options.transformer }),
+  };
+
   return {
     ...config,
     transformer: {
       ...config.transformer,
       babelTransformerPath: transformerPath,
+      // Pass options to transformer via Metro config
+      ...(Object.keys(sodaGqlTransformerOptions).length > 0 && { sodaGqlTransformerOptions }),
     },
   } as T;
 }

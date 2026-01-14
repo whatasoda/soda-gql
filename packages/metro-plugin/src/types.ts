@@ -13,6 +13,25 @@ export type MetroPluginOptions = PluginOptions & {
    * @default 'babel'
    */
   readonly transformer?: TransformerType;
+  /**
+   * Path to the upstream transformer to chain.
+   * If not specified, the original `babelTransformerPath` from the config will be used.
+   * Falls back to default Metro transformers if neither is available.
+   */
+  readonly upstreamTransformer?: string;
+};
+
+/**
+ * Options passed to the transformer via Metro config.
+ * These are stored in `config.transformer.sodaGqlTransformerOptions`.
+ */
+export type SodaGqlTransformerOptions = {
+  /** Path to the upstream transformer to chain */
+  readonly upstreamTransformer?: string;
+  /** Path to soda-gql config file */
+  readonly configPath?: string;
+  /** Transformer type (babel or swc) */
+  readonly transformerType?: TransformerType;
 };
 
 /**
@@ -55,6 +74,8 @@ export type MetroTransformOptions = {
   readonly enableBabelRuntime?: boolean | string;
   /** Use Hermes parser */
   readonly hermesParser?: boolean;
+  /** soda-gql transformer options (passed via config.transformer) */
+  readonly sodaGqlTransformerOptions?: SodaGqlTransformerOptions;
   /** Extra transformer options (for extensibility) */
   readonly [key: string]: unknown;
 };
