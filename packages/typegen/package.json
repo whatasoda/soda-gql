@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/typegen",
-  "version": "0.11.8",
+  "version": "0.11.9",
   "description": "Prebuilt type generation for soda-gql",
   "type": "module",
   "private": false,
