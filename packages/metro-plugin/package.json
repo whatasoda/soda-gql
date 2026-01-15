@@ -9,7 +9,11 @@
     "test": "bun test"
   },
   "files": [
-    "dist"
+    "dist",
+    "index.d.ts",
+    "index.js",
+    "transformer.d.ts",
+    "transformer.js"
   ],
   "author": {
     "name": "Shota Hatada",

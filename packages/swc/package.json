@@ -35,6 +35,10 @@
   "types": "./dist/index.d.mts",
   "files": [
     "dist",
+    "index.d.ts",
+    "index.js",
+    "native.d.ts",
+    "native.js",
     "src"
   ],
   "napi": {
