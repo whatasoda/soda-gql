@@ -182,6 +182,7 @@
       "version": "0.11.4",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
+        "@soda-gql/codegen": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "neverthrow": "^8.1.1",
