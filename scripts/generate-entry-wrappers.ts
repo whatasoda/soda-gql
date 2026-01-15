@@ -51,19 +51,8 @@ function exportKeyToEntryName(exportKey: string): string {
   return exportKey.replace(/^\.\//, "");
 }
 
-function generateJsWrapper(
-  entryName: string,
-  format: readonly ("esm" | "cjs")[],
-  platform: "node" | "neutral",
-): string {
-  const hasEsm = format.includes("esm");
-
-  if (hasEsm) {
-    // ESM wrapper
-    const ext = getDistExtension("esm-js", platform);
-    return `export * from "./dist/${entryName}${ext}";\nexport { default } from "./dist/${entryName}${ext}";\n`;
-  }
-  // CJS-only wrapper
+function generateJsWrapper(entryName: string, platform: "node" | "neutral"): string {
+  // Always generate CJS wrapper for exports-field-unsupported environments
   const ext = getDistExtension("cjs-js", platform);
   return `module.exports = require("./dist/${entryName}${ext}");\n`;
 }
@@ -115,7 +104,7 @@ async function generatePackageWrappers(config: TsdownConfig): Promise<string[]> 
 
     // Generate .js wrapper
     const jsPath = join(packageDir, `${entryName}.js`);
-    const jsContent = generateJsWrapper(entryName, format, platform);
+    const jsContent = generateJsWrapper(entryName, platform);
     await writeFile(jsPath, jsContent);
     generatedFiles.push(`${entryName}.js`);
 
