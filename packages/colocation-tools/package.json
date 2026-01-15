@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/colocation-tools",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "description": "Colocation utilities for soda-gql fragments",
   "type": "module",
   "private": false,
