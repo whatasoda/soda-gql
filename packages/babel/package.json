@@ -6,7 +6,11 @@
   "private": false,
   "license": "MIT",
   "files": [
-    "dist"
+    "dist",
+    "index.d.ts",
+    "index.js",
+    "plugin.d.ts",
+    "plugin.js"
   ],
   "author": {
     "name": "Shota Hatada",

@@ -6,7 +6,17 @@
   "private": false,
   "license": "MIT",
   "files": [
-    "dist"
+    "dist",
+    "canonical-id.d.ts",
+    "canonical-id.js",
+    "index.d.ts",
+    "index.js",
+    "portable.d.ts",
+    "portable.js",
+    "utils.d.ts",
+    "utils.js",
+    "zod.d.ts",
+    "zod.js"
   ],
   "author": {
     "name": "Shota Hatada",

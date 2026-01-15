@@ -7,9 +7,14 @@
   "license": "MIT",
   "files": [
     "dist",
+    "_internal.d.ts",
+    "_internal.js",
+    "adapter.d.ts",
+    "adapter.js",
+    "index.d.ts",
     "index.js",
-    "runtime.js",
-    "adapter.js"
+    "runtime.d.ts",
+    "runtime.js"
   ],
   "author": {
     "name": "Shota Hatada",
