@@ -188,3 +188,7 @@ website/.rspress/
 
 # Local publish artifacts
 .publish/
+
+# Generated entry wrapper files (created by scripts/generate-entry-wrappers.ts)
+packages/*/*.js
+packages/*/*.d.ts
