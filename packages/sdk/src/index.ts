@@ -3,6 +3,7 @@
  * @module
  */
 
+export { type CodegenSdkError, type CodegenSdkOptions, type CodegenSdkResult, codegenAsync } from "./codegen";
 export {
   type ContextTransformer,
   type PrebuildError,
@@ -11,5 +12,3 @@ export {
   prebuild,
   prebuildAsync,
 } from "./prebuild";
-
-export { type CodegenSdkError, type CodegenSdkOptions, type CodegenSdkResult, codegenAsync } from "./codegen";
