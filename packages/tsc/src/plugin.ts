@@ -92,4 +92,15 @@ export const createSodaGqlTransformer = (
   return plugin.before({}, program);
 };
 
-export default createTscPlugin();
+let _cachedPlugin: ReturnType<typeof createTscPlugin> | null = null;
+
+/**
+ * Named export for Nest CLI compatibility.
+ * Nest CLI requires `before`, `after`, or `afterDeclarations` as direct exports.
+ */
+export function before(options: PluginOptions, program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
+  if (!_cachedPlugin) {
+    _cachedPlugin = createTscPlugin(options);
+  }
+  return _cachedPlugin.before(options, program);
+}
