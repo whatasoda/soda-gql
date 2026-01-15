@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import path from "node:path";
 import { type CodegenSdkError, type CodegenSdkOptions, type CodegenSdkResult, codegenAsync } from "./codegen";
 
 describe("codegen", () => {
@@ -65,6 +66,28 @@ describe("codegen", () => {
         // ConfigError or CodegenError has a code property
         expect(error.code).toBeDefined();
         expect(typeof error.code).toBe("string");
+      }
+    });
+  });
+
+  describe("codegenAsync with valid config", () => {
+    it("should generate code from fixture-catalog config", async () => {
+      const configPath = path.resolve(__dirname, "../../../fixture-catalog/soda-gql.config.ts");
+      const result = await codegenAsync({ configPath });
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // Verify result structure
+        expect(result.value.outPath).toContain("index.ts");
+        expect(result.value.internalPath).toContain("_internal.ts");
+        expect(result.value.injectsPath).toContain("_internal-injects.ts");
+        expect(result.value.cjsPath).toContain("index.cjs");
+
+        // Verify schemas were processed
+        expect(result.value.schemas).toHaveProperty("default");
+        expect(result.value.schemas).toHaveProperty("admin");
+        expect(result.value.schemas.default?.objects).toBeGreaterThan(0);
+        expect(result.value.schemas.default?.enums).toBeGreaterThan(0);
       }
     });
   });

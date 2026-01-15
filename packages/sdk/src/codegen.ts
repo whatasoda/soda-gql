@@ -3,8 +3,8 @@
  * @module
  */
 
-import { resolve } from "node:path";
-import type { CodegenError, CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
+import { join } from "node:path";
+import type { CodegenError, CodegenSuccess } from "@soda-gql/codegen";
 import { runCodegen } from "@soda-gql/codegen";
 import type { ConfigError } from "@soda-gql/config";
 import { loadConfig } from "@soda-gql/config";
@@ -82,26 +82,12 @@ export const codegenAsync = async (options: CodegenSdkOptions = {}): Promise<Res
     });
   }
 
-  // Build schemas config with resolved paths
-  const resolvedSchemas: Record<string, CodegenSchemaConfig> = {};
-  for (const [name, schemaConfig] of Object.entries(config.schemas)) {
-    resolvedSchemas[name] = {
-      schema: schemaConfig.schema.map((s) => resolve(s)),
-      inject: {
-        scalars: resolve(schemaConfig.inject.scalars),
-        ...(schemaConfig.inject.adapter ? { adapter: resolve(schemaConfig.inject.adapter) } : {}),
-      },
-      defaultInputDepth: schemaConfig.defaultInputDepth,
-      inputDepthOverrides: schemaConfig.inputDepthOverrides,
-    };
-  }
+  // Derive output path from outdir (already absolute)
+  const outPath = join(config.outdir, "index.ts");
 
-  // Derive output path from outdir
-  const outPath = resolve(config.outdir, "index.ts");
-
-  // Run codegen
+  // Run codegen (config.schemas is already resolved by loadConfig)
   const result = await runCodegen({
-    schemas: resolvedSchemas,
+    schemas: config.schemas,
     outPath,
     format: "human",
     importExtension: config.styles.importExtension,
