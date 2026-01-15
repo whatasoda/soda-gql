@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/@soda-gql%2Fsdk.svg)](https://badge.fury.io/js/@soda-gql%2Fsdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Programmatic API for soda-gql prebuild operations.
+Programmatic API for soda-gql prebuild and codegen operations.
 
 ## Installation
 
@@ -18,7 +18,8 @@ and build plugins to execute artifact generation without invoking the CLI.
 
 **Key Features:**
 
-- Synchronous and asynchronous build APIs
+- Synchronous and asynchronous build APIs (`prebuild`, `prebuildAsync`)
+- Programmatic code generation from GraphQL schemas (`codegenAsync`)
 - Optional context transformation for modifying composer context
 - Configurable build options (force rebuild, evaluator ID, entrypoints override)
 - Comprehensive error handling with typed Result
@@ -77,6 +78,29 @@ const result = await prebuildAsync({
 });
 ```
 
+### Code Generation
+
+Generate GraphQL runtime modules programmatically:
+
+```typescript
+import { codegenAsync } from "@soda-gql/sdk";
+
+// Generate from config file
+const result = await codegenAsync({
+  configPath: "./soda-gql.config.ts",
+});
+
+if (result.isOk()) {
+  console.log("Generated:", result.value.outPath);
+  console.log("Schemas:", Object.keys(result.value.schemas));
+} else {
+  console.error("Codegen failed:", result.error);
+}
+
+// Without explicit config path (will search for config file)
+const autoResult = await codegenAsync();
+```
+
 ## API Reference
 
 ### `prebuild(options: PrebuildOptions): Result<PrebuildResult, PrebuildError>`
@@ -86,6 +110,11 @@ Synchronously builds GraphQL artifacts based on the provided configuration.
 ### `prebuildAsync(options: PrebuildOptions): Promise<Result<PrebuildResult, PrebuildError>>`
 
 Asynchronously builds GraphQL artifacts. Preferred for build plugins and tools.
+
+### `codegenAsync(options?: CodegenSdkOptions): Promise<Result<CodegenSdkResult, CodegenSdkError>>`
+
+Generates GraphQL runtime modules from schemas defined in config. Wraps the CLI's `codegen` command
+for programmatic use.
 
 ### Types
 
@@ -118,6 +147,34 @@ type ContextTransformer = (
   context: Record<string, unknown>
 ) => Record<string, unknown>;
 ```
+
+#### `CodegenSdkOptions`
+
+| Property     | Type     | Required | Description                                         |
+| ------------ | -------- | -------- | --------------------------------------------------- |
+| `configPath` | `string` | No       | Path to soda-gql config file (searches if omitted)  |
+
+#### `CodegenSdkResult`
+
+```typescript
+interface CodegenSdkResult {
+  schemas: Record<string, {
+    schemaHash: string;
+    objects: number;
+    enums: number;
+    inputs: number;
+    unions: number;
+  }>;
+  outPath: string;
+  internalPath: string;
+  injectsPath: string;
+  cjsPath: string;
+}
+```
+
+#### `CodegenSdkError`
+
+Union type: `ConfigError | CodegenError`
 
 ## Session Lifecycle
 
@@ -152,6 +209,7 @@ may result in incorrect context being applied.
 ## Related Packages
 
 - [@soda-gql/builder](../builder) - Core build system
+- [@soda-gql/codegen](../codegen) - Code generation from GraphQL schemas
 - [@soda-gql/config](../config) - Configuration loading
 - [@soda-gql/core](../core) - GraphQL composition primitives
 
