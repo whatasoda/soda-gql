@@ -16,7 +16,7 @@
     "quality": "bun run check:tsconfig-refs && bun run typecheck && bun run biome:check",
     "typecheck": "tsc -b",
     "biome:check": "biome check --write .",
-    "exports:sync": "bun scripts/sync-exports.ts",
+    "exports:sync": "bun scripts/sync-exports.ts && bun scripts/generate-entry-wrappers.ts",
     "build": "bun run --filter=@soda-gql/swc build:dev && bun run exports:sync && bunx tsdown",
     "build:release": "bun run --filter=@soda-gql/swc build && bun run exports:sync && bunx tsdown",
     "test": "bun --conditions=@soda-gql test",
