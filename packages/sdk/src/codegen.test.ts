@@ -35,7 +35,7 @@ describe("codegen", () => {
         cjsPath: "./index.cjs",
       };
       expect(result.outPath).toBe("./index.ts");
-      expect(result.schemas.default.objects).toBe(10);
+      expect(result.schemas.default?.objects).toBe(10);
     });
   });
 
