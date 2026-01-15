@@ -6,7 +6,10 @@
   "private": false,
   "license": "MIT",
   "files": [
-    "dist"
+    "dist",
+    "index.js",
+    "runtime.js",
+    "adapter.js"
   ],
   "author": {
     "name": "Shota Hatada",
