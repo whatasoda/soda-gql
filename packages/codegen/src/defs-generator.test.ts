@@ -100,13 +100,13 @@ describe("generateDefinitionFile", () => {
 
   test("generates empty file comment for empty vars", () => {
     const result = generateDefinitionFile({
-      category: "scalars",
+      category: "inputs",
       schemaName: "default",
       vars: [],
       needsDefineEnum: false,
     });
 
-    expect(result).toContain("scalars definitions (empty)");
+    expect(result).toContain("inputs definitions (empty)");
   });
 });
 
@@ -191,7 +191,6 @@ describe("generateChunkedDefinitionFiles", () => {
 describe("generateDefsStructure", () => {
   test("generates single files when vars are under chunk size", () => {
     const categoryVars = {
-      scalars: [{ name: "scalar_default_ID", code: 'const scalar_default_ID = { name: "ID" } as const;' }],
       enums: [
         {
           name: "enum_default_Status",
@@ -205,7 +204,6 @@ describe("generateDefsStructure", () => {
 
     const result = generateDefsStructure("default", categoryVars, 100);
 
-    expect(result.files.some((f) => f.relativePath === "_defs/scalars.ts")).toBe(true);
     expect(result.files.some((f) => f.relativePath === "_defs/enums.ts")).toBe(true);
     expect(result.files.some((f) => f.relativePath === "_defs/objects.ts")).toBe(true);
   });
@@ -217,7 +215,6 @@ describe("generateDefsStructure", () => {
     }));
 
     const categoryVars = {
-      scalars: [],
       enums: [],
       inputs: [],
       objects,
@@ -234,8 +231,7 @@ describe("generateDefsStructure", () => {
 
   test("import paths are correct for non-chunked categories", () => {
     const categoryVars = {
-      scalars: [{ name: "scalar_default_ID", code: "const scalar_default_ID = {};" }],
-      enums: [],
+      enums: [{ name: "enum_default_Status", code: "const enum_default_Status = {};" }],
       inputs: [],
       objects: [],
       unions: [],
@@ -243,6 +239,6 @@ describe("generateDefsStructure", () => {
 
     const result = generateDefsStructure("default", categoryVars, 100);
 
-    expect(result.importPaths.scalars).toBe("./_defs/scalars");
+    expect(result.importPaths.enums).toBe("./_defs/enums");
   });
 });

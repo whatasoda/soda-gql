@@ -625,7 +625,6 @@ type SplittingMode =
   | {
       readonly mode: "split";
       readonly importPaths: {
-        readonly scalars: string;
         readonly enums: string;
         readonly inputs: string;
         readonly objects: string;
@@ -1093,7 +1092,6 @@ export const generateMultiSchemaModule = (
     ? {
         mode: "split",
         importPaths: {
-          scalars: "./_defs/scalars",
           enums: "./_defs/enums",
           inputs: "./_defs/inputs",
           objects: "./_defs/objects",
@@ -1127,7 +1125,6 @@ export const generateMultiSchemaModule = (
           return [
             schemaName,
             {
-              scalars: (config.scalarVars as string[]).map((c) => toDefVar(c, "scalar")),
               enums: (config.enumVars as string[]).map((c) => toDefVar(c, "enum")),
               inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
               objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),

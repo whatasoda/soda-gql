@@ -205,7 +205,6 @@ export * from "./_internal";
     // This ensures all definitions from all schemas go into the same defs files
     type DefinitionVar = { name: string; code: string };
     const combinedVars = {
-      scalars: [] as DefinitionVar[],
       enums: [] as DefinitionVar[],
       inputs: [] as DefinitionVar[],
       objects: [] as DefinitionVar[],
@@ -213,7 +212,6 @@ export * from "./_internal";
     };
 
     for (const vars of Object.values(categoryVars)) {
-      combinedVars.scalars.push(...vars.scalars);
       combinedVars.enums.push(...vars.enums);
       combinedVars.inputs.push(...vars.inputs);
       combinedVars.objects.push(...vars.objects);

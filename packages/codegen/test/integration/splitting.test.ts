@@ -104,8 +104,7 @@ describe("codegen splitting", () => {
       // Check that _defs directory was created
       expect(existsSync(join(outDir, "_defs"))).toBe(true);
 
-      // Check that category files exist
-      expect(existsSync(join(outDir, "_defs", "scalars.ts"))).toBe(true);
+      // Check that category files exist (scalars are not generated - they come from injection)
       expect(existsSync(join(outDir, "_defs", "enums.ts"))).toBe(true);
       expect(existsSync(join(outDir, "_defs", "inputs.ts"))).toBe(true);
       expect(existsSync(join(outDir, "_defs", "objects.ts"))).toBe(true);

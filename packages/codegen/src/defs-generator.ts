@@ -3,7 +3,7 @@
  * Generates separate files for each definition category (scalars, enums, inputs, objects, unions).
  */
 
-export type DefinitionCategory = "scalars" | "enums" | "inputs" | "objects" | "unions";
+export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions";
 
 export type DefinitionVar = {
   readonly name: string;
@@ -185,7 +185,6 @@ type DefsDirectoryStructure = {
 };
 
 export type CategoryVars = {
-  readonly scalars: readonly DefinitionVar[];
   readonly enums: readonly DefinitionVar[];
   readonly inputs: readonly DefinitionVar[];
   readonly objects: readonly DefinitionVar[];
@@ -202,14 +201,13 @@ export const generateDefsStructure = (
 ): DefsDirectoryStructure => {
   const files: Array<{ relativePath: string; content: string }> = [];
   const importPaths: Record<DefinitionCategory, string> = {
-    scalars: "./_defs/scalars",
     enums: "./_defs/enums",
     inputs: "./_defs/inputs",
     objects: "./_defs/objects",
     unions: "./_defs/unions",
   };
 
-  const categories: DefinitionCategory[] = ["scalars", "enums", "inputs", "objects", "unions"];
+  const categories: DefinitionCategory[] = ["enums", "inputs", "objects", "unions"];
 
   for (const category of categories) {
     const vars = categoryVars[category];
