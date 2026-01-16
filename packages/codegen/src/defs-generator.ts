@@ -1,6 +1,6 @@
 /**
  * Definition file generator for split codegen.
- * Generates separate files for each definition category (scalars, enums, inputs, objects, unions).
+ * Generates separate files for each definition category (enums, inputs, objects, unions).
  */
 
 export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions";

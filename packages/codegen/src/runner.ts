@@ -3,7 +3,7 @@ import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
-import { ensureDirectory, writeModule } from "./file";
+import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess, SplittingConfig } from "./types";
@@ -193,13 +193,6 @@ export * from "./_internal";
   const defsPaths: string[] = [];
   if (splittingConfig.enabled && categoryVars) {
     const outDir = dirname(outPath);
-    const defsDir = join(outDir, "_defs");
-
-    // Ensure _defs directory exists
-    const mkdirResult = ensureDirectory(defsDir);
-    if (mkdirResult.isErr()) {
-      return err(mkdirResult.error);
-    }
 
     // Merge all schema categoryVars into a single combined structure
     // This ensures all definitions from all schemas go into the same defs files
@@ -223,16 +216,8 @@ export * from "./_internal";
 
     for (const file of defsStructure.files) {
       const filePath = join(outDir, file.relativePath);
-      const fileDir = dirname(filePath);
 
-      // Ensure subdirectory exists (for chunked files)
-      if (fileDir !== defsDir) {
-        const subMkdirResult = ensureDirectory(fileDir);
-        if (subMkdirResult.isErr()) {
-          return err(subMkdirResult.error);
-        }
-      }
-
+      // writeModule handles directory creation internally via mkdirSync
       const writeResult = await writeModule(filePath, file.content).match(
         () => Promise.resolve(ok(undefined)),
         (error) => Promise.resolve(err(error)),
