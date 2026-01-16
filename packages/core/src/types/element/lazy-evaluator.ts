@@ -1,3 +1,5 @@
+import { isPromiseLike } from "../../utils/promise";
+
 /**
  * Context passed to the definition factory during evaluation.
  */
@@ -60,7 +62,8 @@ export const createLazyEvaluator = <T, TDep>(
     }
 
     const defined = define(context);
-    if (!(defined instanceof Promise)) {
+    // Use duck typing for VM sandbox compatibility (instanceof Promise fails for cross-realm Promises)
+    if (!isPromiseLike(defined)) {
       return (cache = { value: defined }).value;
     }
 
