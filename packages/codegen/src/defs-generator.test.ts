@@ -36,8 +36,9 @@ describe("chunkArray", () => {
 
   test("returns single chunk for non-positive chunk size", () => {
     const array = [1, 2, 3];
-    const result = chunkArray(array, 0);
-    expect(result).toEqual([[1, 2, 3]]);
+    expect(chunkArray(array, 0)).toEqual([[1, 2, 3]]);
+    expect(chunkArray(array, -1)).toEqual([[1, 2, 3]]);
+    expect(chunkArray(array, -100)).toEqual([[1, 2, 3]]);
   });
 });
 
