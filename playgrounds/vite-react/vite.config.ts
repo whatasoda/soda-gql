@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [sodaGqlPlugin({ debug: true }), react()],
+  plugins: [sodaGqlPlugin({ debug: true, configPath: "./fixture-catalog/soda-gql.config.ts" }), react()],
   resolve: {
     alias: [
       { find: "@/graphql-system", replacement: resolve(__dirname, "./fixture-catalog/graphql-system") },

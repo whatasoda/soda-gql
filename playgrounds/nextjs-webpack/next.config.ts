@@ -6,9 +6,9 @@ const nextConfig: NextConfig = {
     // Add soda-gql webpack plugin
     config.plugins.push(
       new SodaGqlWebpackPlugin({
-        configPath: "./soda-gql.config.ts",
+        configPath: "./fixture-catalog/soda-gql.config.ts",
         debug: dev,
-        transformer: "swc",
+        transformer: "babel",
       }),
     );
 
@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
         {
           loader: "@soda-gql/webpack-plugin/loader",
           options: {
-            configPath: "./soda-gql.config.ts",
-            transformer: "swc",
+            configPath: "./fixture-catalog/soda-gql.config.ts",
+            transformer: "babel",
           },
         },
       ],

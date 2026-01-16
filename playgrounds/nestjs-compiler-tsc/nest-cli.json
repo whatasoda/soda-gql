@@ -8,7 +8,7 @@
       {
         "name": "@soda-gql/tsc/plugin",
         "options": {
-          "configPath": "./soda-gql.config.ts",
+          "configPath": "./fixture-catalog/soda-gql.config.ts",
           "importIdentifier": "@/graphql-system"
         }
       }
