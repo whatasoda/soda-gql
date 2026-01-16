@@ -1,5 +1,5 @@
 import { describe, expect, test as it } from "bun:test";
-import { type CanonicalId, createCanonicalId, isRelativeCanonicalId, parseCanonicalId } from "./canonical-id";
+import { type CanonicalId, createCanonicalId, isRelativeCanonicalId, parseCanonicalId, validateCanonicalId } from "./canonical-id";
 
 describe("canonical identifier helpers", () => {
   describe("createCanonicalId", () => {
@@ -89,6 +89,55 @@ describe("canonical identifier helpers", () => {
       const parsed = parseCanonicalId(original);
       expect(parsed.filePath).toBe("/app/src/entities/user.ts");
       expect(parsed.astPath).toBe("userSlice");
+    });
+  });
+
+  describe("validateCanonicalId", () => {
+    it("returns valid for properly formatted absolute canonical ID", () => {
+      const result = validateCanonicalId("/app/src/user.ts::fragment");
+      expect(result).toEqual({ isValid: true });
+    });
+
+    it("returns valid for properly formatted relative canonical ID", () => {
+      const result = validateCanonicalId("src/user.ts::fragment");
+      expect(result).toEqual({ isValid: true });
+    });
+
+    it("returns invalid when separator is missing", () => {
+      const result = validateCanonicalId("/app/src/user.ts");
+      expect(result.isValid).toBe(false);
+      if (!result.isValid) {
+        expect(result.reason).toContain("separator");
+      }
+    });
+
+    it("returns invalid for empty file path", () => {
+      const result = validateCanonicalId("::fragment");
+      expect(result.isValid).toBe(false);
+      if (!result.isValid) {
+        expect(result.reason).toContain("file path");
+      }
+    });
+
+    it("returns invalid for empty AST path", () => {
+      const result = validateCanonicalId("/app/src/user.ts::");
+      expect(result.isValid).toBe(false);
+      if (!result.isValid) {
+        expect(result.reason).toContain("AST path");
+      }
+    });
+
+    it("returns invalid for empty string", () => {
+      const result = validateCanonicalId("");
+      expect(result.isValid).toBe(false);
+      if (!result.isValid) {
+        expect(result.reason).toContain("separator");
+      }
+    });
+
+    it("returns valid for canonical ID with dots in AST path", () => {
+      const result = validateCanonicalId("/app/src/user.ts::MyComponent.useQuery.def");
+      expect(result).toEqual({ isValid: true });
     });
   });
 });

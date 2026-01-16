@@ -88,3 +88,39 @@ export const parseCanonicalId = (
     astPath: canonicalId.slice(idx + canonicalIdSeparator.length),
   };
 };
+
+/**
+ * Validation result for canonical ID format.
+ */
+export type CanonicalIdValidationResult =
+  | { readonly isValid: true }
+  | { readonly isValid: false; readonly reason: string };
+
+/**
+ * Validate a canonical ID format.
+ * A valid canonical ID has format: "{filePath}::{astPath}"
+ * where both filePath and astPath are non-empty.
+ *
+ * @param canonicalId - The canonical ID to validate
+ * @returns Validation result with isValid boolean and optional error reason
+ */
+export const validateCanonicalId = (canonicalId: string): CanonicalIdValidationResult => {
+  const idx = canonicalId.indexOf(canonicalIdSeparator);
+
+  if (idx === -1) {
+    return { isValid: false, reason: "missing '::' separator" };
+  }
+
+  const filePath = canonicalId.slice(0, idx);
+  const astPath = canonicalId.slice(idx + canonicalIdSeparator.length);
+
+  if (filePath === "") {
+    return { isValid: false, reason: "empty file path" };
+  }
+
+  if (astPath === "") {
+    return { isValid: false, reason: "empty AST path" };
+  }
+
+  return { isValid: true };
+};
