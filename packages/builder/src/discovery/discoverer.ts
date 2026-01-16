@@ -1,4 +1,10 @@
-import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, normalizePath } from "@soda-gql/common";
+import {
+  type AliasResolver,
+  createAsyncScheduler,
+  createSyncScheduler,
+  type EffectGenerator,
+  normalizePath,
+} from "@soda-gql/common";
 import { err, ok } from "neverthrow";
 import { extname } from "node:path";
 import type { createAstAnalyzer } from "../ast";
@@ -27,6 +33,8 @@ const isJsFile = (filePath: string): boolean => {
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof createAstAnalyzer>;
+  /** Optional alias resolver for tsconfig paths */
+  readonly aliasResolver?: AliasResolver;
   /** Set of file paths explicitly invalidated (from BuilderChangeSet) */
   readonly incremental?: {
     readonly cache: DiscoveryCache;
@@ -50,6 +58,7 @@ export type DiscoverModulesResult = {
 export function* discoverModulesGen({
   entryPaths,
   astAnalyzer,
+  aliasResolver,
   incremental,
 }: DiscoverModulesOptions): EffectGenerator<DiscoverModulesResult> {
   const snapshots = new Map<string, DiscoverySnapshot>();
@@ -153,7 +162,7 @@ export function* discoverModulesGen({
     cacheMisses++;
 
     // Build dependency records (relative + external) in a single pass
-    const dependencies = extractModuleDependencies(analysis);
+    const dependencies = extractModuleDependencies({ analysis, aliasResolver });
 
     // Enqueue all resolved relative dependencies for traversal
     for (const dep of dependencies) {

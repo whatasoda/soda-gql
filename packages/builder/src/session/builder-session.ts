@@ -1,5 +1,13 @@
 import { join, resolve } from "node:path";
-import { cachedFn, createAsyncScheduler, createSyncScheduler, type EffectGenerator, type SchedulerError } from "@soda-gql/common";
+import {
+  type AliasResolver,
+  cachedFn,
+  createAliasResolver,
+  createAsyncScheduler,
+  createSyncScheduler,
+  type EffectGenerator,
+  type SchedulerError,
+} from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { type BuilderArtifact, buildArtifact } from "../artifact";
@@ -50,6 +58,7 @@ type SessionState = {
 type BuildGenInput = {
   readonly entryPaths: readonly string[];
   readonly astAnalyzer: ReturnType<typeof createAstAnalyzer>;
+  readonly aliasResolver?: AliasResolver;
   readonly discoveryCache: DiscoveryCache;
   readonly changedFiles: Set<string>;
   readonly removedFiles: Set<string>;
@@ -259,6 +268,7 @@ export const createBuilderSession = (options: {
       input: {
         entryPaths,
         astAnalyzer: ensureAstAnalyzer(),
+        aliasResolver: config.tsconfigPaths ? createAliasResolver(config.tsconfigPaths) : undefined,
         discoveryCache: ensureDiscoveryCache(),
         changedFiles,
         removedFiles,
@@ -415,6 +425,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   const {
     entryPaths,
     astAnalyzer,
+    aliasResolver,
     discoveryCache,
     changedFiles,
     removedFiles,
@@ -435,6 +446,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   const discoveryResult = yield* discoverModulesGen({
     entryPaths,
     astAnalyzer,
+    aliasResolver,
     incremental: {
       cache: discoveryCache,
       changedFiles,
