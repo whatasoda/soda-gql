@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/cli",
-  "version": "0.11.9",
+  "version": "0.11.10",
   "description": "Command-line interface for soda-gql",
   "type": "module",
   "private": false,
