@@ -90,6 +90,7 @@ describe("types.ts", () => {
       styles: {
         importExtension: false,
       },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 
@@ -117,6 +118,7 @@ describe("types.ts", () => {
       styles: {
         importExtension: false,
       },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 

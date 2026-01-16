@@ -121,6 +121,7 @@ const createStubTestConfig = (options: { outdir: string; scalarsPath: string; ad
     },
   },
   styles: { importExtension: false },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 
@@ -254,6 +255,7 @@ describe("tsc-transformer internal module stubbing", () => {
         },
       },
       styles: { importExtension: false },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 

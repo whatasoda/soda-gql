@@ -12,6 +12,8 @@ import {
   type TypeNode,
 } from "graphql";
 
+import type { CategoryVars, DefinitionVar } from "./defs-generator";
+
 const builtinScalarTypes = new Map<string, { readonly input: string; readonly output: string }>([
   ["ID", { input: "string", output: "string" }],
   ["String", { input: "string", output: "string" }],
@@ -575,9 +577,16 @@ const renderDirectiveMethods = (schema: SchemaIndex): string => {
   return renderPropertyLines({ entries: methods, indentSize: 2 });
 };
 
+export type DefsFile = {
+  readonly relativePath: string;
+  readonly content: string;
+};
+
 export type GeneratedModule = {
   readonly code: string;
   readonly injectsCode?: string;
+  readonly defsFiles?: readonly DefsFile[];
+  readonly categoryVars?: Record<string, CategoryVars>;
   readonly stats: {
     readonly objects: number;
     readonly enums: number;
@@ -603,6 +612,16 @@ export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
   readonly defaultInputDepth?: Map<string, number>;
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
+  readonly chunkSize?: number;
+};
+
+type SplittingMode = {
+  readonly importPaths: {
+    readonly enums: string;
+    readonly inputs: string;
+    readonly objects: string;
+    readonly unions: string;
+  };
 };
 
 type MultiRuntimeTemplateOptions = {
@@ -632,6 +651,7 @@ type MultiRuntimeTemplateOptions = {
     }
   >;
   readonly injection: RuntimeTemplateInjection;
+  readonly splitting: SplittingMode;
 };
 
 /**
@@ -725,6 +745,33 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     imports.push(`import { ${injectsImports.join(", ")} } from "${$$.injection.injectsModulePath}";`);
   }
 
+  // Build imports for split mode (always enabled)
+  {
+    const { importPaths } = $$.splitting;
+    for (const [name, config] of Object.entries($$.schemas)) {
+      // Import enums (if any)
+      if (config.enumNames.length > 0) {
+        const enumImports = config.enumNames.map((n) => `enum_${name}_${n}`).join(", ");
+        imports.push(`import { ${enumImports} } from "${importPaths.enums}";`);
+      }
+      // Import inputs (if any)
+      if (config.inputNames.length > 0) {
+        const inputImports = config.inputNames.map((n) => `input_${name}_${n}`).join(", ");
+        imports.push(`import { ${inputImports} } from "${importPaths.inputs}";`);
+      }
+      // Import objects (if any)
+      if (config.objectNames.length > 0) {
+        const objectImports = config.objectNames.map((n) => `object_${name}_${n}`).join(", ");
+        imports.push(`import { ${objectImports} } from "${importPaths.objects}";`);
+      }
+      // Import unions (if any)
+      if (config.unionNames.length > 0) {
+        const unionImports = config.unionNames.map((n) => `union_${name}_${n}`).join(", ");
+        imports.push(`import { ${unionImports} } from "${importPaths.unions}";`);
+      }
+    }
+  }
+
   const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
 
   // Generate per-schema definitions (granular pattern)
@@ -760,12 +807,32 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
         : "";
 
-    // Granular: generate individual variable declarations
+    // Always in split mode
+    const isSplitMode = true;
+
+    // Granular: generate individual variable declarations (skip in split mode - they're imported)
+    // Note: Scalars are never split - they're either injected or inlined
     const scalarVarsBlock = config.scalarVars.join("\n");
-    const enumVarsBlock = config.enumVars.length > 0 ? config.enumVars.join("\n") : "// (no enums)";
-    const inputVarsBlock = config.inputVars.length > 0 ? config.inputVars.join("\n") : "// (no inputs)";
-    const objectVarsBlock = config.objectVars.length > 0 ? config.objectVars.join("\n") : "// (no objects)";
-    const unionVarsBlock = config.unionVars.length > 0 ? config.unionVars.join("\n") : "// (no unions)";
+    const enumVarsBlock = isSplitMode
+      ? "// (enums imported)"
+      : config.enumVars.length > 0
+        ? config.enumVars.join("\n")
+        : "// (no enums)";
+    const inputVarsBlock = isSplitMode
+      ? "// (inputs imported)"
+      : config.inputVars.length > 0
+        ? config.inputVars.join("\n")
+        : "// (no inputs)";
+    const objectVarsBlock = isSplitMode
+      ? "// (objects imported)"
+      : config.objectVars.length > 0
+        ? config.objectVars.join("\n")
+        : "// (no objects)";
+    const unionVarsBlock = isSplitMode
+      ? "// (unions imported)"
+      : config.unionVars.length > 0
+        ? config.unionVars.join("\n")
+        : "// (no unions)";
 
     // Granular: generate assembly references
     // For injection mode, use imported scalar object; otherwise assemble from individual vars
@@ -785,6 +852,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
       config.unionNames.length > 0 ? `{ ${config.unionNames.map((n) => `${n}: union_${name}_${n}`).join(", ")} }` : "{}";
 
     // Granular: skip individual scalar vars when using injection (scalars come from import)
+    // Note: Even in split mode, scalars are inlined unless injection is used
     const scalarVarsSection = $$.injection.mode === "inject" ? "// (scalars imported)" : scalarVarsBlock;
 
     // When injecting scalars, use the imported alias directly; otherwise use the assembled category object
@@ -867,9 +935,11 @@ ${typeExports.join("\n")}`);
     gqlEntries.push(`  ${name}: ${gqlVarName}`);
   }
 
+  // In split mode (always on), we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
+  const needsDefineEnum = false;
+
   return `\
-import {
-  defineEnum,
+import {${needsDefineEnum ? "\n  defineEnum," : ""}
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
   createDirectiveMethod,
@@ -1011,17 +1081,53 @@ export const generateMultiSchemaModule = (
     ? { mode: "inject", perSchema: options.injection, injectsModulePath: "./_internal-injects" }
     : { mode: "inline" };
 
+  // Always use split mode
+  const splitting: SplittingMode = {
+    importPaths: {
+      enums: "./_defs/enums",
+      inputs: "./_defs/inputs",
+      objects: "./_defs/objects",
+      unions: "./_defs/unions",
+    },
+  };
+
   const code = multiRuntimeTemplate({
     schemas: schemaConfigs,
     injection,
+    splitting,
   });
 
   // Generate injects code if in inject mode
   const injectsCode = options?.injection ? generateInjectsCode(options.injection) : undefined;
 
+  // Always build categoryVars (splitting is always enabled)
+  const categoryVarsResult: Record<string, CategoryVars> = Object.fromEntries(
+    Object.entries(schemaConfigs).map(([schemaName, config]) => {
+      const toDefVar = (code: string, prefix: string): DefinitionVar => {
+        // Extract name from "const {prefix}_{schemaName}_{name} = ..."
+        const match = code.match(new RegExp(`const (${prefix}_${schemaName}_(\\w+))`));
+        return {
+          name: match?.[1] ?? "",
+          code,
+        };
+      };
+
+      return [
+        schemaName,
+        {
+          enums: (config.enumVars as string[]).map((c) => toDefVar(c, "enum")),
+          inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
+          objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
+          unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
+        } satisfies CategoryVars,
+      ];
+    }),
+  );
+
   return {
     code,
     injectsCode,
+    categoryVars: categoryVarsResult,
     stats: allStats,
   };
 };

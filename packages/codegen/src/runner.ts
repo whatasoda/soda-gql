@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
+import { generateDefsStructure } from "./defs-generator";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
@@ -134,11 +135,19 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
   }
 
+  // Get chunkSize config (default: 100)
+  const chunkSize = options.chunkSize ?? 100;
+
   // Generate multi-schema module (this becomes _internal.ts content)
-  const { code: internalCode, injectsCode } = generateMultiSchemaModule(schemas, {
+  const {
+    code: internalCode,
+    injectsCode,
+    categoryVars,
+  } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
+    chunkSize,
   });
 
   // Generate index.ts wrapper (simple re-export from _internal)
@@ -177,6 +186,48 @@ export * from "./_internal";
 
     if (injectsWriteResult.isErr()) {
       return err(injectsWriteResult.error);
+    }
+  }
+
+  // Write _defs/ files (always enabled)
+  const defsPaths: string[] = [];
+  if (categoryVars) {
+    const outDir = dirname(outPath);
+
+    // Merge all schema categoryVars into a single combined structure
+    // This ensures all definitions from all schemas go into the same defs files
+    type DefinitionVar = { name: string; code: string };
+    const combinedVars = {
+      enums: [] as DefinitionVar[],
+      inputs: [] as DefinitionVar[],
+      objects: [] as DefinitionVar[],
+      unions: [] as DefinitionVar[],
+    };
+
+    for (const vars of Object.values(categoryVars)) {
+      combinedVars.enums.push(...vars.enums);
+      combinedVars.inputs.push(...vars.inputs);
+      combinedVars.objects.push(...vars.objects);
+      combinedVars.unions.push(...vars.unions);
+    }
+
+    // Generate defs structure for all schemas combined
+    const defsStructure = generateDefsStructure("combined", combinedVars, chunkSize);
+
+    for (const file of defsStructure.files) {
+      const filePath = join(outDir, file.relativePath);
+
+      // writeModule handles directory creation internally via mkdirSync
+      const writeResult = await writeModule(filePath, file.content).match(
+        () => Promise.resolve(ok(undefined)),
+        (error) => Promise.resolve(err(error)),
+      );
+
+      if (writeResult.isErr()) {
+        return err(writeResult.error);
+      }
+
+      defsPaths.push(filePath);
     }
   }
 
@@ -221,5 +272,6 @@ export * from "./_internal";
     internalPath,
     injectsPath,
     cjsPath: bundleResult.value.cjsPath,
+    ...(defsPaths.length > 0 ? { defsPaths } : {}),
   } satisfies CodegenSuccess);
 };

@@ -365,9 +365,7 @@ describe("artifact aggregate", () => {
   it("fails when canonical ID is empty", () => {
     const emptyId = "" as CanonicalId;
 
-    const analyses = new Map<string, ModuleAnalysis>([
-      ["", createTestAnalysis("", [createTestDefinition(emptyId)])],
-    ]);
+    const analyses = new Map<string, ModuleAnalysis>([["", createTestAnalysis("", [createTestDefinition(emptyId)])]]);
 
     const intermediateModule = createTestIntermediateModule({
       [emptyId]: {

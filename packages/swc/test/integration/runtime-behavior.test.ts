@@ -43,6 +43,7 @@ try {
       exclude: [],
       schemas: {},
       styles: { importExtension: false },
+      codegen: { chunkSize: 100 },
       plugins: {},
     },
     artifact: {

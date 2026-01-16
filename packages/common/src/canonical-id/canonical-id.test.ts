@@ -1,5 +1,11 @@
 import { describe, expect, test as it } from "bun:test";
-import { type CanonicalId, createCanonicalId, isRelativeCanonicalId, parseCanonicalId, validateCanonicalId } from "./canonical-id";
+import {
+  type CanonicalId,
+  createCanonicalId,
+  isRelativeCanonicalId,
+  parseCanonicalId,
+  validateCanonicalId,
+} from "./canonical-id";
 
 describe("canonical identifier helpers", () => {
   describe("createCanonicalId", () => {
