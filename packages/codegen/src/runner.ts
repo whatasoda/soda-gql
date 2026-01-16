@@ -2,10 +2,11 @@ import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
-import { writeModule } from "./file";
+import { generateDefsStructure } from "./defs-generator";
+import { ensureDirectory, writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
+import type { CodegenOptions, CodegenResult, CodegenSuccess, SplittingConfig } from "./types";
 
 const extensionMap: Record<string, string> = {
   ".ts": ".js",
@@ -134,11 +135,19 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
   }
 
+  // Get splitting config (default: enabled with chunkSize 100)
+  const splittingConfig: SplittingConfig = options.splitting ?? { enabled: true, chunkSize: 100 };
+
   // Generate multi-schema module (this becomes _internal.ts content)
-  const { code: internalCode, injectsCode } = generateMultiSchemaModule(schemas, {
+  const {
+    code: internalCode,
+    injectsCode,
+    categoryVars,
+  } = generateMultiSchemaModule(schemas, {
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
+    splitting: splittingConfig,
   });
 
   // Generate index.ts wrapper (simple re-export from _internal)
@@ -177,6 +186,65 @@ export * from "./_internal";
 
     if (injectsWriteResult.isErr()) {
       return err(injectsWriteResult.error);
+    }
+  }
+
+  // Write _defs/ files when splitting is enabled
+  const defsPaths: string[] = [];
+  if (splittingConfig.enabled && categoryVars) {
+    const outDir = dirname(outPath);
+    const defsDir = join(outDir, "_defs");
+
+    // Ensure _defs directory exists
+    const mkdirResult = ensureDirectory(defsDir);
+    if (mkdirResult.isErr()) {
+      return err(mkdirResult.error);
+    }
+
+    // Merge all schema categoryVars into a single combined structure
+    // This ensures all definitions from all schemas go into the same defs files
+    type DefinitionVar = { name: string; code: string };
+    const combinedVars = {
+      scalars: [] as DefinitionVar[],
+      enums: [] as DefinitionVar[],
+      inputs: [] as DefinitionVar[],
+      objects: [] as DefinitionVar[],
+      unions: [] as DefinitionVar[],
+    };
+
+    for (const vars of Object.values(categoryVars)) {
+      combinedVars.scalars.push(...vars.scalars);
+      combinedVars.enums.push(...vars.enums);
+      combinedVars.inputs.push(...vars.inputs);
+      combinedVars.objects.push(...vars.objects);
+      combinedVars.unions.push(...vars.unions);
+    }
+
+    // Generate defs structure for all schemas combined
+    const defsStructure = generateDefsStructure("combined", combinedVars, splittingConfig.chunkSize);
+
+    for (const file of defsStructure.files) {
+      const filePath = join(outDir, file.relativePath);
+      const fileDir = dirname(filePath);
+
+      // Ensure subdirectory exists (for chunked files)
+      if (fileDir !== defsDir) {
+        const subMkdirResult = ensureDirectory(fileDir);
+        if (subMkdirResult.isErr()) {
+          return err(subMkdirResult.error);
+        }
+      }
+
+      const writeResult = await writeModule(filePath, file.content).match(
+        () => Promise.resolve(ok(undefined)),
+        (error) => Promise.resolve(err(error)),
+      );
+
+      if (writeResult.isErr()) {
+        return err(writeResult.error);
+      }
+
+      defsPaths.push(filePath);
     }
   }
 
@@ -221,5 +289,6 @@ export * from "./_internal";
     internalPath,
     injectsPath,
     cjsPath: bundleResult.value.cjsPath,
+    ...(defsPaths.length > 0 ? { defsPaths } : {}),
   } satisfies CodegenSuccess);
 };
