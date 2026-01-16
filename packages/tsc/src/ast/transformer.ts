@@ -13,6 +13,11 @@ type TransformCallExpressionArgs = {
   readonly getArtifact: ArtifactLookup;
   readonly factory: ts.NodeFactory;
   readonly isCJS: boolean;
+  /**
+   * Base directory for relative path computation.
+   * When provided, canonical IDs use paths relative to this directory.
+   */
+  readonly baseDir?: string;
 };
 
 type TransformCallExpressionResult =
@@ -26,6 +31,7 @@ export const transformCallExpression = ({
   getArtifact,
   factory,
   isCJS,
+  baseDir,
 }: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
   // Skip if this call doesn't have GQL metadata
   if (!metadata.has(callNode)) {
@@ -37,6 +43,7 @@ export const transformCallExpression = ({
     filename,
     metadata,
     getArtifact,
+    baseDir,
   });
 
   if (gqlCallResult.isErr()) {

@@ -191,6 +191,25 @@ describe("CanonicalPathTracker", () => {
 
       expect(canonicalId).toBe("/test/src/test.ts::" as CanonicalId);
     });
+
+    it("resolves relative canonical IDs when baseDir is provided", () => {
+      const tracker = createCanonicalTracker({ filePath, baseDir: "/test" });
+
+      const canonicalId = tracker.resolveCanonicalId("foo.bar");
+
+      expect(canonicalId).toBe("src/test.ts::foo.bar" as CanonicalId);
+    });
+
+    it("handles baseDir at project root", () => {
+      const tracker = createCanonicalTracker({
+        filePath: "/project/src/components/User.ts",
+        baseDir: "/project",
+      });
+
+      const canonicalId = tracker.resolveCanonicalId("userFragment");
+
+      expect(canonicalId).toBe("src/components/User.ts::userFragment" as CanonicalId);
+    });
   });
 
   describe("Export binding registration", () => {

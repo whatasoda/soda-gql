@@ -1,3 +1,4 @@
+import { relative } from "node:path";
 import type { BuilderArtifact, BuilderArtifactElement } from "@soda-gql/builder";
 import { collectAffectedFiles } from "@soda-gql/builder";
 import {
@@ -232,14 +233,25 @@ export class SodaGqlWebpackPlugin {
   }
 
   /**
+   * Convert an absolute file path to a relative path from baseDir.
+   */
+  private toRelativePath(absolutePath: string): string {
+    if (!this.pluginSession) {
+      return normalizePath(absolutePath);
+    }
+    return normalizePath(relative(this.pluginSession.config.baseDir, absolutePath));
+  }
+
+  /**
    * Check if a file path corresponds to a soda-gql source file.
    */
   private isSodaGqlFile(filePath: string): boolean {
     if (!this.currentArtifact) return false;
 
-    const normalized = normalizePath(filePath);
+    // Convert absolute path to relative for matching against artifact sourcePaths
+    const relativePath = this.toRelativePath(filePath);
     for (const element of Object.values(this.currentArtifact.elements)) {
-      if (normalizePath(element.metadata.sourcePath) === normalized) {
+      if (normalizePath(element.metadata.sourcePath) === relativePath) {
         return true;
       }
     }

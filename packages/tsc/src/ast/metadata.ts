@@ -11,16 +11,22 @@ type CollectArgs = {
   readonly sourceFile: ts.SourceFile;
   readonly filename: string;
   readonly createTracker?: CanonicalTrackerFactory;
+  /**
+   * Base directory for relative path computation.
+   * When provided, canonical IDs use paths relative to this directory.
+   */
+  readonly baseDir?: string;
 };
 
 type ScopeHandle = ReturnType<CanonicalPathTracker["enterScope"]>;
 type ExportBindingMap = Map<string, string>;
 
-export const collectGqlDefinitionMetadata = ({ sourceFile, filename, createTracker }: CollectArgs): GqlDefinitionMetadataMap => {
+export const collectGqlDefinitionMetadata = ({ sourceFile, filename, createTracker, baseDir }: CollectArgs): GqlDefinitionMetadataMap => {
   const exportBindings = collectExportBindings(sourceFile);
   const trackerFactory = createTracker ?? createCanonicalTracker;
   const tracker = trackerFactory({
     filePath: filename,
+    baseDir,
     getExportName: (localName) => exportBindings.get(localName),
   });
 

@@ -127,7 +127,7 @@ describe("artifact aggregate", () => {
     );
   });
 
-  it("fails when duplicate canonical ID exists in analysis", () => {
+  it("succeeds when single definition exists", () => {
     const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment");
 
     // Create analysis with single definition
@@ -148,17 +148,53 @@ describe("artifact aggregate", () => {
       },
     });
 
-    // First pass succeeds
-    const result1 = aggregate({
+    const result = aggregate({
       analyses,
       elements: intermediateModule.elements,
     });
-    expect(result1.isOk()).toBe(true);
+    expect(result.isOk()).toBe(true);
+  });
 
-    // Note: Duplicate detection is handled by aggregate checking `registry.has(definition.canonicalId)`
-    // Since we can't create duplicate definitions in a single analysis easily, this test
-    // verifies the normal case. The ARTIFACT_ALREADY_REGISTERED error would require
-    // malformed input or a bug in the aggregate function.
+  it("fails when duplicate canonical ID exists across different analyses", () => {
+    // Same canonical ID used in two different files
+    const duplicateId = createCanonicalId("/app/src/entities/user.ts", "userFragment");
+
+    // Two different analyses, both claiming the same canonical ID
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(duplicateId)])],
+      ["/app/src/pages/profile.ts", createTestAnalysis("/app/src/pages/profile.ts", [createTestDefinition(duplicateId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [duplicateId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error("Expected aggregate to fail");
+      },
+      (error) => {
+        expect(error.code).toBe("RUNTIME_MODULE_LOAD_FAILED");
+        if (error.code === "RUNTIME_MODULE_LOAD_FAILED") {
+          expect(error.message).toBe("ARTIFACT_ALREADY_REGISTERED");
+        }
+      },
+    );
   });
 
   it("fails when artifact has unknown type", () => {
@@ -191,6 +227,47 @@ describe("artifact aggregate", () => {
           expect(error.message).toBe("UNKNOWN_ARTIFACT_KIND");
           expect(error.filePath).toBe("/app/src/entities/unknown.ts");
         }
+      },
+    );
+  });
+
+  it("stores relative sourcePath in metadata when baseDir is used", () => {
+    // Create canonical ID with relative path using baseDir
+    const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment", { baseDir: "/app" });
+
+    const analyses = new Map<string, ModuleAnalysis>([
+      // Analysis still uses absolute path, but canonical ID is relative
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(fragmentId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [fragmentId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (registry) => {
+        const fragment = registry.get(fragmentId);
+        expect(fragment).toBeDefined();
+        // sourcePath should be relative (from canonical ID)
+        expect(fragment?.metadata.sourcePath).toBe("src/entities/user.ts");
+      },
+      () => {
+        throw new Error("Expected aggregate to succeed");
       },
     );
   });
@@ -240,6 +317,122 @@ describe("artifact aggregate", () => {
       },
       () => {
         throw new Error("Expected aggregate to succeed");
+      },
+    );
+  });
+
+  it("fails when canonical ID is missing separator", () => {
+    // Cast string directly to CanonicalId to bypass createCanonicalId validation
+    const invalidId = "invalid-no-separator" as CanonicalId;
+
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["invalid-no-separator", createTestAnalysis("invalid-no-separator", [createTestDefinition(invalidId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [invalidId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error("Expected aggregate to fail");
+      },
+      (error) => {
+        expect(error.code).toBe("CANONICAL_PATH_INVALID");
+        if (error.code === "CANONICAL_PATH_INVALID") {
+          expect(error.path).toBe("invalid-no-separator");
+          expect(error.reason).toContain("separator");
+        }
+      },
+    );
+  });
+
+  it("fails when canonical ID is empty", () => {
+    const emptyId = "" as CanonicalId;
+
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["", createTestAnalysis("", [createTestDefinition(emptyId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [emptyId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error("Expected aggregate to fail");
+      },
+      (error) => {
+        expect(error.code).toBe("CANONICAL_PATH_INVALID");
+      },
+    );
+  });
+
+  it("fails when canonical ID has empty file path", () => {
+    const invalidId = "::fragment" as CanonicalId;
+
+    const analyses = new Map<string, ModuleAnalysis>([
+      ["::fragment", createTestAnalysis("::fragment", [createTestDefinition(invalidId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [invalidId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error("Expected aggregate to fail");
+      },
+      (error) => {
+        expect(error.code).toBe("CANONICAL_PATH_INVALID");
+        if (error.code === "CANONICAL_PATH_INVALID") {
+          expect(error.reason).toContain("file path");
+        }
       },
     );
   });

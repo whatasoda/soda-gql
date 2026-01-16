@@ -113,4 +113,9 @@ export type ModuleAnalysis = {
 export type AnalyzeModuleInput = {
   readonly filePath: string;
   readonly source: string;
+  /**
+   * Base directory for relative path computation in canonical IDs.
+   * When provided, canonical IDs will use relative paths from baseDir.
+   */
+  readonly baseDir?: string;
 };

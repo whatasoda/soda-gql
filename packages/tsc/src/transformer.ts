@@ -62,6 +62,7 @@ export const createTransformer = ({
     const metadata = collectGqlDefinitionMetadata({
       sourceFile,
       filename: sourceFile.fileName,
+      baseDir: config.baseDir,
     });
 
     const runtimeCallsFromLastTransform: ts.Expression[] = [];
@@ -74,6 +75,7 @@ export const createTransformer = ({
           getArtifact: (canonicalId: CanonicalId) => artifact.elements[canonicalId],
           factory: context.factory,
           isCJS,
+          baseDir: config.baseDir,
         });
 
         if (result.isErr()) {

@@ -259,10 +259,12 @@ const collectAllDefinitions = ({
   sourceFile,
   identifiers,
   exports,
+  baseDir,
 }: {
   sourceFile: ts.SourceFile;
   identifiers: ReadonlySet<string>;
   exports: readonly ModuleExport[];
+  baseDir?: string;
 }): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly ts.CallExpression[];
@@ -284,6 +286,7 @@ const collectAllDefinitions = ({
   // Create canonical tracker
   const tracker = createCanonicalTracker({
     filePath: sourceFile.fileName,
+    baseDir,
     getExportName: (localName) => exportBindings.get(localName),
   });
 
@@ -474,7 +477,7 @@ const collectAllDefinitions = ({
   const definitions = pending.map(
     (item) =>
       ({
-        canonicalId: createCanonicalId(sourceFile.fileName, item.astPath),
+        canonicalId: createCanonicalId(sourceFile.fileName, item.astPath, { baseDir }),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -746,6 +749,7 @@ export const typescriptAdapter: AnalyzerAdapter = {
       sourceFile,
       identifiers: gqlIdentifiers,
       exports,
+      baseDir: input.baseDir,
     });
 
     // Collect diagnostics

@@ -119,9 +119,14 @@ const _buildAstPath = (stack: readonly ScopeFrame[]): string => {
  */
 export const createCanonicalTracker = (options: {
   filePath: string;
+  /**
+   * Base directory for relative path computation in canonical IDs.
+   * When provided, canonical IDs will use relative paths from baseDir.
+   */
+  baseDir?: string;
   getExportName?: (localName: string) => string | undefined;
 }): CanonicalPathTracker => {
-  const { filePath, getExportName } = options;
+  const { filePath, baseDir, getExportName } = options;
 
   // Scope stack
   const scopeStack: ScopeFrame[] = [];
@@ -204,7 +209,7 @@ export const createCanonicalTracker = (options: {
     },
 
     resolveCanonicalId(astPath: string): CanonicalId {
-      return createCanonicalId(filePath, astPath);
+      return createCanonicalId(filePath, astPath, { baseDir });
     },
 
     registerExportBinding(local: string, exported: string): void {

@@ -1,3 +1,4 @@
+import { relative, resolve } from "node:path";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel/plugin";
 import { type BuilderArtifact, type BuilderArtifactElement, collectAffectedFiles } from "@soda-gql/builder";
@@ -81,14 +82,36 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
   };
 
   /**
+   * Convert an absolute file path to a relative path from baseDir.
+   * This is used to match against artifact sourcePaths which are relative.
+   */
+  const toRelativePath = (absolutePath: string): string => {
+    if (!pluginSession) {
+      return normalizePath(absolutePath);
+    }
+    return normalizePath(relative(pluginSession.config.baseDir, absolutePath));
+  };
+
+  /**
+   * Convert a relative file path to an absolute path using baseDir.
+   * This is used to convert artifact sourcePaths to absolute paths for Vite's module graph.
+   */
+  const toAbsolutePath = (relativePath: string): string => {
+    if (!pluginSession) {
+      return relativePath;
+    }
+    return normalizePath(resolve(pluginSession.config.baseDir, relativePath));
+  };
+
+  /**
    * Check if a file path corresponds to a soda-gql source file.
    */
   const isSodaGqlFile = (filePath: string): boolean => {
     if (!currentArtifact) return false;
 
-    const normalized = normalizePath(filePath);
+    const relativePath = toRelativePath(filePath);
     for (const element of Object.values(currentArtifact.elements)) {
-      if (normalizePath(element.metadata.sourcePath) === normalized) {
+      if (normalizePath(element.metadata.sourcePath) === relativePath) {
         return true;
       }
     }
@@ -203,16 +226,17 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
       }
 
       // Check if this file contains any soda-gql elements
-      const normalizedPath = normalizePath(id);
+      // Convert absolute path to relative for matching against artifact sourcePaths
+      const relativePath = toRelativePath(id);
       const hasElements = Object.values(currentArtifact.elements).some(
-        (element) => normalizePath(element.metadata.sourcePath) === normalizedPath,
+        (element) => normalizePath(element.metadata.sourcePath) === relativePath,
       );
 
       if (!hasElements) {
         return null; // Not a soda-gql file
       }
 
-      log(`Transforming: ${normalizedPath}`);
+      log(`Transforming: ${relativePath}`);
 
       // Try SWC transformer first if available
       if (swcTransformer) {
@@ -311,11 +335,13 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
       log(`Changed files: ${changedFiles.size}, Affected files: ${affectedFiles.size}`);
 
       // Convert affected file paths to Vite module nodes
+      // affectedFiles contains relative paths, convert to absolute for Vite's module graph
       const affectedModules = new Set<ModuleNode>();
 
       for (const affectedPath of affectedFiles) {
-        // Try to get module by file path
-        const modulesByFile = server.moduleGraph.getModulesByFile(affectedPath);
+        // Convert relative path to absolute for Vite's module graph lookup
+        const absolutePath = toAbsolutePath(affectedPath);
+        const modulesByFile = server.moduleGraph.getModulesByFile(absolutePath);
         if (modulesByFile) {
           for (const mod of modulesByFile) {
             affectedModules.add(mod);
