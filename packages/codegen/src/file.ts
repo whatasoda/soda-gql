@@ -4,19 +4,6 @@ import { err, ok } from "neverthrow";
 
 import type { CodegenError } from "./types";
 
-export const ensureDirectory = (dirPath: string) => {
-  try {
-    mkdirSync(resolve(dirPath), { recursive: true });
-    return ok<void, CodegenError>(undefined);
-  } catch (error) {
-    return err<void, CodegenError>({
-      code: "EMIT_FAILED",
-      message: error instanceof Error ? error.message : String(error),
-      outPath: dirPath,
-    });
-  }
-};
-
 export const writeModule = (outPath: string, contents: string) => {
   const targetPath = resolve(outPath);
 
