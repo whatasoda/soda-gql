@@ -42,8 +42,9 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         return err(emitRegistrationError(definition, `ARTIFACT_ALREADY_REGISTERED`));
       }
 
+      // Use file path from canonical ID (which is relative when baseDir is set)
       const metadata: BuilderArtifactElementMetadata = {
-        sourcePath: analysis.filePath ?? canonicalToFilePath(definition.canonicalId),
+        sourcePath: canonicalToFilePath(definition.canonicalId),
         contentHash: "", // Will be computed after prebuild creation
       };
 

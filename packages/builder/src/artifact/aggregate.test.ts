@@ -195,6 +195,47 @@ describe("artifact aggregate", () => {
     );
   });
 
+  it("stores relative sourcePath in metadata when baseDir is used", () => {
+    // Create canonical ID with relative path using baseDir
+    const fragmentId = createCanonicalId("/app/src/entities/user.ts", "userFragment", { baseDir: "/app" });
+
+    const analyses = new Map<string, ModuleAnalysis>([
+      // Analysis still uses absolute path, but canonical ID is relative
+      ["/app/src/entities/user.ts", createTestAnalysis("/app/src/entities/user.ts", [createTestDefinition(fragmentId)])],
+    ]);
+
+    const intermediateModule = createTestIntermediateModule({
+      [fragmentId]: {
+        type: "fragment",
+        element: Fragment.create(() => ({
+          typename: "User",
+          key: undefined,
+          schemaLabel: "default",
+          variableDefinitions: {},
+          spread: () => ({}),
+        })),
+      },
+    });
+
+    const result = aggregate({
+      analyses,
+      elements: intermediateModule.elements,
+    });
+
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (registry) => {
+        const fragment = registry.get(fragmentId);
+        expect(fragment).toBeDefined();
+        // sourcePath should be relative (from canonical ID)
+        expect(fragment?.metadata.sourcePath).toBe("src/entities/user.ts");
+      },
+      () => {
+        throw new Error("Expected aggregate to succeed");
+      },
+    );
+  });
+
   it("preserves all prebuild data for operations", () => {
     const operationId = createCanonicalId("/app/src/pages/profile.query.ts", "profileQuery");
 
