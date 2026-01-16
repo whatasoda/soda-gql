@@ -81,7 +81,7 @@ describe("codegen splitting", () => {
     return scalarPath;
   };
 
-  test("generates _defs directory when splitting is enabled", async () => {
+  test("generates _defs directory", async () => {
     const schemaPath = createTestSchema();
     const scalarPath = createScalarFile();
 
@@ -94,7 +94,7 @@ describe("codegen splitting", () => {
       },
       outPath: join(outDir, "index.ts"),
       format: "human",
-      splitting: { enabled: true, chunkSize: 100 },
+      chunkSize: 100,
     };
 
     const result = await runCodegen(options);
@@ -116,7 +116,7 @@ describe("codegen splitting", () => {
     }
   });
 
-  test("does not generate _defs directory when splitting is disabled", async () => {
+  test("_internal.ts imports from _defs", async () => {
     const schemaPath = createTestSchema();
     const scalarPath = createScalarFile();
 
@@ -129,35 +129,7 @@ describe("codegen splitting", () => {
       },
       outPath: join(outDir, "index.ts"),
       format: "human",
-      splitting: { enabled: false, chunkSize: 100 },
-    };
-
-    const result = await runCodegen(options);
-
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // Check that _defs directory was NOT created
-      expect(existsSync(join(outDir, "_defs"))).toBe(false);
-
-      // Check that defsPaths is empty or undefined
-      expect(result.value.defsPaths?.length ?? 0).toBe(0);
-    }
-  });
-
-  test("_internal.ts imports from _defs when splitting is enabled", async () => {
-    const schemaPath = createTestSchema();
-    const scalarPath = createScalarFile();
-
-    const options: CodegenOptions = {
-      schemas: {
-        default: {
-          schema: [schemaPath],
-          inject: { scalars: scalarPath },
-        },
-      },
-      outPath: join(outDir, "index.ts"),
-      format: "human",
-      splitting: { enabled: true, chunkSize: 100 },
+      chunkSize: 100,
     };
 
     const result = await runCodegen(options);
@@ -187,7 +159,7 @@ describe("codegen splitting", () => {
       },
       outPath: join(outDir, "index.ts"),
       format: "human",
-      splitting: { enabled: true, chunkSize: 100 },
+      chunkSize: 100,
     };
 
     const result = await runCodegen(options);
@@ -227,7 +199,7 @@ describe("codegen splitting", () => {
       },
       outPath: join(outDir, "index.ts"),
       format: "human",
-      splitting: { enabled: true, chunkSize: 100 },
+      chunkSize: 100,
     };
 
     const result = await runCodegen(options);
@@ -243,11 +215,11 @@ describe("codegen splitting", () => {
     }
   });
 
-  test("splitting defaults to enabled with chunkSize 100", async () => {
+  test("chunkSize defaults to 100", async () => {
     const schemaPath = createTestSchema();
     const scalarPath = createScalarFile();
 
-    // No explicit splitting config - should use defaults
+    // No explicit chunkSize - should use default (100)
     const options: CodegenOptions = {
       schemas: {
         default: {
@@ -263,7 +235,7 @@ describe("codegen splitting", () => {
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      // Should use default splitting (enabled)
+      // Should generate _defs directory (always enabled)
       expect(existsSync(join(outDir, "_defs"))).toBe(true);
       expect(result.value.defsPaths?.length).toBeGreaterThan(0);
     }

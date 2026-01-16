@@ -42,7 +42,7 @@ const createTestConfig = (options: { outdir: string; scalarsPath: string; adapte
     },
   },
   styles: { importExtension: false },
-  codegen: { splitting: true, chunkSize: 100 },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 
@@ -189,7 +189,7 @@ describe("createBabelTransformer", () => {
           },
         },
         styles: { importExtension: false },
-        codegen: { splitting: true, chunkSize: 100 },
+        codegen: { chunkSize: 100 },
         plugins: {},
       };
 

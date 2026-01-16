@@ -99,7 +99,6 @@ const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
 });
 
 const CodegenConfigSchema = defineSchemaFor<CodegenConfig>()({
-  splitting: z.boolean().optional(),
   chunkSize: z.number().int().positive().optional(),
 });
 

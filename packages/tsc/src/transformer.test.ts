@@ -46,7 +46,7 @@ describe("tsc-transformer", () => {
                     },
                   },
                   styles: { importExtension: false },
-                  codegen: { splitting: true, chunkSize: 100 },
+                  codegen: { chunkSize: 100 },
                   plugins: {},
                 },
                 moduleFormat: "esm",
@@ -87,7 +87,7 @@ describe("tsc-transformer", () => {
                     },
                   },
                   styles: { importExtension: false },
-                  codegen: { splitting: true, chunkSize: 100 },
+                  codegen: { chunkSize: 100 },
                   plugins: {},
                 },
                 moduleFormat: "cjs",
@@ -123,7 +123,7 @@ describe("tsc-transformer", () => {
                     },
                   },
                   styles: { importExtension: false },
-                  codegen: { splitting: true, chunkSize: 100 },
+                  codegen: { chunkSize: 100 },
                   plugins: {},
                 },
                 moduleFormat: "esm",
@@ -170,7 +170,7 @@ const createStubTestConfig = (options: { outdir: string; scalarsPath: string; ad
     },
   },
   styles: { importExtension: false },
-  codegen: { splitting: true, chunkSize: 100 },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 
@@ -303,7 +303,7 @@ describe("tsc-transformer internal module stubbing", () => {
         },
       },
       styles: { importExtension: false },
-      codegen: { splitting: true, chunkSize: 100 },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 

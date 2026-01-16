@@ -84,7 +84,6 @@ function normalizeArtifact(artifact: SodaGqlConfig["artifact"], configDir: strin
  */
 function normalizeCodegen(codegen: SodaGqlConfig["codegen"]): ResolvedCodegenConfig {
   return {
-    splitting: codegen?.splitting ?? true,
     chunkSize: codegen?.chunkSize ?? 100,
   };
 }

@@ -118,7 +118,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
       styles: {
         importExtension: false,
       },
-      codegen: { splitting: true, chunkSize: 100 },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 
@@ -219,7 +219,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
       styles: {
         importExtension: false,
       },
-      codegen: { splitting: true, chunkSize: 100 },
+      codegen: { chunkSize: 100 },
       plugins: {},
     };
 

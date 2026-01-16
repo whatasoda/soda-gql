@@ -289,10 +289,15 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
+    // In split mode, enum definitions are in categoryVars
+    const enumDef = result.categoryVars?.default?.enums.find((e) => e.name.includes("Status"));
+    expect(enumDef).toBeDefined();
+
     // Factory function format: defineEnum<"Status", ...>
-    expect(result.code).toContain('const enum_default_Status = defineEnum<"Status"');
-    expect(result.code).toContain("ACTIVE: true");
-    expect(result.code).toContain("INACTIVE: true");
+    const enumCode = enumDef?.code ?? "";
+    expect(enumCode).toContain('enum_default_Status = defineEnum<"Status"');
+    expect(enumCode).toContain("ACTIVE: true");
+    expect(enumCode).toContain("INACTIVE: true");
     expect(result.stats.enums).toBe(1);
   });
 
@@ -310,11 +315,16 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Inline object format with as const
-    expect(result.code).toContain('const input_default_CreateUserInput = { name: "CreateUserInput", fields:');
-    expect(result.code).toContain("} as const");
+    // In split mode, input definitions are in categoryVars
+    const inputDef = result.categoryVars?.default?.inputs.find((i) => i.name.includes("CreateUserInput"));
+    expect(inputDef).toBeDefined();
+
+    // Input definition should have correct format
+    const inputCode = inputDef?.code ?? "";
+    expect(inputCode).toContain('name: "CreateUserInput", fields:');
+    expect(inputCode).toContain("} as const");
     // Inline specifier format with explicit kind
-    expect(result.code).toContain('name: { kind: "scalar", name: "String", modifier: "!"');
+    expect(inputCode).toContain('name: { kind: "scalar", name: "String", modifier: "!"');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -329,11 +339,16 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Inline object format with as const
-    expect(result.code).toContain('const union_default_SearchResult = { name: "SearchResult", types:');
-    expect(result.code).toContain("} as const");
-    expect(result.code).toContain("User: true");
-    expect(result.code).toContain("Post: true");
+    // In split mode, union definitions are in categoryVars
+    const unionDef = result.categoryVars?.default?.unions.find((u) => u.name.includes("SearchResult"));
+    expect(unionDef).toBeDefined();
+
+    // Union definition should have correct format
+    const unionCode = unionDef?.code ?? "";
+    expect(unionCode).toContain('name: "SearchResult", types:');
+    expect(unionCode).toContain("} as const");
+    expect(unionCode).toContain("User: true");
+    expect(unionCode).toContain("Post: true");
     expect(result.stats.unions).toBe(1);
   });
 
@@ -445,13 +460,18 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Code should contain type modifiers in inline specifiers
-    expect(result.code).toContain('modifier: "!"');
-    expect(result.code).toContain('modifier: "?"');
-    expect(result.code).toContain('modifier: "![]!"');
-    expect(result.code).toContain('modifier: "![]?"');
-    expect(result.code).toContain('modifier: "?[]!"');
-    expect(result.code).toContain('modifier: "![]![]!"');
+    // In split mode, object definitions are in categoryVars
+    const queryObjectDef = result.categoryVars?.default?.objects.find((o) => o.name.includes("Query"));
+    expect(queryObjectDef).toBeDefined();
+
+    // Object code should contain type modifiers in inline specifiers
+    const objectCode = queryObjectDef?.code ?? "";
+    expect(objectCode).toContain('modifier: "!"');
+    expect(objectCode).toContain('modifier: "?"');
+    expect(objectCode).toContain('modifier: "![]!"');
+    expect(objectCode).toContain('modifier: "![]?"');
+    expect(objectCode).toContain('modifier: "?[]!"');
+    expect(objectCode).toContain('modifier: "![]![]!"');
   });
 
   test("generates sorted field definitions", () => {
@@ -467,10 +487,15 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Fields should be sorted alphabetically
-    const aFieldIndex = result.code.indexOf("aField:");
-    const mFieldIndex = result.code.indexOf("mField:");
-    const zFieldIndex = result.code.indexOf("zField:");
+    // In split mode, object definitions are in categoryVars
+    const userObjectDef = result.categoryVars?.default?.objects.find((o) => o.name.includes("User"));
+    expect(userObjectDef).toBeDefined();
+
+    // Fields should be sorted alphabetically in the object definition
+    const objectCode = userObjectDef?.code ?? "";
+    const aFieldIndex = objectCode.indexOf("aField:");
+    const mFieldIndex = objectCode.indexOf("mField:");
+    const zFieldIndex = objectCode.indexOf("zField:");
 
     expect(aFieldIndex).toBeLessThan(mFieldIndex);
     expect(mFieldIndex).toBeLessThan(zFieldIndex);

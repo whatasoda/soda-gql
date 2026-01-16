@@ -6,7 +6,7 @@ import { generateDefsStructure } from "./defs-generator";
 import { writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
-import type { CodegenOptions, CodegenResult, CodegenSuccess, SplittingConfig } from "./types";
+import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
 const extensionMap: Record<string, string> = {
   ".ts": ".js",
@@ -135,8 +135,8 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
   }
 
-  // Get splitting config (default: enabled with chunkSize 100)
-  const splittingConfig: SplittingConfig = options.splitting ?? { enabled: true, chunkSize: 100 };
+  // Get chunkSize config (default: 100)
+  const chunkSize = options.chunkSize ?? 100;
 
   // Generate multi-schema module (this becomes _internal.ts content)
   const {
@@ -147,7 +147,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
-    splitting: splittingConfig,
+    chunkSize,
   });
 
   // Generate index.ts wrapper (simple re-export from _internal)
@@ -189,9 +189,9 @@ export * from "./_internal";
     }
   }
 
-  // Write _defs/ files when splitting is enabled
+  // Write _defs/ files (always enabled)
   const defsPaths: string[] = [];
-  if (splittingConfig.enabled && categoryVars) {
+  if (categoryVars) {
     const outDir = dirname(outPath);
 
     // Merge all schema categoryVars into a single combined structure
@@ -212,7 +212,7 @@ export * from "./_internal";
     }
 
     // Generate defs structure for all schemas combined
-    const defsStructure = generateDefsStructure("combined", combinedVars, splittingConfig.chunkSize);
+    const defsStructure = generateDefsStructure("combined", combinedVars, chunkSize);
 
     for (const file of defsStructure.files) {
       const filePath = join(outDir, file.relativePath);

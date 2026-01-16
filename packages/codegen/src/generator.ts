@@ -608,29 +608,21 @@ type RuntimeTemplateInjection =
       readonly injectsModulePath: string;
     };
 
-export type SplittingOptions = {
-  readonly enabled: boolean;
-  readonly chunkSize: number;
-};
-
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
   readonly defaultInputDepth?: Map<string, number>;
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
-  readonly splitting?: SplittingOptions;
+  readonly chunkSize?: number;
 };
 
-type SplittingMode =
-  | { readonly mode: "inline" }
-  | {
-      readonly mode: "split";
-      readonly importPaths: {
-        readonly enums: string;
-        readonly inputs: string;
-        readonly objects: string;
-        readonly unions: string;
-      };
-    };
+type SplittingMode = {
+  readonly importPaths: {
+    readonly enums: string;
+    readonly inputs: string;
+    readonly objects: string;
+    readonly unions: string;
+  };
+};
 
 type MultiRuntimeTemplateOptions = {
   readonly schemas: Record<
@@ -753,8 +745,8 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     imports.push(`import { ${injectsImports.join(", ")} } from "${$$.injection.injectsModulePath}";`);
   }
 
-  // Build imports for split mode
-  if ($$.splitting.mode === "split") {
+  // Build imports for split mode (always enabled)
+  {
     const { importPaths } = $$.splitting;
     for (const [name, config] of Object.entries($$.schemas)) {
       // Import enums (if any)
@@ -815,11 +807,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
         : "";
 
-    // Check if we're in split mode
-    const isSplitMode = $$.splitting.mode === "split";
+    // Always in split mode
+    const isSplitMode = true;
 
     // Granular: generate individual variable declarations (skip in split mode - they're imported)
-    const scalarVarsBlock = isSplitMode ? "// (scalars imported)" : config.scalarVars.join("\n");
+    // Note: Scalars are never split - they're either injected or inlined
+    const scalarVarsBlock = config.scalarVars.join("\n");
     const enumVarsBlock = isSplitMode
       ? "// (enums imported)"
       : config.enumVars.length > 0
@@ -859,7 +852,8 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
       config.unionNames.length > 0 ? `{ ${config.unionNames.map((n) => `${n}: union_${name}_${n}`).join(", ")} }` : "{}";
 
     // Granular: skip individual scalar vars when using injection (scalars come from import)
-    const scalarVarsSection = $$.injection.mode === "inject" || isSplitMode ? "// (scalars imported)" : scalarVarsBlock;
+    // Note: Even in split mode, scalars are inlined unless injection is used
+    const scalarVarsSection = $$.injection.mode === "inject" ? "// (scalars imported)" : scalarVarsBlock;
 
     // When injecting scalars, use the imported alias directly; otherwise use the assembled category object
     const scalarAssemblyLine =
@@ -941,8 +935,8 @@ ${typeExports.join("\n")}`);
     gqlEntries.push(`  ${name}: ${gqlVarName}`);
   }
 
-  // In split mode, we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
-  const needsDefineEnum = $$.splitting.mode !== "split";
+  // In split mode (always on), we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
+  const needsDefineEnum = false;
 
   return `\
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
@@ -1087,18 +1081,15 @@ export const generateMultiSchemaModule = (
     ? { mode: "inject", perSchema: options.injection, injectsModulePath: "./_internal-injects" }
     : { mode: "inline" };
 
-  // Build splitting mode
-  const splitting: SplittingMode = options?.splitting?.enabled
-    ? {
-        mode: "split",
-        importPaths: {
-          enums: "./_defs/enums",
-          inputs: "./_defs/inputs",
-          objects: "./_defs/objects",
-          unions: "./_defs/unions",
-        },
-      }
-    : { mode: "inline" };
+  // Always use split mode
+  const splitting: SplittingMode = {
+    importPaths: {
+      enums: "./_defs/enums",
+      inputs: "./_defs/inputs",
+      objects: "./_defs/objects",
+      unions: "./_defs/unions",
+    },
+  };
 
   const code = multiRuntimeTemplate({
     schemas: schemaConfigs,
@@ -1109,31 +1100,29 @@ export const generateMultiSchemaModule = (
   // Generate injects code if in inject mode
   const injectsCode = options?.injection ? generateInjectsCode(options.injection) : undefined;
 
-  // Build categoryVars if splitting is enabled
-  const categoryVarsResult: Record<string, CategoryVars> | undefined = options?.splitting?.enabled
-    ? Object.fromEntries(
-        Object.entries(schemaConfigs).map(([schemaName, config]) => {
-          const toDefVar = (code: string, prefix: string): DefinitionVar => {
-            // Extract name from "const {prefix}_{schemaName}_{name} = ..."
-            const match = code.match(new RegExp(`const (${prefix}_${schemaName}_(\\w+))`));
-            return {
-              name: match?.[1] ?? "",
-              code,
-            };
-          };
+  // Always build categoryVars (splitting is always enabled)
+  const categoryVarsResult: Record<string, CategoryVars> = Object.fromEntries(
+    Object.entries(schemaConfigs).map(([schemaName, config]) => {
+      const toDefVar = (code: string, prefix: string): DefinitionVar => {
+        // Extract name from "const {prefix}_{schemaName}_{name} = ..."
+        const match = code.match(new RegExp(`const (${prefix}_${schemaName}_(\\w+))`));
+        return {
+          name: match?.[1] ?? "",
+          code,
+        };
+      };
 
-          return [
-            schemaName,
-            {
-              enums: (config.enumVars as string[]).map((c) => toDefVar(c, "enum")),
-              inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
-              objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
-              unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
-            } satisfies CategoryVars,
-          ];
-        }),
-      )
-    : undefined;
+      return [
+        schemaName,
+        {
+          enums: (config.enumVars as string[]).map((c) => toDefVar(c, "enum")),
+          inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
+          objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
+          unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
+        } satisfies CategoryVars,
+      ];
+    }),
+  );
 
   return {
     code,

@@ -67,14 +67,7 @@ export type StylesConfig = {
 // Codegen-specific configuration
 export type CodegenConfig = {
   /**
-   * Whether to split generated code into separate files.
-   * When true, definitions are split into _defs/ directory.
-   * @default true
-   */
-  readonly splitting?: boolean;
-  /**
-   * Number of definitions per chunk when splitting is enabled.
-   * Only applies when splitting is true.
+   * Number of definitions per chunk file.
    * @default 100
    */
   readonly chunkSize?: number;
@@ -87,7 +80,6 @@ export type ResolvedStylesConfig = {
 
 // Resolved codegen configuration
 export type ResolvedCodegenConfig = {
-  readonly splitting: boolean;
   readonly chunkSize: number;
 };
 
