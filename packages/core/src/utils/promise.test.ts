@@ -15,6 +15,7 @@ describe("isPromiseLike", () => {
   });
 
   test("returns true for thenable objects", () => {
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing thenable detection
     const thenable = { then: (resolve: (v: number) => void) => resolve(42) };
     expect(isPromiseLike(thenable)).toBe(true);
   });
@@ -53,9 +54,13 @@ describe("isPromiseLike", () => {
   });
 
   test("returns false for objects with non-function then", () => {
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing non-function then property
     expect(isPromiseLike({ then: "not a function" })).toBe(false);
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing non-function then property
     expect(isPromiseLike({ then: 42 })).toBe(false);
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing non-function then property
     expect(isPromiseLike({ then: null })).toBe(false);
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing non-function then property
     expect(isPromiseLike({ then: {} })).toBe(false);
   });
 
@@ -64,6 +69,7 @@ describe("isPromiseLike", () => {
     expect(isPromiseLike(fn)).toBe(false);
 
     // Function with then property
+    // biome-ignore lint/suspicious/noThenProperty: intentionally testing function with then property
     const fnWithThen = Object.assign(() => {}, { then: () => {} });
     // Note: this returns true because functions are objects
     // This is intentional - we're checking for Promise-like behavior
