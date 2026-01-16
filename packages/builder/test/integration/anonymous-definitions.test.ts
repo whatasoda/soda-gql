@@ -17,6 +17,7 @@ const copyDefaultInject = (destinationPath: string): void => {
 
 const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
   analyzer: "ts" as const,
+  baseDir: workspaceRoot,
   outdir: path.join(workspaceRoot, "graphql-system"),
   graphqlSystemAliases: ["@/graphql-system"],
   include: [path.join(workspaceRoot, "**/*.ts")],

@@ -103,6 +103,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
     // Create config
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: workspaceRoot,
       outdir: path.join(workspaceRoot, "graphql-system"),
       graphqlSystemAliases: [],
       include: [path.join(workspaceRoot, "**/*.ts")],
@@ -203,6 +204,7 @@ export const HelloFragment = gql.fragment("HelloFragment", "Query", (t) => [
     // Create config
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: workspaceRoot,
       outdir: path.join(workspaceRoot, "graphql-system"),
       graphqlSystemAliases: [],
       include: [path.join(workspaceRoot, "**/*.ts")],
