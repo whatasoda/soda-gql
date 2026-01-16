@@ -1,11 +1,28 @@
 import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, normalizePath } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
+import { extname } from "node:path";
 import type { createAstAnalyzer } from "../ast";
+import type { ModuleAnalysis } from "../ast/types";
 import { type BuilderResult, builderErrors } from "../errors";
 import { type FileStats, OptionalFileReadEffect, OptionalFileStatEffect } from "../scheduler";
 import { createSourceHash, extractModuleDependencies } from "./common";
 import { computeFingerprintFromContent, invalidateFingerprint } from "./fingerprint";
 import type { DiscoveryCache, DiscoverySnapshot } from "./types";
+
+/**
+ * JavaScript file extensions that should be treated as empty modules.
+ * These files are included in the dependency graph but not parsed for definitions.
+ */
+const JS_FILE_EXTENSIONS = [".js", ".mjs", ".cjs", ".jsx"] as const;
+
+/**
+ * Check if a file path is a JavaScript file (not TypeScript).
+ * Used to skip AST analysis for JS files that are resolved as fallbacks.
+ */
+const isJsFile = (filePath: string): boolean => {
+  const ext = extname(filePath).toLowerCase();
+  return (JS_FILE_EXTENSIONS as readonly string[]).includes(ext);
+};
 
 export type DiscoverModulesOptions = {
   readonly entryPaths: readonly string[];
@@ -116,8 +133,23 @@ export function* discoverModulesGen({
 
     const signature = createSourceHash(source);
 
-    // Parse module
-    const analysis = astAnalyzer.analyze({ filePath, source });
+    // Parse module (skip AST analysis for JS files - treat as empty)
+    let analysis: ModuleAnalysis;
+    if (isJsFile(filePath)) {
+      // JS files are included in the dependency graph but treated as empty modules.
+      // This happens when a .js import specifier resolves to an actual .js file
+      // because no corresponding .ts file exists.
+      analysis = {
+        filePath,
+        signature,
+        definitions: [],
+        imports: [],
+        exports: [],
+        diagnostics: [],
+      };
+    } else {
+      analysis = astAnalyzer.analyze({ filePath, source });
+    }
     cacheMisses++;
 
     // Build dependency records (relative + external) in a single pass

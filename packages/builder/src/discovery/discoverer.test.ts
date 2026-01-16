@@ -327,3 +327,113 @@ describe("discoverModulesAsync - invalidatedPaths behavior", () => {
     rmSync(fixtureRoot, { recursive: true, force: true });
   });
 });
+
+describe("discoverModules - JS file handling", () => {
+  test("JS files are discovered with empty analysis when imported via .js specifier", () => {
+    // Setup: Create a TS file that imports a .js file (no .ts equivalent exists)
+    rmSync(fixtureRoot, { recursive: true, force: true });
+    mkdirSync(fixtureRoot, { recursive: true });
+
+    const mainTs = join(fixtureRoot, "main.ts");
+    const helperJs = join(fixtureRoot, "helper.js");
+
+    // main.ts imports helper.js (ESM style) but only helper.js exists, no helper.ts
+    writeFileSync(mainTs, `import { helper } from "./helper.js";\nexport const main = helper;`);
+    writeFileSync(helperJs, `export const helper = 1;`);
+
+    const testConfig = getTestConfig();
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
+    clearFingerprintCache();
+
+    const result = discoverModules({
+      entryPaths: [mainTs],
+      astAnalyzer,
+    });
+    if (result.isErr()) throw result.error;
+
+    // Should discover both files
+    expect(result.value.snapshots).toHaveLength(2);
+
+    // Find the JS file snapshot
+    const jsSnapshot = result.value.snapshots.find((s) => s.filePath.endsWith("helper.js"));
+    expect(jsSnapshot).toBeDefined();
+
+    // JS file should have empty analysis (no definitions, imports, exports)
+    expect(jsSnapshot!.analysis.definitions).toHaveLength(0);
+    expect(jsSnapshot!.analysis.imports).toHaveLength(0);
+    expect(jsSnapshot!.analysis.exports).toHaveLength(0);
+    expect(jsSnapshot!.analysis.diagnostics).toHaveLength(0);
+
+    // Cleanup
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  });
+
+  test("TS files are preferred over JS files when both exist", () => {
+    // Setup: Create both .ts and .js files
+    rmSync(fixtureRoot, { recursive: true, force: true });
+    mkdirSync(fixtureRoot, { recursive: true });
+
+    const mainTs = join(fixtureRoot, "main.ts");
+    const helperTs = join(fixtureRoot, "helper.ts");
+    const helperJs = join(fixtureRoot, "helper.js");
+
+    // main.ts imports helper.js but helper.ts exists, so it should resolve to helper.ts
+    writeFileSync(mainTs, `import { helper } from "./helper.js";\nexport const main = helper;`);
+    writeFileSync(helperTs, `export const helper = 1;`);
+    writeFileSync(helperJs, `module.exports = { helper: 1 };`);
+
+    const testConfig = getTestConfig();
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
+    clearFingerprintCache();
+
+    const result = discoverModules({
+      entryPaths: [mainTs],
+      astAnalyzer,
+    });
+    if (result.isErr()) throw result.error;
+
+    // Should discover 2 files: main.ts and helper.ts (not helper.js)
+    expect(result.value.snapshots).toHaveLength(2);
+
+    const filePaths = result.value.snapshots.map((s) => s.filePath);
+    expect(filePaths.some((p) => p.endsWith("helper.ts"))).toBe(true);
+    expect(filePaths.some((p) => p.endsWith("helper.js"))).toBe(false);
+
+    // Cleanup
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  });
+
+  test("MJS files are discovered with empty analysis", () => {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+    mkdirSync(fixtureRoot, { recursive: true });
+
+    const mainTs = join(fixtureRoot, "main.ts");
+    const utilsMjs = join(fixtureRoot, "utils.mjs");
+
+    writeFileSync(mainTs, `import { util } from "./utils.mjs";\nexport const main = util;`);
+    writeFileSync(utilsMjs, `export const util = 1;`);
+
+    const testConfig = getTestConfig();
+    const graphqlHelper = createGraphqlSystemIdentifyHelper(testConfig);
+    const astAnalyzer = createAstAnalyzer({ analyzer: "ts", graphqlHelper });
+    clearFingerprintCache();
+
+    const result = discoverModules({
+      entryPaths: [mainTs],
+      astAnalyzer,
+    });
+    if (result.isErr()) throw result.error;
+
+    expect(result.value.snapshots).toHaveLength(2);
+
+    const mjsSnapshot = result.value.snapshots.find((s) => s.filePath.endsWith("utils.mjs"));
+    expect(mjsSnapshot).toBeDefined();
+    expect(mjsSnapshot!.analysis.definitions).toHaveLength(0);
+    expect(mjsSnapshot!.analysis.imports).toHaveLength(0);
+    expect(mjsSnapshot!.analysis.exports).toHaveLength(0);
+
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  });
+});
