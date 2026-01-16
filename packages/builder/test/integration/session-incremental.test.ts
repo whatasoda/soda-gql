@@ -44,6 +44,7 @@ const createTestConfig = (
   styles: {
     importExtension: false,
   },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 

@@ -64,9 +64,23 @@ export type StylesConfig = {
   readonly importExtension?: boolean;
 };
 
+// Codegen-specific configuration
+export type CodegenConfig = {
+  /**
+   * Number of definitions per chunk file.
+   * @default 100
+   */
+  readonly chunkSize?: number;
+};
+
 // Resolved output styles configuration
 export type ResolvedStylesConfig = {
   readonly importExtension: boolean;
+};
+
+// Resolved codegen configuration
+export type ResolvedCodegenConfig = {
+  readonly chunkSize: number;
 };
 
 // Plugin-specific config (extensible)
@@ -155,6 +169,10 @@ export type SodaGqlConfig = {
    */
   readonly styles?: StylesConfig;
   /**
+   * Codegen-specific configuration.
+   */
+  readonly codegen?: CodegenConfig;
+  /**
    * The plugins to use for the project.
    */
   readonly plugins?: PluginConfig;
@@ -202,6 +220,7 @@ export type ResolvedSodaGqlConfig = {
   readonly exclude: readonly string[];
   readonly schemas: Readonly<Record<string, ResolvedSchemaConfig>>;
   readonly styles: ResolvedStylesConfig;
+  readonly codegen: ResolvedCodegenConfig;
   readonly plugins: PluginConfig;
   /**
    * Resolved artifact configuration.

@@ -21,6 +21,7 @@ export type CodegenOptions = {
   readonly outPath: string;
   readonly format: CodegenFormat;
   readonly importExtension?: boolean;
+  readonly chunkSize?: number;
 };
 
 export type CodegenCliCommand =
@@ -85,6 +86,7 @@ export type CodegenSuccess = {
   readonly internalPath: string;
   readonly injectsPath: string;
   readonly cjsPath: string;
+  readonly defsPaths?: readonly string[];
 };
 
 export type CodegenResult = Result<CodegenSuccess, CodegenError>;

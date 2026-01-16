@@ -5,6 +5,7 @@ import { type ConfigError, configError } from "./errors";
 import type {
   InjectConfig,
   ResolvedArtifactConfig,
+  ResolvedCodegenConfig,
   ResolvedInjectConfig,
   ResolvedSodaGqlConfig,
   ResolvedTsconfigPaths,
@@ -114,6 +115,15 @@ function normalizeTsconfigPaths(
 }
 
 /**
+ * Normalize codegen config to resolved form with defaults.
+ */
+function normalizeCodegen(codegen: SodaGqlConfig["codegen"]): ResolvedCodegenConfig {
+  return {
+    chunkSize: codegen?.chunkSize ?? 100,
+  };
+}
+
+/**
  * Resolve and normalize config with defaults.
  * Paths in the config are resolved relative to the config file's directory.
  */
@@ -171,6 +181,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
     styles: {
       importExtension: config.styles?.importExtension ?? false,
     },
+    codegen: normalizeCodegen(config.codegen),
     plugins: config.plugins ?? {},
     ...(artifact ? { artifact } : {}),
     ...(tsconfigPaths ? { tsconfigPaths } : {}),

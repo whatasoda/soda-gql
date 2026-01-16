@@ -85,6 +85,7 @@ const createStubTestConfig = (options: {
     },
   },
   styles: { importExtension: false },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 
