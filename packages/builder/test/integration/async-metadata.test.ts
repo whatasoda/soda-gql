@@ -101,10 +101,7 @@ describe("async metadata resolution", () => {
     const fixtureContent = await fs.readFile(fixturePath, "utf-8");
 
     // Rewrite graphql-system import to relative path
-    const rewrittenContent = fixtureContent.replace(
-      /from\s+["'][^"']*graphql-system["']/g,
-      'from "./graphql-system"',
-    );
+    const rewrittenContent = fixtureContent.replace(/from\s+["'][^"']*graphql-system["']/g, 'from "./graphql-system"');
 
     await fs.writeFile(path.join(workspaceRoot, "async-operation.ts"), rewrittenContent);
 
