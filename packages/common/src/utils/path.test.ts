@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveRelativeImportWithExistenceCheck } from "./path";
+import { parseJsExtension, resolveRelativeImportWithExistenceCheck } from "./path";
 
 describe("resolveRelativeImportWithExistenceCheck", () => {
   let testDir: string;
@@ -149,5 +149,178 @@ describe("resolveRelativeImportWithExistenceCheck", () => {
     });
 
     expect(result).toBe(parentFile.replace(/\\/g, "/"));
+  });
+
+  // ESM-style JS extension resolution tests
+  describe("ESM-style JS extension resolution", () => {
+    test("resolves ./bar.js to ./bar.ts when TS file exists", async () => {
+      const barTs = join(testDir, "bar.ts");
+      await writeFile(barTs, "export const bar = 1;");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./bar.js",
+      });
+
+      expect(result).toBe(barTs.replace(/\\/g, "/"));
+    });
+
+    test("resolves ./bar.js to ./bar.tsx when only TSX exists", async () => {
+      const barTsx = join(testDir, "bar.tsx");
+      await writeFile(barTsx, "export const Bar = () => null;");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./bar.js",
+      });
+
+      expect(result).toBe(barTsx.replace(/\\/g, "/"));
+    });
+
+    test("falls back to ./bar.js when no TS equivalent exists", async () => {
+      const barJs = join(testDir, "bar.js");
+      await writeFile(barJs, "module.exports = { bar: 1 };");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./bar.js",
+      });
+
+      expect(result).toBe(barJs.replace(/\\/g, "/"));
+    });
+
+    test("resolves ./utils.mjs to ./utils.mts", async () => {
+      const utilsMts = join(testDir, "utils.mts");
+      await writeFile(utilsMts, "export const util = 1;");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./utils.mjs",
+      });
+
+      expect(result).toBe(utilsMts.replace(/\\/g, "/"));
+    });
+
+    test("resolves ./config.cjs to ./config.cts", async () => {
+      const configCts = join(testDir, "config.cts");
+      await writeFile(configCts, "export const config = {};");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./config.cjs",
+      });
+
+      expect(result).toBe(configCts.replace(/\\/g, "/"));
+    });
+
+    test("resolves ./component.jsx to ./component.tsx", async () => {
+      const componentTsx = join(testDir, "component.tsx");
+      await writeFile(componentTsx, "export const Component = () => null;");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./component.jsx",
+      });
+
+      expect(result).toBe(componentTsx.replace(/\\/g, "/"));
+    });
+
+    test("prefers .ts over actual .js when both exist", async () => {
+      const barTs = join(testDir, "bar.ts");
+      const barJs = join(testDir, "bar.js");
+      await writeFile(barTs, "export const bar = 1;");
+      await writeFile(barJs, "module.exports = { bar: 1 };");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./bar.js",
+      });
+
+      expect(result).toBe(barTs.replace(/\\/g, "/"));
+    });
+
+    test("returns null when neither TS nor JS file exists", async () => {
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./nonexistent.js",
+      });
+
+      expect(result).toBeNull();
+    });
+
+    test("falls back to .mjs when .mts does not exist", async () => {
+      const utilsMjs = join(testDir, "utils.mjs");
+      await writeFile(utilsMjs, "export const util = 1;");
+
+      const importingFile = join(testDir, "main.ts");
+      const result = resolveRelativeImportWithExistenceCheck({
+        filePath: importingFile,
+        specifier: "./utils.mjs",
+      });
+
+      expect(result).toBe(utilsMjs.replace(/\\/g, "/"));
+    });
+  });
+});
+
+describe("parseJsExtension", () => {
+  test("parses .js extension", () => {
+    const result = parseJsExtension("./foo.js");
+    expect(result).toEqual({
+      base: "./foo",
+      jsExtension: ".js",
+      tsExtensions: [".ts", ".tsx"],
+    });
+  });
+
+  test("parses .mjs extension", () => {
+    const result = parseJsExtension("./foo.mjs");
+    expect(result).toEqual({
+      base: "./foo",
+      jsExtension: ".mjs",
+      tsExtensions: [".mts"],
+    });
+  });
+
+  test("parses .cjs extension", () => {
+    const result = parseJsExtension("./foo.cjs");
+    expect(result).toEqual({
+      base: "./foo",
+      jsExtension: ".cjs",
+      tsExtensions: [".cts"],
+    });
+  });
+
+  test("parses .jsx extension", () => {
+    const result = parseJsExtension("./foo.jsx");
+    expect(result).toEqual({
+      base: "./foo",
+      jsExtension: ".jsx",
+      tsExtensions: [".tsx"],
+    });
+  });
+
+  test("returns null for non-JS extensions", () => {
+    expect(parseJsExtension("./foo")).toBeNull();
+    expect(parseJsExtension("./foo.ts")).toBeNull();
+    expect(parseJsExtension("./foo.tsx")).toBeNull();
+    expect(parseJsExtension("./foo.mts")).toBeNull();
+  });
+
+  test("handles nested paths", () => {
+    const result = parseJsExtension("./nested/deep/file.js");
+    expect(result).toEqual({
+      base: "./nested/deep/file",
+      jsExtension: ".js",
+      tsExtensions: [".ts", ".tsx"],
+    });
   });
 });

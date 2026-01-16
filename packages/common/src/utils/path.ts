@@ -9,6 +9,55 @@ import { dirname, join, normalize, resolve } from "node:path";
 export const MODULE_EXTENSION_CANDIDATES = [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs", ".jsx"] as const;
 
 /**
+ * Mapping from JS extensions to their corresponding TS extensions.
+ * Used for ESM-style imports where .js is written but .ts is the actual source.
+ */
+const JS_TO_TS_EXTENSION_MAP: Readonly<Record<string, readonly string[]>> = {
+  ".js": [".ts", ".tsx"],
+  ".mjs": [".mts"],
+  ".cjs": [".cts"],
+  ".jsx": [".tsx"],
+};
+
+/**
+ * Result of parsing a JS extension from a specifier.
+ */
+export type JsExtensionInfo = {
+  /** The specifier without the JS extension */
+  readonly base: string;
+  /** The JS extension found (e.g., ".js", ".mjs") */
+  readonly jsExtension: string;
+  /** The corresponding TS extensions to try (e.g., [".ts", ".tsx"] for ".js") */
+  readonly tsExtensions: readonly string[];
+};
+
+/**
+ * Parse a JS extension from a specifier for ESM-style import resolution.
+ * Returns the base path (without extension), the JS extension, and corresponding TS extensions.
+ *
+ * @param specifier - The import specifier to parse
+ * @returns Object with base, jsExtension, and tsExtensions, or null if no JS extension found
+ *
+ * @example
+ * parseJsExtension("./foo.js") // { base: "./foo", jsExtension: ".js", tsExtensions: [".ts", ".tsx"] }
+ * parseJsExtension("./foo.mjs") // { base: "./foo", jsExtension: ".mjs", tsExtensions: [".mts"] }
+ * parseJsExtension("./foo") // null
+ * parseJsExtension("./foo.ts") // null
+ */
+export const parseJsExtension = (specifier: string): JsExtensionInfo | null => {
+  for (const [ext, tsExts] of Object.entries(JS_TO_TS_EXTENSION_MAP)) {
+    if (specifier.endsWith(ext)) {
+      return {
+        base: specifier.slice(0, -ext.length),
+        jsExtension: ext,
+        tsExtensions: tsExts,
+      };
+    }
+  }
+  return null;
+};
+
+/**
  * Normalize path to use forward slashes (cross-platform).
  * Ensures consistent path handling across platforms.
  */
@@ -29,6 +78,35 @@ export const resolveRelativeImportWithExistenceCheck = ({
   filePath: string;
   specifier: string;
 }): string | null => {
+  // Handle ESM-style imports with JS extensions (e.g., "./foo.js" -> "./foo.ts")
+  const jsExtInfo = parseJsExtension(specifier);
+  if (jsExtInfo) {
+    const baseWithoutExt = resolve(dirname(filePath), jsExtInfo.base);
+
+    // Try corresponding TS extensions first
+    for (const ext of jsExtInfo.tsExtensions) {
+      const candidate = `${baseWithoutExt}${ext}`;
+      if (existsSync(candidate)) {
+        return normalizePath(candidate);
+      }
+    }
+
+    // Fall back to actual JS file if it exists
+    const jsCandidate = `${baseWithoutExt}${jsExtInfo.jsExtension}`;
+    if (existsSync(jsCandidate)) {
+      try {
+        const stat = statSync(jsCandidate);
+        if (stat.isFile()) {
+          return normalizePath(jsCandidate);
+        }
+      } catch {
+        // Ignore stat errors
+      }
+    }
+
+    return null;
+  }
+
   const base = resolve(dirname(filePath), specifier);
 
   // Try with extensions first (most common case)
@@ -81,6 +159,28 @@ export const resolveRelativeImportWithReferences = <_>({
   specifier: string;
   references: Map<string, _> | Set<string>;
 }): string | null => {
+  // Handle ESM-style imports with JS extensions (e.g., "./foo.js" -> "./foo.ts")
+  const jsExtInfo = parseJsExtension(specifier);
+  if (jsExtInfo) {
+    const baseWithoutExt = resolve(dirname(filePath), jsExtInfo.base);
+
+    // Try corresponding TS extensions first
+    for (const ext of jsExtInfo.tsExtensions) {
+      const candidate = `${baseWithoutExt}${ext}`;
+      if (references.has(candidate)) {
+        return normalizePath(candidate);
+      }
+    }
+
+    // Fall back to actual JS file if it exists in references
+    const jsCandidate = `${baseWithoutExt}${jsExtInfo.jsExtension}`;
+    if (references.has(jsCandidate)) {
+      return normalizePath(jsCandidate);
+    }
+
+    return null;
+  }
+
   const base = resolve(dirname(filePath), specifier);
 
   // Try exact path first
