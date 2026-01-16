@@ -2,7 +2,15 @@ import { defineSchemaFor } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import z from "zod";
 import { type ConfigError, configError } from "./errors";
-import type { ArtifactConfig, InjectConfig, SchemaConfig, SchemaInput, SodaGqlConfig, StylesConfig } from "./types";
+import type {
+  ArtifactConfig,
+  CodegenConfig,
+  InjectConfig,
+  SchemaConfig,
+  SchemaInput,
+  SodaGqlConfig,
+  StylesConfig,
+} from "./types";
 
 /**
  * Thin wrapper class to simplify the validation of exported value from config file.
@@ -90,6 +98,11 @@ const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
   importExtension: z.boolean().optional(),
 });
 
+const CodegenConfigSchema = defineSchemaFor<CodegenConfig>()({
+  splitting: z.boolean().optional(),
+  chunkSize: z.number().int().positive().optional(),
+});
+
 const ArtifactConfigSchema = defineSchemaFor<ArtifactConfig>()({
   path: z.string().min(1).optional(),
 });
@@ -102,6 +115,7 @@ const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   exclude: z.array(z.string().min(1)).optional(),
   schemas: z.record(z.string(), SchemaConfigSchema),
   styles: StylesConfigSchema.optional(),
+  codegen: CodegenConfigSchema.optional(),
   plugins: z.record(z.string(), z.unknown()).optional(),
   artifact: ArtifactConfigSchema.optional(),
 });
