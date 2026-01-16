@@ -191,6 +191,7 @@ export const createBuilderSession = (options: {
     createAstAnalyzer({
       analyzer: config.analyzer,
       graphqlHelper,
+      baseDir: config.baseDir,
     }),
   );
   const ensureDiscoveryCache = cachedFn(() =>

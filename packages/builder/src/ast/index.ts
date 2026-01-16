@@ -11,16 +11,24 @@ export type { AnalyzeModuleInput, ModuleAnalysis, ModuleDefinition, ModuleExport
 export const createAstAnalyzer = ({
   analyzer,
   graphqlHelper,
+  baseDir,
 }: {
   readonly analyzer: BuilderAnalyzer;
   readonly graphqlHelper: GraphqlSystemIdentifyHelper;
+  /**
+   * Base directory for relative path computation in canonical IDs.
+   * When provided, all canonical IDs generated during analysis will use
+   * relative paths from baseDir, enabling portable artifacts.
+   */
+  readonly baseDir?: string;
 }) => {
-  const analyze = (input: AnalyzeModuleInput): ModuleAnalysis => {
+  const analyze = (input: Omit<AnalyzeModuleInput, "baseDir">): ModuleAnalysis => {
+    const inputWithBaseDir: AnalyzeModuleInput = { ...input, baseDir };
     if (analyzer === "ts") {
-      return analyzeModuleCore(input, typescriptAdapter, graphqlHelper);
+      return analyzeModuleCore(inputWithBaseDir, typescriptAdapter, graphqlHelper);
     }
     if (analyzer === "swc") {
-      return analyzeModuleCore(input, swcAdapter, graphqlHelper);
+      return analyzeModuleCore(inputWithBaseDir, swcAdapter, graphqlHelper);
     }
     return assertUnreachable(analyzer, "createAstAnalyzer");
   };
