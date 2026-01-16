@@ -1,4 +1,5 @@
 import { dirname, resolve } from "node:path";
+import { readTsconfigPaths } from "@soda-gql/common";
 import { err, ok, Result } from "neverthrow";
 import { type ConfigError, configError } from "./errors";
 import type {
@@ -7,6 +8,7 @@ import type {
   ResolvedCodegenConfig,
   ResolvedInjectConfig,
   ResolvedSodaGqlConfig,
+  ResolvedTsconfigPaths,
   SchemaInput,
   SodaGqlConfig,
 } from "./types";
@@ -80,6 +82,39 @@ function normalizeArtifact(artifact: SodaGqlConfig["artifact"], configDir: strin
 }
 
 /**
+ * Normalize tsconfig paths configuration.
+ * Reads tsconfig.json and extracts paths if defined.
+ * Returns undefined if no tsconfigPath is specified or no paths are defined.
+ */
+function normalizeTsconfigPaths(
+  tsconfigPath: string | undefined,
+  configDir: string,
+): Result<ResolvedTsconfigPaths | undefined, ConfigError> {
+  if (!tsconfigPath) {
+    return ok(undefined);
+  }
+
+  const resolvedPath = resolve(configDir, tsconfigPath);
+  const result = readTsconfigPaths(resolvedPath);
+
+  if (result.isErr()) {
+    return err(
+      configError({
+        code: "CONFIG_VALIDATION_FAILED",
+        message: result.error.message,
+      }),
+    );
+  }
+
+  // Return undefined if no paths defined in tsconfig
+  if (result.value === null) {
+    return ok(undefined);
+  }
+
+  return ok(result.value);
+}
+
+/**
  * Normalize codegen config to resolved form with defaults.
  */
 function normalizeCodegen(codegen: SodaGqlConfig["codegen"]): ResolvedCodegenConfig {
@@ -105,6 +140,13 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
 
   // Normalize artifact config (only if path is specified)
   const artifact = normalizeArtifact(config.artifact, configDir);
+
+  // Normalize tsconfig paths (only if path is specified and paths exist)
+  const tsconfigPathsResult = normalizeTsconfigPaths(config.tsconfigPath, configDir);
+  if (tsconfigPathsResult.isErr()) {
+    return err(tsconfigPathsResult.error);
+  }
+  const tsconfigPaths = tsconfigPathsResult.value;
 
   // Normalize schemas with error handling
   const schemaEntries = Object.entries(config.schemas).map(([name, schemaConfig]) =>
@@ -142,6 +184,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
     codegen: normalizeCodegen(config.codegen),
     plugins: config.plugins ?? {},
     ...(artifact ? { artifact } : {}),
+    ...(tsconfigPaths ? { tsconfigPaths } : {}),
   };
 
   return ok(resolved);

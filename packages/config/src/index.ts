@@ -12,6 +12,7 @@ export type {
   PluginConfig,
   ResolvedArtifactConfig,
   ResolvedSodaGqlConfig,
+  ResolvedTsconfigPaths,
   SchemaConfig,
   SodaGqlConfig,
 } from "./types";
