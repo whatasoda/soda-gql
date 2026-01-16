@@ -18,6 +18,7 @@ import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
 
+import { isPromiseLike } from "../utils/promise";
 import { buildDocument } from "./build-document";
 import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
@@ -131,8 +132,8 @@ export const createOperationComposerFactory = <
           (usage) => (usage.metadataBuilder ? usage.metadataBuilder() : undefined),
         );
 
-        // Check if any fragment metadata is async
-        const hasAsyncFragmentMetadata = fragmentMetadataResults.some((r) => r instanceof Promise);
+        // Check if any fragment metadata is async (use duck typing for VM sandbox compatibility)
+        const hasAsyncFragmentMetadata = fragmentMetadataResults.some((r) => isPromiseLike(r));
 
         // Helper to build operation metadata from aggregated fragment metadata
         const buildOperationMetadata = (
@@ -193,7 +194,8 @@ export const createOperationComposerFactory = <
 
         const operationMetadataResult = buildOperationMetadata(aggregated);
 
-        if (operationMetadataResult instanceof Promise) {
+        // Use duck typing for VM sandbox compatibility (instanceof Promise fails for cross-realm Promises)
+        if (isPromiseLike(operationMetadataResult)) {
           return operationMetadataResult.then((metadata) => createDefinition({ metadata }));
         }
 
