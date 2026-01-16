@@ -1,5 +1,5 @@
-import { readTsconfigPaths } from "@soda-gql/common";
 import { dirname, resolve } from "node:path";
+import { readTsconfigPaths } from "@soda-gql/common";
 import { err, ok, Result } from "neverthrow";
 import { type ConfigError, configError } from "./errors";
 import type {

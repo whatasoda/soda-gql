@@ -1,3 +1,4 @@
+import { extname } from "node:path";
 import {
   type AliasResolver,
   createAsyncScheduler,
@@ -6,7 +7,6 @@ import {
   normalizePath,
 } from "@soda-gql/common";
 import { err, ok } from "neverthrow";
-import { extname } from "node:path";
 import type { createAstAnalyzer } from "../ast";
 import type { ModuleAnalysis } from "../ast/types";
 import { type BuilderResult, builderErrors } from "../errors";

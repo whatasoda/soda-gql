@@ -24,11 +24,7 @@ export type ResolveCanonicalIdOptions = {
  * @param options - Optional settings including baseDir for relative paths
  * @returns A canonical ID in the format `{path}::{astPath}`
  */
-export const resolveCanonicalId = (
-  filename: string,
-  astPath: string,
-  options?: ResolveCanonicalIdOptions,
-): CanonicalId => {
+export const resolveCanonicalId = (filename: string, astPath: string, options?: ResolveCanonicalIdOptions): CanonicalId => {
   const { baseDir } = options ?? {};
   if (baseDir) {
     return createCanonicalId(filename, astPath, { baseDir });

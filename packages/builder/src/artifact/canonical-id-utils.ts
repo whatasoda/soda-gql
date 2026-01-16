@@ -1,7 +1,7 @@
-import { err, ok, type Result } from "neverthrow";
 import { parseCanonicalId, validateCanonicalId } from "@soda-gql/common";
-import { builderErrors } from "../errors";
+import { err, ok, type Result } from "neverthrow";
 import type { BuilderError } from "../errors";
+import { builderErrors } from "../errors";
 
 /**
  * Parsed canonical ID components.

@@ -86,8 +86,7 @@ export const readTsconfigPaths = (tsconfigPath: string): Result<TsconfigPathsCon
 
   // Resolve baseUrl
   const tsconfigDir = dirname(tsconfigPath);
-  const baseUrl =
-    typeof compilerOptions.baseUrl === "string" ? resolve(tsconfigDir, compilerOptions.baseUrl) : tsconfigDir;
+  const baseUrl = typeof compilerOptions.baseUrl === "string" ? resolve(tsconfigDir, compilerOptions.baseUrl) : tsconfigDir;
 
   // Resolve paths to absolute paths
   const rawPaths = compilerOptions.paths as Record<string, string[]>;

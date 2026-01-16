@@ -154,10 +154,7 @@ export const HelloQuery = gql.default(({ query }) =>
     const evaluatorId = Bun.randomUUIDv7();
     const session = createBuilderSession({
       evaluatorId,
-      entrypointsOverride: [
-        path.join(workspaceRoot, "src/entities/user.ts"),
-        path.join(workspaceRoot, "src/pages/hello.ts"),
-      ],
+      entrypointsOverride: [path.join(workspaceRoot, "src/entities/user.ts"), path.join(workspaceRoot, "src/pages/hello.ts")],
       config,
     });
 

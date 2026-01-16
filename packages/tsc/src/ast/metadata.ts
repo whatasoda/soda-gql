@@ -21,7 +21,12 @@ type CollectArgs = {
 type ScopeHandle = ReturnType<CanonicalPathTracker["enterScope"]>;
 type ExportBindingMap = Map<string, string>;
 
-export const collectGqlDefinitionMetadata = ({ sourceFile, filename, createTracker, baseDir }: CollectArgs): GqlDefinitionMetadataMap => {
+export const collectGqlDefinitionMetadata = ({
+  sourceFile,
+  filename,
+  createTracker,
+  baseDir,
+}: CollectArgs): GqlDefinitionMetadataMap => {
   const exportBindings = collectExportBindings(sourceFile);
   const trackerFactory = createTracker ?? createCanonicalTracker;
   const tracker = trackerFactory({

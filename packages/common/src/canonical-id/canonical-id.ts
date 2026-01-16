@@ -92,9 +92,7 @@ export const parseCanonicalId = (
 /**
  * Validation result for canonical ID format.
  */
-export type CanonicalIdValidationResult =
-  | { readonly isValid: true }
-  | { readonly isValid: false; readonly reason: string };
+export type CanonicalIdValidationResult = { readonly isValid: true } | { readonly isValid: false; readonly reason: string };
 
 /**
  * Validate a canonical ID format.
