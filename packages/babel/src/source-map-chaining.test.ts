@@ -19,6 +19,7 @@ const createTestArtifact = () => ({
  */
 const createTestConfig = (): TransformOptions["config"] => ({
   analyzer: "ts" as const,
+  baseDir: "/tmp",
   outdir: "/tmp/graphql-system",
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],

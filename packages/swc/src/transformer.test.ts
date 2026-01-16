@@ -29,6 +29,7 @@ try {
   await createTransformer({
     config: {
       analyzer: "ts",
+      baseDir: "/tmp",
       outdir: "/tmp",
       graphqlSystemAliases: [],
       include: [],
@@ -110,6 +111,7 @@ describe("swc", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              baseDir: "/tmp",
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -150,6 +152,7 @@ describe("swc", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              baseDir: "/tmp",
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -185,6 +188,7 @@ describe("swc", async () => {
             artifact: testCase.input.artifact,
             config: {
               analyzer: "ts",
+              baseDir: "/tmp",
               outdir: "/tmp",
               graphqlSystemAliases: ["@/graphql-system"],
               include: [],
@@ -226,6 +230,7 @@ const writeFile = (filePath: string, content: string): void => {
  */
 const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -373,6 +378,7 @@ describe("swc internal module stubbing", () => {
 
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: tmpDir,
       outdir,
       graphqlSystemAliases: ["@/graphql-system"],
       include: [],

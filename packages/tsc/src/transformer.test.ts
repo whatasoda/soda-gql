@@ -33,6 +33,7 @@ describe("tsc-transformer", () => {
                 artifact: testCase.input.artifact,
                 config: {
                   analyzer,
+                  baseDir: "/tmp",
                   outdir: "/tmp",
                   graphqlSystemAliases: ["@/graphql-system"],
                   include: [],
@@ -73,6 +74,7 @@ describe("tsc-transformer", () => {
                 artifact: testCase.input.artifact,
                 config: {
                   analyzer,
+                  baseDir: "/tmp",
                   outdir: "/tmp",
                   graphqlSystemAliases: ["@/graphql-system"],
                   include: [],
@@ -108,6 +110,7 @@ describe("tsc-transformer", () => {
                 artifact: testCase.input.artifact,
                 config: {
                   analyzer,
+                  baseDir: "/tmp",
                   outdir: "/tmp",
                   graphqlSystemAliases: ["@/graphql-system"],
                   include: [],
@@ -151,6 +154,7 @@ const writeFile = (filePath: string, content: string): void => {
  */
 const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -280,6 +284,7 @@ describe("tsc-transformer internal module stubbing", () => {
 
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: tmpDir,
       outdir,
       graphqlSystemAliases: ["@/graphql-system"],
       include: [],

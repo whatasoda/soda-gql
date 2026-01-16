@@ -172,6 +172,12 @@ export type ResolvedSchemaConfig = {
 // Resolved config (normalized and validated)
 export type ResolvedSodaGqlConfig = {
   readonly analyzer: "ts" | "swc";
+  /**
+   * The base directory for the project (config file's directory).
+   * All relative paths in artifacts are resolved relative to this directory.
+   * This enables portable artifacts that can be shared across different machines.
+   */
+  readonly baseDir: string;
   readonly outdir: string;
   readonly graphqlSystemAliases: readonly string[];
   readonly include: readonly string[];
