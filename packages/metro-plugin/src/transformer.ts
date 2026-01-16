@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { relative } from "node:path";
 import remapping, { type SourceMapInput } from "@ampproject/remapping";
 import { type TransformOptions, transformSync } from "@babel/core";
 import { createPluginWithArtifact } from "@soda-gql/babel/plugin";
@@ -200,9 +201,10 @@ async function transformCore(params: MetroTransformParams, getUpstream: () => Me
   }
 
   // Check if this file contains any soda-gql elements
-  const normalizedPath = normalizePath(filename);
+  // Convert absolute path to relative for matching against artifact sourcePaths
+  const relativePath = normalizePath(relative(session.config.baseDir, filename));
   const hasElements = Object.values(artifact.elements).some(
-    (element) => normalizePath(element.metadata.sourcePath) === normalizedPath,
+    (element) => normalizePath(element.metadata.sourcePath) === relativePath,
   );
 
   if (!hasElements) {

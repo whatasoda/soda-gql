@@ -29,6 +29,11 @@ export type ExtractGqlCallArgs = {
   readonly filename: string;
   readonly metadata: GqlDefinitionMetadataMap;
   readonly getArtifact: ArtifactLookup;
+  /**
+   * Base directory for relative path computation.
+   * When provided, canonical IDs use paths relative to this directory.
+   */
+  readonly baseDir?: string;
 };
 
 export const extractGqlCall = ({
@@ -36,6 +41,7 @@ export const extractGqlCall = ({
   filename,
   metadata,
   getArtifact,
+  baseDir,
 }: ExtractGqlCallArgs): Result<BabelGqlCall, PluginError> => {
   const callExpression = nodePath.node;
 
@@ -44,7 +50,7 @@ export const extractGqlCall = ({
     return err(createMetadataMissingError({ filename }));
   }
 
-  const canonicalId = resolveCanonicalId(filename, meta.astPath);
+  const canonicalId = resolveCanonicalId(filename, meta.astPath, { baseDir });
   const artifact = getArtifact(canonicalId);
 
   if (!artifact) {

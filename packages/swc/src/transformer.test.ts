@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc/test";
+import { createTestConfig, loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc/test";
 
 // Check if native module is available before running tests
 // This needs to be evaluated synchronously at module load time
@@ -100,6 +100,7 @@ describe("swc", async () => {
   });
 
   const testCases = await loadTestCases();
+  const config = createTestConfig();
 
   for (const testCase of testCases) {
     describe(testCase.id, () => {
@@ -109,24 +110,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              baseDir: "/tmp",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              plugins: {},
-            },
+            config,
             moduleFormat: "esm",
           });
           const normalized = await normalizeCode(result);
@@ -150,24 +134,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              baseDir: "/tmp",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              plugins: {},
-            },
+            config,
             moduleFormat: "cjs",
           });
           const normalized = await normalizeCode(result);
@@ -186,24 +153,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              baseDir: "/tmp",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              plugins: {},
-            },
+            config,
             moduleFormat: "esm",
           });
 

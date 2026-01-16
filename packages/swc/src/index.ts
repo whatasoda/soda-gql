@@ -5,7 +5,7 @@
  */
 
 import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import remapping from "@ampproject/remapping";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
@@ -110,19 +110,40 @@ export type TransformInput = {
 const normalizePath = (value: string): string => value.replace(/\\/g, "/");
 
 /**
+ * Compute the path prefix for filtering artifact elements.
+ * Uses relative path from baseDir if provided, otherwise absolute path.
+ */
+const computeArtifactPathPrefix = (absolutePath: string, baseDir?: string): string => {
+  if (baseDir) {
+    const relativePath = normalizePath(relative(baseDir, absolutePath));
+    return `${relativePath}::`;
+  }
+  return `${absolutePath}::`;
+};
+
+/**
  * Filter artifact to only include elements for the given source file.
  * This significantly reduces JSON serialization overhead for large codebases.
  *
  * Canonical IDs have the format: "filepath::astPath"
  * We filter by matching the filepath prefix.
+ *
+ * When baseDir is provided, the sourcePath is converted to a relative path
+ * for matching against relative canonical IDs in the artifact.
+ * The canonical IDs in the returned artifact are converted to absolute paths
+ * to match what the Rust code will generate.
  */
-const filterArtifactForFile = (artifact: BuilderArtifact, sourcePath: string): BuilderArtifact => {
-  const prefix = `${sourcePath}::`;
+const filterArtifactForFile = (artifact: BuilderArtifact, absoluteSourcePath: string, baseDir?: string): BuilderArtifact => {
+  const relativePrefix = computeArtifactPathPrefix(absoluteSourcePath, baseDir);
+  const absolutePrefix = `${absoluteSourcePath}::`;
 
   const filteredElements: BuilderArtifact["elements"] = {};
   for (const [id, element] of Object.entries(artifact.elements)) {
-    if (id.startsWith(prefix)) {
-      (filteredElements as Record<string, typeof element>)[id] = element;
+    if (id.startsWith(relativePrefix)) {
+      // Convert the canonical ID from relative to absolute path format
+      // so it matches what the Rust code will generate
+      const absoluteId = id.replace(relativePrefix, absolutePrefix);
+      (filteredElements as Record<string, typeof element>)[absoluteId] = element;
     }
   }
 
@@ -147,6 +168,7 @@ const resolveCanonicalPath = (filePath: string): string => {
 
 /**
  * Resolve the canonical path to the graphql-system file.
+ * Returns absolute path for use in internal module stubbing.
  */
 const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
   return resolveCanonicalPath(resolve(config.outdir, "index.ts"));
@@ -154,6 +176,7 @@ const resolveGraphqlSystemPath = (config: ResolvedSodaGqlConfig): string => {
 
 /**
  * Collect canonical paths to inject modules (scalars, adapter) from all schemas.
+ * Returns absolute paths for use in internal module stubbing.
  */
 const collectInjectPaths = (config: ResolvedSodaGqlConfig): string[] => {
   const paths: string[] = [];
@@ -209,21 +232,27 @@ export const createTransformer = async (options: TransformOptions): Promise<Tran
 
   // Store full artifact for per-file filtering
   const fullArtifact = options.artifact;
+  const baseDir = options.config.baseDir;
 
   return {
     transform: ({ sourceCode, sourcePath, inputSourceMap }: TransformInput): TransformOutput => {
       // Resolve to absolute path and normalize for canonical ID consistency
       // This ensures bundlers can pass relative paths safely
-      const normalizedPath = normalizePath(resolve(sourcePath));
+      const absolutePath = normalizePath(resolve(sourcePath));
 
       // Filter artifact to only include elements for this file
       // This significantly reduces JSON serialization overhead for large codebases
-      const filteredArtifact = filterArtifactForFile(fullArtifact, normalizedPath);
+      // The filter function converts relative canonical IDs to absolute paths
+      // to match what the Rust code will generate
+      const filteredArtifact = filterArtifactForFile(fullArtifact, absolutePath, baseDir);
       const filteredArtifactJson = JSON.stringify(filteredArtifact);
 
       // Create per-file transformer with filtered artifact
       const fileTransformer = new native.SwcTransformer(filteredArtifactJson, configJson);
-      const resultJson = fileTransformer.transform(sourceCode, normalizedPath);
+
+      // Pass absolute path to native transformer for internal module stubbing detection
+      // and canonical ID computation (the filtered artifact has absolute canonical IDs)
+      const resultJson = fileTransformer.transform(sourceCode, absolutePath);
       const result: TransformResult = JSON.parse(resultJson);
 
       // Handle source map chaining
@@ -268,10 +297,12 @@ export const transform = async (
 
   // Resolve to absolute path and normalize for canonical ID consistency
   // This ensures bundlers can pass relative paths safely
-  const normalizedPath = normalizePath(resolve(input.sourcePath));
+  const absolutePath = normalizePath(resolve(input.sourcePath));
+  const baseDir = input.config.baseDir;
 
   // Filter artifact to only include elements for this file
-  const filteredArtifact = filterArtifactForFile(input.artifact, normalizedPath);
+  // The filter function converts relative canonical IDs to absolute paths
+  const filteredArtifact = filterArtifactForFile(input.artifact, absolutePath, baseDir);
 
   // Resolve paths for internal module stubbing
   const graphqlSystemPath = resolveGraphqlSystemPath(input.config);
@@ -279,7 +310,7 @@ export const transform = async (
 
   const inputJson = JSON.stringify({
     sourceCode: input.sourceCode,
-    sourcePath: normalizedPath,
+    sourcePath: absolutePath,
     artifactJson: JSON.stringify(filteredArtifact),
     config: {
       graphqlSystemAliases: input.config.graphqlSystemAliases,

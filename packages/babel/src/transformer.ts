@@ -85,6 +85,7 @@ export const createTransformer = ({
       const metadata = collectGqlDefinitionMetadata({
         programPath,
         filename: context.filename,
+        baseDir: config.baseDir,
       });
 
       const runtimeCalls: t.Expression[] = [];
@@ -98,6 +99,7 @@ export const createTransformer = ({
             filename: context.filename,
             metadata,
             getArtifact: context.artifactLookup,
+            baseDir: config.baseDir,
           });
 
           if (result.isErr()) {

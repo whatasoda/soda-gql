@@ -9,7 +9,7 @@
 import { describe, expect, it } from "bun:test";
 import { transformAsync } from "@babel/core";
 import { createPlugin } from "@soda-gql/babel/plugin";
-import { type AnalyzerType, loadTestCases, normalizeCode } from "@soda-gql/tsc/test";
+import { type AnalyzerType, createTestConfig, loadTestCases, normalizeCode } from "@soda-gql/tsc/test";
 
 /**
  * Transform source code using babel-plugin.
@@ -50,38 +50,15 @@ const transformWithBabel = async ({
   return result.code;
 };
 
-/**
- * Create a minimal config for transformation.
- */
-const createTransformConfig = (): import("@soda-gql/config").ResolvedSodaGqlConfig => ({
-  analyzer: "ts" as const,
-  baseDir: "/tmp",
-  outdir: "/tmp/babel-conformance",
-  graphqlSystemAliases: ["@/graphql-system"],
-  include: [],
-  exclude: [],
-  schemas: {
-    default: {
-      schema: ["/tmp/schema.graphql"],
-      inject: { scalars: "/tmp/scalars.ts" },
-      defaultInputDepth: 3,
-      inputDepthOverrides: {},
-    },
-  },
-  styles: {
-    importExtension: false,
-  },
-  plugins: {},
-});
-
 const analyzers: AnalyzerType[] = ["ts", "swc"];
 
 describe("Babel-Plugin Conformance with TSC-Transformer", async () => {
-  const config = createTransformConfig();
+  // Use the same config that was used to build the artifacts
 
   for (const analyzer of analyzers) {
     describe(`analyzer: ${analyzer}`, async () => {
       const testCases = await loadTestCases(analyzer);
+      const config = createTestConfig(analyzer);
 
       for (const testCase of testCases) {
         describe(testCase.id, () => {
