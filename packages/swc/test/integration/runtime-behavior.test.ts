@@ -42,6 +42,7 @@ try {
       exclude: [],
       schemas: {},
       styles: { importExtension: false },
+      codegen: { splitting: true, chunkSize: 100 },
       plugins: {},
     },
     artifact: {
