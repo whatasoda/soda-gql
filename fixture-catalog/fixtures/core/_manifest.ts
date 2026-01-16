@@ -58,6 +58,7 @@ export const validFixtures = [
   "imports/preserve-other-imports/source",
 
   // Operations
+  "async-metadata-operation",
   "mutation-simple",
   "mutation-with-slice",
   "subscription-simple",
