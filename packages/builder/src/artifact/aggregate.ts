@@ -1,12 +1,11 @@
 import { createHash } from "node:crypto";
 
 import { err, ok, type Result } from "neverthrow";
-import type { ModuleAnalysis, ModuleDefinition } from "../ast";
+import type { ModuleAnalysis } from "../ast";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import type { BuilderError } from "../types";
+import { parseCanonicalIdSafe } from "./canonical-id-utils";
 import type { BuilderArtifactElement, BuilderArtifactElementMetadata } from "./types";
-
-const canonicalToFilePath = (canonicalId: string): string => canonicalId.split("::")[0] ?? canonicalId;
 
 const computeContentHash = (prebuild: unknown): string => {
   const hash = createHash("sha1");
@@ -14,10 +13,10 @@ const computeContentHash = (prebuild: unknown): string => {
   return hash.digest("hex");
 };
 
-const emitRegistrationError = (definition: ModuleDefinition, message: string): BuilderError => ({
+const emitRegistrationError = (filePath: string, astPath: string, message: string): BuilderError => ({
   code: "RUNTIME_MODULE_LOAD_FAILED",
-  filePath: canonicalToFilePath(definition.canonicalId),
-  astPath: definition.astPath,
+  filePath,
+  astPath,
   message,
 });
 
@@ -31,20 +30,27 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
 
   for (const analysis of analyses.values()) {
     for (const definition of analysis.definitions) {
+      // Validate canonical ID format early
+      const parsedResult = parseCanonicalIdSafe(definition.canonicalId);
+      if (parsedResult.isErr()) {
+        return err(parsedResult.error);
+      }
+      const { filePath, astPath } = parsedResult.value;
+
       const element = elements[definition.canonicalId];
       if (!element) {
         const availableIds = Object.keys(elements).join(", ");
         const message = `ARTIFACT_NOT_FOUND_IN_RUNTIME_MODULE: ${definition.canonicalId}\nAvailable: ${availableIds}`;
-        return err(emitRegistrationError(definition, message));
+        return err(emitRegistrationError(filePath, astPath, message));
       }
 
       if (registry.has(definition.canonicalId)) {
-        return err(emitRegistrationError(definition, `ARTIFACT_ALREADY_REGISTERED`));
+        return err(emitRegistrationError(filePath, astPath, `ARTIFACT_ALREADY_REGISTERED`));
       }
 
       // Use file path from canonical ID (which is relative when baseDir is set)
       const metadata: BuilderArtifactElementMetadata = {
-        sourcePath: canonicalToFilePath(definition.canonicalId),
+        sourcePath: filePath,
         contentHash: "", // Will be computed after prebuild creation
       };
 
@@ -81,7 +87,7 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         continue;
       }
 
-      return err(emitRegistrationError(definition, "UNKNOWN_ARTIFACT_KIND"));
+      return err(emitRegistrationError(filePath, astPath, "UNKNOWN_ARTIFACT_KIND"));
     }
   }
 
