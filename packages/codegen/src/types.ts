@@ -2,6 +2,11 @@ import type { Result } from "neverthrow";
 
 export type CodegenFormat = "json" | "human";
 
+export type SplittingConfig = {
+  readonly enabled: boolean; // default: true
+  readonly chunkSize: number; // default: 100
+};
+
 // Inject configuration per schema (always resolved object form)
 export type CodegenInjectConfig = {
   readonly scalars: string;
@@ -21,6 +26,7 @@ export type CodegenOptions = {
   readonly outPath: string;
   readonly format: CodegenFormat;
   readonly importExtension?: boolean;
+  readonly splitting?: SplittingConfig;
 };
 
 export type CodegenCliCommand =
@@ -85,6 +91,7 @@ export type CodegenSuccess = {
   readonly internalPath: string;
   readonly injectsPath: string;
   readonly cjsPath: string;
+  readonly defsPaths?: readonly string[];
 };
 
 export type CodegenResult = Result<CodegenSuccess, CodegenError>;
