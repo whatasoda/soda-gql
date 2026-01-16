@@ -130,6 +130,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
 
   const resolved: ResolvedSodaGqlConfig = {
     analyzer,
+    baseDir: configDir,
     outdir: resolve(configDir, config.outdir),
     graphqlSystemAliases,
     include: config.include.map((pattern) => resolvePattern(pattern, configDir)),

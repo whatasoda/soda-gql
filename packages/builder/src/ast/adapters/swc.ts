@@ -288,12 +288,14 @@ const collectAllDefinitions = ({
   imports: _imports,
   exports,
   source,
+  baseDir,
 }: {
   module: SwcModule;
   gqlIdentifiers: ReadonlySet<string>;
   imports: readonly ModuleImport[];
   exports: readonly ModuleExport[];
   source: string;
+  baseDir?: string;
 }): {
   readonly definitions: ModuleDefinition[];
   readonly handledCalls: readonly CallExpression[];
@@ -329,6 +331,7 @@ const collectAllDefinitions = ({
   // Create canonical tracker
   const tracker = createCanonicalTracker({
     filePath: module.__filePath,
+    baseDir,
     getExportName: (localName) => exportBindings.get(localName),
   });
 
@@ -564,7 +567,7 @@ const collectAllDefinitions = ({
   const definitions = pending.map(
     (item) =>
       ({
-        canonicalId: createCanonicalId(module.__filePath, item.astPath),
+        canonicalId: createCanonicalId(module.__filePath, item.astPath, { baseDir }),
         astPath: item.astPath,
         isTopLevel: item.isTopLevel,
         isExported: item.isExported,
@@ -934,6 +937,7 @@ export const swcAdapter: AnalyzerAdapter = {
       imports,
       exports,
       source: input.source,
+      baseDir: input.baseDir,
     });
 
     // Collect diagnostics

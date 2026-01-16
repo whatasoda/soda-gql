@@ -137,6 +137,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
   // Construct resolved config
   const config: ResolvedSodaGqlConfig = {
     analyzer: "ts",
+    baseDir: workspaceRoot,
     outdir: path.join(workspaceRoot, "graphql-system"),
     graphqlSystemAliases: [],
     include: [path.join(workspaceRoot, "src/**/*.ts")],

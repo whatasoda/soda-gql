@@ -61,8 +61,9 @@ const createCanonicalTempDir = (prefix: string): string => {
 /**
  * Create a test config with configurable paths.
  */
-const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
+const createStubTestConfig = (options: { baseDir: string; outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: options.baseDir,
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -122,7 +123,7 @@ export const loadStubTestCases = (): LoadStubTestCasesResult => {
   writeFile(adapterPath, "export const adapter = { fetch: () => {} };");
   writeFile(regularPath, "export const foo = 'bar';");
 
-  const config = createStubTestConfig({ outdir, scalarsPath, adapterPath });
+  const config = createStubTestConfig({ baseDir: tmpDir, outdir, scalarsPath, adapterPath });
   const artifact = createEmptyArtifact();
 
   return {

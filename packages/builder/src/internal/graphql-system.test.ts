@@ -23,6 +23,7 @@ const createTestConfig = (options: {
   adapterPath?: string;
 }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: options.graphqlSystemAliases ?? ["@/graphql-system"],
   include: [],
@@ -117,6 +118,7 @@ describe("createGraphqlSystemIdentifyHelper", () => {
 
       const config: ResolvedSodaGqlConfig = {
         analyzer: "ts",
+        baseDir: tmpDir,
         outdir,
         graphqlSystemAliases: ["@/graphql-system"],
         include: [],

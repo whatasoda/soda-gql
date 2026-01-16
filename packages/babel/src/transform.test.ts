@@ -26,6 +26,7 @@ const writeFile = (filePath: string, content: string): void => {
  */
 const createTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -170,6 +171,7 @@ describe("createBabelTransformer", () => {
 
       const config: ResolvedSodaGqlConfig = {
         analyzer: "ts",
+        baseDir: tmpDir,
         outdir,
         graphqlSystemAliases: ["@/graphql-system"],
         include: [],

@@ -1,3 +1,4 @@
+import { relative, resolve } from "node:path";
 import { createBabelTransformer } from "@soda-gql/babel";
 import {
   createPluginSession,
@@ -66,10 +67,23 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
         return;
       }
 
+      const baseDir = session.config.baseDir;
+
+      // Helper to convert absolute path to relative for matching against artifact sourcePaths
+      const toRelativePath = (absolutePath: string): string => {
+        return normalizePath(relative(baseDir, absolutePath));
+      };
+
+      // Helper to convert relative path to absolute for webpack's addDependency
+      const toAbsolutePath = (relativePath: string): string => {
+        return normalizePath(resolve(baseDir, relativePath));
+      };
+
       // Check if this file contains any soda-gql elements
-      const normalizedPath = normalizePath(filename);
+      // Convert absolute path to relative for matching against artifact sourcePaths
+      const relativePath = toRelativePath(filename);
       const hasElements = Object.values(artifact.elements).some(
-        (element) => normalizePath(element.metadata.sourcePath) === normalizedPath,
+        (element) => normalizePath(element.metadata.sourcePath) === relativePath,
       );
 
       if (!hasElements) {
@@ -80,31 +94,34 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
 
       // Add dependencies based on module adjacency for precise HMR
       const sharedState = getSharedState(stateKey);
-      const normalizedFilename = normalizePath(filename);
+      const relativeFilename = toRelativePath(filename);
 
       // Use module adjacency for efficient dependency tracking
-      // moduleAdjacency maps: importedFile -> Set<importingFiles>
+      // moduleAdjacency maps: importedFile -> Set<importingFiles> (now using relative paths)
       if (sharedState.moduleAdjacency.size > 0) {
         // Add files that import this file (reverse dependencies)
-        const importers = sharedState.moduleAdjacency.get(normalizedFilename);
+        const importers = sharedState.moduleAdjacency.get(relativeFilename);
         if (importers) {
           for (const importer of importers) {
-            this.addDependency(importer);
+            // Convert relative path to absolute for webpack
+            this.addDependency(toAbsolutePath(importer));
           }
         }
 
         // Add files that this file imports (forward dependencies)
         for (const [importedFile, importingFiles] of sharedState.moduleAdjacency) {
-          if (importingFiles.has(normalizedFilename)) {
-            this.addDependency(importedFile);
+          if (importingFiles.has(relativeFilename)) {
+            // Convert relative path to absolute for webpack
+            this.addDependency(toAbsolutePath(importedFile));
           }
         }
       } else {
         // Fallback: Add all soda-gql source files as dependencies (conservative approach)
         for (const element of Object.values(artifact.elements)) {
           const elementPath = element.metadata.sourcePath;
-          if (elementPath && elementPath !== filename) {
-            this.addDependency(elementPath);
+          if (elementPath && elementPath !== relativePath) {
+            // Convert relative path to absolute for webpack
+            this.addDependency(toAbsolutePath(elementPath));
           }
         }
       }

@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc/test";
+import { createTestConfig, loadTestCases, normalizeCode, type TransformTestCase } from "@soda-gql/tsc/test";
 
 // Check if native module is available before running tests
 // This needs to be evaluated synchronously at module load time
@@ -29,6 +29,7 @@ try {
   await createTransformer({
     config: {
       analyzer: "ts",
+      baseDir: "/tmp",
       outdir: "/tmp",
       graphqlSystemAliases: [],
       include: [],
@@ -100,6 +101,7 @@ describe("swc", async () => {
   });
 
   const testCases = await loadTestCases();
+  const config = createTestConfig();
 
   for (const testCase of testCases) {
     describe(testCase.id, () => {
@@ -109,24 +111,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              codegen: { chunkSize: 100 },
-              plugins: {},
-            },
+            config,
             moduleFormat: "esm",
           });
           const normalized = await normalizeCode(result);
@@ -150,24 +135,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              codegen: { chunkSize: 100 },
-              plugins: {},
-            },
+            config,
             moduleFormat: "cjs",
           });
           const normalized = await normalizeCode(result);
@@ -186,24 +154,7 @@ describe("swc", async () => {
             sourceCode: testCase.input.sourceCode,
             sourcePath: testCase.input.sourcePath,
             artifact: testCase.input.artifact,
-            config: {
-              analyzer: "ts",
-              outdir: "/tmp",
-              graphqlSystemAliases: ["@/graphql-system"],
-              include: [],
-              exclude: [],
-              schemas: {
-                default: {
-                  schema: ["/tmp/schema.graphql"],
-                  inject: { scalars: "/tmp/scalars.ts" },
-                  defaultInputDepth: 3,
-                  inputDepthOverrides: {},
-                },
-              },
-              styles: { importExtension: false },
-              codegen: { chunkSize: 100 },
-              plugins: {},
-            },
+            config,
             moduleFormat: "esm",
           });
 
@@ -230,6 +181,7 @@ const writeFile = (filePath: string, content: string): void => {
  */
 const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -378,6 +330,7 @@ describe("swc internal module stubbing", () => {
 
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: tmpDir,
       outdir,
       graphqlSystemAliases: ["@/graphql-system"],
       include: [],

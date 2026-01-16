@@ -11,16 +11,22 @@ type CollectArgs = {
   readonly programPath: NodePath<t.Program>;
   readonly filename: string;
   readonly createTracker?: CanonicalTrackerFactory;
+  /**
+   * Base directory for relative path computation.
+   * When provided, canonical IDs use paths relative to this directory.
+   */
+  readonly baseDir?: string;
 };
 
 type ScopeHandle = ReturnType<CanonicalPathTracker["enterScope"]>;
 type ExportBindingMap = Map<string, string>;
 
-export const collectGqlDefinitionMetadata = ({ programPath, filename, createTracker }: CollectArgs): GqlDefinitionMetadataMap => {
+export const collectGqlDefinitionMetadata = ({ programPath, filename, createTracker, baseDir }: CollectArgs): GqlDefinitionMetadataMap => {
   const exportBindings = collectExportBindings(programPath.node);
   const trackerFactory = createTracker ?? createCanonicalTracker;
   const tracker = trackerFactory({
     filePath: filename,
+    baseDir,
     getExportName: (localName) => exportBindings.get(localName),
   });
 

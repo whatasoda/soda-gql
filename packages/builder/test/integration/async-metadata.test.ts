@@ -17,6 +17,7 @@ const defaultInjectPath = path.join(projectRoot, "fixture-catalog/schemas/defaul
  */
 const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
   analyzer: "ts" as const,
+  baseDir: workspaceRoot,
   outdir: path.join(workspaceRoot, "graphql-system"),
   graphqlSystemAliases: ["@/graphql-system"],
   include: [path.join(workspaceRoot, "**/*.ts")],

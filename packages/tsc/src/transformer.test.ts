@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { BuilderArtifact } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { type AnalyzerType, loadTestCases, normalizeCode, transformWithTsc } from "../test/test-cases";
+import { type AnalyzerType, createTestConfig, loadTestCases, normalizeCode, transformWithTsc } from "../test/test-cases";
 
 const analyzers: AnalyzerType[] = ["ts", "swc"];
 
@@ -22,6 +22,7 @@ describe("tsc-transformer", () => {
   for (const analyzer of analyzers) {
     describe(`analyzer: ${analyzer}`, async () => {
       const testCases = await loadTestCases(analyzer);
+      const config = createTestConfig(analyzer);
 
       for (const testCase of testCases) {
         describe(testCase.id, () => {
@@ -31,24 +32,7 @@ describe("tsc-transformer", () => {
                 sourceCode: testCase.input.sourceCode,
                 sourcePath: testCase.input.sourcePath,
                 artifact: testCase.input.artifact,
-                config: {
-                  analyzer,
-                  outdir: "/tmp",
-                  graphqlSystemAliases: ["@/graphql-system"],
-                  include: [],
-                  exclude: [],
-                  schemas: {
-                    default: {
-                      schema: ["/tmp/schema.graphql"],
-                      inject: { scalars: "/tmp/scalars.ts" },
-                      defaultInputDepth: 3,
-                      inputDepthOverrides: {},
-                    },
-                  },
-                  styles: { importExtension: false },
-                  codegen: { chunkSize: 100 },
-                  plugins: {},
-                },
+                config,
                 moduleFormat: "esm",
               });
               const normalized = await normalizeCode(result);
@@ -72,24 +56,7 @@ describe("tsc-transformer", () => {
                 sourceCode: testCase.input.sourceCode,
                 sourcePath: testCase.input.sourcePath,
                 artifact: testCase.input.artifact,
-                config: {
-                  analyzer,
-                  outdir: "/tmp",
-                  graphqlSystemAliases: ["@/graphql-system"],
-                  include: [],
-                  exclude: [],
-                  schemas: {
-                    default: {
-                      schema: ["/tmp/schema.graphql"],
-                      inject: { scalars: "/tmp/scalars.ts" },
-                      defaultInputDepth: 3,
-                      inputDepthOverrides: {},
-                    },
-                  },
-                  styles: { importExtension: false },
-                  codegen: { chunkSize: 100 },
-                  plugins: {},
-                },
+                config,
                 moduleFormat: "cjs",
               });
               const normalized = await normalizeCode(result);
@@ -108,24 +75,7 @@ describe("tsc-transformer", () => {
                 sourceCode: testCase.input.sourceCode,
                 sourcePath: testCase.input.sourcePath,
                 artifact: testCase.input.artifact,
-                config: {
-                  analyzer,
-                  outdir: "/tmp",
-                  graphqlSystemAliases: ["@/graphql-system"],
-                  include: [],
-                  exclude: [],
-                  schemas: {
-                    default: {
-                      schema: ["/tmp/schema.graphql"],
-                      inject: { scalars: "/tmp/scalars.ts" },
-                      defaultInputDepth: 3,
-                      inputDepthOverrides: {},
-                    },
-                  },
-                  styles: { importExtension: false },
-                  codegen: { chunkSize: 100 },
-                  plugins: {},
-                },
+                config,
                 moduleFormat: "esm",
               });
 
@@ -154,6 +104,7 @@ const writeFile = (filePath: string, content: string): void => {
  */
 const createStubTestConfig = (options: { outdir: string; scalarsPath: string; adapterPath?: string }): ResolvedSodaGqlConfig => ({
   analyzer: "ts",
+  baseDir: dirname(options.outdir),
   outdir: options.outdir,
   graphqlSystemAliases: ["@/graphql-system"],
   include: [],
@@ -284,6 +235,7 @@ describe("tsc-transformer internal module stubbing", () => {
 
     const config: ResolvedSodaGqlConfig = {
       analyzer: "ts",
+      baseDir: tmpDir,
       outdir,
       graphqlSystemAliases: ["@/graphql-system"],
       include: [],

@@ -12,6 +12,11 @@ type TransformCallExpressionArgs = {
   readonly filename: string;
   readonly metadata: GqlDefinitionMetadataMap;
   readonly getArtifact: ArtifactLookup;
+  /**
+   * Base directory for relative path computation.
+   * When provided, canonical IDs use paths relative to this directory.
+   */
+  readonly baseDir?: string;
 };
 
 type TransformCallExpressionResult =
@@ -23,6 +28,7 @@ export const transformCallExpression = ({
   filename,
   metadata,
   getArtifact,
+  baseDir,
 }: TransformCallExpressionArgs): Result<TransformCallExpressionResult, PluginError> => {
   // Skip if this call doesn't have GQL metadata
   if (!metadata.has(callPath.node)) {
@@ -34,6 +40,7 @@ export const transformCallExpression = ({
     filename,
     metadata,
     getArtifact,
+    baseDir,
   });
 
   if (gqlCallResult.isErr()) {
