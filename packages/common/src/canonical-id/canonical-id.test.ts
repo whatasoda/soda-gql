@@ -1,5 +1,5 @@
 import { describe, expect, test as it } from "bun:test";
-import { type CanonicalId, createCanonicalId, parseCanonicalId } from "./canonical-id";
+import { type CanonicalId, createCanonicalId, isRelativeCanonicalId, parseCanonicalId } from "./canonical-id";
 
 describe("canonical identifier helpers", () => {
   describe("createCanonicalId", () => {
@@ -8,8 +8,45 @@ describe("canonical identifier helpers", () => {
       expect(id).toBe("/app/src/entities/user.ts::userSlice" as unknown as CanonicalId);
     });
 
-    it("guards against relative paths", () => {
+    it("guards against relative paths without baseDir", () => {
       expect(() => createCanonicalId("./user.ts", "userSlice")).toThrow("CANONICAL_ID_REQUIRES_ABSOLUTE_PATH");
+    });
+
+    it("creates relative canonical ID when baseDir is provided", () => {
+      const id = createCanonicalId("/app/src/entities/user.ts", "userSlice", { baseDir: "/app" });
+      expect(id).toBe("src/entities/user.ts::userSlice" as unknown as CanonicalId);
+    });
+
+    it("normalizes paths when computing relative ID", () => {
+      const id = createCanonicalId("/app/src/../src/entities/user.ts", "userSlice", { baseDir: "/app" });
+      expect(id).toBe("src/entities/user.ts::userSlice" as unknown as CanonicalId);
+    });
+
+    it("handles relative filePath with baseDir", () => {
+      const id = createCanonicalId("./src/entities/user.ts", "userSlice", { baseDir: "/app" });
+      expect(id).toBe("src/entities/user.ts::userSlice" as unknown as CanonicalId);
+    });
+
+    it("normalizes baseDir for consistent relative paths", () => {
+      const id = createCanonicalId("/app/src/user.ts", "fragment", { baseDir: "/app/" });
+      expect(id).toBe("src/user.ts::fragment" as unknown as CanonicalId);
+    });
+  });
+
+  describe("isRelativeCanonicalId", () => {
+    it("returns true for relative canonical IDs", () => {
+      const id = createCanonicalId("/app/src/user.ts", "fragment", { baseDir: "/app" });
+      expect(isRelativeCanonicalId(id)).toBe(true);
+    });
+
+    it("returns false for absolute canonical IDs", () => {
+      const id = createCanonicalId("/app/src/user.ts", "fragment");
+      expect(isRelativeCanonicalId(id)).toBe(false);
+    });
+
+    it("works with string input", () => {
+      expect(isRelativeCanonicalId("src/user.ts::fragment")).toBe(true);
+      expect(isRelativeCanonicalId("/app/src/user.ts::fragment")).toBe(false);
     });
   });
 
