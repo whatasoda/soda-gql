@@ -1,5 +1,5 @@
 /**
- * Portable APIs for runtime-agnostic code (Bun + Node.js)
+ * Portable APIs using Node.js
  */
 
 export {
@@ -17,6 +17,4 @@ export {
   type PortableHasher,
 } from "./hash";
 
-export { generateId } from "./id";
-export { once, resetPortableForTests, runtime } from "./runtime";
-export { type SpawnOptions, type SpawnResult, spawn } from "./spawn";
+export { resetPortableForTests, runtime } from "./runtime";

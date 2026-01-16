@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "customConditions": ["@soda-gql"],
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -20,7 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "types": ["node"],
     "paths": {
-      "@/graphql-system": ["./graphql-system"]
+      "@/graphql-system": ["./fixture-catalog/graphql-system"]
     }
   },
   "include": ["src/**/*"],

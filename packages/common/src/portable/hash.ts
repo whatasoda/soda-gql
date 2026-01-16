@@ -1,8 +1,8 @@
 /**
- * Portable hashing API that works on both Bun and Node.js
+ * Portable hashing API using Node.js crypto
  */
 
-import { runtime } from "./runtime";
+import { createHash } from "node:crypto";
 
 export type HashAlgorithm = "sha256" | "xxhash";
 
@@ -10,42 +10,14 @@ export interface PortableHasher {
   hash(content: string, algorithm?: HashAlgorithm): string;
 }
 
-/**
- * Pads a hex string to the specified length
- */
-function padHex(hex: string, length: number): string {
-  return hex.padStart(length, "0");
-}
-
 export function createPortableHasher(): PortableHasher {
-  if (runtime.isBun) {
-    return {
-      hash(content, algorithm = "xxhash") {
-        if (algorithm === "sha256") {
-          const hasher = new Bun.CryptoHasher("sha256");
-          hasher.update(content);
-          return hasher.digest("hex");
-        }
-        // xxhash - Bun.hash returns a number
-        const hashNum = Bun.hash(content);
-        // Convert to hex and pad to 16 chars for consistency
-        return padHex(hashNum.toString(16), 16);
-      },
-    };
-  }
-
-  // Node.js implementation
   return {
     hash(content, algorithm = "xxhash") {
       if (algorithm === "sha256") {
-        const crypto = require("node:crypto");
-        return crypto.createHash("sha256").update(content).digest("hex");
+        return createHash("sha256").update(content).digest("hex");
       }
-      // xxhash fallback: use sha256 for now (can add xxhash package later if needed)
-      // This ensures consistent behavior across runtimes
-      const crypto = require("node:crypto");
-      const sha256Hash = crypto.createHash("sha256").update(content).digest("hex");
-      // Take first 16 chars to match xxhash output length
+      // xxhash fallback: use sha256 truncated to 16 chars
+      const sha256Hash = createHash("sha256").update(content).digest("hex");
       return sha256Hash.substring(0, 16);
     },
   };

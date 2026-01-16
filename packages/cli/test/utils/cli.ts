@@ -1,7 +1,6 @@
 import { expect } from "bun:test";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "@soda-gql/common";
 
 export type CliResult = {
   readonly stdout: string;
@@ -38,16 +37,24 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
   // Ensure "@soda-gql" condition is set for module resolution in spawned processes
   const nodeOptions = [process.env.NODE_OPTIONS, "--conditions=@soda-gql"].filter(Boolean).join(" ");
 
-  const spawnPromise = spawn({
-    cmd: ["bun", "--conditions=@soda-gql", cliEntryPoint, command, ...args],
-    cwd,
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      ...env,
-      NODE_OPTIONS: nodeOptions,
-    },
-  });
+  const spawnPromise = (async (): Promise<CliResult> => {
+    const proc = Bun.spawn(["bun", "--conditions=@soda-gql", cliEntryPoint, command, ...args], {
+      cwd,
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        ...env,
+        NODE_OPTIONS: nodeOptions,
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+    const exitCode = await proc.exited;
+
+    return { stdout, stderr, exitCode };
+  })();
 
   try {
     const result = await Promise.race([spawnPromise, timeoutPromise]);

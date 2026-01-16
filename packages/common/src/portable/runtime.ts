@@ -1,28 +1,13 @@
 /**
  * Runtime detection utilities for portable API implementation
+ * Note: Bun-specific code has been removed. Node.js APIs are always used.
  */
 
 export const runtime = {
-  isBun: typeof Bun !== "undefined",
-  isNode: typeof process !== "undefined" && typeof Bun === "undefined",
+  isBun: false,
+  isNode: typeof process !== "undefined",
   supportsWebCrypto: typeof crypto !== "undefined" && typeof crypto.subtle !== "undefined",
 } as const;
-
-/**
- * Helper to cache module imports to avoid repeated dynamic imports
- */
-export function once<T>(fn: () => T): () => T {
-  let result: T | undefined;
-  let called = false;
-
-  return () => {
-    if (!called) {
-      result = fn();
-      called = true;
-    }
-    return result as T;
-  };
-}
 
 /**
  * Reset runtime state for testing purposes only

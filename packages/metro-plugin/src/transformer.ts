@@ -95,8 +95,8 @@ let sessionInitialized = false;
  * Ensure plugin session is initialized.
  * First tries to use shared session, falls back to creating own.
  */
-const ensurePluginSession = (): PluginSession | null => {
-  const stateKey = getStateKey();
+const ensurePluginSession = (configPath?: string): PluginSession | null => {
+  const stateKey = getStateKey(configPath);
 
   // Try to use shared session first
   const sharedSession = getSharedPluginSession(stateKey);
@@ -127,8 +127,9 @@ let swcInitialized = false;
 const initializeSwcTransformer = async (
   artifact: BuilderArtifact,
   config: ResolvedSodaGqlConfig,
+  configPath?: string,
 ): Promise<SwcTransformerInterface | null> => {
-  const stateKey = getStateKey();
+  const stateKey = getStateKey(configPath);
 
   // Check if already initialized
   const existing = getSharedSwcTransformer(stateKey);
@@ -174,13 +175,17 @@ export async function transform(params: MetroTransformParams): Promise<MetroTran
  * Core transformation logic.
  * @internal
  */
-async function transformCore(params: MetroTransformParams, getUpstream: () => MetroTransformer): Promise<MetroTransformResult> {
+async function transformCore(
+  params: MetroTransformParams,
+  getUpstream: () => MetroTransformer,
+  configPath?: string,
+): Promise<MetroTransformResult> {
   const { src, filename, options } = params;
-  const stateKey = getStateKey();
+  const stateKey = getStateKey(configPath);
 
   const upstream = getUpstream();
 
-  const session = ensurePluginSession();
+  const session = ensurePluginSession(configPath);
   if (!session) {
     // Plugin disabled or config load failed, pass through to upstream
     return upstream.transform(params);
@@ -213,7 +218,7 @@ async function transformCore(params: MetroTransformParams, getUpstream: () => Me
   }
 
   // Try SWC transformer first if configured
-  const swcTransformer = await initializeSwcTransformer(artifact, session.config);
+  const swcTransformer = await initializeSwcTransformer(artifact, session.config, configPath);
   if (swcTransformer) {
     const swcResult = swcTransformer.transform({
       sourceCode: src,
@@ -303,8 +308,8 @@ export function getCacheKey(): string {
  * Core cache key generation logic.
  * @internal
  */
-function getCacheKeyCore(getUpstream: () => MetroTransformer, upstreamPath?: string): string {
-  const stateKey = getStateKey();
+function getCacheKeyCore(getUpstream: () => MetroTransformer, upstreamPath?: string, configPath?: string): string {
+  const stateKey = getStateKey(configPath);
   const state = getSharedState(stateKey);
   const artifact = state.currentArtifact;
   const upstream = getUpstream();
@@ -340,12 +345,13 @@ function getCacheKeyCore(getUpstream: () => MetroTransformer, upstreamPath?: str
 
 /**
  * Create a transformer with a specific upstream transformer path.
- * Used by generated wrapper files to inject the upstream path at build time.
+ * Used by generated wrapper files to inject the upstream path and config path at build time.
  *
  * @param upstreamPath - Absolute path to the upstream transformer module
+ * @param configPath - Path to soda-gql config file (optional)
  * @returns MetroTransformer instance configured with the specified upstream
  */
-export function createTransformerWithUpstream(upstreamPath: string): MetroTransformer {
+export function createTransformerWithUpstream(upstreamPath: string, configPath?: string): MetroTransformer {
   let cachedUpstream: MetroTransformer | null = null;
 
   const getUpstream = (): MetroTransformer => {
@@ -364,8 +370,8 @@ export function createTransformerWithUpstream(upstreamPath: string): MetroTransf
   };
 
   return {
-    transform: (params: MetroTransformParams) => transformCore(params, getUpstream),
-    getCacheKey: () => getCacheKeyCore(getUpstream, upstreamPath),
+    transform: (params: MetroTransformParams) => transformCore(params, getUpstream, configPath),
+    getCacheKey: () => getCacheKeyCore(getUpstream, upstreamPath, configPath),
   };
 }
 

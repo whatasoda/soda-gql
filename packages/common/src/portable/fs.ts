@@ -1,8 +1,6 @@
 /**
- * Portable filesystem API that works on both Bun and Node.js
+ * Portable filesystem API using Node.js fs
  */
-
-import { once, runtime } from "./runtime";
 
 export interface PortableFS {
   readFile(path: string): Promise<string>;
@@ -58,10 +56,14 @@ interface FSSync {
 }
 
 // Cache the fs/promises import
-const getNodeFS = once(async (): Promise<FSPromises> => {
-  const fs = await import("node:fs/promises");
-  return fs as FSPromises;
-});
+let nodeFsPromises: FSPromises | null = null;
+const getNodeFS = async (): Promise<FSPromises> => {
+  if (!nodeFsPromises) {
+    const fs = await import("node:fs/promises");
+    nodeFsPromises = fs as FSPromises;
+  }
+  return nodeFsPromises;
+};
 
 // Cache the sync fs import
 let nodeFsSync: FSSync | null = null;
@@ -92,121 +94,6 @@ const getTempPath = (targetPath: string): string => {
 };
 
 export function createPortableFS(): PortableFS {
-  if (runtime.isBun) {
-    return {
-      async readFile(path) {
-        const file = Bun.file(path);
-        return await file.text();
-      },
-
-      async writeFile(path, content) {
-        // Bun.write auto-creates parent directories
-        await Bun.write(path, content);
-      },
-
-      async writeFileAtomic(path, content) {
-        const tempPath = getTempPath(path);
-        try {
-          await Bun.write(tempPath, content);
-          const nodeFS = await getNodeFS();
-          await nodeFS.rename(tempPath, path);
-        } catch (error) {
-          // Clean up temp file on failure
-          try {
-            const nodeFS = await getNodeFS();
-            await nodeFS.unlink(tempPath);
-          } catch {
-            // Ignore cleanup errors
-          }
-          throw error;
-        }
-      },
-
-      async exists(path) {
-        // Bun.file().exists() only works for files, use fs.stat for both files and dirs
-        const nodeFS = await getNodeFS();
-        try {
-          await nodeFS.stat(path);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-
-      async stat(path) {
-        const file = Bun.file(path);
-        const size = file.size;
-        // Bun doesn't expose mtime directly, use Node fs.stat
-        const nodeFS = await getNodeFS();
-        const { mtime } = await nodeFS.stat(path);
-        return { mtime, size };
-      },
-
-      async rename(oldPath, newPath) {
-        const nodeFS = await getNodeFS();
-        await nodeFS.rename(oldPath, newPath);
-      },
-
-      async mkdir(path, options) {
-        const nodeFS = await getNodeFS();
-        await nodeFS.mkdir(path, options);
-      },
-
-      writeFileSyncAtomic(path, content) {
-        const fsSync = getNodeFSSync();
-        const pathMod = getPathModule();
-        const tempPath = getTempPath(path);
-
-        // Ensure parent directory exists
-        const dir = pathMod.dirname(path);
-        fsSync.mkdirSync(dir, { recursive: true });
-
-        try {
-          fsSync.writeFileSync(tempPath, content, "utf-8");
-          fsSync.renameSync(tempPath, path);
-        } catch (error) {
-          // Clean up temp file on failure
-          try {
-            fsSync.unlinkSync(tempPath);
-          } catch {
-            // Ignore cleanup errors
-          }
-          throw error;
-        }
-      },
-
-      async unlink(path) {
-        const nodeFS = await getNodeFS();
-        try {
-          await nodeFS.unlink(path);
-        } catch (error) {
-          // Ignore ENOENT (file not found)
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-            throw error;
-          }
-        }
-      },
-
-      unlinkSync(path) {
-        const fsSync = getNodeFSSync();
-        try {
-          fsSync.unlinkSync(path);
-        } catch (error) {
-          // Ignore ENOENT (file not found)
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-            throw error;
-          }
-        }
-      },
-
-      readFileSync(path) {
-        const fsSync = getNodeFSSync();
-        return fsSync.readFileSync(path, "utf-8");
-      },
-    };
-  }
-
-  // Node.js implementation
   return {
     async readFile(path) {
       const nodeFS = await getNodeFS();

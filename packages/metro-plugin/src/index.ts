@@ -81,9 +81,9 @@ export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPlug
 
   let transformerPath: string;
 
+  // Resolve upstream to absolute path for reliable worker loading
+  let resolvedUpstream: string | undefined;
   if (upstreamTransformer) {
-    // Resolve upstream to absolute path for reliable worker loading
-    let resolvedUpstream: string;
     try {
       resolvedUpstream = require.resolve(upstreamTransformer, {
         paths: [process.cwd()],
@@ -92,14 +92,17 @@ export function withSodaGql<T extends MetroConfig>(config: T, options: MetroPlug
       // If resolution fails, use the path as-is (might be an absolute path already)
       resolvedUpstream = upstreamTransformer;
     }
+  }
 
-    // Generate wrapper transformer with hardcoded upstream
+  // Always generate wrapper to embed configPath (and optionally upstream)
+  if (resolvedUpstream || options.configPath) {
     transformerPath = ensureWrapperTransformer({
-      upstreamTransformerPath: resolvedUpstream,
+      upstreamTransformerPath: resolvedUpstream ?? require.resolve("@soda-gql/metro-plugin/transformer"),
       projectRoot: process.cwd(),
+      configPath: options.configPath,
     });
   } else {
-    // No upstream - use main transformer directly
+    // No upstream and no configPath - use main transformer directly
     transformerPath = require.resolve("@soda-gql/metro-plugin/transformer");
   }
 
