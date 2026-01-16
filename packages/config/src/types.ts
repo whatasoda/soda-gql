@@ -93,6 +93,17 @@ export type ResolvedArtifactConfig = {
   readonly path: string;
 };
 
+/**
+ * Resolved tsconfig.json paths configuration.
+ * Contains absolute paths for all path mappings.
+ */
+export type ResolvedTsconfigPaths = {
+  /** Absolute base URL for path resolution */
+  readonly baseUrl: string;
+  /** Path mappings with absolute paths */
+  readonly paths: Readonly<Record<string, readonly string[]>>;
+};
+
 // Unified soda-gql configuration (single project)
 export type SodaGqlConfig = {
   /**
@@ -114,6 +125,13 @@ export type SodaGqlConfig = {
    * @example ["@/graphql-system"]
    */
   readonly graphqlSystemAliases?: readonly string[];
+  /**
+   * Path to tsconfig.json for path alias resolution.
+   * When specified, compilerOptions.paths will be used to resolve import aliases.
+   *
+   * @example "./tsconfig.json"
+   */
+  readonly tsconfigPath?: string;
   /**
    * The files to include in the project.
    *
@@ -190,4 +208,9 @@ export type ResolvedSodaGqlConfig = {
    * Only present when artifact.path is specified in the config.
    */
   readonly artifact?: ResolvedArtifactConfig;
+  /**
+   * Resolved tsconfig paths configuration.
+   * Only present when tsconfigPath is specified and the tsconfig contains paths.
+   */
+  readonly tsconfigPaths?: ResolvedTsconfigPaths;
 };

@@ -98,6 +98,7 @@ const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   analyzer: z.enum(["ts", "swc"]).optional(),
   outdir: z.string().min(1),
   graphqlSystemAliases: z.array(z.string()).optional(),
+  tsconfigPath: z.string().min(1).optional(),
   include: z.array(z.string().min(1)),
   exclude: z.array(z.string().min(1)).optional(),
   schemas: z.record(z.string(), SchemaConfigSchema),
