@@ -3,6 +3,7 @@
  * @module
  */
 
+import { isPromiseLike } from "../../utils/promise";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
 /**
@@ -89,8 +90,8 @@ export class GqlDefine<TValue> extends GqlElement<DefineArtifact<TValue>, Define
     return new GqlDefine((_context) => {
       const result = factory();
       // Handle async factories
-      if (result && typeof result === "object" && "then" in result) {
-        return (result as Promise<TValue>).then((value) => ({ factoryResult: value }));
+      if (isPromiseLike<TValue>(result)) {
+        return result.then((value) => ({ factoryResult: value }));
       }
       return { factoryResult: result as TValue };
     });

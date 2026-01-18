@@ -54,6 +54,14 @@ describe("GqlDefine", () => {
 
       expect(define.value).toBeNull();
     });
+
+    test("should handle object with non-function 'then' property as sync value", () => {
+      // Edge case: object has 'then' property but it's not a function
+      // This should NOT be treated as a Promise
+      const define = GqlDefine.create(() => ({ then: "not-a-function", value: 42 }));
+
+      expect(define.value).toEqual({ then: "not-a-function", value: 42 });
+    });
   });
 
   describe("lazy evaluation", () => {
