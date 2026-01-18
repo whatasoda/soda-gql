@@ -180,4 +180,9 @@ export type GraphqlCompatError =
       readonly code: "GRAPHQL_OUTPUT_ERROR";
       readonly message: string;
       readonly outputPath: string;
+    }
+  | {
+      readonly code: "GRAPHQL_INLINE_FRAGMENT_ON_INTERFACE";
+      readonly message: string;
+      readonly onType: string;
     };

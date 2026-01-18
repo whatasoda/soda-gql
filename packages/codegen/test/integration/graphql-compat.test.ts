@@ -112,7 +112,7 @@ describe("graphql-compat integration", () => {
     const { operations } = transformResult._unsafeUnwrap();
     expect(operations).toHaveLength(1);
 
-    const output = emitOperation(operations[0]!, emitOptions);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Verify structure
     expect(output).toContain('import { gql } from "@/graphql-system"');
@@ -165,15 +165,15 @@ describe("graphql-compat integration", () => {
     expect(operations).toHaveLength(3);
 
     // Check each operation type
-    const queryOutput = emitOperation(operations[0]!, emitOptions);
+    const queryOutput = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
     expect(queryOutput).toContain("({ query, $var })");
     expect(queryOutput).toContain("query.compat(");
 
-    const mutationOutput = emitOperation(operations[1]!, emitOptions);
+    const mutationOutput = emitOperation(operations[1]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
     expect(mutationOutput).toContain("({ mutation, $var })");
     expect(mutationOutput).toContain("mutation.compat(");
 
-    const subscriptionOutput = emitOperation(operations[2]!, emitOptions);
+    const subscriptionOutput = emitOperation(operations[2]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
     expect(subscriptionOutput).toContain("({ subscription, $var })");
     expect(subscriptionOutput).toContain("subscription.compat(");
   });
@@ -202,7 +202,7 @@ describe("graphql-compat integration", () => {
     const { fragments } = transformResult._unsafeUnwrap();
     expect(fragments).toHaveLength(1);
 
-    const output = emitFragment(fragments[0]!, emitOptions);
+    const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Verify structure
     expect(output).toContain('import { gql } from "@/graphql-system"');
@@ -245,11 +245,12 @@ describe("graphql-compat integration", () => {
 
     const output = emitOperation(operations[0]!, {
       ...emitOptions,
+      schemaDocument,
       fragmentImports: new Map([
         ["UserBasicFields", "./UserBasicFields.compat"],
         ["PostFields", "./PostFields.compat"],
       ]),
-    });
+    })._unsafeUnwrap();
 
     // Verify imports
     expect(output).toContain('import { UserBasicFieldsFragment } from "./UserBasicFields.compat"');
@@ -288,7 +289,7 @@ describe("graphql-compat integration", () => {
     expect(transformResult.isOk()).toBe(true);
 
     const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, emitOptions);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Check variable definitions
     expect(output).toContain('...$var("id").ID("!")');
@@ -328,7 +329,7 @@ describe("graphql-compat integration", () => {
     expect(transformResult.isOk()).toBe(true);
 
     const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, emitOptions);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Check nested structure
     expect(output).toContain("...f.posts()(({ f }) => ({");
@@ -357,7 +358,7 @@ describe("graphql-compat integration", () => {
     expect(transformResult.isOk()).toBe(true);
 
     const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, emitOptions);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Check literal arguments - enums are emitted as strings
     expect(output).toContain('filter: { name: "John", role: "ADMIN" }');
@@ -385,7 +386,7 @@ describe("graphql-compat integration", () => {
     expect(transformResult.isOk()).toBe(true);
 
     const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, emitOptions);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
     // Write to file
     const outputPath = join(outDir, "GetUser.compat.ts");

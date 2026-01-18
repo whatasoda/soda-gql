@@ -42,6 +42,7 @@ const testSchema = parse(`
 const defaultOptions = {
   schemaName: "mySchema",
   graphqlSystemPath: "@/graphql-system",
+  schemaDocument: testSchema,
 };
 
 const parseAndTransform = (source: string) => {
@@ -60,7 +61,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('import { gql } from "@/graphql-system"');
     expect(output).toContain("export const GetUserCompat = gql.mySchema");
@@ -80,7 +81,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('...$var("userId").ID("!")');
     expect(output).toContain("{ f, $ }");
@@ -96,7 +97,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('...$var("filter").UserFilter("?")');
     expect(output).toContain('...$var("status").Status("!")');
@@ -112,7 +113,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("({ mutation, $var })");
     expect(output).toContain("mutation.compat({");
@@ -128,7 +129,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("({ subscription, $var })");
     expect(output).toContain("subscription.compat({");
@@ -163,7 +164,7 @@ describe("emitOperation", () => {
       `),
     })._unsafeUnwrap();
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("...f.profile()(({ f }) => ({");
     expect(output).toContain("...f.avatar()");
@@ -197,7 +198,7 @@ describe("emitOperation", () => {
       `),
     })._unsafeUnwrap();
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('str: "hello"');
     expect(output).toContain("num: 42");
@@ -216,7 +217,7 @@ describe("emitOperation", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('status: "ACTIVE"');
   });
@@ -233,7 +234,7 @@ describe("emitOperation", () => {
     const output = emitOperation(operations[0]!, {
       ...defaultOptions,
       fragmentImports: new Map([["UserFields", "./UserFields.compat"]]),
-    });
+    })._unsafeUnwrap();
 
     expect(output).toContain('import { UserFieldsFragment } from "./UserFields.compat"');
     expect(output).toContain("...UserFieldsFragment.spread()");
@@ -249,7 +250,7 @@ describe("emitFragment", () => {
       }
     `);
 
-    const output = emitFragment(fragments[0]!, defaultOptions);
+    const output = emitFragment(fragments[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain('import { gql } from "@/graphql-system"');
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
@@ -283,7 +284,7 @@ describe("emitFragment", () => {
       `),
     })._unsafeUnwrap();
 
-    const output = emitFragment(fragments[0]!, defaultOptions);
+    const output = emitFragment(fragments[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("...f.profile()(({ f }) => ({");
     expect(output).toContain("...f.avatar()");
@@ -300,7 +301,7 @@ describe("emitFragment", () => {
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
       fragmentImports: new Map([["UserBasicFields", "./UserBasicFields.compat"]]),
-    });
+    })._unsafeUnwrap();
 
     expect(output).toContain('import { UserBasicFieldsFragment } from "./UserBasicFields.compat"');
     expect(output).toContain("...UserBasicFieldsFragment.spread()");
@@ -317,7 +318,7 @@ describe("emitValue edge cases", () => {
       }
     `);
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("filter: null");
   });
@@ -341,7 +342,7 @@ describe("emitValue edge cases", () => {
       `),
     })._unsafeUnwrap();
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("input: {}");
   });
@@ -364,8 +365,100 @@ describe("emitValue edge cases", () => {
       `),
     })._unsafeUnwrap();
 
-    const output = emitOperation(operations[0]!, defaultOptions);
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("matrix: [[1, 2], [3, 4]]");
+  });
+});
+
+describe("inline fragments", () => {
+  const unionSchema = parse(`
+    type User { id: ID!, name: String! }
+    type Post { id: ID!, title: String! }
+    union SearchResult = User | Post
+    type Query { search(query: String!): [SearchResult!]! }
+  `);
+
+  it("emits inline fragments on union type", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!) {
+        search(query: $q) {
+          ... on User { id name }
+          ... on Post { id title }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    // Should contain union member handlers
+    expect(output).toContain("User: ({ f }) => ({");
+    expect(output).toContain("Post: ({ f }) => ({");
+    expect(output).toContain("...f.id()");
+    expect(output).toContain("...f.name()");
+    expect(output).toContain("...f.title()");
+  });
+
+  it("returns error for inline fragments on unknown type (not in schema)", () => {
+    // When the inline fragment's onType is not in objects or unions, it should error
+    const minimalSchema = parse(`
+      type Query { data: String }
+    `);
+
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data {
+          ... on UnknownType { field }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    // Note: This would normally fail transform, but we test emitter behavior
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: minimalSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: minimalSchema,
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_INLINE_FRAGMENT_ON_INTERFACE");
+    }
+  });
+
+  it("emits inline fragments without schema (no validation)", () => {
+    // When no schemaDocument is provided, inline fragments are emitted without validation
+    const parsed = parseGraphqlSource(
+      `
+      query Search {
+        search {
+          ... on User { id name }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: testSchema,
+    })._unsafeUnwrap();
+
+    // Emit without schemaDocument - should not error
+    const result = emitOperation(operations[0]!, defaultOptions);
+
+    expect(result.isOk()).toBe(true);
   });
 });

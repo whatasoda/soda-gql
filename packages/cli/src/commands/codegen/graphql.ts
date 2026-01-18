@@ -208,17 +208,26 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       schemaName: args.schemaName,
       graphqlSystemPath,
       fragmentImports,
+      schemaDocument,
     };
 
     const parts: string[] = [];
 
     for (const op of operations) {
-      parts.push(emitOperation(op as EnrichedOperation, emitOptions));
+      const emitResult = emitOperation(op as EnrichedOperation, emitOptions);
+      if (emitResult.isErr()) {
+        return err(cliErrors.parseError(emitResult.error.message, file));
+      }
+      parts.push(emitResult.value);
       operationCount++;
     }
 
     for (const frag of fragments) {
-      parts.push(emitFragment(frag as EnrichedFragment, emitOptions));
+      const emitResult = emitFragment(frag as EnrichedFragment, emitOptions);
+      if (emitResult.isErr()) {
+        return err(cliErrors.parseError(emitResult.error.message, file));
+      }
+      parts.push(emitResult.value);
       fragmentCount++;
     }
 
