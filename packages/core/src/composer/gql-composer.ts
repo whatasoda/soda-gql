@@ -8,8 +8,10 @@ import { GqlDefine } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
+import { createCompatComposer } from "./compat";
 import { applyContextTransformer } from "./context-transformer";
 import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
+import { createExtendComposer } from "./extend";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
 import { createVarBuilder, type InputTypeMethods } from "./var-builder";
@@ -144,13 +146,23 @@ export const createGqlElementComposer = <
   );
 
   // Wrap operation composers in objects with an `operation` method for extensibility
-  // This allows adding more factories (e.g., query.subscription, query.fragment) in the future
+  // This allows adding more factories (e.g., query.compat, mutation.compat) in the future
   const context = {
     fragment,
-    query: { operation: createOperationComposer("query") },
-    mutation: { operation: createOperationComposer("mutation") },
-    subscription: { operation: createOperationComposer("subscription") },
+    query: {
+      operation: createOperationComposer("query"),
+      compat: createCompatComposer<TSchema, "query">(schema, "query"),
+    },
+    mutation: {
+      operation: createOperationComposer("mutation"),
+      compat: createCompatComposer<TSchema, "mutation">(schema, "mutation"),
+    },
+    subscription: {
+      operation: createOperationComposer("subscription"),
+      compat: createCompatComposer<TSchema, "subscription">(schema, "subscription"),
+    },
     define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine.create(factory),
+    extend: createExtendComposer<TSchema, TMetadataAdapter>(schema, metadataAdapter, transformDocument),
     $var: createVarBuilder<TSchema>(inputTypeMethods),
     $dir: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
