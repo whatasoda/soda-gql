@@ -1,6 +1,6 @@
 import { err, ok } from "neverthrow";
 import { artifactCommand } from "./commands/artifact";
-import { codegenCommand } from "./commands/codegen";
+import { codegenCommand } from "./commands/codegen/index";
 import { doctorCommand } from "./commands/doctor";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
