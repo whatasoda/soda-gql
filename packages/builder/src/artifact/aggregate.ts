@@ -44,6 +44,11 @@ export const aggregate = ({ analyses, elements }: AggregateInput): Result<Map<st
         return err(emitRegistrationError(filePath, astPath, message));
       }
 
+      // Skip define elements - they exist only for builder evaluation, not final output
+      if (element.type === "define") {
+        continue;
+      }
+
       if (registry.has(definition.canonicalId)) {
         return err(emitRegistrationError(filePath, astPath, `ARTIFACT_ALREADY_REGISTERED`));
       }

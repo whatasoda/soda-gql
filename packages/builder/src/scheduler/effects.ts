@@ -1,10 +1,10 @@
 import { readFileSync, statSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { Effect, Effects, parseCanonicalId } from "@soda-gql/common";
-import { type AnyFragment, type AnyOperation, GqlElement } from "@soda-gql/core";
+import { type AnyFragment, type AnyGqlDefine, type AnyOperation, GqlElement } from "@soda-gql/core";
 import { builderErrors } from "../errors";
 
-type AcceptableArtifact = AnyFragment | AnyOperation;
+type AcceptableArtifact = AnyFragment | AnyOperation | AnyGqlDefine;
 
 /**
  * File stats result type.

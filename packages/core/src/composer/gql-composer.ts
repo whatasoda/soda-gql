@@ -3,7 +3,8 @@
  * @module
  */
 
-import type { AnyFragment, AnyOperation } from "../types/element";
+import type { AnyFragment, AnyGqlDefine, AnyOperation } from "../types/element";
+import { GqlDefine } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
@@ -19,7 +20,7 @@ import { createVarBuilder, type InputTypeMethods } from "./var-builder";
  * The composer provides a context with builders for fragments, operations,
  * variables, and colocation helpers.
  */
-export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOperation>(
+export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOperation | AnyGqlDefine>(
   composeElement: (context: TContext) => TResult,
 ) => TResult;
 
@@ -149,6 +150,7 @@ export const createGqlElementComposer = <
     query: { operation: createOperationComposer("query") },
     mutation: { operation: createOperationComposer("mutation") },
     subscription: { operation: createOperationComposer("subscription") },
+    define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine.create(factory),
     $var: createVarBuilder<TSchema>(inputTypeMethods),
     $dir: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
@@ -186,6 +188,7 @@ export type AnyGqlContext = {
   readonly query: { operation: (...args: unknown[]) => AnyOperation };
   readonly mutation: { operation: (...args: unknown[]) => AnyOperation };
   readonly subscription: { operation: (...args: unknown[]) => AnyOperation };
+  readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly $var: unknown;
   readonly $dir: StandardDirectives;
   readonly $colocate: unknown;
