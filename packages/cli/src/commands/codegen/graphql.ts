@@ -152,6 +152,10 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     const outputPath = join(args.outputDir, outputBase);
 
     for (const frag of parsed.fragments) {
+      const existing = fragmentsByName.get(frag.name);
+      if (existing && existing.file !== file) {
+        return err(cliErrors.duplicateFragment(frag.name, existing.file, file));
+      }
       fragmentsByName.set(frag.name, { file, outputPath });
     }
   }

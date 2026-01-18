@@ -27,6 +27,7 @@ export type CliErrorCode =
   | "CLI_FORMATTER_NOT_INSTALLED"
   | "CLI_PARSE_ERROR"
   | "CLI_FORMAT_ERROR"
+  | "CLI_DUPLICATE_FRAGMENT"
   // Unexpected errors
   | "CLI_UNEXPECTED";
 
@@ -111,6 +112,14 @@ export type CliError =
     }
   | {
       readonly category: "cli";
+      readonly code: "CLI_DUPLICATE_FRAGMENT";
+      readonly message: string;
+      readonly fragmentName: string;
+      readonly existingFile: string;
+      readonly newFile: string;
+    }
+  | {
+      readonly category: "cli";
       readonly code: "CLI_UNEXPECTED";
       readonly message: string;
       readonly cause?: unknown;
@@ -133,6 +142,7 @@ type CliNoPatternsError = Extract<CliError, { code: "CLI_NO_PATTERNS" }>;
 type CliFormatterNotInstalledError = Extract<CliError, { code: "CLI_FORMATTER_NOT_INSTALLED" }>;
 type CliParseErrorError = Extract<CliError, { code: "CLI_PARSE_ERROR" }>;
 type CliFormatErrorError = Extract<CliError, { code: "CLI_FORMAT_ERROR" }>;
+type CliDuplicateFragmentError = Extract<CliError, { code: "CLI_DUPLICATE_FRAGMENT" }>;
 type CliUnexpectedError = Extract<CliError, { code: "CLI_UNEXPECTED" }>;
 type CliCodegenError = Extract<CliError, { category: "codegen" }>;
 type CliBuilderError = Extract<CliError, { category: "builder" }>;
@@ -221,6 +231,15 @@ export const cliErrors = {
     code: "CLI_FORMAT_ERROR",
     message,
     filePath,
+  }),
+
+  duplicateFragment: (fragmentName: string, existingFile: string, newFile: string): CliDuplicateFragmentError => ({
+    category: "cli",
+    code: "CLI_DUPLICATE_FRAGMENT",
+    message: `Fragment "${fragmentName}" is defined in multiple files:\n  - ${existingFile}\n  - ${newFile}`,
+    fragmentName,
+    existingFile,
+    newFile,
   }),
 
   unexpected: (message: string, cause?: unknown): CliUnexpectedError => ({

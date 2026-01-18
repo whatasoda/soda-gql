@@ -197,3 +197,81 @@ describe("soda-gql codegen CLI", () => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 });
+
+describe("soda-gql codegen graphql CLI", () => {
+  const tmpRoot = join(projectRoot, "tests/.tmp/codegen-graphql-cli-test");
+  mkdirSync(tmpRoot, { recursive: true });
+
+  const copyDefaultInject = (destinationPath: string): void => {
+    cpSync(join(projectRoot, "fixture-catalog/schemas/default/scalars.ts"), destinationPath);
+  };
+
+  it("reports DUPLICATE_FRAGMENT when same fragment is defined in multiple files", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "generated");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Create two .graphql files with the same fragment name
+    const file1 = join(graphqlDir, "UserFields1.graphql");
+    const file2 = join(graphqlDir, "UserFields2.graphql");
+
+    await Bun.write(
+      file1,
+      `
+      fragment UserFields on User {
+        id
+        name
+      }
+    `,
+    );
+
+    await Bun.write(
+      file2,
+      `
+      fragment UserFields on User {
+        id
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    const result = await runCodegenCli(
+      ["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql"), "--output", outDir],
+      { cwd: caseDir },
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("DUPLICATE_FRAGMENT");
+    expect(result.stderr).toContain("UserFields");
+  });
+
+  afterAll(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+});
