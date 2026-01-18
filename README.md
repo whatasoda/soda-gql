@@ -152,6 +152,38 @@ export const userQuery = gql.default(({ query, $var }) =>
 
 See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure and advanced usage.
 
+### Define Element (Value Sharing)
+
+Use `define` to share configuration values and helper functions across multiple gql definitions:
+
+```typescript
+// shared/config.ts
+export const ApiConfig = gql.default(({ define }) =>
+  define(() => ({
+    defaultTimeout: 5000,
+    retryCount: 3,
+  }))
+);
+
+// queries/user.ts
+import { ApiConfig } from "../shared/config";
+
+export const GetUser = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") },
+    metadata: () => ({
+      custom: { timeout: ApiConfig.value.defaultTimeout },
+    }),
+    fields: ({ f, $ }) => ({ ... }),
+  })
+);
+```
+
+Values defined with `define` pass builder evaluation but are excluded from the final artifact.
+
+See [Define Element Guide](./docs/guides/define-element.md) for detailed documentation.
+
 ### Prebuilt Types (Bundler Compatibility)
 
 When bundling with tools like tsdown, rollup-plugin-dts, or other bundlers that merge declaration files, complex type inference (like `InferFields`) may be lost at module boundaries. The prebuilt types feature solves this by pre-calculating types at build time.
