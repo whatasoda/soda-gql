@@ -9,12 +9,6 @@ import type { InputTypeSpecifiers } from "../type-foundation";
 import type { FieldsBuilder } from "./fields-builder";
 
 /**
- * Brand key for CompatSpec to distinguish from other GqlDefine values.
- * Using a string literal brand instead of unique symbol for cross-file compatibility.
- */
-export const COMPAT_SPEC_BRAND = "__compat_spec__" as const;
-
-/**
  * Specification for a compat operation, storing unevaluated fieldsBuilder.
  * Created by `query.compat()`, `mutation.compat()`, `subscription.compat()`.
  *
@@ -31,7 +25,6 @@ export const COMPAT_SPEC_BRAND = "__compat_spec__" as const;
  * ```typescript
  * // This is created internally by query.compat()
  * const spec: CompatSpec<Schema, 'query', 'GetUser', { userId: VarSpec }, Fields> = {
- *   __compat_spec__: true,
  *   schema,
  *   operationType: 'query',
  *   operationName: 'GetUser',
@@ -47,7 +40,6 @@ export type CompatSpec<
   TVarDefinitions extends InputTypeSpecifiers,
   TFields extends AnyFields,
 > = {
-  readonly [COMPAT_SPEC_BRAND]: true;
   readonly schema: TSchema;
   readonly operationType: TOperationType;
   readonly operationName: TOperationName;

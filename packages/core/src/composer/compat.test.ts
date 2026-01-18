@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { type BasicTestSchema, basicTestSchema } from "../../test/fixtures";
 import { defineOperationRoots } from "../schema";
 import { GqlDefine } from "../types/element";
-import { COMPAT_SPEC_BRAND } from "../types/element/compat-spec";
 import { createCompatComposer } from "./compat";
 
 const schema = basicTestSchema;
@@ -39,7 +38,6 @@ describe("createCompatComposer", () => {
       });
 
       const spec = compat.value;
-      expect(spec[COMPAT_SPEC_BRAND]).toBe(true);
       expect(spec.operationType).toBe("query");
       expect(spec.operationName).toBe("GetUser");
     });

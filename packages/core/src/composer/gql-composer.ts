@@ -197,10 +197,11 @@ export const createGqlElementComposer = <
  */
 export type AnyGqlContext = {
   readonly fragment: Record<string, unknown>;
-  readonly query: { operation: (...args: unknown[]) => AnyOperation };
-  readonly mutation: { operation: (...args: unknown[]) => AnyOperation };
-  readonly subscription: { operation: (...args: unknown[]) => AnyOperation };
+  readonly query: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
+  readonly mutation: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
+  readonly subscription: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
+  readonly extend: (...args: unknown[]) => AnyOperation;
   readonly $var: unknown;
   readonly $dir: StandardDirectives;
   readonly $colocate: unknown;

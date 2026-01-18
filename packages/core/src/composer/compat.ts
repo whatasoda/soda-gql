@@ -4,7 +4,7 @@
  */
 
 import { type FieldsBuilder, GqlDefine } from "../types/element";
-import { COMPAT_SPEC_BRAND, type CompatSpec } from "../types/element/compat-spec";
+import type { CompatSpec } from "../types/element/compat-spec";
 import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -53,7 +53,6 @@ export const createCompatComposer = <TSchema extends AnyGraphqlSchema, TOperatio
     options: CompatOptions<TSchema, TTypeName, TOperationName, TVarDefinitions, TFields>,
   ): GqlDefine<CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>> => {
     return GqlDefine.create(() => ({
-      [COMPAT_SPEC_BRAND]: true as const,
       schema,
       operationType,
       operationName: options.name,
