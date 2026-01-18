@@ -104,7 +104,7 @@ describe("soda-gql init CLI", () => {
   });
 
   describe("gitignore content", () => {
-    it("ignores generated index files", async () => {
+    it("ignores generated files from codegen and typegen", async () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}-6`);
       mkdirSync(caseDir, { recursive: true });
 
@@ -112,8 +112,14 @@ describe("soda-gql init CLI", () => {
 
       const gitignoreContent = await Bun.file(join(caseDir, "graphql-system/.gitignore")).text();
 
+      // codegen output files
+      expect(gitignoreContent).toContain("/_internal.ts");
       expect(gitignoreContent).toContain("/index.ts");
       expect(gitignoreContent).toContain("/index.cjs");
+      // typegen output files
+      expect(gitignoreContent).toContain("/index.prebuilt.ts");
+      expect(gitignoreContent).toContain("/index.prebuilt.cjs");
+      expect(gitignoreContent).toContain("/types.prebuilt.ts");
     });
   });
 
