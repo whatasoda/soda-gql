@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createCanonicalId } from "@soda-gql/common";
-import { Fragment, GqlElement } from "@soda-gql/core";
+import { Fragment, GqlDefine, GqlElement } from "@soda-gql/core";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { createIntermediateRegistry } from "./registry";
 
@@ -578,6 +578,83 @@ describe("createIntermediateRegistry", () => {
       expect(evalOrder.indexOf("module-a-end")).toBeLessThan(evalOrder.indexOf("element-start"));
       // Verify element was evaluated
       expect(asTestElement(element).value).toBe("TestValue");
+    });
+  });
+
+  describe("GqlDefine support", () => {
+    test("should accept GqlDefine with primitive value", () => {
+      const registry = createIntermediateRegistry();
+
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      const element = registry.addElement("test:define-primitive", () => GqlDefine.create(() => 42));
+
+      const result = registry.evaluate();
+
+      expect(result["test:define-primitive"]).toBeDefined();
+      expect(result["test:define-primitive"]?.type).toBe("define");
+      expect(element.value).toBe(42);
+    });
+
+    test("should accept GqlDefine with plain object", () => {
+      const registry = createIntermediateRegistry();
+
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      const element = registry.addElement("test:define-object", () =>
+        GqlDefine.create(() => ({ foo: "bar", count: 123 })),
+      );
+
+      const result = registry.evaluate();
+
+      expect(result["test:define-object"]).toBeDefined();
+      expect(result["test:define-object"]?.type).toBe("define");
+      expect(element.value).toEqual({ foo: "bar", count: 123 });
+    });
+
+    test("should accept GqlDefine with array", () => {
+      const registry = createIntermediateRegistry();
+
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      const element = registry.addElement("test:define-array", () => GqlDefine.create(() => ["a", "b", "c"]));
+
+      const result = registry.evaluate();
+
+      expect(result["test:define-array"]).toBeDefined();
+      expect(result["test:define-array"]?.type).toBe("define");
+      expect(element.value).toEqual(["a", "b", "c"]);
+    });
+
+    test("should support async GqlDefine factory", async () => {
+      const registry = createIntermediateRegistry();
+
+      // biome-ignore lint/correctness/useYield: generator without dependencies for testing
+      registry.setModule("/src/a.ts", function* () {
+        return {};
+      });
+
+      const element = registry.addElement("test:define-async", () =>
+        GqlDefine.create(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return "async-result";
+        }),
+      );
+
+      const result = await registry.evaluateAsync();
+
+      expect(result["test:define-async"]).toBeDefined();
+      expect(result["test:define-async"]?.type).toBe("define");
+      expect(element.value).toBe("async-result");
     });
   });
 });
