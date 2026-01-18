@@ -185,4 +185,9 @@ export type GraphqlCompatError =
       readonly code: "GRAPHQL_INLINE_FRAGMENT_ON_INTERFACE";
       readonly message: string;
       readonly onType: string;
+    }
+  | {
+      readonly code: "GRAPHQL_UNDECLARED_VARIABLE";
+      readonly message: string;
+      readonly variableName: string;
     };

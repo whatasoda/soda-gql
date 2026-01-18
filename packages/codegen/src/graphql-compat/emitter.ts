@@ -276,7 +276,11 @@ const emitFieldSelection = (
   let line = `${padding}...f.${field.name}(`;
 
   if (hasArgs) {
-    line += emitArguments(args, variableNames);
+    const argsResult = emitArguments(args, variableNames);
+    if (argsResult.isErr()) {
+      return err(argsResult.error);
+    }
+    line += argsResult.value;
   }
 
   line += ")";
@@ -314,47 +318,76 @@ const emitFieldSelection = (
 /**
  * Emit field arguments.
  */
-const emitArguments = (args: readonly ParsedArgument[], variableNames: Set<string>): string => {
+const emitArguments = (
+  args: readonly ParsedArgument[],
+  variableNames: Set<string>,
+): Result<string, GraphqlCompatError> => {
   if (args.length === 0) {
-    return "";
+    return ok("");
   }
 
-  const argEntries = args.map((arg) => `${arg.name}: ${emitValue(arg.value, variableNames)}`);
-  return `{ ${argEntries.join(", ")} }`;
+  const argEntries: string[] = [];
+  for (const arg of args) {
+    const result = emitValue(arg.value, variableNames);
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    argEntries.push(`${arg.name}: ${result.value}`);
+  }
+  return ok(`{ ${argEntries.join(", ")} }`);
 };
 
 /**
  * Emit a value (literal or variable reference).
  */
-const emitValue = (value: ParsedValue, variableNames: Set<string>): string => {
+const emitValue = (value: ParsedValue, variableNames: Set<string>): Result<string, GraphqlCompatError> => {
   switch (value.kind) {
     case "variable":
       // Check if it's a declared variable
       if (variableNames.has(value.name)) {
-        return `$.${value.name}`;
+        return ok(`$.${value.name}`);
       }
-      // Undeclared variable - emit as string for now
-      return `$${value.name}`;
+      return err({
+        code: "GRAPHQL_UNDECLARED_VARIABLE",
+        message: `Variable "$${value.name}" is not declared in the operation`,
+        variableName: value.name,
+      });
     case "int":
     case "float":
-      return value.value;
+      return ok(value.value);
     case "string":
-      return JSON.stringify(value.value);
+      return ok(JSON.stringify(value.value));
     case "boolean":
-      return value.value ? "true" : "false";
+      return ok(value.value ? "true" : "false");
     case "null":
-      return "null";
+      return ok("null");
     case "enum":
       // Enums are emitted as string literals in soda-gql
-      return JSON.stringify(value.value);
-    case "list":
-      return `[${value.values.map((v) => emitValue(v, variableNames)).join(", ")}]`;
+      return ok(JSON.stringify(value.value));
+    case "list": {
+      const values: string[] = [];
+      for (const v of value.values) {
+        const result = emitValue(v, variableNames);
+        if (result.isErr()) {
+          return err(result.error);
+        }
+        values.push(result.value);
+      }
+      return ok(`[${values.join(", ")}]`);
+    }
     case "object": {
       if (value.fields.length === 0) {
-        return "{}";
+        return ok("{}");
       }
-      const entries = value.fields.map((f) => `${f.name}: ${emitValue(f.value, variableNames)}`);
-      return `{ ${entries.join(", ")} }`;
+      const entries: string[] = [];
+      for (const f of value.fields) {
+        const result = emitValue(f.value, variableNames);
+        if (result.isErr()) {
+          return err(result.error);
+        }
+        entries.push(`${f.name}: ${result.value}`);
+      }
+      return ok(`{ ${entries.join(", ")} }`);
     }
   }
 };

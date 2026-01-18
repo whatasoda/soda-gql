@@ -369,6 +369,69 @@ describe("emitValue edge cases", () => {
 
     expect(output).toContain("matrix: [[1, 2], [3, 4]]");
   });
+
+  it("returns error for undeclared variable in field argument", () => {
+    const { operations } = parseAndTransform(`
+      query GetUser {
+        user(id: $undeclaredVar) {
+          id
+        }
+      }
+    `);
+
+    const result = emitOperation(operations[0]!, defaultOptions);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
+      if (result.error.code === "GRAPHQL_UNDECLARED_VARIABLE") {
+        expect(result.error.variableName).toBe("undeclaredVar");
+      }
+    }
+  });
+
+  it("returns error for undeclared variable in nested object argument", () => {
+    const { operations } = parseAndTransform(`
+      query GetUsers {
+        users(filter: { name: $undeclaredName }) {
+          id
+        }
+      }
+    `);
+
+    const result = emitOperation(operations[0]!, defaultOptions);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
+    }
+  });
+
+  it("returns error for undeclared variable in list argument", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data(ids: [$undeclaredId]) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: parse(`
+        type Data { id: ID! }
+        type Query { data(ids: [ID]): Data }
+      `),
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, defaultOptions);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
+    }
+  });
 });
 
 describe("inline fragments", () => {
