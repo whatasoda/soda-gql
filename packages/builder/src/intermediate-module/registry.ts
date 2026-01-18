@@ -1,5 +1,13 @@
 import { createAsyncScheduler, createSyncScheduler, type EffectGenerator, ParallelEffect } from "@soda-gql/common";
-import { type AnyFragment, type AnyGqlDefine, type AnyOperation, Fragment, GqlDefine, GqlElement, Operation } from "@soda-gql/core";
+import {
+  type AnyFragment,
+  type AnyGqlDefine,
+  type AnyOperation,
+  Fragment,
+  GqlDefine,
+  GqlElement,
+  Operation,
+} from "@soda-gql/core";
 import type { ModuleAnalysis } from "../ast";
 import { ElementEvaluationEffect } from "../scheduler";
 import type { EvaluationRequest, IntermediateArtifactElement } from "./types";

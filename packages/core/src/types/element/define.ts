@@ -53,9 +53,7 @@ type DefineArtifact<TValue> = {
 export class GqlDefine<TValue> extends GqlElement<DefineArtifact<TValue>, DefineInferMeta<TValue>> {
   private declare readonly [__DEFINE_BRAND__]: void;
 
-  private constructor(
-    define: (context: GqlElementContext | null) => DefineArtifact<TValue> | Promise<DefineArtifact<TValue>>,
-  ) {
+  private constructor(define: (context: GqlElementContext | null) => DefineArtifact<TValue> | Promise<DefineArtifact<TValue>>) {
     super(define);
   }
 

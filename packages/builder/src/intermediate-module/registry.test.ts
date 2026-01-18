@@ -607,9 +607,7 @@ describe("createIntermediateRegistry", () => {
         return {};
       });
 
-      const element = registry.addElement("test:define-object", () =>
-        GqlDefine.create(() => ({ foo: "bar", count: 123 })),
-      );
+      const element = registry.addElement("test:define-object", () => GqlDefine.create(() => ({ foo: "bar", count: 123 })));
 
       const result = registry.evaluate();
 
