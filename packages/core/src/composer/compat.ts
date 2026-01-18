@@ -3,7 +3,7 @@
  * @module
  */
 
-import { GqlDefine, type FieldsBuilder } from "../types/element";
+import { type FieldsBuilder, GqlDefine } from "../types/element";
 import { COMPAT_SPEC_BRAND, type CompatSpec } from "../types/element/compat-spec";
 import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";

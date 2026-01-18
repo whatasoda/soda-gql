@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyGraphqlSchema } from "../types/schema";
 import { Operation } from "../types/element";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatComposer } from "./compat";
 import { createExtendComposer } from "./extend";
 
@@ -131,7 +131,7 @@ describe("createExtendComposer", () => {
       const printed = print(operation.document);
 
       expect(printed).toContain("query GetUser");
-      expect(printed).toContain("user(id: \"1\")");
+      expect(printed).toContain('user(id: "1")');
       expect(printed).toContain("id");
       expect(printed).toContain("name");
     });

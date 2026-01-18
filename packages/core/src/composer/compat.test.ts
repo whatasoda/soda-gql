@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyGraphqlSchema } from "../types/schema";
-import { COMPAT_SPEC_BRAND } from "../types/element/compat-spec";
 import { GqlDefine } from "../types/element";
+import { COMPAT_SPEC_BRAND } from "../types/element/compat-spec";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatComposer } from "./compat";
 
 const schema = {

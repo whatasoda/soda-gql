@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
+import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema";
 import type { OperationMetadata } from "../../src/types/metadata";
@@ -274,5 +274,4 @@ describe("compat-extend integration", () => {
       expect(printed).toContain("users(limit: 10)");
     });
   });
-
 });

@@ -3,7 +3,7 @@
  * @module
  */
 
-import { GqlDefine, Operation } from "../types/element";
+import { type GqlDefine, Operation } from "../types/element";
 import type { CompatSpec } from "../types/element/compat-spec";
 import type { AnyFields, DeclaredVariables } from "../types/fragment";
 import type {
