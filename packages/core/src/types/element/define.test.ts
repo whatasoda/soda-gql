@@ -58,8 +58,10 @@ describe("GqlDefine", () => {
     test("should handle object with non-function 'then' property as sync value", () => {
       // Edge case: object has 'then' property but it's not a function
       // This should NOT be treated as a Promise
+      // biome-ignore lint/suspicious/noThenProperty: intentionally testing edge case
       const define = GqlDefine.create(() => ({ then: "not-a-function", value: 42 }));
 
+      // biome-ignore lint/suspicious/noThenProperty: intentionally testing edge case
       expect(define.value).toEqual({ then: "not-a-function", value: 42 });
     });
   });
