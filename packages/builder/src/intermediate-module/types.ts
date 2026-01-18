@@ -1,5 +1,5 @@
 import type { Script } from "node:vm";
-import type { AnyFragment, AnyOperation } from "@soda-gql/core";
+import type { AnyFragment, AnyGqlDefine, AnyOperation } from "@soda-gql/core";
 
 /**
  * Request type yielded by module generators to import dependencies.
@@ -20,4 +20,5 @@ export type IntermediateModule = {
 
 export type IntermediateArtifactElement =
   | { readonly type: "fragment"; readonly element: AnyFragment }
-  | { readonly type: "operation"; readonly element: AnyOperation };
+  | { readonly type: "operation"; readonly element: AnyOperation }
+  | { readonly type: "define"; readonly element: AnyGqlDefine };
