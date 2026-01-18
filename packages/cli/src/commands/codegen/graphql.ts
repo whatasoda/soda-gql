@@ -20,7 +20,8 @@ type ParsedGraphqlArgs = {
   schemaFiles: readonly string[];
   inputPatterns: readonly string[];
   outputDir: string;
-  graphqlSystemPath: string;
+  /** Resolved absolute path to graphql-system directory (config.outdir) */
+  graphqlSystemDir: string;
 };
 
 const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs> => {
@@ -85,15 +86,12 @@ const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs>
     );
   }
 
-  // Determine graphql-system import path (default to relative path from outdir)
-  const graphqlSystemPath = `${config.outdir}/index`;
-
   return ok({
     schemaName,
     schemaFiles: schemaConfig.schema,
     inputPatterns,
     outputDir: resolve(outputDir),
-    graphqlSystemPath,
+    graphqlSystemDir: resolve(config.outdir),
   });
 };
 
@@ -199,10 +197,15 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       collectDeps(frag.fragmentDependencies);
     }
 
+    // Calculate graphqlSystemPath as relative path from output file
+    const graphqlSystemTarget = join(args.graphqlSystemDir, "index");
+    const graphqlSystemRelative = relative(dirname(outputPath), graphqlSystemTarget);
+    const graphqlSystemPath = graphqlSystemRelative.startsWith(".") ? graphqlSystemRelative : `./${graphqlSystemRelative}`;
+
     // Generate code
     const emitOptions = {
       schemaName: args.schemaName,
-      graphqlSystemPath: args.graphqlSystemPath,
+      graphqlSystemPath,
       fragmentImports,
     };
 
