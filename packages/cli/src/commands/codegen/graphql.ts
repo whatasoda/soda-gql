@@ -5,7 +5,7 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import type { EnrichedFragment, EnrichedOperation } from "@soda-gql/codegen";
+import type { EnrichedFragment, EnrichedOperation, ParseResult } from "@soda-gql/codegen";
 import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { Glob } from "bun";
@@ -134,8 +134,10 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
   // Track all fragments for cross-file imports
   const fragmentsByName = new Map<string, { file: string; outputPath: string }>();
+  // Cache parsed results to avoid re-reading and re-parsing files
+  const parseCache = new Map<string, ParseResult>();
 
-  // First pass: collect all fragments
+  // First pass: collect all fragments and cache parse results
   for (const file of graphqlFiles) {
     const source = await readFile(file, "utf-8");
     const parseResult = parseGraphqlSource(source, file);
@@ -144,6 +146,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     }
 
     const parsed = parseResult.value;
+    parseCache.set(file, parsed);
+
     const outputBase = basename(file).replace(/\.(graphql|gql)$/, ".compat.ts");
     const outputPath = join(args.outputDir, outputBase);
 
@@ -152,19 +156,16 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     }
   }
 
-  // Second pass: generate code
+  // Second pass: generate code (using cached parse results)
   const files: GeneratedFile[] = [];
   let operationCount = 0;
   let fragmentCount = 0;
 
   for (const file of graphqlFiles) {
-    const source = await readFile(file, "utf-8");
-    const parseResult = parseGraphqlSource(source, file);
-    if (parseResult.isErr()) {
-      return err(cliErrors.parseError(parseResult.error.message, file));
-    }
+    // Use cached parse result instead of re-reading file
+    const parsed = parseCache.get(file)!;
 
-    const transformResult = transformParsedGraphql(parseResult.value, { schemaDocument });
+    const transformResult = transformParsedGraphql(parsed, { schemaDocument });
     if (transformResult.isErr()) {
       const error = transformResult.error;
       return err(cliErrors.parseError(error.message, file));
