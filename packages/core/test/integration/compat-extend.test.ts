@@ -2,70 +2,13 @@ import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
-import { createVarMethod } from "../../src/composer/var-builder";
-import { defineOperationRoots, defineScalar } from "../../src/schema";
 import type { OperationMetadata } from "../../src/types/metadata";
-import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { VarRef } from "../../src/types/type-foundation";
-import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import { type ExtendedTestSchema, extendedInputTypeMethods, extendedTestSchema } from "../fixtures";
 
-const schema = {
-  label: "test" as const,
-  operations: defineOperationRoots({
-    query: "Query",
-    mutation: "Mutation",
-    subscription: "Subscription",
-  }),
-  scalar: {
-    ...defineScalar<"ID", string, string>("ID"),
-    ...defineScalar<"String", string, string>("String"),
-    ...defineScalar<"Int", number, number>("Int"),
-  },
-  enum: {},
-  input: {},
-  object: {
-    Query: define("Query").object({
-      user: unsafeOutputType.object("User:!", {
-        arguments: {
-          id: unsafeInputType.scalar("ID:!", {}),
-        },
-      }),
-      users: unsafeOutputType.object("User:![]!", {
-        arguments: {
-          limit: unsafeInputType.scalar("Int:?", {}),
-        },
-      }),
-    }),
-    Mutation: define("Mutation").object({
-      updateUser: unsafeOutputType.object("User:?", {
-        arguments: {
-          id: unsafeInputType.scalar("ID:!", {}),
-          name: unsafeInputType.scalar("String:!", {}),
-        },
-      }),
-    }),
-    Subscription: define("Subscription").object({
-      userUpdated: unsafeOutputType.object("User:!", {
-        arguments: {
-          userId: unsafeInputType.scalar("ID:!", {}),
-        },
-      }),
-    }),
-    User: define("User").object({
-      id: unsafeOutputType.scalar("ID:!", {}),
-      name: unsafeOutputType.scalar("String:!", {}),
-    }),
-  },
-  union: {},
-} satisfies AnyGraphqlSchema;
-
-type Schema = typeof schema & { _?: never };
-
-const inputTypeMethods = {
-  ID: createVarMethod("scalar", "ID"),
-  Int: createVarMethod("scalar", "Int"),
-  String: createVarMethod("scalar", "String"),
-};
+const schema = extendedTestSchema;
+type Schema = ExtendedTestSchema;
+const inputTypeMethods = extendedInputTypeMethods;
 
 describe("compat-extend integration", () => {
   const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });

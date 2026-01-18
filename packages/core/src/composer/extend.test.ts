@@ -1,57 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
-import { defineOperationRoots, defineScalar } from "../schema";
+import { type BasicTestSchema, basicTestSchema } from "../../test/fixtures";
 import { Operation } from "../types/element";
-import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatComposer } from "./compat";
 import { createExtendComposer } from "./extend";
 
-const schema = {
-  label: "test" as const,
-  operations: defineOperationRoots({
-    query: "Query",
-    mutation: "Mutation",
-    subscription: "Subscription",
-  }),
-  scalar: {
-    ...defineScalar<"ID", string, string>("ID"),
-    ...defineScalar<"String", string, string>("String"),
-  },
-  enum: {},
-  input: {},
-  object: {
-    Query: define("Query").object({
-      user: unsafeOutputType.object("User:!", {
-        arguments: {
-          id: unsafeInputType.scalar("ID:!", {}),
-        },
-      }),
-    }),
-    Mutation: define("Mutation").object({
-      updateUser: unsafeOutputType.object("User:?", {
-        arguments: {
-          id: unsafeInputType.scalar("ID:!", {}),
-          name: unsafeInputType.scalar("String:!", {}),
-        },
-      }),
-    }),
-    Subscription: define("Subscription").object({
-      userUpdated: unsafeOutputType.object("User:!", {
-        arguments: {
-          userId: unsafeInputType.scalar("ID:!", {}),
-        },
-      }),
-    }),
-    User: define("User").object({
-      id: unsafeOutputType.scalar("ID:!", {}),
-      name: unsafeOutputType.scalar("String:!", {}),
-    }),
-  },
-  union: {},
-} satisfies AnyGraphqlSchema;
-
-type Schema = typeof schema & { _?: never };
+const schema = basicTestSchema;
+type Schema = BasicTestSchema;
 
 describe("createExtendComposer", () => {
   describe("basic extend", () => {
