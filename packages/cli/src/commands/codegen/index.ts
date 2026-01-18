@@ -6,6 +6,7 @@
 import { err, ok } from "neverthrow";
 import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";
+import { graphqlCommand } from "./graphql";
 import { schemaCommand } from "./schema";
 
 const CODEGEN_HELP = `Usage: soda-gql codegen <subcommand> [options]
@@ -59,9 +60,9 @@ export const codegenCommand = async (argv: readonly string[]): Promise<CodegenCo
     return schemaCommand(rest);
   }
 
-  // Explicit graphql subcommand (placeholder - will be added in next commit)
+  // Explicit graphql subcommand
   if (subcommand === "graphql") {
-    return err(cliErrors.argsInvalid("codegen graphql", "graphql subcommand is not yet implemented"));
+    return graphqlCommand(rest);
   }
 
   // Legacy support: if args look like schema args, route to schema

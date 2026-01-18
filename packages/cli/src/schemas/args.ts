@@ -36,7 +36,18 @@ export const TypegenArgsSchema = z.object({
   config: z.string().optional(),
 });
 
+/**
+ * Args for `codegen graphql` subcommand.
+ */
+export const CodegenGraphqlArgsSchema = z.object({
+  config: z.string().optional(),
+  schema: z.string().optional(),
+  input: z.array(z.string()).or(z.string()).optional(),
+  output: z.string().optional(),
+});
+
 export type CodegenSchemaArgs = z.infer<typeof CodegenSchemaArgsSchema>;
+export type CodegenGraphqlArgs = z.infer<typeof CodegenGraphqlArgsSchema>;
 /** @deprecated Use CodegenSchemaArgs instead. */
 export type CodegenArgs = CodegenSchemaArgs;
 export type BuilderArgs = z.infer<typeof BuilderArgsSchema>;
