@@ -1,6 +1,8 @@
 export * from "./build-document";
 export * from "./colocate";
+export * from "./compat";
 export * from "./directive-builder";
+export * from "./extend";
 export * from "./field-path-context";
 export * from "./fields-builder";
 export * from "./fragment";
@@ -8,4 +10,5 @@ export * from "./fragment-usage-context";
 export * from "./gql-composer";
 export * from "./input";
 export * from "./operation";
+export * from "./operation-core";
 export * from "./var-builder";
