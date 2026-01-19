@@ -9,7 +9,7 @@ import type { EnrichedFragment, EnrichedOperation, ParseResult } from "@soda-gql
 import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "@soda-gql/codegen";
 import { normalizePath } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
-import { Glob } from "bun";
+import fg from "fast-glob";
 import { err, ok } from "neverthrow";
 import { type CliResult, cliErrors } from "../../errors";
 import { CodegenGraphqlArgsSchema } from "../../schemas/args";
@@ -115,8 +115,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
   // Find all .graphql files matching input patterns
   const graphqlFiles: string[] = [];
   for (const pattern of args.inputPatterns) {
-    const glob = new Glob(pattern);
-    for await (const file of glob.scan({ cwd: process.cwd(), absolute: true })) {
+    const files = await fg(pattern, { cwd: process.cwd(), absolute: true });
+    for (const file of files) {
       if (file.endsWith(".graphql") || file.endsWith(".gql")) {
         graphqlFiles.push(file);
       }
