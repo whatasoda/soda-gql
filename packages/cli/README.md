@@ -37,7 +37,7 @@ export default defineConfig({
 #### Generate GraphQL System
 
 ```bash
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 This command:
@@ -50,7 +50,7 @@ This command:
 For first-time setup, generate inject template with scalar and adapter definitions:
 
 ```bash
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
 #### Generate from .graphql Files
@@ -58,10 +58,10 @@ bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inj
 Convert existing `.graphql` operation files to soda-gql compat pattern:
 
 ```bash
-bun run soda-gql codegen graphql --input "src/**/*.graphql" --output src/generated
+bun run soda-gql codegen graphql --input "src/**/*.graphql"
 ```
 
-This generates TypeScript files using the compat API pattern, allowing gradual migration from traditional `.graphql` files.
+This generates TypeScript files alongside input files using the compat API pattern, allowing gradual migration from traditional `.graphql` files.
 
 **Options:**
 
@@ -70,15 +70,16 @@ This generates TypeScript files using the compat API pattern, allowing gradual m
 | `--config <path>` | Path to config file |
 | `--schema <name>` | Schema name (required if multiple schemas configured) |
 | `--input <glob>` | Glob pattern for .graphql files (repeatable) |
-| `--output <dir>` | Output directory for generated files |
+| `--suffix <ext>` | Output file suffix (default: `.compat.ts`) |
 
 **Example:**
 
 ```bash
 # Generate compat files from all .graphql files in src/
-bun run soda-gql codegen graphql \
-  --input "src/**/*.graphql" \
-  --output src/generated
+bun run soda-gql codegen graphql --input "src/**/*.graphql"
+
+# Generate with custom suffix
+bun run soda-gql codegen graphql --input "src/**/*.graphql" --suffix ".generated.ts"
 ```
 
 ### CLI Options
@@ -121,10 +122,10 @@ export default defineConfig({
 EOF
 
 # 3. Generate templates (first-time only)
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 
 # 4. Generate GraphQL system
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 ## Related Packages

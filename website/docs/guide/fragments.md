@@ -233,7 +233,7 @@ Fragments work correctly without keys at runtime. However, keys become important
 | Prebuilt type generation | **Yes** |
 
 :::warning Prebuilt Types Requirement
-When generating prebuilt types with `bun run soda-gql codegen --prebuilt`, **fragments without keys are silently skipped**. If you need a fragment's types in the prebuilt registry, add a `key` property.
+When generating prebuilt types with `bun run soda-gql typegen`, **fragments without keys are silently skipped**. If you need a fragment's types in the prebuilt registry, add a `key` property.
 :::
 
 Operations do not need a separate key property - they use their `name` automatically.

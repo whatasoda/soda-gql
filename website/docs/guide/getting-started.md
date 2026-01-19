@@ -77,7 +77,7 @@ export const adapter = defineAdapter({
 ### 4. Generate GraphQL System
 
 ```bash
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 This generates the type-safe GraphQL system in the `graphql-system/` directory.

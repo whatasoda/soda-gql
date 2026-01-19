@@ -58,7 +58,7 @@ See the main [README](./README.md) for installation and setup instructions.
 
 ```bash
 # Generate typed runtime entry from schema
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 
 # Run tests
 bun run test

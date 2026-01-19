@@ -70,7 +70,7 @@ module.exports = withSodaGql(config);
 bun run soda-gql init
 
 # Generate the GraphQL system
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 ## Project Structure

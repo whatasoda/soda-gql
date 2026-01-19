@@ -66,7 +66,7 @@ Code generation expects user-defined scalar definitions and an optional adapter.
 
 ```bash
 # Create a starting point for scalar + adapter definitions
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
 Edit `./src/graphql-system/default.inject.ts` to describe each custom scalar and optionally configure the adapter. The template uses `defineScalar()` and `defineAdapter()` helpers for type safety.
@@ -99,7 +99,7 @@ Replace or extend the examples to match the scalars in your schema.
 
 ```bash
 # Generate the type-safe GraphQL system
-bun run soda-gql codegen \
+bun run soda-gql codegen schema \
   --schema ./schema.graphql \
   --out ./src/graphql-system/index.ts \
   --inject-from ./src/graphql-system/inject.ts
@@ -302,7 +302,7 @@ async function getUser(id: string) {
 
 ### Type Errors in Generated Code
 
-1. Ensure schema is up to date: `bunx soda-gql generate`
+1. Ensure schema is up to date: `bunx soda-gql codegen schema`
 2. Check that TypeScript includes `graphql-system` directory
 3. Restart TypeScript service in your IDE
 

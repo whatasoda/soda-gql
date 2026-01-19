@@ -11,7 +11,7 @@ Common issues and solutions when using soda-gql.
 **Solution**:
 ```bash
 # Generate the GraphQL system
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 If the error persists, check your `tsconfig.json` paths configuration:
@@ -30,7 +30,7 @@ If the error persists, check your `tsconfig.json` paths configuration:
 **Cause**: TypeScript's language server cache is stale.
 
 **Solution**:
-1. Regenerate the GraphQL system: `bun run soda-gql codegen`
+1. Regenerate the GraphQL system: `bun run soda-gql codegen schema`
 2. Restart your IDE's TypeScript server:
    - VS Code: `Cmd/Ctrl + Shift + P` → "TypeScript: Restart TS Server"
    - Other IDEs: Restart the IDE
@@ -70,7 +70,7 @@ If the error persists, check your `tsconfig.json` paths configuration:
 **Solution**:
 ```bash
 # Scaffold the inject template
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
 ### INJECT_TEMPLATE_EXISTS
@@ -132,7 +132,7 @@ npx react-native start --reset-cache
 
 **Solution**:
 ```bash
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 ### "Type 'X' is not assignable to type 'Y'" in operations
@@ -140,7 +140,7 @@ bun run soda-gql codegen
 **Cause**: Schema and generated types are out of sync.
 
 **Solution**:
-1. Regenerate: `bun run soda-gql codegen`
+1. Regenerate: `bun run soda-gql codegen schema`
 2. Restart TypeScript server
 3. Clear any build caches
 
