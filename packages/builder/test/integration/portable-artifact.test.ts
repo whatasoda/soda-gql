@@ -143,7 +143,7 @@ export const HelloQuery = gql.default(({ query }) =>
       styles: {
         importExtension: false,
       },
-      codegen: { chunkSize: 100 },
+      codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
       plugins: {},
     };
 
@@ -260,7 +260,7 @@ export const HelloFragment = gql.default(({ fragment }) =>
       styles: {
         importExtension: false,
       },
-      codegen: { chunkSize: 100 },
+      codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
       plugins: {},
     };
 

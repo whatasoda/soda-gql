@@ -120,6 +120,9 @@ function normalizeTsconfigPaths(
 function normalizeCodegen(codegen: SodaGqlConfig["codegen"]): ResolvedCodegenConfig {
   return {
     chunkSize: codegen?.chunkSize ?? 100,
+    graphql: {
+      suffix: codegen?.graphql?.suffix ?? ".compat.ts",
+    },
   };
 }
 

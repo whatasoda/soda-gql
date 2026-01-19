@@ -36,7 +36,7 @@ try {
       exclude: [],
       schemas: {},
       styles: { importExtension: false },
-      codegen: { chunkSize: 100 },
+      codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
       plugins: {},
     },
     artifact: {
@@ -198,7 +198,7 @@ const createStubTestConfig = (options: { outdir: string; scalarsPath: string; ad
     },
   },
   styles: { importExtension: false },
-  codegen: { chunkSize: 100 },
+  codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
   plugins: {},
 });
 
@@ -350,7 +350,7 @@ describe("swc internal module stubbing", () => {
         },
       },
       styles: { importExtension: false },
-      codegen: { chunkSize: 100 },
+      codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
       plugins: {},
     };
 

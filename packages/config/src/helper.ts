@@ -5,6 +5,7 @@ import { type ConfigError, configError } from "./errors";
 import type {
   ArtifactConfig,
   CodegenConfig,
+  CodegenGraphqlConfig,
   InjectConfig,
   SchemaConfig,
   SchemaInput,
@@ -98,8 +99,13 @@ const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
   importExtension: z.boolean().optional(),
 });
 
+const CodegenGraphqlConfigSchema = defineSchemaFor<CodegenGraphqlConfig>()({
+  suffix: z.string().min(1).optional(),
+});
+
 const CodegenConfigSchema = defineSchemaFor<CodegenConfig>()({
   chunkSize: z.number().int().positive().optional(),
+  graphql: CodegenGraphqlConfigSchema.optional(),
 });
 
 const ArtifactConfigSchema = defineSchemaFor<ArtifactConfig>()({

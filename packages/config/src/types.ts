@@ -64,6 +64,15 @@ export type StylesConfig = {
   readonly importExtension?: boolean;
 };
 
+// Codegen graphql-specific configuration
+export type CodegenGraphqlConfig = {
+  /**
+   * Suffix for generated files.
+   * @default ".compat.ts"
+   */
+  readonly suffix?: string;
+};
+
 // Codegen-specific configuration
 export type CodegenConfig = {
   /**
@@ -71,6 +80,10 @@ export type CodegenConfig = {
    * @default 100
    */
   readonly chunkSize?: number;
+  /**
+   * GraphQL codegen-specific configuration.
+   */
+  readonly graphql?: CodegenGraphqlConfig;
 };
 
 // Resolved output styles configuration
@@ -78,9 +91,15 @@ export type ResolvedStylesConfig = {
   readonly importExtension: boolean;
 };
 
+// Resolved codegen graphql configuration
+export type ResolvedCodegenGraphqlConfig = {
+  readonly suffix: string;
+};
+
 // Resolved codegen configuration
 export type ResolvedCodegenConfig = {
   readonly chunkSize: number;
+  readonly graphql: ResolvedCodegenGraphqlConfig;
 };
 
 // Plugin-specific config (extensible)

@@ -40,7 +40,7 @@ const createTestConfig = (options: {
     },
   },
   styles: { importExtension: false },
-  codegen: { chunkSize: 100 },
+  codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
   plugins: {},
 });
 
@@ -138,7 +138,7 @@ describe("createGraphqlSystemIdentifyHelper", () => {
           },
         },
         styles: { importExtension: false },
-        codegen: { chunkSize: 100 },
+        codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
         plugins: {},
       };
 

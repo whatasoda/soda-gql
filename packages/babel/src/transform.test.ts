@@ -43,7 +43,7 @@ const createTestConfig = (options: { outdir: string; scalarsPath: string; adapte
     },
   },
   styles: { importExtension: false },
-  codegen: { chunkSize: 100 },
+  codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
   plugins: {},
 });
 
@@ -191,7 +191,7 @@ describe("createBabelTransformer", () => {
           },
         },
         styles: { importExtension: false },
-        codegen: { chunkSize: 100 },
+        codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
         plugins: {},
       };
 

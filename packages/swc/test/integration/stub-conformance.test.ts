@@ -29,7 +29,7 @@ try {
       exclude: [],
       schemas: {},
       styles: { importExtension: false },
-      codegen: { chunkSize: 100 },
+      codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
       plugins: {},
     },
     artifact: {
