@@ -167,7 +167,10 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
   for (const file of graphqlFiles) {
     // Use cached parse result instead of re-reading file
-    const parsed = parseCache.get(file)!;
+    const parsed = parseCache.get(file);
+    if (!parsed) {
+      throw new Error(`Internal error: parse cache missing for ${file}`);
+    }
 
     const transformResult = transformParsedGraphql(parsed, { schemaDocument });
     if (transformResult.isErr()) {

@@ -31,10 +31,7 @@ export type EmitOptions = {
 /**
  * Emit TypeScript code for an operation.
  */
-export const emitOperation = (
-  operation: EnrichedOperation,
-  options: EmitOptions,
-): Result<string, GraphqlCompatError> => {
+export const emitOperation = (operation: EnrichedOperation, options: EmitOptions): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
 
@@ -84,10 +81,7 @@ export const emitOperation = (
 /**
  * Emit TypeScript code for a fragment.
  */
-export const emitFragment = (
-  fragment: EnrichedFragment,
-  options: EmitOptions,
-): Result<string, GraphqlCompatError> => {
+export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
 
@@ -342,10 +336,7 @@ const emitFieldSelection = (
 /**
  * Emit field arguments.
  */
-const emitArguments = (
-  args: readonly ParsedArgument[],
-  variableNames: Set<string>,
-): Result<string, GraphqlCompatError> => {
+const emitArguments = (args: readonly ParsedArgument[], variableNames: Set<string>): Result<string, GraphqlCompatError> => {
   if (args.length === 0) {
     return ok("");
   }
