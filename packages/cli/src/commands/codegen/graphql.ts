@@ -20,7 +20,8 @@ type ParsedGraphqlArgs = {
   schemaName: string;
   schemaFiles: readonly string[];
   inputPatterns: readonly string[];
-  outputDir: string;
+  /** Output file suffix (e.g., ".compat.ts", ".generated.ts") */
+  suffix: string;
   /** Resolved absolute path to graphql-system directory (config.outdir) */
   graphqlSystemDir: string;
 };
@@ -79,19 +80,14 @@ const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs>
     );
   }
 
-  // Get output directory
-  const outputDir = args.output ?? config.outdir;
-  if (!outputDir) {
-    return err(
-      cliErrors.argsInvalid("codegen graphql", "No output directory specified. Use --output to specify output directory"),
-    );
-  }
+  // Get suffix from CLI args or config
+  const suffix = args.suffix ?? config.codegen.graphql.suffix;
 
   return ok({
     schemaName,
     schemaFiles: schemaConfig.schema,
     inputPatterns,
-    outputDir: resolve(outputDir),
+    suffix,
     graphqlSystemDir: resolve(config.outdir),
   });
 };
@@ -149,8 +145,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     const parsed = parseResult.value;
     parseCache.set(file, parsed);
 
-    const outputBase = basename(file).replace(/\.(graphql|gql)$/, ".compat.ts");
-    const outputPath = join(args.outputDir, outputBase);
+    const outputBase = basename(file).replace(/\.(graphql|gql)$/, args.suffix);
+    const outputPath = join(dirname(file), outputBase);
 
     for (const frag of parsed.fragments) {
       const existing = fragmentsByName.get(frag.name);
@@ -181,8 +177,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
     const { operations, fragments } = transformResult.value;
 
-    const outputBase = basename(file).replace(/\.(graphql|gql)$/, ".compat.ts");
-    const outputPath = join(args.outputDir, outputBase);
+    const outputBase = basename(file).replace(/\.(graphql|gql)$/, args.suffix);
+    const outputPath = join(dirname(file), outputBase);
 
     // Build fragment imports map for this file
     const fragmentImports = new Map<string, string>();
@@ -285,17 +281,18 @@ const formatSuccess = (result: GraphqlGenerationResult): string => {
 export const GRAPHQL_HELP = `Usage: soda-gql codegen graphql [options]
 
 Generate TypeScript compat code from .graphql operation files.
+Output files are created alongside input files.
 
 Options:
   --config <path>    Path to soda-gql.config.ts
   --schema <name>    Schema name (required if multiple schemas configured)
   --input <glob>     Glob pattern for .graphql files (repeatable)
-  --output <dir>     Output directory for generated files
+  --suffix <ext>     Output file suffix (default: ".compat.ts")
   --help, -h         Show this help message
 
 Examples:
-  soda-gql codegen graphql --input "src/**/*.graphql" --output src/generated
-  soda-gql codegen graphql --schema mySchema --input "queries/*.graphql" --output src/generated
+  soda-gql codegen graphql --input "src/**/*.graphql"
+  soda-gql codegen graphql --input "queries/*.graphql" --suffix ".generated.ts"
 `;
 
 type GraphqlCommandResult = CommandResult<CommandSuccess & { data?: GraphqlGenerationResult }>;
