@@ -89,7 +89,7 @@ All integrations follow similar setup steps:
 bun install
 
 # 2. Generate GraphQL system
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 
 # 3. Build your project
 bun run build

@@ -11,7 +11,11 @@ When bundlers merge `.d.ts` files, complex type inference (like `InferFields`) c
 Generate a prebuilt types module that pre-calculates all types at build time:
 
 ```bash
-bun run soda-gql codegen --prebuilt
+# First generate the GraphQL system
+bun run soda-gql codegen schema
+
+# Then generate prebuilt types
+bun run soda-gql typegen
 ```
 
 This creates additional files:

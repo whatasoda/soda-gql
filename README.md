@@ -58,10 +58,10 @@ Generate the GraphQL system:
 
 ```bash
 # Scaffold inject template with scalar and adapter definitions (first-time setup)
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 
 # Generate GraphQL system from schema
-bun run soda-gql codegen
+bun run soda-gql codegen schema
 ```
 
 The generated module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
@@ -81,7 +81,7 @@ The generated module imports your scalar definitions from the inject file. Keep 
 Already have `.graphql` operation files? Generate soda-gql compat code:
 
 ```bash
-bun run soda-gql codegen graphql --input "src/**/*.graphql" --output src/generated
+bun run soda-gql codegen graphql --input "src/**/*.graphql"
 ```
 
 This creates TypeScript files using the compat pattern, preserving your existing operations while gaining full type safety.
@@ -203,7 +203,11 @@ When bundling with tools like tsdown, rollup-plugin-dts, or other bundlers that 
 Generate prebuilt module alongside the regular output:
 
 ```bash
-bun run soda-gql codegen --prebuilt
+# First generate the GraphQL system
+bun run soda-gql codegen schema
+
+# Then generate prebuilt types
+bun run soda-gql typegen
 ```
 
 This creates additional files in your output directory:

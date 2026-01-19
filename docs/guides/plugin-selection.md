@@ -125,11 +125,11 @@ All higher-level plugins (webpack, vite, metro) use @soda-gql/babel internally.
 
 1. Verify the plugin is correctly configured in your build tool
 2. Check that files match the `include` patterns in `soda-gql.config.ts`
-3. Ensure GraphQL system is generated: `bun run soda-gql codegen`
+3. Ensure GraphQL system is generated: `bun run soda-gql codegen schema`
 
 ### "Cannot find module '@/graphql-system'"
 
-1. Run `bun run soda-gql codegen` to generate the GraphQL system
+1. Run `bun run soda-gql codegen schema` to generate the GraphQL system
 2. Verify `tsconfig.json` paths are configured correctly
 3. Check that `outdir` in config matches your import path
 

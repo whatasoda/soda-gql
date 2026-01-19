@@ -111,7 +111,7 @@ The inject module (`{schema}.inject.ts`) bridges your GraphQL schema with TypeSc
 
 **Scaffolding:**
 ```bash
-bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
+bun run soda-gql codegen schema --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
 This creates a template with standard scalars (ID, String, Int, Float, Boolean) that you can customize.

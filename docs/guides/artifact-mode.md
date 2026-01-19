@@ -110,7 +110,7 @@ jobs:
         run: npm ci
 
       - name: Generate GraphQL types
-        run: npx soda-gql codegen
+        run: npx soda-gql codegen schema
 
       - name: Build soda-gql artifact
         run: npx soda-gql artifact build --output ./dist/soda-gql-artifact.json

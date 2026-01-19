@@ -21,7 +21,7 @@ bun add @soda-gql/formatter
 The formatter is typically used through the CLI:
 
 ```bash
-soda-gql codegen --format
+soda-gql format
 ```
 
 ### Programmatic Usage
