@@ -182,24 +182,34 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
     // Build fragment imports map for this file
     const fragmentImports = new Map<string, string>();
-    const collectDeps = (deps: readonly string[]) => {
+    const collectDeps = (deps: readonly string[]): CliResult<void> => {
       for (const fragName of deps) {
         const fragInfo = fragmentsByName.get(fragName);
-        if (fragInfo && fragInfo.outputPath !== outputPath) {
+        if (!fragInfo) {
+          return err(cliErrors.fragmentNotFound(fragName, file));
+        }
+        if (fragInfo.outputPath !== outputPath) {
           // Calculate relative import path
           const relativePath = relative(dirname(outputPath), fragInfo.outputPath).replace(/\.ts$/, "");
           const importPath = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
           fragmentImports.set(fragName, importPath);
         }
       }
+      return ok(undefined);
     };
 
     // Collect dependencies from operations and fragments
     for (const op of operations) {
-      collectDeps(op.fragmentDependencies);
+      const result = collectDeps(op.fragmentDependencies);
+      if (result.isErr()) {
+        return err(result.error);
+      }
     }
     for (const frag of fragments) {
-      collectDeps(frag.fragmentDependencies);
+      const result = collectDeps(frag.fragmentDependencies);
+      if (result.isErr()) {
+        return err(result.error);
+      }
     }
 
     // Calculate graphqlSystemPath as relative path from output file

@@ -271,6 +271,61 @@ describe("soda-gql codegen graphql CLI", () => {
     expect(result.stderr).toContain("UserFields");
   });
 
+  it("reports FRAGMENT_NOT_FOUND when referencing undefined fragment", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "generated");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Create operation file that references an undefined fragment
+    const operationFile = join(graphqlDir, "GetUser.graphql");
+    await Bun.write(
+      operationFile,
+      `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UndefinedFragment
+        }
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    const result = await runCodegenCli(
+      ["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql"), "--output", outDir],
+      { cwd: caseDir },
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("FRAGMENT_NOT_FOUND");
+    expect(result.stderr).toContain("UndefinedFragment");
+  });
+
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });

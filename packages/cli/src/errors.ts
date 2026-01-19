@@ -28,6 +28,7 @@ export type CliErrorCode =
   | "CLI_PARSE_ERROR"
   | "CLI_FORMAT_ERROR"
   | "CLI_DUPLICATE_FRAGMENT"
+  | "CLI_FRAGMENT_NOT_FOUND"
   // Unexpected errors
   | "CLI_UNEXPECTED";
 
@@ -120,6 +121,13 @@ export type CliError =
     }
   | {
       readonly category: "cli";
+      readonly code: "CLI_FRAGMENT_NOT_FOUND";
+      readonly message: string;
+      readonly fragmentName: string;
+      readonly referencedIn: string;
+    }
+  | {
+      readonly category: "cli";
       readonly code: "CLI_UNEXPECTED";
       readonly message: string;
       readonly cause?: unknown;
@@ -143,6 +151,7 @@ type CliFormatterNotInstalledError = Extract<CliError, { code: "CLI_FORMATTER_NO
 type CliParseErrorError = Extract<CliError, { code: "CLI_PARSE_ERROR" }>;
 type CliFormatErrorError = Extract<CliError, { code: "CLI_FORMAT_ERROR" }>;
 type CliDuplicateFragmentError = Extract<CliError, { code: "CLI_DUPLICATE_FRAGMENT" }>;
+type CliFragmentNotFoundError = Extract<CliError, { code: "CLI_FRAGMENT_NOT_FOUND" }>;
 type CliUnexpectedError = Extract<CliError, { code: "CLI_UNEXPECTED" }>;
 type CliCodegenError = Extract<CliError, { category: "codegen" }>;
 type CliBuilderError = Extract<CliError, { category: "builder" }>;
@@ -240,6 +249,14 @@ export const cliErrors = {
     fragmentName,
     existingFile,
     newFile,
+  }),
+
+  fragmentNotFound: (fragmentName: string, referencedIn: string): CliFragmentNotFoundError => ({
+    category: "cli",
+    code: "CLI_FRAGMENT_NOT_FOUND",
+    message: `Fragment "${fragmentName}" is referenced but not defined in any input file`,
+    fragmentName,
+    referencedIn,
   }),
 
   unexpected: (message: string, cause?: unknown): CliUnexpectedError => ({
