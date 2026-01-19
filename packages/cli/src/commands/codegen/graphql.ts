@@ -213,8 +213,7 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     }
 
     // Calculate graphqlSystemPath as relative path from output file
-    const graphqlSystemTarget = join(args.graphqlSystemDir, "index");
-    const graphqlSystemRelative = relative(dirname(outputPath), graphqlSystemTarget);
+    const graphqlSystemRelative = relative(dirname(outputPath), args.graphqlSystemDir);
     const graphqlSystemPath = graphqlSystemRelative.startsWith(".") ? graphqlSystemRelative : `./${graphqlSystemRelative}`;
 
     // Generate code
