@@ -666,4 +666,37 @@ describe("inline fragments", () => {
 
     expect(result.isOk()).toBe(true);
   });
+
+  it("returns error for inline fragment without type condition", () => {
+    // Inline fragment without 'on Type' (e.g., `... { id }`) creates empty onType
+    // This should error since it generates invalid code like `"": ({ f }) => ...`
+    const minimalSchema = parse(`
+      type Data { id: ID!, name: String }
+      type Query { data: Data }
+    `);
+
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data {
+          ... { id }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: minimalSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: minimalSchema,
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_INLINE_FRAGMENT_WITHOUT_TYPE");
+    }
+  });
 });

@@ -227,6 +227,16 @@ const emitInlineFragmentsAsUnion = (
 ): Result<string, GraphqlCompatError> => {
   const padding = "  ".repeat(indent);
 
+  // Validate inline fragments have type conditions
+  for (const frag of inlineFragments) {
+    if (frag.onType === "") {
+      return err({
+        code: "GRAPHQL_INLINE_FRAGMENT_WITHOUT_TYPE",
+        message: "Inline fragments without type condition are not supported. Use `... on TypeName { }` syntax.",
+      });
+    }
+  }
+
   // Validate all inline fragments are on union types (not interfaces)
   for (const frag of inlineFragments) {
     if (schema && !schema.objects.has(frag.onType)) {
