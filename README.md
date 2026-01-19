@@ -76,6 +76,16 @@ The generated module imports your scalar definitions from the inject file. Keep 
 
 **Note**: The inject file defines TypeScript types for custom scalars (DateTime, JSON, etc.). Scaffold it once with `--emit-inject-template`, then customize as needed. The generated `index.ts` and bundled outputs should be added to `.gitignore`.
 
+### Migrating from .graphql Files
+
+Already have `.graphql` operation files? Generate soda-gql compat code:
+
+```bash
+bun run soda-gql codegen graphql --input "src/**/*.graphql" --output src/generated
+```
+
+This creates TypeScript files using the compat pattern, preserving your existing operations while gaining full type safety.
+
 ### Basic Example
 
 ```typescript

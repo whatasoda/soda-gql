@@ -53,6 +53,34 @@ For first-time setup, generate inject template with scalar and adapter definitio
 bun run soda-gql codegen --emit-inject-template ./src/graphql-system/default.inject.ts
 ```
 
+#### Generate from .graphql Files
+
+Convert existing `.graphql` operation files to soda-gql compat pattern:
+
+```bash
+bun run soda-gql codegen graphql --input "src/**/*.graphql" --output src/generated
+```
+
+This generates TypeScript files using the compat API pattern, allowing gradual migration from traditional `.graphql` files.
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--config <path>` | Path to config file |
+| `--schema <name>` | Schema name (required if multiple schemas configured) |
+| `--input <glob>` | Glob pattern for .graphql files (repeatable) |
+| `--output <dir>` | Output directory for generated files |
+
+**Example:**
+
+```bash
+# Generate compat files from all .graphql files in src/
+bun run soda-gql codegen graphql \
+  --input "src/**/*.graphql" \
+  --output src/generated
+```
+
 ### CLI Options
 
 | Option | Description |
