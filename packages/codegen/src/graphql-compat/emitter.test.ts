@@ -432,6 +432,148 @@ describe("emitValue edge cases", () => {
       expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
     }
   });
+
+  it("returns error for undeclared variable in nested field argument", () => {
+    const nestedSchema = parse(`
+      type Post { id: ID!, title: String! }
+      type User { id: ID!, posts(limit: Int): [Post!]! }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser($userId: ID!) {
+        user(id: $userId) {
+          posts(limit: $undeclaredLimit) {
+            id
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: nestedSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: nestedSchema,
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
+      if (result.error.code === "GRAPHQL_UNDECLARED_VARIABLE") {
+        expect(result.error.variableName).toBe("undeclaredLimit");
+      }
+    }
+  });
+
+  it("allows declared variable in nested field argument", () => {
+    const nestedSchema = parse(`
+      type Post { id: ID!, title: String! }
+      type User { id: ID!, posts(limit: Int): [Post!]! }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser($userId: ID!, $postLimit: Int) {
+        user(id: $userId) {
+          posts(limit: $postLimit) {
+            id
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: nestedSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: nestedSchema,
+    });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toContain("$.postLimit");
+    }
+  });
+
+  it("returns error for undeclared variable in union inline fragment", () => {
+    const unionSchema = parse(`
+      type Post { id: ID!, comments(limit: Int): [String!]! }
+      type User { id: ID!, name: String! }
+      union SearchResult = User | Post
+      type Query { search(query: String!): [SearchResult!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!) {
+        search(query: $q) {
+          ... on Post {
+            comments(limit: $undeclaredLimit) {
+              id
+            }
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("GRAPHQL_UNDECLARED_VARIABLE");
+      if (result.error.code === "GRAPHQL_UNDECLARED_VARIABLE") {
+        expect(result.error.variableName).toBe("undeclaredLimit");
+      }
+    }
+  });
+
+  it("allows declared variable in union inline fragment", () => {
+    const unionSchema = parse(`
+      type Post { id: ID!, comments(limit: Int): [String!]! }
+      type User { id: ID!, name: String! }
+      union SearchResult = User | Post
+      type Query { search(query: String!): [SearchResult!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!, $commentLimit: Int) {
+        search(query: $q) {
+          ... on Post {
+            comments(limit: $commentLimit)
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const result = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toContain("$.commentLimit");
+    }
+  });
 });
 
 describe("inline fragments", () => {

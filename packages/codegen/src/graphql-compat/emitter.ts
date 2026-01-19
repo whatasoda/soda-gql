@@ -135,7 +135,8 @@ const emitVariables = (variables: readonly EnrichedVariable[]): string => {
 };
 
 /**
- * Emit field selections.
+ * Emit field selections (public API).
+ * Converts EnrichedVariable[] to Set<string> and delegates to internal implementation.
  */
 const emitSelections = (
   selections: readonly ParsedSelection[],
@@ -144,6 +145,19 @@ const emitSelections = (
   schema: SchemaIndex | null,
 ): Result<string, GraphqlCompatError> => {
   const variableNames = new Set(variables.map((v) => v.name));
+  return emitSelectionsInternal(selections, indent, variableNames, schema);
+};
+
+/**
+ * Internal implementation for emitting field selections.
+ * Takes variableNames as Set<string> for recursive calls.
+ */
+const emitSelectionsInternal = (
+  selections: readonly ParsedSelection[],
+  indent: number,
+  variableNames: Set<string>,
+  schema: SchemaIndex | null,
+): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
 
   // Separate inline fragments from other selections
@@ -208,7 +222,7 @@ const emitSingleSelection = (
 const emitInlineFragmentsAsUnion = (
   inlineFragments: readonly ParsedInlineFragment[],
   indent: number,
-  _variableNames: Set<string>,
+  variableNames: Set<string>,
   schema: SchemaIndex | null,
 ): Result<string, GraphqlCompatError> => {
   const padding = "  ".repeat(indent);
@@ -239,7 +253,7 @@ const emitInlineFragmentsAsUnion = (
   const entries: string[] = [];
   for (const frag of inlineFragments) {
     const innerPadding = "  ".repeat(indent + 1);
-    const fieldsResult = emitSelections(frag.selections, indent + 2, [], schema);
+    const fieldsResult = emitSelectionsInternal(frag.selections, indent + 2, variableNames, schema);
     if (fieldsResult.isErr()) {
       return err(fieldsResult.error);
     }
@@ -291,7 +305,7 @@ const emitFieldSelection = (
 
     if (hasInlineFragments) {
       // Union field: emit with union callback pattern
-      const nestedResult = emitSelections(selections, indent + 1, [], schema);
+      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema);
       if (nestedResult.isErr()) {
         return err(nestedResult.error);
       }
@@ -301,7 +315,7 @@ const emitFieldSelection = (
     } else {
       // Regular nested selections
       line += "(({ f }) => ({\n";
-      const nestedResult = emitSelections(selections, indent + 1, [], schema);
+      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema);
       if (nestedResult.isErr()) {
         return err(nestedResult.error);
       }
