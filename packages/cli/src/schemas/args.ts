@@ -1,9 +1,18 @@
 import { z } from "zod";
 
-export const CodegenArgsSchema = z.object({
+/**
+ * Args for `codegen schema` subcommand.
+ */
+export const CodegenSchemaArgsSchema = z.object({
   config: z.string().optional(),
   "emit-inject-template": z.string().optional(),
 });
+
+/**
+ * Legacy alias for backwards compatibility.
+ * @deprecated Use CodegenSchemaArgsSchema instead.
+ */
+export const CodegenArgsSchema = CodegenSchemaArgsSchema;
 
 export const BuilderArgsSchema = z.object({
   mode: z.enum(["runtime", "zero-runtime"]),
@@ -27,7 +36,20 @@ export const TypegenArgsSchema = z.object({
   config: z.string().optional(),
 });
 
-export type CodegenArgs = z.infer<typeof CodegenArgsSchema>;
+/**
+ * Args for `codegen graphql` subcommand.
+ */
+export const CodegenGraphqlArgsSchema = z.object({
+  config: z.string().optional(),
+  schema: z.string().optional(),
+  input: z.array(z.string()).or(z.string()).optional(),
+  suffix: z.string().optional(),
+});
+
+export type CodegenSchemaArgs = z.infer<typeof CodegenSchemaArgsSchema>;
+export type CodegenGraphqlArgs = z.infer<typeof CodegenGraphqlArgsSchema>;
+/** @deprecated Use CodegenSchemaArgs instead. */
+export type CodegenArgs = CodegenSchemaArgs;
 export type BuilderArgs = z.infer<typeof BuilderArgsSchema>;
 export type FormatArgs = z.infer<typeof FormatArgsSchema>;
 export type InitArgs = z.infer<typeof InitArgsSchema>;

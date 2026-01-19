@@ -1,12 +1,17 @@
+/**
+ * Codegen schema subcommand - generates graphql-system runtime module.
+ * @module
+ */
+
 import { resolve } from "node:path";
 import type { CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
 import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
-import { type CliResult, cliErrors } from "../errors";
-import { CodegenArgsSchema } from "../schemas/args";
-import type { CommandResult, CommandSuccess } from "../types";
-import { parseArgs } from "../utils/parse-args";
+import { type CliResult, cliErrors } from "../../errors";
+import { CodegenSchemaArgsSchema } from "../../schemas/args";
+import type { CommandResult, CommandSuccess } from "../../types";
+import { parseArgs } from "../../utils/parse-args";
 
 type ParsedCommand =
   | {
@@ -20,11 +25,11 @@ type ParsedCommand =
       importExtension: boolean;
     };
 
-const parseCodegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
-  const parsed = parseArgs([...argv], CodegenArgsSchema);
+const parseSchemaArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
+  const parsed = parseArgs([...argv], CodegenSchemaArgsSchema);
 
   if (!parsed.isOk()) {
-    return err(cliErrors.argsInvalid("codegen", parsed.error));
+    return err(cliErrors.argsInvalid("codegen schema", parsed.error));
   }
 
   const args = parsed.value;
@@ -47,7 +52,7 @@ const parseCodegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => 
 
   // Check if schemas config exists
   if (!config.schemas || Object.keys(config.schemas).length === 0) {
-    return err(cliErrors.argsInvalid("codegen", "schemas configuration is required in soda-gql.config.ts"));
+    return err(cliErrors.argsInvalid("codegen schema", "schemas configuration is required in soda-gql.config.ts"));
   }
 
   // Build schemas config with resolved paths
@@ -83,7 +88,7 @@ const formatTemplateSuccess = (outPath: string): string => {
   return `Created inject template → ${outPath}`;
 };
 
-const CODEGEN_HELP = `Usage: soda-gql codegen [options]
+export const SCHEMA_HELP = `Usage: soda-gql codegen schema [options]
 
 Generate graphql-system runtime module from GraphQL schema.
 
@@ -93,21 +98,21 @@ Options:
   --help, -h                     Show this help message
 
 Examples:
-  soda-gql codegen
-  soda-gql codegen --config ./soda-gql.config.ts
-  soda-gql codegen --emit-inject-template ./src/graphql/scalars.ts
+  soda-gql codegen schema
+  soda-gql codegen schema --config ./soda-gql.config.ts
+  soda-gql codegen schema --emit-inject-template ./src/graphql/scalars.ts
 
 Note: Run 'soda-gql typegen' after codegen to generate prebuilt types.
 `;
 
-type CodegenCommandResult = CommandResult<CommandSuccess & { data?: CodegenSuccess }>;
+type SchemaCommandResult = CommandResult<CommandSuccess & { data?: CodegenSuccess }>;
 
-export const codegenCommand = async (argv: readonly string[]): Promise<CodegenCommandResult> => {
+export const schemaCommand = async (argv: readonly string[]): Promise<SchemaCommandResult> => {
   if (argv.includes("--help") || argv.includes("-h")) {
-    return ok({ message: CODEGEN_HELP });
+    return ok({ message: SCHEMA_HELP });
   }
 
-  const parsed = parseCodegenArgs(argv);
+  const parsed = parseSchemaArgs(argv);
 
   if (parsed.isErr()) {
     return err(parsed.error);

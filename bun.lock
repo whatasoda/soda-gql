@@ -84,6 +84,7 @@
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@soda-gql/typegen": "workspace:*",
         "fast-glob": "^3.3.3",

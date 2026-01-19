@@ -50,6 +50,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@soda-gql/common": "workspace:*",
     "@soda-gql/codegen": "workspace:*",
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/config": "workspace:*",

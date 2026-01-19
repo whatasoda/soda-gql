@@ -197,3 +197,443 @@ describe("soda-gql codegen CLI", () => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 });
+
+describe("soda-gql codegen graphql CLI", () => {
+  const tmpRoot = join(projectRoot, "tests/.tmp/codegen-graphql-cli-test");
+  mkdirSync(tmpRoot, { recursive: true });
+
+  const copyDefaultInject = (destinationPath: string): void => {
+    cpSync(join(projectRoot, "fixture-catalog/schemas/default/scalars.ts"), destinationPath);
+  };
+
+  it("reports DUPLICATE_FRAGMENT when same fragment is defined in multiple files", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "generated");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Create two .graphql files with the same fragment name
+    const file1 = join(graphqlDir, "UserFields1.graphql");
+    const file2 = join(graphqlDir, "UserFields2.graphql");
+
+    await Bun.write(
+      file1,
+      `
+      fragment UserFields on User {
+        id
+        name
+      }
+    `,
+    );
+
+    await Bun.write(
+      file2,
+      `
+      fragment UserFields on User {
+        id
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    const result = await runCodegenCli(["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql")], {
+      cwd: caseDir,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("DUPLICATE_FRAGMENT");
+    expect(result.stderr).toContain("UserFields");
+  });
+
+  it("reports FRAGMENT_NOT_FOUND when referencing undefined fragment", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "generated");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Create operation file that references an undefined fragment
+    const operationFile = join(graphqlDir, "GetUser.graphql");
+    await Bun.write(
+      operationFile,
+      `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UndefinedFragment
+        }
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    const result = await runCodegenCli(["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql")], {
+      cwd: caseDir,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("FRAGMENT_NOT_FOUND");
+    expect(result.stderr).toContain("UndefinedFragment");
+  });
+
+  it("generates output files alongside input files", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const queriesDir = join(caseDir, "src", "queries");
+    const mutationsDir = join(caseDir, "src", "mutations");
+    const outDir = join(caseDir, "graphql-system");
+    mkdirSync(queriesDir, { recursive: true });
+    mkdirSync(mutationsDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+      type Mutation { updateUser(id: ID!, name: String!): User }
+    `,
+    );
+
+    // Create .graphql files in different directories with same name
+    await Bun.write(
+      join(queriesDir, "User.graphql"),
+      `
+      query GetUser($id: ID!) {
+        user(id: $id) { id name }
+      }
+    `,
+    );
+
+    await Bun.write(
+      join(mutationsDir, "User.graphql"),
+      `
+      mutation UpdateUser($id: ID!, $name: String!) {
+        updateUser(id: $id, name: $name) { id name }
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    // First generate the graphql-system
+    await runCodegenCli(["--config", configPath], { cwd: caseDir });
+
+    // Then generate compat files
+    const result = await runCodegenCli(["graphql", "--config", configPath, "--input", join(caseDir, "src/**/*.graphql")], {
+      cwd: caseDir,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // Verify files are generated alongside inputs (not in a separate directory)
+    const queryOutput = join(queriesDir, "User.compat.ts");
+    const mutationOutput = join(mutationsDir, "User.compat.ts");
+
+    expect(await Bun.file(queryOutput).exists()).toBe(true);
+    expect(await Bun.file(mutationOutput).exists()).toBe(true);
+
+    // Verify content is different (query vs mutation)
+    const queryContent = await Bun.file(queryOutput).text();
+    const mutationContent = await Bun.file(mutationOutput).text();
+
+    expect(queryContent).toContain("GetUser");
+    expect(queryContent).not.toContain("UpdateUser");
+    expect(mutationContent).toContain("UpdateUser");
+    expect(mutationContent).not.toContain("GetUser");
+  });
+
+  it("uses custom suffix from CLI argument", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "graphql-system");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    await Bun.write(
+      join(graphqlDir, "Query.graphql"),
+      `
+      query GetUser($id: ID!) {
+        user(id: $id) { id name }
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    // First generate the graphql-system
+    await runCodegenCli(["--config", configPath], { cwd: caseDir });
+
+    // Then generate compat files with custom suffix
+    const result = await runCodegenCli(
+      ["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql"), "--suffix", ".generated.ts"],
+      { cwd: caseDir },
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(await Bun.file(join(graphqlDir, "Query.generated.ts")).exists()).toBe(true);
+    expect(await Bun.file(join(graphqlDir, "Query.compat.ts")).exists()).toBe(false);
+  });
+
+  it("generates same-file fragments without import statements", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "graphql-system");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String!, email: String }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Single .graphql file with both operation and fragment
+    await Bun.write(
+      join(graphqlDir, "User.graphql"),
+      `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UserFields
+        }
+      }
+
+      fragment UserFields on User {
+        id
+        name
+        email
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    // First generate the graphql-system
+    await runCodegenCli(["--config", configPath], { cwd: caseDir });
+
+    // Then generate compat files
+    const result = await runCodegenCli(["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql")], {
+      cwd: caseDir,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const outputPath = join(graphqlDir, "User.compat.ts");
+    expect(await Bun.file(outputPath).exists()).toBe(true);
+
+    const content = await Bun.file(outputPath).text();
+
+    // Should contain both exports
+    expect(content).toContain("export const GetUserCompat");
+    expect(content).toContain("export const UserFieldsFragment");
+
+    // Should NOT have import for UserFields (same file)
+    expect(content).not.toContain("import { UserFieldsFragment }");
+
+    // Should have the spread reference
+    expect(content).toContain("UserFieldsFragment.spread()");
+  });
+
+  it("generates imports only for cross-file fragments, not same-file", async () => {
+    const caseDir = join(tmpRoot, `case-${Date.now()}`);
+    const graphqlDir = join(caseDir, "graphql");
+    const outDir = join(caseDir, "graphql-system");
+    mkdirSync(graphqlDir, { recursive: true });
+    mkdirSync(outDir, { recursive: true });
+
+    // Create schema with Post type
+    const schemaPath = join(caseDir, "schema.graphql");
+    await Bun.write(
+      schemaPath,
+      `
+      type User { id: ID!, name: String!, posts: [Post!]! }
+      type Post { id: ID!, title: String! }
+      type Query { user(id: ID!): User }
+    `,
+    );
+
+    // Users.graphql: operation + UserFields fragment (same-file), references PostFields (cross-file)
+    await Bun.write(
+      join(graphqlDir, "Users.graphql"),
+      `
+      query GetUserWithPosts($id: ID!) {
+        user(id: $id) {
+          ...UserFields
+          posts {
+            ...PostFields
+          }
+        }
+      }
+
+      fragment UserFields on User {
+        id
+        name
+      }
+    `,
+    );
+
+    // Posts.graphql: PostFields fragment (cross-file)
+    await Bun.write(
+      join(graphqlDir, "Posts.graphql"),
+      `
+      fragment PostFields on Post {
+        id
+        title
+      }
+    `,
+    );
+
+    // Create inject file and config
+    const injectFile = join(caseDir, "inject.ts");
+    copyDefaultInject(injectFile);
+
+    const configPath = createTempConfigFile(caseDir, {
+      outdir: outDir,
+      include: [join(caseDir, "**/*.ts")],
+      schemas: {
+        default: {
+          schema: schemaPath,
+          inject: { scalars: injectFile },
+        },
+      },
+    });
+
+    // First generate the graphql-system
+    await runCodegenCli(["--config", configPath], { cwd: caseDir });
+
+    // Then generate compat files
+    const result = await runCodegenCli(["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql")], {
+      cwd: caseDir,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const usersOutput = join(graphqlDir, "Users.compat.ts");
+    const postsOutput = join(graphqlDir, "Posts.compat.ts");
+
+    expect(await Bun.file(usersOutput).exists()).toBe(true);
+    expect(await Bun.file(postsOutput).exists()).toBe(true);
+
+    const usersContent = await Bun.file(usersOutput).text();
+
+    // Should have import for PostFields (cross-file)
+    expect(usersContent).toContain('import { PostFieldsFragment } from "./Posts.compat"');
+
+    // Should NOT have import for UserFields (same file)
+    expect(usersContent).not.toContain("import { UserFieldsFragment }");
+
+    // Should have both spreads
+    expect(usersContent).toContain("UserFieldsFragment.spread()");
+    expect(usersContent).toContain("PostFieldsFragment.spread()");
+
+    // Should have operation and fragment exports
+    expect(usersContent).toContain("export const GetUserWithPostsCompat");
+    expect(usersContent).toContain("export const UserFieldsFragment");
+  });
+
+  afterAll(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+});

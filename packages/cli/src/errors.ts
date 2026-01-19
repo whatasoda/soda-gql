@@ -27,6 +27,8 @@ export type CliErrorCode =
   | "CLI_FORMATTER_NOT_INSTALLED"
   | "CLI_PARSE_ERROR"
   | "CLI_FORMAT_ERROR"
+  | "CLI_DUPLICATE_FRAGMENT"
+  | "CLI_FRAGMENT_NOT_FOUND"
   // Unexpected errors
   | "CLI_UNEXPECTED";
 
@@ -111,6 +113,21 @@ export type CliError =
     }
   | {
       readonly category: "cli";
+      readonly code: "CLI_DUPLICATE_FRAGMENT";
+      readonly message: string;
+      readonly fragmentName: string;
+      readonly existingFile: string;
+      readonly newFile: string;
+    }
+  | {
+      readonly category: "cli";
+      readonly code: "CLI_FRAGMENT_NOT_FOUND";
+      readonly message: string;
+      readonly fragmentName: string;
+      readonly referencedIn: string;
+    }
+  | {
+      readonly category: "cli";
       readonly code: "CLI_UNEXPECTED";
       readonly message: string;
       readonly cause?: unknown;
@@ -133,6 +150,8 @@ type CliNoPatternsError = Extract<CliError, { code: "CLI_NO_PATTERNS" }>;
 type CliFormatterNotInstalledError = Extract<CliError, { code: "CLI_FORMATTER_NOT_INSTALLED" }>;
 type CliParseErrorError = Extract<CliError, { code: "CLI_PARSE_ERROR" }>;
 type CliFormatErrorError = Extract<CliError, { code: "CLI_FORMAT_ERROR" }>;
+type CliDuplicateFragmentError = Extract<CliError, { code: "CLI_DUPLICATE_FRAGMENT" }>;
+type CliFragmentNotFoundError = Extract<CliError, { code: "CLI_FRAGMENT_NOT_FOUND" }>;
 type CliUnexpectedError = Extract<CliError, { code: "CLI_UNEXPECTED" }>;
 type CliCodegenError = Extract<CliError, { category: "codegen" }>;
 type CliBuilderError = Extract<CliError, { category: "builder" }>;
@@ -221,6 +240,23 @@ export const cliErrors = {
     code: "CLI_FORMAT_ERROR",
     message,
     filePath,
+  }),
+
+  duplicateFragment: (fragmentName: string, existingFile: string, newFile: string): CliDuplicateFragmentError => ({
+    category: "cli",
+    code: "CLI_DUPLICATE_FRAGMENT",
+    message: `Fragment "${fragmentName}" is defined in multiple files:\n  - ${existingFile}\n  - ${newFile}`,
+    fragmentName,
+    existingFile,
+    newFile,
+  }),
+
+  fragmentNotFound: (fragmentName: string, referencedIn: string): CliFragmentNotFoundError => ({
+    category: "cli",
+    code: "CLI_FRAGMENT_NOT_FOUND",
+    message: `Fragment "${fragmentName}" is referenced but not defined in any input file`,
+    fragmentName,
+    referencedIn,
   }),
 
   unexpected: (message: string, cause?: unknown): CliUnexpectedError => ({
