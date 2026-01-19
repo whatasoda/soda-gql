@@ -42,7 +42,6 @@ const createTestConfig = (
   },
   codegen: {
     chunkSize: 100,
-    graphql: { suffix: ".compat.ts" },
   },
   plugins: {},
   ...(options?.tsconfigPaths ? { tsconfigPaths: options.tsconfigPaths } : {}),

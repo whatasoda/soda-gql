@@ -463,66 +463,6 @@ describe("soda-gql codegen graphql CLI", () => {
     expect(await Bun.file(join(graphqlDir, "Query.compat.ts")).exists()).toBe(false);
   });
 
-  it("uses custom suffix from config", async () => {
-    const caseDir = join(tmpRoot, `case-${Date.now()}`);
-    const graphqlDir = join(caseDir, "graphql");
-    const outDir = join(caseDir, "graphql-system");
-    mkdirSync(graphqlDir, { recursive: true });
-    mkdirSync(outDir, { recursive: true });
-
-    // Create schema
-    const schemaPath = join(caseDir, "schema.graphql");
-    await Bun.write(
-      schemaPath,
-      `
-      type User { id: ID!, name: String! }
-      type Query { user(id: ID!): User }
-    `,
-    );
-
-    await Bun.write(
-      join(graphqlDir, "Query.graphql"),
-      `
-      query GetUser($id: ID!) {
-        user(id: $id) { id name }
-      }
-    `,
-    );
-
-    // Create inject file and config with custom suffix
-    const injectFile = join(caseDir, "inject.ts");
-    copyDefaultInject(injectFile);
-
-    const configPath = createTempConfigFile(caseDir, {
-      outdir: outDir,
-      include: [join(caseDir, "**/*.ts")],
-      schemas: {
-        default: {
-          schema: schemaPath,
-          inject: { scalars: injectFile },
-        },
-      },
-      codegen: {
-        graphql: {
-          suffix: ".gql.ts",
-        },
-      },
-    });
-
-    // First generate the graphql-system
-    await runCodegenCli(["--config", configPath], { cwd: caseDir });
-
-    // Then generate compat files (should use config suffix)
-    const result = await runCodegenCli(
-      ["graphql", "--config", configPath, "--input", join(graphqlDir, "**/*.graphql")],
-      { cwd: caseDir },
-    );
-
-    expect(result.exitCode).toBe(0);
-    expect(await Bun.file(join(graphqlDir, "Query.gql.ts")).exists()).toBe(true);
-    expect(await Bun.file(join(graphqlDir, "Query.compat.ts")).exists()).toBe(false);
-  });
-
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });

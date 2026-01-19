@@ -26,7 +26,7 @@ const createTestConfig = (): TransformOptions["config"] => ({
   exclude: [],
   schemas: {},
   styles: { importExtension: false },
-  codegen: { chunkSize: 100, graphql: { suffix: ".compat.ts" } },
+  codegen: { chunkSize: 100 },
   plugins: {},
 });
 

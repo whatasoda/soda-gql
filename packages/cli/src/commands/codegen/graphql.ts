@@ -80,8 +80,8 @@ const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs>
     );
   }
 
-  // Get suffix from CLI args or config
-  const suffix = args.suffix ?? config.codegen.graphql.suffix;
+  // Get suffix from CLI args or use default
+  const suffix = args.suffix ?? ".compat.ts";
 
   return ok({
     schemaName,
