@@ -263,6 +263,13 @@ const extractArgument = (node: ArgumentNode): ParsedArgument => {
 };
 
 /**
+ * Assert unreachable code path (for exhaustiveness checks).
+ */
+const assertUnreachable = (value: never): never => {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+};
+
+/**
  * Extract a value (literal or variable reference).
  */
 const extractValue = (node: ValueNode): ParsedValue => {
@@ -291,5 +298,7 @@ const extractValue = (node: ValueNode): ParsedValue => {
           value: extractValue(field.value),
         })),
       };
+    default:
+      return assertUnreachable(node);
   }
 };
