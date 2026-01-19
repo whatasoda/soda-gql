@@ -5,9 +5,9 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { normalizePath } from "@soda-gql/common";
 import type { EnrichedFragment, EnrichedOperation, ParseResult } from "@soda-gql/codegen";
 import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "@soda-gql/codegen";
+import { normalizePath } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
 import { Glob } from "bun";
 import { err, ok } from "neverthrow";

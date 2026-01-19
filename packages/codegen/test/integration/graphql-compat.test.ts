@@ -397,4 +397,184 @@ describe("graphql-compat integration", () => {
     expect(written).toBe(output);
     expect(written).toContain("export const GetUserCompat");
   });
+
+  test("end-to-end: same-file operation and fragment (no imports)", async () => {
+    const schemaPath = createTestSchema();
+    const schemaResult = loadSchema([schemaPath]);
+    expect(schemaResult.isOk()).toBe(true);
+    const schemaDocument = schemaResult._unsafeUnwrap();
+
+    // Single file with both operation and fragment
+    const source = `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UserFields
+        }
+      }
+
+      fragment UserFields on User {
+        id
+        name
+        email
+      }
+    `;
+
+    const parseResult = parseGraphqlSource(source, "User.graphql");
+    expect(parseResult.isOk()).toBe(true);
+
+    const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
+    expect(transformResult.isOk()).toBe(true);
+
+    const { operations, fragments } = transformResult._unsafeUnwrap();
+    expect(operations).toHaveLength(1);
+    expect(fragments).toHaveLength(1);
+    expect(operations[0]!.fragmentDependencies).toContain("UserFields");
+
+    // Emit operation with empty fragmentImports (same-file scenario)
+    const operationOutput = emitOperation(operations[0]!, {
+      ...emitOptions,
+      schemaDocument,
+      fragmentImports: new Map(), // Empty = same-file fragments
+    })._unsafeUnwrap();
+
+    // Should NOT have import (same file)
+    expect(operationOutput).not.toContain("import { UserFieldsFragment }");
+    // Should still have spread
+    expect(operationOutput).toContain("...UserFieldsFragment.spread()");
+
+    // Emit fragment
+    const fragmentOutput = emitFragment(fragments[0]!, {
+      ...emitOptions,
+      schemaDocument,
+    })._unsafeUnwrap();
+
+    expect(fragmentOutput).toContain("export const UserFieldsFragment = gql.mySchema");
+    expect(fragmentOutput).toContain("fragment.User(");
+  });
+
+  test("end-to-end: multiple operations using same fragment in one file", async () => {
+    const schemaPath = createTestSchema();
+    const schemaResult = loadSchema([schemaPath]);
+    expect(schemaResult.isOk()).toBe(true);
+    const schemaDocument = schemaResult._unsafeUnwrap();
+
+    const source = `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UserFields
+        }
+      }
+
+      mutation UpdateUser($id: ID!, $name: String!) {
+        updateUser(id: $id, name: $name) {
+          ...UserFields
+        }
+      }
+
+      fragment UserFields on User {
+        id
+        name
+      }
+    `;
+
+    const parseResult = parseGraphqlSource(source, "UserOps.graphql");
+    expect(parseResult.isOk()).toBe(true);
+
+    const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
+    expect(transformResult.isOk()).toBe(true);
+
+    const { operations, fragments } = transformResult._unsafeUnwrap();
+    expect(operations).toHaveLength(2);
+    expect(fragments).toHaveLength(1);
+
+    // Both operations reference the same fragment
+    expect(operations[0]!.fragmentDependencies).toContain("UserFields");
+    expect(operations[1]!.fragmentDependencies).toContain("UserFields");
+
+    // Emit both operations with empty fragmentImports
+    const queryOutput = emitOperation(operations[0]!, {
+      ...emitOptions,
+      schemaDocument,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    const mutationOutput = emitOperation(operations[1]!, {
+      ...emitOptions,
+      schemaDocument,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    // Neither should have import
+    expect(queryOutput).not.toContain("import { UserFieldsFragment }");
+    expect(mutationOutput).not.toContain("import { UserFieldsFragment }");
+    // Both should have spread
+    expect(queryOutput).toContain("...UserFieldsFragment.spread()");
+    expect(mutationOutput).toContain("...UserFieldsFragment.spread()");
+  });
+
+  test("end-to-end: nested fragments in same file (fragment using another fragment)", async () => {
+    const schemaPath = createTestSchema();
+    const schemaResult = loadSchema([schemaPath]);
+    expect(schemaResult.isOk()).toBe(true);
+    const schemaDocument = schemaResult._unsafeUnwrap();
+
+    const source = `
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          ...UserFullFields
+        }
+      }
+
+      fragment UserFullFields on User {
+        ...UserBasicFields
+        email
+        role
+      }
+
+      fragment UserBasicFields on User {
+        id
+        name
+      }
+    `;
+
+    const parseResult = parseGraphqlSource(source, "UserProfile.graphql");
+    expect(parseResult.isOk()).toBe(true);
+
+    const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
+    expect(transformResult.isOk()).toBe(true);
+
+    const { operations, fragments } = transformResult._unsafeUnwrap();
+    expect(operations).toHaveLength(1);
+    expect(fragments).toHaveLength(2);
+
+    // Operation references UserFullFields, which references UserBasicFields
+    expect(operations[0]!.fragmentDependencies).toContain("UserFullFields");
+
+    // Find UserFullFields fragment
+    const userFullFields = fragments.find((f) => f.name === "UserFullFields");
+    expect(userFullFields).toBeDefined();
+    expect(userFullFields!.fragmentDependencies).toContain("UserBasicFields");
+
+    // Emit operation with empty fragmentImports (all same-file)
+    const operationOutput = emitOperation(operations[0]!, {
+      ...emitOptions,
+      schemaDocument,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    // Emit fragment with same-file dependency
+    const fragmentOutput = emitFragment(userFullFields!, {
+      ...emitOptions,
+      schemaDocument,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    // No imports (all same-file)
+    expect(operationOutput).not.toContain("import { UserFullFieldsFragment }");
+    expect(fragmentOutput).not.toContain("import { UserBasicFieldsFragment }");
+
+    // Spreads should be present
+    expect(operationOutput).toContain("...UserFullFieldsFragment.spread()");
+    expect(fragmentOutput).toContain("...UserBasicFieldsFragment.spread()");
+  });
 });

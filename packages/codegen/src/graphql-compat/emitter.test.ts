@@ -239,6 +239,66 @@ describe("emitOperation", () => {
     expect(output).toContain('import { UserFieldsFragment } from "./UserFields.compat"');
     expect(output).toContain("...UserFieldsFragment.spread()");
   });
+
+  it("emits fragment spread without import when fragmentImports is empty (same-file)", () => {
+    const { operations } = parseAndTransform(`
+      query GetUser {
+        user(id: "1") {
+          ...UserFields
+        }
+      }
+    `);
+
+    // Empty fragmentImports simulates same-file fragments
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    // Should NOT contain import for UserFields
+    expect(output).not.toContain("import { UserFieldsFragment }");
+    // Should still contain the spread call
+    expect(output).toContain("...UserFieldsFragment.spread()");
+  });
+
+  it("emits import only for cross-file fragments, not same-file", () => {
+    const schemaWithPosts = parse(`
+      type User { id: ID!, name: String!, posts: [Post!]! }
+      type Post { id: ID!, title: String! }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser {
+        user(id: "1") {
+          ...UserFields
+          posts {
+            ...PostFields
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: schemaWithPosts,
+    })._unsafeUnwrap();
+
+    // Only PostFields is cross-file, UserFields is same-file (not in map)
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: schemaWithPosts,
+      fragmentImports: new Map([["PostFields", "./PostFields.compat"]]),
+    })._unsafeUnwrap();
+
+    // Should contain import for PostFields (cross-file)
+    expect(output).toContain('import { PostFieldsFragment } from "./PostFields.compat"');
+    // Should NOT contain import for UserFields (same-file)
+    expect(output).not.toContain("import { UserFieldsFragment }");
+    // Both spreads should be present
+    expect(output).toContain("...UserFieldsFragment.spread()");
+    expect(output).toContain("...PostFieldsFragment.spread()");
+  });
 });
 
 describe("emitFragment", () => {
@@ -304,6 +364,26 @@ describe("emitFragment", () => {
     })._unsafeUnwrap();
 
     expect(output).toContain('import { UserBasicFieldsFragment } from "./UserBasicFields.compat"');
+    expect(output).toContain("...UserBasicFieldsFragment.spread()");
+  });
+
+  it("emits fragment with same-file fragment dependency (no import)", () => {
+    const { fragments } = parseAndTransform(`
+      fragment UserWithBasic on User {
+        ...UserBasicFields
+        email
+      }
+    `);
+
+    // Empty fragmentImports simulates same-file fragment dependency
+    const output = emitFragment(fragments[0]!, {
+      ...defaultOptions,
+      fragmentImports: new Map(),
+    })._unsafeUnwrap();
+
+    // Should NOT contain import for UserBasicFields
+    expect(output).not.toContain("import { UserBasicFieldsFragment }");
+    // Should still contain the spread call
     expect(output).toContain("...UserBasicFieldsFragment.spread()");
   });
 });
