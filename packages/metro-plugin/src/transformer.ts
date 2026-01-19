@@ -263,6 +263,9 @@ async function transformCore(
     filename,
     babelrc: false,
     configFile: false,
+    parserOpts: {
+      plugins: filename.endsWith(".tsx") ? ["typescript", "jsx"] : ["typescript"],
+    },
     plugins: [sodaGqlPlugin],
     sourceMaps: true,
   };

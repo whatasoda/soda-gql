@@ -260,6 +260,9 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
         filename: id,
         babelrc: false,
         configFile: false,
+        parserOpts: {
+          plugins: id.endsWith(".tsx") ? ["typescript", "jsx"] : ["typescript"],
+        },
         plugins: [createPluginWithArtifact({ artifact: currentArtifact, config: pluginSession.config })],
         sourceMaps: true,
       };
