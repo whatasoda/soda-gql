@@ -5,6 +5,7 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
+import { normalizePath } from "@soda-gql/common";
 import type { EnrichedFragment, EnrichedOperation, ParseResult } from "@soda-gql/codegen";
 import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "@soda-gql/codegen";
 import { loadConfig } from "@soda-gql/config";
@@ -192,8 +193,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
           return err(cliErrors.fragmentNotFound(fragName, file));
         }
         if (fragInfo.outputPath !== outputPath) {
-          // Calculate relative import path
-          const relativePath = relative(dirname(outputPath), fragInfo.outputPath).replace(/\.ts$/, "");
+          // Calculate relative import path (normalize for cross-platform compatibility)
+          const relativePath = normalizePath(relative(dirname(outputPath), fragInfo.outputPath)).replace(/\.ts$/, "");
           const importPath = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
           fragmentImports.set(fragName, importPath);
         }
@@ -215,8 +216,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       }
     }
 
-    // Calculate graphqlSystemPath as relative path from output file
-    const graphqlSystemRelative = relative(dirname(outputPath), args.graphqlSystemDir);
+    // Calculate graphqlSystemPath as relative path from output file (normalize for cross-platform compatibility)
+    const graphqlSystemRelative = normalizePath(relative(dirname(outputPath), args.graphqlSystemDir));
     const graphqlSystemPath = graphqlSystemRelative.startsWith(".") ? graphqlSystemRelative : `./${graphqlSystemRelative}`;
 
     // Generate code
