@@ -222,7 +222,7 @@ type InferFieldValue<
         : never  // Type error: field has required arguments
       : never
   // Object notation: { args } | { directives } | { args, directives }
-  : TValue extends ScalarShorthandObject
+  : TValue extends ScalarShorthandObject<AssignableInputByFieldName<TSchema, TTypeName, TFieldKey & keyof TSchema["object"][TTypeName]["fields"]>>
     ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"]
       ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
       : never
