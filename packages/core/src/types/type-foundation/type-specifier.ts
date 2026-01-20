@@ -3,8 +3,12 @@ import type { TypeModifier } from "./type-modifier-core.generated";
 
 export type AnyDefaultValue = { default: ConstValue };
 
-export type InputTypeKind = "scalar" | "enum" | "input";
-export type OutputTypeKind = "scalar" | "enum" | "object" | "union" | "typename";
+export type InputTypeKind = "scalar" | "enum" | "input" | "excluded";
+export type OutputTypeKind = "scalar" | "enum" | "object" | "union" | "typename" | "excluded";
+
+// Creatable type kinds exclude "excluded" which is only used in generated code for filtered types
+export type CreatableInputTypeKind = Exclude<InputTypeKind, "excluded">;
+export type CreatableOutputTypeKind = Exclude<OutputTypeKind, "excluded">;
 
 export type AnyTypeSpecifier = {
   readonly kind: string;
@@ -22,11 +26,12 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly defaultValue?: AnyDefaultValue | null;
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
-export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier;
+export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier | InputExcludedSpecifier;
 export type InputInferrableTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier;
 export type InputScalarSpecifier = AbstractInputTypeSpecifier<"scalar">;
 export type InputEnumSpecifier = AbstractInputTypeSpecifier<"enum">;
 export type InputInputObjectSpecifier = AbstractInputTypeSpecifier<"input">;
+export type InputExcludedSpecifier = AbstractInputTypeSpecifier<"excluded">;
 
 type AbstractOutputTypeSpecifier<TKind extends OutputTypeKind, TName extends string = string> = {
   readonly kind: TKind;
@@ -40,10 +45,12 @@ export type OutputTypeSpecifier =
   | OutputEnumSpecifier
   | OutputObjectSpecifier
   | OutputUnionSpecifier
-  | OutputTypenameSpecifier;
+  | OutputTypenameSpecifier
+  | OutputExcludedSpecifier;
 export type OutputInferrableTypeSpecifier = OutputScalarSpecifier | OutputEnumSpecifier | OutputTypenameSpecifier;
 export type OutputScalarSpecifier = AbstractOutputTypeSpecifier<"scalar">;
 export type OutputEnumSpecifier = AbstractOutputTypeSpecifier<"enum">;
 export type OutputObjectSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"object", TName>;
 export type OutputUnionSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"union", TName>;
 export type OutputTypenameSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"typename", TName>;
+export type OutputExcludedSpecifier = AbstractOutputTypeSpecifier<"excluded">;

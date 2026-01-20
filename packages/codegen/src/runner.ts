@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
@@ -142,6 +143,14 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
   // Get chunkSize config (default: 100)
   const chunkSize = options.chunkSize ?? 100;
 
+  // Build typeFilters config for each schema
+  const typeFiltersConfig = new Map<string, TypeFilterConfig>();
+  for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
+    if (schemaConfig.typeFilter) {
+      typeFiltersConfig.set(schemaName, schemaConfig.typeFilter);
+    }
+  }
+
   // Generate multi-schema module (this becomes _internal.ts content)
   const {
     code: internalCode,
@@ -153,6 +162,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
     typenameMode: typenameModeConfig.size > 0 ? typenameModeConfig : undefined,
     chunkSize,
+    typeFilters: typeFiltersConfig.size > 0 ? typeFiltersConfig : undefined,
   });
 
   // Generate index.ts wrapper (simple re-export from _internal)

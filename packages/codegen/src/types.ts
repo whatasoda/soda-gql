@@ -1,4 +1,4 @@
-import type { TypenameMode } from "@soda-gql/config";
+import type { TypeFilterConfig, TypenameMode } from "@soda-gql/config";
 import type { Result } from "neverthrow";
 
 export type CodegenFormat = "json" | "human";
@@ -16,6 +16,7 @@ export type CodegenSchemaConfig = {
   readonly defaultInputDepth?: number;
   readonly inputDepthOverrides?: Readonly<Record<string, number>>;
   readonly typenameMode?: TypenameMode;
+  readonly typeFilter?: TypeFilterConfig;
 };
 
 export type CodegenOptions = {

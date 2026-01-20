@@ -1,3 +1,4 @@
+import type { TypeCategory, TypeFilterConfig } from "@soda-gql/config";
 import {
   type ConstDirectiveNode,
   type ConstValueNode,
@@ -13,6 +14,7 @@ import {
 } from "graphql";
 
 import type { CategoryVars, DefinitionVar } from "./defs-generator";
+import { buildExclusionSet, compileTypeFilter } from "./type-filter";
 
 const builtinScalarTypes = new Map<string, { readonly input: string; readonly output: string }>([
   ["ID", { input: "string", output: "string" }],
@@ -366,9 +368,17 @@ const renderConstValue = (value: ConstValueNode): string => {
   }
 };
 
-const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode): string => {
+const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
   const { name, modifier } = parseTypeReference(definition.type);
   const defaultValue = definition.defaultValue;
+
+  // Check if referenced type is excluded
+  if (excluded.has(name)) {
+    if (defaultValue) {
+      return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
+    }
+    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}" }`;
+  }
 
   let kind: "scalar" | "enum" | "input";
   if (isScalarName(schema, name)) {
@@ -386,17 +396,31 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
   return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
 };
 
-const renderArgumentMap = (schema: SchemaIndex, args: readonly InputValueDefinitionNode[] | undefined): string => {
+const renderArgumentMap = (
+  schema: SchemaIndex,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  excluded: Set<string>,
+): string => {
   const entries = [...(args ?? [])]
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg)}`);
+    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg, excluded)}`);
 
   return renderPropertyLines({ entries, indentSize: 8 });
 };
 
-const renderOutputRef = (schema: SchemaIndex, type: TypeNode, args: readonly InputValueDefinitionNode[] | undefined): string => {
+const renderOutputRef = (
+  schema: SchemaIndex,
+  type: TypeNode,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  excluded: Set<string>,
+): string => {
   const { name, modifier } = parseTypeReference(type);
-  const argumentMap = renderArgumentMap(schema, args);
+  const argumentMap = renderArgumentMap(schema, args, excluded);
+
+  // Check if referenced type is excluded
+  if (excluded.has(name)) {
+    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
+  }
 
   let kind: "scalar" | "enum" | "union" | "object";
   if (isScalarName(schema, name)) {
@@ -427,6 +451,7 @@ const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; inden
 const renderObjectFields = (
   schema: SchemaIndex,
   fields: Map<string, FieldDefinitionNode>,
+  excluded: Set<string>,
   options?: { readonly typenameMode?: TypenameMode; readonly objectName?: string },
 ): string => {
   const entries: string[] = [];
@@ -440,16 +465,16 @@ const renderObjectFields = (
   entries.push(
     ...Array.from(fields.values())
       .sort((left, right) => left.name.value.localeCompare(right.name.value))
-      .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments)}`),
+      .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, excluded)}`),
   );
 
   return renderPropertyLines({ entries, indentSize: 6 });
 };
 
-const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDefinitionNode>): string => {
+const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDefinitionNode>, excluded: Set<string>): string => {
   const entries = Array.from(fields.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((field) => `${field.name.value}: ${renderInputRef(schema, field)}`);
+    .map((field) => `${field.name.value}: ${renderInputRef(schema, field, excluded)}`);
 
   return renderPropertyLines({ entries, indentSize: 6 });
 };
@@ -469,18 +494,25 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
   return `const enum_${schemaName}_${record.name} = defineEnum<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
 };
 
-const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord): string => {
-  const fields = renderInputFields(schema, record.fields);
+const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord, excluded: Set<string>): string => {
+  const fields = renderInputFields(schema, record.fields, excluded);
   return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord, typenameMode?: TypenameMode): string => {
-  const fields = renderObjectFields(schema, record.fields, { typenameMode, objectName: record.name });
+const renderObjectVar = (
+  schemaName: string,
+  schema: SchemaIndex,
+  record: ObjectRecord,
+  excluded: Set<string>,
+  typenameMode?: TypenameMode,
+): string => {
+  const fields = renderObjectFields(schema, record.fields, excluded, { typenameMode, objectName: record.name });
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
+const renderUnionVar = (schemaName: string, record: UnionRecord, excluded: Set<string>): string => {
   const memberNames = Array.from(record.members.values())
+    .filter((member) => !excluded.has(member.name.value))
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((member) => member.name.value);
   const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
@@ -530,14 +562,19 @@ const collectDirectiveNames = (schema: SchemaIndex): string[] =>
 const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
   `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
 
-const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string => {
+const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, excluded: Set<string>): string => {
   const scalarMethods = Array.from(builtinScalarTypes.keys())
     .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
+    .filter((name) => !excluded.has(name))
     .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
 
-  const enumMethods = collectEnumTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "enum", name));
+  const enumMethods = collectEnumTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "enum", name));
 
-  const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "input", name));
+  const inputMethods = collectInputTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "input", name));
 
   const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
     const leftName = left.split(":")[0] ?? "";
@@ -552,19 +589,23 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string
  * Renders argument specifiers for a directive.
  * Returns null if the directive has no arguments.
  */
-const renderDirectiveArgsSpec = (schema: SchemaIndex, args: Map<string, InputValueDefinitionNode>): string | null => {
+const renderDirectiveArgsSpec = (
+  schema: SchemaIndex,
+  args: Map<string, InputValueDefinitionNode>,
+  excluded: Set<string>,
+): string | null => {
   if (args.size === 0) return null;
 
   const entries = Array.from(args.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg)}`);
+    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg, excluded)}`);
 
   return renderPropertyLines({ entries, indentSize: 4 });
 };
 
-const renderDirectiveMethod = (schema: SchemaIndex, record: DirectiveRecord): string => {
+const renderDirectiveMethod = (schema: SchemaIndex, record: DirectiveRecord, excluded: Set<string>): string => {
   const locationsJson = JSON.stringify(record.locations);
-  const argsSpec = renderDirectiveArgsSpec(schema, record.args);
+  const argsSpec = renderDirectiveArgsSpec(schema, record.args, excluded);
 
   if (argsSpec === null) {
     // No arguments - use simple createDirectiveMethod
@@ -575,7 +616,7 @@ const renderDirectiveMethod = (schema: SchemaIndex, record: DirectiveRecord): st
   return `${record.name}: createTypedDirectiveMethod("${record.name}", ${locationsJson} as const, ${argsSpec})`;
 };
 
-const renderDirectiveMethods = (schema: SchemaIndex): string => {
+const renderDirectiveMethods = (schema: SchemaIndex, excluded: Set<string>): string => {
   const directiveNames = collectDirectiveNames(schema);
   if (directiveNames.length === 0) {
     return "{}";
@@ -584,7 +625,7 @@ const renderDirectiveMethods = (schema: SchemaIndex): string => {
   const methods = directiveNames
     .map((name) => {
       const record = schema.directives.get(name);
-      return record ? renderDirectiveMethod(schema, record) : null;
+      return record ? renderDirectiveMethod(schema, record, excluded) : null;
     })
     .filter((method): method is string => method !== null);
 
@@ -630,6 +671,7 @@ export type RuntimeGenerationOptions = {
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
   readonly typenameMode?: Map<string, TypenameMode>;
   readonly chunkSize?: number;
+  readonly typeFilters?: Map<string, TypeFilterConfig>;
 };
 
 type SplittingMode = {
@@ -995,12 +1037,28 @@ export const generateMultiSchemaModule = (
   for (const [name, document] of schemas.entries()) {
     const schema = createSchemaIndex(document);
 
-    // Collect type names
-    const objectTypeNames = collectObjectTypeNames(schema);
-    const enumTypeNames = collectEnumTypeNames(schema);
-    const inputTypeNames = collectInputTypeNames(schema);
-    const unionTypeNames = collectUnionTypeNames(schema);
-    const customScalarNames = collectScalarNames(schema).filter((n) => !builtinScalarTypes.has(n));
+    // Build type filter for this schema
+    const typeFilterConfig = options?.typeFilters?.get(name);
+    const typeFilter = compileTypeFilter(typeFilterConfig);
+
+    // Collect all type names for exclusion set building
+    const allTypeNames = new Map<TypeCategory, readonly string[]>([
+      ["object", Array.from(schema.objects.keys()).filter((n) => !n.startsWith("__"))],
+      ["input", Array.from(schema.inputs.keys()).filter((n) => !n.startsWith("__"))],
+      ["enum", Array.from(schema.enums.keys()).filter((n) => !n.startsWith("__"))],
+      ["union", Array.from(schema.unions.keys()).filter((n) => !n.startsWith("__"))],
+      ["scalar", Array.from(schema.scalars.keys()).filter((n) => !n.startsWith("__"))],
+    ]);
+
+    // Build exclusion set
+    const excluded = buildExclusionSet(typeFilter, allTypeNames);
+
+    // Collect type names (filtered)
+    const objectTypeNames = collectObjectTypeNames(schema).filter((n) => !excluded.has(n));
+    const enumTypeNames = collectEnumTypeNames(schema).filter((n) => !excluded.has(n));
+    const inputTypeNames = collectInputTypeNames(schema).filter((n) => !excluded.has(n));
+    const unionTypeNames = collectUnionTypeNames(schema).filter((n) => !excluded.has(n));
+    const customScalarNames = collectScalarNames(schema).filter((n) => !builtinScalarTypes.has(n) && !excluded.has(n));
 
     // Generate individual variable declarations (granular pattern)
     const scalarVars: string[] = [];
@@ -1035,7 +1093,7 @@ export const generateMultiSchemaModule = (
     for (const inputName of inputTypeNames) {
       const record = schema.inputs.get(inputName);
       if (record) {
-        inputVars.push(renderInputVar(name, schema, record));
+        inputVars.push(renderInputVar(name, schema, record, excluded));
       }
     }
 
@@ -1044,7 +1102,7 @@ export const generateMultiSchemaModule = (
     for (const objectName of objectTypeNames) {
       const record = schema.objects.get(objectName);
       if (record) {
-        objectVars.push(renderObjectVar(name, schema, record, typenameMode));
+        objectVars.push(renderObjectVar(name, schema, record, excluded, typenameMode));
       }
     }
 
@@ -1052,7 +1110,7 @@ export const generateMultiSchemaModule = (
     for (const unionName of unionTypeNames) {
       const record = schema.unions.get(unionName);
       if (record) {
-        unionVars.push(renderUnionVar(name, record));
+        unionVars.push(renderUnionVar(name, record, excluded));
       }
     }
 
@@ -1060,8 +1118,8 @@ export const generateMultiSchemaModule = (
     const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
 
     const factoryVar = `createMethod_${name}`;
-    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
-    const directiveMethodsBlock = renderDirectiveMethods(schema);
+    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
+    const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
     // Pass adapter type name if injection has adapter for this schema
     const adapterTypeName = options?.injection?.get(name)?.adapterImportPath ? `Adapter_${name}` : undefined;
     const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name, adapterTypeName);
