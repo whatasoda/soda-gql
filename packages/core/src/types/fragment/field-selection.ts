@@ -35,8 +35,8 @@ export type AnyNestedObject = { readonly [alias: string]: AnyFieldSelection };
 
 /** Nested selection supporting shorthand syntax. */
 export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
-/** Nested selection produced when resolving a union field. */
-export type AnyNestedUnion = { readonly [typeName: string]: AnyNestedObject | undefined };
+/** Nested selection produced when resolving a union field. Supports shorthand syntax. */
+export type AnyNestedUnion = { readonly [typeName: string]: AnyNestedObjectExtended | undefined };
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
@@ -105,7 +105,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
           {
             [TTypename in keyof TNested]: undefined extends TNested[TTypename]
               ? never
-              : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
+              : InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), NonNullable<TNested[TTypename]> & AnyFieldsExtended>;
           }[keyof TNested],
           TSpecifier["modifier"]
         >

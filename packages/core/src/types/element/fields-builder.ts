@@ -9,7 +9,6 @@ import type {
   AnyAssignableInput,
   AnyFieldSelection,
   AnyFieldsExtended,
-  AnyNestedObject,
   AnyNestedUnion,
   DeclaredVariables,
   FieldSelectionTemplateOf,
@@ -78,6 +77,7 @@ export type NestedObjectFieldsBuilderTools<
 
 /**
  * Builder for union type selections with per-member field definitions.
+ * Supports shorthand syntax (`id: true`) within each member's field builder.
  */
 export type NestedUnionFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
@@ -87,7 +87,7 @@ export type NestedUnionFieldsBuilder<
   [TTypename in keyof TUnionFields & TMemberName]?: NestedObjectFieldsBuilder<
     TSchema,
     TTypename,
-    NonNullable<TUnionFields[TTypename]>
+    NonNullable<TUnionFields[TTypename]> & AnyFieldsExtended
   >;
 };
 

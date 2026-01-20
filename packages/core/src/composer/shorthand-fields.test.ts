@@ -36,6 +36,11 @@ const schema = {
         },
       }),
       users: unsafeOutputType.object("User:![]!", {}),
+      search: unsafeOutputType.union("SearchResult:![]!", {
+        arguments: {
+          query: unsafeInputType.scalar("String:!", {}),
+        },
+      }),
     }),
     Mutation: define("Mutation").object({
       createUser: unsafeOutputType.object("User:!", {
@@ -65,8 +70,25 @@ const schema = {
       width: unsafeOutputType.scalar("Int:!", {}),
       height: unsafeOutputType.scalar("Int:!", {}),
     }),
+    Article: define("Article").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+      author: unsafeOutputType.scalar("String:!", {}),
+      publishedAt: unsafeOutputType.scalar("String:?", {}),
+    }),
+    Video: define("Video").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+      duration: unsafeOutputType.scalar("Int:!", {}),
+      thumbnailUrl: unsafeOutputType.scalar("String:?", {}),
+    }),
   },
-  union: {},
+  union: {
+    SearchResult: define("SearchResult").union({
+      Article: true,
+      Video: true,
+    }),
+  },
 } satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema & { _?: never };
@@ -339,6 +361,114 @@ describe("Shorthand Field Selection", () => {
       expect(printed).toContain("createUser");
       expect(printed).toContain("id");
       expect(printed).toContain("isActive");
+    });
+  });
+
+  describe("shorthand in union inline fragments", () => {
+    it("accepts shorthand for scalar fields in union members", () => {
+      const searchQuery = gql(({ query, $var }) =>
+        query.operation({
+          name: "SearchContent",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              Article: () => ({
+                id: true,
+                title: true,
+                author: true,
+              }),
+              Video: () => ({
+                id: true,
+                title: true,
+                duration: true,
+              }),
+            }),
+          }),
+        }),
+      );
+
+      const printed = print(searchQuery.document);
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("id");
+      expect(printed).toContain("title");
+      expect(printed).toContain("author");
+      expect(printed).toContain("duration");
+    });
+
+    it("accepts mixed shorthand and factory syntax in union members", () => {
+      const searchQuery = gql(({ query, $var }) =>
+        query.operation({
+          name: "SearchMixed",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              Article: ({ f }) => ({
+                id: true,
+                ...f.title(),
+                author: true,
+              }),
+              Video: ({ f }) => ({
+                ...f.id(),
+                title: true,
+                ...f.duration(),
+              }),
+            }),
+          }),
+        }),
+      );
+
+      const printed = print(searchQuery.document);
+      expect(printed).toContain("id");
+      expect(printed).toContain("title");
+      expect(printed).toContain("author");
+      expect(printed).toContain("duration");
+    });
+
+    it("generates correct GraphQL for union with shorthand", () => {
+      const searchQuery = gql(({ query, $var }) =>
+        query.operation({
+          name: "SearchVerify",
+          variables: { ...$var("q").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.q })({
+              Article: () => ({
+                id: true,
+                title: true,
+              }),
+            }),
+          }),
+        }),
+      );
+
+      const printed = print(searchQuery.document);
+      expect(printed).toMatch(/query SearchVerify\(\$q: String!\)/);
+      expect(printed).toMatch(/search\(query: \$q\)/);
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("id");
+      expect(printed).toContain("title");
+    });
+
+    it("handles partial union member selection with shorthand", () => {
+      const searchQuery = gql(({ query, $var }) =>
+        query.operation({
+          name: "SearchPartial",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              Article: () => ({
+                id: true,
+                title: true,
+              }),
+              // Video member is not selected
+            }),
+          }),
+        }),
+      );
+
+      const printed = print(searchQuery.document);
+      expect(printed).toContain("... on Article");
+      expect(printed).not.toContain("... on Video");
     });
   });
 });
