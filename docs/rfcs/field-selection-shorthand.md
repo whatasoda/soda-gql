@@ -38,14 +38,23 @@ fields: ({ f }) => ({
 
 ### Scope
 
+This RFC introduces shorthand syntax for simple scalar and enum field selections.
+
+#### Shorthand Supported
+
 | Feature | Syntax |
 |---------|--------|
-| Scalar fields (no args) | `id: true` (shorthand) |
-| Enum fields (no args) | `status: true` (shorthand) |
-| Scalar/Enum with args | **Factory only** - `...f.formattedDate({ format: "..." })` |
-| Scalar/Enum with directives | **Factory only** - `...f.email(null, { directives: [...] })` |
-| Object fields | **Factory only** - `...f.profile()(...)` |
-| Union fields | **Factory only** - `...f.media()(...)` |
+| Scalar fields (no args) | `id: true` |
+| Enum fields (no args) | `status: true` |
+
+#### Factory Required (No Change)
+
+| Feature | Syntax |
+|---------|--------|
+| Scalar/Enum with args | `...f.formattedDate({ format: "..." })` |
+| Scalar/Enum with directives | `...f.email(null, { directives: [...] })` |
+| Object fields | `...f.profile()(...)` |
+| Union fields | `...f.media()(...)` |
 
 ### Key Design Choices
 
