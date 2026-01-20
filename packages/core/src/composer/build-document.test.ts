@@ -1214,3 +1214,177 @@ describe("Directive enum argument handling", () => {
     expect(printed).not.toContain('scope: "PRIVATE"');
   });
 });
+
+describe("Object __typename injection with always mode", () => {
+  const schemaWithAlwaysMode = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {
+      ID: { name: "ID", $type: { input: "", output: "" } },
+      String: { name: "String", $type: { input: "", output: "" } },
+    },
+    enum: {},
+    input: {},
+    object: {
+      Query: { name: "Query", fields: {} },
+      User: { name: "User", fields: {} },
+      Post: { name: "Post", fields: {} },
+    },
+    union: {},
+    __typenameMode: "always" as const,
+  } as unknown as AnyGraphqlSchema;
+
+  const schemaWithUnionOnlyMode = {
+    ...schemaWithAlwaysMode,
+    __typenameMode: "union-only" as const,
+  } as unknown as AnyGraphqlSchema;
+
+  it("injects __typename at beginning of object selection in always mode", () => {
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const, arguments: {} },
+        args: {},
+        directives: [],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+          name: {
+            parent: "User",
+            field: "name",
+            type: { kind: "scalar" as const, name: "String", modifier: "?" as const, arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithAlwaysMode,
+    });
+
+    const printed = print(doc);
+
+    // __typename should be present in the selection
+    expect(printed).toContain("__typename");
+
+    // __typename should be at the beginning of the object selection
+    const userMatch = printed.match(/user \{([^}]+)\}/);
+    expect(userMatch).not.toBeNull();
+    expect(userMatch?.[1]?.trim().startsWith("__typename")).toBe(true);
+  });
+
+  it("does not inject __typename for objects in union-only mode", () => {
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const, arguments: {} },
+        args: {},
+        directives: [],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUser",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithUnionOnlyMode,
+    });
+
+    const printed = print(doc);
+
+    // __typename should NOT be present in object selections for union-only mode
+    expect(printed).not.toContain("__typename");
+  });
+
+  it("injects __typename in nested object selections in always mode", () => {
+    const fields = {
+      user: {
+        parent: "Query",
+        field: "user",
+        type: { kind: "object" as const, name: "User", modifier: "?" as const, arguments: {} },
+        args: {},
+        directives: [],
+        object: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+          posts: {
+            parent: "User",
+            field: "posts",
+            type: { kind: "object" as const, name: "Post", modifier: "![]!" as const, arguments: {} },
+            args: {},
+            directives: [],
+            object: {
+              title: {
+                parent: "Post",
+                field: "title",
+                type: { kind: "scalar" as const, name: "String", modifier: "!" as const, arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+            },
+            union: null,
+          },
+        },
+        union: null,
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUserWithPosts",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithAlwaysMode,
+    });
+
+    const printed = print(doc);
+
+    // Count __typename occurrences - should be 2 (user and posts)
+    const typenameCount = (printed.match(/__typename/g) || []).length;
+    expect(typenameCount).toBe(2);
+
+    // Verify __typename is at the beginning of each object selection
+    const userMatch = printed.match(/user \{([^}]+posts)/);
+    expect(userMatch?.[1]?.trim().startsWith("__typename")).toBe(true);
+  });
+});

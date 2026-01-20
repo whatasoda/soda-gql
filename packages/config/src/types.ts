@@ -27,11 +27,10 @@ export type SchemaInput = string | readonly string[] | (() => readonly string[])
 
 /**
  * Controls automatic __typename field insertion.
- * - 'always': Insert __typename in all object selections and include in types
+ * - 'always': Insert __typename in all object selections (for cache normalization)
  * - 'union-only': Insert __typename only in union member selections (default)
- * - 'never': Never auto-insert __typename
  */
-export type TypenameMode = "always" | "union-only" | "never";
+export type TypenameMode = "always" | "union-only";
 
 // Schema configuration for codegen
 export type SchemaConfig = {

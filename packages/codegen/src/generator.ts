@@ -474,12 +474,7 @@ const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRe
   return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderObjectVar = (
-  schemaName: string,
-  schema: SchemaIndex,
-  record: ObjectRecord,
-  typenameMode?: TypenameMode,
-): string => {
+const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord, typenameMode?: TypenameMode): string => {
   const fields = renderObjectFields(schema, record.fields, { typenameMode, objectName: record.name });
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
@@ -627,7 +622,7 @@ type RuntimeTemplateInjection =
       readonly injectsModulePath: string;
     };
 
-export type TypenameMode = "always" | "union-only" | "never";
+export type TypenameMode = "always" | "union-only";
 
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
@@ -832,9 +827,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
 
     // Generate __typenameMode block if not union-only (the default)
     const typenameModeBlock =
-      config.typenameMode && config.typenameMode !== "union-only"
-        ? `\n  __typenameMode: "${config.typenameMode}",`
-        : "";
+      config.typenameMode && config.typenameMode !== "union-only" ? `\n  __typenameMode: "${config.typenameMode}",` : "";
 
     // Always in split mode
     const isSplitMode = true;

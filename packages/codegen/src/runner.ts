@@ -125,7 +125,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
   // Build defaultInputDepth, inputDepthOverrides, and typenameMode config for each schema
   const defaultInputDepthConfig = new Map<string, number>();
   const inputDepthOverridesConfig = new Map<string, Readonly<Record<string, number>>>();
-  const typenameModeConfig = new Map<string, "always" | "union-only" | "never">();
+  const typenameModeConfig = new Map<string, "always" | "union-only">();
 
   for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
     if (schemaConfig.defaultInputDepth !== undefined && schemaConfig.defaultInputDepth !== 3) {

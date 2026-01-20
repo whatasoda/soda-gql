@@ -941,3 +941,124 @@ describe("TypeFormatters", () => {
     });
   });
 });
+
+describe("Object __typename calculation with always mode", () => {
+  const schemaWithAlwaysMode: AnyGraphqlSchema = {
+    ...mockSchema,
+    __typenameMode: "always",
+  };
+
+  const schemaWithUnionOnlyMode: AnyGraphqlSchema = {
+    ...mockSchema,
+    __typenameMode: "union-only",
+  };
+
+  test("calculateFieldType includes __typename for object in always mode", () => {
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "user",
+      type: { kind: "object", name: "User", modifier: "!", arguments: {} },
+      args: {},
+      directives: [],
+      object: {
+        id: {
+          parent: "User",
+          field: "id",
+          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        },
+        name: {
+          parent: "User",
+          field: "name",
+          type: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        },
+      },
+      union: null,
+    };
+
+    const result = calculateFieldType(schemaWithAlwaysMode, selection);
+
+    // __typename should be at the beginning
+    expect(result).toContain('readonly __typename: "User"');
+    expect(result).toMatch(/^\{ readonly __typename: "User"/);
+  });
+
+  test("calculateFieldType does not include __typename for object in union-only mode", () => {
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "user",
+      type: { kind: "object", name: "User", modifier: "!", arguments: {} },
+      args: {},
+      directives: [],
+      object: {
+        id: {
+          parent: "User",
+          field: "id",
+          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        },
+      },
+      union: null,
+    };
+
+    const result = calculateFieldType(schemaWithUnionOnlyMode, selection);
+
+    // __typename should NOT be present for union-only mode
+    expect(result).not.toContain("__typename");
+  });
+
+  test("calculateFieldType handles empty object with __typename in always mode", () => {
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "user",
+      type: { kind: "object", name: "User", modifier: "!", arguments: {} },
+      args: {},
+      directives: [],
+      object: {},
+      union: null,
+    };
+
+    const result = calculateFieldType(schemaWithAlwaysMode, selection);
+
+    // Even empty object should have __typename
+    expect(result).toBe('{ readonly __typename: "User" }');
+  });
+
+  test("calculateFieldType handles nullable object with __typename in always mode", () => {
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "user",
+      type: { kind: "object", name: "User", modifier: "?", arguments: {} },
+      args: {},
+      directives: [],
+      object: {
+        id: {
+          parent: "User",
+          field: "id",
+          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          args: {},
+          directives: [],
+          object: null,
+          union: null,
+        },
+      },
+      union: null,
+    };
+
+    const result = calculateFieldType(schemaWithAlwaysMode, selection);
+
+    // Should have nullable wrapper and __typename
+    expect(result).toContain("| null | undefined");
+    expect(result).toContain('readonly __typename: "User"');
+  });
+});

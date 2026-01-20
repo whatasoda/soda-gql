@@ -1,5 +1,5 @@
-import type { Result } from "neverthrow";
 import type { TypenameMode } from "@soda-gql/config";
+import type { Result } from "neverthrow";
 
 export type CodegenFormat = "json" | "human";
 

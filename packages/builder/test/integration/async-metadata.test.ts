@@ -27,7 +27,8 @@ const createTestConfig = (workspaceRoot: string): ResolvedSodaGqlConfig => ({
       schema: [path.join(workspaceRoot, "schema.graphql")],
       inject: { scalars: path.join(workspaceRoot, "graphql-inject.ts") },
       defaultInputDepth: 3,
-      inputDepthOverrides: {}, typenameMode: "union-only",
+      inputDepthOverrides: {},
+      typenameMode: "union-only",
     },
   },
   styles: {

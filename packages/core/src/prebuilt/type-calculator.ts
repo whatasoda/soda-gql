@@ -260,6 +260,28 @@ const generateInputFieldType = (
 };
 
 /**
+ * Insert a field definition at the beginning of an object type string.
+ *
+ * @param objectType - Type string like "{ readonly field: Type }" or "{}"
+ * @param fieldDef - Field definition to insert (e.g., 'readonly __typename: "User"')
+ * @returns Modified type string with field inserted at the beginning
+ */
+const insertFieldIntoObjectType = (objectType: string, fieldDef: string): string => {
+  if (objectType === "{}") {
+    return `{ ${fieldDef} }`;
+  }
+
+  // Validate expected format: starts with "{ "
+  if (!objectType.startsWith("{ ")) {
+    // Unexpected format: use intersection as fallback
+    return `{ ${fieldDef} } & ${objectType}`;
+  }
+
+  // Insert field after "{ " and before existing content
+  return `{ ${fieldDef}; ${objectType.slice(2)}`;
+};
+
+/**
  * Calculate the TypeScript type string for a single field selection.
  *
  * @param schema - The GraphQL schema
@@ -275,7 +297,13 @@ export const calculateFieldType = (
 
   // Handle object types (nested selection)
   if (type.kind === "object" && selection.object) {
-    const nestedType = calculateFieldsType(schema, selection.object, formatters);
+    let nestedType = calculateFieldsType(schema, selection.object, formatters);
+
+    // Inject __typename for "always" mode (for cache normalization)
+    if (schema.__typenameMode === "always") {
+      nestedType = insertFieldIntoObjectType(nestedType, `readonly __typename: "${type.name}"`);
+    }
+
     return applyTypeModifier(nestedType, type.modifier);
   }
 
@@ -318,10 +346,7 @@ const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, for
     if (fields) {
       const memberType = calculateFieldsType(schema, fields, formatters);
       // Inject __typename as the first field for each union member
-      const withTypename =
-        memberType === "{}"
-          ? `{ readonly __typename: "${typeName}" }`
-          : `{ readonly __typename: "${typeName}"; ${memberType.slice(2)}`;
+      const withTypename = insertFieldIntoObjectType(memberType, `readonly __typename: "${typeName}"`);
       memberTypes.push(withTypename);
     }
   }
