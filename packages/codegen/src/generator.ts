@@ -448,10 +448,25 @@ const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; inden
   return ["{", `${indent}${entries.join(`,\n${indent}`)},`, `${lastIndent}}`].join(`\n`);
 };
 
-const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>, excluded: Set<string>): string => {
-  const entries = Array.from(fields.values())
-    .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, excluded)}`);
+const renderObjectFields = (
+  schema: SchemaIndex,
+  fields: Map<string, FieldDefinitionNode>,
+  excluded: Set<string>,
+  options?: { readonly typenameMode?: TypenameMode; readonly objectName?: string },
+): string => {
+  const entries: string[] = [];
+
+  // Add __typename field when typenameMode is "always"
+  if (options?.typenameMode === "always" && options.objectName) {
+    entries.push(`__typename: { kind: "typename", name: "${options.objectName}", modifier: "!", arguments: {} }`);
+  }
+
+  // Add regular fields
+  entries.push(
+    ...Array.from(fields.values())
+      .sort((left, right) => left.name.value.localeCompare(right.name.value))
+      .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, excluded)}`),
+  );
 
   return renderPropertyLines({ entries, indentSize: 6 });
 };
@@ -484,8 +499,14 @@ const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRe
   return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord, excluded: Set<string>): string => {
-  const fields = renderObjectFields(schema, record.fields, excluded);
+const renderObjectVar = (
+  schemaName: string,
+  schema: SchemaIndex,
+  record: ObjectRecord,
+  excluded: Set<string>,
+  typenameMode?: TypenameMode,
+): string => {
+  const fields = renderObjectFields(schema, record.fields, excluded, { typenameMode, objectName: record.name });
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
@@ -642,10 +663,13 @@ type RuntimeTemplateInjection =
       readonly injectsModulePath: string;
     };
 
+export type TypenameMode = "always" | "union-only";
+
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
   readonly defaultInputDepth?: Map<string, number>;
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
+  readonly typenameMode?: Map<string, TypenameMode>;
   readonly chunkSize?: number;
   readonly typeFilters?: Map<string, TypeFilterConfig>;
 };
@@ -683,6 +707,7 @@ type MultiRuntimeTemplateOptions = {
       readonly fragmentBuildersTypeBlock: string;
       readonly defaultInputDepth?: number;
       readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+      readonly typenameMode?: TypenameMode;
     }
   >;
   readonly injection: RuntimeTemplateInjection;
@@ -842,6 +867,10 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
         : "";
 
+    // Generate __typenameMode block if not union-only (the default)
+    const typenameModeBlock =
+      config.typenameMode && config.typenameMode !== "union-only" ? `\n  __typenameMode: "${config.typenameMode}",` : "";
+
     // Always in split mode
     const isSplitMode = true;
 
@@ -928,7 +957,7 @@ const ${schemaVar} = {
   enum: enum_${name},
   input: input_${name},
   object: object_${name},
-  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
+  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}${typenameModeBlock}
 } as const;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
@@ -1069,10 +1098,11 @@ export const generateMultiSchemaModule = (
     }
 
     // Objects
+    const typenameMode = options?.typenameMode?.get(name);
     for (const objectName of objectTypeNames) {
       const record = schema.objects.get(objectName);
       if (record) {
-        objectVars.push(renderObjectVar(name, schema, record, excluded));
+        objectVars.push(renderObjectVar(name, schema, record, excluded, typenameMode));
       }
     }
 
@@ -1119,6 +1149,7 @@ export const generateMultiSchemaModule = (
       fragmentBuildersTypeBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),
+      typenameMode: options?.typenameMode?.get(name),
     };
 
     // Accumulate stats

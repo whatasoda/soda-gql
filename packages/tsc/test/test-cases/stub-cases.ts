@@ -82,6 +82,7 @@ const createStubTestConfig = (options: {
       },
       defaultInputDepth: 3,
       inputDepthOverrides: {},
+      typenameMode: "union-only",
     },
   },
   styles: { importExtension: false },

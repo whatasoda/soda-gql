@@ -85,6 +85,7 @@ describe("types.ts", () => {
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       styles: {
@@ -113,6 +114,7 @@ describe("types.ts", () => {
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       styles: {

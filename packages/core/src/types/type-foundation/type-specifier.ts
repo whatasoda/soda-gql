@@ -33,9 +33,9 @@ export type InputEnumSpecifier = AbstractInputTypeSpecifier<"enum">;
 export type InputInputObjectSpecifier = AbstractInputTypeSpecifier<"input">;
 export type InputExcludedSpecifier = AbstractInputTypeSpecifier<"excluded">;
 
-type AbstractOutputTypeSpecifier<TKind extends OutputTypeKind> = {
+type AbstractOutputTypeSpecifier<TKind extends OutputTypeKind, TName extends string = string> = {
   readonly kind: TKind;
-  readonly name: string;
+  readonly name: TName;
   readonly modifier: TypeModifier;
   readonly arguments: InputTypeSpecifiers;
 };
@@ -50,7 +50,7 @@ export type OutputTypeSpecifier =
 export type OutputInferrableTypeSpecifier = OutputScalarSpecifier | OutputEnumSpecifier | OutputTypenameSpecifier;
 export type OutputScalarSpecifier = AbstractOutputTypeSpecifier<"scalar">;
 export type OutputEnumSpecifier = AbstractOutputTypeSpecifier<"enum">;
-export type OutputObjectSpecifier = AbstractOutputTypeSpecifier<"object">;
-export type OutputUnionSpecifier = AbstractOutputTypeSpecifier<"union">;
-export type OutputTypenameSpecifier = AbstractOutputTypeSpecifier<"typename">;
+export type OutputObjectSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"object", TName>;
+export type OutputUnionSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"union", TName>;
+export type OutputTypenameSpecifier<TName extends string = string> = AbstractOutputTypeSpecifier<"typename", TName>;
 export type OutputExcludedSpecifier = AbstractOutputTypeSpecifier<"excluded">;

@@ -148,6 +148,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
         inject: { scalars: scalarsPath },
         defaultInputDepth: 3,
         inputDepthOverrides: {},
+        typenameMode: "union-only",
       },
     },
     styles: { importExtension: false },

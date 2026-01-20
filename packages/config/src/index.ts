@@ -11,6 +11,7 @@ export type {
   ArtifactConfig,
   PluginConfig,
   ResolvedArtifactConfig,
+  ResolvedSchemaConfig,
   ResolvedSodaGqlConfig,
   ResolvedTsconfigPaths,
   SchemaConfig,
@@ -18,4 +19,5 @@ export type {
   TypeCategory,
   TypeFilterConfig,
   TypeFilterRule,
+  TypenameMode,
 } from "./types";

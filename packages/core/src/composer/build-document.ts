@@ -227,28 +227,39 @@ const buildDirectives = (
     });
 };
 
+/** Create a __typename field node for GraphQL AST */
+const createTypenameFieldNode = (): FieldNode => ({
+  kind: Kind.FIELD,
+  name: { kind: Kind.NAME, value: "__typename" },
+});
+
 const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): InlineFragmentNode[] =>
   Object.entries(union)
     .map(([typeName, object]): InlineFragmentNode | null => {
-      return object
-        ? {
-            kind: Kind.INLINE_FRAGMENT,
-            typeCondition: {
-              kind: Kind.NAMED_TYPE,
-              name: { kind: Kind.NAME, value: typeName },
-            },
-            selectionSet: {
-              kind: Kind.SELECTION_SET,
-              selections: buildField(object, schema),
-            },
-          }
-        : null;
+      if (!object) return null;
+
+      return {
+        kind: Kind.INLINE_FRAGMENT,
+        typeCondition: {
+          kind: Kind.NAMED_TYPE,
+          name: { kind: Kind.NAME, value: typeName },
+        },
+        selectionSet: {
+          kind: Kind.SELECTION_SET,
+          // Auto-inject __typename field at the beginning of each union member's selection
+          selections: [createTypenameFieldNode(), ...buildField(object, schema)],
+        },
+      };
     })
     .filter((item) => item !== null);
 
 const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
   Object.entries(field).map(([alias, { args, field, object, union, directives, type }]): FieldNode => {
     const builtDirectives = buildDirectives(directives, "FIELD", schema);
+
+    // Inject __typename for object selections in "always" mode (for cache normalization)
+    const shouldInjectTypename = schema.__typenameMode === "always" && object !== null;
+
     return {
       kind: Kind.FIELD,
       name: { kind: Kind.NAME, value: field },
@@ -258,7 +269,7 @@ const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
       selectionSet: object
         ? {
             kind: Kind.SELECTION_SET,
-            selections: buildField(object, schema),
+            selections: [...(shouldInjectTypename ? [createTypenameFieldNode()] : []), ...buildField(object, schema)],
           }
         : union
           ? {

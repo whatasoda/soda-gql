@@ -114,6 +114,7 @@ export const HelloQuery = gql.default(({ query }) =>
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       outPath,
@@ -138,6 +139,7 @@ export const HelloQuery = gql.default(({ query }) =>
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       styles: {
@@ -231,6 +233,7 @@ export const HelloFragment = gql.default(({ fragment }) =>
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       outPath,
@@ -255,6 +258,7 @@ export const HelloFragment = gql.default(({ fragment }) =>
           inject: { scalars: path.join(workspaceRoot, "inject.ts") },
           defaultInputDepth: 3,
           inputDepthOverrides: {},
+          typenameMode: "union-only",
         },
       },
       styles: {

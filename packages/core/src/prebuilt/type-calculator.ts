@@ -260,6 +260,27 @@ const generateInputFieldType = (
 };
 
 /**
+ * Insert a field definition at the beginning of an object type string.
+ *
+ * @param objectType - Type string like "{ readonly field: Type }" or "{}"
+ * @param fieldDef - Field definition to insert (e.g., 'readonly __typename: "User"')
+ * @returns Modified type string with field inserted at the beginning
+ */
+const insertFieldIntoObjectType = (objectType: string, fieldDef: string): string => {
+  if (objectType === "{}") {
+    return `{ ${fieldDef} }`;
+  }
+
+  // Validate expected format: starts with "{ "
+  if (!objectType.startsWith("{ ")) {
+    throw new Error(`Unexpected object type format: ${objectType}`);
+  }
+
+  // Insert field after "{ " and before existing content
+  return `{ ${fieldDef}; ${objectType.slice(2)}`;
+};
+
+/**
  * Calculate the TypeScript type string for a single field selection.
  *
  * @param schema - The GraphQL schema
@@ -275,7 +296,13 @@ export const calculateFieldType = (
 
   // Handle object types (nested selection)
   if (type.kind === "object" && selection.object) {
-    const nestedType = calculateFieldsType(schema, selection.object, formatters);
+    let nestedType = calculateFieldsType(schema, selection.object, formatters);
+
+    // Inject __typename for "always" mode (for cache normalization)
+    if (schema.__typenameMode === "always") {
+      nestedType = insertFieldIntoObjectType(nestedType, `readonly __typename: "${type.name}"`);
+    }
+
     return applyTypeModifier(nestedType, type.modifier);
   }
 
@@ -309,14 +336,17 @@ export const calculateFieldType = (
 
 /**
  * Calculate the TypeScript type string for a union type selection.
+ * Each union member includes __typename as a string literal type.
  */
 const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, formatters?: TypeFormatters): string => {
   const memberTypes: string[] = [];
 
-  for (const [_typeName, fields] of Object.entries(union)) {
+  for (const [typeName, fields] of Object.entries(union)) {
     if (fields) {
       const memberType = calculateFieldsType(schema, fields, formatters);
-      memberTypes.push(memberType);
+      // Inject __typename as the first field for each union member
+      const withTypename = insertFieldIntoObjectType(memberType, `readonly __typename: "${typeName}"`);
+      memberTypes.push(withTypename);
     }
   }
 
