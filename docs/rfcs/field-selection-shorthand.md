@@ -93,6 +93,10 @@ fields: ({ f, $ }) => ({
 
   // Alias requires factory syntax
   ...f.id(null, { alias: "uniqueId" }),  // spreads as { ":uniqueId": {...} }
+
+  // Alias with arguments - requires factory syntax
+  ...f.formattedDate({ format: "YYYY-MM-DD" }, { alias: "dateFormatted" }),
+  // ↑ spreads as { ":dateFormatted": {...} }
 })
 ```
 
@@ -100,18 +104,23 @@ fields: ({ f, $ }) => ({
 - Shorthand values (`true`, `{ args }`, `{ directives }`) use plain keys: `id`, `name`, etc.
 - Factory returns use `:` prefixed keys: `":id"`, `":profile"`, etc.
 
+**Note**: Empty object `{}` is not valid shorthand. Use `true` for simple selections:
+- ✅ `id: true`
+- ❌ `id: {}`
+
 ### Type Definitions
 
 #### New Types (`types/fragment/field-selection.ts`)
 
 ```typescript
 /**
- * Object notation for scalar/enum with args or directives
+ * Object notation for scalar/enum with args or directives.
+ * At least one of args or directives must be specified.
+ * Use `true` for simple field selection without args or directives.
  */
-export type ScalarShorthandObject<TArgs extends AnyAssignableInput = AnyAssignableInput> = {
-  readonly args?: TArgs;
-  readonly directives?: AnyDirectiveRef[];
-};
+export type ScalarShorthandObject<TArgs extends AnyAssignableInput = AnyAssignableInput> =
+  | { readonly args: TArgs; readonly directives?: AnyDirectiveRef[] }
+  | { readonly args?: TArgs; readonly directives: AnyDirectiveRef[] };
 
 /**
  * Shorthand values: true or object notation
@@ -127,7 +136,7 @@ export type AnyFieldValue = AnyFieldSelection | ScalarShorthand;
 
 /**
  * Extended field map supporting both shorthand and factory syntax
- * - Plain keys (e.g., "id"): Shorthand values (true | { args?, directives? })
+ * - Plain keys (e.g., "id"): Shorthand values (true | { args } | { directives } | { args, directives })
  * - Colon-prefixed keys (e.g., ":id"): Factory returns (AnyFieldSelection)
  */
 export type AnyFieldsExtended = {
@@ -150,6 +159,12 @@ export const wrapByKey = <K extends string, V>(key: K, value: V) =>
 
 ```typescript
 /**
+ * Strip colon prefix from factory keys for output type mapping.
+ * Factory keys like ":id" become "id" in the output type.
+ */
+type StripColonPrefix<K extends string> = K extends `:${infer R}` ? R : K;
+
+/**
  * Infer fields with shorthand support
  */
 export type InferFieldsExtended<
@@ -158,7 +173,7 @@ export type InferFieldsExtended<
   TFields extends AnyFieldsExtended,
 > = {
   [_ in TSchema["label"]]: {
-    [K in keyof TFields]: InferFieldValue<TSchema, TTypeName, K, TFields[K]>;
+    [K in keyof TFields as StripColonPrefix<K & string>]: InferFieldValue<TSchema, TTypeName, K & string, TFields[K]>;
   } & {};
 }[TSchema["label"]];
 
@@ -178,7 +193,7 @@ type InferFieldValue<
     ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"]
       ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
       : never
-  // Object notation: { args?, directives? }
+  // Object notation: { args } | { directives } | { args, directives }
   : TValue extends ScalarShorthandObject
     ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"]
       ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
@@ -270,8 +285,9 @@ const buildField = (
 |-------|-------------|-------|
 | 1 | Update `wrapByKey` to add `:` prefix | `utils/wrap-by-key.ts` |
 | 2 | Add shorthand types | `types/fragment/field-selection.ts` |
-| 3 | Add `InferFieldsExtended` | `types/fragment/field-selection.ts` |
+| 3 | Add `InferFieldsExtended` with `StripColonPrefix` | `types/fragment/field-selection.ts` |
 | 4 | Runtime detection and expansion | `composer/build-document.ts` |
+| 4.1 | Update `buildField` call sites to pass `typeName` | `composer/build-document.ts` |
 | 5 | Extend `FieldsBuilder` types | `types/element/fields-builder.ts` |
 | 6 | Update Fragment/Operation builders | `composer/fragment.ts`, `composer/operation.ts` |
 | 7 | Update formatter for `:` prefix handling | `packages/formatter/src/*.ts` |
@@ -338,7 +354,10 @@ function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
 
 ## Open Questions
 
-None at this time.
+1. **Required arguments validation**: Should the type system enforce that `true` shorthand
+   is only valid for fields without required arguments? Current type definitions check
+   field existence but not argument requirements. Implementation may need additional
+   type constraints to ensure type safety.
 
 ## References
 
