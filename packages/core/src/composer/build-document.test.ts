@@ -956,6 +956,139 @@ describe("Enum value handling", () => {
   });
 });
 
+describe("Union __typename auto-injection", () => {
+  const schemaWithUnion = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {
+      ID: { name: "ID", $type: { input: "", output: "" } },
+      String: { name: "String", $type: { input: "", output: "" } },
+    },
+    enum: {},
+    input: {},
+    object: {
+      Query: { name: "Query", fields: {} },
+      User: { name: "User", fields: {} },
+      Post: { name: "Post", fields: {} },
+    },
+    union: {
+      SearchResult: { name: "SearchResult", types: ["User", "Post"] },
+    },
+  } as unknown as AnyGraphqlSchema;
+
+  it("injects __typename field at the beginning of each union member selection", () => {
+    const fields = {
+      search: {
+        parent: "Query",
+        field: "search",
+        type: { kind: "union" as const, name: "SearchResult", modifier: "![]!" as const, arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: {
+          User: {
+            id: {
+              parent: "User",
+              field: "id",
+              type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+            name: {
+              parent: "User",
+              field: "name",
+              type: { kind: "scalar" as const, name: "String", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+          },
+          Post: {
+            id: {
+              parent: "Post",
+              field: "id",
+              type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+            title: {
+              parent: "Post",
+              field: "title",
+              type: { kind: "scalar" as const, name: "String", modifier: "!" as const, arguments: {} },
+              args: {},
+              directives: [],
+              object: null,
+              union: null,
+            },
+          },
+        },
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "SearchQuery",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithUnion,
+    });
+
+    const printed = print(doc);
+
+    // __typename should be injected in each union member
+    expect(printed).toContain("... on User {");
+    expect(printed).toContain("... on Post {");
+
+    // Check that __typename is present in the output
+    const userMatch = printed.match(/\.\.\. on User \{([^}]+)\}/);
+    const postMatch = printed.match(/\.\.\. on Post \{([^}]+)\}/);
+
+    expect(userMatch).not.toBeNull();
+    expect(postMatch).not.toBeNull();
+
+    // __typename should be the first field in each fragment
+    expect(userMatch![1]).toContain("__typename");
+    expect(postMatch![1]).toContain("__typename");
+  });
+
+  it("includes __typename in empty union member selection", () => {
+    const fields = {
+      search: {
+        parent: "Query",
+        field: "search",
+        type: { kind: "union" as const, name: "SearchResult", modifier: "?" as const, arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: {
+          User: {
+            // Empty selection - only __typename will be present
+          },
+        },
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "SearchQuery",
+      operationType: "query",
+      variables: {},
+      fields: fields as any,
+      schema: schemaWithUnion,
+    });
+
+    const printed = print(doc);
+
+    // Should have __typename even with empty field selection
+    expect(printed).toContain("... on User {");
+    expect(printed).toContain("__typename");
+  });
+});
+
 describe("Directive enum argument handling", () => {
   const schemaWithEnum = {
     label: "test",

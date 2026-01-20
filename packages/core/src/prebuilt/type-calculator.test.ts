@@ -618,6 +618,179 @@ describe("generateInputTypeFromSpecifiers", () => {
   });
 });
 
+describe("Union type __typename calculation", () => {
+  test("calculateFieldType includes __typename in union member types", () => {
+    const schemaWithUnion: AnyGraphqlSchema = {
+      ...mockSchema,
+      union: {
+        SearchResult: {
+          name: "SearchResult",
+          types: { User: true, Post: true },
+        },
+      },
+      object: {
+        ...mockSchema.object,
+        User: { name: "User", fields: {} },
+        Post: { name: "Post", fields: {} },
+      },
+    };
+
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "search",
+      type: { kind: "union", name: "SearchResult", modifier: "!", arguments: {} },
+      args: {},
+      directives: [],
+      object: null,
+      union: {
+        User: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+        Post: {
+          title: {
+            parent: "Post",
+            field: "title",
+            type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+      },
+    };
+
+    const result = calculateFieldType(schemaWithUnion, selection);
+
+    // Each union member should have __typename as the first field
+    expect(result).toContain('readonly __typename: "User"');
+    expect(result).toContain('readonly __typename: "Post"');
+
+    // Full pattern check
+    expect(result).toMatch(/\{ readonly __typename: "User"; readonly id:/);
+    expect(result).toMatch(/\{ readonly __typename: "Post"; readonly title:/);
+  });
+
+  test("calculateFieldType handles empty union member selection with __typename", () => {
+    const schemaWithUnion: AnyGraphqlSchema = {
+      ...mockSchema,
+      union: {
+        SearchResult: {
+          name: "SearchResult",
+          types: { User: true, Post: true },
+        },
+      },
+    };
+
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "search",
+      type: { kind: "union", name: "SearchResult", modifier: "?", arguments: {} },
+      args: {},
+      directives: [],
+      object: null,
+      union: {
+        User: {},
+        Post: {},
+      },
+    };
+
+    const result = calculateFieldType(schemaWithUnion, selection);
+
+    // Even with empty field selection, __typename should be present
+    expect(result).toContain('{ readonly __typename: "User" }');
+    expect(result).toContain('{ readonly __typename: "Post" }');
+  });
+
+  test("calculateFieldType handles nullable union with __typename", () => {
+    const schemaWithUnion: AnyGraphqlSchema = {
+      ...mockSchema,
+      union: {
+        SearchResult: {
+          name: "SearchResult",
+          types: { User: true },
+        },
+      },
+    };
+
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "search",
+      type: { kind: "union", name: "SearchResult", modifier: "?", arguments: {} },
+      args: {},
+      directives: [],
+      object: null,
+      union: {
+        User: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+      },
+    };
+
+    const result = calculateFieldType(schemaWithUnion, selection);
+
+    // Should be wrapped with null | undefined for optional union
+    expect(result).toContain("| null | undefined");
+    expect(result).toContain('readonly __typename: "User"');
+  });
+
+  test("calculateFieldType handles union array with __typename", () => {
+    const schemaWithUnion: AnyGraphqlSchema = {
+      ...mockSchema,
+      union: {
+        SearchResult: {
+          name: "SearchResult",
+          types: { User: true },
+        },
+      },
+    };
+
+    const selection: AnyFieldSelection = {
+      parent: "Query",
+      field: "search",
+      type: { kind: "union", name: "SearchResult", modifier: "![]!", arguments: {} },
+      args: {},
+      directives: [],
+      object: null,
+      union: {
+        User: {
+          id: {
+            parent: "User",
+            field: "id",
+            type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+            args: {},
+            directives: [],
+            object: null,
+            union: null,
+          },
+        },
+      },
+    };
+
+    const result = calculateFieldType(schemaWithUnion, selection);
+
+    // Should be an array type with __typename inside
+    expect(result).toContain("[]");
+    expect(result).toContain('readonly __typename: "User"');
+  });
+});
+
 describe("TypeFormatters", () => {
   describe("with calculateFieldsType", () => {
     test("uses scalarOutput formatter for scalar fields", () => {
