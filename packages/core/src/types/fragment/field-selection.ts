@@ -37,14 +37,18 @@ export type AnyFields = {
   readonly [alias: string]: AnyFieldSelection;
 };
 
-/** Strongly typed field reference produced for concrete schema members. */
+/**
+ * Strongly typed field reference produced for concrete schema members.
+ *
+ * Supports shorthand syntax in nested object selections via AnyNestedObjectExtended.
+ */
 export type AbstractFieldSelection<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
   TSpecifier extends OutputTypeSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
-  TExtras extends { object: AnyNestedObject } | { union: AnyNestedUnion } | { _?: never },
+  TExtras extends { object: AnyNestedObjectExtended } | { union: AnyNestedUnion } | { _?: never },
 > = {
   readonly parent: TTypeName;
   readonly field: TFieldName;
@@ -54,6 +58,9 @@ export type AbstractFieldSelection<
   readonly object: TExtras extends { object: infer TObject } ? TObject : null;
   readonly union: TExtras extends { union: infer TUnion } ? TUnion : null;
 };
+
+/** Nested selection supporting shorthand syntax. */
+export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
 
 /** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldSelectionTemplateOf<
