@@ -10,6 +10,7 @@ import type {
   SchemaInput,
   SodaGqlConfig,
   StylesConfig,
+  TypeFilterConfig,
 } from "./types";
 
 /**
@@ -87,11 +88,18 @@ const SchemaInputSchema: z.ZodType<SchemaInput> = z.union([
   z.custom<() => readonly string[]>((val) => typeof val === "function"),
 ]);
 
+// TypeFilterConfig supports function or object with exclude rules
+// Runtime validation is deferred since functions can't be fully validated at parse time
+const TypeFilterConfigSchema: z.ZodType<TypeFilterConfig | undefined> = z
+  .union([z.custom<TypeFilterConfig>((val) => typeof val === "function" || (val && typeof val === "object")), z.undefined()])
+  .optional();
+
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: SchemaInputSchema,
   inject: InjectConfigSchema,
   defaultInputDepth: z.number().int().positive().max(10).optional(),
   inputDepthOverrides: z.record(z.string(), z.number().int().positive()).optional(),
+  typeFilter: TypeFilterConfigSchema,
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({

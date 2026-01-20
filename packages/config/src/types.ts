@@ -51,7 +51,41 @@ export type SchemaConfig = {
    * @example { user_bool_exp: 5, post_bool_exp: 5 }
    */
   readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+  /**
+   * Filter configuration for excluding types from codegen output.
+   * Useful for excluding unused types like Hasura's `*_stddev_*` input types.
+   *
+   * @example Function-based filter:
+   * ```ts
+   * typeFilter: ({ name, category }) => !name.includes('_stddev_')
+   * ```
+   *
+   * @example Pattern-based filter:
+   * ```ts
+   * typeFilter: {
+   *   exclude: [
+   *     { pattern: '*_stddev_*', category: 'input' },
+   *     { pattern: '*_variance_*', category: 'input' },
+   *   ],
+   * }
+   * ```
+   */
+  readonly typeFilter?: TypeFilterConfig;
 };
+
+// Type filter configuration for excluding types from codegen output
+export type TypeCategory = "object" | "input" | "enum" | "union" | "scalar";
+
+export type TypeFilterRule = {
+  /** Glob pattern to match type names (e.g., "*_stddev_*") */
+  readonly pattern: string;
+  /** Category to filter (defaults to all categories if omitted) */
+  readonly category?: TypeCategory | readonly TypeCategory[];
+};
+
+export type TypeFilterConfig =
+  | ((context: { name: string; category: TypeCategory }) => boolean)
+  | { readonly exclude: readonly TypeFilterRule[] };
 
 // Output styles configuration for codegen
 export type StylesConfig = {
@@ -203,6 +237,7 @@ export type ResolvedSchemaConfig = {
   readonly inject: ResolvedInjectConfig;
   readonly defaultInputDepth: number;
   readonly inputDepthOverrides: Readonly<Record<string, number>>;
+  readonly typeFilter?: TypeFilterConfig;
 };
 
 // Resolved config (normalized and validated)
