@@ -799,4 +799,46 @@ describe("generateMultiSchemaModule", () => {
     );
     expect(orderByInput).toBeDefined();
   });
+
+  test("excludes union members when object type is excluded", () => {
+    const document = parse(`
+      type Query { search: SearchResult }
+      type User { id: ID! }
+      type Post { id: ID! }
+      type InternalType { id: ID! }
+      union SearchResult = User | Post | InternalType
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "InternalType", category: "object" }] }]]),
+    });
+
+    // Union should not include excluded member
+    const unionDef = result.categoryVars?.default?.unions.find((u) => u.name.includes("SearchResult"));
+    expect(unionDef).toBeDefined();
+    const unionCode = unionDef?.code ?? "";
+    expect(unionCode).toContain("User: true");
+    expect(unionCode).toContain("Post: true");
+    expect(unionCode).not.toContain("InternalType");
+  });
+
+  test("excludes variable methods for excluded input types", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input users_stddev_order_by { id: order_by }
+      input users_order_by { id: order_by }
+      enum order_by { asc desc }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "*_stddev_*", category: "input" }] }]]),
+    });
+
+    // Variable methods should not include excluded type
+    expect(result.code).toContain("users_order_by:");
+    expect(result.code).not.toContain("users_stddev_order_by:");
+  });
 });

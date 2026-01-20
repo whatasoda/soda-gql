@@ -489,8 +489,9 @@ const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: Object
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderUnionVar = (schemaName: string, record: UnionRecord): string => {
+const renderUnionVar = (schemaName: string, record: UnionRecord, excluded: Set<string>): string => {
   const memberNames = Array.from(record.members.values())
+    .filter((member) => !excluded.has(member.name.value))
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((member) => member.name.value);
   const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
@@ -540,14 +541,19 @@ const collectDirectiveNames = (schema: SchemaIndex): string[] =>
 const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
   `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
 
-const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string): string => {
+const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, excluded: Set<string>): string => {
   const scalarMethods = Array.from(builtinScalarTypes.keys())
     .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
+    .filter((name) => !excluded.has(name))
     .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
 
-  const enumMethods = collectEnumTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "enum", name));
+  const enumMethods = collectEnumTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "enum", name));
 
-  const inputMethods = collectInputTypeNames(schema).map((name) => renderInputTypeMethod(factoryVar, "input", name));
+  const inputMethods = collectInputTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "input", name));
 
   const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
     const leftName = left.split(":")[0] ?? "";
@@ -1074,7 +1080,7 @@ export const generateMultiSchemaModule = (
     for (const unionName of unionTypeNames) {
       const record = schema.unions.get(unionName);
       if (record) {
-        unionVars.push(renderUnionVar(name, record));
+        unionVars.push(renderUnionVar(name, record, excluded));
       }
     }
 
@@ -1082,7 +1088,7 @@ export const generateMultiSchemaModule = (
     const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
 
     const factoryVar = `createMethod_${name}`;
-    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar);
+    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
     const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
     // Pass adapter type name if injection has adapter for this schema
     const adapterTypeName = options?.injection?.get(name)?.adapterImportPath ? `Adapter_${name}` : undefined;
