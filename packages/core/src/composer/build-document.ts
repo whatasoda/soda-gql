@@ -230,19 +230,25 @@ const buildDirectives = (
 const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): InlineFragmentNode[] =>
   Object.entries(union)
     .map(([typeName, object]): InlineFragmentNode | null => {
-      return object
-        ? {
-            kind: Kind.INLINE_FRAGMENT,
-            typeCondition: {
-              kind: Kind.NAMED_TYPE,
-              name: { kind: Kind.NAME, value: typeName },
-            },
-            selectionSet: {
-              kind: Kind.SELECTION_SET,
-              selections: buildField(object, schema),
-            },
-          }
-        : null;
+      if (!object) return null;
+
+      // Auto-inject __typename field at the beginning of each union member's selection
+      const typenameFieldNode: FieldNode = {
+        kind: Kind.FIELD,
+        name: { kind: Kind.NAME, value: "__typename" },
+      };
+
+      return {
+        kind: Kind.INLINE_FRAGMENT,
+        typeCondition: {
+          kind: Kind.NAMED_TYPE,
+          name: { kind: Kind.NAME, value: typeName },
+        },
+        selectionSet: {
+          kind: Kind.SELECTION_SET,
+          selections: [typenameFieldNode, ...buildField(object, schema)],
+        },
+      };
     })
     .filter((item) => item !== null);
 
