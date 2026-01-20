@@ -8,7 +8,7 @@
  */
 
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
-import type { AnyFieldSelection, AnyFields, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
+import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputDepthOverrides, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
 
@@ -328,16 +328,24 @@ const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, for
 };
 
 /**
+ * Check if a field value is shorthand (true) vs factory return (AnyFieldSelection).
+ */
+const isShorthandValue = (value: AnyFieldValue): value is true => value === true;
+
+/**
  * Calculate the TypeScript type string for a set of field selections.
  * This is the main entry point for type calculation.
  *
  * @param schema - The GraphQL schema
  * @param fields - The field selections to calculate types for
  * @param formatters - Optional formatters for customizing type names
+ *
+ * @note Shorthand syntax (`id: true`) is not yet supported in prebuilt type generation.
+ *       Use factory syntax (`...f.id()`) for fields in fragments/operations that need prebuilt types.
  */
 export const calculateFieldsType = (
   schema: AnyGraphqlSchema,
-  fields: AnyFields | AnyNestedObject,
+  fields: AnyFieldsExtended,
   formatters?: TypeFormatters,
 ): string => {
   const entries = Object.entries(fields);
@@ -346,8 +354,14 @@ export const calculateFieldsType = (
     return "{}";
   }
 
-  const fieldTypes = entries.map(([alias, selection]) => {
-    const fieldType = calculateFieldType(schema, selection, formatters);
+  const fieldTypes = entries.map(([alias, value]) => {
+    if (isShorthandValue(value)) {
+      throw new Error(
+        `Shorthand syntax (${alias}: true) is not yet supported in prebuilt type generation. ` +
+          `Use factory syntax (...f.${alias}()) instead.`,
+      );
+    }
+    const fieldType = calculateFieldType(schema, value, formatters);
     // Use readonly for all fields to match InferFields behavior
     return `readonly ${alias}: ${fieldType}`;
   });
