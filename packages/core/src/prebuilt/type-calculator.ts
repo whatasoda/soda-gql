@@ -273,8 +273,7 @@ const insertFieldIntoObjectType = (objectType: string, fieldDef: string): string
 
   // Validate expected format: starts with "{ "
   if (!objectType.startsWith("{ ")) {
-    // Unexpected format: use intersection as fallback
-    return `{ ${fieldDef} } & ${objectType}`;
+    throw new Error(`Unexpected object type format: ${objectType}`);
   }
 
   // Insert field after "{ " and before existing content
