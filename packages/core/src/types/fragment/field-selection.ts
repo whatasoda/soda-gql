@@ -82,10 +82,16 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
-      type: infer TSpecifier extends OutputObjectSpecifier;
+      type: infer TSpecifier extends OutputObjectSpecifier<infer TName>;
       object: infer TNested extends AnyNestedObject;
     }
-      ? ApplyTypeModifier<InferFields<TSchema, TNested>, TSpecifier["modifier"]>
+      ? ApplyTypeModifier<
+          // Add __typename for "always" mode, otherwise just nested fields
+          TSchema["__typenameMode"] extends "always"
+            ? { readonly __typename: TName } & InferFields<TSchema, TNested>
+            : InferFields<TSchema, TNested>,
+          TSpecifier["modifier"]
+        >
       : never)
   | (TSelection extends {
       type: infer TSpecifier extends OutputUnionSpecifier;

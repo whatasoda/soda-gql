@@ -670,6 +670,7 @@ type MultiRuntimeTemplateOptions = {
       readonly fragmentBuildersTypeBlock: string;
       readonly defaultInputDepth?: number;
       readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+      readonly typenameMode?: TypenameMode;
     }
   >;
   readonly injection: RuntimeTemplateInjection;
@@ -829,6 +830,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
         : "";
 
+    // Generate __typenameMode block if not union-only (the default)
+    const typenameModeBlock =
+      config.typenameMode && config.typenameMode !== "union-only"
+        ? `\n  __typenameMode: "${config.typenameMode}",`
+        : "";
+
     // Always in split mode
     const isSplitMode = true;
 
@@ -915,7 +922,7 @@ const ${schemaVar} = {
   enum: enum_${name},
   input: input_${name},
   object: object_${name},
-  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
+  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}${typenameModeBlock}
 } as const;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
@@ -1091,6 +1098,7 @@ export const generateMultiSchemaModule = (
       fragmentBuildersTypeBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),
+      typenameMode: options?.typenameMode?.get(name),
     };
 
     // Accumulate stats
