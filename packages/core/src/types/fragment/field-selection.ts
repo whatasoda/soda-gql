@@ -16,6 +16,9 @@ import type { AnyDirectiveAttachments } from "./directives";
  * Canonical representation of the field selections we collect during model and
  * slice definition. Each alias maps to a typed field reference that still
  * remembers its parent type, arguments, directives, and nested selections.
+ *
+ * Note: The `object` property supports both factory-returned AnyFieldSelection
+ * and shorthand (true) values via AnyNestedObjectExtended.
  */
 export type AnyFieldSelection = {
   readonly parent: AnyTypeName;
@@ -23,12 +26,15 @@ export type AnyFieldSelection = {
   readonly type: OutputTypeSpecifier;
   readonly args: AnyAssignableInput;
   readonly directives: AnyDirectiveAttachments;
-  readonly object: AnyNestedObject | null;
+  readonly object: AnyNestedObjectExtended | null;
   readonly union: AnyNestedUnion | null;
 };
 
-/** Nested selection produced when resolving an object field. */
+/** Nested selection produced when resolving an object field (factory syntax only). */
 export type AnyNestedObject = { readonly [alias: string]: AnyFieldSelection };
+
+/** Nested selection supporting shorthand syntax. */
+export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
 /** Nested selection produced when resolving a union field. */
 export type AnyNestedUnion = { readonly [typeName: string]: AnyNestedObject | undefined };
 
@@ -59,9 +65,6 @@ export type AbstractFieldSelection<
   readonly union: TExtras extends { union: infer TUnion } ? TUnion : null;
 };
 
-/** Nested selection supporting shorthand syntax. */
-export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
-
 /** Convenience alias to obtain a typed field reference from the schema. */
 export type FieldSelectionTemplateOf<
   TSchema extends AnyGraphqlSchema,
@@ -74,7 +77,7 @@ export type FieldSelectionTemplateOf<
       TRef,
       AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
       AnyDirectiveAttachments,
-      | (TRef extends OutputObjectSpecifier ? { object: AnyNestedObject } : never)
+      | (TRef extends OutputObjectSpecifier ? { object: AnyNestedObjectExtended } : never)
       | (TRef extends OutputUnionSpecifier ? { union: AnyNestedUnion } : never)
     >
   : never;
