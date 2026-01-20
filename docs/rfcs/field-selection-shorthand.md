@@ -56,6 +56,19 @@ fields: ({ f }) => ({
 5. **Runtime detection**: Key prefix check (`key.startsWith(':')` for factory, plain key for shorthand)
 6. **Alias via factory only**: Aliases require factory syntax (shorthand does not support aliases)
 
+### Design Rationale: `:` Prefix
+
+The colon (`:`) prefix was chosen for factory keys because:
+
+1. **GraphQL alias syntax alignment**: In GraphQL, aliases use colon syntax (`alias: fieldName`). This creates a natural mental model where `:fieldName` represents "a field that may have an alias"
+2. **No symbol collision**: Other symbols are already used in GraphQL/TypeScript context:
+   - `$` - Variables in GraphQL (`$userId`)
+   - `@` - Directives in GraphQL (`@include`, `@skip`)
+   - `#` - Comments in GraphQL
+   - `_` - Common convention for private/internal identifiers
+
+Note: Keys with `:` prefix require quotes in object literals (e.g., `{ ":id": ... }`), but this is handled internally by `wrapByKey` utility, so users don't write these keys directly.
+
 ## Detailed Design
 
 ### Syntax Examples
@@ -107,6 +120,12 @@ fields: ({ f, $ }) => ({
 **Note**: Empty object `{}` is not valid shorthand. Use `true` for simple selections:
 - ✅ `id: true`
 - ❌ `id: {}`
+
+**Why `{}` is invalid**:
+- **Ambiguity**: `{}` could mean "select with no args" or "incomplete object notation"
+- **Type safety**: `true` is unambiguous and easier to validate at type level
+- **Consistency**: Requiring explicit `true` makes intent clear
+- **Detection**: `{} extends ScalarShorthandObject` is `true` in TypeScript, making runtime detection unreliable
 
 ### Type Definitions
 
@@ -211,6 +230,51 @@ type InferScalarFieldByName<
     >
   : never;
 ```
+
+#### Required Arguments Validation (`types/fragment/field-selection.ts`)
+
+The type system enforces that `true` shorthand is only valid for fields without required arguments.
+This uses the existing `IsOptional` logic from `assignable-input.ts`.
+
+```typescript
+/**
+ * Extract required keys from an object type.
+ * A key is required if {} doesn't extend Pick<T, K>.
+ */
+type RequiredKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? never : K;
+}[keyof T];
+
+/**
+ * Check if a field has no required arguments.
+ */
+type HasNoRequiredArgs<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
+> = keyof RequiredKeys<AssignableInputByFieldName<TSchema, TTypeName, TFieldName>> extends never
+  ? true
+  : false;
+
+/**
+ * Validate that shorthand `true` is only used for fields without required arguments.
+ * Fields with required arguments must use object notation with `args`.
+ */
+type ValidateShorthand<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends string,
+  TValue,
+> = TValue extends true
+  ? TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string
+    ? HasNoRequiredArgs<TSchema, TTypeName, TFieldName> extends true
+      ? true
+      : never  // Type error: field has required arguments, use { args: {...} } instead
+    : never
+  : TValue;
+```
+
+This validation is applied in `InferFieldValue` to produce type errors when `true` is used on fields with required arguments.
 
 ### Runtime Processing (`composer/build-document.ts`)
 
@@ -351,13 +415,6 @@ function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
 - Redundant - `directives` presence is sufficient
 - Adds unnecessary verbosity
 - Final design: `{ directives: [...] }` without `select`
-
-## Open Questions
-
-1. **Required arguments validation**: Should the type system enforce that `true` shorthand
-   is only valid for fields without required arguments? Current type definitions check
-   field existence but not argument requirements. Implementation may need additional
-   type constraints to ensure type safety.
 
 ## References
 
