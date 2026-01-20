@@ -30,6 +30,7 @@
     "bench:looseConstraint": "bun scripts/run.ts --looseConstraint",
     "generate:noSatisfies": "bun scripts/generate.ts noSatisfies",
     "typecheck:noSatisfies": "tsc --project noSatisfies/tsconfig.json --extendedDiagnostics --noEmit",
-    "bench:noSatisfies": "bun scripts/run.ts --noSatisfies"
+    "bench:noSatisfies": "bun scripts/run.ts --noSatisfies",
+    "bench:runtime": "bun scripts/runtime-bench.ts"
   }
 }

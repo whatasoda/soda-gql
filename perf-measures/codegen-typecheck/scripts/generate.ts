@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { parse } from "graphql";
 import { generateMultiSchemaModule } from "../../../packages/codegen/src/generator";
+import { generateDefsStructure } from "../../../packages/codegen/src/defs-generator";
 
 const BENCH_DIR = path.join(import.meta.dirname, "..");
 const SCHEMA_PATH = path.join(BENCH_DIR, "../../playgrounds/hasura/schema.graphql");
@@ -14,10 +15,26 @@ async function loadSchema(): Promise<ReturnType<typeof parse>> {
   return parse(content);
 }
 
-async function generateBaseline(document: ReturnType<typeof parse>): Promise<string> {
+interface GeneratedOutput {
+  code: string;
+  defsFiles?: Array<{ relativePath: string; content: string }>;
+}
+
+async function generateBaseline(document: ReturnType<typeof parse>): Promise<GeneratedOutput> {
   const schemas = new Map([["hasura", document]]);
-  const { code } = generateMultiSchemaModule(schemas);
-  return code;
+  const { code, categoryVars } = generateMultiSchemaModule(schemas);
+
+  // Generate _defs files
+  let defsFiles: Array<{ relativePath: string; content: string }> = [];
+  if (categoryVars) {
+    const hasuraCategoryVars = categoryVars["hasura"];
+    if (hasuraCategoryVars) {
+      const defsStructure = generateDefsStructure("hasura", hasuraCategoryVars, 100);
+      defsFiles = [...defsStructure.files];
+    }
+  }
+
+  return { code, defsFiles };
 }
 
 async function generateOptimized(document: ReturnType<typeof parse>): Promise<string> {
@@ -115,41 +132,51 @@ async function main() {
 
   const document = await loadSchema();
 
-  let code: string;
+  let output: GeneratedOutput;
   switch (mode) {
     case "optimized":
-      code = await generateOptimized(document);
+      output = { code: await generateOptimized(document) };
       break;
     case "granular":
-      code = await generateGranular(document);
+      output = { code: await generateGranular(document) };
       break;
     case "precomputed":
-      code = await generatePrecomputed(document);
+      output = { code: await generatePrecomputed(document) };
       break;
     case "shallowInput":
-      code = await generateShallowInput(document);
+      output = { code: await generateShallowInput(document) };
       break;
     case "typedAssertion":
-      code = await generateTypedAssertion(document);
+      output = { code: await generateTypedAssertion(document) };
       break;
     case "branded":
-      code = await generateBranded(document);
+      output = { code: await generateBranded(document) };
       break;
     case "looseConstraint":
-      code = await generateLooseConstraint(document);
+      output = { code: await generateLooseConstraint(document) };
       break;
     case "noSatisfies":
-      code = await generateNoSatisfies(document);
+      output = { code: await generateNoSatisfies(document) };
       break;
     default:
-      code = await generateBaseline(document);
+      output = await generateBaseline(document);
   }
 
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(path.join(outputDir, "index.ts"), code);
+  await fs.writeFile(path.join(outputDir, "index.ts"), output.code);
 
-  const lines = code.split("\n").length;
-  const size = Buffer.byteLength(code, "utf-8");
+  // Write _defs files if present
+  if (output.defsFiles) {
+    for (const file of output.defsFiles) {
+      const filePath = path.join(outputDir, file.relativePath);
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, file.content);
+    }
+    console.log(`Generated ${output.defsFiles.length} _defs files`);
+  }
+
+  const lines = output.code.split("\n").length;
+  const size = Buffer.byteLength(output.code, "utf-8");
   console.log(`Generated ${lines} lines (${(size / 1024).toFixed(1)} KB) to ${outputDir}/index.ts`);
 }
 
