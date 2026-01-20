@@ -38,12 +38,12 @@ fields: ({ f }) => ({
 
 ### Scope
 
-| Feature | Shorthand Support |
-|---------|------------------|
-| Scalar fields (no args) | `id: true` |
-| Enum fields (no args) | `status: true` |
-| Scalar/Enum with args | `{ args: {...} }` |
-| Scalar/Enum with directives | `{ directives: [...] }` |
+| Feature | Syntax |
+|---------|--------|
+| Scalar fields (no args) | `id: true` (shorthand) |
+| Enum fields (no args) | `status: true` (shorthand) |
+| Scalar/Enum with args | **Factory only** - `...f.formattedDate({ format: "..." })` |
+| Scalar/Enum with directives | **Factory only** - `...f.email(null, { directives: [...] })` |
 | Object fields | **Factory only** - `...f.profile()(...)` |
 | Union fields | **Factory only** - `...f.media()(...)` |
 
@@ -52,22 +52,9 @@ fields: ({ f }) => ({
 1. **Hybrid approach**: Shorthand and factory syntax can be mixed freely
 2. **Scalars/Enums only**: Object/Union fields require callbacks (no change)
 3. **Variables via callback**: `$` access remains through callback arguments
-4. **`:` prefix for factory keys**: Factory returns use `:fieldName` keys (e.g., `":id"`) to distinguish from shorthand
-5. **Runtime detection**: Key prefix check (`key.startsWith(':')` for factory, plain key for shorthand)
-6. **Alias via factory only**: Aliases require factory syntax (shorthand does not support aliases)
-
-### Design Rationale: `:` Prefix
-
-The colon (`:`) prefix was chosen for factory keys because:
-
-1. **GraphQL alias syntax alignment**: In GraphQL, aliases use colon syntax (`alias: fieldName`). This creates a natural mental model where `:fieldName` represents "a field that may have an alias"
-2. **No symbol collision**: Other symbols are already used in GraphQL/TypeScript context:
-   - `$` - Variables in GraphQL (`$userId`)
-   - `@` - Directives in GraphQL (`@include`, `@skip`)
-   - `#` - Comments in GraphQL
-   - `_` - Common convention for private/internal identifiers
-
-Note: Keys with `:` prefix require quotes in object literals (e.g., `{ ":id": ... }`), but this is handled internally by `wrapByKey` utility, so users don't write these keys directly.
+4. **Value-based detection**: Runtime distinguishes shorthand (`true`) from factory returns (`AnyFieldSelection`) by checking value structure
+5. **Alias via factory only**: Aliases require factory syntax (shorthand does not support aliases)
+6. **Args/Directives via factory only**: Fields with arguments or directives require factory syntax
 
 ## Detailed Design
 
@@ -76,56 +63,49 @@ Note: Keys with `:` prefix require quotes in object literals (e.g., `{ ":id": ..
 ```typescript
 // Basic shorthand
 fields: ({ f, $ }) => ({
-  // No-arg scalars - shorthand (plain keys)
+  // No-arg scalars - shorthand
   id: true,
   name: true,
   status: true,  // Enum OK
 
-  // Scalar with arguments
-  formattedDate: { args: { format: "YYYY-MM-DD" } },
+  // Scalar with arguments - factory required
+  ...f.formattedDate({ format: "YYYY-MM-DD" }),
 
-  // Scalar with directives
-  email: { directives: [d.include({ if: $.showEmail })] },
+  // Scalar with directives - factory required
+  ...f.email(null, { directives: [d.include({ if: $.showEmail })] }),
 
-  // Arguments + directives
-  avatar: { args: { size: 100 }, directives: [d.skip({ if: $.noAvatar })] },
+  // Arguments + directives - factory required
+  ...f.avatar({ size: 100 }, { directives: [d.skip({ if: $.noAvatar })] }),
 
-  // Object fields - factory required (returns :prefix keys)
+  // Object fields - factory required
   ...f.friends({ first: 10 })(({ f }) => ({
-    // ↑ spreads as { ":friends": {...} }
     id: true,
     name: true,
   })),
 
   // Mixed syntax OK - shorthand and factory coexist
   ...f.profile()(({ f }) => ({
-    // ↑ spreads as { ":profile": {...} }
     bio: true,
-    ...f.avatar({ size: 200 }),  // spreads as { ":avatar": {...} }
+    ...f.avatar({ size: 200 }),
   })),
 
   // Alias requires factory syntax
-  ...f.id(null, { alias: "uniqueId" }),  // spreads as { ":uniqueId": {...} }
+  ...f.id(null, { alias: "uniqueId" }),
 
   // Alias with arguments - requires factory syntax
   ...f.formattedDate({ format: "YYYY-MM-DD" }, { alias: "dateFormatted" }),
-  // ↑ spreads as { ":dateFormatted": {...} }
 })
 ```
 
 **Key distinction:**
-- Shorthand values (`true`, `{ args }`, `{ directives }`) use plain keys: `id`, `name`, etc.
-- Factory returns use `:` prefixed keys: `":id"`, `":profile"`, etc.
+- Shorthand: `true` for simple scalar/enum fields without args or directives
+- Factory: Spread syntax (`...f.fieldName()`) for fields with args, directives, aliases, or nested selections
 
-**Note**: Empty object `{}` is not valid shorthand. Use `true` for simple selections:
+**Note**: Only `true` is valid for shorthand. Empty object `{}` is not allowed:
 - ✅ `id: true`
 - ❌ `id: {}`
 
-**Why `{}` is invalid**:
-- **Ambiguity**: `{}` could mean "select with no args" or "incomplete object notation"
-- **Type safety**: `true` is unambiguous and easier to validate at type level
-- **Consistency**: Requiring explicit `true` makes intent clear
-- **Detection**: `{} extends ScalarShorthandObject` is `true` in TypeScript, making runtime detection unreliable
+Why `true` only: The literal `true` is unambiguous and easy to detect at both type and runtime level. An empty object `{}` would be indistinguishable from a malformed `AnyFieldSelection` and adds no value over `true`.
 
 ### Type Definitions
 
@@ -133,65 +113,31 @@ fields: ({ f, $ }) => ({
 
 ```typescript
 /**
- * Object notation for scalar/enum with args or directives.
- * At least one of args or directives must be specified.
- * Use `true` for simple field selection without args or directives.
- *
- * Note: This union type enforces that at least one property is required:
- * - { args: TArgs; directives?: ... } - args required
- * - { args?: TArgs; directives: ... } - directives required
- * Empty object `{}` does NOT satisfy either branch, so it produces a type error.
+ * Shorthand value for scalar/enum fields without args or directives.
+ * Only `true` is valid - use factory syntax for args/directives.
  */
-export type ScalarShorthandObject<TArgs extends AnyAssignableInput = AnyAssignableInput> =
-  | { readonly args: TArgs; readonly directives?: AnyDirectiveRef[] }
-  | { readonly args?: TArgs; readonly directives: AnyDirectiveRef[] };
+export type ScalarShorthand = true;
 
 /**
- * Shorthand values: true or object notation (never empty {})
- * - `true`: Simple field selection without args or directives
- * - `ScalarShorthandObject`: Object with args and/or directives (at least one required)
- */
-export type ScalarShorthand<TArgs extends AnyAssignableInput = AnyAssignableInput> =
-  | true
-  | ScalarShorthandObject<TArgs>;
-
-/**
- * Field value including shorthand (plain keys) and factory returns (: prefixed keys)
+ * Field value: either shorthand (true) or factory return (AnyFieldSelection)
  */
 export type AnyFieldValue = AnyFieldSelection | ScalarShorthand;
 
 /**
- * Extended field map supporting both shorthand and factory syntax
- * - Plain keys (e.g., "id"): Shorthand values (true | { args } | { directives } | { args, directives })
- * - Colon-prefixed keys (e.g., ":id"): Factory returns (AnyFieldSelection)
+ * Extended field map supporting both shorthand and factory syntax.
+ * Detection is value-based: `true` for shorthand, object for factory.
  */
 export type AnyFieldsExtended = {
   readonly [key: string]: AnyFieldValue;
 };
 ```
 
-#### `wrapByKey` Utility (`utils/wrap-by-key.ts`)
-
-```typescript
-/**
- * Wraps a value with a colon-prefixed key for factory returns.
- * This ensures factory results are distinguishable from shorthand.
- */
-export const wrapByKey = <K extends string, V>(key: K, value: V) =>
-  ({ [`:${key}`]: value }) as { [_ in `:${K}`]: V };
-```
-
 #### Type Inference (`types/fragment/field-selection.ts`)
 
 ```typescript
 /**
- * Strip colon prefix from factory keys for output type mapping.
- * Factory keys like ":id" become "id" in the output type.
- */
-type StripColonPrefix<K extends string> = K extends `:${infer R}` ? R : K;
-
-/**
- * Infer fields with shorthand support
+ * Infer fields with shorthand support.
+ * No key transformation needed - detection is purely value-based.
  */
 export type InferFieldsExtended<
   TSchema extends AnyGraphqlSchema,
@@ -199,7 +145,7 @@ export type InferFieldsExtended<
   TFields extends AnyFieldsExtended,
 > = {
   [_ in TSchema["label"]]: {
-    [K in keyof TFields as StripColonPrefix<K & string>]: InferFieldValue<TSchema, TTypeName, K & string, TFields[K]>;
+    [K in keyof TFields]: InferFieldValue<TSchema, TTypeName, K & string, TFields[K]>;
   } & {};
 }[TSchema["label"]];
 
@@ -209,23 +155,16 @@ type InferFieldValue<
   TFieldKey extends string,
   TValue,
 > =
-  // Factory return (: prefixed key) - use existing InferField
-  TFieldKey extends `:${string}`
-    ? TValue extends AnyFieldSelection
-      ? InferField<TSchema, TValue>
-      : never
-  // Shorthand: true - apply ValidateShorthand for required args check
-  : TValue extends true
+  // Shorthand: true - validate no required args
+  TValue extends true
     ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"] & string
       ? ValidateShorthand<TSchema, TTypeName, TFieldKey, TValue> extends true
         ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
         : never  // Type error: field has required arguments
       : never
-  // Object notation: { args } | { directives } | { args, directives }
-  : TValue extends ScalarShorthandObject<AssignableInputByFieldName<TSchema, TTypeName, TFieldKey & keyof TSchema["object"][TTypeName]["fields"]>>
-    ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"]
-      ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
-      : never
+  // Factory return - use existing InferField
+  : TValue extends AnyFieldSelection
+    ? InferField<TSchema, TValue>
   : never;
 
 type InferScalarFieldByName<
@@ -267,7 +206,7 @@ type HasNoRequiredArgs<
 
 /**
  * Validate that shorthand `true` is only used for fields without required arguments.
- * Fields with required arguments must use object notation with `args`.
+ * Fields with required arguments must use factory syntax.
  */
 type ValidateShorthand<
   TSchema extends AnyGraphqlSchema,
@@ -278,7 +217,7 @@ type ValidateShorthand<
   ? TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string
     ? HasNoRequiredArgs<TSchema, TTypeName, TFieldName> extends true
       ? true
-      : never  // Type error: field has required arguments, use { args: {...} } instead
+      : never  // Type error: field has required arguments, use factory syntax
     : never
   : TValue;
 ```
@@ -289,17 +228,10 @@ This validation is applied in `InferFieldValue` to produce type errors when `tru
 
 ```typescript
 /**
- * Check if a key is from factory (has : prefix)
+ * Check if value is shorthand (true) vs factory return (AnyFieldSelection)
  */
-function isFactoryKey(key: string): boolean {
-  return key.startsWith(':');
-}
-
-/**
- * Extract field name from key (removes : prefix if present)
- */
-function extractFieldName(key: string): string {
-  return isFactoryKey(key) ? key.slice(1) : key;
+function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
+  return value === true;
 }
 
 /**
@@ -309,19 +241,16 @@ function expandShorthand(
   schema: AnyGraphqlSchema,
   typeName: string,
   fieldName: string,
-  value: ScalarShorthand,
 ): AnyFieldSelection {
   const typeDef = schema.object[typeName];
   const fieldSpec = typeDef.fields[fieldName];
-
-  const shorthandObj = value === true ? {} : value;
 
   return {
     parent: typeName,
     field: fieldName,
     type: fieldSpec,
-    args: shorthandObj.args ?? {},
-    directives: shorthandObj.directives ?? [],
+    args: {},
+    directives: [],
     object: null,
     union: null,
   };
@@ -335,20 +264,14 @@ const buildField = (
   schema: AnyGraphqlSchema,
   typeName: string,
 ): FieldNode[] =>
-  Object.entries(fields).map(([key, value]) => {
-    const fieldName = extractFieldName(key);
+  Object.entries(fields).map(([fieldName, value]) => {
+    // Expand shorthand to AnyFieldSelection if needed
+    const selection = isShorthand(value)
+      ? expandShorthand(schema, typeName, fieldName)
+      : value;
 
-    // Factory return (: prefixed key) - value is AnyFieldSelection
-    if (isFactoryKey(key)) {
-      const selection = value as AnyFieldSelection;
-      const { args, field, object, union, directives, type } = selection;
-      // ... existing buildField logic
-    }
-
-    // Shorthand (plain key) - expand to AnyFieldSelection
-    const selection = expandShorthand(schema, typeName, fieldName, value as ScalarShorthand);
     const { args, field, object, union, directives, type } = selection;
-    // ... same buildField logic
+    // ... existing buildField logic
   });
 ```
 
@@ -356,29 +279,24 @@ const buildField = (
 
 | Phase | Description | Files |
 |-------|-------------|-------|
-| 1 | Update `wrapByKey` to add `:` prefix | `utils/wrap-by-key.ts` |
-| 2 | Add shorthand types | `types/fragment/field-selection.ts` |
-| 3 | Add `InferFieldsExtended` with `StripColonPrefix` | `types/fragment/field-selection.ts` |
-| 4 | Runtime detection and expansion | `composer/build-document.ts` |
-| 4.1 | Update `buildField` call sites to pass `typeName` | `composer/build-document.ts` |
-| 5 | Extend `FieldsBuilder` types | `types/element/fields-builder.ts` |
+| 1 | Add shorthand types (`ScalarShorthand`, `AnyFieldValue`, `AnyFieldsExtended`) | `types/fragment/field-selection.ts` |
+| 2 | Add `InferFieldsExtended` and `ValidateShorthand` types | `types/fragment/field-selection.ts` |
+| 3 | Add `isShorthand` and `expandShorthand` runtime functions | `composer/build-document.ts` |
+| 4 | Update `buildField` to handle shorthand expansion | `composer/build-document.ts` |
+| 5 | Extend `FieldsBuilder` return types to accept shorthand | `types/element/fields-builder.ts` |
 | 6 | Update Fragment/Operation builders | `composer/fragment.ts`, `composer/operation.ts` |
-| 7 | Update formatter for `:` prefix handling | `packages/formatter/src/*.ts` |
-| 8 | Add tests | `*.test.ts` |
+| 7 | Add tests | `*.test.ts` |
 
-**Note**: Phase 1 (`wrapByKey` change) is a breaking change for existing code. All existing tests will need updates to expect `:` prefixed keys.
+**Note**: No breaking changes to existing code. Factory syntax continues to work unchanged.
 
 ## Backward Compatibility
 
-- **Source-level compatible**: Existing `...f.id()` spread patterns work unchanged in source code
-- **Runtime key change**: Factory returns now use `:` prefixed keys (e.g., `":id"` instead of `"id"`)
+- **Fully compatible**: Existing `...f.id()` spread patterns work unchanged
+- **No internal changes**: Factory returns use the same key format as before
 - **Mixing allowed**: Both shorthand and factory syntaxes can be used in the same builder
 - **Gradual migration**: Projects can adopt shorthand at their own pace
 
-**Breaking change note**: Internal key representation changes from `"fieldName"` to `":fieldName"` for factory returns. This affects:
-- Code that directly accesses field selection keys
-- Test assertions that check field map structure
-- Any tooling that parses field selection objects
+No breaking changes. Value-based detection (`value === true`) distinguishes shorthand from factory returns without requiring key format changes.
 
 ## Alternatives Considered
 
@@ -400,30 +318,37 @@ const buildField = (
 - Significant type system rewrite required
 - Factory syntax with callbacks provides better type inference for nested fields
 
-### 2. Value-based Detection (without Key Prefix)
+### 2. Key Prefix (`:fieldName`) for Factory Detection
 
 ```typescript
-// Detect via value structure
-function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
-  return value === true || !('parent' in value);
-}
+// Factory returns use : prefix
+...f.id()  // spreads as { ":id": {...} }
+
+// Shorthand uses plain keys
+id: true   // plain key "id"
 ```
 
 **Rejected because**:
-- Relies on internal structure of `AnyFieldSelection`
-- Fragile to future changes in field selection structure
-- Key prefix provides cleaner, more explicit distinction
+- Requires `StripColonPrefix` type transformation in type inference
+- Breaking change: all existing tests need key updates
+- `wrapByKey` utility modification adds complexity
+- Value-based detection is simpler and sufficient
 
-### 3. `select: true` Property for Directive-only Shorthand
+### 3. Object Notation Shorthand (`{ args }`, `{ directives }`)
 
 ```typescript
-{ select: true, directives: [...] }
+// Shorthand with arguments
+formattedDate: { args: { format: "YYYY-MM-DD" } },
+
+// Shorthand with directives
+email: { directives: [d.include({ if: $.showEmail })] },
 ```
 
 **Rejected because**:
-- Redundant - `directives` presence is sufficient
-- Adds unnecessary verbosity
-- Final design: `{ directives: [...] }` without `select`
+- Adds `ScalarShorthandObject` type with union branches
+- Type inference for `{ args }` requires additional validation
+- Factory syntax already handles these cases cleanly
+- Limiting shorthand to `true` only keeps types simple
 
 ## References
 
@@ -431,7 +356,6 @@ function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
 - Assignable input (IsOptional logic): `packages/core/src/types/fragment/assignable-input.ts`
 - Builder implementation: `packages/core/src/composer/fields-builder.ts`
 - Fields builder types: `packages/core/src/types/element/fields-builder.ts`
-- Key wrapping utility: `packages/core/src/utils/wrap-by-key.ts`
 - Document builder: `packages/core/src/composer/build-document.ts`
 - Fragment composer: `packages/core/src/composer/fragment.ts`
 - Operation composer: `packages/core/src/composer/operation.ts`
