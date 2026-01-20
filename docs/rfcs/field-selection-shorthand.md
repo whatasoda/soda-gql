@@ -136,13 +136,20 @@ fields: ({ f, $ }) => ({
  * Object notation for scalar/enum with args or directives.
  * At least one of args or directives must be specified.
  * Use `true` for simple field selection without args or directives.
+ *
+ * Note: This union type enforces that at least one property is required:
+ * - { args: TArgs; directives?: ... } - args required
+ * - { args?: TArgs; directives: ... } - directives required
+ * Empty object `{}` does NOT satisfy either branch, so it produces a type error.
  */
 export type ScalarShorthandObject<TArgs extends AnyAssignableInput = AnyAssignableInput> =
   | { readonly args: TArgs; readonly directives?: AnyDirectiveRef[] }
   | { readonly args?: TArgs; readonly directives: AnyDirectiveRef[] };
 
 /**
- * Shorthand values: true or object notation
+ * Shorthand values: true or object notation (never empty {})
+ * - `true`: Simple field selection without args or directives
+ * - `ScalarShorthandObject`: Object with args and/or directives (at least one required)
  */
 export type ScalarShorthand<TArgs extends AnyAssignableInput = AnyAssignableInput> =
   | true
@@ -207,10 +214,12 @@ type InferFieldValue<
     ? TValue extends AnyFieldSelection
       ? InferField<TSchema, TValue>
       : never
-  // Shorthand: true
+  // Shorthand: true - apply ValidateShorthand for required args check
   : TValue extends true
-    ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"]
-      ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
+    ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"] & string
+      ? ValidateShorthand<TSchema, TTypeName, TFieldKey, TValue> extends true
+        ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
+        : never  // Type error: field has required arguments
       : never
   // Object notation: { args } | { directives } | { args, directives }
   : TValue extends ScalarShorthandObject
@@ -419,7 +428,11 @@ function isShorthand(value: AnyFieldValue): value is ScalarShorthand {
 ## References
 
 - Current field selection: `packages/core/src/types/fragment/field-selection.ts`
+- Assignable input (IsOptional logic): `packages/core/src/types/fragment/assignable-input.ts`
 - Builder implementation: `packages/core/src/composer/fields-builder.ts`
+- Fields builder types: `packages/core/src/types/element/fields-builder.ts`
 - Key wrapping utility: `packages/core/src/utils/wrap-by-key.ts`
 - Document builder: `packages/core/src/composer/build-document.ts`
+- Fragment composer: `packages/core/src/composer/fragment.ts`
+- Operation composer: `packages/core/src/composer/operation.ts`
 - Type inference: `InferFields` type in `field-selection.ts`
