@@ -73,6 +73,28 @@ Each schema entry requires:
 |--------|------|-------------|
 | `schema` | `string` | Path to GraphQL schema file |
 | `inject` | `string \| { scalars: string; adapter?: string }` | Path to inject file or object with separate paths |
+| `defaultInputDepth` | `number` | Depth limit for recursive input types (default: `3`, max: `10`) |
+| `inputDepthOverrides` | `Record<string, number>` | Per-type depth overrides for specific input types |
+| `typeFilter` | `function \| object` | Filter to exclude types from codegen (see below) |
+
+### Type Filtering
+
+Exclude unwanted types from codegen output using pattern-based or function-based filters:
+
+```typescript
+typeFilter: {
+  exclude: [
+    { pattern: "*_stddev_*", category: "input" },
+    { pattern: "*_variance_*", category: "input" },
+  ],
+},
+```
+
+Or use a function for complex logic:
+
+```typescript
+typeFilter: ({ name, category }) => !name.includes("_stddev_"),
+```
 
 ## Config File Formats
 

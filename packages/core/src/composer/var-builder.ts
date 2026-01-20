@@ -67,7 +67,10 @@ export type VarSpecifier<
  *
  * @deprecated Use createVarMethodFactory instead for proper type inference with nested input objects.
  */
-export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName extends string>(kind: TKind, typeName: TTypeName) => {
+export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName extends string>(
+  kind: TKind,
+  typeName: TTypeName,
+) => {
   return <
     TSchema extends AnyGraphqlSchema,
     const TModifier extends TypeModifier,

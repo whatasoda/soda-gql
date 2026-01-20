@@ -10,11 +10,7 @@ type CompiledFilter = (context: FilterContext) => boolean;
 
 const compileRule = (rule: TypeFilterRule): CompiledFilter => {
   const matcher = picomatch(rule.pattern);
-  const categories = rule.category
-    ? Array.isArray(rule.category)
-      ? rule.category
-      : [rule.category]
-    : null;
+  const categories = rule.category ? (Array.isArray(rule.category) ? rule.category : [rule.category]) : null;
 
   return (context) => {
     if (categories && !categories.includes(context.category)) {
@@ -37,10 +33,7 @@ export const compileTypeFilter = (config: TypeFilterConfig | undefined): Compile
   return (context) => rules.every((rule) => rule(context));
 };
 
-export const buildExclusionSet = (
-  filter: CompiledFilter,
-  typeNames: Map<TypeCategory, readonly string[]>,
-): Set<string> => {
+export const buildExclusionSet = (filter: CompiledFilter, typeNames: Map<TypeCategory, readonly string[]>): Set<string> => {
   const excluded = new Set<string>();
 
   for (const [category, names] of typeNames) {

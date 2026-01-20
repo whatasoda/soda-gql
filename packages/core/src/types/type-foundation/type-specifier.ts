@@ -26,11 +26,7 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly defaultValue?: AnyDefaultValue | null;
 };
 export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
-export type InputTypeSpecifier =
-  | InputScalarSpecifier
-  | InputEnumSpecifier
-  | InputInputObjectSpecifier
-  | InputExcludedSpecifier;
+export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier | InputExcludedSpecifier;
 export type InputInferrableTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier;
 export type InputScalarSpecifier = AbstractInputTypeSpecifier<"scalar">;
 export type InputEnumSpecifier = AbstractInputTypeSpecifier<"enum">;

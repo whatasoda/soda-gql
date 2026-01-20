@@ -1,6 +1,6 @@
-import type { TypeFilterConfig } from "@soda-gql/config";
 import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";

@@ -448,11 +448,7 @@ const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; inden
   return ["{", `${indent}${entries.join(`,\n${indent}`)},`, `${lastIndent}}`].join(`\n`);
 };
 
-const renderObjectFields = (
-  schema: SchemaIndex,
-  fields: Map<string, FieldDefinitionNode>,
-  excluded: Set<string>,
-): string => {
+const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>, excluded: Set<string>): string => {
   const entries = Array.from(fields.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, excluded)}`);
@@ -460,11 +456,7 @@ const renderObjectFields = (
   return renderPropertyLines({ entries, indentSize: 6 });
 };
 
-const renderInputFields = (
-  schema: SchemaIndex,
-  fields: Map<string, InputValueDefinitionNode>,
-  excluded: Set<string>,
-): string => {
+const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDefinitionNode>, excluded: Set<string>): string => {
   const entries = Array.from(fields.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((field) => `${field.name.value}: ${renderInputRef(schema, field, excluded)}`);
@@ -487,22 +479,12 @@ const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
   return `const enum_${schemaName}_${record.name} = defineEnum<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
 };
 
-const renderInputVar = (
-  schemaName: string,
-  schema: SchemaIndex,
-  record: InputRecord,
-  excluded: Set<string>,
-): string => {
+const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord, excluded: Set<string>): string => {
   const fields = renderInputFields(schema, record.fields, excluded);
   return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderObjectVar = (
-  schemaName: string,
-  schema: SchemaIndex,
-  record: ObjectRecord,
-  excluded: Set<string>,
-): string => {
+const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord, excluded: Set<string>): string => {
   const fields = renderObjectFields(schema, record.fields, excluded);
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
