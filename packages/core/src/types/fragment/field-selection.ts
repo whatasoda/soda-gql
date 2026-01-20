@@ -105,3 +105,104 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
     }
       ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
       : never);
+
+// ============================================================================
+// Shorthand Syntax Support (RFC: Field Selection Shorthand)
+// ============================================================================
+
+/**
+ * Shorthand value for scalar/enum fields without args or directives.
+ * Only `true` is valid - use factory syntax for args/directives.
+ */
+export type ScalarShorthand = true;
+
+/**
+ * Field value: either shorthand (true) or factory return (AnyFieldSelection)
+ */
+export type AnyFieldValue = AnyFieldSelection | ScalarShorthand;
+
+/**
+ * Extended field map supporting both shorthand and factory syntax.
+ * Detection is value-based: `true` for shorthand, object for factory.
+ */
+export type AnyFieldsExtended = {
+  readonly [key: string]: AnyFieldValue;
+};
+
+/**
+ * Extract required keys from an object type.
+ * A key is required if {} doesn't extend Pick<T, K>.
+ */
+type RequiredKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? never : K;
+}[keyof T];
+
+/**
+ * Check if a field has no required arguments.
+ */
+type HasNoRequiredArgs<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
+> = keyof RequiredKeys<AssignableInputByFieldName<TSchema, TTypeName, TFieldName>> extends never ? true : false;
+
+/**
+ * Validate that shorthand `true` is only used for fields without required arguments.
+ * Fields with required arguments must use factory syntax.
+ */
+type ValidateShorthand<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends string,
+  TValue,
+> = TValue extends true
+  ? TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string
+    ? HasNoRequiredArgs<TSchema, TTypeName, TFieldName> extends true
+      ? true
+      : never // Type error: field has required arguments, use factory syntax
+    : never
+  : TValue;
+
+/**
+ * Infer the output type for a scalar/enum field by looking up the schema.
+ * Used for shorthand syntax where field type info is not embedded in the value.
+ */
+type InferScalarFieldByName<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
+> = TSchema["object"][TTypeName]["fields"][TFieldName] extends infer TSpecifier extends OutputInferrableTypeSpecifier
+  ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
+  : never;
+
+/**
+ * Infer the output type for a single field value (shorthand or factory return).
+ */
+type InferFieldValue<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFieldKey extends string,
+  TValue,
+> = TValue extends true
+  ? TFieldKey extends keyof TSchema["object"][TTypeName]["fields"] & string
+    ? ValidateShorthand<TSchema, TTypeName, TFieldKey, TValue> extends true
+      ? InferScalarFieldByName<TSchema, TTypeName, TFieldKey>
+      : never
+    : never
+  : TValue extends AnyFieldSelection
+    ? InferField<TSchema, TValue>
+    : never;
+
+/**
+ * Infer fields with shorthand support.
+ * Requires TTypeName to look up field types when value is shorthand (true).
+ */
+export type InferFieldsExtended<
+  TSchema extends AnyGraphqlSchema,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFields extends AnyFieldsExtended,
+> = {
+  [_ in TSchema["label"]]: {
+    [K in keyof TFields]: InferFieldValue<TSchema, TTypeName, K & string, TFields[K]>;
+  } & {};
+}[TSchema["label"]];
