@@ -95,7 +95,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
           {
             [TTypename in keyof TNested]: undefined extends TNested[TTypename]
               ? never
-              : InferFields<TSchema, NonNullable<TNested[TTypename]>>;
+              : { readonly __typename: TTypename & string } & InferFields<TSchema, NonNullable<TNested[TTypename]>>;
           }[keyof TNested],
           TSpecifier["modifier"]
         >
