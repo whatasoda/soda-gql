@@ -8,15 +8,19 @@ import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeMo
 
 /**
  * Minimal schema for testing buildDocument.
- * Contains empty type definitions to satisfy the schema interface.
+ * Contains minimal type definitions to satisfy the schema interface.
  */
 const emptySchema: AnyGraphqlSchema = {
   label: "test",
-  operations: { query: null, mutation: null, subscription: null },
+  operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
   scalar: {},
   enum: {},
   input: {},
-  object: {},
+  object: {
+    Query: { name: "Query", fields: {} },
+    Mutation: { name: "Mutation", fields: {} },
+    Subscription: { name: "Subscription", fields: {} },
+  },
   union: {},
 };
 
@@ -179,6 +183,7 @@ describe("Document Integrity Tests", () => {
       expect(() => {
         buildDocument({
           operationType: invalidOperation,
+          operationTypeName: "Query",
           operationName: "TestOperation",
           variables: {} as InputTypeSpecifiers,
           fields: {},
@@ -190,6 +195,7 @@ describe("Document Integrity Tests", () => {
     it("should handle valid operation types", () => {
       const queryDoc = buildDocument({
         operationType: "query",
+        operationTypeName: "Query",
         operationName: "TestQuery",
         variables: {},
         fields: {},
@@ -204,6 +210,7 @@ describe("Document Integrity Tests", () => {
 
       const mutationDoc = buildDocument({
         operationType: "mutation",
+        operationTypeName: "Mutation",
         operationName: "TestMutation",
         variables: {},
         fields: {},
@@ -218,6 +225,7 @@ describe("Document Integrity Tests", () => {
 
       const subscriptionDoc = buildDocument({
         operationType: "subscription",
+        operationTypeName: "Subscription",
         operationName: "TestSubscription",
         variables: {},
         fields: {},
@@ -478,6 +486,7 @@ describe("DirectiveRef in buildDocument", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: emptySchema,
@@ -540,6 +549,7 @@ describe("DirectiveRef in buildDocument", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables,
       fields: fields as any,
       schema: emptySchema,
@@ -584,6 +594,7 @@ describe("DirectiveRef in buildDocument", () => {
       buildDocument({
         operationName: "GetUser",
         operationType: "query",
+        operationTypeName: "Query",
         variables: {},
         fields: fields as any,
         schema: emptySchema,
@@ -629,6 +640,7 @@ describe("DirectiveRef in buildDocument", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: emptySchema,
@@ -672,6 +684,7 @@ describe("DirectiveRef in buildDocument", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: emptySchema,
@@ -942,6 +955,7 @@ describe("Enum value handling", () => {
       const doc = buildDocument({
         operationName: "GetUser",
         operationType: "query",
+        operationTypeName: "Query",
         variables: {},
         fields: fields as any,
         schema: schemaWithQuery,
@@ -996,6 +1010,7 @@ describe("Directive enum argument handling", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: schemaWithEnum,
@@ -1032,6 +1047,7 @@ describe("Directive enum argument handling", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: schemaWithEnum,
@@ -1067,6 +1083,7 @@ describe("Directive enum argument handling", () => {
     const doc = buildDocument({
       operationName: "GetUser",
       operationType: "query",
+      operationTypeName: "Query",
       variables: {},
       fields: fields as any,
       schema: schemaWithEnum,
