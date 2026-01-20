@@ -309,14 +309,20 @@ export const calculateFieldType = (
 
 /**
  * Calculate the TypeScript type string for a union type selection.
+ * Each union member includes __typename as a string literal type.
  */
 const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, formatters?: TypeFormatters): string => {
   const memberTypes: string[] = [];
 
-  for (const [_typeName, fields] of Object.entries(union)) {
+  for (const [typeName, fields] of Object.entries(union)) {
     if (fields) {
       const memberType = calculateFieldsType(schema, fields, formatters);
-      memberTypes.push(memberType);
+      // Inject __typename as the first field for each union member
+      const withTypename =
+        memberType === "{}"
+          ? `{ readonly __typename: "${typeName}" }`
+          : `{ readonly __typename: "${typeName}"; ${memberType.slice(2)}`;
+      memberTypes.push(withTypename);
     }
   }
 
