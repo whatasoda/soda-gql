@@ -4,7 +4,7 @@
  */
 
 import { type FieldsBuilder, Operation } from "../types/element";
-import type { AnyFields } from "../types/fragment";
+import type { AnyFieldsExtended } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
   DefaultMetadataAdapter,
@@ -60,7 +60,7 @@ export const createOperationComposerFactory = <
 
     return <
       TOperationName extends string,
-      TFields extends AnyFields,
+      TFields extends AnyFieldsExtended,
       TVarDefinitions extends InputTypeSpecifiers = {},
       TOperationMetadata = unknown,
     >(options: {

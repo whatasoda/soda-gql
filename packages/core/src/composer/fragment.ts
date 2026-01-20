@@ -4,7 +4,7 @@
  */
 
 import { type FieldsBuilder, Fragment } from "../types/element";
-import type { AnyFields, DeclaredVariables } from "../types/fragment";
+import type { AnyFieldsExtended, DeclaredVariables } from "../types/fragment";
 import type { AnyMetadataAdapter, DefaultMetadataAdapter, ExtractAdapterTypes, FragmentMetadataBuilder } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputTypeSpecifiers } from "../types/type-foundation";
@@ -24,7 +24,7 @@ export type FragmentBuilderFor<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
-> = <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
+> = <TFields extends AnyFieldsExtended, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
   /** Optional unique key for prebuilt type lookup. */
   key?: string;
   variables?: TVarDefinitions;
@@ -57,7 +57,7 @@ export const createGqlFragmentComposers = <
   type TFragmentMetadata = ExtractAdapterTypes<TAdapter>["fragmentMetadata"];
 
   type FragmentBuilder<TTypeName extends keyof TSchema["object"] & string> = <
-    TFields extends AnyFields,
+    TFields extends AnyFieldsExtended,
     TVarDefinitions extends InputTypeSpecifiers = {},
   >(options: {
     key?: string;
@@ -69,7 +69,7 @@ export const createGqlFragmentComposers = <
   const createFragmentComposer = <TTypeName extends keyof TSchema["object"] & string>(
     typename: TTypeName,
   ): FragmentBuilder<TTypeName> => {
-    return <TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
+    return <TFields extends AnyFieldsExtended, TVarDefinitions extends InputTypeSpecifiers = {}>(options: {
       key?: string;
       variables?: TVarDefinitions;
       metadata?: FragmentMetadataBuilder<DeclaredVariables<TSchema, TVarDefinitions>, TFragmentMetadata>;
