@@ -159,6 +159,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
             inject: normalizeInject(schemaConfig.inject, configDir),
             defaultInputDepth: schemaConfig.defaultInputDepth ?? 3,
             inputDepthOverrides: schemaConfig.inputDepthOverrides ?? {},
+            typenameMode: schemaConfig.typenameMode ?? "union-only",
           },
         ] as const,
     ),

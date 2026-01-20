@@ -84,7 +84,7 @@ describe("types.ts", () => {
           schema: ["/abs/path/to/schema.graphql"],
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
-          inputDepthOverrides: {},
+          inputDepthOverrides: {}, typenameMode: "union-only",
         },
       },
       styles: {
@@ -112,7 +112,7 @@ describe("types.ts", () => {
           schema: ["/abs/path/to/schema.graphql"],
           inject: { scalars: "/abs/path/to/scalars.ts" },
           defaultInputDepth: 3,
-          inputDepthOverrides: {},
+          inputDepthOverrides: {}, typenameMode: "union-only",
         },
       },
       styles: {

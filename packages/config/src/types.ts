@@ -25,6 +25,14 @@ export type InjectConfig =
  */
 export type SchemaInput = string | readonly string[] | (() => readonly string[]);
 
+/**
+ * Controls automatic __typename field insertion.
+ * - 'always': Insert __typename in all object selections and include in types
+ * - 'union-only': Insert __typename only in union member selections (default)
+ * - 'never': Never auto-insert __typename
+ */
+export type TypenameMode = "always" | "union-only" | "never";
+
 // Schema configuration for codegen
 export type SchemaConfig = {
   readonly schema: SchemaInput;
@@ -51,6 +59,12 @@ export type SchemaConfig = {
    * @example { user_bool_exp: 5, post_bool_exp: 5 }
    */
   readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+  /**
+   * Controls automatic __typename field insertion.
+   *
+   * @default "union-only"
+   */
+  readonly typenameMode?: TypenameMode;
 };
 
 // Output styles configuration for codegen
@@ -203,6 +217,7 @@ export type ResolvedSchemaConfig = {
   readonly inject: ResolvedInjectConfig;
   readonly defaultInputDepth: number;
   readonly inputDepthOverrides: Readonly<Record<string, number>>;
+  readonly typenameMode: TypenameMode;
 };
 
 // Resolved config (normalized and validated)

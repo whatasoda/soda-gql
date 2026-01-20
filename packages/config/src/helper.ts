@@ -92,6 +92,7 @@ const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   inject: InjectConfigSchema,
   defaultInputDepth: z.number().int().positive().max(10).optional(),
   inputDepthOverrides: z.record(z.string(), z.number().int().positive()).optional(),
+  typenameMode: z.enum(["always", "union-only", "never"]).optional(),
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({

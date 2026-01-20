@@ -147,7 +147,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
         schema: [schemaPath],
         inject: { scalars: scalarsPath },
         defaultInputDepth: 3,
-        inputDepthOverrides: {},
+        inputDepthOverrides: {}, typenameMode: "union-only",
       },
     },
     styles: { importExtension: false },

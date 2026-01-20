@@ -81,7 +81,7 @@ const createStubTestConfig = (options: {
         adapter: options.adapterPath,
       },
       defaultInputDepth: 3,
-      inputDepthOverrides: {},
+      inputDepthOverrides: {}, typenameMode: "union-only",
     },
   },
   styles: { importExtension: false },

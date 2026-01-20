@@ -1,4 +1,5 @@
 import type { Result } from "neverthrow";
+import type { TypenameMode } from "@soda-gql/config";
 
 export type CodegenFormat = "json" | "human";
 
@@ -14,6 +15,7 @@ export type CodegenSchemaConfig = {
   readonly inject: CodegenInjectConfig;
   readonly defaultInputDepth?: number;
   readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+  readonly typenameMode?: TypenameMode;
 };
 
 export type CodegenOptions = {
