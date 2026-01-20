@@ -424,10 +424,24 @@ const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; inden
   return ["{", `${indent}${entries.join(`,\n${indent}`)},`, `${lastIndent}}`].join(`\n`);
 };
 
-const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>): string => {
-  const entries = Array.from(fields.values())
-    .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments)}`);
+const renderObjectFields = (
+  schema: SchemaIndex,
+  fields: Map<string, FieldDefinitionNode>,
+  options?: { readonly typenameMode?: TypenameMode; readonly objectName?: string },
+): string => {
+  const entries: string[] = [];
+
+  // Add __typename field when typenameMode is "always"
+  if (options?.typenameMode === "always" && options.objectName) {
+    entries.push(`__typename: { kind: "typename", name: "${options.objectName}", modifier: "!", arguments: {} }`);
+  }
+
+  // Add regular fields
+  entries.push(
+    ...Array.from(fields.values())
+      .sort((left, right) => left.name.value.localeCompare(right.name.value))
+      .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments)}`),
+  );
 
   return renderPropertyLines({ entries, indentSize: 6 });
 };
@@ -460,8 +474,13 @@ const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRe
   return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
-const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord): string => {
-  const fields = renderObjectFields(schema, record.fields);
+const renderObjectVar = (
+  schemaName: string,
+  schema: SchemaIndex,
+  record: ObjectRecord,
+  typenameMode?: TypenameMode,
+): string => {
+  const fields = renderObjectFields(schema, record.fields, { typenameMode, objectName: record.name });
   return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
 };
 
@@ -608,10 +627,13 @@ type RuntimeTemplateInjection =
       readonly injectsModulePath: string;
     };
 
+export type TypenameMode = "always" | "union-only" | "never";
+
 export type RuntimeGenerationOptions = {
   readonly injection?: Map<string, PerSchemaInjection>;
   readonly defaultInputDepth?: Map<string, number>;
   readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
+  readonly typenameMode?: Map<string, TypenameMode>;
   readonly chunkSize?: number;
 };
 
@@ -1018,10 +1040,11 @@ export const generateMultiSchemaModule = (
     }
 
     // Objects
+    const typenameMode = options?.typenameMode?.get(name);
     for (const objectName of objectTypeNames) {
       const record = schema.objects.get(objectName);
       if (record) {
-        objectVars.push(renderObjectVar(name, schema, record));
+        objectVars.push(renderObjectVar(name, schema, record, typenameMode));
       }
     }
 

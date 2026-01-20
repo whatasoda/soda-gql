@@ -122,9 +122,10 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     });
   }
 
-  // Build defaultInputDepth and inputDepthOverrides config for each schema
+  // Build defaultInputDepth, inputDepthOverrides, and typenameMode config for each schema
   const defaultInputDepthConfig = new Map<string, number>();
   const inputDepthOverridesConfig = new Map<string, Readonly<Record<string, number>>>();
+  const typenameModeConfig = new Map<string, "always" | "union-only" | "never">();
 
   for (const [schemaName, schemaConfig] of Object.entries(options.schemas)) {
     if (schemaConfig.defaultInputDepth !== undefined && schemaConfig.defaultInputDepth !== 3) {
@@ -132,6 +133,9 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
     if (schemaConfig.inputDepthOverrides && Object.keys(schemaConfig.inputDepthOverrides).length > 0) {
       inputDepthOverridesConfig.set(schemaName, schemaConfig.inputDepthOverrides);
+    }
+    if (schemaConfig.typenameMode) {
+      typenameModeConfig.set(schemaName, schemaConfig.typenameMode);
     }
   }
 
@@ -147,6 +151,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     injection: injectionConfig,
     defaultInputDepth: defaultInputDepthConfig.size > 0 ? defaultInputDepthConfig : undefined,
     inputDepthOverrides: inputDepthOverridesConfig.size > 0 ? inputDepthOverridesConfig : undefined,
+    typenameMode: typenameModeConfig.size > 0 ? typenameModeConfig : undefined,
     chunkSize,
   });
 
