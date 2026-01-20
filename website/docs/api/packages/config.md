@@ -52,6 +52,7 @@ Each entry in `schemas` requires:
 | `inject` | `string` | Path to inject file (scalars and adapter definitions) |
 | `defaultInputDepth` | `number` | Depth limit for recursive input types (default: `3`, max: `10`) |
 | `inputDepthOverrides` | `Record<string, number>` | Per-type depth overrides for specific input types |
+| `typeFilter` | `function \| object` | Filter configuration to exclude types from codegen output |
 
 ### Recursive Input Type Handling
 
@@ -85,6 +86,49 @@ export default defineConfig({
 **Default behavior**:
 - `defaultInputDepth`: `3` (types nested deeper than 3 levels become `never`)
 - `inputDepthOverrides`: `{}` (no per-type overrides)
+
+### Type Filtering
+
+For schemas with many auto-generated types (like Hasura's aggregate types), configure type filters to exclude unwanted types from codegen output:
+
+```typescript
+import { defineConfig } from "@soda-gql/config";
+
+export default defineConfig({
+  outdir: "./src/graphql-system",
+  include: ["./src/**/*.ts"],
+  schemas: {
+    default: {
+      schema: "./schema.graphql",
+      inject: "./src/graphql-system/default.inject.ts",
+      typeFilter: {
+        exclude: [
+          { pattern: "*_stddev_*", category: "input" },
+          { pattern: "*_variance_*", category: "input" },
+        ],
+      },
+    },
+  },
+});
+```
+
+**Function-based filtering** for more complex logic:
+
+```typescript
+typeFilter: ({ name, category }) => {
+  // Return true to include, false to exclude
+  if (category !== "input") return true;
+  return !name.includes("_stddev_") && !name.includes("_variance_");
+},
+```
+
+**When to use**:
+- Hasura GraphQL schemas with many aggregate input types (`*_stddev_*`, `*_variance_*`, etc.)
+- Large schemas where unused types slow down codegen or bloat output
+
+**Filter rule options**:
+- `pattern`: Glob pattern to match type names (e.g., `"*_stddev_*"`)
+- `category`: Optional filter by type category (`"object"`, `"input"`, `"enum"`, `"union"`, `"scalar"`)
 
 ## Multi-Schema Configuration
 

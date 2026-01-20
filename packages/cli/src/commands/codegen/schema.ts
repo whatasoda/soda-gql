@@ -64,6 +64,7 @@ const parseSchemaArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
       inject: schemaConfig.inject,
       defaultInputDepth: schemaConfig.defaultInputDepth,
       inputDepthOverrides: schemaConfig.inputDepthOverrides,
+      typeFilter: schemaConfig.typeFilter,
     };
   }
 

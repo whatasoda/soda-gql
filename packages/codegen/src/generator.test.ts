@@ -709,4 +709,136 @@ describe("generateMultiSchemaModule", () => {
     // Should still generate customDirectives with standard directives
     expect(result.code).toContain("customDirectives_default = { ...createStandardDirectives(), ...{} }");
   });
+
+  test("excludes types matching filter", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input users_stddev_order_by { id: order_by }
+      input users_order_by {
+        id: order_by
+        stddev: users_stddev_order_by
+      }
+      enum order_by { asc desc }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "*_stddev_*", category: "input" }] }]]),
+    });
+
+    // Excluded type should not be generated
+    const stddevInput = result.categoryVars?.default?.inputs.find((i) => i.name.includes("stddev"));
+    expect(stddevInput).toBeUndefined();
+
+    // Non-excluded type should be generated
+    const orderByInput = result.categoryVars?.default?.inputs.find(
+      (i) => i.name.includes("users_order_by") && !i.name.includes("stddev"),
+    );
+    expect(orderByInput).toBeDefined();
+
+    // Reference to excluded type should have kind: "excluded"
+    const orderByCode = orderByInput?.code ?? "";
+    expect(orderByCode).toContain('kind: "excluded"');
+    expect(orderByCode).toContain('name: "users_stddev_order_by"');
+  });
+
+  test("excludes types using function-based filter", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input internal_config { value: String }
+      input public_config { value: String }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", ({ name }) => !name.startsWith("internal_")]]),
+    });
+
+    // internal_config should be excluded
+    const internalInput = result.categoryVars?.default?.inputs.find((i) => i.name.includes("internal_config"));
+    expect(internalInput).toBeUndefined();
+
+    // public_config should be included
+    const publicInput = result.categoryVars?.default?.inputs.find((i) => i.name.includes("public_config"));
+    expect(publicInput).toBeDefined();
+  });
+
+  test("handles multiple exclude patterns", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input users_stddev_order_by { id: order_by }
+      input users_variance_order_by { id: order_by }
+      input users_order_by { id: order_by }
+      enum order_by { asc desc }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([
+        [
+          "default",
+          {
+            exclude: [{ pattern: "*_stddev_*" }, { pattern: "*_variance_*" }],
+          },
+        ],
+      ]),
+    });
+
+    // Both stddev and variance should be excluded
+    const stddevInput = result.categoryVars?.default?.inputs.find((i) => i.name.includes("stddev"));
+    const varianceInput = result.categoryVars?.default?.inputs.find((i) => i.name.includes("variance"));
+    expect(stddevInput).toBeUndefined();
+    expect(varianceInput).toBeUndefined();
+
+    // users_order_by should be included
+    const orderByInput = result.categoryVars?.default?.inputs.find(
+      (i) => i.name.includes("users_order_by") && !i.name.includes("stddev") && !i.name.includes("variance"),
+    );
+    expect(orderByInput).toBeDefined();
+  });
+
+  test("excludes union members when object type is excluded", () => {
+    const document = parse(`
+      type Query { search: SearchResult }
+      type User { id: ID! }
+      type Post { id: ID! }
+      type InternalType { id: ID! }
+      union SearchResult = User | Post | InternalType
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "InternalType", category: "object" }] }]]),
+    });
+
+    // Union should not include excluded member
+    const unionDef = result.categoryVars?.default?.unions.find((u) => u.name.includes("SearchResult"));
+    expect(unionDef).toBeDefined();
+    const unionCode = unionDef?.code ?? "";
+    expect(unionCode).toContain("User: true");
+    expect(unionCode).toContain("Post: true");
+    expect(unionCode).not.toContain("InternalType");
+  });
+
+  test("excludes variable methods for excluded input types", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input users_stddev_order_by { id: order_by }
+      input users_order_by { id: order_by }
+      enum order_by { asc desc }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "*_stddev_*", category: "input" }] }]]),
+    });
+
+    // Variable methods should not include excluded type
+    expect(result.code).toContain("users_order_by:");
+    expect(result.code).not.toContain("users_stddev_order_by:");
+  });
 });

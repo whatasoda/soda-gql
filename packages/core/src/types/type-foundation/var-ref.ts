@@ -1,12 +1,13 @@
-import type { InputTypeKind } from "./type-specifier";
+import type { CreatableInputTypeKind } from "./type-specifier";
 
 /**
  * VarRef meta interface using typeName + kind instead of full profile.
  * This simplifies type comparison and improves error messages.
+ * Uses CreatableInputTypeKind since VarRefs should never reference excluded types.
  */
 export interface AnyVarRefBrand {
   readonly typeName: string;
-  readonly kind: InputTypeKind;
+  readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
 }
 

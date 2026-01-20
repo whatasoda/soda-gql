@@ -15,7 +15,7 @@ import type {
   InferInputKind,
   ResolveInputProfileFromMeta,
 } from "../types/schema";
-import type { InputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
+import type { CreatableInputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
 import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
 import type { SelectableProxy } from "./var-ref-tools";
@@ -26,7 +26,7 @@ import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue }
  */
 type AssignableDefaultValue<
   TSchema extends AnyGraphqlSchema,
-  TKind extends InputTypeKind,
+  TKind extends CreatableInputTypeKind,
   TName extends string,
   TModifier extends TypeModifier,
 > = ConstAssignableInputValue<
@@ -44,7 +44,7 @@ type AssignableDefaultValue<
  * Created by `$var.TypeName("modifier", { default?: ... })` calls.
  */
 export type VarSpecifier<
-  TKind extends InputTypeKind,
+  TKind extends CreatableInputTypeKind,
   TTypeName extends string,
   TModifier extends TypeModifier,
   TDefaultFn extends (() => unknown) | null,
@@ -67,7 +67,10 @@ export type VarSpecifier<
  *
  * @deprecated Use createVarMethodFactory instead for proper type inference with nested input objects.
  */
-export const createVarMethod = <TKind extends InputTypeKind, TTypeName extends string>(kind: TKind, typeName: TTypeName) => {
+export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName extends string>(
+  kind: TKind,
+  typeName: TTypeName,
+) => {
   return <
     TSchema extends AnyGraphqlSchema,
     const TModifier extends TypeModifier,
@@ -103,7 +106,7 @@ export const createVarMethod = <TKind extends InputTypeKind, TTypeName extends s
  * ```
  */
 export const createVarMethodFactory = <TSchema extends AnyGraphqlSchema>() => {
-  return <TKind extends InputTypeKind, TTypeName extends AllInputTypeNames<TSchema>>(
+  return <TKind extends CreatableInputTypeKind, TTypeName extends AllInputTypeNames<TSchema>>(
     kind: TKind,
     typeName: TTypeName,
   ): InputTypeMethod<TSchema, TKind, TTypeName> => {
@@ -120,7 +123,7 @@ export const createVarMethodFactory = <TSchema extends AnyGraphqlSchema>() => {
 /**
  * Type for a single input type method.
  */
-export type InputTypeMethod<TSchema extends AnyGraphqlSchema, TKind extends InputTypeKind, TTypeName extends string> = <
+export type InputTypeMethod<TSchema extends AnyGraphqlSchema, TKind extends CreatableInputTypeKind, TTypeName extends string> = <
   const TModifier extends TypeModifier,
   const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
   const TDirectives extends AnyConstDirectiveAttachments = {},
@@ -145,7 +148,7 @@ export type InputTypeMethods<TSchema extends AnyGraphqlSchema> = {
 type WrappedVarMethod<
   TVarName extends string,
   TSchema extends AnyGraphqlSchema,
-  TKind extends InputTypeKind,
+  TKind extends CreatableInputTypeKind,
   TTypeName extends string,
 > = <
   const TModifier extends TypeModifier,

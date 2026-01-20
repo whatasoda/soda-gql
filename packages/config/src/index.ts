@@ -15,4 +15,7 @@ export type {
   ResolvedTsconfigPaths,
   SchemaConfig,
   SodaGqlConfig,
+  TypeCategory,
+  TypeFilterConfig,
+  TypeFilterRule,
 } from "./types";

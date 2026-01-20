@@ -165,6 +165,11 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         return factoryReturn;
       }
 
+      // Excluded types are filtered out during codegen and should never be encountered at runtime
+      if (type.kind === "excluded") {
+        throw new Error(`Field "${fieldName}" references excluded type "${type.name}"`);
+      }
+
       throw new Error(`Unsupported field type: ${type satisfies never}`);
     };
 

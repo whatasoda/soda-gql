@@ -10,6 +10,7 @@ import type {
   SchemaInput,
   SodaGqlConfig,
   StylesConfig,
+  TypeFilterConfig,
 } from "./types";
 
 /**
@@ -87,11 +88,32 @@ const SchemaInputSchema: z.ZodType<SchemaInput> = z.union([
   z.custom<() => readonly string[]>((val) => typeof val === "function"),
 ]);
 
+// TypeCategory enum for type filtering
+const TypeCategorySchema = z.enum(["object", "input", "enum", "union", "scalar"]);
+
+// TypeFilterRule validates pattern and optional category
+const TypeFilterRuleSchema = z.object({
+  pattern: z.string().min(1),
+  category: z.union([TypeCategorySchema, z.array(TypeCategorySchema).min(1)]).optional(),
+});
+
+// TypeFilterConfig supports function or object with exclude rules
+// Function signature validation is deferred to runtime (compileTypeFilter)
+const TypeFilterConfigSchema: z.ZodType<TypeFilterConfig | undefined> = z
+  .union([
+    z.custom<TypeFilterConfig>((val) => typeof val === "function"),
+    z.object({
+      exclude: z.array(TypeFilterRuleSchema).min(1),
+    }),
+  ])
+  .optional();
+
 const SchemaConfigSchema = defineSchemaFor<SchemaConfig>()({
   schema: SchemaInputSchema,
   inject: InjectConfigSchema,
   defaultInputDepth: z.number().int().positive().max(10).optional(),
   inputDepthOverrides: z.record(z.string(), z.number().int().positive()).optional(),
+  typeFilter: TypeFilterConfigSchema,
 });
 
 const StylesConfigSchema = defineSchemaFor<StylesConfig>()({
