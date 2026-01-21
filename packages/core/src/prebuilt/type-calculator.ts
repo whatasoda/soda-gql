@@ -275,7 +275,7 @@ export const calculateFieldType = (
 
   // Handle object types (nested selection)
   if (type.kind === "object" && selection.object) {
-    const nestedType = calculateFieldsType(schema, selection.object, formatters);
+    const nestedType = calculateFieldsType(schema, selection.object, formatters, type.name);
     return applyTypeModifier(nestedType, type.modifier);
   }
 
@@ -313,9 +313,9 @@ export const calculateFieldType = (
 const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, formatters?: TypeFormatters): string => {
   const memberTypes: string[] = [];
 
-  for (const [_typeName, fields] of Object.entries(union)) {
+  for (const [typeName, fields] of Object.entries(union)) {
     if (fields) {
-      const memberType = calculateFieldsType(schema, fields, formatters);
+      const memberType = calculateFieldsType(schema, fields, formatters, typeName);
       memberTypes.push(memberType);
     }
   }
@@ -333,20 +333,49 @@ const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, for
 const isShorthandValue = (value: AnyFieldValue): value is true => value === true;
 
 /**
+ * Expand shorthand to AnyFieldSelection using schema type info.
+ * Used at prebuilt type generation time to convert `true` to full field selection.
+ *
+ * @param schema - The GraphQL schema
+ * @param typeName - The parent object type name
+ * @param fieldName - The field name to select
+ */
+const expandShorthandForType = (schema: AnyGraphqlSchema, typeName: string, fieldName: string): AnyFieldSelection => {
+  const typeDef = schema.object[typeName];
+  if (!typeDef) {
+    throw new Error(`Type "${typeName}" not found in schema`);
+  }
+
+  const fieldSpec = typeDef.fields[fieldName];
+  if (!fieldSpec) {
+    throw new Error(`Field "${fieldName}" not found on type "${typeName}"`);
+  }
+
+  return {
+    parent: typeName,
+    field: fieldName,
+    type: fieldSpec,
+    args: {},
+    directives: [],
+    object: null,
+    union: null,
+  };
+};
+
+/**
  * Calculate the TypeScript type string for a set of field selections.
  * This is the main entry point for type calculation.
  *
  * @param schema - The GraphQL schema
  * @param fields - The field selections to calculate types for
  * @param formatters - Optional formatters for customizing type names
- *
- * @note Shorthand syntax (`id: true`) is not yet supported in prebuilt type generation.
- *       Use factory syntax (`...f.id()`) for fields in fragments/operations that need prebuilt types.
+ * @param typeName - Parent type name for shorthand expansion
  */
 export const calculateFieldsType = (
   schema: AnyGraphqlSchema,
   fields: AnyFieldsExtended,
   formatters?: TypeFormatters,
+  typeName?: string,
 ): string => {
   const entries = Object.entries(fields);
 
@@ -355,13 +384,19 @@ export const calculateFieldsType = (
   }
 
   const fieldTypes = entries.map(([alias, value]) => {
+    let selection: AnyFieldSelection;
     if (isShorthandValue(value)) {
-      throw new Error(
-        `Shorthand syntax (${alias}: true) is not yet supported in prebuilt type generation. ` +
-          `Use factory syntax (...f.${alias}()) instead.`,
-      );
+      if (!typeName) {
+        throw new Error(
+          `Shorthand syntax (${alias}: true) requires type context. ` +
+            `This is an internal error - type name should be provided.`,
+        );
+      }
+      selection = expandShorthandForType(schema, typeName, alias);
+    } else {
+      selection = value;
     }
-    const fieldType = calculateFieldType(schema, value, formatters);
+    const fieldType = calculateFieldType(schema, selection, formatters);
     // Use readonly for all fields to match InferFields behavior
     return `readonly ${alias}: ${fieldType}`;
   });
