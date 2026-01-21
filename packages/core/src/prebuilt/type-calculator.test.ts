@@ -768,3 +768,118 @@ describe("TypeFormatters", () => {
     });
   });
 });
+
+// Schema with fields for shorthand tests
+const schemaWithFields: AnyGraphqlSchema = {
+  ...mockSchema,
+  object: {
+    ...mockSchema.object,
+    User: {
+      name: "User",
+      fields: {
+        id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+        name: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+        email: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+        status: { kind: "enum", name: "Status", modifier: "!", arguments: {} },
+        profile: { kind: "object", name: "Profile", modifier: "?", arguments: {} },
+      },
+    },
+    Profile: {
+      name: "Profile",
+      fields: {
+        bio: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+        avatarUrl: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+      },
+    },
+  },
+};
+
+describe("calculateFieldsType with shorthand", () => {
+  test("handles shorthand scalar fields", () => {
+    const fields = { id: true, name: true } as const;
+    expect(calculateFieldsType(schemaWithFields, fields, undefined, "User")).toBe(
+      '{ readonly id: ScalarOutput<"ID">; readonly name: ScalarOutput<"String"> }',
+    );
+  });
+
+  test("handles shorthand nullable scalar field", () => {
+    const fields = { email: true } as const;
+    expect(calculateFieldsType(schemaWithFields, fields, undefined, "User")).toBe(
+      '{ readonly email: (ScalarOutput<"String"> | null | undefined) }',
+    );
+  });
+
+  test("handles shorthand enum field", () => {
+    const fields = { status: true } as const;
+    expect(calculateFieldsType(schemaWithFields, fields, undefined, "User")).toBe(
+      '{ readonly status: "ACTIVE" | "INACTIVE" | "PENDING" }',
+    );
+  });
+
+  test("handles mixed shorthand and factory syntax", () => {
+    const fields = {
+      id: true as const,
+      name: {
+        parent: "User",
+        field: "name",
+        type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: null,
+      } as AnyFieldSelection,
+    };
+    expect(calculateFieldsType(schemaWithFields, fields, undefined, "User")).toBe(
+      '{ readonly id: ScalarOutput<"ID">; readonly name: ScalarOutput<"String"> }',
+    );
+  });
+
+  test("handles shorthand in nested object", () => {
+    const fields = {
+      profile: {
+        parent: "User",
+        field: "profile",
+        type: { kind: "object", name: "Profile", modifier: "?", arguments: {} },
+        args: {},
+        directives: [],
+        object: {
+          bio: true,
+          avatarUrl: true,
+        } as const,
+        union: null,
+      } as AnyFieldSelection,
+    };
+    expect(calculateFieldsType(schemaWithFields, fields, undefined, "User")).toBe(
+      '{ readonly profile: ({ readonly bio: (ScalarOutput<"String"> | null | undefined); readonly avatarUrl: (ScalarOutput<"String"> | null | undefined) } | null | undefined) }',
+    );
+  });
+
+  test("throws error when shorthand used without typeName", () => {
+    const fields = { id: true } as const;
+    expect(() => calculateFieldsType(schemaWithFields, fields)).toThrow("requires type context");
+  });
+
+  test("throws error for unknown field in shorthand", () => {
+    const fields = { unknownField: true } as const;
+    expect(() => calculateFieldsType(schemaWithFields, fields, undefined, "User")).toThrow(
+      'Field "unknownField" not found on type "User"',
+    );
+  });
+
+  test("throws error for unknown type in shorthand", () => {
+    const fields = { id: true } as const;
+    expect(() => calculateFieldsType(schemaWithFields, fields, undefined, "UnknownType")).toThrow(
+      'Type "UnknownType" not found in schema',
+    );
+  });
+
+  test("handles shorthand with custom formatters", () => {
+    const fields = { id: true, name: true } as const;
+    const formatters = {
+      scalarOutput: (name: string) => `Custom_${name}`,
+    };
+    expect(calculateFieldsType(schemaWithFields, fields, formatters, "User")).toBe(
+      "{ readonly id: Custom_ID; readonly name: Custom_String }",
+    );
+  });
+});
