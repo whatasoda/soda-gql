@@ -8,8 +8,7 @@ import type {
   AbstractFieldSelection,
   AnyAssignableInput,
   AnyFieldSelection,
-  AnyFields,
-  AnyNestedObject,
+  AnyFieldsExtended,
   AnyNestedUnion,
   DeclaredVariables,
   FieldSelectionTemplateOf,
@@ -29,12 +28,14 @@ import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
  * Builder signature exposed to userland `model` and `slice` helpers. The
  * tooling `f`/`fields`/`_` aliases provide ergonomic access to GraphQL fields
  * while preserving the original schema information for inference.
+ *
+ * Supports both shorthand syntax (`id: true`) and factory syntax (`...f.id()`).
  */
 export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TVariableDefinitions extends InputTypeSpecifiers,
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
 > = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 
 /**
@@ -54,11 +55,13 @@ export type FieldsBuilderTools<
 /**
  * Builder for nested object field selections.
  * Used when a field returns an object type requiring sub-selections.
+ *
+ * Supports both shorthand syntax (`id: true`) and factory syntax (`...f.id()`).
  */
 export type NestedObjectFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TFields extends AnyNestedObject,
+  TFields extends AnyFieldsExtended,
 > = (tools: NoInfer<NestedObjectFieldsBuilderTools<TSchema, TTypeName>>) => TFields;
 
 /**
@@ -74,6 +77,7 @@ export type NestedObjectFieldsBuilderTools<
 
 /**
  * Builder for union type selections with per-member field definitions.
+ * Supports shorthand syntax (`id: true`) within each member's field builder.
  */
 export type NestedUnionFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
@@ -83,7 +87,7 @@ export type NestedUnionFieldsBuilder<
   [TTypename in keyof TUnionFields & TMemberName]?: NestedObjectFieldsBuilder<
     TSchema,
     TTypename,
-    NonNullable<TUnionFields[TTypename]>
+    NonNullable<TUnionFields[TTypename]> & AnyFieldsExtended
   >;
 };
 
@@ -139,7 +143,7 @@ export type FieldSelectionFactoryObjectReturn<
   TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection & { type: OutputObjectSpecifier },
   TAlias extends string | null,
-> = <TNested extends AnyNestedObject>(
+> = <TNested extends AnyFieldsExtended>(
   nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<

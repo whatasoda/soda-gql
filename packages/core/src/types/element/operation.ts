@@ -4,7 +4,7 @@
  */
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
-import type { AnyFields, InferFields } from "../fragment";
+import type { AnyFieldsExtended, InferFieldsExtended } from "../fragment";
 import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
 import type { InputTypeSpecifiers } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
@@ -22,7 +22,7 @@ export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   string,
   string[],
   any,
-  AnyFields,
+  AnyFieldsExtended,
   any
 >;
 
@@ -46,7 +46,7 @@ type OperationArtifact<
   TOperationName extends string,
   TVariableNames extends string[],
   TVariables extends AnyConstAssignableInput,
-  TFields extends Partial<AnyFields>,
+  TFields extends Partial<AnyFieldsExtended>,
   TData extends object,
 > = {
   readonly operationType: TOperationType;
@@ -76,7 +76,7 @@ export class Operation<
     TOperationName extends string,
     TVariableNames extends string[],
     TVariables extends AnyConstAssignableInput,
-    TFields extends Partial<AnyFields>,
+    TFields extends Partial<AnyFieldsExtended>,
     TData extends object,
   >
   extends GqlElement<
@@ -145,7 +145,7 @@ export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableDefinitions extends InputTypeSpecifiers,
-    TFields extends AnyFields,
+    TFields extends AnyFieldsExtended,
   >(
     define: (context: GqlElementContext | null) =>
       | {
@@ -154,7 +154,10 @@ export class Operation<
           schemaLabel: TSchema["label"];
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
-          document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+          document: TypedDocumentNode<
+            InferFieldsExtended<TSchema, TSchema["operations"][TOperationType] & keyof TSchema["object"] & string, TFields>,
+            ConstAssignableInput<TSchema, TVariableDefinitions>
+          >;
           metadata?: unknown;
         }
       | Promise<{
@@ -163,7 +166,10 @@ export class Operation<
           schemaLabel: TSchema["label"];
           variableNames: (keyof TVariableDefinitions & string)[];
           documentSource: () => TFields;
-          document: TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVariableDefinitions>>;
+          document: TypedDocumentNode<
+            InferFieldsExtended<TSchema, TSchema["operations"][TOperationType] & keyof TSchema["object"] & string, TFields>,
+            ConstAssignableInput<TSchema, TVariableDefinitions>
+          >;
           metadata?: unknown;
         }>,
   ) {

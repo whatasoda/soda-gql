@@ -28,9 +28,12 @@ import {
   type AnyAssignableInput,
   type AnyAssignableInputValue,
   type AnyDirectiveAttachments,
-  type AnyFields,
+  type AnyFieldSelection,
+  type AnyFieldsExtended,
+  type AnyFieldValue,
   type AnyNestedUnion,
-  type InferFields,
+  type InferFieldsExtended,
+  type ScalarShorthand,
   VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
@@ -227,6 +230,44 @@ const buildDirectives = (
     });
 };
 
+/**
+ * Check if value is shorthand (true) vs factory return (AnyFieldSelection).
+ * Used for field selection shorthand syntax support.
+ */
+const isShorthand = (value: AnyFieldValue): value is ScalarShorthand => {
+  return value === true;
+};
+
+/**
+ * Expand shorthand to AnyFieldSelection using schema type info.
+ * Used at document build time to convert `true` to full field selection.
+ *
+ * @param schema - The GraphQL schema
+ * @param typeName - The parent object type name
+ * @param fieldName - The field name to select
+ */
+const expandShorthand = (schema: AnyGraphqlSchema, typeName: string, fieldName: string): AnyFieldSelection => {
+  const typeDef = schema.object[typeName];
+  if (!typeDef) {
+    throw new Error(`Type "${typeName}" not found in schema`);
+  }
+
+  const fieldSpec = typeDef.fields[fieldName];
+  if (!fieldSpec) {
+    throw new Error(`Field "${fieldName}" not found on type "${typeName}"`);
+  }
+
+  return {
+    parent: typeName,
+    field: fieldName,
+    type: fieldSpec,
+    args: {},
+    directives: [],
+    object: null,
+    union: null,
+  };
+};
+
 const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): InlineFragmentNode[] =>
   Object.entries(union)
     .map(([typeName, object]): InlineFragmentNode | null => {
@@ -239,15 +280,27 @@ const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): I
             },
             selectionSet: {
               kind: Kind.SELECTION_SET,
-              selections: buildField(object, schema),
+              selections: buildField(object, schema, typeName),
             },
           }
         : null;
     })
     .filter((item) => item !== null);
 
-const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
-  Object.entries(field).map(([alias, { args, field, object, union, directives, type }]): FieldNode => {
+/**
+ * Builds field nodes from extended fields map.
+ * Supports both shorthand (true) and factory (AnyFieldSelection) syntax.
+ *
+ * @param fields - Field selections (shorthand or factory)
+ * @param schema - The GraphQL schema
+ * @param typeName - Parent type name (required for shorthand expansion)
+ */
+const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeName?: string): FieldNode[] =>
+  Object.entries(fields).map(([alias, value]): FieldNode => {
+    // Expand shorthand to AnyFieldSelection if needed
+    const selection = isShorthand(value) ? expandShorthand(schema, typeName!, alias) : value;
+
+    const { args, field, object, union, directives, type } = selection;
     const builtDirectives = buildDirectives(directives, "FIELD", schema);
     return {
       kind: Kind.FIELD,
@@ -258,7 +311,7 @@ const buildField = (field: AnyFields, schema: AnyGraphqlSchema): FieldNode[] =>
       selectionSet: object
         ? {
             kind: Kind.SELECTION_SET,
-            selections: buildField(object, schema),
+            selections: buildField(object, schema, type.name),
           }
         : union
           ? {
@@ -473,16 +526,18 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
  */
 export const buildDocument = <
   TSchema extends AnyGraphqlSchema,
-  TFields extends AnyFields,
+  TTypeName extends keyof TSchema["object"] & string,
+  TFields extends AnyFieldsExtended,
   TVarDefinitions extends InputTypeSpecifiers,
 >(options: {
   operationName: string;
   operationType: OperationType;
+  operationTypeName: TTypeName;
   variables: TVarDefinitions;
   fields: TFields;
   schema: TSchema;
-}): TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
-  const { operationName, operationType, variables, fields, schema } = options;
+}): TypedDocumentNode<InferFieldsExtended<TSchema, TTypeName, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
+  const { operationName, operationType, operationTypeName, variables, fields, schema } = options;
   return {
     kind: Kind.DOCUMENT,
     definitions: [
@@ -494,9 +549,12 @@ export const buildDocument = <
         // directives: directives || [],
         selectionSet: {
           kind: Kind.SELECTION_SET,
-          selections: buildField(fields, schema),
+          selections: buildField(fields, schema, operationTypeName),
         },
       },
     ],
-  } satisfies DocumentNode as TypedDocumentNode<InferFields<TSchema, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>>;
+  } satisfies DocumentNode as TypedDocumentNode<
+    InferFieldsExtended<TSchema, TTypeName, TFields>,
+    ConstAssignableInput<TSchema, TVarDefinitions>
+  >;
 };

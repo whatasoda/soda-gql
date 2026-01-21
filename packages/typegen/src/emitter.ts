@@ -137,7 +137,7 @@ const groupBySchema = (
         }
 
         // Generate output type with schema-specific scalar names
-        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters);
+        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters, selection.typename);
 
         // Generate input type from variableDefinitions with schema-specific names
         const hasVariables = Object.keys(selection.variableDefinitions).length > 0;
@@ -165,7 +165,9 @@ const groupBySchema = (
         }
 
         // Generate output type with schema-specific scalar names
-        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters);
+        // Get the root type name from schema operations (Query, Mutation, Subscription)
+        const rootTypeName = schema.operations[selection.operationType as keyof typeof schema.operations];
+        const outputType = calculateFieldsType(schema, selection.fields, outputFormatters, rootTypeName ?? undefined);
 
         // Generate input type with schema-specific scalar and input object names
         const inputType = generateInputType(schema, selection.variableDefinitions, inputFormatters);

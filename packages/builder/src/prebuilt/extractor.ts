@@ -8,7 +8,7 @@
  */
 
 import type { CanonicalId } from "@soda-gql/common";
-import { type AnyFields, type AnyVarRef, createVarRefFromVariable, type InputTypeSpecifiers } from "@soda-gql/core";
+import { type AnyFieldsExtended, type AnyVarRef, createVarRefFromVariable, type InputTypeSpecifiers } from "@soda-gql/core";
 import { Kind, type OperationDefinitionNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 
@@ -21,7 +21,7 @@ export type FieldSelectionData =
       readonly schemaLabel: string;
       readonly key: string | undefined;
       readonly typename: string;
-      readonly fields: AnyFields;
+      readonly fields: AnyFieldsExtended;
       readonly variableDefinitions: InputTypeSpecifiers;
     }
   | {
@@ -29,7 +29,7 @@ export type FieldSelectionData =
       readonly schemaLabel: string;
       readonly operationName: string;
       readonly operationType: string;
-      readonly fields: AnyFields;
+      readonly fields: AnyFieldsExtended;
       readonly variableDefinitions: readonly VariableDefinitionNode[];
     };
 

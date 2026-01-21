@@ -5,7 +5,7 @@
  */
 
 import type { FieldsBuilder } from "../types/element";
-import type { AnyFields, DeclaredVariables } from "../types/fragment";
+import type { AnyFieldsExtended, DeclaredVariables } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
   DocumentTransformer,
@@ -32,7 +32,7 @@ export type OperationCoreParams<
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends InputTypeSpecifiers,
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 > = {
@@ -72,7 +72,7 @@ export type OperationArtifactResult<
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends InputTypeSpecifiers,
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
   TOperationMetadata,
 > = {
   readonly operationType: TOperationType;
@@ -104,7 +104,7 @@ export const buildOperationArtifact = <
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends InputTypeSpecifiers,
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 >(
@@ -137,9 +137,15 @@ export const buildOperationArtifact = <
   const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => fieldsFactory({ f, $ }));
 
   // 3. Build document
-  const document = buildDocument<TSchema, TFields, TVarDefinitions>({
+  const document = buildDocument<
+    TSchema,
+    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
+    TFields,
+    TVarDefinitions
+  >({
     operationName,
     operationType,
+    operationTypeName,
     variables,
     fields,
     schema,
