@@ -320,6 +320,129 @@ describe("emitFragment", () => {
     expect(output).toContain("...f.name()");
   });
 
+  describe("fragment variable inference", () => {
+    const schemaWithArgs = parse(`
+      scalar CustomScalar
+
+      enum PostStatus {
+        DRAFT
+        PUBLISHED
+      }
+
+      input PostFilter {
+        status: PostStatus
+        authorId: ID
+      }
+
+      type Post {
+        id: ID!
+        title: String!
+      }
+
+      type User {
+        id: ID!
+        name: String!
+        posts(first: Int!, status: PostStatus, filter: PostFilter): [Post!]!
+      }
+
+      type Query {
+        user(id: ID!): User
+      }
+    `);
+
+    const optionsWithArgs = {
+      ...defaultOptions,
+      schemaDocument: schemaWithArgs,
+    };
+
+    const parseAndTransformWithArgs = (source: string) => {
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      return transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs })._unsafeUnwrap();
+    };
+
+    it("emits fragment with inferred variables", () => {
+      const { fragments } = parseAndTransformWithArgs(`
+        fragment UserWithPosts on User {
+          posts(first: $limit) { id }
+        }
+      `);
+
+      const output = emitFragment(fragments[0]!, optionsWithArgs)._unsafeUnwrap();
+
+      expect(output).toContain("({ fragment, $var })");
+      expect(output).toContain('variables: { ...$var("limit").Int("!")');
+      expect(output).toContain("fields: ({ f, $ }) =>");
+      expect(output).toContain("...f.posts({ first: $.limit })");
+    });
+
+    it("emits fragment with multiple inferred variables", () => {
+      const { fragments } = parseAndTransformWithArgs(`
+        fragment UserWithPosts on User {
+          posts(first: $limit, status: $status) { id }
+        }
+      `);
+
+      const output = emitFragment(fragments[0]!, optionsWithArgs)._unsafeUnwrap();
+
+      expect(output).toContain('...$var("limit").Int("!")');
+      expect(output).toContain('...$var("status").PostStatus("?")');
+      expect(output).toContain("first: $.limit");
+      expect(output).toContain("status: $.status");
+    });
+
+    it("emits fragment with variables from nested input object", () => {
+      const { fragments } = parseAndTransformWithArgs(`
+        fragment FilteredPosts on User {
+          posts(first: 10, filter: { status: $status }) { id }
+        }
+      `);
+
+      const output = emitFragment(fragments[0]!, optionsWithArgs)._unsafeUnwrap();
+
+      expect(output).toContain('...$var("status").PostStatus("?")');
+      expect(output).toContain('filter: { status: $.status }');
+    });
+
+    it("emits fragment with propagated variables from spread", () => {
+      const { fragments } = parseAndTransformWithArgs(`
+        fragment UserWithPosts on User {
+          ...PostsFragment
+          id
+        }
+        fragment PostsFragment on User {
+          posts(first: $limit) { id }
+        }
+      `);
+
+      // Find UserWithPosts fragment
+      const userFragment = fragments.find((f) => f.name === "UserWithPosts")!;
+      const output = emitFragment(userFragment, {
+        ...optionsWithArgs,
+        fragmentImports: new Map([["PostsFragment", "./PostsFragment.compat"]]),
+      })._unsafeUnwrap();
+
+      // Should have $var for propagated variable
+      expect(output).toContain("({ fragment, $var })");
+      expect(output).toContain('...$var("limit").Int("!")');
+    });
+
+    it("emits fragment without variables when no arguments", () => {
+      const { fragments } = parseAndTransformWithArgs(`
+        fragment SimpleUser on User {
+          id
+          name
+        }
+      `);
+
+      const output = emitFragment(fragments[0]!, optionsWithArgs)._unsafeUnwrap();
+
+      // Should NOT have $var
+      expect(output).toContain("({ fragment })");
+      expect(output).not.toContain("$var");
+      expect(output).toContain("fields: ({ f }) =>");
+    });
+  });
+
   it("emits fragment with nested selections", () => {
     const parsed = parseGraphqlSource(
       `

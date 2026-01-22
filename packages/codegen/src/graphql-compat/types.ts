@@ -40,6 +40,22 @@ export type ParsedFragment = {
 };
 
 /**
+ * Inferred variable from fragment field arguments.
+ * Unlike ParsedVariable which comes from explicit declaration,
+ * this is derived from variable usages in field arguments.
+ */
+export type InferredVariable = {
+  /** Variable name (without $) */
+  readonly name: string;
+  /** Type name (e.g., "ID", "String", "UserInput") */
+  readonly typeName: string;
+  /** Type modifier in soda-gql format */
+  readonly modifier: string;
+  /** Type kind (scalar, enum, or input) */
+  readonly typeKind: "scalar" | "enum" | "input";
+};
+
+/**
  * Parsed variable definition from a GraphQL operation.
  */
 export type ParsedVariable = {
@@ -194,4 +210,31 @@ export type GraphqlCompatError =
   | {
       readonly code: "GRAPHQL_INLINE_FRAGMENT_WITHOUT_TYPE";
       readonly message: string;
+    }
+  | {
+      readonly code: "GRAPHQL_VARIABLE_TYPE_MISMATCH";
+      readonly message: string;
+      readonly variableName: string;
+    }
+  | {
+      readonly code: "GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE";
+      readonly message: string;
+      readonly variableName: string;
+    }
+  | {
+      readonly code: "GRAPHQL_FRAGMENT_CIRCULAR_DEPENDENCY";
+      readonly message: string;
+      readonly fragmentNames: readonly string[];
+    }
+  | {
+      readonly code: "GRAPHQL_UNKNOWN_FIELD";
+      readonly message: string;
+      readonly typeName: string;
+      readonly fieldName: string;
+    }
+  | {
+      readonly code: "GRAPHQL_UNKNOWN_ARGUMENT";
+      readonly message: string;
+      readonly fieldName: string;
+      readonly argumentName: string;
     };
