@@ -95,10 +95,7 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
       type: infer TSpecifier extends OutputObjectSpecifier;
       object: infer TNested extends AnyNestedObjectExtended;
     }
-      ? ApplyTypeModifier<
-          InferFieldsExtended<TSchema, TSpecifier["name"], TNested>,
-          TSpecifier["modifier"]
-        >
+      ? ApplyTypeModifier<InferFieldsExtended<TSchema, TSpecifier["name"], TNested>, TSpecifier["modifier"]>
       : never)
   | (TSelection extends {
       type: infer TSpecifier extends OutputUnionSpecifier;
