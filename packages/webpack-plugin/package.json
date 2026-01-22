@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/webpack-plugin",
-  "version": "0.11.16",
+  "version": "0.11.17",
   "description": "Webpack plugin for soda-gql with HMR support",
   "type": "module",
   "private": false,
