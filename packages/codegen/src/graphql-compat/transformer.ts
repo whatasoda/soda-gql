@@ -398,6 +398,108 @@ export const inferVariablesFromUsages = (
  */
 const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 
+// ============================================================================
+// Fragment Dependency Ordering
+// ============================================================================
+
+/**
+ * Topologically sort fragments so dependencies come before dependents.
+ * Detects circular dependencies.
+ *
+ * Note: Uses the existing collectFragmentDependencies function defined below.
+ */
+export const sortFragmentsByDependency = (
+  fragments: readonly ParsedFragment[],
+): Result<ParsedFragment[], GraphqlCompatError> => {
+  // Build dependency graph using existing function
+  const graph = new Map<string, Set<string>>();
+  for (const fragment of fragments) {
+    const deps = collectFragmentDependenciesSet(fragment.selections);
+    graph.set(fragment.name, deps);
+  }
+
+  const fragmentByName = new Map<string, ParsedFragment>();
+  for (const f of fragments) {
+    fragmentByName.set(f.name, f);
+  }
+
+  const sorted: ParsedFragment[] = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>(); // For cycle detection
+
+  const visit = (name: string, path: string[]): GraphqlCompatError | null => {
+    if (visited.has(name)) return null;
+
+    if (visiting.has(name)) {
+      // Found a cycle
+      const cycleStart = path.indexOf(name);
+      const cycle = path.slice(cycleStart).concat(name);
+      return {
+        code: "GRAPHQL_FRAGMENT_CIRCULAR_DEPENDENCY",
+        message: `Circular dependency detected in fragments: ${cycle.join(" -> ")}`,
+        fragmentNames: cycle,
+      };
+    }
+
+    // Fragment might not be in our list (external dependency)
+    const fragment = fragmentByName.get(name);
+    if (!fragment) {
+      // External fragment, skip
+      visited.add(name);
+      return null;
+    }
+
+    visiting.add(name);
+    const deps = graph.get(name) ?? new Set();
+
+    for (const dep of deps) {
+      const error = visit(dep, [...path, name]);
+      if (error) return error;
+    }
+
+    visiting.delete(name);
+    visited.add(name);
+    sorted.push(fragment);
+    return null;
+  };
+
+  for (const fragment of fragments) {
+    const error = visit(fragment.name, []);
+    if (error) return err(error);
+  }
+
+  return ok(sorted);
+};
+
+/**
+ * Recursively collect fragment spread names from selections into a Set.
+ * Internal helper for sortFragmentsByDependency.
+ */
+const collectFragmentDependenciesSet = (selections: readonly ParsedSelection[]): Set<string> => {
+  const deps = new Set<string>();
+
+  const collect = (sels: readonly ParsedSelection[]): void => {
+    for (const sel of sels) {
+      switch (sel.kind) {
+        case "fragmentSpread":
+          deps.add(sel.name);
+          break;
+        case "field":
+          if (sel.selections) {
+            collect(sel.selections);
+          }
+          break;
+        case "inlineFragment":
+          collect(sel.selections);
+          break;
+      }
+    }
+  };
+
+  collect(selections);
+  return deps;
+};
+
 /**
  * Check if a type name is an enum type.
  */

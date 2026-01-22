@@ -6,6 +6,7 @@ import {
   inferVariablesFromUsages,
   mergeModifiers,
   mergeVariableUsages,
+  sortFragmentsByDependency,
   transformParsedGraphql,
 } from "./transformer";
 import { createSchemaIndex } from "../generator";
@@ -519,6 +520,120 @@ describe("inferVariablesFromUsages", () => {
     expect(result.isOk()).toBe(true);
     const names = result._unsafeUnwrap().map((v) => v.name);
     expect(names).toEqual(["a", "m", "z"]);
+  });
+});
+
+describe("sortFragmentsByDependency", () => {
+  it("sorts independent fragments in original order", () => {
+    const source = `
+      fragment A on User { id }
+      fragment B on User { name }
+      fragment C on User { email }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isOk()).toBe(true);
+    const names = result._unsafeUnwrap().map((f) => f.name);
+    expect(names).toEqual(["A", "B", "C"]);
+  });
+
+  it("sorts dependent fragments with dependency first", () => {
+    const source = `
+      fragment A on User {
+        ...B
+      }
+      fragment B on User { id }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isOk()).toBe(true);
+    const names = result._unsafeUnwrap().map((f) => f.name);
+    expect(names).toEqual(["B", "A"]);
+  });
+
+  it("handles chain of dependencies", () => {
+    const source = `
+      fragment A on User { ...B }
+      fragment B on User { ...C }
+      fragment C on User { id }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isOk()).toBe(true);
+    const names = result._unsafeUnwrap().map((f) => f.name);
+    expect(names).toEqual(["C", "B", "A"]);
+  });
+
+  it("handles diamond dependency", () => {
+    const source = `
+      fragment A on User { ...B, ...C }
+      fragment B on User { ...D }
+      fragment C on User { ...D }
+      fragment D on User { id }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isOk()).toBe(true);
+    const sorted = result._unsafeUnwrap();
+    const names = sorted.map((f) => f.name);
+    // D should come before B and C, which should come before A
+    expect(names.indexOf("D")).toBeLessThan(names.indexOf("B"));
+    expect(names.indexOf("D")).toBeLessThan(names.indexOf("C"));
+    expect(names.indexOf("B")).toBeLessThan(names.indexOf("A"));
+    expect(names.indexOf("C")).toBeLessThan(names.indexOf("A"));
+  });
+
+  it("detects circular dependency", () => {
+    const source = `
+      fragment A on User { ...B }
+      fragment B on User { ...A }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isErr()).toBe(true);
+    const error = result._unsafeUnwrapErr();
+    expect(error.code).toBe("GRAPHQL_FRAGMENT_CIRCULAR_DEPENDENCY");
+    if (error.code === "GRAPHQL_FRAGMENT_CIRCULAR_DEPENDENCY") {
+      expect(error.fragmentNames).toContain("A");
+      expect(error.fragmentNames).toContain("B");
+    }
+  });
+
+  it("detects self-reference", () => {
+    const source = `
+      fragment A on User { ...A }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_FRAGMENT_CIRCULAR_DEPENDENCY");
+  });
+
+  it("handles external (missing) fragment dependencies", () => {
+    const source = `
+      fragment A on User {
+        ...ExternalFragment
+        id
+      }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+
+    const result = sortFragmentsByDependency(parsed.fragments);
+
+    // Should succeed - external fragments are just skipped
+    expect(result.isOk()).toBe(true);
   });
 });
 
