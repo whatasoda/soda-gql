@@ -114,8 +114,8 @@ describe("graphql-compat integration", () => {
 
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
-    // Verify structure
-    expect(output).toContain('import { gql } from "@/graphql-system"');
+    // Verify structure (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("export const GetUserCompat = gql.mySchema");
     expect(output).toContain('name: "GetUser"');
     expect(output).toContain('...$var("userId").ID("!")');
@@ -204,8 +204,8 @@ describe("graphql-compat integration", () => {
 
     const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
-    // Verify structure
-    expect(output).toContain('import { gql } from "@/graphql-system"');
+    // Verify structure (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
     expect(output).toContain("fragment.User(");
     expect(output).toContain("fields: ({ f }) => ({");
@@ -246,15 +246,10 @@ describe("graphql-compat integration", () => {
     const output = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map([
-        ["UserBasicFields", "./UserBasicFields.compat"],
-        ["PostFields", "./PostFields.compat"],
-      ]),
     })._unsafeUnwrap();
 
-    // Verify imports
-    expect(output).toContain('import { UserBasicFieldsFragment } from "./UserBasicFields.compat"');
-    expect(output).toContain('import { PostFieldsFragment } from "./PostFields.compat"');
+    // Verify spreads (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("...UserBasicFieldsFragment.spread()");
     expect(output).toContain("...PostFieldsFragment.spread()");
   });

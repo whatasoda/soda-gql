@@ -35,20 +35,7 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
   const lines: string[] = [];
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
 
-  // Generate imports
-  lines.push(`import { gql } from "${options.graphqlSystemPath}";`);
-
-  // Add fragment imports if needed
-  if (operation.fragmentDependencies.length > 0 && options.fragmentImports) {
-    for (const fragName of operation.fragmentDependencies) {
-      const importPath = options.fragmentImports.get(fragName);
-      if (importPath) {
-        lines.push(`import { ${fragName}Fragment } from "${importPath}";`);
-      }
-    }
-  }
-
-  lines.push("");
+  // Note: imports (gql and fragment) are handled by the caller
 
   // Generate export
   const exportName = `${operation.name}Compat`;
@@ -86,20 +73,7 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
   const hasVariables = fragment.variables.length > 0;
 
-  // Generate imports
-  lines.push(`import { gql } from "${options.graphqlSystemPath}";`);
-
-  // Add fragment imports if needed
-  if (fragment.fragmentDependencies.length > 0 && options.fragmentImports) {
-    for (const fragName of fragment.fragmentDependencies) {
-      const importPath = options.fragmentImports.get(fragName);
-      if (importPath) {
-        lines.push(`import { ${fragName}Fragment } from "${importPath}";`);
-      }
-    }
-  }
-
-  lines.push("");
+  // Note: imports (gql and fragment) are handled by the caller
 
   // Generate export
   const exportName = `${fragment.name}Fragment`;
