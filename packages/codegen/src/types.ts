@@ -71,6 +71,11 @@ export type CodegenError =
       readonly code: "INJECT_TEMPLATE_FAILED";
       readonly message: string;
       readonly outPath: string;
+    }
+  | {
+      readonly code: "REMOVE_FAILED";
+      readonly message: string;
+      readonly outPath: string;
     };
 
 export type CodegenSuccess = {

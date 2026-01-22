@@ -425,11 +425,10 @@ describe("graphql-compat integration", () => {
     expect(fragments).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit operation with empty fragmentImports (same-file scenario)
+    // Emit operation (imports are handled by caller)
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(), // Empty = same-file fragments
     })._unsafeUnwrap();
 
     // Should NOT have import (same file)
@@ -486,17 +485,15 @@ describe("graphql-compat integration", () => {
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
     expect(operations[1]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit both operations with empty fragmentImports
+    // Emit both operations (imports are handled by caller)
     const queryOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     const mutationOutput = emitOperation(operations[1]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     // Neither should have import
@@ -550,18 +547,16 @@ describe("graphql-compat integration", () => {
     expect(userFullFields).toBeDefined();
     expect(userFullFields!.fragmentDependencies).toContain("UserBasicFields");
 
-    // Emit operation with empty fragmentImports (all same-file)
+    // Emit operation (imports are handled by caller)
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
-    // Emit fragment with same-file dependency
+    // Emit fragment (imports are handled by caller)
     const fragmentOutput = emitFragment(userFullFields!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     // No imports (all same-file)

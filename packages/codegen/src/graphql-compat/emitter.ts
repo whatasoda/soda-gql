@@ -22,12 +22,8 @@ export type EmitOptions = {
   readonly schemaName: string;
   /** Import path for graphql-system module */
   readonly graphqlSystemPath: string;
-  /** Map of fragment name to its import path (relative) */
-  readonly fragmentImports?: ReadonlyMap<string, string>;
   /** Schema document for type lookups (required for inline fragment support) */
   readonly schemaDocument?: DocumentNode;
-  /** Use shorthand syntax for scalar fields (default: true) */
-  readonly shorthand?: boolean;
 };
 
 /**

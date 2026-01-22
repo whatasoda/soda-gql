@@ -356,10 +356,7 @@ describe("emitFragment", () => {
 
       // Find UserWithPosts fragment
       const userFragment = fragments.find((f) => f.name === "UserWithPosts")!;
-      const output = emitFragment(userFragment, {
-        ...optionsWithArgs,
-        fragmentImports: new Map([["PostsFragment", "./PostsFragment.compat"]]),
-      })._unsafeUnwrap();
+      const output = emitFragment(userFragment, optionsWithArgs)._unsafeUnwrap();
 
       // Should have $var for propagated variable
       expect(output).toContain("({ fragment, $var })");

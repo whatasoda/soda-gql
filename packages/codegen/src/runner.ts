@@ -1,10 +1,10 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
-import { writeModule } from "./file";
+import { removeDirectory, writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
@@ -207,7 +207,10 @@ export * from "./_internal";
     // Clean up existing _defs directory to prevent stale files
     const defsDir = join(outDir, "_defs");
     if (existsSync(defsDir)) {
-      rmSync(defsDir, { recursive: true, force: true });
+      const removeResult = removeDirectory(defsDir);
+      if (removeResult.isErr()) {
+        return err(removeResult.error);
+      }
     }
 
     // Merge all schema categoryVars into a single combined structure
