@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
 import { parseGraphqlSource } from "./parser";
-import { transformParsedGraphql } from "./transformer";
+import { mergeModifiers, transformParsedGraphql } from "./transformer";
 
 // Simple test schema
 const testSchema = parse(`
@@ -301,6 +301,82 @@ describe("transformParsedGraphql", () => {
       const { operations } = result._unsafeUnwrap();
 
       expect(operations[0]!.fragmentDependencies).toEqual(["UserFields"]);
+    });
+  });
+});
+
+describe("mergeModifiers", () => {
+  describe("simple modifiers", () => {
+    it("merges non-null and nullable to non-null", () => {
+      const result = mergeModifiers("!", "?");
+      expect(result).toEqual({ ok: true, value: "!" });
+    });
+
+    it("merges nullable and non-null to non-null", () => {
+      const result = mergeModifiers("?", "!");
+      expect(result).toEqual({ ok: true, value: "!" });
+    });
+
+    it("merges non-null and non-null to non-null", () => {
+      const result = mergeModifiers("!", "!");
+      expect(result).toEqual({ ok: true, value: "!" });
+    });
+
+    it("merges nullable and nullable to nullable", () => {
+      const result = mergeModifiers("?", "?");
+      expect(result).toEqual({ ok: true, value: "?" });
+    });
+  });
+
+  describe("list modifiers", () => {
+    it("merges list modifiers with stricter outer", () => {
+      const result = mergeModifiers("![]!", "?[]!");
+      expect(result).toEqual({ ok: true, value: "![]!" });
+    });
+
+    it("merges list modifiers with stricter inner", () => {
+      const result = mergeModifiers("![]!", "![]?");
+      expect(result).toEqual({ ok: true, value: "![]!" });
+    });
+
+    it("merges nullable lists to nullable", () => {
+      const result = mergeModifiers("?[]?", "?[]?");
+      expect(result).toEqual({ ok: true, value: "?[]?" });
+    });
+
+    it("merges mixed list modifiers", () => {
+      const result = mergeModifiers("?[]?", "![]!");
+      expect(result).toEqual({ ok: true, value: "![]!" });
+    });
+  });
+
+  describe("nested list modifiers", () => {
+    it("merges nested lists", () => {
+      const result = mergeModifiers("![]![]!", "?[]?[]?");
+      expect(result).toEqual({ ok: true, value: "![]![]!" });
+    });
+
+    it("merges nested lists with mixed strictness", () => {
+      const result = mergeModifiers("![]?[]!", "?[]![]?");
+      expect(result).toEqual({ ok: true, value: "![]![]!" });
+    });
+  });
+
+  describe("incompatible modifiers", () => {
+    it("errors on different list depths (0 vs 1)", () => {
+      const result = mergeModifiers("!", "![]!");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("Incompatible list depths");
+      }
+    });
+
+    it("errors on different list depths (1 vs 2)", () => {
+      const result = mergeModifiers("![]!", "![]![]!");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("Incompatible list depths");
+      }
     });
   });
 });

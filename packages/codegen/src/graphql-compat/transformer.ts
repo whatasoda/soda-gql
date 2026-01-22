@@ -18,6 +18,81 @@ type SchemaIndex = ReturnType<typeof createSchemaIndex>;
  */
 const builtinScalarTypes = new Set(["ID", "String", "Int", "Float", "Boolean"]);
 
+// ============================================================================
+// Modifier Merging Utilities
+// ============================================================================
+
+/**
+ * Parsed structure of a modifier for comparison and merging.
+ * Example: "![]?" -> { inner: "!", lists: ["[]?"] }
+ */
+type ModifierStructure = {
+  readonly inner: "!" | "?";
+  readonly lists: readonly ("[]!" | "[]?")[];
+};
+
+/**
+ * Parse a modifier string into its structural components.
+ * @param modifier - Modifier string like "!", "?", "![]!", "?[]?[]!"
+ * @returns Parsed structure with inner nullability and list modifiers
+ */
+const parseModifierStructure = (modifier: string): ModifierStructure => {
+  // Extract inner nullability (first character)
+  const inner = modifier[0] === "!" ? "!" : "?";
+
+  // Extract list modifiers ([]! or []?)
+  const lists: ("[]!" | "[]?")[] = [];
+  const listPattern = /\[\]([!?])/g;
+  let match: RegExpExecArray | null;
+  while ((match = listPattern.exec(modifier)) !== null) {
+    lists.push(`[]${match[1]}` as "[]!" | "[]?");
+  }
+
+  return { inner, lists };
+};
+
+/**
+ * Rebuild modifier string from structure.
+ */
+const buildModifier = (structure: ModifierStructure): string => {
+  return structure.inner + structure.lists.join("");
+};
+
+/**
+ * Merge two modifiers by taking the stricter constraint at each level.
+ * - Non-null (!) is stricter than nullable (?)
+ * - List depths must match
+ *
+ * @param a - First modifier
+ * @param b - Second modifier
+ * @returns Merged modifier or error if incompatible
+ */
+export const mergeModifiers = (a: string, b: string): { ok: true; value: string } | { ok: false; reason: string } => {
+  const structA = parseModifierStructure(a);
+  const structB = parseModifierStructure(b);
+
+  // List depths must match
+  if (structA.lists.length !== structB.lists.length) {
+    return {
+      ok: false,
+      reason: `Incompatible list depths: "${a}" has ${structA.lists.length} list level(s), "${b}" has ${structB.lists.length}`,
+    };
+  }
+
+  // Take stricter inner constraint (! beats ?)
+  const mergedInner: "!" | "?" = structA.inner === "!" || structB.inner === "!" ? "!" : "?";
+
+  // Merge each list level (! beats ?)
+  const mergedLists: ("[]!" | "[]?")[] = [];
+  for (let i = 0; i < structA.lists.length; i++) {
+    const listA = structA.lists[i]!;
+    const listB = structB.lists[i]!;
+    mergedLists.push(listA === "[]!" || listB === "[]!" ? "[]!" : "[]?");
+  }
+
+  return { ok: true, value: buildModifier({ inner: mergedInner, lists: mergedLists }) };
+};
+
 /**
  * Check if a type name is a scalar type.
  */
