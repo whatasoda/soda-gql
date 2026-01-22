@@ -291,6 +291,156 @@ describe("transformParsedGraphql", () => {
     });
   });
 
+  describe("fragment variable inference", () => {
+    const schemaWithArgs = parse(`
+      enum PostStatus { DRAFT, PUBLISHED }
+
+      input PostFilter {
+        status: PostStatus
+        authorId: ID
+      }
+
+      type Post {
+        id: ID!
+        title: String!
+      }
+
+      type User {
+        id: ID!
+        name: String!
+        posts(first: Int!, status: PostStatus, filter: PostFilter): [Post!]!
+      }
+
+      type Query {
+        user(id: ID!): User
+      }
+    `);
+
+    it("infers variables from fragment field arguments", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          posts(first: $limit) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      expect(fragments[0]!.variables).toHaveLength(1);
+      expect(fragments[0]!.variables[0]).toMatchObject({
+        name: "limit",
+        typeName: "Int",
+        modifier: "!",
+        typeKind: "scalar",
+      });
+    });
+
+    it("infers multiple variables from same fragment", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          posts(first: $limit, status: $status) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      expect(fragments[0]!.variables).toHaveLength(2);
+      const names = fragments[0]!.variables.map((v) => v.name).sort();
+      expect(names).toEqual(["limit", "status"]);
+    });
+
+    it("infers variables from nested input object", () => {
+      const source = `
+        fragment FilteredPosts on User {
+          posts(first: 10, filter: { status: $status }) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      expect(fragments[0]!.variables).toHaveLength(1);
+      expect(fragments[0]!.variables[0]).toMatchObject({
+        name: "status",
+        typeName: "PostStatus",
+        typeKind: "enum",
+      });
+    });
+
+    it("propagates variables from spread fragments", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          ...PostsFragment
+          id
+        }
+        fragment PostsFragment on User {
+          posts(first: $limit) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      // Find UserWithPosts fragment
+      const userFragment = fragments.find((f) => f.name === "UserWithPosts");
+      expect(userFragment).toBeDefined();
+      expect(userFragment!.variables).toHaveLength(1);
+      expect(userFragment!.variables[0]!.name).toBe("limit");
+    });
+
+    it("merges same variable from multiple sources with stricter modifier", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          posts(first: $limit) { id }
+          ...OtherPosts
+        }
+        fragment OtherPosts on User {
+          posts(first: $limit, status: $status) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      // Find UserWithPosts fragment - should have both limit and status
+      const userFragment = fragments.find((f) => f.name === "UserWithPosts");
+      expect(userFragment).toBeDefined();
+      expect(userFragment!.variables).toHaveLength(2);
+
+      const limitVar = userFragment!.variables.find((v) => v.name === "limit");
+      expect(limitVar).toBeDefined();
+      // Both usages have Int!, so merged should be Int!
+      expect(limitVar!.modifier).toBe("!");
+    });
+
+    it("returns empty variables for fragment without arguments", () => {
+      const source = `
+        fragment UserFields on User {
+          id
+          name
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isOk()).toBe(true);
+      const { fragments } = result._unsafeUnwrap();
+
+      expect(fragments[0]!.variables).toHaveLength(0);
+    });
+  });
+
   describe("inline fragments", () => {
     it("collects dependencies from inline fragments", () => {
       const source = `

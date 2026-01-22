@@ -520,6 +520,8 @@ export type EnrichedOperation = Omit<ParsedOperation, "variables"> & {
 export type EnrichedFragment = ParsedFragment & {
   /** Fragment names used in this fragment (for imports) */
   readonly fragmentDependencies: readonly string[];
+  /** Variables inferred from field arguments in this fragment */
+  readonly variables: readonly InferredVariable[];
 };
 
 /**
@@ -548,14 +550,34 @@ export type TransformOptions = {
 /**
  * Transform parsed operations/fragments by enriching them with schema information.
  *
- * This resolves variable type kinds (scalar, enum, input) and collects
- * fragment dependencies.
+ * This resolves variable type kinds (scalar, enum, input), collects
+ * fragment dependencies, and infers variables for fragments.
  */
 export const transformParsedGraphql = (
   parsed: ParseResult,
   options: TransformOptions,
 ): Result<TransformResult, GraphqlCompatError> => {
   const schema = createSchemaIndex(options.schemaDocument);
+
+  // Sort fragments by dependency (dependencies first)
+  const sortResult = sortFragmentsByDependency(parsed.fragments);
+  if (sortResult.isErr()) {
+    return err(sortResult.error);
+  }
+  const sortedFragments = sortResult.value;
+
+  // Transform fragments in dependency order, building up resolved variables map
+  const resolvedFragmentVariables = new Map<string, readonly InferredVariable[]>();
+  const fragments: EnrichedFragment[] = [];
+
+  for (const frag of sortedFragments) {
+    const result = transformFragment(frag, schema, resolvedFragmentVariables);
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    resolvedFragmentVariables.set(frag.name, result.value.variables);
+    fragments.push(result.value);
+  }
 
   // Transform operations
   const operations: EnrichedOperation[] = [];
@@ -565,16 +587,6 @@ export const transformParsedGraphql = (
       return err(result.error);
     }
     operations.push(result.value);
-  }
-
-  // Transform fragments
-  const fragments: EnrichedFragment[] = [];
-  for (const frag of parsed.fragments) {
-    const result = transformFragment(frag, schema);
-    if (result.isErr()) {
-      return err(result.error);
-    }
-    fragments.push(result.value);
   }
 
   return ok({ operations, fragments });
@@ -610,14 +622,55 @@ const transformOperation = (op: ParsedOperation, schema: SchemaIndex): Result<En
 
 /**
  * Transform a single fragment.
+ * Infers variables from field arguments and propagates variables from spread fragments.
  */
-const transformFragment = (frag: ParsedFragment, _schema: SchemaIndex): Result<EnrichedFragment, GraphqlCompatError> => {
+const transformFragment = (
+  frag: ParsedFragment,
+  schema: SchemaIndex,
+  resolvedFragmentVariables: Map<string, readonly InferredVariable[]>,
+): Result<EnrichedFragment, GraphqlCompatError> => {
   // Collect fragment dependencies (fragments used within this fragment)
   const fragmentDependencies = collectFragmentDependencies(frag.selections);
+
+  // Collect direct variable usages from this fragment's selections
+  const directUsagesResult = collectVariableUsages(frag.selections, frag.onType, schema);
+  if (directUsagesResult.isErr()) {
+    return err(directUsagesResult.error);
+  }
+  const directUsages = directUsagesResult.value;
+
+  // Collect variables from spread fragments
+  const spreadVariables: InferredVariable[] = [];
+  for (const depName of fragmentDependencies) {
+    const depVariables = resolvedFragmentVariables.get(depName);
+    if (depVariables) {
+      spreadVariables.push(...depVariables);
+    }
+    // If not found, it's an external fragment - skip
+  }
+
+  // Combine direct usages with spread variables
+  // Convert spread variables to usages for merging
+  const allUsages = [
+    ...directUsages,
+    ...spreadVariables.map((v) => ({
+      name: v.name,
+      typeName: v.typeName,
+      modifier: v.modifier,
+      typeKind: v.typeKind,
+    })),
+  ];
+
+  // Infer final variables
+  const variablesResult = inferVariablesFromUsages(allUsages);
+  if (variablesResult.isErr()) {
+    return err(variablesResult.error);
+  }
 
   return ok({
     ...frag,
     fragmentDependencies,
+    variables: variablesResult.value,
   });
 };
 
