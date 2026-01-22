@@ -152,7 +152,8 @@ export type FieldSelectionFactoryObjectReturn<
     TSelection["type"],
     TSelection["args"],
     TSelection["directives"],
-    { object: TNested }
+    TNested,
+    null
   >;
 };
 
@@ -169,7 +170,8 @@ export type FieldSelectionFactoryUnionReturn<
     TSelection["type"],
     TSelection["args"],
     TSelection["directives"],
-    { union: TNested }
+    null,
+    TNested
   >;
 };
 
@@ -183,7 +185,8 @@ export type FieldSelectionFactoryPrimitiveReturn<
     TSelection["type"],
     TSelection["args"],
     TSelection["directives"],
-    {}
+    null,
+    null
   >;
 };
 

@@ -929,7 +929,7 @@ const ${schemaVar} = {
   input: input_${name},
   object: object_${name},
   union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
-} as const;
+} as const satisfies AnyGraphqlSchema;
 
 const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
 const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
@@ -977,6 +977,7 @@ ${typeExports.join("\n")}`);
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
   type ExtractMetadataAdapter,
   type FragmentBuilderFor,
+  type AnyGraphqlSchema,
   createDirectiveMethod,
   createTypedDirectiveMethod,
   createGqlElementComposer,

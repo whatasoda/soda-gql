@@ -54,15 +54,16 @@ export type AbstractFieldSelection<
   TSpecifier extends OutputTypeSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
-  TExtras extends { object: AnyNestedObjectExtended } | { union: AnyNestedUnion } | { _?: never },
+  TObject extends AnyNestedObjectExtended | null,
+  TUnion extends AnyNestedUnion | null,
 > = {
   readonly parent: TTypeName;
   readonly field: TFieldName;
   readonly type: TSpecifier;
   readonly args: TArgs;
   readonly directives: TDirectives;
-  readonly object: TExtras extends { object: infer TObject } ? TObject : null;
-  readonly union: TExtras extends { union: infer TUnion } ? TUnion : null;
+  readonly object: TObject;
+  readonly union: TUnion;
 };
 
 /** Convenience alias to obtain a typed field reference from the schema. */
@@ -77,8 +78,8 @@ export type FieldSelectionTemplateOf<
       TRef,
       AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
       AnyDirectiveAttachments,
-      | (TRef extends OutputObjectSpecifier ? { object: AnyNestedObjectExtended } : never)
-      | (TRef extends OutputUnionSpecifier ? { union: AnyNestedUnion } : never)
+      TRef extends OutputObjectSpecifier ? AnyNestedObjectExtended : null,
+      TRef extends OutputUnionSpecifier ? AnyNestedUnion : null
     >
   : never;
 
