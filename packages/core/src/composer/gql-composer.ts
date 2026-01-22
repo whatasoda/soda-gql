@@ -14,7 +14,7 @@ import { createStandardDirectives, type StandardDirectives } from "./directive-b
 import { createExtendComposer } from "./extend";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
-import { createVarBuilder, type AnyInputTypeMethods } from "./var-builder";
+import { type AnyInputTypeMethods, createVarBuilder } from "./var-builder";
 
 /**
  * Function signature for composing GraphQL elements (fragments or operations).
