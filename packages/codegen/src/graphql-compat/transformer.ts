@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { DocumentNode, FieldDefinitionNode, InputValueDefinitionNode } from "graphql";
+import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
 import { parseTypeNode } from "./parser";
@@ -180,29 +180,41 @@ const collectVariablesFromValue = (
   expectedModifier: string,
   schema: SchemaIndex,
   usages: VariableUsage[],
-): void => {
+): GraphqlCompatError | null => {
   if (value.kind === "variable") {
     const typeKind = resolveTypeKindFromName(schema, expectedTypeName);
-    if (typeKind) {
-      usages.push({
-        name: value.name,
+    if (!typeKind) {
+      return {
+        code: "GRAPHQL_UNKNOWN_TYPE",
+        message: `Unknown type "${expectedTypeName}" for variable "$${value.name}"`,
         typeName: expectedTypeName,
-        modifier: expectedModifier,
-        typeKind,
-      });
+      };
     }
-    return;
+    usages.push({
+      name: value.name,
+      typeName: expectedTypeName,
+      modifier: expectedModifier,
+      typeKind,
+    });
+    return null;
   }
 
   if (value.kind === "object") {
     // For object values, check each field against input type definition
     for (const field of value.fields) {
       const fieldType = getInputFieldType(schema, expectedTypeName, field.name);
-      if (fieldType) {
-        collectVariablesFromValue(field.value, fieldType.typeName, fieldType.modifier, schema, usages);
+      if (!fieldType) {
+        return {
+          code: "GRAPHQL_UNKNOWN_FIELD",
+          message: `Unknown field "${field.name}" on input type "${expectedTypeName}"`,
+          typeName: expectedTypeName,
+          fieldName: field.name,
+        };
       }
+      const error = collectVariablesFromValue(field.value, fieldType.typeName, fieldType.modifier, schema, usages);
+      if (error) return error;
     }
-    return;
+    return null;
   }
 
   if (value.kind === "list") {
@@ -215,12 +227,14 @@ const collectVariablesFromValue = (
         lists: struct.lists.slice(1),
       });
       for (const item of value.values) {
-        collectVariablesFromValue(item, expectedTypeName, innerModifier, schema, usages);
+        const error = collectVariablesFromValue(item, expectedTypeName, innerModifier, schema, usages);
+        if (error) return error;
       }
     }
   }
 
   // Other value kinds (int, float, string, etc.) don't contain variables
+  return null;
 };
 
 /**
@@ -236,10 +250,15 @@ const collectVariablesFromArguments = (
   for (const arg of args) {
     const argType = getArgumentType(schema, parentTypeName, fieldName, arg.name);
     if (!argType) {
-      // If we can't find the argument type, skip it (schema might not match)
-      continue;
+      return {
+        code: "GRAPHQL_UNKNOWN_ARGUMENT",
+        message: `Unknown argument "${arg.name}" on field "${fieldName}"`,
+        fieldName,
+        argumentName: arg.name,
+      };
     }
-    collectVariablesFromValue(arg.value, argType.typeName, argType.modifier, schema, usages);
+    const error = collectVariablesFromValue(arg.value, argType.typeName, argType.modifier, schema, usages);
+    if (error) return error;
   }
   return null;
 };
@@ -268,10 +287,16 @@ export const collectVariableUsages = (
           if (sel.selections && sel.selections.length > 0) {
             // Need to determine the field's return type for nested selections
             const fieldReturnType = getFieldReturnType(schema, parentType, sel.name);
-            if (fieldReturnType) {
-              const error = collect(sel.selections, fieldReturnType);
-              if (error) return error;
+            if (!fieldReturnType) {
+              return {
+                code: "GRAPHQL_UNKNOWN_FIELD",
+                message: `Unknown field "${sel.name}" on type "${parentType}"`,
+                typeName: parentType,
+                fieldName: sel.name,
+              };
             }
+            const error = collect(sel.selections, fieldReturnType);
+            if (error) return error;
           }
           break;
         }

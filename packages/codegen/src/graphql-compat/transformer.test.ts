@@ -25,16 +25,27 @@ const testSchema = parse(`
     status: Status
   }
 
+  type Profile {
+    bio: String
+    avatar: String
+  }
+
   type User {
     id: ID!
     name: String!
     email: String
     status: Status!
+    profile: Profile
+  }
+
+  type Node {
+    id: ID!
   }
 
   type Query {
     user(id: ID!): User
     users(filter: UserFilter): [User!]!
+    node: Node
   }
 
   type Mutation {
@@ -439,6 +450,32 @@ describe("transformParsedGraphql", () => {
 
       expect(fragments[0]!.variables).toHaveLength(0);
     });
+
+    it("errors on unknown argument in fragment", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          posts(unknownArg: $value) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_UNKNOWN_ARGUMENT");
+    });
+
+    it("errors on unknown input field in fragment", () => {
+      const source = `
+        fragment FilteredPosts on User {
+          posts(first: 10, filter: { unknownField: $value }) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const result = transformParsedGraphql(parsed, { schemaDocument: schemaWithArgs });
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_UNKNOWN_FIELD");
+    });
   });
 
   describe("inline fragments", () => {
@@ -569,6 +606,70 @@ describe("collectVariableUsages", () => {
     expect(result.isOk()).toBe(true);
     const usages = result._unsafeUnwrap();
     expect(usages).toHaveLength(2);
+  });
+
+  describe("error cases", () => {
+    it("errors on unknown argument", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          posts(unknownArg: $value) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const fragment = parsed.fragments[0]!;
+
+      const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+      expect(result.isErr()).toBe(true);
+      const error = result._unsafeUnwrapErr();
+      expect(error.code).toBe("GRAPHQL_UNKNOWN_ARGUMENT");
+      expect(error).toMatchObject({
+        fieldName: "posts",
+        argumentName: "unknownArg",
+      });
+    });
+
+    it("errors on unknown field with nested selections", () => {
+      const source = `
+        fragment UserWithPosts on User {
+          unknownField {
+            id
+          }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const fragment = parsed.fragments[0]!;
+
+      const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+      expect(result.isErr()).toBe(true);
+      const error = result._unsafeUnwrapErr();
+      expect(error.code).toBe("GRAPHQL_UNKNOWN_FIELD");
+      expect(error).toMatchObject({
+        typeName: "User",
+        fieldName: "unknownField",
+      });
+    });
+
+    it("errors on unknown input field", () => {
+      const source = `
+        fragment FilteredPosts on User {
+          posts(filter: { unknownField: $value }) { id }
+        }
+      `;
+      const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+      const fragment = parsed.fragments[0]!;
+
+      const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+      expect(result.isErr()).toBe(true);
+      const error = result._unsafeUnwrapErr();
+      expect(error.code).toBe("GRAPHQL_UNKNOWN_FIELD");
+      expect(error).toMatchObject({
+        typeName: "PostFilter",
+        fieldName: "unknownField",
+      });
+    });
   });
 });
 
