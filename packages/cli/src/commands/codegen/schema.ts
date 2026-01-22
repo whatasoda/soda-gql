@@ -141,6 +141,7 @@ export const schemaCommand = async (argv: readonly string[]): Promise<SchemaComm
       },
       defaultInputDepth: schemaConfig.defaultInputDepth,
       inputDepthOverrides: schemaConfig.inputDepthOverrides,
+      typeFilter: schemaConfig.typeFilter,
     };
   }
 
