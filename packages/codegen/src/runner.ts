@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
@@ -203,6 +203,12 @@ export * from "./_internal";
   const defsPaths: string[] = [];
   if (categoryVars) {
     const outDir = dirname(outPath);
+
+    // Clean up existing _defs directory to prevent stale files
+    const defsDir = join(outDir, "_defs");
+    if (existsSync(defsDir)) {
+      rmSync(defsDir, { recursive: true, force: true });
+    }
 
     // Merge all schema categoryVars into a single combined structure
     // This ensures all definitions from all schemas go into the same defs files
