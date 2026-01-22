@@ -14,7 +14,7 @@ import { createStandardDirectives, type StandardDirectives } from "./directive-b
 import { createExtendComposer } from "./extend";
 import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
 import { createOperationComposerFactory } from "./operation";
-import { createVarBuilder, type InputTypeMethods } from "./var-builder";
+import { createVarBuilder, type AnyInputTypeMethods } from "./var-builder";
 
 /**
  * Function signature for composing GraphQL elements (fragments or operations).
@@ -85,7 +85,7 @@ export type GqlElementComposerOptions<
   /** Optional adapter for custom helpers and metadata handling. */
   adapter?: TAdapter;
   /** Methods for building variable type specifiers. */
-  inputTypeMethods: InputTypeMethods<TSchema>;
+  inputTypeMethods: AnyInputTypeMethods;
   /** Optional custom directive methods (including schema-defined directives). */
   directiveMethods?: TDirectiveMethods;
 };

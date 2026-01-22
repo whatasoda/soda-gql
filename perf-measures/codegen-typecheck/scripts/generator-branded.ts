@@ -13,22 +13,9 @@ import { generateMultiSchemaModule } from "../../../packages/codegen/src/generat
 
 export const generateMultiSchemaModuleBranded = (
   schemas: Map<string, DocumentNode>,
-): { code: string } => {
-  const { code: originalCode } = generateMultiSchemaModule(schemas);
-
-  // Add AnyGraphqlSchema import
-  let modifiedCode = originalCode.replace(
-    /createVarMethodFactory,\n\} from "@soda-gql\/core";/,
-    'createVarMethodFactory,\n  type AnyGraphqlSchema,\n} from "@soda-gql/core";',
-  );
-
-  // Change const declaration to add satisfies clause
-  // Before: const hasuraSchema = { ... } as const;
-  // After:  const hasuraSchema = { ... } as const satisfies AnyGraphqlSchema;
-  modifiedCode = modifiedCode.replace(
-    /^(const \w+Schema = \{[\s\S]*?\}) as const;$/m,
-    "$1 as const satisfies AnyGraphqlSchema;",
-  );
-
-  return { code: modifiedCode };
+): ReturnType<typeof generateMultiSchemaModule> => {
+  // Just use the standard generator - it already has `satisfies AnyGraphqlSchema`
+  // The "branded" strategy was originally intended to add satisfies, but this
+  // is now part of the standard generator.
+  return generateMultiSchemaModule(schemas);
 };

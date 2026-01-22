@@ -232,6 +232,14 @@ type AnyInputTypeMethod = (
 ) => unknown;
 
 /**
+ * Type-erased input type methods for performance optimization.
+ * Uses permissive function signature to allow any generated inputTypeMethods.
+ * @internal
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Required for type erasure - actual type safety is at codegen site
+export type AnyInputTypeMethods = Record<string, (...args: any[]) => unknown>;
+
+/**
  * Creates a variable builder using injected input type methods.
  *
  * The returned builder provides type-safe variable definition methods
@@ -244,7 +252,7 @@ type AnyInputTypeMethod = (
  * @internal Used by `createGqlElementComposer`
  */
 export const createVarBuilder = <TSchema extends AnyGraphqlSchema>(
-  inputTypeMethods: InputTypeMethods<TSchema>,
+  inputTypeMethods: AnyInputTypeMethods,
 ): VarBuilder<TSchema> => {
   const varBuilder = <TVarName extends string>(varName: TVarName): VarBuilderMethods<TVarName, TSchema> => {
     const wrappedMethods = {} as VarBuilderMethods<TVarName, TSchema>;

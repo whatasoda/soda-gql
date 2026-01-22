@@ -13,31 +13,19 @@ import { generateMultiSchemaModule } from "../../../packages/codegen/src/generat
 
 export const generateMultiSchemaModuleLooseConstraint = (
   schemas: Map<string, DocumentNode>,
-): { code: string } => {
-  const { code: originalCode } = generateMultiSchemaModule(schemas);
-
-  // Add a local type wrapper at the top, after imports
-  const typeWrapper = `
-// Bypass expensive structural type checking by using 'any' for the schema parameter
-type BypassSchemaCheck<T> = T extends infer U ? U : never;
-
-`;
-
-  // Insert after imports
-  let modifiedCode = originalCode.replace(
-    /^(import \{[\s\S]*?\} from "@soda-gql\/core";\n)/m,
-    `$1${typeWrapper}`,
-  );
+): ReturnType<typeof generateMultiSchemaModule> => {
+  const result = generateMultiSchemaModule(schemas);
+  const { code: originalCode } = result;
 
   // Modify the createGqlElementComposer call to cast schema to any first
   // This bypasses the structural comparison
-  modifiedCode = modifiedCode.replace(
+  const modifiedCode = originalCode.replace(
     /createGqlElementComposer<([^>]+)>\((\w+Schema),/g,
-    (match, typeParams, schemaVar) => {
+    (_match, typeParams, schemaVar) => {
       // Cast to any first, then to the specific type
       return `createGqlElementComposer<${typeParams}>(${schemaVar} as any,`;
     }
   );
 
-  return { code: modifiedCode };
+  return { ...result, code: modifiedCode };
 };
