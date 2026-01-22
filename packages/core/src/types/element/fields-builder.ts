@@ -93,9 +93,10 @@ export type NestedUnionFieldsBuilder<
 
 /** Map each field to a factory capable of emitting fully-typed references. */
 export type FieldSelectionFactories<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string> = {
-  [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName>]: TFieldName extends string
-    ? FieldSelectionFactory<TSchema, FieldSelectionTemplateOf<TSchema, TTypeName, TFieldName>>
-    : never;
+  [TFieldName in keyof ObjectFieldRecord<TSchema, TTypeName> & string]: FieldSelectionFactory<
+    TSchema,
+    FieldSelectionTemplateOf<TSchema, TTypeName, TFieldName>
+  >;
 };
 
 /**
