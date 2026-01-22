@@ -6,7 +6,7 @@
 import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
-import type { EnrichedFragment, EnrichedOperation, EnrichedVariable } from "./transformer";
+import type { EnrichedFragment, EnrichedOperation } from "./transformer";
 import type { GraphqlCompatError, ParsedArgument, ParsedInlineFragment, ParsedSelection, ParsedValue } from "./types";
 
 /**
@@ -84,6 +84,7 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
 export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
+  const hasVariables = fragment.variables.length > 0;
 
   // Generate imports
   lines.push(`import { gql } from "${options.graphqlSystemPath}";`);
@@ -103,12 +104,20 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
   // Generate export
   const exportName = `${fragment.name}Fragment`;
 
-  lines.push(`export const ${exportName} = gql.${options.schemaName}(({ fragment }) =>`);
+  // Include $var in destructure if fragment has variables
+  const destructure = hasVariables ? "fragment, $var" : "fragment";
+  lines.push(`export const ${exportName} = gql.${options.schemaName}(({ ${destructure} }) =>`);
   lines.push(`  fragment.${fragment.onType}({`);
 
-  // Fields
-  lines.push(`    fields: ({ f }) => ({`);
-  const fieldLinesResult = emitSelections(fragment.selections, 3, [], schema);
+  // Variables block (if any)
+  if (hasVariables) {
+    lines.push(`    variables: { ${emitVariables(fragment.variables)} },`);
+  }
+
+  // Fields - include $ in context if fragment has variables
+  const fieldsContext = hasVariables ? "{ f, $ }" : "{ f }";
+  lines.push(`    fields: (${fieldsContext}) => ({`);
+  const fieldLinesResult = emitSelections(fragment.selections, 3, fragment.variables, schema);
   if (fieldLinesResult.isErr()) {
     return err(fieldLinesResult.error);
   }
@@ -122,20 +131,29 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
 };
 
 /**
+ * Common variable type for emission (both EnrichedVariable and InferredVariable have these fields).
+ */
+type EmittableVariable = {
+  readonly name: string;
+  readonly typeName: string;
+  readonly modifier: string;
+};
+
+/**
  * Emit variable definitions.
  */
-const emitVariables = (variables: readonly EnrichedVariable[]): string => {
+const emitVariables = (variables: readonly EmittableVariable[]): string => {
   return variables.map((v) => `...$var(${JSON.stringify(v.name)}).${v.typeName}(${JSON.stringify(v.modifier)})`).join(", ");
 };
 
 /**
  * Emit field selections (public API).
- * Converts EnrichedVariable[] to Set<string> and delegates to internal implementation.
+ * Converts variable array to Set<string> and delegates to internal implementation.
  */
 const emitSelections = (
   selections: readonly ParsedSelection[],
   indent: number,
-  variables: readonly EnrichedVariable[],
+  variables: readonly EmittableVariable[],
   schema: SchemaIndex | null,
 ): Result<string, GraphqlCompatError> => {
   const variableNames = new Set(variables.map((v) => v.name));
