@@ -13,8 +13,9 @@ import { generateMultiSchemaModule } from "../../../packages/codegen/src/generat
 
 export const generateMultiSchemaModuleLooseConstraint = (
   schemas: Map<string, DocumentNode>,
-): { code: string } => {
-  const { code: originalCode } = generateMultiSchemaModule(schemas);
+): ReturnType<typeof generateMultiSchemaModule> => {
+  const result = generateMultiSchemaModule(schemas);
+  const { code: originalCode } = result;
 
   // Add a local type wrapper at the top, after imports
   const typeWrapper = `
@@ -33,11 +34,11 @@ type BypassSchemaCheck<T> = T extends infer U ? U : never;
   // This bypasses the structural comparison
   modifiedCode = modifiedCode.replace(
     /createGqlElementComposer<([^>]+)>\((\w+Schema),/g,
-    (match, typeParams, schemaVar) => {
+    (_match, typeParams, schemaVar) => {
       // Cast to any first, then to the specific type
       return `createGqlElementComposer<${typeParams}>(${schemaVar} as any,`;
     }
   );
 
-  return { code: modifiedCode };
+  return { ...result, code: modifiedCode };
 };

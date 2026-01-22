@@ -103,18 +103,40 @@ async function generateTypedAssertion(document: ReturnType<typeof parse>): Promi
   return code;
 }
 
-async function generateBranded(document: ReturnType<typeof parse>): Promise<string> {
+async function generateBranded(document: ReturnType<typeof parse>): Promise<GeneratedOutput> {
   const { generateMultiSchemaModuleBranded } = await import("./generator-branded");
   const schemas = new Map([["hasura", document]]);
-  const { code } = generateMultiSchemaModuleBranded(schemas);
-  return code;
+  const { code, categoryVars } = generateMultiSchemaModuleBranded(schemas);
+
+  // Generate _defs files (same as baseline)
+  let defsFiles: Array<{ relativePath: string; content: string }> = [];
+  if (categoryVars) {
+    const hasuraCategoryVars = categoryVars["hasura"];
+    if (hasuraCategoryVars) {
+      const defsStructure = generateDefsStructure("hasura", hasuraCategoryVars, 100);
+      defsFiles = [...defsStructure.files];
+    }
+  }
+
+  return { code, defsFiles };
 }
 
-async function generateLooseConstraint(document: ReturnType<typeof parse>): Promise<string> {
+async function generateLooseConstraint(document: ReturnType<typeof parse>): Promise<GeneratedOutput> {
   const { generateMultiSchemaModuleLooseConstraint } = await import("./generator-loose-constraint");
   const schemas = new Map([["hasura", document]]);
-  const { code } = generateMultiSchemaModuleLooseConstraint(schemas);
-  return code;
+  const { code, categoryVars } = generateMultiSchemaModuleLooseConstraint(schemas);
+
+  // Generate _defs files (same as baseline)
+  let defsFiles: Array<{ relativePath: string; content: string }> = [];
+  if (categoryVars) {
+    const hasuraCategoryVars = categoryVars["hasura"];
+    if (hasuraCategoryVars) {
+      const defsStructure = generateDefsStructure("hasura", hasuraCategoryVars, 100);
+      defsFiles = [...defsStructure.files];
+    }
+  }
+
+  return { code, defsFiles };
 }
 
 async function generateNoSatisfies(document: ReturnType<typeof parse>): Promise<string> {
@@ -150,10 +172,10 @@ async function main() {
       output = { code: await generateTypedAssertion(document) };
       break;
     case "branded":
-      output = { code: await generateBranded(document) };
+      output = await generateBranded(document);
       break;
     case "looseConstraint":
-      output = { code: await generateLooseConstraint(document) };
+      output = await generateLooseConstraint(document);
       break;
     case "noSatisfies":
       output = { code: await generateNoSatisfies(document) };
