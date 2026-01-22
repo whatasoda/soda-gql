@@ -17,22 +17,9 @@ export const generateMultiSchemaModuleLooseConstraint = (
   const result = generateMultiSchemaModule(schemas);
   const { code: originalCode } = result;
 
-  // Add a local type wrapper at the top, after imports
-  const typeWrapper = `
-// Bypass expensive structural type checking by using 'any' for the schema parameter
-type BypassSchemaCheck<T> = T extends infer U ? U : never;
-
-`;
-
-  // Insert after imports
-  let modifiedCode = originalCode.replace(
-    /^(import \{[\s\S]*?\} from "@soda-gql\/core";\n)/m,
-    `$1${typeWrapper}`,
-  );
-
   // Modify the createGqlElementComposer call to cast schema to any first
   // This bypasses the structural comparison
-  modifiedCode = modifiedCode.replace(
+  const modifiedCode = originalCode.replace(
     /createGqlElementComposer<([^>]+)>\((\w+Schema),/g,
     (_match, typeParams, schemaVar) => {
       // Cast to any first, then to the specific type
