@@ -224,14 +224,23 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       schemaDocument,
     };
 
-    const parts: string[] = [];
+    const imports: string[] = [];
+    const bodies: string[] = [];
+
+    // Add gql import once at the top
+    imports.push(`import { gql } from "${graphqlSystemPath}";`);
+
+    // Collect fragment imports (deduplicated via fragmentImports Map)
+    for (const [fragName, importPath] of fragmentImports) {
+      imports.push(`import { ${fragName}Fragment } from "${importPath}";`);
+    }
 
     for (const op of operations) {
       const emitResult = emitOperation(op as EnrichedOperation, emitOptions);
       if (emitResult.isErr()) {
         return err(cliErrors.parseError(emitResult.error.message, file));
       }
-      parts.push(emitResult.value);
+      bodies.push(emitResult.value);
       operationCount++;
     }
 
@@ -240,15 +249,15 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       if (emitResult.isErr()) {
         return err(cliErrors.parseError(emitResult.error.message, file));
       }
-      parts.push(emitResult.value);
+      bodies.push(emitResult.value);
       fragmentCount++;
     }
 
-    if (parts.length > 0) {
+    if (bodies.length > 0) {
       files.push({
         inputPath: file,
         outputPath,
-        content: parts.join("\n\n"),
+        content: `${imports.join("\n")}\n\n${bodies.join("\n\n")}`,
       });
     }
   }

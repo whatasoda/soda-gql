@@ -4,7 +4,7 @@ import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
-import { writeModule } from "./file";
+import { removeDirectory, writeModule } from "./file";
 import { generateMultiSchemaModule } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
@@ -203,6 +203,15 @@ export * from "./_internal";
   const defsPaths: string[] = [];
   if (categoryVars) {
     const outDir = dirname(outPath);
+
+    // Clean up existing _defs directory to prevent stale files
+    const defsDir = join(outDir, "_defs");
+    if (existsSync(defsDir)) {
+      const removeResult = removeDirectory(defsDir);
+      if (removeResult.isErr()) {
+        return err(removeResult.error);
+      }
+    }
 
     // Merge all schema categoryVars into a single combined structure
     // This ensures all definitions from all schemas go into the same defs files

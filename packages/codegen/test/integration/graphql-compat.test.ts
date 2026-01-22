@@ -114,16 +114,16 @@ describe("graphql-compat integration", () => {
 
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
-    // Verify structure
-    expect(output).toContain('import { gql } from "@/graphql-system"');
+    // Verify structure (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("export const GetUserCompat = gql.mySchema");
     expect(output).toContain('name: "GetUser"');
     expect(output).toContain('...$var("userId").ID("!")');
     expect(output).toContain("...f.user({ id: $.userId })");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
-    expect(output).toContain("...f.email()");
-    expect(output).toContain("...f.role()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+    expect(output).toContain("email: true");
+    expect(output).toContain("role: true");
   });
 
   test("end-to-end: generates compat code with multiple operations", async () => {
@@ -204,15 +204,15 @@ describe("graphql-compat integration", () => {
 
     const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
 
-    // Verify structure
-    expect(output).toContain('import { gql } from "@/graphql-system"');
+    // Verify structure (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
     expect(output).toContain("fragment.User(");
     expect(output).toContain("fields: ({ f }) => ({");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
-    expect(output).toContain("...f.email()");
-    expect(output).toContain("...f.role()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+    expect(output).toContain("email: true");
+    expect(output).toContain("role: true");
   });
 
   test("end-to-end: handles fragment spreads with imports", async () => {
@@ -246,15 +246,10 @@ describe("graphql-compat integration", () => {
     const output = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map([
-        ["UserBasicFields", "./UserBasicFields.compat"],
-        ["PostFields", "./PostFields.compat"],
-      ]),
     })._unsafeUnwrap();
 
-    // Verify imports
-    expect(output).toContain('import { UserBasicFieldsFragment } from "./UserBasicFields.compat"');
-    expect(output).toContain('import { PostFieldsFragment } from "./PostFields.compat"');
+    // Verify spreads (imports are handled by caller, not emitter)
+    expect(output).not.toContain("import");
     expect(output).toContain("...UserBasicFieldsFragment.spread()");
     expect(output).toContain("...PostFieldsFragment.spread()");
   });
@@ -430,11 +425,10 @@ describe("graphql-compat integration", () => {
     expect(fragments).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit operation with empty fragmentImports (same-file scenario)
+    // Emit operation (imports are handled by caller)
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(), // Empty = same-file fragments
     })._unsafeUnwrap();
 
     // Should NOT have import (same file)
@@ -491,17 +485,15 @@ describe("graphql-compat integration", () => {
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
     expect(operations[1]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit both operations with empty fragmentImports
+    // Emit both operations (imports are handled by caller)
     const queryOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     const mutationOutput = emitOperation(operations[1]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     // Neither should have import
@@ -555,18 +547,16 @@ describe("graphql-compat integration", () => {
     expect(userFullFields).toBeDefined();
     expect(userFullFields!.fragmentDependencies).toContain("UserBasicFields");
 
-    // Emit operation with empty fragmentImports (all same-file)
+    // Emit operation (imports are handled by caller)
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
-    // Emit fragment with same-file dependency
+    // Emit fragment (imports are handled by caller)
     const fragmentOutput = emitFragment(userFullFields!, {
       ...emitOptions,
       schemaDocument,
-      fragmentImports: new Map(),
     })._unsafeUnwrap();
 
     // No imports (all same-file)

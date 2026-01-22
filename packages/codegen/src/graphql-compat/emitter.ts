@@ -22,8 +22,6 @@ export type EmitOptions = {
   readonly schemaName: string;
   /** Import path for graphql-system module */
   readonly graphqlSystemPath: string;
-  /** Map of fragment name to its import path (relative) */
-  readonly fragmentImports?: ReadonlyMap<string, string>;
   /** Schema document for type lookups (required for inline fragment support) */
   readonly schemaDocument?: DocumentNode;
 };
@@ -35,20 +33,7 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
   const lines: string[] = [];
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
 
-  // Generate imports
-  lines.push(`import { gql } from "${options.graphqlSystemPath}";`);
-
-  // Add fragment imports if needed
-  if (operation.fragmentDependencies.length > 0 && options.fragmentImports) {
-    for (const fragName of operation.fragmentDependencies) {
-      const importPath = options.fragmentImports.get(fragName);
-      if (importPath) {
-        lines.push(`import { ${fragName}Fragment } from "${importPath}";`);
-      }
-    }
-  }
-
-  lines.push("");
+  // Note: imports (gql and fragment) are handled by the caller
 
   // Generate export
   const exportName = `${operation.name}Compat`;
@@ -86,20 +71,7 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
   const schema = options.schemaDocument ? createSchemaIndex(options.schemaDocument) : null;
   const hasVariables = fragment.variables.length > 0;
 
-  // Generate imports
-  lines.push(`import { gql } from "${options.graphqlSystemPath}";`);
-
-  // Add fragment imports if needed
-  if (fragment.fragmentDependencies.length > 0 && options.fragmentImports) {
-    for (const fragName of fragment.fragmentDependencies) {
-      const importPath = options.fragmentImports.get(fragName);
-      if (importPath) {
-        lines.push(`import { ${fragName}Fragment } from "${importPath}";`);
-      }
-    }
-  }
-
-  lines.push("");
+  // Note: imports (gql and fragment) are handled by the caller
 
   // Generate export
   const exportName = `${fragment.name}Fragment`;
@@ -308,6 +280,11 @@ const emitFieldSelection = (
   const selections = field.selections;
   const hasArgs = args && args.length > 0;
   const hasSelections = selections && selections.length > 0;
+
+  // Use shorthand syntax for scalar fields (no args, no nested selections)
+  if (!hasArgs && !hasSelections) {
+    return ok(`${padding}${field.name}: true,`);
+  }
 
   let line = `${padding}...f.${field.name}(`;
 
