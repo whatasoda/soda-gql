@@ -26,6 +26,8 @@ export type EmitOptions = {
   readonly fragmentImports?: ReadonlyMap<string, string>;
   /** Schema document for type lookups (required for inline fragment support) */
   readonly schemaDocument?: DocumentNode;
+  /** Use shorthand syntax for scalar fields (default: true) */
+  readonly shorthand?: boolean;
 };
 
 /**
@@ -282,6 +284,11 @@ const emitFieldSelection = (
   const selections = field.selections;
   const hasArgs = args && args.length > 0;
   const hasSelections = selections && selections.length > 0;
+
+  // Use shorthand syntax for scalar fields (no args, no nested selections)
+  if (!hasArgs && !hasSelections) {
+    return ok(`${padding}${field.name}: true,`);
+  }
 
   let line = `${padding}...f.${field.name}(`;
 

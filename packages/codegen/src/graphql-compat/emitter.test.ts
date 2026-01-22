@@ -68,8 +68,8 @@ describe("emitOperation", () => {
     expect(output).toContain("export const GetUserCompat = gql.mySchema");
     expect(output).toContain('name: "GetUser"');
     expect(output).toContain('...f.user({ id: "123" })');
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
   });
 
   it("emits query with variables", () => {
@@ -168,7 +168,7 @@ describe("emitOperation", () => {
     const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("...f.profile()(({ f }) => ({");
-    expect(output).toContain("...f.avatar()");
+    expect(output).toContain("avatar: true");
   });
 
   it("emits literal values correctly", () => {
@@ -256,8 +256,8 @@ describe("emitFragment", () => {
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
     expect(output).toContain("fragment.User({");
     expect(output).toContain("fields: ({ f }) => ({");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
   });
 
   describe("fragment variable inference", () => {
@@ -410,7 +410,7 @@ describe("emitFragment", () => {
     const output = emitFragment(fragments[0]!, defaultOptions)._unsafeUnwrap();
 
     expect(output).toContain("...f.profile()(({ f }) => ({");
-    expect(output).toContain("...f.avatar()");
+    expect(output).toContain("avatar: true");
   });
 
   it("emits fragment with fragment dependencies (imports handled by caller)", () => {
@@ -729,9 +729,9 @@ describe("inline fragments", () => {
     // Should contain union member handlers
     expect(output).toContain("User: ({ f }) => ({");
     expect(output).toContain("Post: ({ f }) => ({");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
-    expect(output).toContain("...f.title()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+    expect(output).toContain("title: true");
   });
 
   it("returns error for inline fragments on unknown type (not in schema)", () => {

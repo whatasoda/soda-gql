@@ -120,10 +120,10 @@ describe("graphql-compat integration", () => {
     expect(output).toContain('name: "GetUser"');
     expect(output).toContain('...$var("userId").ID("!")');
     expect(output).toContain("...f.user({ id: $.userId })");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
-    expect(output).toContain("...f.email()");
-    expect(output).toContain("...f.role()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+    expect(output).toContain("email: true");
+    expect(output).toContain("role: true");
   });
 
   test("end-to-end: generates compat code with multiple operations", async () => {
@@ -209,10 +209,10 @@ describe("graphql-compat integration", () => {
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
     expect(output).toContain("fragment.User(");
     expect(output).toContain("fields: ({ f }) => ({");
-    expect(output).toContain("...f.id()");
-    expect(output).toContain("...f.name()");
-    expect(output).toContain("...f.email()");
-    expect(output).toContain("...f.role()");
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+    expect(output).toContain("email: true");
+    expect(output).toContain("role: true");
   });
 
   test("end-to-end: handles fragment spreads with imports", async () => {
