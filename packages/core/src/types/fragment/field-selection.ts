@@ -1,6 +1,6 @@
 /** Canonical field selection types used by models and slices. */
 
-import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputProfile, PickTypeSpecifierByFieldName } from "../schema";
+import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputProfile } from "../schema";
 import type {
   ApplyTypeModifier,
   GetModifiedType,
@@ -71,17 +71,16 @@ export type FieldSelectionTemplateOf<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
-> = PickTypeSpecifierByFieldName<TSchema, TTypeName, TFieldName> extends infer TRef extends OutputTypeSpecifier
-  ? AbstractFieldSelection<
-      TTypeName,
-      TFieldName,
-      TRef,
-      AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
-      AnyDirectiveAttachments,
-      TRef extends OutputObjectSpecifier ? AnyNestedObjectExtended : null,
-      TRef extends OutputUnionSpecifier ? AnyNestedUnion : null
-    >
-  : never;
+  TRef extends OutputTypeSpecifier = TSchema["object"][TTypeName]["fields"][TFieldName],
+> = AbstractFieldSelection<
+  TTypeName,
+  TFieldName,
+  TRef,
+  AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
+  AnyDirectiveAttachments,
+  TRef extends OutputObjectSpecifier ? AnyNestedObjectExtended : null,
+  TRef extends OutputUnionSpecifier ? AnyNestedUnion : null
+>;
 
 /** Resolve the data shape produced by a set of field selections. */
 export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFields> = {
