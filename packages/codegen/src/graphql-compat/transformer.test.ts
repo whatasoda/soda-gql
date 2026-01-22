@@ -1,7 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
 import { parseGraphqlSource } from "./parser";
-import { mergeModifiers, transformParsedGraphql } from "./transformer";
+import {
+  collectVariableUsages,
+  inferVariablesFromUsages,
+  mergeModifiers,
+  mergeVariableUsages,
+  transformParsedGraphql,
+} from "./transformer";
+import { createSchemaIndex } from "../generator";
 
 // Simple test schema
 const testSchema = parse(`
@@ -302,6 +309,216 @@ describe("transformParsedGraphql", () => {
 
       expect(operations[0]!.fragmentDependencies).toEqual(["UserFields"]);
     });
+  });
+});
+
+describe("collectVariableUsages", () => {
+  const schemaWithArgs = parse(`
+    scalar CustomScalar
+
+    enum PostStatus {
+      DRAFT
+      PUBLISHED
+    }
+
+    input PostFilter {
+      status: PostStatus
+      authorId: ID
+    }
+
+    type Post {
+      id: ID!
+      title: String!
+    }
+
+    type User {
+      id: ID!
+      name: String!
+      posts(first: Int, status: PostStatus, filter: PostFilter): [Post!]!
+    }
+
+    type Query {
+      user(id: ID!): User
+      users(ids: [ID!]!): [User!]!
+    }
+  `);
+  const schema = createSchemaIndex(schemaWithArgs);
+
+  it("collects variable from direct field argument", () => {
+    const source = `
+      fragment UserWithPosts on User {
+        posts(first: $limit) { id }
+      }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+    const fragment = parsed.fragments[0]!;
+
+    const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+    expect(result.isOk()).toBe(true);
+    const usages = result._unsafeUnwrap();
+    expect(usages).toHaveLength(1);
+    expect(usages[0]).toMatchObject({
+      name: "limit",
+      typeName: "Int",
+      modifier: "?",
+    });
+  });
+
+  it("collects variable from nested input object", () => {
+    const source = `
+      fragment FilteredPosts on User {
+        posts(filter: { status: $status }) { id }
+      }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+    const fragment = parsed.fragments[0]!;
+
+    const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+    expect(result.isOk()).toBe(true);
+    const usages = result._unsafeUnwrap();
+    expect(usages).toHaveLength(1);
+    expect(usages[0]).toMatchObject({
+      name: "status",
+      typeName: "PostStatus",
+      modifier: "?",
+      typeKind: "enum",
+    });
+  });
+
+  it("collects multiple variables from same field", () => {
+    const source = `
+      fragment FilteredPosts on User {
+        posts(first: $limit, status: $status) { id }
+      }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+    const fragment = parsed.fragments[0]!;
+
+    const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+    expect(result.isOk()).toBe(true);
+    const usages = result._unsafeUnwrap();
+    expect(usages).toHaveLength(2);
+    expect(usages.map((u) => u.name).sort()).toEqual(["limit", "status"]);
+  });
+
+  it("collects same variable used multiple times", () => {
+    const source = `
+      fragment FilteredPosts on User {
+        posts(filter: { status: $status, authorId: $authorId }) { id }
+      }
+    `;
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+    const fragment = parsed.fragments[0]!;
+
+    const result = collectVariableUsages(fragment.selections, fragment.onType, schema);
+
+    expect(result.isOk()).toBe(true);
+    const usages = result._unsafeUnwrap();
+    expect(usages).toHaveLength(2);
+  });
+});
+
+describe("mergeVariableUsages", () => {
+  it("merges single usage", () => {
+    const result = mergeVariableUsages("limit", [
+      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" },
+    ]);
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toEqual({
+      name: "limit",
+      typeName: "Int",
+      modifier: "?",
+      typeKind: "scalar",
+    });
+  });
+
+  it("merges multiple usages with same type", () => {
+    const result = mergeVariableUsages("limit", [
+      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" },
+      { name: "limit", typeName: "Int", modifier: "!", typeKind: "scalar" },
+    ]);
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toEqual({
+      name: "limit",
+      typeName: "Int",
+      modifier: "!",
+      typeKind: "scalar",
+    });
+  });
+
+  it("errors on type mismatch", () => {
+    const result = mergeVariableUsages("value", [
+      { name: "value", typeName: "Int", modifier: "?", typeKind: "scalar" },
+      { name: "value", typeName: "String", modifier: "?", typeKind: "scalar" },
+    ]);
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_VARIABLE_TYPE_MISMATCH");
+  });
+
+  it("errors on modifier incompatibility", () => {
+    const result = mergeVariableUsages("ids", [
+      { name: "ids", typeName: "ID", modifier: "!", typeKind: "scalar" },
+      { name: "ids", typeName: "ID", modifier: "![]!", typeKind: "scalar" },
+    ]);
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE");
+  });
+});
+
+describe("inferVariablesFromUsages", () => {
+  it("infers variables from usages", () => {
+    const usages = [
+      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+      { name: "status", typeName: "PostStatus", modifier: "?", typeKind: "enum" as const },
+    ];
+
+    const result = inferVariablesFromUsages(usages);
+
+    expect(result.isOk()).toBe(true);
+    const variables = result._unsafeUnwrap();
+    expect(variables).toHaveLength(2);
+    expect(variables[0]!.name).toBe("limit");
+    expect(variables[1]!.name).toBe("status");
+  });
+
+  it("groups and merges same variable", () => {
+    const usages = [
+      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+      { name: "limit", typeName: "Int", modifier: "!", typeKind: "scalar" as const },
+    ];
+
+    const result = inferVariablesFromUsages(usages);
+
+    expect(result.isOk()).toBe(true);
+    const variables = result._unsafeUnwrap();
+    expect(variables).toHaveLength(1);
+    expect(variables[0]).toEqual({
+      name: "limit",
+      typeName: "Int",
+      modifier: "!",
+      typeKind: "scalar",
+    });
+  });
+
+  it("sorts variables by name", () => {
+    const usages = [
+      { name: "z", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+      { name: "a", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+      { name: "m", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+    ];
+
+    const result = inferVariablesFromUsages(usages);
+
+    expect(result.isOk()).toBe(true);
+    const names = result._unsafeUnwrap().map((v) => v.name);
+    expect(names).toEqual(["a", "m", "z"]);
   });
 });
 

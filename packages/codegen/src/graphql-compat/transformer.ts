@@ -3,10 +3,21 @@
  * @module
  */
 
-import type { DocumentNode } from "graphql";
+import type { DocumentNode, FieldDefinitionNode, InputValueDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
-import type { GraphqlCompatError, ParsedFragment, ParsedOperation, ParsedVariable, ParseResult } from "./types";
+import { parseTypeNode } from "./parser";
+import type {
+  GraphqlCompatError,
+  InferredVariable,
+  ParsedArgument,
+  ParsedFragment,
+  ParsedOperation,
+  ParsedSelection,
+  ParsedValue,
+  ParsedVariable,
+  ParseResult,
+} from "./types";
 
 /**
  * Schema index type extracted from generator.
@@ -67,7 +78,10 @@ const buildModifier = (structure: ModifierStructure): string => {
  * @param b - Second modifier
  * @returns Merged modifier or error if incompatible
  */
-export const mergeModifiers = (a: string, b: string): { ok: true; value: string } | { ok: false; reason: string } => {
+export const mergeModifiers = (
+  a: string,
+  b: string,
+): { ok: true; value: string } | { ok: false; reason: string } => {
   const structA = parseModifierStructure(a);
   const structB = parseModifierStructure(b);
 
@@ -91,6 +105,292 @@ export const mergeModifiers = (a: string, b: string): { ok: true; value: string 
   }
 
   return { ok: true, value: buildModifier({ inner: mergedInner, lists: mergedLists }) };
+};
+
+// ============================================================================
+// Variable Collection from Selections
+// ============================================================================
+
+/**
+ * Intermediate type for tracking variable usages before merging.
+ */
+type VariableUsage = {
+  readonly name: string;
+  readonly typeName: string;
+  readonly modifier: string;
+  readonly typeKind: "scalar" | "enum" | "input";
+};
+
+/**
+ * Get the expected type for a field argument from the schema.
+ * Returns null if the field or argument is not found.
+ */
+const getArgumentType = (
+  schema: SchemaIndex,
+  parentTypeName: string,
+  fieldName: string,
+  argumentName: string,
+): { typeName: string; modifier: string } | null => {
+  const objectRecord = schema.objects.get(parentTypeName);
+  if (!objectRecord) return null;
+
+  const fieldDef = objectRecord.fields.get(fieldName);
+  if (!fieldDef) return null;
+
+  const argDef = fieldDef.arguments?.find((arg) => arg.name.value === argumentName);
+  if (!argDef) return null;
+
+  return parseTypeNode(argDef.type);
+};
+
+/**
+ * Get the expected type for an input object field from the schema.
+ */
+const getInputFieldType = (
+  schema: SchemaIndex,
+  inputTypeName: string,
+  fieldName: string,
+): { typeName: string; modifier: string } | null => {
+  const inputRecord = schema.inputs.get(inputTypeName);
+  if (!inputRecord) return null;
+
+  const fieldDef = inputRecord.fields.get(fieldName);
+  if (!fieldDef) return null;
+
+  return parseTypeNode(fieldDef.type);
+};
+
+/**
+ * Resolve the type kind for a type name.
+ */
+const resolveTypeKindFromName = (schema: SchemaIndex, typeName: string): "scalar" | "enum" | "input" | null => {
+  if (isScalarName(schema, typeName)) return "scalar";
+  if (isEnumName(schema, typeName)) return "enum";
+  if (schema.inputs.has(typeName)) return "input";
+  return null;
+};
+
+/**
+ * Extract variable usages from a parsed value, given the expected type.
+ * Handles nested input objects recursively.
+ */
+const collectVariablesFromValue = (
+  value: ParsedValue,
+  expectedTypeName: string,
+  expectedModifier: string,
+  schema: SchemaIndex,
+  usages: VariableUsage[],
+): void => {
+  if (value.kind === "variable") {
+    const typeKind = resolveTypeKindFromName(schema, expectedTypeName);
+    if (typeKind) {
+      usages.push({
+        name: value.name,
+        typeName: expectedTypeName,
+        modifier: expectedModifier,
+        typeKind,
+      });
+    }
+    return;
+  }
+
+  if (value.kind === "object") {
+    // For object values, check each field against input type definition
+    for (const field of value.fields) {
+      const fieldType = getInputFieldType(schema, expectedTypeName, field.name);
+      if (fieldType) {
+        collectVariablesFromValue(field.value, fieldType.typeName, fieldType.modifier, schema, usages);
+      }
+    }
+    return;
+  }
+
+  if (value.kind === "list") {
+    // For list values, unwrap one level of list modifier
+    // e.g., [ID!]! -> ID! for elements
+    const struct = parseModifierStructure(expectedModifier);
+    if (struct.lists.length > 0) {
+      const innerModifier = buildModifier({
+        inner: struct.inner,
+        lists: struct.lists.slice(1),
+      });
+      for (const item of value.values) {
+        collectVariablesFromValue(item, expectedTypeName, innerModifier, schema, usages);
+      }
+    }
+  }
+
+  // Other value kinds (int, float, string, etc.) don't contain variables
+};
+
+/**
+ * Collect variable usages from field arguments.
+ */
+const collectVariablesFromArguments = (
+  args: readonly ParsedArgument[],
+  parentTypeName: string,
+  fieldName: string,
+  schema: SchemaIndex,
+  usages: VariableUsage[],
+): GraphqlCompatError | null => {
+  for (const arg of args) {
+    const argType = getArgumentType(schema, parentTypeName, fieldName, arg.name);
+    if (!argType) {
+      // If we can't find the argument type, skip it (schema might not match)
+      continue;
+    }
+    collectVariablesFromValue(arg.value, argType.typeName, argType.modifier, schema, usages);
+  }
+  return null;
+};
+
+/**
+ * Recursively collect all variable usages from selections.
+ */
+export const collectVariableUsages = (
+  selections: readonly ParsedSelection[],
+  parentTypeName: string,
+  schema: SchemaIndex,
+): Result<VariableUsage[], GraphqlCompatError> => {
+  const usages: VariableUsage[] = [];
+
+  const collect = (sels: readonly ParsedSelection[], parentType: string): GraphqlCompatError | null => {
+    for (const sel of sels) {
+      switch (sel.kind) {
+        case "field": {
+          // Collect from arguments
+          if (sel.arguments && sel.arguments.length > 0) {
+            const error = collectVariablesFromArguments(sel.arguments, parentType, sel.name, schema, usages);
+            if (error) return error;
+          }
+
+          // Recurse into nested selections
+          if (sel.selections && sel.selections.length > 0) {
+            // Need to determine the field's return type for nested selections
+            const fieldReturnType = getFieldReturnType(schema, parentType, sel.name);
+            if (fieldReturnType) {
+              const error = collect(sel.selections, fieldReturnType);
+              if (error) return error;
+            }
+          }
+          break;
+        }
+        case "inlineFragment": {
+          // Use the inline fragment's type condition
+          const error = collect(sel.selections, sel.onType);
+          if (error) return error;
+          break;
+        }
+        case "fragmentSpread":
+          // Fragment spreads are handled separately (variables from spread fragments)
+          break;
+      }
+    }
+    return null;
+  };
+
+  const error = collect(selections, parentTypeName);
+  if (error) return err(error);
+
+  return ok(usages);
+};
+
+/**
+ * Get the return type of a field (unwrapped from modifiers).
+ */
+const getFieldReturnType = (schema: SchemaIndex, parentTypeName: string, fieldName: string): string | null => {
+  const objectRecord = schema.objects.get(parentTypeName);
+  if (!objectRecord) return null;
+
+  const fieldDef = objectRecord.fields.get(fieldName);
+  if (!fieldDef) return null;
+
+  const { typeName } = parseTypeNode(fieldDef.type);
+  return typeName;
+};
+
+/**
+ * Merge multiple variable usages into a single InferredVariable.
+ * Validates type compatibility and merges modifiers using stricter constraint.
+ */
+export const mergeVariableUsages = (
+  variableName: string,
+  usages: readonly VariableUsage[],
+): Result<InferredVariable, GraphqlCompatError> => {
+  if (usages.length === 0) {
+    // This shouldn't happen, but handle defensively
+    return err({
+      code: "GRAPHQL_UNDECLARED_VARIABLE",
+      message: `No usages found for variable "${variableName}"`,
+      variableName,
+    });
+  }
+
+  const first = usages[0]!;
+
+  // Validate all usages have the same type name
+  for (const usage of usages) {
+    if (usage.typeName !== first.typeName) {
+      return err({
+        code: "GRAPHQL_VARIABLE_TYPE_MISMATCH",
+        message: `Variable "$${variableName}" has conflicting types: "${first.typeName}" and "${usage.typeName}"`,
+        variableName,
+      });
+    }
+  }
+
+  // Merge modifiers
+  let mergedModifier = first.modifier;
+  for (let i = 1; i < usages.length; i++) {
+    const result = mergeModifiers(mergedModifier, usages[i]!.modifier);
+    if (!result.ok) {
+      return err({
+        code: "GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE",
+        message: `Variable "$${variableName}" has incompatible modifiers: ${result.reason}`,
+        variableName,
+      });
+    }
+    mergedModifier = result.value;
+  }
+
+  return ok({
+    name: variableName,
+    typeName: first.typeName,
+    modifier: mergedModifier,
+    typeKind: first.typeKind,
+  });
+};
+
+/**
+ * Infer variables from collected usages.
+ * Groups by variable name and merges each group.
+ */
+export const inferVariablesFromUsages = (
+  usages: readonly VariableUsage[],
+): Result<InferredVariable[], GraphqlCompatError> => {
+  // Group usages by variable name
+  const byName = new Map<string, VariableUsage[]>();
+  for (const usage of usages) {
+    const existing = byName.get(usage.name);
+    if (existing) {
+      existing.push(usage);
+    } else {
+      byName.set(usage.name, [usage]);
+    }
+  }
+
+  // Merge each group
+  const variables: InferredVariable[] = [];
+  for (const [name, group] of byName) {
+    const result = mergeVariableUsages(name, group);
+    if (result.isErr()) return err(result.error);
+    variables.push(result.value);
+  }
+
+  // Sort by name for deterministic output
+  variables.sort((a, b) => a.name.localeCompare(b.name));
+
+  return ok(variables);
 };
 
 /**
