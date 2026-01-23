@@ -185,7 +185,7 @@ type VariableUsage = {
  * Get the expected type for a field argument from the schema.
  * Returns null if the field or argument is not found.
  */
-const getArgumentType = (
+export const getArgumentType = (
   schema: SchemaIndex,
   parentTypeName: string,
   fieldName: string,
@@ -206,7 +206,7 @@ const getArgumentType = (
 /**
  * Get the expected type for an input object field from the schema.
  */
-const getInputFieldType = (
+export const getInputFieldType = (
   schema: SchemaIndex,
   inputTypeName: string,
   fieldName: string,
@@ -384,7 +384,7 @@ export const collectVariableUsages = (
 /**
  * Get the return type of a field (unwrapped from modifiers).
  */
-const getFieldReturnType = (schema: SchemaIndex, parentTypeName: string, fieldName: string): string | null => {
+export const getFieldReturnType = (schema: SchemaIndex, parentTypeName: string, fieldName: string): string | null => {
   const objectRecord = schema.objects.get(parentTypeName);
   if (!objectRecord) return null;
 
