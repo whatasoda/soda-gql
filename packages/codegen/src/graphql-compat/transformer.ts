@@ -207,11 +207,7 @@ export const getArgumentType = (
 /**
  * Get the expected type for an input object field from the schema.
  */
-export const getInputFieldType = (
-  schema: SchemaIndex,
-  inputTypeName: string,
-  fieldName: string,
-): TypeInfo | null => {
+export const getInputFieldType = (schema: SchemaIndex, inputTypeName: string, fieldName: string): TypeInfo | null => {
   const inputRecord = schema.inputs.get(inputTypeName);
   if (!inputRecord) return null;
 

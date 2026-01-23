@@ -1165,4 +1165,34 @@ describe("Literal Value List Coercion", () => {
     // Literal should be wrapped in array
     expect(output).toContain('tags: ["single"]');
   });
+
+  it("coerces fields inside objects within array literals", () => {
+    // BugBot issue: List coercion fails for nested object fields
+    // When a list literal contains objects with fields requiring coercion,
+    // the type context was lost. This test verifies the fix.
+    const nestedSchema = parse(`
+      input ItemInput { tags: [String!] }
+      type Data { id: ID! }
+      type Query { data(items: [ItemInput!]): Data }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data(items: [{ tags: "single-tag" }]) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: nestedSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: nestedSchema,
+    })._unsafeUnwrap();
+
+    // "single-tag" inside the object within the array should be coerced to ["single-tag"]
+    expect(output).toContain('items: [{ tags: ["single-tag"] }]');
+  });
 });

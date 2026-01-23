@@ -398,6 +398,21 @@ const needsListCoercion = (value: ParsedValue, expectedModifier: string | undefi
 };
 
 /**
+ * Extract the element type from a list type by removing the outermost list modifier.
+ * For example: "![]!" (non-null list of non-null) → "!" (non-null element)
+ *              "?[]![]!" (nested lists) → "?[]!" (inner list type)
+ * Returns null if the modifier doesn't represent a list type.
+ */
+const getListElementType = (expectedType: TypeInfo): TypeInfo | null => {
+  const { modifier, typeName } = expectedType;
+  // Modifier format: {inner}{list_modifiers}
+  // Strip the outermost list modifier ([]! or []?)
+  const listMatch = modifier.match(/^(.+?)(\[\][!?])$/);
+  if (!listMatch || !listMatch[1]) return null;
+  return { typeName, modifier: listMatch[1] };
+};
+
+/**
  * Emit a value with type context for list coercion.
  */
 const emitValueWithType = (
@@ -412,6 +427,20 @@ const emitValueWithType = (
   // Handle object values with recursive type context
   if (value.kind === "object" && expectedType && schema) {
     return emitObjectWithType(value, expectedType.typeName, variableNames, schema, shouldCoerce);
+  }
+
+  // Handle list values with recursive type context for element coercion
+  if (value.kind === "list" && expectedType && schema) {
+    const elementType = getListElementType(expectedType);
+    if (elementType) {
+      const values: string[] = [];
+      for (const v of value.values) {
+        const result = emitValueWithType(v, elementType, variableNames, schema);
+        if (result.isErr()) return result;
+        values.push(result.value);
+      }
+      return ok(`[${values.join(", ")}]`);
+    }
   }
 
   // Emit the value normally
