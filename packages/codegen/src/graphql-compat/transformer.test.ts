@@ -1,15 +1,16 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
+import { createSchemaIndex } from "../generator";
 import { parseGraphqlSource } from "./parser";
 import {
   collectVariableUsages,
   inferVariablesFromUsages,
+  isModifierAssignable,
   mergeModifiers,
   mergeVariableUsages,
   sortFragmentsByDependency,
   transformParsedGraphql,
 } from "./transformer";
-import { createSchemaIndex } from "../generator";
 
 // Simple test schema
 const testSchema = parse(`
@@ -549,7 +550,8 @@ describe("collectVariableUsages", () => {
     expect(usages[0]).toMatchObject({
       name: "limit",
       typeName: "Int",
-      modifier: "?",
+      expectedModifier: "?",
+      minimumModifier: "?",
     });
   });
 
@@ -570,7 +572,8 @@ describe("collectVariableUsages", () => {
     expect(usages[0]).toMatchObject({
       name: "status",
       typeName: "PostStatus",
-      modifier: "?",
+      expectedModifier: "?",
+      minimumModifier: "?",
       typeKind: "enum",
     });
   });
@@ -676,7 +679,7 @@ describe("collectVariableUsages", () => {
 describe("mergeVariableUsages", () => {
   it("merges single usage", () => {
     const result = mergeVariableUsages("limit", [
-      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" },
+      { name: "limit", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" },
     ]);
 
     expect(result.isOk()).toBe(true);
@@ -690,8 +693,8 @@ describe("mergeVariableUsages", () => {
 
   it("merges multiple usages with same type", () => {
     const result = mergeVariableUsages("limit", [
-      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" },
-      { name: "limit", typeName: "Int", modifier: "!", typeKind: "scalar" },
+      { name: "limit", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" },
+      { name: "limit", typeName: "Int", expectedModifier: "!", minimumModifier: "!", typeKind: "scalar" },
     ]);
 
     expect(result.isOk()).toBe(true);
@@ -705,18 +708,37 @@ describe("mergeVariableUsages", () => {
 
   it("errors on type mismatch", () => {
     const result = mergeVariableUsages("value", [
-      { name: "value", typeName: "Int", modifier: "?", typeKind: "scalar" },
-      { name: "value", typeName: "String", modifier: "?", typeKind: "scalar" },
+      { name: "value", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" },
+      { name: "value", typeName: "String", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" },
     ]);
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr().code).toBe("GRAPHQL_VARIABLE_TYPE_MISMATCH");
   });
 
-  it("errors on modifier incompatibility", () => {
-    const result = mergeVariableUsages("ids", [
-      { name: "ids", typeName: "ID", modifier: "!", typeKind: "scalar" },
-      { name: "ids", typeName: "ID", modifier: "![]!", typeKind: "scalar" },
+  it("supports List Coercion (single value in scalar and list positions)", () => {
+    // $id used in both id: ID! and ids: [ID!]! positions
+    // minimumModifier for [ID!]! is ID! due to List Coercion
+    const result = mergeVariableUsages("id", [
+      { name: "id", typeName: "ID", expectedModifier: "!", minimumModifier: "!", typeKind: "scalar" },
+      { name: "id", typeName: "ID", expectedModifier: "![]!", minimumModifier: "!", typeKind: "scalar" },
+    ]);
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toEqual({
+      name: "id",
+      typeName: "ID",
+      modifier: "!",
+      typeKind: "scalar",
+    });
+  });
+
+  it("errors when List Coercion depth exceeds 1", () => {
+    // $id used in both id: ID! and ids: [[ID!]!]! positions
+    // minimumModifier for [[ID!]!]! is [ID!]! which conflicts with ID!
+    const result = mergeVariableUsages("id", [
+      { name: "id", typeName: "ID", expectedModifier: "!", minimumModifier: "!", typeKind: "scalar" },
+      { name: "id", typeName: "ID", expectedModifier: "![]![]!", minimumModifier: "![]!", typeKind: "scalar" },
     ]);
 
     expect(result.isErr()).toBe(true);
@@ -727,8 +749,8 @@ describe("mergeVariableUsages", () => {
 describe("inferVariablesFromUsages", () => {
   it("infers variables from usages", () => {
     const usages = [
-      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
-      { name: "status", typeName: "PostStatus", modifier: "?", typeKind: "enum" as const },
+      { name: "limit", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" as const },
+      { name: "status", typeName: "PostStatus", expectedModifier: "?", minimumModifier: "?", typeKind: "enum" as const },
     ];
 
     const result = inferVariablesFromUsages(usages);
@@ -742,8 +764,8 @@ describe("inferVariablesFromUsages", () => {
 
   it("groups and merges same variable", () => {
     const usages = [
-      { name: "limit", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
-      { name: "limit", typeName: "Int", modifier: "!", typeKind: "scalar" as const },
+      { name: "limit", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" as const },
+      { name: "limit", typeName: "Int", expectedModifier: "!", minimumModifier: "!", typeKind: "scalar" as const },
     ];
 
     const result = inferVariablesFromUsages(usages);
@@ -761,9 +783,9 @@ describe("inferVariablesFromUsages", () => {
 
   it("sorts variables by name", () => {
     const usages = [
-      { name: "z", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
-      { name: "a", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
-      { name: "m", typeName: "Int", modifier: "?", typeKind: "scalar" as const },
+      { name: "z", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" as const },
+      { name: "a", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" as const },
+      { name: "m", typeName: "Int", expectedModifier: "?", minimumModifier: "?", typeKind: "scalar" as const },
     ];
 
     const result = inferVariablesFromUsages(usages);
@@ -960,6 +982,93 @@ describe("mergeModifiers", () => {
       if (!result.ok) {
         expect(result.reason).toContain("Incompatible list depths");
       }
+    });
+  });
+});
+
+describe("isModifierAssignable", () => {
+  describe("same depth (no List Coercion)", () => {
+    it("allows non-null to nullable", () => {
+      expect(isModifierAssignable("!", "?")).toBe(true);
+    });
+
+    it("allows non-null to non-null", () => {
+      expect(isModifierAssignable("!", "!")).toBe(true);
+    });
+
+    it("disallows nullable to non-null", () => {
+      expect(isModifierAssignable("?", "!")).toBe(false);
+    });
+
+    it("allows nullable to nullable", () => {
+      expect(isModifierAssignable("?", "?")).toBe(true);
+    });
+
+    it("allows non-null list to nullable list", () => {
+      expect(isModifierAssignable("![]!", "?[]?")).toBe(true);
+    });
+
+    it("disallows nullable list to non-null list", () => {
+      expect(isModifierAssignable("?[]?", "![]!")).toBe(false);
+    });
+  });
+
+  describe("List Coercion (depth diff = 1)", () => {
+    it("allows single value to required list (! to ![]!)", () => {
+      expect(isModifierAssignable("!", "![]!")).toBe(true);
+    });
+
+    it("allows single value to nullable list (! to ![]?)", () => {
+      expect(isModifierAssignable("!", "![]?")).toBe(true);
+    });
+
+    it("allows single value to nullable outer list (! to ?[]!)", () => {
+      expect(isModifierAssignable("!", "?[]!")).toBe(true);
+    });
+
+    it("allows nullable single to nullable list (? to ?[]?)", () => {
+      expect(isModifierAssignable("?", "?[]?")).toBe(true);
+    });
+
+    it("disallows nullable single to non-null inner list (? to ![]!)", () => {
+      expect(isModifierAssignable("?", "![]!")).toBe(false);
+    });
+
+    it("allows list to nested list (![]! to ![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]!")).toBe(true);
+    });
+
+    it("allows nullable inner list to nullable nested list (?[]? to ?[]?[]?)", () => {
+      expect(isModifierAssignable("?[]?", "?[]?[]?")).toBe(true);
+    });
+  });
+
+  describe("invalid depth differences", () => {
+    it("disallows list to single value (![]! to !)", () => {
+      expect(isModifierAssignable("![]!", "!")).toBe(false);
+    });
+
+    it("disallows depth diff > 1 (! to ![]![]!)", () => {
+      expect(isModifierAssignable("!", "![]![]!")).toBe(false);
+    });
+
+    it("disallows depth diff > 1 (![]! to ![]![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]![]!")).toBe(false);
+    });
+  });
+
+  describe("complex nullability cases", () => {
+    it("allows when inner matches through coercion (![]! to ![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]!")).toBe(true);
+    });
+
+    it("disallows when inner nullability conflicts through coercion (?[]? to ![]![]!)", () => {
+      // ?[]? has inner=? which can't satisfy inner=! of target
+      expect(isModifierAssignable("?[]?", "![]![]!")).toBe(false);
+    });
+
+    it("allows matching nullability at all levels (?[]! to ?[]![]?)", () => {
+      expect(isModifierAssignable("?[]!", "?[]![]?")).toBe(true);
     });
   });
 });
