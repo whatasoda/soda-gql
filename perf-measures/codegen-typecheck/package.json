@@ -31,6 +31,9 @@
     "generate:noSatisfies": "bun scripts/generate.ts noSatisfies",
     "typecheck:noSatisfies": "tsc --project noSatisfies/tsconfig.json --extendedDiagnostics --noEmit",
     "bench:noSatisfies": "bun scripts/run.ts --noSatisfies",
+    "generate:deferred": "bun scripts/generate.ts deferred",
+    "typecheck:deferred": "tsc --project deferred/tsconfig.json --extendedDiagnostics --noEmit",
+    "bench:deferred": "bun scripts/run.ts --deferred",
     "bench:runtime": "bun scripts/runtime-bench.ts"
   }
 }
