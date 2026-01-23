@@ -340,7 +340,7 @@ describe("emitFragment", () => {
       const output = emitFragment(fragments[0]!, optionsWithArgs)._unsafeUnwrap();
 
       expect(output).toContain('...$var("status").PostStatus("?")');
-      expect(output).toContain('filter: { status: $.status }');
+      expect(output).toContain("filter: { status: $.status }");
     });
 
     it("emits fragment with propagated variables from spread", () => {

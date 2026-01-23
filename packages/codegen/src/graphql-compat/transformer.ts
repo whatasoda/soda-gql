@@ -70,6 +70,66 @@ const buildModifier = (structure: ModifierStructure): string => {
 };
 
 /**
+ * Check if source modifier can be assigned to target modifier.
+ * Implements GraphQL List Coercion: depth difference of 0 or 1 is allowed.
+ *
+ * Rules:
+ * - A single value can be coerced into a list (depth diff = 1)
+ * - At each level, non-null can be assigned to nullable (but not vice versa)
+ *
+ * @param source - The modifier of the value being assigned (variable's type)
+ * @param target - The modifier expected by the position (field argument's type)
+ * @returns true if assignment is valid
+ */
+export const isModifierAssignable = (source: string, target: string): boolean => {
+  const srcStruct = parseModifierStructure(source);
+  const tgtStruct = parseModifierStructure(target);
+
+  const depthDiff = tgtStruct.lists.length - srcStruct.lists.length;
+
+  // Depth difference must be 0 or 1 (List Coercion only wraps one level)
+  if (depthDiff < 0 || depthDiff > 1) return false;
+
+  // When List Coercion applies (depth diff = 1), compare inner levels only
+  // The outer list level of target is satisfied by the coercion itself
+  const tgtListsToCompare = depthDiff === 1 ? tgtStruct.lists.slice(1) : tgtStruct.lists;
+
+  // When coercing a nullable scalar to a list, target's outer list must be nullable
+  // A null scalar would produce null (not [null]), violating non-null list constraint
+  // This only applies to scalars (no lists), not when coercing list to nested list
+  if (depthDiff === 1 && srcStruct.lists.length === 0 && srcStruct.inner === "?" && tgtStruct.lists[0] === "[]!") {
+    return false;
+  }
+
+  // Inner nullability: non-null can go to nullable, but not vice versa
+  if (srcStruct.inner === "?" && tgtStruct.inner === "!") return false;
+
+  // List level nullability: check each corresponding level
+  for (let i = 0; i < srcStruct.lists.length; i++) {
+    const srcList = srcStruct.lists[i]!;
+    const tgtList = tgtListsToCompare[i]!;
+    if (srcList === "[]?" && tgtList === "[]!") return false;
+  }
+
+  return true;
+};
+
+/**
+ * Derive minimum modifier needed to satisfy expected modifier.
+ * When List Coercion can apply, returns one level shallower.
+ *
+ * @param expectedModifier - The modifier expected by the field argument
+ * @returns The minimum modifier the variable must have
+ */
+const deriveMinimumModifier = (expectedModifier: string): string => {
+  const struct = parseModifierStructure(expectedModifier);
+  if (struct.lists.length > 0) {
+    return buildModifier({ inner: struct.inner, lists: struct.lists.slice(1) });
+  }
+  return expectedModifier;
+};
+
+/**
  * Merge two modifiers by taking the stricter constraint at each level.
  * - Non-null (!) is stricter than nullable (?)
  * - List depths must match
@@ -78,10 +138,7 @@ const buildModifier = (structure: ModifierStructure): string => {
  * @param b - Second modifier
  * @returns Merged modifier or error if incompatible
  */
-export const mergeModifiers = (
-  a: string,
-  b: string,
-): { ok: true; value: string } | { ok: false; reason: string } => {
+export const mergeModifiers = (a: string, b: string): { ok: true; value: string } | { ok: false; reason: string } => {
   const structA = parseModifierStructure(a);
   const structB = parseModifierStructure(b);
 
@@ -117,7 +174,10 @@ export const mergeModifiers = (
 type VariableUsage = {
   readonly name: string;
   readonly typeName: string;
-  readonly modifier: string;
+  /** The modifier expected by the field/argument position */
+  readonly expectedModifier: string;
+  /** The minimum modifier the variable needs (after applying List Coercion) */
+  readonly minimumModifier: string;
   readonly typeKind: "scalar" | "enum" | "input";
 };
 
@@ -193,7 +253,8 @@ const collectVariablesFromValue = (
     usages.push({
       name: value.name,
       typeName: expectedTypeName,
-      modifier: expectedModifier,
+      expectedModifier,
+      minimumModifier: deriveMinimumModifier(expectedModifier),
       typeKind,
     });
     return null;
@@ -336,7 +397,12 @@ const getFieldReturnType = (schema: SchemaIndex, parentTypeName: string, fieldNa
 
 /**
  * Merge multiple variable usages into a single InferredVariable.
- * Validates type compatibility and merges modifiers using stricter constraint.
+ * Validates type compatibility and merges modifiers using List Coercion rules.
+ *
+ * The algorithm:
+ * 1. Validate all usages have the same type name
+ * 2. Merge minimumModifiers to find the candidate (shallowest type that could work)
+ * 3. Verify the candidate can satisfy ALL expected modifiers via isModifierAssignable
  */
 export const mergeVariableUsages = (
   variableName: string,
@@ -364,10 +430,10 @@ export const mergeVariableUsages = (
     }
   }
 
-  // Merge modifiers
-  let mergedModifier = first.modifier;
+  // Merge minimumModifiers to find candidate
+  let candidateModifier = first.minimumModifier;
   for (let i = 1; i < usages.length; i++) {
-    const result = mergeModifiers(mergedModifier, usages[i]!.modifier);
+    const result = mergeModifiers(candidateModifier, usages[i]!.minimumModifier);
     if (!result.ok) {
       return err({
         code: "GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE",
@@ -375,13 +441,24 @@ export const mergeVariableUsages = (
         variableName,
       });
     }
-    mergedModifier = result.value;
+    candidateModifier = result.value;
+  }
+
+  // Verify candidate satisfies all expected modifiers
+  for (const usage of usages) {
+    if (!isModifierAssignable(candidateModifier, usage.expectedModifier)) {
+      return err({
+        code: "GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE",
+        message: `Variable "$${variableName}" with modifier "${candidateModifier}" cannot satisfy expected "${usage.expectedModifier}"`,
+        variableName,
+      });
+    }
   }
 
   return ok({
     name: variableName,
     typeName: first.typeName,
-    modifier: mergedModifier,
+    modifier: candidateModifier,
     typeKind: first.typeKind,
   });
 };
@@ -390,9 +467,7 @@ export const mergeVariableUsages = (
  * Infer variables from collected usages.
  * Groups by variable name and merges each group.
  */
-export const inferVariablesFromUsages = (
-  usages: readonly VariableUsage[],
-): Result<InferredVariable[], GraphqlCompatError> => {
+export const inferVariablesFromUsages = (usages: readonly VariableUsage[]): Result<InferredVariable[], GraphqlCompatError> => {
   // Group usages by variable name
   const byName = new Map<string, VariableUsage[]>();
   for (const usage of usages) {
@@ -433,9 +508,7 @@ const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScal
  *
  * Note: Uses the existing collectFragmentDependencies function defined below.
  */
-export const sortFragmentsByDependency = (
-  fragments: readonly ParsedFragment[],
-): Result<ParsedFragment[], GraphqlCompatError> => {
+export const sortFragmentsByDependency = (fragments: readonly ParsedFragment[]): Result<ParsedFragment[], GraphqlCompatError> => {
   // Build dependency graph using existing function
   const graph = new Map<string, Set<string>>();
   for (const fragment of fragments) {
@@ -675,13 +748,15 @@ const transformFragment = (
   }
 
   // Combine direct usages with spread variables
-  // Convert spread variables to usages for merging
-  const allUsages = [
+  // Convert spread variables (InferredVariable) to usages for merging
+  // For already-inferred variables, expectedModifier and minimumModifier are the same
+  const allUsages: VariableUsage[] = [
     ...directUsages,
     ...spreadVariables.map((v) => ({
       name: v.name,
       typeName: v.typeName,
-      modifier: v.modifier,
+      expectedModifier: v.modifier,
+      minimumModifier: v.modifier,
       typeKind: v.typeKind,
     })),
   ];
