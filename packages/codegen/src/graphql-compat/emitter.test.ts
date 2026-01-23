@@ -1092,4 +1092,77 @@ describe("Literal Value List Coercion", () => {
 
     expect(output).toContain('ids: ["single-post"]');
   });
+
+  it("coerces inside inline fragment in fragment", () => {
+    // Union type with inline fragment containing list coercion
+    const unionSchema = parse(`
+      type Post { id: ID!, tags(names: [String!]): [String!]! }
+      type Comment { id: ID!, content: String! }
+      union SearchResult = Post | Comment
+      type Query { search: [SearchResult!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query Search {
+        search {
+          ... on Post {
+            id
+            tags(names: "single-tag")
+          }
+          ... on Comment {
+            id
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: unionSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    // "single-tag" should be coerced to ["single-tag"] inside inline fragment
+    expect(output).toContain('names: ["single-tag"]');
+  });
+
+  it("coerces literal but not variable in same operation", () => {
+    // Mixed case: variable should NOT be coerced, literal should be coerced
+    const mixedSchema = parse(`
+      input FilterInput { tags: [String!] }
+      type User { id: ID!, name: String! }
+      type Query {
+        users(ids: [ID!]): [User!]!
+        search(filter: FilterInput): [User!]!
+      }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query MixedQuery($userIds: [ID!]) {
+        users(ids: $userIds) {
+          id
+        }
+        search(filter: { tags: "single" }) {
+          name
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: mixedSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: mixedSchema,
+    })._unsafeUnwrap();
+
+    // Variable should NOT be wrapped in array
+    expect(output).toContain("ids: $.userIds");
+    expect(output).not.toContain("[$.userIds]");
+
+    // Literal should be wrapped in array
+    expect(output).toContain('tags: ["single"]');
+  });
 });

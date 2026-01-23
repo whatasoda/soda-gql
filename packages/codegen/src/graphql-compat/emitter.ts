@@ -13,7 +13,7 @@ import {
   getFieldReturnType,
   getInputFieldType,
 } from "./transformer";
-import type { GraphqlCompatError, ParsedArgument, ParsedInlineFragment, ParsedSelection, ParsedValue } from "./types";
+import type { GraphqlCompatError, ParsedArgument, ParsedInlineFragment, ParsedSelection, ParsedValue, TypeInfo } from "./types";
 
 /**
  * Schema index for type lookups.
@@ -398,19 +398,11 @@ const needsListCoercion = (value: ParsedValue, expectedModifier: string | undefi
 };
 
 /**
- * Expected type information for a value.
- */
-type ExpectedType = {
-  readonly typeName: string;
-  readonly modifier: string;
-};
-
-/**
  * Emit a value with type context for list coercion.
  */
 const emitValueWithType = (
   value: ParsedValue,
-  expectedType: ExpectedType | null,
+  expectedType: TypeInfo | null,
   variableNames: Set<string>,
   schema: SchemaIndex | null,
 ): Result<string, GraphqlCompatError> => {

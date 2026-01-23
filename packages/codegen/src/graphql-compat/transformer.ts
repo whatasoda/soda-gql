@@ -17,6 +17,7 @@ import type {
   ParsedValue,
   ParsedVariable,
   ParseResult,
+  TypeInfo,
 } from "./types";
 
 /**
@@ -190,7 +191,7 @@ export const getArgumentType = (
   parentTypeName: string,
   fieldName: string,
   argumentName: string,
-): { typeName: string; modifier: string } | null => {
+): TypeInfo | null => {
   const objectRecord = schema.objects.get(parentTypeName);
   if (!objectRecord) return null;
 
@@ -210,7 +211,7 @@ export const getInputFieldType = (
   schema: SchemaIndex,
   inputTypeName: string,
   fieldName: string,
-): { typeName: string; modifier: string } | null => {
+): TypeInfo | null => {
   const inputRecord = schema.inputs.get(inputTypeName);
   if (!inputRecord) return null;
 
