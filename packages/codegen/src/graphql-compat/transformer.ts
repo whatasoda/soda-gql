@@ -94,6 +94,13 @@ export const isModifierAssignable = (source: string, target: string): boolean =>
   // The outer list level of target is satisfied by the coercion itself
   const tgtListsToCompare = depthDiff === 1 ? tgtStruct.lists.slice(1) : tgtStruct.lists;
 
+  // When coercing a nullable scalar to a list, target's outer list must be nullable
+  // A null scalar would produce null (not [null]), violating non-null list constraint
+  // This only applies to scalars (no lists), not when coercing list to nested list
+  if (depthDiff === 1 && srcStruct.lists.length === 0 && srcStruct.inner === "?" && tgtStruct.lists[0] === "[]!") {
+    return false;
+  }
+
   // Inner nullability: non-null can go to nullable, but not vice versa
   if (srcStruct.inner === "?" && tgtStruct.inner === "!") return false;
 

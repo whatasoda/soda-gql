@@ -1034,6 +1034,11 @@ describe("isModifierAssignable", () => {
       expect(isModifierAssignable("?", "![]!")).toBe(false);
     });
 
+    it("disallows nullable single to non-null outer list (? to ?[]!)", () => {
+      // When source is null, coercion produces null (not [null]), violating []!
+      expect(isModifierAssignable("?", "?[]!")).toBe(false);
+    });
+
     it("allows list to nested list (![]! to ![]![]!)", () => {
       expect(isModifierAssignable("![]!", "![]![]!")).toBe(true);
     });
