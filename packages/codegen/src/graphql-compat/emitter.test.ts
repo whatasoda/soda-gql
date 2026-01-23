@@ -818,3 +818,278 @@ describe("inline fragments", () => {
     }
   });
 });
+
+describe("Literal Value List Coercion", () => {
+  // Schema with list arguments for testing coercion
+  const listSchema = parse(`
+    input FilterInput {
+      ids: [ID!]
+      tags: [String!]!
+      nested: NestedInput
+    }
+    input NestedInput {
+      values: [Int!]
+    }
+    type User {
+      id: ID!
+      name: String!
+    }
+    type Query {
+      user(id: ID!): User
+      users(ids: [ID!]): [User!]!
+      search(filter: FilterInput): [User!]!
+      tagged(tags: [String!]!): [User!]!
+    }
+  `);
+
+  const listOptions = {
+    ...defaultOptions,
+    schemaDocument: listSchema,
+  };
+
+  const parseAndTransformWithList = (source: string) => {
+    const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
+    return transformParsedGraphql(parsed, { schemaDocument: listSchema })._unsafeUnwrap();
+  };
+
+  it("wraps scalar value in array when list expected", () => {
+    // ids: "hoge" where ids: [ID!]? -> ids: ["hoge"]
+    const { operations } = parseAndTransformWithList(`
+      query GetUsers {
+        users(ids: "hoge") {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain('ids: ["hoge"]');
+    expect(output).not.toContain('ids: "hoge"');
+  });
+
+  it("keeps array value as-is when list expected", () => {
+    // ids: ["a", "b"] where ids: [ID!]? -> ids: ["a", "b"]
+    const { operations } = parseAndTransformWithList(`
+      query GetUsers {
+        users(ids: ["a", "b"]) {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain('ids: ["a", "b"]');
+    // Should NOT be double-wrapped
+    expect(output).not.toContain('[["a", "b"]]');
+  });
+
+  it("coerces scalar inside nested input object", () => {
+    // filter: { ids: "hoge" } where FilterInput.ids: [ID!]? -> filter: { ids: ["hoge"] }
+    const { operations } = parseAndTransformWithList(`
+      query SearchUsers {
+        search(filter: { ids: "single" }) {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain('ids: ["single"]');
+  });
+
+  it("does not coerce variable references", () => {
+    // ids: $var -> ids: $.var (runtime handles coercion)
+    const { operations } = parseAndTransformWithList(`
+      query GetUsers($userIds: [ID!]) {
+        users(ids: $userIds) {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain("ids: $.userIds");
+    // Should NOT wrap variable in array
+    expect(output).not.toContain("[$.userIds]");
+  });
+
+  it("does not coerce when non-list type expected", () => {
+    // id: "hoge" where id: ID! -> id: "hoge"
+    const { operations } = parseAndTransformWithList(`
+      query GetUser {
+        user(id: "hoge") {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain('id: "hoge"');
+    // Should NOT wrap in array
+    expect(output).not.toContain('["hoge"]');
+  });
+
+  it("does not coerce null values", () => {
+    // ids: null where ids: [ID!]? -> ids: null
+    const { operations } = parseAndTransformWithList(`
+      query GetUsers {
+        users(ids: null) {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain("ids: null");
+    // Should NOT be [null]
+    expect(output).not.toContain("[null]");
+  });
+
+  it("handles deeply nested object coercion", () => {
+    // filter: { nested: { values: 42 } } -> filter: { nested: { values: [42] } }
+    const { operations } = parseAndTransformWithList(`
+      query SearchUsers {
+        search(filter: { nested: { values: 42 } }) {
+          id
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, listOptions)._unsafeUnwrap();
+
+    expect(output).toContain("values: [42]");
+  });
+
+  it("coerces integer value in array argument", () => {
+    // Similar to string but with int
+    const intSchema = parse(`
+      type Data { id: ID! }
+      type Query { data(nums: [Int!]): Data }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data(nums: 42) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: intSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: intSchema,
+    })._unsafeUnwrap();
+
+    expect(output).toContain("nums: [42]");
+  });
+
+  it("coerces enum value in array argument", () => {
+    const enumSchema = parse(`
+      enum Status { ACTIVE INACTIVE }
+      type User { id: ID! }
+      type Query { users(statuses: [Status!]): [User!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUsers {
+        users(statuses: ACTIVE) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: enumSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: enumSchema,
+    })._unsafeUnwrap();
+
+    expect(output).toContain('statuses: ["ACTIVE"]');
+  });
+
+  it("coerces boolean value in array argument", () => {
+    const boolSchema = parse(`
+      type Data { id: ID! }
+      type Query { data(flags: [Boolean!]): Data }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data(flags: true) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: boolSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: boolSchema,
+    })._unsafeUnwrap();
+
+    expect(output).toContain("flags: [true]");
+  });
+
+  it("coerces object value in array argument", () => {
+    const objSchema = parse(`
+      input ItemInput { name: String! }
+      type Data { id: ID! }
+      type Query { data(items: [ItemInput!]): Data }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetData {
+        data(items: { name: "item1" }) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: objSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: objSchema,
+    })._unsafeUnwrap();
+
+    expect(output).toContain('items: [{ name: "item1" }]');
+  });
+
+  it("coerces in fragment with inferred variables", () => {
+    const fragSchema = parse(`
+      type Post { id: ID!, title: String! }
+      type User { id: ID!, posts(ids: [ID!]): [Post!]! }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      fragment UserPosts on User {
+        posts(ids: "single-post") { id }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { fragments } = transformParsedGraphql(parsed, { schemaDocument: fragSchema })._unsafeUnwrap();
+
+    const output = emitFragment(fragments[0]!, {
+      ...defaultOptions,
+      schemaDocument: fragSchema,
+    })._unsafeUnwrap();
+
+    expect(output).toContain('ids: ["single-post"]');
+  });
+});
