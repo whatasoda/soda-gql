@@ -6,7 +6,13 @@
 import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
-import type { EnrichedFragment, EnrichedOperation } from "./transformer";
+import {
+  type EnrichedFragment,
+  type EnrichedOperation,
+  getArgumentType,
+  getFieldReturnType,
+  getInputFieldType,
+} from "./transformer";
 import type { GraphqlCompatError, ParsedArgument, ParsedInlineFragment, ParsedSelection, ParsedValue } from "./types";
 
 /**
@@ -24,6 +30,20 @@ export type EmitOptions = {
   readonly graphqlSystemPath: string;
   /** Schema document for type lookups (required for inline fragment support) */
   readonly schemaDocument?: DocumentNode;
+};
+
+/**
+ * Map operation kind to root type name.
+ */
+const getRootTypeName = (kind: "query" | "mutation" | "subscription"): string => {
+  switch (kind) {
+    case "query":
+      return "Query";
+    case "mutation":
+      return "Mutation";
+    case "subscription":
+      return "Subscription";
+  }
 };
 
 /**
@@ -48,9 +68,10 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
     lines.push(`    variables: { ${emitVariables(operation.variables)} },`);
   }
 
-  // Fields
+  // Fields - pass root type name for list coercion
+  const rootTypeName = getRootTypeName(operation.kind);
   lines.push(`    fields: ({ f, $ }) => ({`);
-  const fieldLinesResult = emitSelections(operation.selections, 3, operation.variables, schema);
+  const fieldLinesResult = emitSelections(operation.selections, 3, operation.variables, schema, rootTypeName);
   if (fieldLinesResult.isErr()) {
     return err(fieldLinesResult.error);
   }
@@ -87,9 +108,10 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
   }
 
   // Fields - include $ in context if fragment has variables
+  // Pass fragment.onType as the parent type for list coercion
   const fieldsContext = hasVariables ? "{ f, $ }" : "{ f }";
   lines.push(`    fields: (${fieldsContext}) => ({`);
-  const fieldLinesResult = emitSelections(fragment.selections, 3, fragment.variables, schema);
+  const fieldLinesResult = emitSelections(fragment.selections, 3, fragment.variables, schema, fragment.onType);
   if (fieldLinesResult.isErr()) {
     return err(fieldLinesResult.error);
   }
@@ -127,9 +149,10 @@ const emitSelections = (
   indent: number,
   variables: readonly EmittableVariable[],
   schema: SchemaIndex | null,
+  parentTypeName: string | undefined,
 ): Result<string, GraphqlCompatError> => {
   const variableNames = new Set(variables.map((v) => v.name));
-  return emitSelectionsInternal(selections, indent, variableNames, schema);
+  return emitSelectionsInternal(selections, indent, variableNames, schema, parentTypeName);
 };
 
 /**
@@ -141,6 +164,7 @@ const emitSelectionsInternal = (
   indent: number,
   variableNames: Set<string>,
   schema: SchemaIndex | null,
+  parentTypeName: string | undefined,
 ): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
 
@@ -158,7 +182,7 @@ const emitSelectionsInternal = (
 
   // Emit regular selections (fields and fragment spreads)
   for (const sel of otherSelections) {
-    const result = emitSingleSelection(sel, indent, variableNames, schema);
+    const result = emitSingleSelection(sel, indent, variableNames, schema, parentTypeName);
     if (result.isErr()) {
       return err(result.error);
     }
@@ -185,12 +209,13 @@ const emitSingleSelection = (
   indent: number,
   variableNames: Set<string>,
   schema: SchemaIndex | null,
+  parentTypeName: string | undefined,
 ): Result<string, GraphqlCompatError> => {
   const padding = "  ".repeat(indent);
 
   switch (sel.kind) {
     case "field":
-      return emitFieldSelection(sel, indent, variableNames, schema);
+      return emitFieldSelection(sel, indent, variableNames, schema, parentTypeName);
     case "fragmentSpread":
       return ok(`${padding}...${sel.name}Fragment.spread(),`);
     case "inlineFragment":
@@ -247,7 +272,8 @@ const emitInlineFragmentsAsUnion = (
   const entries: string[] = [];
   for (const frag of inlineFragments) {
     const innerPadding = "  ".repeat(indent + 1);
-    const fieldsResult = emitSelectionsInternal(frag.selections, indent + 2, variableNames, schema);
+    // Use the inline fragment's type condition as the parent type for nested selections
+    const fieldsResult = emitSelectionsInternal(frag.selections, indent + 2, variableNames, schema, frag.onType);
     if (fieldsResult.isErr()) {
       return err(fieldsResult.error);
     }
@@ -272,6 +298,7 @@ const emitFieldSelection = (
   indent: number,
   variableNames: Set<string>,
   schema: SchemaIndex | null,
+  parentTypeName: string | undefined,
 ): Result<string, GraphqlCompatError> => {
   const padding = "  ".repeat(indent);
 
@@ -289,7 +316,7 @@ const emitFieldSelection = (
   let line = `${padding}...f.${field.name}(`;
 
   if (hasArgs) {
-    const argsResult = emitArguments(args, variableNames);
+    const argsResult = emitArguments(args, variableNames, schema, parentTypeName, field.name);
     if (argsResult.isErr()) {
       return err(argsResult.error);
     }
@@ -302,9 +329,13 @@ const emitFieldSelection = (
     // Check if selections contain inline fragments (union field)
     const hasInlineFragments = selections.some((s) => s.kind === "inlineFragment");
 
+    // Determine nested parent type for recursive selections
+    const nestedParentType =
+      schema && parentTypeName ? (getFieldReturnType(schema, parentTypeName, field.name) ?? undefined) : undefined;
+
     if (hasInlineFragments) {
       // Union field: emit with union callback pattern
-      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema);
+      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema, nestedParentType);
       if (nestedResult.isErr()) {
         return err(nestedResult.error);
       }
@@ -314,7 +345,7 @@ const emitFieldSelection = (
     } else {
       // Regular nested selections
       line += "(({ f }) => ({\n";
-      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema);
+      const nestedResult = emitSelectionsInternal(selections, indent + 1, variableNames, schema, nestedParentType);
       if (nestedResult.isErr()) {
         return err(nestedResult.error);
       }
@@ -328,17 +359,136 @@ const emitFieldSelection = (
   return ok(line);
 };
 
+// ============================================================================
+// List Coercion Utilities
+// ============================================================================
+
 /**
- * Emit field arguments.
+ * Check if a modifier represents a list type (contains []).
  */
-const emitArguments = (args: readonly ParsedArgument[], variableNames: Set<string>): Result<string, GraphqlCompatError> => {
+const isListModifier = (modifier: string): boolean => {
+  return modifier.includes("[]");
+};
+
+/**
+ * Determine if a value needs to be wrapped in an array for list coercion.
+ * Returns true if:
+ * - Expected type is a list
+ * - Value is NOT already a list
+ * - Value is NOT a variable (runtime handles coercion)
+ * - Value is NOT null
+ */
+const needsListCoercion = (value: ParsedValue, expectedModifier: string | undefined): boolean => {
+  // No coercion if no expected type info
+  if (!expectedModifier) return false;
+
+  // No coercion if expected type is not a list
+  if (!isListModifier(expectedModifier)) return false;
+
+  // No coercion for variables (runtime handles this)
+  if (value.kind === "variable") return false;
+
+  // No coercion for null
+  if (value.kind === "null") return false;
+
+  // No coercion if value is already a list
+  if (value.kind === "list") return false;
+
+  return true;
+};
+
+/**
+ * Expected type information for a value.
+ */
+type ExpectedType = {
+  readonly typeName: string;
+  readonly modifier: string;
+};
+
+/**
+ * Emit a value with type context for list coercion.
+ */
+const emitValueWithType = (
+  value: ParsedValue,
+  expectedType: ExpectedType | null,
+  variableNames: Set<string>,
+  schema: SchemaIndex | null,
+): Result<string, GraphqlCompatError> => {
+  // Check if list coercion is needed
+  const shouldCoerce = needsListCoercion(value, expectedType?.modifier);
+
+  // Handle object values with recursive type context
+  if (value.kind === "object" && expectedType && schema) {
+    return emitObjectWithType(value, expectedType.typeName, variableNames, schema, shouldCoerce);
+  }
+
+  // Emit the value normally
+  const result = emitValue(value, variableNames);
+  if (result.isErr()) return result;
+
+  // Wrap in array if coercion needed
+  if (shouldCoerce) {
+    return ok(`[${result.value}]`);
+  }
+
+  return result;
+};
+
+/**
+ * Emit an object value with type context for recursive list coercion.
+ */
+const emitObjectWithType = (
+  value: ParsedValue & { kind: "object" },
+  inputTypeName: string,
+  variableNames: Set<string>,
+  schema: SchemaIndex,
+  wrapInArray: boolean,
+): Result<string, GraphqlCompatError> => {
+  if (value.fields.length === 0) {
+    return ok(wrapInArray ? "[{}]" : "{}");
+  }
+
+  const entries: string[] = [];
+  for (const f of value.fields) {
+    // Look up field type from input object definition
+    const fieldType = getInputFieldType(schema, inputTypeName, f.name);
+
+    const result = emitValueWithType(f.value, fieldType, variableNames, schema);
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    entries.push(`${f.name}: ${result.value}`);
+  }
+
+  const objectStr = `{ ${entries.join(", ")} }`;
+  return ok(wrapInArray ? `[${objectStr}]` : objectStr);
+};
+
+// ============================================================================
+// Argument Emission
+// ============================================================================
+
+/**
+ * Emit field arguments with type context for list coercion.
+ */
+const emitArguments = (
+  args: readonly ParsedArgument[],
+  variableNames: Set<string>,
+  schema: SchemaIndex | null,
+  parentTypeName: string | undefined,
+  fieldName: string | undefined,
+): Result<string, GraphqlCompatError> => {
   if (args.length === 0) {
     return ok("");
   }
 
   const argEntries: string[] = [];
   for (const arg of args) {
-    const result = emitValue(arg.value, variableNames);
+    // Look up expected type from schema
+    const expectedType =
+      schema && parentTypeName && fieldName ? getArgumentType(schema, parentTypeName, fieldName, arg.name) : null;
+
+    const result = emitValueWithType(arg.value, expectedType, variableNames, schema);
     if (result.isErr()) {
       return err(result.error);
     }
