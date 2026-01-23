@@ -4,6 +4,9 @@ import type {
   AnyVarRef,
   ConstValue,
   GetAssignableType,
+  GetSpecDefaultValue,
+  GetSpecModifier,
+  InputFieldSpec,
   InputTypeSpecifier,
   InputTypeSpecifiers,
   TypeProfile,
@@ -26,9 +29,9 @@ export type AnyAssigningInput = {
   readonly [key: string]: AnyVarRef;
 };
 
-type IsOptional<TSpecifier extends InputTypeSpecifier> = TSpecifier["modifier"] extends `${string}?`
+type IsOptional<TSpecifier extends InputFieldSpec> = GetSpecModifier<TSpecifier> extends `${string}?`
   ? true
-  : TSpecifier["defaultValue"] extends AnyDefaultValue
+  : GetSpecDefaultValue<TSpecifier> extends AnyDefaultValue
     ? true
     : false;
 

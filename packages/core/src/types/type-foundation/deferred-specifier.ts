@@ -13,6 +13,7 @@
  */
 
 import type { TypeModifier } from "./type-modifier-core.generated";
+import type { AnyDefaultValue } from "./type-specifier";
 
 // ============================================================
 // Kind Character Mapping
@@ -199,3 +200,21 @@ export type GetSpecModifier<T> =
   T extends string
     ? ParseBasicSpec<T> extends { modifier: infer M } ? M : never
     : T extends { modifier: infer M } ? M : never;
+
+/**
+ * Get defaultValue from any specifier format
+ * Returns AnyDefaultValue if present, null otherwise
+ *
+ * For deferred strings: checks for |D suffix and returns AnyDefaultValue
+ * For structured: returns the actual defaultValue property
+ *
+ * Note: For deferred strings, we return AnyDefaultValue (not the actual value)
+ * because the deferred format only indicates presence, not the actual default.
+ * This is sufficient for type-level checks like IsOptional.
+ */
+export type GetSpecDefaultValue<T> =
+  T extends string
+    ? T extends `${string}|D` ? AnyDefaultValue : null
+    : T extends { defaultValue: infer D }
+      ? D extends AnyDefaultValue ? D : null
+      : null;

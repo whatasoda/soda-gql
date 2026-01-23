@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from "bun:test";
 import type {
+  GetSpecDefaultValue,
   GetSpecKind,
   GetSpecModifier,
   GetSpecName,
@@ -11,7 +12,7 @@ import type {
   ResolveInputSpec,
   ResolveOutputSpec,
 } from "./deferred-specifier";
-import type { InputScalarSpecifier } from "./type-specifier";
+import type { AnyDefaultValue } from "./type-specifier";
 
 // Type assertion helper
 type Expect<T extends true> = T;
@@ -193,6 +194,55 @@ describe("Resolution utilities", () => {
     type _Test1 = Expect<Equal<Result1, "!">>;
     type _Test2 = Expect<Equal<Result2, "![]!">>;
     type _Test3 = Expect<Equal<Result3, "!">>;
+    expect(true).toBe(true);
+  });
+
+  it("GetSpecDefaultValue extracts defaultValue from string with |D suffix", () => {
+    type Result1 = GetSpecDefaultValue<"s|uuid|!|D">;
+    type Result2 = GetSpecDefaultValue<"e|order_by|?|D">;
+
+    // Deferred strings return AnyDefaultValue (not the actual value)
+    type _Test1 = Expect<Equal<Result1, AnyDefaultValue>>;
+    type _Test2 = Expect<Equal<Result2, AnyDefaultValue>>;
+    expect(true).toBe(true);
+  });
+
+  it("GetSpecDefaultValue returns null for string without |D suffix", () => {
+    type Result1 = GetSpecDefaultValue<"s|uuid|!">;
+    type Result2 = GetSpecDefaultValue<"e|order_by|?">;
+    type Result3 = GetSpecDefaultValue<"s|Int|!|arg:s|X|?">; // has args but no |D
+
+    type _Test1 = Expect<Equal<Result1, null>>;
+    type _Test2 = Expect<Equal<Result2, null>>;
+    type _Test3 = Expect<Equal<Result3, null>>;
+    expect(true).toBe(true);
+  });
+
+  it("GetSpecDefaultValue passes through structured defaultValue", () => {
+    type WithDefault = { kind: "scalar"; name: "test"; modifier: "!"; defaultValue: { default: "value" } };
+    type WithoutDefault = { kind: "scalar"; name: "test"; modifier: "!"; defaultValue: null };
+    type WithUndefined = { kind: "scalar"; name: "test"; modifier: "!" };
+
+    type Result1 = GetSpecDefaultValue<WithDefault>;
+    type Result2 = GetSpecDefaultValue<WithoutDefault>;
+    type Result3 = GetSpecDefaultValue<WithUndefined>;
+
+    type _Test1 = Expect<Equal<Result1, { default: "value" }>>;
+    type _Test2 = Expect<Equal<Result2, null>>;
+    type _Test3 = Expect<Equal<Result3, null>>;
+    expect(true).toBe(true);
+  });
+
+  it("GetSpecDefaultValue works with AnyDefaultValue type check", () => {
+    // Test that the result can be used with AnyDefaultValue extends check
+    type ResultWithD = GetSpecDefaultValue<"s|uuid|!|D">;
+    type ResultWithoutD = GetSpecDefaultValue<"s|uuid|!">;
+
+    type HasDefault1 = ResultWithD extends AnyDefaultValue ? true : false;
+    type HasDefault2 = ResultWithoutD extends AnyDefaultValue ? true : false;
+
+    type _Test1 = Expect<Equal<HasDefault1, true>>;
+    type _Test2 = Expect<Equal<HasDefault2, false>>;
     expect(true).toBe(true);
   });
 });

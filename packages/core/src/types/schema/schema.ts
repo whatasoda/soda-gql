@@ -4,12 +4,17 @@ import type {
   DecrementDepth,
   DepthCounter,
   GetInputTypeDepth,
+  GetSpecDefaultValue,
+  GetSpecModifier,
+  GetSpecName,
   InputDepthOverrides,
   InputEnumSpecifier,
+  InputFieldSpec,
   InputScalarSpecifier,
   InputTypeSpecifier,
   InputTypeSpecifiers,
   IsDepthExhausted,
+  OutputFieldSpec,
   OutputInferrableTypeSpecifier,
   OutputScalarSpecifier,
   OutputTypeSpecifiers,
@@ -118,41 +123,48 @@ export type UnionDefinition = {
  * Infers a TypeProfile from an input type specifier.
  *
  * @typeParam TSchema - The GraphQL schema
- * @typeParam TSpecifier - The input type specifier to infer from
+ * @typeParam TSpecifier - The input type specifier to infer from (structured or deferred string)
  * @typeParam TDepth - Depth counter to limit recursion (default from schema overrides or schema default or 3 levels)
  *
  * When depth is exhausted, returns `never` to cause a type error.
  * This prevents infinite recursion in self-referential types like `bool_exp`.
+ *
+ * Note: This type accepts both structured specifiers (InputTypeSpecifier) and deferred
+ * string specifiers (DeferredInputSpecifier). The implementation uses pattern matching
+ * for structured specifiers to preserve type narrowing.
  */
 export type InferInputProfile<
   TSchema extends AnyGraphqlSchema,
-  TSpecifier extends InputTypeSpecifier,
+  TSpecifier extends InputFieldSpec,
   TDepth extends DepthCounter = GetInputTypeDepth<
     TSchema["__inputDepthOverrides"],
-    TSpecifier["name"],
+    GetSpecName<TSpecifier>,
     TSchema["__defaultInputDepth"]
   >,
 > = {
   [_ in TSchema["label"]]: IsDepthExhausted<TDepth> extends true
     ? never
     : [
+        // For structured specifiers, use pattern matching to preserve type narrowing
         TSpecifier extends InputScalarSpecifier
           ? TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]
           : TSpecifier extends InputEnumSpecifier
             ? TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]
-            : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-              ? {
-                  kind: "input";
-                  name: TSpecifier["name"];
-                  fields: {
-                    [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
-                      ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
-                      : never;
-                  };
-                }
+            : TSpecifier extends { kind: "input"; name: infer TName extends string }
+              ? TSchema["input"][TName]["fields"] extends infer TFields
+                ? {
+                    kind: "input";
+                    name: TName;
+                    fields: {
+                      [K in keyof TFields]: TFields[K] extends InputFieldSpec
+                        ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
+                        : never;
+                    };
+                  }
+                : never
               : never,
-        TSpecifier["modifier"],
-        TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+        GetSpecModifier<TSpecifier>,
+        GetSpecDefaultValue<TSpecifier> extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
       ];
 }[TSchema["label"]];
 
@@ -170,8 +182,10 @@ export type PickTypeSpecifierByFieldName<
 
 export type InputFieldRecord<
   TSchema extends AnyGraphqlSchema,
-  TSpecifier extends InputTypeSpecifier,
-> = TSchema["input"][TSpecifier["name"]]["fields"];
+  TSpecifier extends InputFieldSpec,
+> = TSpecifier extends { name: infer TName extends string }
+  ? TSchema["input"][TName]["fields"]
+  : never;
 
 export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
   readonly [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
@@ -181,11 +195,10 @@ export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TSpecifier extends
   readonly [TTypeName in UnionMemberName<TSchema, TSpecifier>]: TSchema["object"][TTypeName];
 };
 
-export type UnionMemberName<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputUnionSpecifier> = Extract<
-  keyof TSchema["object"],
-  keyof TSchema["union"][TSpecifier["name"]]["types"]
-> &
-  string;
+export type UnionMemberName<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputUnionSpecifier | OutputFieldSpec> =
+  TSpecifier extends { name: infer TName extends string }
+    ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
+    : never;
 
 /**
  * Union of all input type names in a schema (scalars, enums, and input objects).
