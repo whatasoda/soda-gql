@@ -54,3 +54,36 @@ export type OutputObjectSpecifier = AbstractOutputTypeSpecifier<"object">;
 export type OutputUnionSpecifier = AbstractOutputTypeSpecifier<"union">;
 export type OutputTypenameSpecifier = AbstractOutputTypeSpecifier<"typename">;
 export type OutputExcludedSpecifier = AbstractOutputTypeSpecifier<"excluded">;
+
+// ============================================================
+// Deferred String Literal Specifier Types
+// ============================================================
+
+/**
+ * Deferred input specifier string format: "{kind}|{name}|{modifier}[|D]"
+ * - s=scalar, e=enum, i=input
+ * - Trailing |D indicates default value present
+ */
+export type DeferredInputSpecifier = `${"s" | "e" | "i"}|${string}|${TypeModifier}${string}`;
+
+/**
+ * Deferred output specifier string format: "{kind}|{name}|{modifier}[|args]"
+ * - s=scalar, e=enum, o=object, u=union
+ * - Arguments format: "argName:k|Type|Mod,..."
+ */
+export type DeferredOutputSpecifier = `${"s" | "e" | "o" | "u"}|${string}|${TypeModifier}${string}`;
+
+/**
+ * Input field specifier - either structured or deferred string
+ */
+export type InputFieldSpec = InputTypeSpecifier | DeferredInputSpecifier;
+
+/**
+ * Output field specifier - either structured or deferred string
+ */
+export type OutputFieldSpec = OutputTypeSpecifier | DeferredOutputSpecifier;
+
+/**
+ * Type guard: is this a deferred (string) specifier?
+ */
+export type IsDeferredSpec<T> = T extends string ? true : false;

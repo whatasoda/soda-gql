@@ -6,4 +6,5 @@ export * from "./type-modifier-core.generated";
 export * from "./type-modifier-extension.generated";
 export * from "./type-profile";
 export * from "./type-specifier";
+export * from "./deferred-specifier";
 export * from "./var-ref";
