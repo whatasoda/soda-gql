@@ -34,8 +34,20 @@ export type EmitOptions = {
 
 /**
  * Map operation kind to root type name.
+ * Uses schema.operationTypes if available, falls back to standard names.
  */
-const getRootTypeName = (kind: "query" | "mutation" | "subscription"): string => {
+const getRootTypeName = (schema: SchemaIndex | null, kind: "query" | "mutation" | "subscription"): string => {
+  if (schema) {
+    switch (kind) {
+      case "query":
+        return schema.operationTypes.query ?? "Query";
+      case "mutation":
+        return schema.operationTypes.mutation ?? "Mutation";
+      case "subscription":
+        return schema.operationTypes.subscription ?? "Subscription";
+    }
+  }
+  // Fallback when no schema is available
   switch (kind) {
     case "query":
       return "Query";
@@ -69,7 +81,7 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
   }
 
   // Fields - pass root type name for list coercion
-  const rootTypeName = getRootTypeName(operation.kind);
+  const rootTypeName = getRootTypeName(schema, operation.kind);
   lines.push(`    fields: ({ f, $ }) => ({`);
   const fieldLinesResult = emitSelections(operation.selections, 3, operation.variables, schema, rootTypeName);
   if (fieldLinesResult.isErr()) {
