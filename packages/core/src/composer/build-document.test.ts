@@ -977,7 +977,7 @@ describe("Directive enum argument handling", () => {
       arguments: { role: "ADMIN" },
       locations: ["FIELD"],
       argumentSpecs: {
-        role: { kind: "enum", name: "Role", modifier: "!" },
+        role: "e|Role|!",
       },
     });
 
@@ -1049,8 +1049,8 @@ describe("Directive enum argument handling", () => {
       arguments: { scope: "PRIVATE", ttl: 3600 },
       locations: ["FIELD"],
       argumentSpecs: {
-        scope: { kind: "enum", name: "CacheScope", modifier: "?" },
-        ttl: { kind: "scalar", name: "Int", modifier: "!" },
+        scope: "e|CacheScope|?",
+        ttl: "s|Int|!",
       },
     });
 

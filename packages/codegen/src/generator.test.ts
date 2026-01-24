@@ -673,12 +673,12 @@ describe("generateMultiSchemaModule", () => {
 
     // Should use createTypedDirectiveMethod for directives with arguments
     expect(result.code).toContain('auth: createTypedDirectiveMethod("auth", ["FIELD"] as const,');
-    expect(result.code).toContain('role: { kind: "scalar", name: "String", modifier: "!" }');
+    expect(result.code).toContain('role: "s|String|!"');
 
-    // Should include enum type in argument specifiers
+    // Should include enum type in argument specifiers (deferred string format)
     expect(result.code).toContain('cached: createTypedDirectiveMethod("cached", ["FIELD","OBJECT"] as const,');
-    expect(result.code).toContain('scope: { kind: "enum", name: "CacheScope", modifier: "?"');
-    expect(result.code).toContain('ttl: { kind: "scalar", name: "Int", modifier: "!" }');
+    expect(result.code).toContain('scope: "e|CacheScope|?"');
+    expect(result.code).toContain('ttl: "s|Int|!"');
 
     // Should pass directiveMethods to createGqlElementComposer
     expect(result.code).toContain("directiveMethods: customDirectives_default");

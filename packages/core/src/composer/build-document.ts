@@ -48,17 +48,6 @@ import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../t
 import { parseInputSpecifier, parseOutputSpecifier, type ParsedInputSpecifier } from "../utils/deferred-specifier-parser";
 
 /**
- * Convert a DirectiveArgumentSpecifier to a ParsedInputSpecifier.
- * Used because directive argument specifiers use structured format.
- */
-const convertDirectiveArgSpec = (spec: { kind: string; name: string; modifier: string }): ParsedInputSpecifier => ({
-  kind: spec.kind as "scalar" | "enum" | "input",
-  name: spec.name,
-  modifier: spec.modifier,
-  hasDefault: false,
-});
-
-/**
  * Context for determining if a value should be output as an enum.
  * Contains the schema for looking up nested input types and the current type specifier.
  */
@@ -198,18 +187,18 @@ const buildArguments = (
     .filter((item) => item !== null);
 
 /**
- * Build arguments from directive argument specifiers (structured format).
- * Used for directives which use structured specifiers instead of deferred strings.
+ * Build arguments from directive argument specifiers (deferred string format).
+ * Uses parseInputSpecifier to convert deferred strings to structured format.
  */
 const buildDirectiveArguments = (
   args: AnyAssignableInput,
-  argumentSpecifiers: Readonly<Record<string, { kind: string; name: string; modifier: string }>> | undefined,
+  argumentSpecifiers: Readonly<Record<string, DeferredInputSpecifier>> | undefined,
   schema: AnyGraphqlSchema,
 ): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
       const spec = argumentSpecifiers?.[name];
-      const typeSpecifier = spec ? convertDirectiveArgSpec(spec) : null;
+      const typeSpecifier = spec ? parseInputSpecifier(spec) : null;
       const valueNode = buildArgumentValue(value, { schema, typeSpecifier });
       return valueNode
         ? {

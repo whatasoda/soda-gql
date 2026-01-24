@@ -8,6 +8,8 @@
  * @module
  */
 
+import type { DeferredInputSpecifier } from "./type-specifier";
+
 /**
  * Executable directive locations (used in operations/fragments).
  */
@@ -54,13 +56,10 @@ export interface AnyDirectiveRefBrand {
 
 /**
  * Type specifier for a directive argument.
- * Used to enable enum detection when building directive arguments.
+ * Uses deferred string format for consistency with other type specifiers.
+ * @see DeferredInputSpecifier
  */
-export type DirectiveArgumentSpecifier = {
-  readonly kind: "scalar" | "enum" | "input";
-  readonly name: string;
-  readonly modifier: string;
-};
+export type DirectiveArgumentSpecifier = DeferredInputSpecifier;
 
 /**
  * Internal structure of a DirectiveRef.

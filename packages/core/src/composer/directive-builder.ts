@@ -103,7 +103,7 @@ export type DirectiveArgumentSpecifiers = {
  *
  * @param name - The directive name (without @)
  * @param locations - Valid locations where the directive can be applied
- * @param argSpecs - Type specifiers for directive arguments
+ * @param argSpecs - Type specifiers for directive arguments (deferred string format)
  * @returns A function that creates DirectiveRef instances with argument type info
  *
  * @example
@@ -111,7 +111,7 @@ export type DirectiveArgumentSpecifiers = {
  * const authMethod = createTypedDirectiveMethod(
  *   "auth",
  *   ["FIELD"] as const,
- *   { role: { kind: "enum", name: "Role", modifier: "!" } }
+ *   { role: "e|Role|!" }
  * );
  * const authDirective = authMethod({ role: "ADMIN" });
  * ```

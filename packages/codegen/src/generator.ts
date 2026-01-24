@@ -640,15 +640,15 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, exclude
 };
 
 /**
- * Renders an input reference as a structured object (for directive arguments).
- * Directives use structured specifiers at runtime for enum detection.
+ * Renders an input reference as a deferred string for directive arguments.
+ * Format: "{kindChar}|{name}|{modifier}"
  */
-const renderStructuredInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
+const renderDeferredDirectiveArgRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string | null => {
   const { name, modifier } = parseTypeReference(definition.type);
 
-  // Check if referenced type is excluded
+  // Skip excluded types
   if (excluded.has(name)) {
-    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}" }`;
+    return null;
   }
 
   let kind: "scalar" | "enum" | "input";
@@ -660,13 +660,14 @@ const renderStructuredInputRef = (schema: SchemaIndex, definition: InputValueDef
     kind = "input";
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
+  const kindChar = inputKindToChar(kind);
+  return `"${kindChar}|${name}|${modifier}"`;
 };
 
 /**
  * Renders argument specifiers for a directive.
  * Returns null if the directive has no arguments.
- * Note: Uses structured format since DirectiveRef system requires it.
+ * Uses deferred string format for consistency with other type specifiers.
  */
 const renderDirectiveArgsSpec = (
   schema: SchemaIndex,
@@ -677,7 +678,13 @@ const renderDirectiveArgsSpec = (
 
   const entries = Array.from(args.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((arg) => `${arg.name.value}: ${renderStructuredInputRef(schema, arg, excluded)}`);
+    .map((arg) => {
+      const ref = renderDeferredDirectiveArgRef(schema, arg, excluded);
+      return ref ? `${arg.name.value}: ${ref}` : null;
+    })
+    .filter((entry): entry is string => entry !== null);
+
+  if (entries.length === 0) return null;
 
   return renderPropertyLines({ entries, indentSize: 4 });
 };
