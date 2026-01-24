@@ -1196,3 +1196,32 @@ describe("Literal Value List Coercion", () => {
     expect(output).toContain('items: [{ tags: ["single-tag"] }]');
   });
 });
+
+describe("Custom root type names (Hasura-style)", () => {
+  it("coerces object to list with query_root", () => {
+    const hasuraSchema = parse(`
+      schema { query: query_root }
+      input order_by_input { field: order_direction }
+      enum order_direction { asc desc }
+      type Item { id: ID! }
+      type query_root { items(order_by: [order_by_input!]): [Item!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetItems {
+        items(order_by: { field: desc }) { id }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: hasuraSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: hasuraSchema,
+    })._unsafeUnwrap();
+
+    // Object should be wrapped in array due to list coercion
+    expect(output).toContain('order_by: [{ field: "desc" }]');
+  });
+});
