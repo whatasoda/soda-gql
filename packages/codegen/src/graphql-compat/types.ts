@@ -40,6 +40,15 @@ export type ParsedFragment = {
 };
 
 /**
+ * Type information consisting of base type name and modifier.
+ * Used by parseTypeNode, getArgumentType, getInputFieldType.
+ */
+export type TypeInfo = {
+  readonly typeName: string;
+  readonly modifier: string;
+};
+
+/**
  * Inferred variable from fragment field arguments.
  * Unlike ParsedVariable which comes from explicit declaration,
  * this is derived from variable usages in field arguments.

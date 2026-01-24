@@ -35,6 +35,7 @@ import type {
   ParsedValue,
   ParsedVariable,
   ParseResult,
+  TypeInfo,
 } from "./types";
 
 /**
@@ -162,7 +163,7 @@ const extractVariable = (node: VariableDefinitionNode): ParsedVariable => {
  * - Inner: `!` (non-null) or `?` (nullable)
  * - List: `[]!` (non-null list) or `[]?` (nullable list)
  */
-export const parseTypeNode = (node: TypeNode): { typeName: string; modifier: string } => {
+export const parseTypeNode = (node: TypeNode): TypeInfo => {
   type TypeLevel = { kind: "list" | "named"; nonNull: boolean };
   const levels: TypeLevel[] = [];
 
