@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/formatter",
-  "version": "0.11.22",
+  "version": "0.11.23",
   "description": "GraphQL document formatter for soda-gql",
   "type": "module",
   "private": false,
