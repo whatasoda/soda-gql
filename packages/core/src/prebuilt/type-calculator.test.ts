@@ -124,7 +124,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "name",
-      type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+      type: "s|String|!",
       args: {},
       directives: [],
       object: null,
@@ -138,7 +138,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "email",
-      type: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+      type: "s|String|?",
       args: {},
       directives: [],
       object: null,
@@ -152,7 +152,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "status",
-      type: { kind: "enum", name: "Status", modifier: "!", arguments: {} },
+      type: "e|Status|!",
       args: {},
       directives: [],
       object: null,
@@ -166,7 +166,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "__typename",
-      type: { kind: "typename", name: "User", modifier: "!", arguments: {} },
+      type: "s|User|!",
       args: {},
       directives: [],
       object: null,
@@ -180,14 +180,14 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "Query",
       field: "user",
-      type: { kind: "object", name: "User", modifier: "!", arguments: {} },
+      type: "o|User|!",
       args: {},
       directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
-          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          type: "s|ID|!",
           args: {},
           directives: [],
           object: null,
@@ -196,7 +196,7 @@ describe("calculateFieldType", () => {
         name: {
           parent: "User",
           field: "name",
-          type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+          type: "s|String|!",
           args: {},
           directives: [],
           object: null,
@@ -215,14 +215,14 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "Query",
       field: "users",
-      type: { kind: "object", name: "User", modifier: "![]!", arguments: {} },
+      type: "o|User|![]!",
       args: {},
       directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
-          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          type: "s|ID|!",
           args: {},
           directives: [],
           object: null,
@@ -246,7 +246,7 @@ describe("calculateFieldsType", () => {
       id: {
         parent: "User",
         field: "id",
-        type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+        type: "s|ID|!",
         args: {},
         directives: [],
         object: null,
@@ -255,7 +255,7 @@ describe("calculateFieldsType", () => {
       name: {
         parent: "User",
         field: "name",
-        type: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+        type: "s|String|?",
         args: {},
         directives: [],
         object: null,
@@ -421,30 +421,30 @@ const schemaWithInputs: AnyGraphqlSchema = {
     CreateUserInput: {
       name: "CreateUserInput",
       fields: {
-        name: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
-        email: { kind: "scalar", name: "String", modifier: "?", defaultValue: null },
-        age: { kind: "scalar", name: "Int", modifier: "?", defaultValue: null },
+        name: "s|String|!",
+        email: "s|String|?",
+        age: "s|Int|?",
       },
     },
     UpdateUserInput: {
       name: "UpdateUserInput",
       fields: {
-        id: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null },
-        data: { kind: "input", name: "CreateUserInput", modifier: "!", defaultValue: null },
+        id: "s|ID|!",
+        data: "i|CreateUserInput|!",
       },
     },
     FilterInput: {
       name: "FilterInput",
       fields: {
-        status: { kind: "enum", name: "Status", modifier: "?", defaultValue: null },
-        ids: { kind: "scalar", name: "ID", modifier: "![]!", defaultValue: null },
+        status: "e|Status|?",
+        ids: "s|ID|![]!",
       },
     },
     RecursiveInput: {
       name: "RecursiveInput",
       fields: {
-        value: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
-        children: { kind: "input", name: "RecursiveInput", modifier: "?[]?", defaultValue: null },
+        value: "s|String|!",
+        children: "i|RecursiveInput|?[]?",
       },
     },
   },
@@ -525,8 +525,8 @@ describe("generateInputObjectType", () => {
         InputWithDefaults: {
           name: "InputWithDefaults",
           fields: {
-            requiredField: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
-            fieldWithDefault: { kind: "scalar", name: "Int", modifier: "!", defaultValue: { default: 42 } },
+            requiredField: "s|String|!",
+            fieldWithDefault: "s|Int|!|D",
           },
         },
       },
@@ -545,14 +545,14 @@ describe("generateInputTypeFromSpecifiers", () => {
 
   test("handles single required scalar variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      userId: { kind: "scalar", name: "ID", modifier: "!" },
+      userId: "s|ID|!",
     };
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly userId: ScalarInput<"ID"> }');
   });
 
   test("handles single optional scalar variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      filter: { kind: "scalar", name: "String", modifier: "?" },
+      filter: "s|String|?",
     };
     // applyTypeModifier already wraps with nullability, so no double wrapping
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
@@ -562,7 +562,7 @@ describe("generateInputTypeFromSpecifiers", () => {
 
   test("handles enum variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      status: { kind: "enum", name: "Status", modifier: "!" },
+      status: "e|Status|!",
     };
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
       '{ readonly status: "ACTIVE" | "INACTIVE" | "PENDING" }',
@@ -571,14 +571,14 @@ describe("generateInputTypeFromSpecifiers", () => {
 
   test("handles array variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      ids: { kind: "scalar", name: "ID", modifier: "![]!" },
+      ids: "s|ID|![]!",
     };
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly ids: (ScalarInput<"ID">)[] }');
   });
 
   test("handles input object variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      input: { kind: "input", name: "CreateUserInput", modifier: "!" },
+      input: "i|CreateUserInput|!",
     };
     // Should use schema's input definition
     const result = generateInputTypeFromSpecifiers(schemaWithInputs, specifiers);
@@ -588,20 +588,15 @@ describe("generateInputTypeFromSpecifiers", () => {
 
   test("handles variable with default value as optional", () => {
     const specifiers: InputTypeSpecifiers = {
-      limit: {
-        kind: "scalar",
-        name: "Int",
-        modifier: "!",
-        defaultValue: { default: 10 },
-      },
+      limit: "s|Int|!|D",
     };
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe('{ readonly limit?: ScalarInput<"Int"> }');
   });
 
   test("handles multiple variables", () => {
     const specifiers: InputTypeSpecifiers = {
-      id: { kind: "scalar", name: "ID", modifier: "!" },
-      status: { kind: "enum", name: "Status", modifier: "?" },
+      id: "s|ID|!",
+      status: "e|Status|?",
     };
     const result = generateInputTypeFromSpecifiers(mockSchema, specifiers);
     expect(result).toContain('readonly id: ScalarInput<"ID">');
@@ -610,7 +605,7 @@ describe("generateInputTypeFromSpecifiers", () => {
 
   test("handles optional array variable", () => {
     const specifiers: InputTypeSpecifiers = {
-      tags: { kind: "scalar", name: "String", modifier: "![]?" },
+      tags: "s|String|![]?",
     };
     expect(generateInputTypeFromSpecifiers(mockSchema, specifiers)).toBe(
       '{ readonly tags?: ((ScalarInput<"String">)[] | null | undefined) }',
@@ -625,7 +620,7 @@ describe("TypeFormatters", () => {
         id: {
           parent: "User",
           field: "id",
-          type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+          type: "s|ID|!",
           args: {},
           directives: [],
           object: null,
@@ -645,7 +640,7 @@ describe("TypeFormatters", () => {
         name: {
           parent: "User",
           field: "name",
-          type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+          type: "s|String|!",
           args: {},
           directives: [],
           object: null,
@@ -694,7 +689,7 @@ describe("TypeFormatters", () => {
   describe("with generateInputTypeFromSpecifiers", () => {
     test("uses scalarInput formatter", () => {
       const specifiers: InputTypeSpecifiers = {
-        id: { kind: "scalar", name: "ID", modifier: "!" },
+        id: "s|ID|!",
       };
 
       const formatters = {
@@ -708,7 +703,7 @@ describe("TypeFormatters", () => {
 
     test("uses inputObject formatter", () => {
       const specifiers: InputTypeSpecifiers = {
-        data: { kind: "input", name: "CreateUserInput", modifier: "!" },
+        data: "i|CreateUserInput|!",
       };
 
       const formatters = {
@@ -777,18 +772,18 @@ const schemaWithFields: AnyGraphqlSchema = {
     User: {
       name: "User",
       fields: {
-        id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
-        name: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
-        email: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
-        status: { kind: "enum", name: "Status", modifier: "!", arguments: {} },
-        profile: { kind: "object", name: "Profile", modifier: "?", arguments: {} },
+        id: "s|ID|!",
+        name: "s|String|!",
+        email: "s|String|?",
+        status: "e|Status|!",
+        profile: "o|Profile|?",
       },
     },
     Profile: {
       name: "Profile",
       fields: {
-        bio: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
-        avatarUrl: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+        bio: "s|String|?",
+        avatarUrl: "s|String|?",
       },
     },
   },
@@ -822,7 +817,7 @@ describe("calculateFieldsType with shorthand", () => {
       name: {
         parent: "User",
         field: "name",
-        type: { kind: "scalar", name: "String", modifier: "!", arguments: {} },
+        type: "s|String|!",
         args: {},
         directives: [],
         object: null,
@@ -839,7 +834,7 @@ describe("calculateFieldsType with shorthand", () => {
       profile: {
         parent: "User",
         field: "profile",
-        type: { kind: "object", name: "Profile", modifier: "?", arguments: {} },
+        type: "o|Profile|?",
         args: {},
         directives: [],
         object: {

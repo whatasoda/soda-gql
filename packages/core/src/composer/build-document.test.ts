@@ -185,7 +185,7 @@ describe("Document Integrity Tests", () => {
           operationType: invalidOperation,
           operationTypeName: "Query",
           operationName: "TestOperation",
-          variables: {} as InputTypeSpecifiers,
+          variables: {},
           fields: {},
           schema: emptySchema,
         });
@@ -456,14 +456,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        type: "o|User|?",
         args: {},
         directives: [],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            type: "s|ID|!",
             args: {},
             directives: [],
             object: null,
@@ -472,7 +472,7 @@ describe("DirectiveRef in buildDocument", () => {
           email: {
             parent: "User",
             field: "email",
-            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            type: "s|String|?",
             args: {},
             directives: [skipDirective],
             object: null,
@@ -509,14 +509,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        type: "o|User|?",
         args: {},
         directives: [],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            type: "s|ID|!",
             args: {},
             directives: [],
             object: null,
@@ -525,7 +525,7 @@ describe("DirectiveRef in buildDocument", () => {
           email: {
             parent: "User",
             field: "email",
-            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            type: "s|String|?",
             args: {},
             directives: [includeDirective],
             object: null,
@@ -544,7 +544,7 @@ describe("DirectiveRef in buildDocument", () => {
         defaultValue: null,
         directives: {},
       },
-    };
+    } as any;
 
     const doc = buildDocument({
       operationName: "GetUser",
@@ -572,14 +572,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        type: "o|User|?",
         args: {},
         directives: [queryOnlyDirective], // Invalid: FIELD location not allowed
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            type: "s|ID|!",
             args: {},
             directives: [],
             object: null,
@@ -619,14 +619,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        type: "o|User|?",
         args: {},
         directives: [],
         object: {
           name: {
             parent: "User",
             field: "name",
-            type: { kind: "scalar" as const, name: "String", modifier: "?" as const },
+            type: "s|String|?",
             args: {},
             directives: [skipDirective, includeDirective],
             object: null,
@@ -662,14 +662,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "object" as const, name: "User", modifier: "?" as const },
+        type: "o|User|?",
         args: {},
         directives: ["not a directive" as unknown, validDirective, { name: "fake" } as unknown, null as unknown],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: { kind: "scalar" as const, name: "ID", modifier: "!" as const },
+            type: "s|ID|!",
             args: {},
             directives: [],
             object: null,
@@ -714,15 +714,15 @@ describe("Enum value handling", () => {
       UserFilter: {
         name: "UserFilter",
         fields: {
-          status: { kind: "enum", name: "Status", modifier: "?" },
-          name: { kind: "scalar", name: "String", modifier: "?" },
+          status: "e|Status|?",
+          name: "s|String|?",
         },
       },
       NestedInput: {
         name: "NestedInput",
         fields: {
-          filter: { kind: "input", name: "UserFilter", modifier: "?" },
-          priority: { kind: "enum", name: "Priority", modifier: "!" },
+          filter: "i|UserFilter|?",
+          priority: "e|Priority|!",
         },
       },
     },
@@ -734,7 +734,7 @@ describe("Enum value handling", () => {
     it("outputs Kind.ENUM for enum type specifier", () => {
       const result = buildArgumentValue("ACTIVE", {
         schema: schemaWithEnum,
-        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!", hasDefault: false },
       });
 
       expect(result).toEqual({
@@ -746,7 +746,7 @@ describe("Enum value handling", () => {
     it("outputs Kind.STRING for scalar type specifier", () => {
       const result = buildArgumentValue("some-string", {
         schema: schemaWithEnum,
-        typeSpecifier: { kind: "scalar", name: "String", modifier: "!" },
+        typeSpecifier: { kind: "scalar", name: "String", modifier: "!", hasDefault: false },
       });
 
       expect(result).toEqual({
@@ -770,7 +770,7 @@ describe("Enum value handling", () => {
     it("outputs Kind.ENUM for enums in array", () => {
       const result = buildArgumentValue(["ACTIVE", "INACTIVE"], {
         schema: schemaWithEnum,
-        typeSpecifier: { kind: "enum", name: "Status", modifier: "![]!" },
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "![]!", hasDefault: false },
       });
 
       expect(result).toEqual({
@@ -787,7 +787,7 @@ describe("Enum value handling", () => {
         { status: "ACTIVE", name: "John" },
         {
           schema: schemaWithEnum,
-          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!", hasDefault: false },
         },
       );
 
@@ -816,7 +816,7 @@ describe("Enum value handling", () => {
         },
         {
           schema: schemaWithEnum,
-          typeSpecifier: { kind: "input", name: "NestedInput", modifier: "!" },
+          typeSpecifier: { kind: "input", name: "NestedInput", modifier: "!", hasDefault: false },
         },
       );
 
@@ -850,7 +850,7 @@ describe("Enum value handling", () => {
       const varRef = createVarRefFromVariable("statusVar");
       const result = buildArgumentValue(varRef, {
         schema: schemaWithEnum,
-        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!", hasDefault: false },
       });
 
       expect(result).toEqual({
@@ -864,7 +864,7 @@ describe("Enum value handling", () => {
     it("outputs Kind.ENUM for enum default values", () => {
       const result = buildConstValueNode("ACTIVE", {
         schema: schemaWithEnum,
-        typeSpecifier: { kind: "enum", name: "Status", modifier: "!" },
+        typeSpecifier: { kind: "enum", name: "Status", modifier: "!", hasDefault: false },
       });
 
       expect(result).toEqual({
@@ -878,7 +878,7 @@ describe("Enum value handling", () => {
         { status: "ACTIVE" },
         {
           schema: schemaWithEnum,
-          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!" },
+          typeSpecifier: { kind: "input", name: "UserFilter", modifier: "!", hasDefault: false },
         },
       );
 
@@ -902,21 +902,14 @@ describe("Enum value handling", () => {
         Query: {
           name: "Query",
           fields: {
-            user: {
-              kind: "object",
-              name: "User",
-              modifier: "?",
-              arguments: {
-                status: { kind: "enum", name: "Status", modifier: "!" },
-              },
-            },
+            user: "o|User|?|status:e|Status|!",
           },
         },
         User: {
           name: "User",
           fields: {
-            id: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
-            name: { kind: "scalar", name: "String", modifier: "?", arguments: {} },
+            id: "s|ID|!",
+            name: "s|String|?",
           },
         },
       },
@@ -927,21 +920,14 @@ describe("Enum value handling", () => {
         user: {
           parent: "Query",
           field: "user",
-          type: {
-            kind: "object" as const,
-            name: "User",
-            modifier: "?" as const,
-            arguments: {
-              status: { kind: "enum" as const, name: "Status", modifier: "!" as const },
-            },
-          },
+          type: "o|User|?|status:e|Status|!",
           args: { status: "ACTIVE" },
           directives: [],
           object: {
             id: {
               parent: "User",
               field: "id",
-              type: { kind: "scalar" as const, name: "ID", modifier: "!" as const, arguments: {} },
+              type: "s|ID|!",
               args: {},
               directives: [],
               object: null,
@@ -999,7 +985,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        type: "s|User|?",
         args: {},
         directives: [authDirective],
         object: null,
@@ -1036,7 +1022,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        type: "s|User|?",
         args: {},
         directives: [skipDirective],
         object: null,
@@ -1072,7 +1058,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: { kind: "scalar" as const, name: "User", modifier: "?" as const },
+        type: "s|User|?",
         args: {},
         directives: [cachedDirective],
         object: null,

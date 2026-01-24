@@ -25,7 +25,28 @@ type AbstractInputTypeSpecifier<TKind extends InputTypeKind> = {
   readonly modifier: TypeModifier;
   readonly defaultValue?: AnyDefaultValue | null;
 };
-export type InputTypeSpecifiers = { [key: string]: InputTypeSpecifier };
+// Record types use deferred string format for performance
+export type InputTypeSpecifiers = { [key: string]: DeferredInputSpecifier };
+
+/**
+ * VarSpecifier is the structured format for operation variable definitions.
+ * Created by $var() at runtime, NOT from codegen.
+ */
+export type VarSpecifier = {
+  readonly kind: CreatableInputTypeKind;
+  readonly name: string;
+  readonly modifier: TypeModifier;
+  readonly defaultValue: AnyDefaultValue | null;
+  readonly directives: Record<string, unknown>;
+};
+
+/**
+ * VariableDefinitions is a record of VarSpecifier for operation variables.
+ * Used in operation/compat/extend composers.
+ */
+export type VariableDefinitions = { [key: string]: VarSpecifier };
+
+// Structured types are used internally (parsed representation)
 export type InputTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier | InputInputObjectSpecifier | InputExcludedSpecifier;
 export type InputInferrableTypeSpecifier = InputScalarSpecifier | InputEnumSpecifier;
 export type InputScalarSpecifier = AbstractInputTypeSpecifier<"scalar">;
@@ -39,7 +60,8 @@ type AbstractOutputTypeSpecifier<TKind extends OutputTypeKind> = {
   readonly modifier: TypeModifier;
   readonly arguments: InputTypeSpecifiers;
 };
-export type OutputTypeSpecifiers = { [key: string]: OutputTypeSpecifier };
+// Record types use deferred string format for performance
+export type OutputTypeSpecifiers = { [key: string]: DeferredOutputSpecifier };
 export type OutputTypeSpecifier =
   | OutputScalarSpecifier
   | OutputEnumSpecifier
@@ -74,16 +96,9 @@ export type DeferredInputSpecifier = `${"s" | "e" | "i"}|${string}|${TypeModifie
 export type DeferredOutputSpecifier = `${"s" | "e" | "o" | "u"}|${string}|${TypeModifier}${string}`;
 
 /**
- * Input field specifier - either structured or deferred string
+ * Deferred specifier for inferable output types (scalar, enum).
+ * Used for types that can be directly inferred without nested selection.
  */
-export type InputFieldSpec = InputTypeSpecifier | DeferredInputSpecifier;
+export type DeferredOutputInferrableSpecifier = `${"s" | "e"}|${string}|${TypeModifier}${string}`;
 
-/**
- * Output field specifier - either structured or deferred string
- */
-export type OutputFieldSpec = OutputTypeSpecifier | DeferredOutputSpecifier;
-
-/**
- * Type guard: is this a deferred (string) specifier?
- */
-export type IsDeferredSpec<T> = T extends string ? true : false;
+// Legacy aliases removed - use DeferredInputSpecifier/DeferredOutputSpecifier directly

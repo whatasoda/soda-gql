@@ -36,9 +36,27 @@ import {
   type ScalarShorthand,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../types/schema";
-import type { ConstValue, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import type { AnyGraphqlSchema, ConstAssignableInputFromVarDefs, OperationType } from "../types/schema";
+import type {
+  ConstValue,
+  DeferredInputSpecifier,
+  InputTypeSpecifiers,
+  TypeModifier,
+  VariableDefinitions,
+} from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
+import { parseInputSpecifier, parseOutputSpecifier, type ParsedInputSpecifier } from "../utils/deferred-specifier-parser";
+
+/**
+ * Convert a DirectiveArgumentSpecifier to a ParsedInputSpecifier.
+ * Used because directive argument specifiers use structured format.
+ */
+const convertDirectiveArgSpec = (spec: { kind: string; name: string; modifier: string }): ParsedInputSpecifier => ({
+  kind: spec.kind as "scalar" | "enum" | "input",
+  name: spec.name,
+  modifier: spec.modifier,
+  hasDefault: false,
+});
 
 /**
  * Context for determining if a value should be output as an enum.
@@ -46,8 +64,8 @@ import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../t
  */
 export type EnumLookup = {
   schema: AnyGraphqlSchema;
-  /** Type specifier for the current value. null means enum detection is skipped. */
-  typeSpecifier: InputTypeSpecifier | null;
+  /** Parsed type specifier for the current value. null means enum detection is skipped. */
+  typeSpecifier: ParsedInputSpecifier | null;
 };
 
 /**
@@ -103,10 +121,11 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: E
       fields: Object.entries(value)
         .map(([key, fieldValue]): ObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
             const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
-            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
+            const fieldSpec = inputDef?.fields[key];
+            fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
           }
 
           const valueNode = buildArgumentValue(fieldValue, {
@@ -165,7 +184,32 @@ const buildArguments = (
 ): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
-      const typeSpecifier = argumentSpecifiers[name] ?? null;
+      const specifierStr = argumentSpecifiers[name];
+      const typeSpecifier = specifierStr ? parseInputSpecifier(specifierStr) : null;
+      const valueNode = buildArgumentValue(value, { schema, typeSpecifier });
+      return valueNode
+        ? {
+            kind: Kind.ARGUMENT,
+            name: { kind: Kind.NAME, value: name },
+            value: valueNode,
+          }
+        : null;
+    })
+    .filter((item) => item !== null);
+
+/**
+ * Build arguments from directive argument specifiers (structured format).
+ * Used for directives which use structured specifiers instead of deferred strings.
+ */
+const buildDirectiveArguments = (
+  args: AnyAssignableInput,
+  argumentSpecifiers: Readonly<Record<string, { kind: string; name: string; modifier: string }>> | undefined,
+  schema: AnyGraphqlSchema,
+): ArgumentNode[] =>
+  Object.entries(args ?? {})
+    .map(([name, value]): ArgumentNode | null => {
+      const spec = argumentSpecifiers?.[name];
+      const typeSpecifier = spec ? convertDirectiveArgSpec(spec) : null;
       const valueNode = buildArgumentValue(value, { schema, typeSpecifier });
       return valueNode
         ? {
@@ -218,14 +262,10 @@ const buildDirectives = (
       validateDirectiveLocation(directive, location);
       const inner = DirectiveRef.getInner(directive);
 
-      // Use argument specifiers from DirectiveRef for enum detection
-      // Cast is safe because DirectiveArgumentSpecifier matches InputTypeSpecifier structure
-      const argumentSpecifiers = (inner.argumentSpecs ?? {}) as InputTypeSpecifiers;
-
       return {
         kind: Kind.DIRECTIVE as const,
         name: { kind: Kind.NAME as const, value: inner.name },
-        arguments: buildArguments(inner.arguments as AnyAssignableInput, argumentSpecifiers, schema),
+        arguments: buildDirectiveArguments(inner.arguments as AnyAssignableInput, inner.argumentSpecs, schema),
       };
     });
 };
@@ -301,17 +341,18 @@ const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeNam
     const selection = isShorthand(value) ? expandShorthand(schema, typeName!, alias) : value;
 
     const { args, field, object, union, directives, type } = selection;
+    const parsedType = parseOutputSpecifier(type);
     const builtDirectives = buildDirectives(directives, "FIELD", schema);
     return {
       kind: Kind.FIELD,
       name: { kind: Kind.NAME, value: field },
       alias: alias !== field ? { kind: Kind.NAME, value: alias } : undefined,
-      arguments: buildArguments(args, type.arguments, schema),
+      arguments: buildArguments(args, parsedType.arguments as InputTypeSpecifiers, schema),
       directives: builtDirectives.length > 0 ? builtDirectives : undefined,
       selectionSet: object
         ? {
             kind: Kind.SELECTION_SET,
-            selections: buildField(object, schema, type.name),
+            selections: buildField(object, schema, parsedType.name),
           }
         : union
           ? {
@@ -355,10 +396,11 @@ export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): 
       fields: Object.entries(value)
         .map(([key, fieldValue]): ConstObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          let fieldTypeSpecifier: InputTypeSpecifier | null = null;
+          let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
             const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
-            fieldTypeSpecifier = inputDef?.fields[key] ?? null;
+            const fieldSpec = inputDef?.fields[key];
+            fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
           }
 
           const valueNode = buildConstValueNode(fieldValue, {
@@ -483,19 +525,50 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
   return curr.type;
 };
 
-const buildVariables = (variables: InputTypeSpecifiers, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
-  return Object.entries(variables).map(
-    ([name, ref]): VariableDefinitionNode => ({
+/**
+ * VarSpecifier shape from $var() at runtime.
+ * Operation variables use structured objects, not deferred strings.
+ */
+export type AnyVarSpecifier = {
+  kind: "scalar" | "enum" | "input";
+  name: string;
+  modifier: TypeModifier;
+  defaultValue: null | { default: ConstValue };
+  directives: Record<string, unknown>;
+};
+
+// VariableDefinitions is imported from type-foundation
+
+const buildVariables = (
+  variables: Record<string, AnyVarSpecifier>,
+  schema: AnyGraphqlSchema,
+): VariableDefinitionNode[] => {
+  return Object.entries(variables).map(([name, varSpec]): VariableDefinitionNode => {
+    // Build default value if present
+    let defaultValue: ConstValueNode | undefined;
+    if (varSpec.defaultValue) {
+      // Convert VarSpecifier to ParsedInputSpecifier format for enum lookup
+      const parsedSpec: ParsedInputSpecifier = {
+        kind: varSpec.kind,
+        name: varSpec.name,
+        modifier: varSpec.modifier,
+        hasDefault: true,
+      };
+      const enumLookup: EnumLookup = { schema, typeSpecifier: parsedSpec };
+      const constValue = buildConstValueNode(varSpec.defaultValue.default, enumLookup);
+      defaultValue = constValue ?? undefined;
+    }
+
+    return {
       kind: Kind.VARIABLE_DEFINITION,
       variable: { kind: Kind.VARIABLE, name: { kind: Kind.NAME, value: name } },
-      defaultValue:
-        (ref.defaultValue && buildConstValueNode(ref.defaultValue.default, { schema, typeSpecifier: ref })) || undefined,
-      type: buildWithTypeModifier(ref.modifier, () => ({
+      defaultValue,
+      type: buildWithTypeModifier(varSpec.modifier, () => ({
         kind: Kind.NAMED_TYPE,
-        name: { kind: Kind.NAME, value: ref.name },
+        name: { kind: Kind.NAME, value: varSpec.name },
       })),
-    }),
-  );
+    };
+  });
 };
 
 /**
@@ -528,7 +601,7 @@ export const buildDocument = <
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyFieldsExtended,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
 >(options: {
   operationName: string;
   operationType: OperationType;
@@ -536,7 +609,7 @@ export const buildDocument = <
   variables: TVarDefinitions;
   fields: TFields;
   schema: TSchema;
-}): TypedDocumentNode<InferFieldsExtended<TSchema, TTypeName, TFields>, ConstAssignableInput<TSchema, TVarDefinitions>> => {
+}): TypedDocumentNode<InferFieldsExtended<TSchema, TTypeName, TFields>, ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>> => {
   const { operationName, operationType, operationTypeName, variables, fields, schema } = options;
   return {
     kind: Kind.DOCUMENT,
@@ -555,6 +628,6 @@ export const buildDocument = <
     ],
   } satisfies DocumentNode as TypedDocumentNode<
     InferFieldsExtended<TSchema, TTypeName, TFields>,
-    ConstAssignableInput<TSchema, TVarDefinitions>
+    ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>
   >;
 };

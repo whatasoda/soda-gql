@@ -5,7 +5,7 @@
 
 import type { AnyFields } from "../fragment";
 import type { AnyGraphqlSchema, OperationType } from "../schema";
-import type { InputTypeSpecifiers } from "../type-foundation";
+import type { VariableDefinitions } from "../type-foundation";
 import type { FieldsBuilder } from "./fields-builder";
 
 /**
@@ -37,7 +37,7 @@ export type CompatSpec<
   TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TFields extends AnyFields,
 > = {
   readonly schema: TSchema;
@@ -55,7 +55,7 @@ export type CompatSpec<
 /**
  * Type alias for any CompatSpec instance.
  */
-export type AnyCompatSpec = CompatSpec<AnyGraphqlSchema, OperationType, string, InputTypeSpecifiers, AnyFields>;
+export type AnyCompatSpec = CompatSpec<AnyGraphqlSchema, OperationType, string, VariableDefinitions, AnyFields>;
 
 /**
  * Extracts type information from a CompatSpec.

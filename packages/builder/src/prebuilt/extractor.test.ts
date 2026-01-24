@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
-import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation, InputTypeSpecifiers } from "@soda-gql/core";
+import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation, DeferredOutputSpecifier, VariableDefinitions } from "@soda-gql/core";
 import { type DocumentNode, Kind, type OperationTypeNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
@@ -10,7 +10,7 @@ const createMockFragment = (
   typename: string,
   key: string | undefined,
   fields: AnyFields,
-  variableDefinitions: InputTypeSpecifiers = {},
+  variableDefinitions: VariableDefinitions = {},
   schemaLabel = "testSchema",
 ): AnyFragment => {
   return {
@@ -74,19 +74,22 @@ const createMockOperation = (
 const createMockField = (
   parent: string,
   field: string,
-  kind: "scalar" | "enum" | "object" | "union" | "interface" | "typename",
+  kind: "scalar" | "enum" | "object" | "union",
   name: string,
   modifier: "!" | "?" | "![]!" | "![]?" | "?[]!" | "?[]?",
-): AnyFieldSelection =>
-  ({
+): AnyFieldSelection => {
+  const kindChar = kind === "scalar" ? "s" : kind === "enum" ? "e" : kind === "object" ? "o" : "u";
+  const type: DeferredOutputSpecifier = `${kindChar}|${name}|${modifier}`;
+  return {
     parent,
     field,
-    type: { kind, name, modifier, arguments: {} },
+    type,
     args: {},
     directives: [],
     object: null,
     union: null,
-  }) as AnyFieldSelection;
+  } as AnyFieldSelection;
+};
 
 describe("extractFieldSelections", () => {
   test("extracts field selections from fragments", () => {
@@ -124,9 +127,9 @@ describe("extractFieldSelections", () => {
       id: createMockField("User", "id", "scalar", "ID", "!"),
     };
 
-    const variableDefinitions: InputTypeSpecifiers = {
-      userId: { kind: "scalar", name: "ID", modifier: "!" },
-      includeEmail: { kind: "scalar", name: "Boolean", modifier: "?" },
+    const variableDefinitions: VariableDefinitions = {
+      userId: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null, directives: {} },
+      includeEmail: { kind: "scalar", name: "Boolean", modifier: "?", defaultValue: null, directives: {} },
     };
 
     const elements: Record<CanonicalId, IntermediateArtifactElement> = {

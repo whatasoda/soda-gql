@@ -27,7 +27,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
-import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers } from "@soda-gql/core";
+import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers, generateInputTypeFromVarDefs, parseInputSpecifier } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import type { TypegenError } from "./errors";
@@ -131,7 +131,7 @@ const groupBySchema = (
 
       try {
         // Collect input objects used in fragment variables
-        const usedInputObjects = collectUsedInputObjectsFromSpecifiers(schema, selection.variableDefinitions);
+        const usedInputObjects = collectUsedInputObjectsFromVarDefs(schema, selection.variableDefinitions);
         for (const inputName of usedInputObjects) {
           group.inputObjects.add(inputName);
         }
@@ -142,7 +142,7 @@ const groupBySchema = (
         // Generate input type from variableDefinitions with schema-specific names
         const hasVariables = Object.keys(selection.variableDefinitions).length > 0;
         const inputType = hasVariables
-          ? generateInputTypeFromSpecifiers(schema, selection.variableDefinitions, { formatters: inputFormatters })
+          ? generateInputTypeFromVarDefs(schema, selection.variableDefinitions, { formatters: inputFormatters })
           : "void";
 
         group.fragments.push({
@@ -228,10 +228,11 @@ const collectNestedInputObjects = (schema: AnyGraphqlSchema, initialInputNames: 
       return;
     }
 
-    for (const field of Object.values(inputDef.fields)) {
-      if (field.kind === "input" && !inputObjects.has(field.name)) {
-        inputObjects.add(field.name);
-        collectNested(field.name, seen);
+    for (const fieldSpec of Object.values(inputDef.fields)) {
+      const parsed = parseInputSpecifier(fieldSpec);
+      if (parsed.kind === "input" && !inputObjects.has(parsed.name)) {
+        inputObjects.add(parsed.name);
+        collectNested(parsed.name, seen);
       }
     }
   };
@@ -264,9 +265,27 @@ const collectUsedInputObjects = (
  */
 const collectUsedInputObjectsFromSpecifiers = (schema: AnyGraphqlSchema, specifiers: InputTypeSpecifiers): Set<string> => {
   const directInputs = new Set<string>();
-  for (const specifier of Object.values(specifiers)) {
-    if (specifier.kind === "input" && schema.input[specifier.name]) {
-      directInputs.add(specifier.name);
+  for (const specStr of Object.values(specifiers)) {
+    const parsed = parseInputSpecifier(specStr);
+    if (parsed.kind === "input" && schema.input[parsed.name]) {
+      directInputs.add(parsed.name);
+    }
+  }
+  return collectNestedInputObjects(schema, directInputs);
+};
+
+/**
+ * Collect all input object types used in VariableDefinitions (VarSpecifier objects).
+ * Used for fragment variable definitions.
+ */
+const collectUsedInputObjectsFromVarDefs = (
+  schema: AnyGraphqlSchema,
+  varDefs: Record<string, { kind: string; name: string }>,
+): Set<string> => {
+  const directInputs = new Set<string>();
+  for (const varSpec of Object.values(varDefs)) {
+    if (varSpec.kind === "input" && schema.input[varSpec.name]) {
+      directInputs.add(varSpec.name);
     }
   }
   return collectNestedInputObjects(schema, directInputs);

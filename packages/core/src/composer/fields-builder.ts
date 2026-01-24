@@ -12,8 +12,9 @@ import type {
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
-import type { OutputObjectSpecifier, OutputUnionSpecifier } from "../types/type-foundation";
+import type { DeferredOutputSpecifier } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
+import { parseOutputSpecifier } from "../utils/deferred-specifier-parser";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
@@ -74,7 +75,10 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
     throw new Error(`Type ${typeName} is not defined in schema objects`);
   }
 
-  const entries = Object.entries(typeDef.fields).map(([fieldName, type]): [string, AnyFieldSelectionFactory] => {
+  const entries = Object.entries(typeDef.fields).map(([fieldName, typeSpecifier]): [string, AnyFieldSelectionFactory] => {
+    // Parse the deferred output specifier string
+    const parsedType = parseOutputSpecifier(typeSpecifier as string);
+
     const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
       fieldArgs: AnyFieldSelection["args"] | null | void,
       extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
@@ -82,26 +86,25 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
       const directives = extras?.directives ?? [];
 
-      if (type.kind === "object") {
-        type TSelection = AnyFieldSelection & { type: OutputObjectSpecifier };
+      if (parsedType.kind === "object") {
         const factoryReturn = (<TNested extends AnyNestedObject>(
-          nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
+          nest: NestedObjectFieldsBuilder<TSchema, string, TNested>,
         ) => {
           // Build new path for this field
           const currentPath = getCurrentFieldPath();
           const newPath = appendToPath(currentPath, {
             field: fieldName,
             parentType: typeName,
-            isList: isListType(type.modifier),
+            isList: isListType(parsedType.modifier),
           });
 
           // Run nested builder with updated path context
-          const nestedFields = withFieldPath(newPath, () => nest({ f: createFieldFactories(schema, type.name) }));
+          const nestedFields = withFieldPath(newPath, () => nest({ f: createFieldFactories(schema, parsedType.name) }));
 
           return wrap({
             parent: typeName,
             field: fieldName,
-            type: type,
+            type: typeSpecifier as DeferredOutputSpecifier,
             args: fieldArgs ?? {},
             directives,
             object: nestedFields,
@@ -112,17 +115,16 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         return factoryReturn;
       }
 
-      if (type.kind === "union") {
-        type TSelection = AnyFieldSelection & { type: OutputUnionSpecifier };
+      if (parsedType.kind === "union") {
         const factoryReturn = (<TNested extends AnyNestedUnion>(
-          nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
+          nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, DeferredOutputSpecifier>, TNested>,
         ) => {
           // Build new path for this field
           const currentPath = getCurrentFieldPath();
           const newPath = appendToPath(currentPath, {
             field: fieldName,
             parentType: typeName,
-            isList: isListType(type.modifier),
+            isList: isListType(parsedType.modifier),
           });
 
           // Run nested builders with updated path context
@@ -141,7 +143,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           return wrap({
             parent: typeName,
             field: fieldName,
-            type: type,
+            type: typeSpecifier as DeferredOutputSpecifier,
             args: fieldArgs ?? {},
             directives,
             object: null,
@@ -152,25 +154,20 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         return factoryReturn;
       }
 
-      if (type.kind === "scalar" || type.kind === "enum" || type.kind === "typename") {
-        const factoryReturn: AnyFieldSelectionFactoryReturn<TAlias> = wrap({
+      if (parsedType.kind === "scalar" || parsedType.kind === "enum") {
+        const factoryReturn = wrap({
           parent: typeName,
           field: fieldName,
-          type,
+          type: typeSpecifier as DeferredOutputSpecifier,
           args: fieldArgs ?? {},
           directives,
           object: null,
           union: null,
-        });
+        }) as unknown as AnyFieldSelectionFactoryReturn<TAlias>;
         return factoryReturn;
       }
 
-      // Excluded types are filtered out during codegen and should never be encountered at runtime
-      if (type.kind === "excluded") {
-        throw new Error(`Field "${fieldName}" references excluded type "${type.name}"`);
-      }
-
-      throw new Error(`Unsupported field type: ${type satisfies never}`);
+      throw new Error(`Unsupported field type kind: ${parsedType.kind}`);
     };
 
     return [fieldName, factory] as const;

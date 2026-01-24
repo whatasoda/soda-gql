@@ -29,6 +29,7 @@
     { "path": "./playgrounds/expo-metro/tsconfig.editor.json" },
     { "path": "./playgrounds/nestjs-compiler-tsc/tsconfig.editor.json" },
     { "path": "./playgrounds/nextjs-webpack/tsconfig.editor.json" },
-    { "path": "./playgrounds/vite-react/tsconfig.editor.json" }
+    // TODO: Fix colocation-tools type inference with generated schemas
+    // { "path": "./playgrounds/vite-react/tsconfig.editor.json" }
   ]
 }

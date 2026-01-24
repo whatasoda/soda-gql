@@ -70,7 +70,7 @@ describe("buildOperationArtifact", () => {
     });
 
     it("builds artifact with variableNames", () => {
-      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const };
+      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const, defaultValue: null, directives: {} };
 
       const result = buildOperationArtifact({
         schema,
@@ -217,7 +217,7 @@ describe("buildOperationArtifact", () => {
     });
 
     it("receives variable refs in metadata builder", () => {
-      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const };
+      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const, defaultValue: null, directives: {} };
       let receivedVarRef: unknown;
 
       const result = buildOperationArtifact({

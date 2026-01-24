@@ -15,7 +15,7 @@ import type {
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { InputTypeSpecifiers } from "../types/type-foundation";
+import type { VariableDefinitions } from "../types/type-foundation";
 import type { createVarRefs } from "./input";
 import { buildOperationArtifact } from "./operation-core";
 
@@ -61,7 +61,7 @@ export const createOperationComposerFactory = <
     return <
       TOperationName extends string,
       TFields extends AnyFieldsExtended,
-      TVarDefinitions extends InputTypeSpecifiers = {},
+      TVarDefinitions extends VariableDefinitions = {},
       TOperationMetadata = unknown,
     >(options: {
       name: TOperationName;

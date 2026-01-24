@@ -11,3 +11,5 @@ export type * from "./utils/empty-object";
 export type * from "./utils/hidden";
 export type * from "./utils/type-utils";
 export type * from "./utils/wrap-by-key";
+export { parseInputSpecifier, parseOutputSpecifier } from "./utils/deferred-specifier-parser";
+export type { ParsedInputSpecifier, ParsedOutputSpecifier } from "./utils/deferred-specifier-parser";

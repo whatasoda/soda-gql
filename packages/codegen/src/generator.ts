@@ -368,12 +368,29 @@ const renderConstValue = (value: ConstValueNode): string => {
   }
 };
 
+/**
+ * Maps type kind to deferred specifier prefix character.
+ */
+const inputKindToChar = (kind: "scalar" | "enum" | "input" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "input":
+      return "i";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
+  }
+};
+
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
   const { name, modifier } = parseTypeReference(definition.type);
   const defaultValue = definition.defaultValue;
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
+    // Excluded types still use structured format for now (they're filtered out)
     if (defaultValue) {
       return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
     }
@@ -389,11 +406,66 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
     kind = "input";
   }
 
-  // Only include defaultValue when it has a value (reduces file size significantly)
-  if (defaultValue) {
-    return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
+  // Generate deferred string specifier format: "{kindChar}|{name}|{modifier}[|D]"
+  const kindChar = inputKindToChar(kind);
+  const defaultSuffix = defaultValue ? "|D" : "";
+  return `"${kindChar}|${name}|${modifier}${defaultSuffix}"`;
+};
+
+/**
+ * Maps output type kind to deferred specifier prefix character.
+ */
+const outputKindToChar = (kind: "scalar" | "enum" | "union" | "object" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "object":
+      return "o";
+    case "union":
+      return "u";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
   }
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
+};
+
+/**
+ * Render arguments as a comma-separated list of deferred specifiers.
+ * Format: "argName:kindChar|typeName|modifier,..."
+ */
+const renderDeferredArgumentList = (
+  schema: SchemaIndex,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  excluded: Set<string>,
+): string => {
+  if (!args || args.length === 0) {
+    return "";
+  }
+
+  const argSpecs = [...args]
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => {
+      const { name, modifier } = parseTypeReference(arg.type);
+      // Skip excluded types - they shouldn't appear in field arguments
+      if (excluded.has(name)) {
+        return null;
+      }
+      let kind: "scalar" | "enum" | "input";
+      if (isScalarName(schema, name)) {
+        kind = "scalar";
+      } else if (isEnumName(schema, name)) {
+        kind = "enum";
+      } else {
+        kind = "input";
+      }
+      const kindChar = inputKindToChar(kind);
+      const defaultSuffix = arg.defaultValue ? "|D" : "";
+      return `${arg.name.value}:${kindChar}|${name}|${modifier}${defaultSuffix}`;
+    })
+    .filter((spec): spec is string => spec !== null);
+
+  return argSpecs.length > 0 ? `|${argSpecs.join(",")}` : "";
 };
 
 const renderArgumentMap = (
@@ -415,10 +487,10 @@ const renderOutputRef = (
   excluded: Set<string>,
 ): string => {
   const { name, modifier } = parseTypeReference(type);
-  const argumentMap = renderArgumentMap(schema, args, excluded);
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
+    const argumentMap = renderArgumentMap(schema, args, excluded);
     return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
   }
 
@@ -435,7 +507,10 @@ const renderOutputRef = (
     kind = "scalar"; // fallback for unknown types
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
+  // Generate deferred string specifier format: "{kindChar}|{name}|{modifier}[|args]"
+  const kindChar = outputKindToChar(kind);
+  const argsList = renderDeferredArgumentList(schema, args, excluded);
+  return `"${kindChar}|${name}|${modifier}${argsList}"`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -565,8 +640,33 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, exclude
 };
 
 /**
+ * Renders an input reference as a structured object (for directive arguments).
+ * Directives use structured specifiers at runtime for enum detection.
+ */
+const renderStructuredInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
+  const { name, modifier } = parseTypeReference(definition.type);
+
+  // Check if referenced type is excluded
+  if (excluded.has(name)) {
+    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}" }`;
+  }
+
+  let kind: "scalar" | "enum" | "input";
+  if (isScalarName(schema, name)) {
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else {
+    kind = "input";
+  }
+
+  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
+};
+
+/**
  * Renders argument specifiers for a directive.
  * Returns null if the directive has no arguments.
+ * Note: Uses structured format since DirectiveRef system requires it.
  */
 const renderDirectiveArgsSpec = (
   schema: SchemaIndex,
@@ -577,7 +677,7 @@ const renderDirectiveArgsSpec = (
 
   const entries = Array.from(args.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg, excluded)}`);
+    .map((arg) => `${arg.name.value}: ${renderStructuredInputRef(schema, arg, excluded)}`);
 
   return renderPropertyLines({ entries, indentSize: 4 });
 };

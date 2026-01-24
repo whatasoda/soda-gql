@@ -4,9 +4,9 @@
  */
 
 import type { OptionalArg } from "../../utils/empty-object";
-import type { AnyAssignableInput, AnyFieldsExtended, AssignableInput, InferFieldsExtended } from "../fragment";
+import type { AnyAssignableInput, AnyFieldsExtended, AssignableInputFromVarDefs, InferFieldsExtended } from "../fragment";
 import type { AnyGraphqlSchema } from "../schema";
-import type { InputTypeSpecifiers } from "../type-foundation";
+import type { VariableDefinitions } from "../type-foundation";
 import { GqlElement } from "./gql-element";
 
 /**
@@ -35,7 +35,7 @@ interface FragmentArtifact<
   readonly typename: TTypeName;
   readonly key: string | undefined;
   readonly schemaLabel: string;
-  readonly variableDefinitions: InputTypeSpecifiers;
+  readonly variableDefinitions: VariableDefinitions;
   readonly spread: (variables: TVariables) => TFields;
 }
 
@@ -103,7 +103,7 @@ export class Fragment<
   static create<
     TSchema extends AnyGraphqlSchema,
     TTypeName extends keyof TSchema["object"] & string,
-    TVariableDefinitions extends InputTypeSpecifiers,
+    TVariableDefinitions extends VariableDefinitions,
     TFields extends AnyFieldsExtended,
   >(
     define: () => {
@@ -111,12 +111,12 @@ export class Fragment<
       key: string | undefined;
       schemaLabel: TSchema["label"];
       variableDefinitions: TVariableDefinitions;
-      spread: (variables: OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>) => TFields;
+      spread: (variables: OptionalArg<AssignableInputFromVarDefs<TSchema, TVariableDefinitions>>) => TFields;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };
     type Output = InferFieldsExtended<TSchema, TTypeName, TFields> & { [key: symbol]: never };
-    type Variables = OptionalArg<AssignableInput<TSchema, TVariableDefinitions>>;
+    type Variables = OptionalArg<AssignableInputFromVarDefs<TSchema, TVariableDefinitions>>;
 
     return new Fragment<TTypeName, Variables, Fields, Output>(define as () => FragmentArtifact<TTypeName, Variables, Fields>);
   }

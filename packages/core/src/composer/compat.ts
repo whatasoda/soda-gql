@@ -7,7 +7,7 @@ import { type FieldsBuilder, GqlDefine } from "../types/element";
 import type { CompatSpec } from "../types/element/compat-spec";
 import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { InputTypeSpecifiers } from "../types/type-foundation";
+import type { VariableDefinitions } from "../types/type-foundation";
 
 /**
  * Options for creating a compat operation specification.
@@ -16,7 +16,7 @@ export type CompatOptions<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TOperationName extends string,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TFields extends AnyFields,
 > = {
   /** The operation name */
@@ -49,7 +49,7 @@ export const createCompatComposer = <TSchema extends AnyGraphqlSchema, TOperatio
     throw new Error(`Operation type ${operationType} is not defined in schema roots`);
   }
 
-  return <TOperationName extends string, TFields extends AnyFields, TVarDefinitions extends InputTypeSpecifiers = {}>(
+  return <TOperationName extends string, TFields extends AnyFields, TVarDefinitions extends VariableDefinitions = {}>(
     options: CompatOptions<TSchema, TTypeName, TOperationName, TVarDefinitions, TFields>,
   ): GqlDefine<CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>> => {
     return GqlDefine.create(() => ({

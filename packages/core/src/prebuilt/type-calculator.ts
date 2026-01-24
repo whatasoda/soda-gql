@@ -10,7 +10,8 @@
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { InputDepthOverrides, InputTypeSpecifier, InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import type { InputDepthOverrides, InputTypeSpecifiers, TypeModifier, VariableDefinitions } from "../types/type-foundation";
+import { parseInputSpecifier, parseOutputSpecifier } from "../utils/deferred-specifier-parser";
 
 /**
  * Formatters for customizing type name output.
@@ -213,10 +214,11 @@ export const generateInputObjectType = (
     return "{}";
   }
 
-  const fieldTypes = fieldEntries.map(([fieldName, specifier]) => {
+  const fieldTypes = fieldEntries.map(([fieldName, specifierStr]) => {
+    const specifier = parseInputSpecifier(specifierStr as string);
     const fieldType = generateInputFieldType(schema, specifier, options, newSeen, depth - 1);
     const isOptional = specifier.modifier === "?" || specifier.modifier.endsWith("?");
-    const hasDefault = specifier.defaultValue != null;
+    const hasDefault = specifier.hasDefault;
 
     // Fields with defaults or nullable fields are optional
     if (hasDefault || isOptional) {
@@ -229,11 +231,11 @@ export const generateInputObjectType = (
 };
 
 /**
- * Generate a TypeScript type string for an input field based on its specifier.
+ * Generate a TypeScript type string for an input field based on its parsed specifier.
  */
 const generateInputFieldType = (
   schema: AnyGraphqlSchema,
-  specifier: { readonly kind: string; readonly name: string; readonly modifier: TypeModifier },
+  specifier: { readonly kind: string; readonly name: string; readonly modifier: string },
   options: GenerateInputObjectTypeOptions,
   seen: Set<string>,
   depth: number,
@@ -256,7 +258,7 @@ const generateInputFieldType = (
       baseType = "unknown";
   }
 
-  return applyTypeModifier(baseType, specifier.modifier);
+  return applyTypeModifier(baseType, specifier.modifier as TypeModifier);
 };
 
 /**
@@ -271,36 +273,37 @@ export const calculateFieldType = (
   selection: AnyFieldSelection,
   formatters?: TypeFormatters,
 ): string => {
-  const { type } = selection;
+  // Parse the deferred output specifier
+  const parsedType = parseOutputSpecifier(selection.type as string);
+
+  // Handle __typename field specially - return literal type name
+  if (selection.field === "__typename") {
+    // For __typename, the name in the specifier is the parent type name
+    return applyTypeModifier(`"${parsedType.name}"`, parsedType.modifier as TypeModifier);
+  }
 
   // Handle object types (nested selection)
-  if (type.kind === "object" && selection.object) {
-    const nestedType = calculateFieldsType(schema, selection.object, formatters, type.name);
-    return applyTypeModifier(nestedType, type.modifier);
+  if (parsedType.kind === "object" && selection.object) {
+    const nestedType = calculateFieldsType(schema, selection.object, formatters, parsedType.name);
+    return applyTypeModifier(nestedType, parsedType.modifier as TypeModifier);
   }
 
   // Handle union types
-  if (type.kind === "union" && selection.union) {
+  if (parsedType.kind === "union" && selection.union) {
     const unionType = calculateUnionType(schema, selection.union, formatters);
-    return applyTypeModifier(unionType, type.modifier);
+    return applyTypeModifier(unionType, parsedType.modifier as TypeModifier);
   }
 
-  // Handle __typename special field
-  if (type.kind === "typename") {
-    // __typename returns a string literal type
-    return applyTypeModifier(`"${type.name}"`, type.modifier);
-  }
-
-  // Handle scalar types
-  if (type.kind === "scalar") {
-    const scalarType = formatters?.scalarOutput?.(type.name) ?? getScalarOutputType(schema, type.name);
-    return applyTypeModifier(scalarType, type.modifier);
+  // Handle scalar types (including __typename which is represented as scalar)
+  if (parsedType.kind === "scalar") {
+    const scalarType = formatters?.scalarOutput?.(parsedType.name) ?? getScalarOutputType(schema, parsedType.name);
+    return applyTypeModifier(scalarType, parsedType.modifier as TypeModifier);
   }
 
   // Handle enum types
-  if (type.kind === "enum") {
-    const enumType = getEnumType(schema, type.name);
-    return applyTypeModifier(enumType, type.modifier);
+  if (parsedType.kind === "enum") {
+    const enumType = getEnumType(schema, parsedType.name);
+    return applyTypeModifier(enumType, parsedType.modifier as TypeModifier);
   }
 
   // Fallback
@@ -470,12 +473,12 @@ export const generateInputType = (
 };
 
 /**
- * Generate TypeScript type for a single input field from its specifier.
+ * Generate TypeScript type for a single input field from its parsed specifier.
  * Used by generateInputTypeFromSpecifiers.
  */
 const generateInputFieldTypeFromSpecifier = (
   schema: AnyGraphqlSchema,
-  specifier: InputTypeSpecifier,
+  specifier: { kind: string; name: string; modifier: string },
   options: GenerateInputObjectTypeOptions,
 ): string => {
   let baseType: string;
@@ -495,7 +498,7 @@ const generateInputFieldTypeFromSpecifier = (
       baseType = "unknown";
   }
 
-  return applyTypeModifier(baseType, specifier.modifier);
+  return applyTypeModifier(baseType, specifier.modifier as TypeModifier);
 };
 
 /**
@@ -520,14 +523,52 @@ export const generateInputTypeFromSpecifiers = (
     return "void";
   }
 
-  const fields = entries.map(([name, specifier]) => {
+  const fields = entries.map(([name, specifierStr]) => {
+    const specifier = parseInputSpecifier(specifierStr as string);
     // Check if the outermost type is required
     // "!" = required, "?" = optional
     // "![]!" = required (outer), "![]?" = optional (outer)
     // For arrays, check if the last character is "!" (required outer) or "?" (optional outer)
     const isOuterRequired = specifier.modifier.endsWith("!");
-    const hasDefault = specifier.defaultValue != null;
+    const hasDefault = specifier.hasDefault;
     const baseType = generateInputFieldTypeFromSpecifier(schema, specifier, options);
+
+    // Field is optional if outer type is nullable or has default value
+    const isOptional = !isOuterRequired || hasDefault;
+
+    return `readonly ${name}${isOptional ? "?" : ""}: ${baseType}`;
+  });
+
+  return `{ ${fields.join("; ")} }`;
+};
+
+/**
+ * Generate a TypeScript type string for input variables from VariableDefinitions.
+ *
+ * Unlike generateInputTypeFromSpecifiers which works with deferred specifier strings,
+ * this function works with VarSpecifier objects created by $var().
+ * Used for generating Fragment input types in prebuilt mode.
+ *
+ * @param schema - The GraphQL schema
+ * @param varDefs - Variable definitions (VarSpecifier objects)
+ * @param options - Generation options including depth limits
+ */
+export const generateInputTypeFromVarDefs = (
+  schema: AnyGraphqlSchema,
+  varDefs: VariableDefinitions,
+  options: GenerateInputObjectTypeOptions = {},
+): string => {
+  const entries = Object.entries(varDefs);
+
+  if (entries.length === 0) {
+    return "void";
+  }
+
+  const fields = entries.map(([name, varSpec]) => {
+    // VarSpecifier already has kind, name, modifier as properties
+    const isOuterRequired = varSpec.modifier.endsWith("!");
+    const hasDefault = varSpec.defaultValue !== null;
+    const baseType = generateInputFieldTypeFromSpecifier(schema, varSpec, options);
 
     // Field is optional if outer type is nullable or has default value
     const isOptional = !isOuterRequired || hasDefault;

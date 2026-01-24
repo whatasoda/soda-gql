@@ -16,7 +16,7 @@ import type {
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { InputTypeSpecifiers } from "../types/type-foundation";
+import type { VariableDefinitions } from "../types/type-foundation";
 
 import { buildOperationArtifact } from "./operation-core";
 
@@ -25,7 +25,7 @@ import { buildOperationArtifact } from "./operation-core";
  */
 export type ExtendOptions<
   TSchema extends AnyGraphqlSchema,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TOperationMetadata,
   TAggregatedFragmentMetadata,
   TSchemaLevel,
@@ -73,7 +73,7 @@ export const createExtendComposer = <
   return <
     TOperationType extends OperationType,
     TOperationName extends string,
-    TVarDefinitions extends InputTypeSpecifiers,
+    TVarDefinitions extends VariableDefinitions,
     TFields extends AnyFields,
     TOperationMetadata = unknown,
   >(

@@ -13,14 +13,11 @@ import type {
   DeclaredVariables,
   FieldSelectionTemplateOf,
 } from "../fragment";
-import type { AnyGraphqlSchema, ObjectFieldRecord, UnionMemberName } from "../schema";
+import type { AnyGraphqlSchema, ObjectFieldRecord } from "../schema";
 import type {
-  InputTypeSpecifiers,
-  OutputEnumSpecifier,
-  OutputObjectSpecifier,
-  OutputScalarSpecifier,
-  OutputTypenameSpecifier,
-  OutputUnionSpecifier,
+  DeferredOutputSpecifier,
+  GetSpecName,
+  VariableDefinitions,
 } from "../type-foundation";
 import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
 
@@ -34,7 +31,7 @@ import type { AnyDirectiveRef } from "../type-foundation/directive-ref";
 export type FieldsBuilder<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariableDefinitions extends InputTypeSpecifiers,
+  TVariableDefinitions extends VariableDefinitions,
   TFields extends AnyFieldsExtended,
 > = (tools: NoInfer<FieldsBuilderTools<TSchema, TTypeName, TVariableDefinitions>>) => TFields;
 
@@ -46,7 +43,7 @@ export type FieldsBuilder<
 export type FieldsBuilderTools<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
-  TVariableDefinitions extends InputTypeSpecifiers,
+  TVariableDefinitions extends VariableDefinitions,
 > = {
   f: FieldSelectionFactories<TSchema, TTypeName>;
   $: DeclaredVariables<TSchema, TVariableDefinitions>;
@@ -119,33 +116,38 @@ export type FieldSelectionFactory<TSchema extends AnyGraphqlSchema, TSelection e
   extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
 ) => FieldSelectionFactoryReturn<TSchema, TSelection, TAlias>;
 
+/** Deferred specifier pattern for object types: o|{name}|{modifier}[|args] */
+type ObjectSpecifierPattern = `o|${string}|${string}`;
+
+/** Deferred specifier pattern for union types: u|{name}|{modifier}[|args] */
+type UnionSpecifierPattern = `u|${string}|${string}`;
+
+/** Deferred specifier pattern for primitive types (scalar, enum): s|{name}|{modifier} or e|{name}|{modifier} */
+type PrimitiveSpecifierPattern = `s|${string}|${string}` | `e|${string}|${string}`;
+
 export type AnyFieldSelectionFactoryReturn<TAlias extends string | null> =
-  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: OutputObjectSpecifier }, TAlias>
-  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: OutputUnionSpecifier }, TAlias>
-  | FieldSelectionFactoryReturn<
-      AnyGraphqlSchema,
-      AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier },
-      TAlias
-    >;
+  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: ObjectSpecifierPattern }, TAlias>
+  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: UnionSpecifierPattern }, TAlias>
+  | FieldSelectionFactoryReturn<AnyGraphqlSchema, AnyFieldSelection & { type: PrimitiveSpecifierPattern }, TAlias>;
 
 export type FieldSelectionFactoryReturn<
   TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection,
   TAlias extends string | null,
-> = TSelection extends { type: OutputObjectSpecifier }
+> = TSelection extends { type: ObjectSpecifierPattern }
   ? FieldSelectionFactoryObjectReturn<TSchema, TSelection, TAlias>
-  : TSelection extends { type: OutputUnionSpecifier }
+  : TSelection extends { type: UnionSpecifierPattern }
     ? FieldSelectionFactoryUnionReturn<TSchema, TSelection, TAlias>
-    : TSelection extends { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier }
+    : TSelection extends { type: PrimitiveSpecifierPattern }
       ? FieldSelectionFactoryPrimitiveReturn<TSelection, TAlias>
       : never;
 
 export type FieldSelectionFactoryObjectReturn<
   TSchema extends AnyGraphqlSchema,
-  TSelection extends AnyFieldSelection & { type: OutputObjectSpecifier },
+  TSelection extends AnyFieldSelection & { type: ObjectSpecifierPattern },
   TAlias extends string | null,
 > = <TNested extends AnyFieldsExtended>(
-  nest: NestedObjectFieldsBuilder<TSchema, TSelection["type"]["name"], TNested>,
+  nest: NestedObjectFieldsBuilder<TSchema, GetSpecName<TSelection["type"]> & keyof TSchema["object"] & string, TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
     TSelection["parent"],
@@ -160,10 +162,10 @@ export type FieldSelectionFactoryObjectReturn<
 
 export type FieldSelectionFactoryUnionReturn<
   TSchema extends AnyGraphqlSchema,
-  TSelection extends AnyFieldSelection & { type: OutputUnionSpecifier },
+  TSelection extends AnyFieldSelection & { type: UnionSpecifierPattern },
   TAlias extends string | null,
 > = <TNested extends AnyNestedUnion>(
-  nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, TSelection["type"]>, TNested>,
+  nest: NestedUnionFieldsBuilder<TSchema, UnionMemberNameFromDeferred<TSchema, TSelection["type"]>, TNested>,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
     TSelection["parent"],
@@ -176,8 +178,16 @@ export type FieldSelectionFactoryUnionReturn<
   >;
 };
 
+/** Helper to get union member names from a deferred union specifier */
+type UnionMemberNameFromDeferred<
+  TSchema extends AnyGraphqlSchema,
+  TSpecifier extends DeferredOutputSpecifier,
+> = GetSpecName<TSpecifier> extends keyof TSchema["union"]
+  ? Extract<keyof TSchema["union"][GetSpecName<TSpecifier>]["types"], string>
+  : never;
+
 export type FieldSelectionFactoryPrimitiveReturn<
-  TSelection extends AnyFieldSelection & { type: OutputTypenameSpecifier | OutputScalarSpecifier | OutputEnumSpecifier },
+  TSelection extends AnyFieldSelection & { type: PrimitiveSpecifierPattern },
   TAlias extends string | null,
 > = {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<

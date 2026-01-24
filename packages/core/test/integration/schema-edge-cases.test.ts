@@ -43,13 +43,8 @@ describe("Schema Edge Cases", () => {
         input: {},
         object: {
           Query: define("Query").object({
-            // Create a field with an invalid kind by casting
-            weirdField: {
-              kind: "invalid" as any,
-              name: "String",
-              modifier: "!",
-              arguments: {},
-            } as any,
+            // Create a field with an invalid kind by casting (x is not a valid kind char)
+            weirdField: "x|String|!" as any,
           }),
         },
         union: {},
@@ -59,7 +54,7 @@ describe("Schema Edge Cases", () => {
         const factories = createFieldFactories(schema, "Query");
         // Trigger the factory to execute by accessing the invalid field
         (factories as any).weirdField();
-      }).toThrow("Unsupported field type");
+      }).toThrow("Invalid output specifier kind: x");
     });
   });
 

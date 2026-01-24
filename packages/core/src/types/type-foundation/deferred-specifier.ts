@@ -155,66 +155,89 @@ export type ParseDeferredOutputSpec<S extends string> =
     : never;
 
 // ============================================================
-// Resolution Utilities
+// Resolution Utilities (String-Only)
 // ============================================================
 
 /**
- * Resolve any input specifier (deferred string or structured) to structured form
+ * Resolve deferred input specifier to structured form
  */
-export type ResolveInputSpec<T> =
-  T extends string ? ParseDeferredInputSpec<T> : T;
+export type ResolveInputSpec<T extends string> = ParseDeferredInputSpec<T>;
 
 /**
- * Resolve any output specifier (deferred string or structured) to structured form
+ * Resolve deferred output specifier to structured form
  */
-export type ResolveOutputSpec<T> =
-  T extends string ? ParseDeferredOutputSpec<T> : T;
+export type ResolveOutputSpec<T extends string> = ParseDeferredOutputSpec<T>;
 
 /**
- * Get kind from any specifier format
+ * Get kind from deferred specifier string
  */
-export type GetSpecKind<T> =
-  T extends string
-    ? ParseBasicSpec<T> extends { kind: infer K extends string }
-      ? K extends "s" ? "scalar"
-      : K extends "e" ? "enum"
-      : K extends "o" ? "object"
-      : K extends "u" ? "union"
-      : K extends "i" ? "input"
-      : never
-      : never
-    : T extends { kind: infer K } ? K : never;
+export type GetSpecKind<T extends string> =
+  ParseBasicSpec<T> extends { kind: infer K extends string }
+    ? K extends "s" ? "scalar"
+    : K extends "e" ? "enum"
+    : K extends "o" ? "object"
+    : K extends "u" ? "union"
+    : K extends "i" ? "input"
+    : never
+    : never;
 
 /**
- * Get name from any specifier format
+ * Get name from deferred specifier string.
+ * Uses direct pattern matching with string constraint for better narrowing.
  */
-export type GetSpecName<T> =
-  T extends string
-    ? ParseBasicSpec<T> extends { name: infer N } ? N : never
-    : T extends { name: infer N } ? N : never;
+export type GetSpecName<T extends string> =
+  T extends `${string}|${infer N extends string}|${string}` ? N : never;
 
 /**
- * Get modifier from any specifier format
+ * Get modifier from deferred specifier string.
+ * Uses direct pattern matching with string constraint for better narrowing.
  */
-export type GetSpecModifier<T> =
-  T extends string
-    ? ParseBasicSpec<T> extends { modifier: infer M } ? M : never
-    : T extends { modifier: infer M } ? M : never;
+export type GetSpecModifier<T extends string> =
+  T extends `${string}|${string}|${infer M extends string}` ? ExtractModifier<M> : never;
 
 /**
- * Get defaultValue from any specifier format
- * Returns AnyDefaultValue if present, null otherwise
+ * Get defaultValue indicator from deferred specifier string
+ * Returns AnyDefaultValue if |D suffix present, null otherwise
  *
- * For deferred strings: checks for |D suffix and returns AnyDefaultValue
- * For structured: returns the actual defaultValue property
- *
- * Note: For deferred strings, we return AnyDefaultValue (not the actual value)
- * because the deferred format only indicates presence, not the actual default.
+ * Note: Returns AnyDefaultValue (not the actual value) because the deferred
+ * format only indicates presence, not the actual default value.
  * This is sufficient for type-level checks like IsOptional.
  */
-export type GetSpecDefaultValue<T> =
-  T extends string
-    ? T extends `${string}|D` ? AnyDefaultValue : null
-    : T extends { defaultValue: infer D }
-      ? D extends AnyDefaultValue ? D : null
-      : null;
+export type GetSpecDefaultValue<T extends string> =
+  T extends `${string}|D` ? AnyDefaultValue : null;
+
+// ============================================================
+// Arguments Extraction (as InputTypeSpecifiers)
+// ============================================================
+
+/**
+ * Parse single argument "argName:k|Type|Mod" and return as deferred input specifier
+ */
+type ParseSingleArgAsDeferred<S extends string> =
+  S extends `${infer ArgName}:${infer Spec}`
+    ? { readonly [K in ArgName]: Spec }
+    : {};
+
+/**
+ * Parse comma-separated argument list as deferred input specifiers
+ */
+type ParseArgListAsDeferred<S extends string> =
+  S extends "" ? {} :
+  S extends `${infer Arg},${infer Rest}`
+    ? ParseSingleArgAsDeferred<Arg> & ParseArgListAsDeferred<Rest>
+    : ParseSingleArgAsDeferred<S>;
+
+/**
+ * Extract arguments from output specifier as InputTypeSpecifiers (deferred strings).
+ * Returns a record of deferred input specifier strings, not parsed objects.
+ *
+ * @example
+ * GetSpecArguments<"o|users|!|limit:s|Int|?,offset:s|Int|?">
+ * // { limit: "s|Int|?"; offset: "s|Int|?" }
+ */
+export type GetSpecArguments<S extends string> =
+  S extends `${string}|${string}|${infer ModAndArgs}`
+    ? ModAndArgs extends `${infer _Mod}|${infer Args}`
+      ? ParseArgListAsDeferred<StripDefaultSuffix<Args>>
+      : {}
+    : {};

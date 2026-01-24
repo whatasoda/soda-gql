@@ -51,7 +51,7 @@ describe("createExtendComposer", () => {
     it("preserves variableNames from compat", () => {
       const queryCompat = createCompatComposer<Schema, "query">(schema, "query");
       const extend = createExtendComposer<Schema>(schema);
-      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const };
+      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const, defaultValue: null, directives: {} };
 
       const compat = queryCompat({
         name: "GetUser",
@@ -136,7 +136,7 @@ describe("createExtendComposer", () => {
     it("metadata builder receives $ with variable refs", () => {
       const queryCompat = createCompatComposer<Schema, "query">(schema, "query");
       const extend = createExtendComposer<Schema>(schema);
-      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const };
+      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const, defaultValue: null, directives: {} };
 
       let receivedVarRefs: Record<string, unknown> | undefined;
 

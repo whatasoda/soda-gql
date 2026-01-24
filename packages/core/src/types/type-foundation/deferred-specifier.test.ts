@@ -151,11 +151,11 @@ describe("Resolution utilities", () => {
     expect(true).toBe(true);
   });
 
-  it("ResolveInputSpec passes through structured", () => {
-    // When given a non-string (structured) type, it passes through unchanged
-    type Structured = { kind: "scalar"; name: "test"; modifier: "!"; defaultValue: null };
-    type Result = ResolveInputSpec<Structured>;
-    type _Test = Expect<Equal<Result, Structured>>;
+  it("ResolveInputSpec aliases ParseDeferredInputSpec", () => {
+    // ResolveInputSpec is now just an alias for ParseDeferredInputSpec
+    type Result = ResolveInputSpec<"s|test|!">;
+    type _TestKind = Expect<Equal<Result["kind"], "scalar">>;
+    type _TestName = Expect<Equal<Result["name"], "test">>;
     expect(true).toBe(true);
   });
 
@@ -218,18 +218,10 @@ describe("Resolution utilities", () => {
     expect(true).toBe(true);
   });
 
-  it("GetSpecDefaultValue passes through structured defaultValue", () => {
-    type WithDefault = { kind: "scalar"; name: "test"; modifier: "!"; defaultValue: { default: "value" } };
-    type WithoutDefault = { kind: "scalar"; name: "test"; modifier: "!"; defaultValue: null };
-    type WithUndefined = { kind: "scalar"; name: "test"; modifier: "!" };
-
-    type Result1 = GetSpecDefaultValue<WithDefault>;
-    type Result2 = GetSpecDefaultValue<WithoutDefault>;
-    type Result3 = GetSpecDefaultValue<WithUndefined>;
-
-    type _Test1 = Expect<Equal<Result1, { default: "value" }>>;
-    type _Test2 = Expect<Equal<Result2, null>>;
-    type _Test3 = Expect<Equal<Result3, null>>;
+  it("GetSpecDefaultValue with args but no |D returns null", () => {
+    // Arguments don't affect default value detection
+    type Result = GetSpecDefaultValue<"s|Int|!|arg:s|X|?">;
+    type _Test = Expect<Equal<Result, null>>;
     expect(true).toBe(true);
   });
 

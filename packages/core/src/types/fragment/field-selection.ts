@@ -3,11 +3,11 @@
 import type { AnyFieldName, AnyGraphqlSchema, AnyTypeName, InferOutputProfile } from "../schema";
 import type {
   ApplyTypeModifier,
+  DeferredOutputInferrableSpecifier,
+  DeferredOutputSpecifier,
   GetModifiedType,
-  OutputInferrableTypeSpecifier,
-  OutputObjectSpecifier,
-  OutputTypeSpecifier,
-  OutputUnionSpecifier,
+  GetSpecKind,
+  GetSpecModifier,
 } from "../type-foundation";
 import type { AnyAssignableInput, AssignableInputByFieldName } from "./assignable-input";
 import type { AnyDirectiveAttachments } from "./directives";
@@ -23,7 +23,7 @@ import type { AnyDirectiveAttachments } from "./directives";
 export type AnyFieldSelection = {
   readonly parent: AnyTypeName;
   readonly field: AnyFieldName;
-  readonly type: OutputTypeSpecifier;
+  readonly type: DeferredOutputSpecifier;
   readonly args: AnyAssignableInput;
   readonly directives: AnyDirectiveAttachments;
   readonly object: AnyNestedObjectExtended | null;
@@ -51,7 +51,7 @@ export type AnyFields = {
 export type AbstractFieldSelection<
   TTypeName extends AnyTypeName,
   TFieldName extends AnyFieldName,
-  TSpecifier extends OutputTypeSpecifier,
+  TSpecifier extends DeferredOutputSpecifier,
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
   TObject extends AnyNestedObjectExtended | null,
@@ -71,15 +71,15 @@ export type FieldSelectionTemplateOf<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"] & string,
-  TRef extends OutputTypeSpecifier = TSchema["object"][TTypeName]["fields"][TFieldName],
+  TRef extends DeferredOutputSpecifier = TSchema["object"][TTypeName]["fields"][TFieldName],
 > = AbstractFieldSelection<
   TTypeName,
   TFieldName,
   TRef,
   AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
   AnyDirectiveAttachments,
-  TRef extends OutputObjectSpecifier ? AnyNestedObjectExtended : null,
-  TRef extends OutputUnionSpecifier ? AnyNestedUnion : null
+  GetSpecKind<TRef> extends "object" ? AnyNestedObjectExtended : null,
+  GetSpecKind<TRef> extends "union" ? AnyNestedUnion : null
 >;
 
 /** Resolve the data shape produced by a set of field selections. */
@@ -92,13 +92,13 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyFieldSelection> =
   | (TSelection extends {
-      type: infer TSpecifier extends OutputObjectSpecifier;
+      type: infer TSpecifier extends `o|${infer TName extends string}|${infer TModifier extends string}`;
       object: infer TNested extends AnyNestedObjectExtended;
     }
-      ? ApplyTypeModifier<InferFieldsExtended<TSchema, TSpecifier["name"], TNested>, TSpecifier["modifier"]>
+      ? ApplyTypeModifier<InferFieldsExtended<TSchema, TName, TNested>, TModifier>
       : never)
   | (TSelection extends {
-      type: infer TSpecifier extends OutputUnionSpecifier;
+      type: infer TSpecifier extends `u|${infer _TName extends string}|${infer TModifier extends string}`;
       union: infer TNested extends AnyNestedUnion;
     }
       ? ApplyTypeModifier<
@@ -111,13 +111,13 @@ export type InferField<TSchema extends AnyGraphqlSchema, TSelection extends AnyF
                   NonNullable<TNested[TTypename]> & AnyFieldsExtended
                 >;
           }[keyof TNested],
-          TSpecifier["modifier"]
+          TModifier
         >
       : never)
   | (TSelection extends {
-      type: infer TSpecifier extends OutputInferrableTypeSpecifier;
+      type: infer TSpecifier extends DeferredOutputInferrableSpecifier;
     }
-      ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
+      ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, GetSpecModifier<TSpecifier>>
       : never);
 
 // ============================================================================
@@ -185,8 +185,8 @@ type InferScalarFieldByName<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
-> = TSchema["object"][TTypeName]["fields"][TFieldName] extends infer TSpecifier extends OutputInferrableTypeSpecifier
-  ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, TSpecifier["modifier"]>
+> = TSchema["object"][TTypeName]["fields"][TFieldName] extends infer TSpecifier extends DeferredOutputInferrableSpecifier
+  ? GetModifiedType<InferOutputProfile<TSchema, TSpecifier>, GetSpecModifier<TSpecifier>>
   : never;
 
 /**
