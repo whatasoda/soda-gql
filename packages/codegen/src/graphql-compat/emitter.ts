@@ -320,8 +320,8 @@ const emitFieldSelection = (
   const hasArgs = args && args.length > 0;
   const hasSelections = selections && selections.length > 0;
 
-  // Use shorthand syntax for scalar fields (no args, no nested selections)
-  if (!hasArgs && !hasSelections) {
+  // Use shorthand syntax for scalar fields (no args, no nested selections, no alias)
+  if (!hasArgs && !hasSelections && !field.alias) {
     return ok(`${padding}${field.name}: true,`);
   }
 
@@ -333,6 +333,12 @@ const emitFieldSelection = (
       return err(argsResult.error);
     }
     line += argsResult.value;
+    if (field.alias) {
+      line += `, { alias: ${JSON.stringify(field.alias)} }`;
+    }
+  } else if (field.alias) {
+    // No args but has alias: pass null for args, then alias option
+    line += `null, { alias: ${JSON.stringify(field.alias)} }`;
   }
 
   line += ")";

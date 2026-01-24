@@ -1197,6 +1197,145 @@ describe("Literal Value List Coercion", () => {
   });
 });
 
+describe("Field aliases", () => {
+  it("emits scalar field with alias using spread syntax", () => {
+    const { operations } = parseAndTransform(`
+      query GetUser {
+        user(id: "123") {
+          uniqueId: id
+          name
+        }
+      }
+    `);
+
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
+
+    // Aliased field should use spread syntax with alias option
+    expect(output).toContain('...f.id(null, { alias: "uniqueId" })');
+    // Non-aliased field should use shorthand
+    expect(output).toContain("name: true");
+  });
+
+  it("emits scalar field with alias and arguments", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query GetUsers {
+        activeUsers: users(filter: { status: ACTIVE }) {
+          id
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
+
+    // Field with alias and arguments should include alias in extras
+    expect(output).toContain('...f.users({ filter: { status: "ACTIVE" } }, { alias: "activeUsers" })');
+  });
+
+  it("emits object field with alias", () => {
+    const nestedSchema = parse(`
+      type Profile { avatar: String }
+      type User { id: ID!, profile: Profile }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser {
+        user(id: "1") {
+          userProfile: profile {
+            avatar
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: nestedSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: nestedSchema,
+    })._unsafeUnwrap();
+
+    // Object field with alias should use spread syntax with alias option
+    expect(output).toContain('...f.profile(null, { alias: "userProfile" })(({ f }) => ({');
+  });
+
+  it("emits object field with alias and arguments", () => {
+    const nestedSchema = parse(`
+      type Post { id: ID!, title: String! }
+      type User { id: ID!, posts(limit: Int): [Post!]! }
+      type Query { user(id: ID!): User }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser {
+        user(id: "1") {
+          recentPosts: posts(limit: 5) {
+            id
+          }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: nestedSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: nestedSchema,
+    })._unsafeUnwrap();
+
+    // Object field with alias and args should include both
+    expect(output).toContain('...f.posts({ limit: 5 }, { alias: "recentPosts" })(({ f }) => ({');
+  });
+
+  it("handles alias with same name as another field (duplicate field name scenario)", () => {
+    // This is the exact scenario from the bug: alias causes duplicate property names
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser {
+        user(id: "123") {
+          uniqueId: id
+          id
+          name
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
+
+    // Should NOT have duplicate 'id' properties
+    // The aliased field should use alias, the non-aliased should use shorthand
+    expect(output).toContain('...f.id(null, { alias: "uniqueId" })');
+    expect(output).toContain("id: true");
+    expect(output).toContain("name: true");
+
+    // Verify no duplicate by checking the output can be parsed as valid TypeScript
+    // (indirectly verified by the distinct patterns above)
+  });
+
+  it("emits fragment with aliased fields", () => {
+    const { fragments } = parseAndTransform(`
+      fragment UserFields on User {
+        uniqueId: id
+        displayName: name
+      }
+    `);
+
+    const output = emitFragment(fragments[0]!, defaultOptions)._unsafeUnwrap();
+
+    expect(output).toContain('...f.id(null, { alias: "uniqueId" })');
+    expect(output).toContain('...f.name(null, { alias: "displayName" })');
+  });
+});
+
 describe("Custom root type names (Hasura-style)", () => {
   it("coerces object to list with query_root", () => {
     const hasuraSchema = parse(`
