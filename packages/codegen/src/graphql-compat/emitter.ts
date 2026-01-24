@@ -473,6 +473,14 @@ const emitObjectWithType = (
   for (const f of value.fields) {
     // Look up field type from input object definition
     const fieldType = getInputFieldType(schema, inputTypeName, f.name);
+    if (fieldType === null) {
+      return err({
+        code: "GRAPHQL_UNKNOWN_FIELD",
+        message: `Unknown field "${f.name}" on input type "${inputTypeName}"`,
+        typeName: inputTypeName,
+        fieldName: f.name,
+      });
+    }
 
     const result = emitValueWithType(f.value, fieldType, variableNames, schema);
     if (result.isErr()) {
