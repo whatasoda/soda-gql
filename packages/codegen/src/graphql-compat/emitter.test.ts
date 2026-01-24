@@ -1196,3 +1196,94 @@ describe("Literal Value List Coercion", () => {
     expect(output).toContain('items: [{ tags: ["single-tag"] }]');
   });
 });
+
+describe("Custom root type names (Hasura-style)", () => {
+  it("coerces object to list with query_root", () => {
+    const hasuraSchema = parse(`
+      schema { query: query_root }
+      input order_by_input { field: order_direction }
+      enum order_direction { asc desc }
+      type Item { id: ID! }
+      type query_root { items(order_by: [order_by_input!]): [Item!]! }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      query GetItems {
+        items(order_by: { field: desc }) { id }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: hasuraSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: hasuraSchema,
+    })._unsafeUnwrap();
+
+    // Object should be wrapped in array due to list coercion
+    expect(output).toContain('order_by: [{ field: "desc" }]');
+  });
+
+  it("coerces scalar to list in input object with mutation_root", () => {
+    const hasuraSchema = parse(`
+      schema { mutation: mutation_root }
+      input CreateItemInput { tags: [String!] }
+      type CreateResult { id: ID! }
+      type mutation_root { createItem(input: CreateItemInput!): CreateResult }
+    `);
+    const parsed = parseGraphqlSource(
+      `
+      mutation CreateItem {
+        createItem(input: { tags: "single-tag" }) { id }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, { schemaDocument: hasuraSchema })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: hasuraSchema,
+    })._unsafeUnwrap();
+
+    // Scalar should be wrapped in array inside input object
+    expect(output).toContain('input: { tags: ["single-tag"] }');
+  });
+
+  it("coerces with both query_root and mutation_root in same schema", () => {
+    const hasuraSchema = parse(`
+      schema { query: query_root, mutation: mutation_root }
+      input FilterInput { ids: [ID!] }
+      input UpdateInput { values: [Int!] }
+      type Item { id: ID! }
+      type UpdateResult { success: Boolean! }
+      type query_root { items(filter: FilterInput): [Item!]! }
+      type mutation_root { update(input: UpdateInput!): UpdateResult }
+    `);
+
+    // Test query
+    const queryParsed = parseGraphqlSource(
+      `query GetItems { items(filter: { ids: "single-id" }) { id } }`,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations: queryOps } = transformParsedGraphql(queryParsed, { schemaDocument: hasuraSchema })._unsafeUnwrap();
+    const queryOutput = emitOperation(queryOps[0]!, {
+      ...defaultOptions,
+      schemaDocument: hasuraSchema,
+    })._unsafeUnwrap();
+    expect(queryOutput).toContain('filter: { ids: ["single-id"] }');
+
+    // Test mutation
+    const mutationParsed = parseGraphqlSource(
+      `mutation Update { update(input: { values: 42 }) { success } }`,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations: mutationOps } = transformParsedGraphql(mutationParsed, { schemaDocument: hasuraSchema })._unsafeUnwrap();
+    const mutationOutput = emitOperation(mutationOps[0]!, {
+      ...defaultOptions,
+      schemaDocument: hasuraSchema,
+    })._unsafeUnwrap();
+    expect(mutationOutput).toContain("input: { values: [42] }");
+  });
+});
