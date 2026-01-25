@@ -431,19 +431,15 @@ const outputKindToChar = (kind: "scalar" | "enum" | "union" | "object" | "exclud
 };
 
 /**
- * Render arguments as a comma-separated list of deferred specifiers.
- * Format: "argName:kindChar|typeName|modifier,..."
+ * Render arguments as inline strings for inclusion in deferred specifier.
+ * Format: ["argName:k|T|M", "argName2:k|T|M", ...]
  */
-const renderDeferredArgumentList = (
+const renderInlineArguments = (
   schema: SchemaIndex,
-  args: readonly InputValueDefinitionNode[] | undefined,
+  args: readonly InputValueDefinitionNode[],
   excluded: Set<string>,
-): string => {
-  if (!args || args.length === 0) {
-    return "";
-  }
-
-  const argSpecs = [...args]
+): string[] => {
+  return [...args]
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
     .map((arg) => {
       const { name, modifier } = parseTypeReference(arg.type);
@@ -464,8 +460,6 @@ const renderDeferredArgumentList = (
       return `${arg.name.value}:${kindChar}|${name}|${modifier}${defaultSuffix}`;
     })
     .filter((spec): spec is string => spec !== null);
-
-  return argSpecs.length > 0 ? `|${argSpecs.join(",")}` : "";
 };
 
 const renderArgumentMap = (
@@ -507,10 +501,19 @@ const renderOutputRef = (
     kind = "scalar"; // fallback for unknown types
   }
 
-  // Generate deferred string specifier format: "{kindChar}|{name}|{modifier}[|args]"
   const kindChar = outputKindToChar(kind);
-  const argsList = renderDeferredArgumentList(schema, args, excluded);
-  return `"${kindChar}|${name}|${modifier}${argsList}"`;
+
+  // Build inline arguments string if present
+  // Format: "kind|name|modifier|arg1:k|T|M,arg2:k|T|M"
+  let argsStr = "";
+  if (args && args.length > 0) {
+    const argParts = renderInlineArguments(schema, args, excluded);
+    if (argParts.length > 0) {
+      argsStr = `|${argParts.join(",")}`;
+    }
+  }
+
+  return `"${kindChar}|${name}|${modifier}${argsStr}"`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {

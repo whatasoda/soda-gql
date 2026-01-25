@@ -5,7 +5,12 @@
  * for runtime operations that need to access specifier properties.
  */
 
-import type { InputTypeKind, OutputTypeKind } from "../types/type-foundation/type-specifier";
+import type {
+  DeferredOutputField,
+  DeferredOutputFieldWithArgs,
+  InputTypeKind,
+  OutputTypeKind,
+} from "../types/type-foundation/type-specifier";
 
 export type ParsedInputSpecifier = {
   kind: InputTypeKind;
@@ -135,4 +140,46 @@ function splitArguments(argsStr: string): string[] {
   }
 
   return result;
+}
+
+// ============================================================
+// Field Specifier Parsing (handles both string and object formats)
+// ============================================================
+
+/**
+ * Type guard to check if a field specifier has extracted arguments.
+ *
+ * @example
+ * isFieldWithArgs("o|User|!")  // false
+ * isFieldWithArgs({ spec: "o|User|!", arguments: { id: "s|ID|!" } })  // true
+ */
+export function isFieldWithArgs(field: DeferredOutputField): field is DeferredOutputFieldWithArgs {
+  return typeof field === "object" && field !== null && "spec" in field;
+}
+
+/**
+ * Parse a field specifier (either format) into a structured object.
+ * Handles both legacy inline format and new object format.
+ *
+ * @example
+ * // Legacy inline format
+ * parseOutputField("o|User|!|id:s|ID|!")
+ * // { kind: "object", name: "User", modifier: "!", arguments: { id: "s|ID|!" } }
+ *
+ * // New object format
+ * parseOutputField({ spec: "o|User|!", arguments: { id: "s|ID|!" } })
+ * // { kind: "object", name: "User", modifier: "!", arguments: { id: "s|ID|!" } }
+ *
+ * // Simple string (no arguments)
+ * parseOutputField("s|String|!")
+ * // { kind: "scalar", name: "String", modifier: "!", arguments: {} }
+ */
+export function parseOutputField(field: DeferredOutputField): ParsedOutputSpecifier {
+  if (isFieldWithArgs(field)) {
+    // New object format - arguments already extracted
+    const spec = parseOutputSpecifier(field.spec);
+    return { ...spec, arguments: field.arguments };
+  }
+  // Legacy string format - parse inline arguments
+  return parseOutputSpecifier(field);
 }

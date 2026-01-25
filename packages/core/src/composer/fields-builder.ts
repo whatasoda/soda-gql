@@ -12,9 +12,9 @@ import type {
 } from "../types/element";
 import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
-import type { DeferredOutputSpecifier } from "../types/type-foundation";
+import type { DeferredOutputField, DeferredOutputSpecifier } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
-import { parseOutputSpecifier } from "../utils/deferred-specifier-parser";
+import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
@@ -77,7 +77,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
 
   const entries = Object.entries(typeDef.fields).map(([fieldName, typeSpecifier]): [string, AnyFieldSelectionFactory] => {
     // Parse the deferred output specifier string
-    const parsedType = parseOutputSpecifier(typeSpecifier as string);
+    const parsedType = parseOutputField(typeSpecifier as DeferredOutputField);
 
     const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
       fieldArgs: AnyFieldSelection["args"] | null | void,

@@ -45,7 +45,7 @@ import type {
   VariableDefinitions,
 } from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
-import { parseInputSpecifier, parseOutputSpecifier, type ParsedInputSpecifier } from "../utils/deferred-specifier-parser";
+import { parseInputSpecifier, parseOutputField, type ParsedInputSpecifier } from "../utils/deferred-specifier-parser";
 
 /**
  * Context for determining if a value should be output as an enum.
@@ -330,7 +330,7 @@ const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeNam
     const selection = isShorthand(value) ? expandShorthand(schema, typeName!, alias) : value;
 
     const { args, field, object, union, directives, type } = selection;
-    const parsedType = parseOutputSpecifier(type);
+    const parsedType = parseOutputField(type);
     const builtDirectives = buildDirectives(directives, "FIELD", schema);
     return {
       kind: Kind.FIELD,

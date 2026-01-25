@@ -11,7 +11,8 @@ import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { InputDepthOverrides, InputTypeSpecifiers, TypeModifier, VariableDefinitions } from "../types/type-foundation";
-import { parseInputSpecifier, parseOutputSpecifier } from "../utils/deferred-specifier-parser";
+import type { DeferredOutputField } from "../types/type-foundation";
+import { parseInputSpecifier, parseOutputField } from "../utils/deferred-specifier-parser";
 
 /**
  * Formatters for customizing type name output.
@@ -273,8 +274,8 @@ export const calculateFieldType = (
   selection: AnyFieldSelection,
   formatters?: TypeFormatters,
 ): string => {
-  // Parse the deferred output specifier
-  const parsedType = parseOutputSpecifier(selection.type as string);
+  // Parse the deferred output specifier (handles both string and object formats)
+  const parsedType = parseOutputField(selection.type as DeferredOutputField);
 
   // Handle __typename field specially - return literal type name
   if (selection.field === "__typename") {

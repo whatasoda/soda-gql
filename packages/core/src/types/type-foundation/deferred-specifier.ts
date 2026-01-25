@@ -231,6 +231,8 @@ type ParseArgListAsDeferred<S extends string> =
  * Extract arguments from output specifier as InputTypeSpecifiers (deferred strings).
  * Returns a record of deferred input specifier strings, not parsed objects.
  *
+ * @deprecated Use GetFieldArguments for new code (handles both inline and object formats)
+ *
  * @example
  * GetSpecArguments<"o|users|!|limit:s|Int|?,offset:s|Int|?">
  * // { limit: "s|Int|?"; offset: "s|Int|?" }
@@ -241,3 +243,66 @@ export type GetSpecArguments<S extends string> =
       ? ParseArgListAsDeferred<StripDefaultSuffix<Args>>
       : {}
     : {};
+
+// ============================================================
+// Field Specifier Utilities (Handles both string and object formats)
+// ============================================================
+
+import type { DeferredOutputField, DeferredOutputFieldWithArgs, DeferredOutputSpecifier, InputTypeSpecifiers } from "./type-specifier";
+
+/**
+ * Extract the spec string from a field specifier.
+ * Handles both simple string format and object format with arguments.
+ *
+ * @example
+ * GetFieldSpec<"o|User|!">
+ * // "o|User|!"
+ *
+ * GetFieldSpec<{ spec: "o|User|!", arguments: { id: "s|ID|!" } }>
+ * // "o|User|!"
+ */
+export type GetFieldSpec<T extends DeferredOutputField> =
+  T extends DeferredOutputSpecifier
+    ? T
+    : T extends DeferredOutputFieldWithArgs
+      ? T["spec"]
+      : never;
+
+/**
+ * Extract arguments from a field specifier.
+ * Handles both inline string format (legacy) and object format (new).
+ *
+ * @example
+ * // Legacy inline format
+ * GetFieldArguments<"o|User|!|id:s|ID|!">
+ * // { id: "s|ID|!" }
+ *
+ * // New object format
+ * GetFieldArguments<{ spec: "o|User|!", arguments: { id: "s|ID|!" } }>
+ * // { id: "s|ID|!" }
+ *
+ * // No arguments
+ * GetFieldArguments<"o|User|!">
+ * // {}
+ */
+export type GetFieldArguments<T extends DeferredOutputField> =
+  T extends DeferredOutputSpecifier
+    ? GetSpecArguments<T>  // Parse inline arguments (backward compat)
+    : T extends { arguments: infer A extends InputTypeSpecifiers }
+      ? A
+      : {};
+
+/**
+ * Parse a field specifier to structured output type.
+ * Handles both string and object formats.
+ */
+export type ParseFieldSpec<T extends DeferredOutputField> =
+  T extends DeferredOutputSpecifier
+    ? ParseDeferredOutputSpec<T>
+    : T extends DeferredOutputFieldWithArgs
+      ? ParseDeferredOutputSpec<T["spec"]> extends infer Base
+        ? Base extends { kind: infer K; name: infer N; modifier: infer M }
+          ? { readonly kind: K; readonly name: N; readonly modifier: M; readonly arguments: T["arguments"] }
+          : never
+        : never
+      : never;
