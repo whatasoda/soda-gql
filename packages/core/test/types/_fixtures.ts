@@ -86,7 +86,7 @@ export const nestedSchema = {
   label: "nested" as const,
   operations: defineOperationRoots({
     query: "Query",
-    mutation: null,
+    mutation: "Mutation",
     subscription: "Subscription",
   }),
   scalar: {
@@ -131,6 +131,7 @@ export const nestedSchema = {
       text: unsafeOutputType.scalar("String:!", {}),
       author: unsafeOutputType.object("User:!", {}),
     }),
+    Mutation: define("Mutation").object({}),
     Subscription: define("Subscription").object({}),
   },
   union: {},
