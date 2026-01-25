@@ -1,4 +1,5 @@
 export * from "./const-value";
+export * from "./deferred-specifier";
 export * from "./depth-counter";
 export * from "./directive-ref";
 export * from "./modified-type-name";

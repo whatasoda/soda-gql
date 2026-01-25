@@ -21,7 +21,7 @@ const createMockSchema = (label: string): AnyGraphqlSchema =>
     enum: {},
     input: {},
     object: {
-      Query: { name: "Query", fields: { __typename: { kind: "typename", name: "Query", modifier: "!", arguments: {} } } },
+      Query: { name: "Query", fields: { __typename: "s|Query|!" } },
     },
     union: {},
   }) as unknown as AnyGraphqlSchema;
@@ -216,7 +216,7 @@ describe("emitPrebuiltTypes", () => {
               id: {
                 parent: "User",
                 field: "id",
-                type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+                type: "s|ID|!",
                 args: {},
                 directives: [],
                 object: null,
@@ -261,7 +261,7 @@ describe("emitPrebuiltTypes", () => {
               id: {
                 parent: "User",
                 field: "id",
-                type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+                type: "s|ID|!",
                 args: {},
                 directives: [],
                 object: null,
@@ -356,7 +356,7 @@ describe("emitPrebuiltTypes", () => {
               id: {
                 parent: "User",
                 field: "id",
-                type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+                type: "s|ID|!",
                 args: {},
                 directives: [],
                 object: null,
@@ -364,7 +364,7 @@ describe("emitPrebuiltTypes", () => {
               },
             },
             variableDefinitions: {
-              userId: { kind: "scalar", name: "ID", modifier: "!" },
+              userId: { kind: "scalar", name: "ID", modifier: "!", defaultValue: null, directives: {} },
             },
           } as FieldSelectionData,
         ],
@@ -416,14 +416,14 @@ describe("emitPrebuiltTypes", () => {
               user: {
                 parent: "Query",
                 field: "user",
-                type: { kind: "object", name: "User", modifier: "?", arguments: {} },
+                type: "o|User|?",
                 args: {},
                 directives: [],
                 object: {
                   id: {
                     parent: "User",
                     field: "id",
-                    type: { kind: "scalar", name: "ID", modifier: "!", arguments: {} },
+                    type: "s|ID|!",
                     args: {},
                     directives: [],
                     object: null,
@@ -472,7 +472,7 @@ describe("emitPrebuiltTypes", () => {
               user: {
                 parent: "Query",
                 field: "user",
-                type: { kind: "object", name: "User", modifier: "?", arguments: {} },
+                type: "o|User|?",
                 args: {},
                 directives: [],
                 object: null,
@@ -611,7 +611,7 @@ describe("emitPrebuiltTypes", () => {
             CreateUserInput: {
               name: "CreateUserInput",
               fields: {
-                name: { kind: "scalar", name: "String", modifier: "!", defaultValue: null },
+                name: "s|String|!",
               },
             },
           },

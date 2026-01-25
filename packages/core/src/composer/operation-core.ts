@@ -15,7 +15,7 @@ import type {
   OperationDocumentTransformer,
 } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { InputTypeSpecifiers } from "../types/type-foundation";
+import type { VariableDefinitions } from "../types/type-foundation";
 
 import { isPromiseLike } from "../utils/promise";
 import { buildDocument } from "./build-document";
@@ -31,7 +31,7 @@ export type OperationCoreParams<
   TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
@@ -71,7 +71,7 @@ export type OperationCoreParams<
 export type OperationArtifactResult<
   TOperationType extends OperationType,
   TOperationName extends string,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TFields extends AnyFieldsExtended,
   TOperationMetadata,
 > = {
@@ -103,7 +103,7 @@ export const buildOperationArtifact = <
   TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
-  TVarDefinitions extends InputTypeSpecifiers,
+  TVarDefinitions extends VariableDefinitions,
   TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,

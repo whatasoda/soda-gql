@@ -11,7 +11,7 @@ import {
   VarRef,
 } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { AnyVarRef, InputTypeSpecifiers, NestedValue } from "../types/type-foundation";
+import type { AnyVarRef, NestedValue, VariableDefinitions } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 
 /**
@@ -25,7 +25,7 @@ import { mapValues } from "../utils/map-values";
  *
  * @internal
  */
-export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends InputTypeSpecifiers>(
+export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends VariableDefinitions>(
   definitions: TVariableDefinitions,
   providedValues: AnyAssignableInput | void,
 ): DeclaredVariables<TSchema, TVariableDefinitions> => {
@@ -52,10 +52,10 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
  *
  * @internal
  */
-export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends InputTypeSpecifiers>(
+export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends VariableDefinitions>(
   definitions: TVarDefinitions,
 ) =>
-  mapValues(definitions as InputTypeSpecifiers, (_, name): AnyVarRef => createVarRefFromVariable(name)) as DeclaredVariables<
+  mapValues(definitions as VariableDefinitions, (_, name): AnyVarRef => createVarRefFromVariable(name)) as DeclaredVariables<
     TSchema,
     TVarDefinitions
   >;

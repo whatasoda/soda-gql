@@ -1,6 +1,6 @@
 /** Utilities for computing type-safe field path selectors. */
 
-import type { AnyFields, AnyNestedObject } from "@soda-gql/core";
+import type { AnyFieldsExtended, AnyNestedObjectExtended } from "@soda-gql/core";
 
 export type AnyFieldPath = string;
 
@@ -15,12 +15,13 @@ type DecrementDepth<D extends readonly unknown[]> = D extends readonly [unknown,
  * slice result transforms can reference response paths safely.
  *
  * Note: TSchema is not needed - only uses TFields.object for nesting.
+ * Supports both factory-style fields and shorthand syntax (true).
  */
-export type AvailableFieldPathOf<TFields extends AnyFields> = AvailableFieldPathsInner<TFields, "$", MaxDepth>;
+export type AvailableFieldPathOf<TFields extends AnyFieldsExtended> = AvailableFieldPathsInner<TFields, "$", MaxDepth>;
 
 /** Recursive helper used to build path strings for nested selections. */
 type AvailableFieldPathsInner<
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
   TCurr extends AnyFieldPath,
   TDepth extends readonly unknown[],
 > = TDepth extends readonly []
@@ -29,7 +30,7 @@ type AvailableFieldPathsInner<
       readonly [TAliasName in keyof TFields]-?: TAliasName extends string
         ?
             | `${TCurr}.${TAliasName}`
-            | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObject }
+            | (TFields[TAliasName] extends { object: infer TNested extends AnyNestedObjectExtended }
                 ? AvailableFieldPathsInner<TNested, `${TCurr}.${TAliasName}`, DecrementDepth<TDepth>>
                 : never)
         : never;

@@ -323,8 +323,8 @@ describe("generateMultiSchemaModule", () => {
     const inputCode = inputDef?.code ?? "";
     expect(inputCode).toContain('name: "CreateUserInput", fields:');
     expect(inputCode).toContain("} as const");
-    // Inline specifier format with explicit kind
-    expect(inputCode).toContain('name: { kind: "scalar", name: "String", modifier: "!"');
+    // Deferred specifier format
+    expect(inputCode).toContain('"s|String|!"');
     expect(result.stats.inputs).toBe(1);
   });
 
@@ -464,14 +464,15 @@ describe("generateMultiSchemaModule", () => {
     const queryObjectDef = result.categoryVars?.default?.objects.find((o) => o.name.includes("Query"));
     expect(queryObjectDef).toBeDefined();
 
-    // Object code should contain type modifiers in inline specifiers
+    // Object code should contain type modifiers in deferred specifier format
     const objectCode = queryObjectDef?.code ?? "";
-    expect(objectCode).toContain('modifier: "!"');
-    expect(objectCode).toContain('modifier: "?"');
-    expect(objectCode).toContain('modifier: "![]!"');
-    expect(objectCode).toContain('modifier: "![]?"');
-    expect(objectCode).toContain('modifier: "?[]!"');
-    expect(objectCode).toContain('modifier: "![]![]!"');
+    // Deferred specifiers contain modifiers at the end after the second |
+    expect(objectCode).toContain('|!"'); // Required scalar
+    expect(objectCode).toContain('|?"'); // Optional scalar
+    expect(objectCode).toContain('|![]!"'); // Required list of required
+    expect(objectCode).toContain('|![]?"'); // Optional list of required
+    expect(objectCode).toContain('|?[]!"'); // Required list of optional
+    expect(objectCode).toContain('|![]![]!"'); // Nested list
   });
 
   test("generates sorted field definitions", () => {
@@ -672,12 +673,12 @@ describe("generateMultiSchemaModule", () => {
 
     // Should use createTypedDirectiveMethod for directives with arguments
     expect(result.code).toContain('auth: createTypedDirectiveMethod("auth", ["FIELD"] as const,');
-    expect(result.code).toContain('role: { kind: "scalar", name: "String", modifier: "!" }');
+    expect(result.code).toContain('role: "s|String|!"');
 
-    // Should include enum type in argument specifiers
+    // Should include enum type in argument specifiers (deferred string format)
     expect(result.code).toContain('cached: createTypedDirectiveMethod("cached", ["FIELD","OBJECT"] as const,');
-    expect(result.code).toContain('scope: { kind: "enum", name: "CacheScope", modifier: "?"');
-    expect(result.code).toContain('ttl: { kind: "scalar", name: "Int", modifier: "!" }');
+    expect(result.code).toContain('scope: "e|CacheScope|?"');
+    expect(result.code).toContain('ttl: "s|Int|!"');
 
     // Should pass directiveMethods to createGqlElementComposer
     expect(result.code).toContain("directiveMethods: customDirectives_default");

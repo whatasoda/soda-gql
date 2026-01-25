@@ -37,7 +37,7 @@ const schema = {
     User: define("User").object({
       id: unsafeOutputType.scalar("ID:!", {}),
       name: unsafeOutputType.scalar("String:!", {}),
-      email: unsafeOutputType.scalar("String:", {}),
+      email: unsafeOutputType.scalar("String:?", {}),
     }),
   },
   union: {},

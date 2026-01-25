@@ -5,8 +5,8 @@
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { AnyFieldsExtended, InferFieldsExtended } from "../fragment";
-import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInput, OperationType } from "../schema";
-import type { InputTypeSpecifiers } from "../type-foundation";
+import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInputFromVarDefs, OperationType } from "../schema";
+import type { VariableDefinitions } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
 /**
@@ -144,7 +144,7 @@ export class Operation<
     TSchema extends AnyGraphqlSchema,
     TOperationType extends OperationType,
     TOperationName extends string,
-    TVariableDefinitions extends InputTypeSpecifiers,
+    TVariableDefinitions extends VariableDefinitions,
     TFields extends AnyFieldsExtended,
   >(
     define: (context: GqlElementContext | null) =>
@@ -156,7 +156,7 @@ export class Operation<
           documentSource: () => TFields;
           document: TypedDocumentNode<
             InferFieldsExtended<TSchema, TSchema["operations"][TOperationType] & keyof TSchema["object"] & string, TFields>,
-            ConstAssignableInput<TSchema, TVariableDefinitions>
+            ConstAssignableInputFromVarDefs<TSchema, TVariableDefinitions>
           >;
           metadata?: unknown;
         }
@@ -168,7 +168,7 @@ export class Operation<
           documentSource: () => TFields;
           document: TypedDocumentNode<
             InferFieldsExtended<TSchema, TSchema["operations"][TOperationType] & keyof TSchema["object"] & string, TFields>,
-            ConstAssignableInput<TSchema, TVariableDefinitions>
+            ConstAssignableInputFromVarDefs<TSchema, TVariableDefinitions>
           >;
           metadata?: unknown;
         }>,

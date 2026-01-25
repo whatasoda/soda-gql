@@ -1,17 +1,16 @@
 import type { WithTypeMeta } from "../../utils/type-meta";
 import type {
-  AnyDefaultValue,
   DecrementDepth,
+  DeferredInputSpecifier,
+  DeferredOutputInferrableSpecifier,
+  DeferredOutputSpecifier,
   DepthCounter,
   GetInputTypeDepth,
+  GetSpecModifier,
+  GetSpecName,
   InputDepthOverrides,
-  InputEnumSpecifier,
-  InputScalarSpecifier,
-  InputTypeSpecifier,
   InputTypeSpecifiers,
   IsDepthExhausted,
-  OutputInferrableTypeSpecifier,
-  OutputScalarSpecifier,
   OutputTypeSpecifiers,
   OutputUnionSpecifier,
   TypeModifier,
@@ -118,7 +117,7 @@ export type UnionDefinition = {
  * Infers a TypeProfile from an input type specifier.
  *
  * @typeParam TSchema - The GraphQL schema
- * @typeParam TSpecifier - The input type specifier to infer from
+ * @typeParam TSpecifier - The deferred input specifier string
  * @typeParam TDepth - Depth counter to limit recursion (default from schema overrides or schema default or 3 levels)
  *
  * When depth is exhausted, returns `never` to cause a type error.
@@ -126,40 +125,54 @@ export type UnionDefinition = {
  */
 export type InferInputProfile<
   TSchema extends AnyGraphqlSchema,
-  TSpecifier extends InputTypeSpecifier,
+  TSpecifier extends DeferredInputSpecifier,
   TDepth extends DepthCounter = GetInputTypeDepth<
     TSchema["__inputDepthOverrides"],
-    TSpecifier["name"],
+    GetSpecName<TSpecifier>,
     TSchema["__defaultInputDepth"]
   >,
 > = {
   [_ in TSchema["label"]]: IsDepthExhausted<TDepth> extends true
     ? never
-    : [
-        TSpecifier extends InputScalarSpecifier
-          ? TSchema["scalar"][TSpecifier["name"]]["$type"]["inputProfile"]
-          : TSpecifier extends InputEnumSpecifier
-            ? TSchema["enum"][TSpecifier["name"]]["$type"]["inputProfile"]
-            : TSchema["input"][TSpecifier["name"]]["fields"] extends infer TFields
-              ? {
+    : // Use direct pattern matching for proper type narrowing
+      // Note: GetSpecModifier extracts the modifier and strips any |D suffix
+      TSpecifier extends `s|${infer TName extends string}|${string}`
+      ? [
+          TSchema["scalar"][TName]["$type"]["inputProfile"],
+          GetSpecModifier<TSpecifier>,
+          TSpecifier extends `${string}|D` ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+        ]
+      : TSpecifier extends `e|${infer TName extends string}|${string}`
+        ? [
+            TSchema["enum"][TName]["$type"]["inputProfile"],
+            GetSpecModifier<TSpecifier>,
+            TSpecifier extends `${string}|D` ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+          ]
+        : TSpecifier extends `i|${infer TName extends string}|${string}`
+          ? TSchema["input"][TName]["fields"] extends infer TFields
+            ? [
+                {
                   kind: "input";
-                  name: TSpecifier["name"];
+                  name: TName;
                   fields: {
-                    [K in keyof TFields]: TFields[K] extends InputTypeSpecifier
+                    [K in keyof TFields]: TFields[K] extends DeferredInputSpecifier
                       ? InferInputProfile<TSchema, TFields[K], DecrementDepth<TDepth>>
                       : never;
                   };
-                }
-              : never,
-        TSpecifier["modifier"],
-        TSpecifier["defaultValue"] extends AnyDefaultValue ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
-      ];
+                },
+                GetSpecModifier<TSpecifier>,
+                TSpecifier extends `${string}|D` ? TypeProfile.WITH_DEFAULT_INPUT : undefined,
+              ]
+            : never
+          : never;
 }[TSchema["label"]];
 
-export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputInferrableTypeSpecifier> = {
-  [_ in TSchema["label"]]: (TSpecifier extends OutputScalarSpecifier
-    ? TSchema["scalar"][TSpecifier["name"]]
-    : TSchema["enum"][TSpecifier["name"]])["$type"]["outputProfile"];
+export type InferOutputProfile<TSchema extends AnyGraphqlSchema, TSpecifier extends DeferredOutputInferrableSpecifier> = {
+  [_ in TSchema["label"]]: TSpecifier extends `s|${infer TName extends string}|${string}`
+    ? TSchema["scalar"][TName]["$type"]["outputProfile"]
+    : TSpecifier extends `e|${infer TName extends string}|${string}`
+      ? TSchema["enum"][TName]["$type"]["outputProfile"]
+      : never;
 }[TSchema["label"]];
 
 export type PickTypeSpecifierByFieldName<
@@ -170,8 +183,8 @@ export type PickTypeSpecifierByFieldName<
 
 export type InputFieldRecord<
   TSchema extends AnyGraphqlSchema,
-  TSpecifier extends InputTypeSpecifier,
-> = TSchema["input"][TSpecifier["name"]]["fields"];
+  TSpecifier extends DeferredInputSpecifier,
+> = TSpecifier extends `i|${infer TName extends string}|${string}` ? TSchema["input"][TName]["fields"] : never;
 
 export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
   readonly [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
@@ -181,11 +194,14 @@ export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TSpecifier extends
   readonly [TTypeName in UnionMemberName<TSchema, TSpecifier>]: TSchema["object"][TTypeName];
 };
 
-export type UnionMemberName<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputUnionSpecifier> = Extract<
-  keyof TSchema["object"],
-  keyof TSchema["union"][TSpecifier["name"]]["types"]
-> &
-  string;
+export type UnionMemberName<
+  TSchema extends AnyGraphqlSchema,
+  TSpecifier extends OutputUnionSpecifier | DeferredOutputSpecifier,
+> = TSpecifier extends { name: infer TName extends string }
+  ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
+  : TSpecifier extends `u|${infer TName extends string}|${string}`
+    ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
+    : never;
 
 /**
  * Union of all input type names in a schema (scalars, enums, and input objects).
@@ -225,34 +241,7 @@ export type ResolveInputProfileFromMeta<
   TKind extends "scalar" | "enum" | "input",
   TModifier extends TypeModifier,
 > = TKind extends "scalar"
-  ? InferInputProfile<
-      TSchema,
-      {
-        kind: "scalar";
-        name: TTypeName;
-        modifier: TModifier;
-        defaultValue: null;
-        directives: {};
-      }
-    >
+  ? InferInputProfile<TSchema, `s|${TTypeName}|${TModifier}`>
   : TKind extends "enum"
-    ? InferInputProfile<
-        TSchema,
-        {
-          kind: "enum";
-          name: TTypeName;
-          modifier: TModifier;
-          defaultValue: null;
-          directives: {};
-        }
-      >
-    : InferInputProfile<
-        TSchema,
-        {
-          kind: "input";
-          name: TTypeName;
-          modifier: TModifier;
-          defaultValue: null;
-          directives: {};
-        }
-      >;
+    ? InferInputProfile<TSchema, `e|${TTypeName}|${TModifier}`>
+    : InferInputProfile<TSchema, `i|${TTypeName}|${TModifier}`>;

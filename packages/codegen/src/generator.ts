@@ -368,12 +368,29 @@ const renderConstValue = (value: ConstValueNode): string => {
   }
 };
 
+/**
+ * Maps type kind to deferred specifier prefix character.
+ */
+const inputKindToChar = (kind: "scalar" | "enum" | "input" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "input":
+      return "i";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
+  }
+};
+
 const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
   const { name, modifier } = parseTypeReference(definition.type);
   const defaultValue = definition.defaultValue;
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
+    // Excluded types still use structured format for now (they're filtered out)
     if (defaultValue) {
       return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
     }
@@ -389,11 +406,60 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
     kind = "input";
   }
 
-  // Only include defaultValue when it has a value (reduces file size significantly)
-  if (defaultValue) {
-    return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
+  // Generate deferred string specifier format: "{kindChar}|{name}|{modifier}[|D]"
+  const kindChar = inputKindToChar(kind);
+  const defaultSuffix = defaultValue ? "|D" : "";
+  return `"${kindChar}|${name}|${modifier}${defaultSuffix}"`;
+};
+
+/**
+ * Maps output type kind to deferred specifier prefix character.
+ */
+const outputKindToChar = (kind: "scalar" | "enum" | "union" | "object" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "object":
+      return "o";
+    case "union":
+      return "u";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
   }
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}" }`;
+};
+
+/**
+ * Render arguments as object format for DeferredOutputFieldWithArgs.
+ * Returns array of "argName: \"spec\"" entries.
+ */
+const renderArgumentsObjectEntries = (
+  schema: SchemaIndex,
+  args: readonly InputValueDefinitionNode[],
+  excluded: Set<string>,
+): string[] => {
+  return [...args]
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => {
+      const { name, modifier } = parseTypeReference(arg.type);
+      // Skip excluded types - they shouldn't appear in field arguments
+      if (excluded.has(name)) {
+        return null;
+      }
+      let kind: "scalar" | "enum" | "input";
+      if (isScalarName(schema, name)) {
+        kind = "scalar";
+      } else if (isEnumName(schema, name)) {
+        kind = "enum";
+      } else {
+        kind = "input";
+      }
+      const kindChar = inputKindToChar(kind);
+      const defaultSuffix = arg.defaultValue ? "|D" : "";
+      return `${arg.name.value}: "${kindChar}|${name}|${modifier}${defaultSuffix}"`;
+    })
+    .filter((spec): spec is string => spec !== null);
 };
 
 const renderArgumentMap = (
@@ -415,10 +481,10 @@ const renderOutputRef = (
   excluded: Set<string>,
 ): string => {
   const { name, modifier } = parseTypeReference(type);
-  const argumentMap = renderArgumentMap(schema, args, excluded);
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
+    const argumentMap = renderArgumentMap(schema, args, excluded);
     return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
   }
 
@@ -435,7 +501,19 @@ const renderOutputRef = (
     kind = "scalar"; // fallback for unknown types
   }
 
-  return `{ kind: "${kind}", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
+  const kindChar = outputKindToChar(kind);
+  const spec = `${kindChar}|${name}|${modifier}`;
+
+  // Always use object format for consistency (avoids union type distribution issues)
+  if (args && args.length > 0) {
+    const argEntries = renderArgumentsObjectEntries(schema, args, excluded);
+    if (argEntries.length > 0) {
+      return `{ spec: "${spec}", arguments: { ${argEntries.join(", ")} } }`;
+    }
+  }
+
+  // Fields without arguments still use object format with empty arguments
+  return `{ spec: "${spec}", arguments: {} }`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -565,8 +643,38 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, exclude
 };
 
 /**
+ * Renders an input reference as a deferred string for directive arguments.
+ * Format: "{kindChar}|{name}|{modifier}"
+ */
+const renderDeferredDirectiveArgRef = (
+  schema: SchemaIndex,
+  definition: InputValueDefinitionNode,
+  excluded: Set<string>,
+): string | null => {
+  const { name, modifier } = parseTypeReference(definition.type);
+
+  // Skip excluded types
+  if (excluded.has(name)) {
+    return null;
+  }
+
+  let kind: "scalar" | "enum" | "input";
+  if (isScalarName(schema, name)) {
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else {
+    kind = "input";
+  }
+
+  const kindChar = inputKindToChar(kind);
+  return `"${kindChar}|${name}|${modifier}"`;
+};
+
+/**
  * Renders argument specifiers for a directive.
  * Returns null if the directive has no arguments.
+ * Uses deferred string format for consistency with other type specifiers.
  */
 const renderDirectiveArgsSpec = (
   schema: SchemaIndex,
@@ -577,7 +685,13 @@ const renderDirectiveArgsSpec = (
 
   const entries = Array.from(args.values())
     .sort((left, right) => left.name.value.localeCompare(right.name.value))
-    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg, excluded)}`);
+    .map((arg) => {
+      const ref = renderDeferredDirectiveArgRef(schema, arg, excluded);
+      return ref ? `${arg.name.value}: ${ref}` : null;
+    })
+    .filter((entry): entry is string => entry !== null);
+
+  if (entries.length === 0) return null;
 
   return renderPropertyLines({ entries, indentSize: 4 });
 };

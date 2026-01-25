@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType } from "../../test/utils/schema";
 import { defineScalar } from "../schema";
-import type { AssignableInput, DeclaredVariables } from "./fragment/assignable-input";
+import type { AssignableInputByFieldName, DeclaredVariables } from "./fragment/assignable-input";
 import type { AnyGraphqlSchema } from "./schema";
 import { createVarRefFromVariable } from "./type-foundation/var-ref";
 
@@ -42,36 +42,27 @@ const createTestSchema = () =>
       }),
     },
     object: {
-      Query: define("Query").object({
-        // Required ID argument
-        user: unsafeOutputType.object("User:?", {
-          arguments: {
-            id: unsafeInputType.scalar("ID:!", {}),
-          },
-        }),
-        // Optional ID argument
-        optionalUser: unsafeOutputType.object("User:?", {
-          arguments: {
-            id: unsafeInputType.scalar("ID:?", {}),
-          },
-        }),
-        // List argument
-        users: unsafeOutputType.object("User:![]!", {
-          arguments: {
-            ids: unsafeInputType.scalar("ID:![]?", {}),
-          },
-        }),
-        // String argument (for type mismatch tests)
-        userByName: unsafeOutputType.object("User:?", {
-          arguments: {
-            name: unsafeInputType.scalar("String:!", {}),
-          },
-        }),
-      }),
-      User: define("User").object({
-        id: unsafeOutputType.scalar("ID:!", {}),
-        name: unsafeOutputType.scalar("String:!", {}),
-      }),
+      // Use object format for field specifiers with arguments
+      Query: {
+        name: "Query" as const,
+        fields: {
+          // Required ID argument
+          user: { spec: "o|User|?", arguments: { id: "s|ID|!" } },
+          // Optional ID argument
+          optionalUser: { spec: "o|User|?", arguments: { id: "s|ID|?" } },
+          // List argument
+          users: { spec: "o|User|![]!", arguments: { ids: "s|ID|![]?" } },
+          // String argument (for type mismatch tests)
+          userByName: { spec: "o|User|?", arguments: { name: "s|String|!" } },
+        } as const,
+      },
+      User: {
+        name: "User" as const,
+        fields: {
+          id: { spec: "s|ID|!", arguments: {} },
+          name: { spec: "s|String|!", arguments: {} },
+        } as const,
+      },
     },
     union: {},
   }) satisfies AnyGraphqlSchema;
@@ -86,7 +77,7 @@ describe("Type error examples for documentation", () => {
 
       // This should compile: Required (!) -> Optional (?) is allowed
       // TypeScript's structural typing allows this because ! is a subtype of ?
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "optionalUser"> = {
         id: requiredIdVar,
       };
       expect(true).toBe(true);
@@ -103,7 +94,7 @@ describe("Type error examples for documentation", () => {
 
       // Optional (?) variable cannot be assigned to required (!) argument
       // Error includes: Type 'Signature_Optional' is not assignable to type 'Signature_Required'
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["user"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "user"> = {
         // @ts-expect-error
         id: $.id,
       };
@@ -122,7 +113,7 @@ describe("Type error examples for documentation", () => {
 
       // Int variable cannot be assigned to ID argument
       // Error includes: Type '"Int"' is not assignable to type '"ID"'
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["user"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "user"> = {
         // @ts-expect-error
         id: $.userId,
       };
@@ -138,7 +129,7 @@ describe("Type error examples for documentation", () => {
 
       // ID variable cannot be assigned to String argument
       // Error includes: Type '"ID"' is not assignable to type '"String"'
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["userByName"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "userByName"> = {
         // @ts-expect-error
         name: $.id,
       };
@@ -157,7 +148,7 @@ describe("Type error examples for documentation", () => {
 
       // Single ID (!) cannot be assigned to list argument ([ID!]?)
       // Error includes: Type 'Signature_Required' is not assignable to type 'Signature_RequiredList_Optional'
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["users"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "users"> = {
         // @ts-expect-error
         ids: $.id,
       };
@@ -173,7 +164,7 @@ describe("Type error examples for documentation", () => {
       const $ = { ids: createVarRefFromVariable("ids") } as unknown as ListIdVars;
 
       // This should compile: [ID!]? -> [ID!]? is allowed
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["users"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "users"> = {
         ids: $.ids,
       };
       expect(true).toBe(true);
@@ -185,13 +176,13 @@ describe("Type error examples for documentation", () => {
       // Required field 'id' is missing
       // Error includes: Property 'id' is missing in type '{}'
       // @ts-expect-error
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["user"]["arguments"]> = {};
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "user"> = {};
       expect(true).toBe(true);
     });
 
     it("allows omitting optional arguments", () => {
       // This should compile: optional arguments can be omitted
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["optionalUser"]["arguments"]> = {};
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "optionalUser"> = {};
       expect(true).toBe(true);
     });
   });
@@ -199,7 +190,7 @@ describe("Type error examples for documentation", () => {
   describe("Const value type mismatch", () => {
     it("rejects wrong const value type", () => {
       // number is not assignable to ID (string)
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["user"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "user"> = {
         // @ts-expect-error
         id: 123,
       };
@@ -208,7 +199,7 @@ describe("Type error examples for documentation", () => {
 
     it("accepts correct const value type", () => {
       // This should compile: string is assignable to ID
-      const _input: AssignableInput<TestSchema, TestSchema["object"]["Query"]["fields"]["user"]["arguments"]> = {
+      const _input: AssignableInputByFieldName<TestSchema, "Query", "user"> = {
         id: "user-123",
       };
       expect(true).toBe(true);

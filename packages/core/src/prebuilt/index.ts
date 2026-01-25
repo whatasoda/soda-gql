@@ -17,6 +17,7 @@ export {
   generateInputObjectType,
   generateInputType,
   generateInputTypeFromSpecifiers,
+  generateInputTypeFromVarDefs,
   getEnumType,
   getScalarInputType,
   getScalarOutputType,

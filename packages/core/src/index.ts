@@ -7,6 +7,8 @@ export { createVarRefFromVariable, VarRef } from "./types/fragment";
 export * from "./types/metadata";
 export type * from "./types/schema";
 export type * from "./types/type-foundation";
+export type { ParsedInputSpecifier, ParsedOutputSpecifier } from "./utils/deferred-specifier-parser";
+export { parseInputSpecifier, parseOutputSpecifier } from "./utils/deferred-specifier-parser";
 export type * from "./utils/empty-object";
 export type * from "./utils/hidden";
 export type * from "./utils/type-utils";

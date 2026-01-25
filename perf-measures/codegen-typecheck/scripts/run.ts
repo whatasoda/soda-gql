@@ -23,9 +23,10 @@ const ALL_MODES = [
   "branded",
   "looseConstraint",
   "noSatisfies",
+  "deferred",
 ] as const;
 
-type BenchMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies";
+type BenchMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies" | "deferred";
 
 type CompareMode = "none" | "previous" | "baseline";
 
@@ -82,6 +83,9 @@ function parseArgs(): RunOptions {
         break;
       case "--noSatisfies":
         options.mode = "noSatisfies";
+        break;
+      case "--deferred":
+        options.mode = "deferred";
         break;
       case "--all":
         options.mode = "all";

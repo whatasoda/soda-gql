@@ -8,7 +8,7 @@ import { generateDefsStructure } from "../../../packages/codegen/src/defs-genera
 const BENCH_DIR = path.join(import.meta.dirname, "..");
 const SCHEMA_PATH = path.join(BENCH_DIR, "../../playgrounds/hasura/schema.graphql");
 
-type GeneratorMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies";
+type GeneratorMode = "baseline" | "optimized" | "granular" | "precomputed" | "shallowInput" | "typedAssertion" | "branded" | "looseConstraint" | "noSatisfies" | "deferred";
 
 async function loadSchema(): Promise<ReturnType<typeof parse>> {
   const content = await fs.readFile(SCHEMA_PATH, "utf-8");
@@ -146,6 +146,13 @@ async function generateNoSatisfies(document: ReturnType<typeof parse>): Promise<
   return code;
 }
 
+async function generateDeferred(document: ReturnType<typeof parse>): Promise<GeneratedOutput> {
+  const { generateMultiSchemaModuleDeferred } = await import("./generator-deferred");
+  const schemas = new Map([["hasura", document]]);
+  const { code } = generateMultiSchemaModuleDeferred(schemas);
+  return { code };
+}
+
 async function main() {
   const mode = (process.argv[2] as GeneratorMode) || "baseline";
   const outputDir = path.join(BENCH_DIR, mode, "generated");
@@ -179,6 +186,9 @@ async function main() {
       break;
     case "noSatisfies":
       output = { code: await generateNoSatisfies(document) };
+      break;
+    case "deferred":
+      output = await generateDeferred(document);
       break;
     default:
       output = await generateBaseline(document);

@@ -11,7 +11,7 @@ import type {
   AllInputTypeNames,
   AnyConstDirectiveAttachments,
   AnyGraphqlSchema,
-  ConstAssignableInputValue,
+  ConstAssignableInputValueFromVarSpec,
   InferInputKind,
   ResolveInputProfileFromMeta,
 } from "../types/schema";
@@ -29,13 +29,15 @@ type AssignableDefaultValue<
   TKind extends CreatableInputTypeKind,
   TName extends string,
   TModifier extends TypeModifier,
-> = ConstAssignableInputValue<
+> = ConstAssignableInputValueFromVarSpec<
   TSchema,
   {
-    scalar: { kind: "scalar"; name: TName; modifier: TModifier; directives: {}; defaultValue: null };
-    enum: { kind: "enum"; name: TName; modifier: TModifier; directives: {}; defaultValue: null };
-    input: { kind: "input"; name: TName; modifier: TModifier; directives: {}; defaultValue: null };
-  }[TKind]
+    kind: TKind;
+    name: TName;
+    modifier: TModifier;
+    directives: {};
+    defaultValue: null;
+  }
 >;
 
 /**
@@ -43,7 +45,7 @@ type AssignableDefaultValue<
  *
  * Created by `$var.TypeName("modifier", { default?: ... })` calls.
  */
-export type VarSpecifier<
+export type GenericVarSpecifier<
   TKind extends CreatableInputTypeKind,
   TTypeName extends string,
   TModifier extends TypeModifier,
@@ -82,14 +84,14 @@ export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName 
       default?: TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>);
       directives?: TDirectives;
     },
-  ): VarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> =>
+  ): GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> =>
     ({
       kind,
       name: typeName,
       modifier,
       defaultValue: extras?.default ? { default: extras.default() } : null,
       directives: extras?.directives ?? {},
-    }) as VarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
+    }) as GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
 };
 
 /**
@@ -133,7 +135,7 @@ export type InputTypeMethod<TSchema extends AnyGraphqlSchema, TKind extends Crea
     default?: TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>);
     directives?: TDirectives;
   },
-) => VarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
+) => GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
 
 /**
  * Type for all input type methods in a schema.
@@ -160,7 +162,7 @@ type WrappedVarMethod<
     default?: TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>);
     directives?: TDirectives;
   },
-) => { [K in TVarName]: VarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> };
+) => { [K in TVarName]: GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> };
 
 /**
  * Type for the variable builder methods for a specific variable name.
