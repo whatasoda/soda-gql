@@ -25,7 +25,7 @@ export const basicSchema = {
   operations: defineOperationRoots({
     query: "Query",
     mutation: "Mutation",
-    subscription: null,
+    subscription: "Subscription",
   }),
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
@@ -56,6 +56,7 @@ export const basicSchema = {
         },
       }),
     }),
+    Subscription: define("Subscription").object({}),
     User: define("User").object({
       id: unsafeOutputType.scalar("ID:!", {}),
       name: unsafeOutputType.scalar("String:!", {}),
@@ -86,7 +87,7 @@ export const nestedSchema = {
   operations: defineOperationRoots({
     query: "Query",
     mutation: null,
-    subscription: null,
+    subscription: "Subscription",
   }),
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
@@ -130,6 +131,7 @@ export const nestedSchema = {
       text: unsafeOutputType.scalar("String:!", {}),
       author: unsafeOutputType.object("User:!", {}),
     }),
+    Subscription: define("Subscription").object({}),
   },
   union: {},
 } satisfies AnyGraphqlSchema;
@@ -150,8 +152,8 @@ export const unionSchema = {
   label: "union" as const,
   operations: defineOperationRoots({
     query: "Query",
-    mutation: null,
-    subscription: null,
+    mutation: "Mutation",
+    subscription: "Subscription",
   }),
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
@@ -189,6 +191,8 @@ export const unionSchema = {
       id: unsafeOutputType.scalar("ID:!", {}),
       text: unsafeOutputType.scalar("String:!", {}),
     }),
+    Mutation: define("Mutation").object({}),
+    Subscription: define("Subscription").object({}),
   },
   union: {
     SearchResult: define("SearchResult").union({
@@ -213,8 +217,8 @@ export const enumSchema = {
   label: "enum" as const,
   operations: defineOperationRoots({
     query: "Query",
-    mutation: null,
-    subscription: null,
+    mutation: "Mutation",
+    subscription: "Subscription",
   }),
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
@@ -268,6 +272,8 @@ export const enumSchema = {
       title: unsafeOutputType.scalar("String:!", {}),
       status: unsafeOutputType.enum("PostStatus:!", {}),
     }),
+    Mutation: define("Mutation").object({}),
+    Subscription: define("Subscription").object({}),
   },
   union: {},
 } satisfies AnyGraphqlSchema;
@@ -287,7 +293,7 @@ export const inputObjectSchema = {
   operations: defineOperationRoots({
     query: "Query",
     mutation: "Mutation",
-    subscription: null,
+    subscription: "Subscription",
   }),
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
@@ -341,6 +347,7 @@ export const inputObjectSchema = {
       email: unsafeOutputType.scalar("String:!", {}),
       age: unsafeOutputType.scalar("Int:?", {}),
     }),
+    Subscription: define("Subscription").object({}),
   },
   union: {},
 } satisfies AnyGraphqlSchema;
