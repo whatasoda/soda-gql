@@ -106,9 +106,10 @@ export type DeferredOutputFieldWithArgs = {
 };
 
 /**
- * Union type for output field specifiers.
- * - Simple string for fields without arguments
- * - Object with spec + arguments for fields with arguments
+ * Union type for output field specifiers (for backward compatibility in runtime parsers).
+ *
+ * Note: For schema definitions, use `OutputTypeSpecifiers` which enforces object format only.
+ * This union is maintained for `parseOutputField()` to handle legacy string formats.
  */
 export type DeferredOutputField = DeferredOutputSpecifier | DeferredOutputFieldWithArgs;
 

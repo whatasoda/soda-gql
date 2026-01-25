@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Kind, print } from "graphql";
+import type { AnyFields } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
@@ -456,14 +457,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "o|User|?",
+        type: { spec: "o|User|?", arguments: {} },
         args: {},
         directives: [],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: "s|ID|!",
+            type: { spec: "s|ID|!", arguments: {} },
             args: {},
             directives: [],
             object: null,
@@ -472,7 +473,7 @@ describe("DirectiveRef in buildDocument", () => {
           email: {
             parent: "User",
             field: "email",
-            type: "s|String|?",
+            type: { spec: "s|String|?", arguments: {} },
             args: {},
             directives: [skipDirective],
             object: null,
@@ -488,7 +489,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: emptySchema,
     });
 
@@ -509,14 +510,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "o|User|?",
+        type: { spec: "o|User|?", arguments: {} },
         args: {},
         directives: [],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: "s|ID|!",
+            type: { spec: "s|ID|!", arguments: {} },
             args: {},
             directives: [],
             object: null,
@@ -525,7 +526,7 @@ describe("DirectiveRef in buildDocument", () => {
           email: {
             parent: "User",
             field: "email",
-            type: "s|String|?",
+            type: { spec: "s|String|?", arguments: {} },
             args: {},
             directives: [includeDirective],
             object: null,
@@ -551,7 +552,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables,
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: emptySchema,
     });
 
@@ -572,14 +573,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "o|User|?",
+        type: { spec: "o|User|?", arguments: {} },
         args: {},
         directives: [queryOnlyDirective], // Invalid: FIELD location not allowed
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: "s|ID|!",
+            type: { spec: "s|ID|!", arguments: {} },
             args: {},
             directives: [],
             object: null,
@@ -596,7 +597,7 @@ describe("DirectiveRef in buildDocument", () => {
         operationType: "query",
         operationTypeName: "Query",
         variables: {},
-        fields: fields as any,
+        fields: fields as AnyFields,
         schema: emptySchema,
       });
     }).toThrow("Directive @queryOnly cannot be used on FIELD");
@@ -619,14 +620,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "o|User|?",
+        type: { spec: "o|User|?", arguments: {} },
         args: {},
         directives: [],
         object: {
           name: {
             parent: "User",
             field: "name",
-            type: "s|String|?",
+            type: { spec: "s|String|?", arguments: {} },
             args: {},
             directives: [skipDirective, includeDirective],
             object: null,
@@ -642,7 +643,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: emptySchema,
     });
 
@@ -662,14 +663,14 @@ describe("DirectiveRef in buildDocument", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "o|User|?",
+        type: { spec: "o|User|?", arguments: {} },
         args: {},
         directives: ["not a directive" as unknown, validDirective, { name: "fake" } as unknown, null as unknown],
         object: {
           id: {
             parent: "User",
             field: "id",
-            type: "s|ID|!",
+            type: { spec: "s|ID|!", arguments: {} },
             args: {},
             directives: [],
             object: null,
@@ -686,7 +687,7 @@ describe("DirectiveRef in buildDocument", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: emptySchema,
     });
 
@@ -985,7 +986,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "s|User|?",
+        type: { spec: "s|User|?", arguments: {} },
         args: {},
         directives: [authDirective],
         object: null,
@@ -998,7 +999,7 @@ describe("Directive enum argument handling", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: schemaWithEnum,
     });
 
@@ -1022,7 +1023,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "s|User|?",
+        type: { spec: "s|User|?", arguments: {} },
         args: {},
         directives: [skipDirective],
         object: null,
@@ -1035,7 +1036,7 @@ describe("Directive enum argument handling", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: schemaWithEnum,
     });
 
@@ -1058,7 +1059,7 @@ describe("Directive enum argument handling", () => {
       user: {
         parent: "Query",
         field: "user",
-        type: "s|User|?",
+        type: { spec: "s|User|?", arguments: {} },
         args: {},
         directives: [cachedDirective],
         object: null,
@@ -1071,7 +1072,7 @@ describe("Directive enum argument handling", () => {
       operationType: "query",
       operationTypeName: "Query",
       variables: {},
-      fields: fields as any,
+      fields: fields as AnyFields,
       schema: schemaWithEnum,
     });
 
